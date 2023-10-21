@@ -1,0 +1,27 @@
+<div class="row">
+    <h6 class="my-3 font-weight-bold">Sucursales </h6>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Sucursal</th>
+                    <th class="text-center">Activo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let sucursal of sucursales">
+                    <td>{{ sucursal.nombre }}</td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check" style="margin: auto !important;" (change)="onSubmit(sucursal)" [(ngModel)]="sucursal.activo" name="activo">
+                    </td>
+                </tr>          
+                <tr>
+                    <td colspan="2" class="text-center" *ngIf="loading">
+                        <span class="badge badge-primary">Cargando...</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>

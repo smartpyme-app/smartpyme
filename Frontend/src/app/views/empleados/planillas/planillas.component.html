@@ -1,0 +1,198 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Planillas <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/planillas">Planillas</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="planillas?.total">{{ planillas?.total + ' registros' }}</span>
+
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" placeholder="Buscar" focus="true" class="form-control" [(ngModel)]="buscador">
+            <button tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+            <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            <!-- <button tooltip="Reportes" (click)="openReportes(mreportes)" class="btn btn-default tcla-F6"><i class="fa fa-print"></i></button> -->
+            <button routerLink="/planilla/nueva" tooltip="Generar planilla (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+        </div>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Periodo</th>
+                        <th>Estado</th>
+                        <th class="text-center">Total Bruto</th>
+                        <th class="text-center">ISSS</th>
+                        <th class="text-center">AFP</th>
+                        <th class="text-center">Renta</th>
+                        <th class="text-center">Total Neto</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="planillas?.total < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene planillas registradas</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let planilla of planillas?.data">
+                        <td>{{ planilla.fecha | date:'dd/MM/YYY' }}</td>
+                        <td>
+                            Del: {{ planilla.fecha_inicio | date:'dd' }} al: {{ planilla.fecha_fin | date:'dd MMMM' }}
+                        </td>
+                        <td>
+                            <span class="badge click" [ngClass]="{'badge-warning' : planilla?.estado == 'Pendiente', 'badge-success' : planilla?.estado == 'Pagada'}">
+                                {{planilla.estado}}
+                            </span>
+                        </td>
+                        <td class="text-center">{{ planilla.total_bruto | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{ planilla.isss | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{ planilla.afp | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{ planilla.renta | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{ planilla.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">
+                            <div role="group" class="btn-group">
+                                <a tooltip="Eliminar" class="btn btn-default" (click)="delete(planilla.id)">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <div class="dropdown">
+                                  <a class="btn btn-default" href="#" role="button" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa fa-print"></i>
+                                  </a>
+
+                                  <ul class="dropdown-menu">
+                                    <li><a type="button" class="dropdown-item click" (click)="pdfPlanilla(planilla)">Imprimir planilla</a>
+                                    </li>
+                                    <li><a type="button" class="dropdown-item click" (click)="pdfBoletas(planilla)">Imprimir Boletas</a>
+                                    </li>
+                                  </ul>
+                                </div>
+                                 <a tooltip="Ver" class="btn btn-default" routerLink="/planilla/{{planilla.id}}">
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="planillas?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="planillas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mplanilla>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Asistencia</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef!.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row text-center">
+            <p>{{ asistencia.entrada }}</p>
+            <div class="form-group">
+                <input type="text" class="form-control" name="username" [(ngModel)]="user.username" placeholder="Usuario" required focus="true"/>
+            </div>
+            <div class="form-group">
+                 <input type="password" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Contraseña" required />
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="">Usuarios:</label>
+                <select [(ngModel)]="filtro.usuario_id" class="form-control form-select" name="filtro.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mreportes>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Reportes</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+        <div class="row">
+            <div class="col">
+                <a href="{{ apiService.baseUrl }}" target="_blank" class="btn btn-default btn-block">Resporte de faltas y atrasos</a>
+                <a href="{{ apiService.baseUrl }}" target="_blank" class="btn btn-default btn-block">Asistencia diaria</a>
+                <a href="{{ apiService.baseUrl }}" target="_blank" class="btn btn-default btn-block">Asistencia mensual</a>
+            </div>
+        </div>
+  </div>
+</ng-template>

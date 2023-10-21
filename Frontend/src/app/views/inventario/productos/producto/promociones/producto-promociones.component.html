@@ -1,0 +1,90 @@
+<h6 class="my-3 font-weight-bold">Promociones</h6>
+<div class="row">
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th rowspan="2">Periodo</th>
+                    <th rowspan="2">Activo</th>
+                    <th rowspan="2" class="text-center">Precio<br>Normal</th>
+                    <th rowspan="2" class="text-center">Precio<br>Promoción</th>
+                    <th colspan="2" class="text-center">Descuento</th>
+                    <th rowspan="2" class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" class="text-center" *ngIf="loading">
+                        <span class="label label-info">Cargando</span>
+                    </td>
+                </tr>
+
+                <tr class="animated fadeIn" *ngFor=" let promocion of producto?.promociones">
+                    <td class="text-center">{{promocion.inicio | date:'dd '}} al {{promocion.fin | date:'dd MMM '}}</td>
+                    <td class="text-center">
+                        <span class="badge badge-pop" [ngClass]="{'badge-danger' : !promocion?.activa, 'badge-success' : promocion?.activa}" [popover]="popTemplate" [outsideClick]="true">
+                            <span *ngIf="promocion.activa">Si</span>
+                            <span *ngIf="!promocion.activa">No</span>
+                        </span>
+                    </td>
+                    <td class="text-center">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{ promocion.precio | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">${{ (producto.precio - promocion.precio) | number:'1.2'}}</td>
+                    <td class="text-center">{{ (100 - ((promocion.precio / producto.precio) * 100)) | number:'1.2'}}%</td>
+                    <td class="text-center">
+                        <div class="btn-group">
+                            <a (click)="deletePromocion(promocion)" class="btn btn-default" title="Eliminar"><i class="fa fa-trash"></i></a>
+                            <a (click)="openModal(mPromocion, promocion)" class="btn btn-default" title="Editar"><i class="fa fa-pencil-alt"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="!loading">
+                    <td colspan="8" class="text-center">
+                        <a class="btn btn-link" (click)="openModal(mPromocion, {})" tooltip="Agregar promoción">
+                            Agregar promoción
+                        </a>
+                    </td>
+                </tr> 
+            </tbody>
+        </table>
+    </div>
+</div> 
+
+
+<ng-template #mPromocion>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Promoción</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="precio">Precio:</label> <small class="text-muted float-end">Precio actual: {{ producto.precio | currency:'USD':'symbol':'1.2' }} </small>
+                <input type="number" name="precio" [(ngModel)]="promocion.precio" placeholder="Precio de promoción" class="form-control" focus="true">
+            </div>
+
+            <div class="form-group col-sm-12">
+                <label for="inicio">Inicio:</label>
+                <input type='datetime-local' class="form-control" name="inicio" #dateP1 [(ngModel)]="promocion.inicio"/>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="fin">Fin:</label>
+                <input type='datetime-local' class="form-control" name="fin" #dateP2 [(ngModel)]="promocion.fin"/>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="!promocion.precio || !promocion.inicio || !promocion.fin">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

@@ -1,0 +1,279 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading" (click)="loadAll()">Facturación <small class="text-muted p-2"></small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/ventas">Ventas</a></li>
+            <li class="breadcrumb-item"><a>Venta</a></li>
+        </ol>
+    </div>
+</div>
+
+<section class="card">
+    <div class="card-body" style="min-height: calc(100vh - 250px);">
+
+        <div class="row">
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="fecha">Fecha:</label><br>
+                <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+            </div>
+            <!-- <div class="col-md-6 col-lg-2">
+                <label for="tipo">Tipo:</label>
+                <select class="form-control form-select" [(ngModel)]="venta.tipo" name="tipo">
+                    <option value="Interna">Interna</option>
+                    <option value="Exportación">Exportación</option>
+                </select>
+            </div> -->
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="metodo_pago">Método de pago:</label>
+                <select name="metodo_pago" [(ngModel)]="venta.metodo_pago" class="form-select" id="metodo_pago">
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Contra entrega">Contra entrega</option>
+                    <option value="Chivo Wallet">Chivo Wallet</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="tipo_documento">Documento:</label>
+                <select name="tipo_documento" [(ngModel)]="venta.tipo_documento" (change)="setDocumento($event.target.value)" class="form-select" id="tipo_documento">
+                    <option value="{{documento.nombre}}" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-1">
+                <label for="correlativo">Correlativo:</label><br>
+                <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="">Cliente</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="cliente_id" placeholder="Consumidor Final" [(ngModel)]="venta.cliente_id" class="form-select p-0">
+                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                            {{ cliente.nombre }} - {{ cliente.registro }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-cliente (update)="setCliente($event)"></app-crear-cliente>
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="condicion">Condición:</label>
+                <select name="condicion" [(ngModel)]="venta.condicion" (change)="setCondicion()" class="form-select" id="condicion">
+                    <option value="Contado">Contado</option>
+                    <option value="Crédito">Crédito</option>
+                    <option value="8 días">8 días</option>
+                    <option value="15 días">15 días</option>
+                    <option value="30 días">30 días</option>
+                    <option value="60 días">60 días</option>
+                    <!-- <option value="Adelantado">Adelantado</option> -->
+                </select>
+            </div>
+            <!-- <div class="form-group col-md-4 col-lg-2">
+                <label for="fecha_pago">Fecha de pago:</label><br>
+                <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
+            </div> -->
+        </div>
+        <div class="row" *ngIf="venta.condicion == 'Crédito'">
+             <div class="form-group col-md-4 col-lg-2">
+                 <label>Plazo:</label>
+                 <span class="input-group">
+                     <input type="number" name="numero_de_cuotas" (change)="setFechaPago()" [(ngModel)]="venta.credito.numero_de_cuotas" class="form-control" required>
+                     <select name="venta.credito.forma_de_pago" (change)="setFechaPago()" class="form-select" [(ngModel)]="venta.credito.forma_de_pago" required>
+                         <option value="Dias">{{ venta.credito.numero_de_cuotas <= 1 ? 'Dia' : 'Dias' }}</option>
+                         <option value="Semanas">{{ venta.credito.numero_de_cuotas <= 1 ? 'Semana' : 'Semanas' }}</option>
+                         <option value="Meses">{{ venta.credito.numero_de_cuotas <= 1 ? 'Mes' : 'Meses' }}</option>
+                     </select>
+                 </span>
+             </div>
+            <div class="form-group col-md-4 col-lg-2">
+                 <label>Interés anual <small>%</small>:</label>
+                 <input type="number" name="interes_anual" [(ngModel)]="venta.credito.interes_anual" class="form-control" required>
+             </div>
+             <!-- <div class="form-group col-md-4 col-lg-2">
+                 <label>Tipo de cuota:</label>
+                 <select name="venta.credito.tipo_cuota" class="form-select" [(ngModel)]="venta.credito.tipo_cuota" required>
+                     <option value="Sobre Saldos">Sobre Saldos</option>
+                     <option value="Cuota Fija">Cuota Fija</option>
+                 </select>
+             </div> -->
+             <div class="form-group col-md-4 col-lg-2">
+                 <label>Prima:</label>
+                 <input type="number" name="prima" [(ngModel)]="venta.credito.prima" class="form-control" required>
+             </div>
+             <div class="form-group col-md-4 col-lg-2">
+                 <label>Periodo de gracia <small>({{ venta.credito.forma_de_pago }})</small>:</label>
+                 <input type="number" name="periodo_de_gracia" [(ngModel)]="venta.credito.periodo_de_gracia" class="form-control" required>
+             </div>
+             <div class="form-group col-md-4">
+                 <label for="nota">Nota:</label><br>
+                 <input type="text" class="form-control" [(ngModel)]="venta.credito.nota" name="credito.nota">
+             </div>
+        </div>
+
+        <div class="row">
+            <app-venta-detalles [venta]="venta" (update)="updateVenta($event)" (sumTotal)="sumTotal()"></app-venta-detalles>
+            <div class="col-md-12">
+                <table class="table table-sm table-borderless table-condensed mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-right"> Sub Total: </td>
+                            <td width="70px" class="text-right"> {{ venta.subtotal | currency:'USD':'symbol':'1.2'}} </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right"> IVA: </td>
+                            <td width="70px" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">
+                                <div class="form-check form-switch w-100">
+                                    <label class="form-check-label" for="venta.percepcion">
+                                        <input id="venta.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.percepcion" name="venta.percepcion" *ngIf="!loading">
+                                        IVA percibido:
+                                    </label>
+                                </div>
+                            </td>
+                            <td  width="70px" class="text-right">
+                               {{ (venta.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">
+                                <div class="form-check form-switch w-100">
+                                    <label class="form-check-label" for="venta.retencion">
+                                        <input id="venta.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="venta.retencion" *ngIf="!loading">
+                                        IVA retenido:
+                                    </label>
+                                </div>
+                            </td>
+                            <td  width="70px" class="text-right">
+                               {{ (venta.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">No Sujeta:</td>
+                            <td width="70px" class="text-right">{{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Exenta:</td>
+                            <td width="70px" class="text-right">{{ venta.exenta | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Gravada:</td>
+                            <td width="70px" class="text-right">{{ venta.gravada | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right"> <b>Total:</b> </td>
+                            <td width="70px" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar venta (F10)">
+                    Facturar
+                </button>
+                <button (click)="openModalOrden(morden)" [disabled]="loading" class="btn btn-default float-end tcla-F9" title="Guardar como pendiente (F9)">
+                    Guardar
+                </button>
+                <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">.</button>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<ng-template #morden>
+  <div class="modal-header">
+    <h4 class="modal-title pull-left">Guardar como cuenta por cobrar</h4>
+    <button type="button" class="close float-end" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onPosponer()">
+    <div class="row">
+        <div class="col-md-12">
+            <input type="text" name="nombre" class="form-control" placeholder="Nota o nombre de cliente" [(ngModel)]="venta.nombre" focus="true">
+        </div>
+    </div>
+    <div class="row text-center">
+        <div class="col-md-12 mt-5">
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fa fa-clock-o"></i>
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
+        </div>
+    </div>        
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mfacturar>
+  <div class="modal-header">
+    <div class="modal-title text-center w-100">
+        <p class="my-0">{{venta.tipo_documento}}</p>
+        <h3>{{venta.correlativo}}</h3>
+    </div>
+    <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
+        <div class="row text-center">
+            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ venta.total | currency:'USD':'symbol':'1.2' }}</span></h4>
+            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="venta.recibido">{{ venta.recibido - venta.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info" *ngIf="!venta.recibido">$0.00</span></h4>
+            <div class="form-group text-center col-md-12 my-3">
+                <label for="recibido">Recibido:</label>
+                <input type="number" name="recibido" [(ngModel)]="venta.recibido" placeholder="{{ venta.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center" focus="true">
+            </div>
+
+            <div class="form-group col-md-12 mb-3" *ngIf="!venta.nota">
+                <label for="nota">Nota:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="venta.nota" name="nota" id="nota">
+            </div>
+
+            <label class="mt-4" style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
+
+        </div>
+        <div class="row text-center">
+            <div class="col-md-12 mt-4">
+                <button type="submit" class="btn btn-primary btn-block tcla-F12" id="submit" [disabled]="loading">
+                    <span *ngIf="!loading">Cobrar <small>(F12)</small></span>
+                    <span *ngIf="loading">Cobrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" focus="true">
+            </div>
+            <div class="col-md-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

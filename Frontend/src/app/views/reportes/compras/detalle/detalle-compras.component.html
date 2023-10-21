@@ -1,0 +1,152 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Compras <small class="text-muted p-2"> Detalle</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/compras">Compras</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Detalles</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header text-center">
+        <form name="form" class="form-inline d-flex justify-content-center" (ngSubmit)="loadAll()" autocomplete="off">
+            <div class="form-group">
+                <label for="">Nombre: </label>
+                <input type="text" name="nombre" class="form-control" placeholder="Nombre" [(ngModel)]="filtro.nombre" focus="true">
+            </div>
+            <div class="form-group" style="margin-left: 15px;">
+                <label for="categoria_id">Categoria:</label>
+                <select [(ngModel)]="filtro.categoria_id" class="form-control form-select" name="categoria_id">
+                    <option value="">Todas</option>
+                    <optgroup label="{{ categoria.nombre }}" *ngFor="let categoria of categorias">
+                        <option [value]="sub.id" *ngFor="let sub of categoria.subcategorias">{{ sub.nombre }}</option>
+                      </optgroup>
+                </select>
+            </div>
+            <div class="form-group" style="margin-left: 15px;">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group" style="margin-left: 15px;">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-default" tooltip="Filtrar"><i class="fa fa-filter"></i></button>
+                <app-descargar-excel *ngIf="compras?.length > 0" [nombre]="'Compras Historial'"></app-descargar-excel>
+            </div>
+        </form>
+    </div>
+    <div class="card-body table-responsive no-padding">
+        <table class="table table-borderless table-hover" id="tablaReporte">
+            <thead>
+                <tr>
+                    <th class="text-center">Fecha</th>
+                    <th>Producto</th>
+                    <th>Medida</th>
+                    <th class="text-center">Unidades</th>
+                    <th class="text-center">Compra Subtotal</th>
+                    <th class="text-center">Compra IVA</th>
+                    <th class="text-center">Compra Total</th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr>
+            <td colspan="8" class="text-center" *ngIf="compras?.length < 1 && !loading">
+                <span class="label label-info">No tiene compras registradas</span>
+            </td>
+            <td colspan="8" class="text-center" *ngIf="loading">
+                <span class="label label-info">Cargando...</span>
+            </td>
+            </tr>
+
+            <tr class="animated fadeIn" *ngFor=" let compra of compras"> 
+                <td class="text-center">{{compra.fecha | date:'dd-MM-yyyy'}} </td>
+                <td>{{compra.producto}}</td>
+                <td>{{compra.medida}}</td>
+                <td class="text-center">{{compra.cantidad | number:'1.0'}}</td>
+                <td class="text-center">{{compra.subtotal | currency:'USD':'symbol':'1.2'}}</td>
+                <td class="text-center">{{compra.iva | currency:'USD':'symbol':'1.2'}}</td>
+                <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+            </tr>
+
+            <tr *ngIf="compras?.length > 0 && !loading">
+                <td colspan="3" class="text-center"><b>Total</b></td>                                
+            <td class="text-center"><b>{{ compras | sum:'cantidad' | number:'1.0'}}</b></td>
+                <td class="text-center"><b>{{ compras | sum:'subtotal' | currency:'USD':'symbol':'1.2' }}</b></td>
+                <td class="text-center"><b>{{ compras | sum:'iva' | currency:'USD':'symbol':'1.2' }}</b></td>                                
+                <td class="text-center"><b>{{ compras | sum:'total' | currency:'USD':'symbol':'1.2'}}</b></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type="date" class="form-control" [(ngModel)]="filtro.fecha_ini" name="fecha_ini">
+                <input type="time" class="form-control" [(ngModel)]="filtro.hora_ini" name="hora_ini">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type="date" class="form-control" [(ngModel)]="filtro.fecha_fin" name="fecha_fin">
+                <input type="time" class="form-control" [(ngModel)]="filtro.hora_fin" name="hora_fin">
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.usuario">Empleado:</label>
+                <select [(ngModel)]="filtro.usuario_id" class="form-control" name="filtro.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.estado">Estado:</label>
+                <select [(ngModel)]="filtro.estado" class="form-control" name="filtro.estado">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Cobrada">Cobrada</option>
+                    <option value="Anulada">Anulada</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.forma_de_pago">Forma de Pago:</label>
+                <select [(ngModel)]="filtro.forma_de_pago" class="form-control" name="filtro.forma_de_pago">
+                    <option value="">Todos</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Consumo Interno">Consumo Interno</option>
+                    <option value="Credito Empleado">Crédito Empleado</option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

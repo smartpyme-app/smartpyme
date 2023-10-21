@@ -1,0 +1,47 @@
+<div class="table-responsive">
+    <table class="table table-borderless table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th class="text-center">Ref</th>
+                <th class="text-center">Estado</th>
+                <th class="text-center">Total</th>
+                <th class="text-center"><i class="fa fa-cog"></i></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="8" class="text-center" *ngIf="compras?.total < 1 && !loading">
+                    <span class="badge badge-primary">No tiene compras registradas</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                    <span class="badge badge-primary">Cargando...</span>
+                </td>
+            </tr>
+
+            <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
+                
+                <td>{{compra.id }}</td>
+                <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
+                <td><a routerLink="/proveedor/{{compra.proveedor_id}}">{{compra.proveedor | truncate:30 }}</a></td>
+                <td class="text-center">{{compra.referencia}}</td>
+                <td class="text-center">{{compra.estado}}</td>
+                 <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                <td class="text-center">
+                    <div class="btn-group" role="group">
+                        <a class="btn btn-default" routerLink="/compra/{{compra.id}}" tooltip="Editar">
+                            <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>  
+                </td>
+
+            </tr>
+        </tbody>
+    </table>
+    <div class="text-center" *ngIf="compras?.last_page > 1">
+        <app-pagination [items]="compras" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+</div>
+           

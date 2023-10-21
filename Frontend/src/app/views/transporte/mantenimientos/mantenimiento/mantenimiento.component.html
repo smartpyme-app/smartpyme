@@ -1,0 +1,68 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Mantenimiento <small class="text-muted p-2"> Info</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/mantenimientos">Mantenimientos</a></li>
+            <li class="breadcrumb-item"><a>Mantenimiento</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="fecha">Fecha:</label>
+                <input type="date" name="fecha" [(ngModel)]="mantenimiento.fecha" class="form-control">
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="tipo">Tipo:</label>
+                <select class="form-control form-select" [(ngModel)]="mantenimiento.tipo" name="tipo">
+                    <option value="Preventivo">Preventivo</option>
+                    <option value="Correctivo">Correctivo</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-2" *ngIf="!mantenimiento.id">
+                <label for="estado">Estado:</label>
+                <select class="form-control form-select" [(ngModel)]="mantenimiento.estado" name="estado">
+                    <option value="Completado">Completado</option>
+                    <option value="En Proceso">En Proceso</option>
+                    <option value="Programado">Programado</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-2" *ngIf="mantenimiento.id">
+                <label for="estado">Estado:</label> <br>
+                <p class="badge" [ngClass]="{'badge-warning' : mantenimiento?.estado == 'En Proceso', 'badge-success' : mantenimiento?.estado == 'Completado', 'badge-info' : mantenimiento?.estado == 'Programado'}">{{ mantenimiento.estado }}</p>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="flota_id">Flota:</label>
+                <ng-select name="flota_id" [(ngModel)]="mantenimiento.flota_id">
+                    <ng-option *ngFor="let flota of flotas" [value]="flota.id">
+                        {{ flota.placa }} - {{ flota.tipo }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12 col-lg-4">
+                <label for="nota">Nota:</label>
+                <input type="text" class="form-control" [(ngModel)]="mantenimiento.nota" name="nota">
+            </div>
+        </div>
+
+        <div class="row">
+            <app-mantenimiento-detalles [mantenimiento]="mantenimiento" (update)="updateOrden($event)"></app-mantenimiento-detalles>
+        </div>
+    </div> 
+    <div class="card-footer" *ngIf="mantenimiento.estado != 'Completado'">
+        <button *ngIf="mantenimiento.id" (click)="onCompletado()" [disabled]="loading" class="btn btn-primary float-end tcla-F11 ml-3" tooltip="Se marca como completado (F11)">
+            <span *ngIf="!loading"> Finalizar</span>
+            <span *ngIf="loading"> Finalizando...</span>
+        </button>
+        <button (click)="onSubmit()" [disabled]="loading" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+            <span *ngIf="!loading"> Guardar</span>
+            <span *ngIf="loading"> Guardando...</span>
+        </button>
+    </div>
+</div>

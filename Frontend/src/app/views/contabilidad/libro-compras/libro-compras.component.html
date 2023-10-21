@@ -1,0 +1,140 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Libro de Compras <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Libro de Compras</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-body text-center">
+                <div class="col-12">
+                    <h3>Libro de compras</h3>
+                    <p>Historial de compras</p>
+                    <form name="form" (ngSubmit)="loadAll()" class="form-inline justify-content-center">
+                        <div class="form-group">
+                            <label for="">Del:</label>
+                            <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+                        </div>
+                        <div class="form-group" style="margin-left: 15px;">
+                            <label for="">Al:</label>
+                            <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+                        </div>
+                        <button type="submit" class="btn btn-primary" [disabled]="loading">
+                            <i *ngIf="!loading" class="fa fa-search"></i>
+                            <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+                        </button>
+                        <app-descargar-excel *ngIf="compras?.length > 0" [nombre]="'Libro de Compras'"></app-descargar-excel>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive bg-white">
+        <table class="table table-bordered table-hover" id="tablaReporte">
+            <thead>
+                <tr>
+                    <th colspan="6"></th>
+                    <th colspan="2" class="text-center">Exentas</th>
+                    <th></th>
+                    <th colspan="2" class="text-center">Gravadas</th>
+                    <th colspan="8"></th>
+                </tr>
+                <tr>
+                    <th>N°</th>
+                    <th>Fecha</th>
+                    <th class="text-center hidden-xs">Documento</th>
+                    <th class="text-center">Registro</th>
+                    <th>NIT</th>
+                    <th>Proveedor</th>
+
+                    <th class="text-center">Internas</th>
+                    <th class="text-center">Importaciones</th>
+                    
+                    <th class="text-center" nowrap>No sujetas</th>
+                    
+                    <th class="text-center">Internas</th>
+                    <th class="text-center">Importaciones</th>
+
+                    <th class="text-center">IVA</th>
+
+                    <th class="text-center" nowrap>Rebajas y Devoluciones</th>
+                    <th class="text-center" nowrap>IVA Reb y Dev</th>
+
+                    <th class="text-center" nowrap>IVA Retenido</th>
+                    <th class="text-center">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="16" class="text-center" *ngIf="compras?.length < 1 && !loading">
+                        <span class="badge badge-primary">No tiene compras registradas</span>
+                    </td>
+                    <td colspan="16" class="text-center" *ngIf="loading">
+                        <span class="badge badge-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr class="animated fadeIn" *ngFor=" let compra of compras; let i=index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
+                    <td class="text-center hidden-xs">{{compra.referencia }}</td>
+                    <td class="text-center">{{compra.registro}}</td>
+                    <td>{{compra.nit}}</td>
+                    <td>{{compra.proveedor}}</td>
+
+                    <td class="text-center">{{compra.inter_exenta  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.impor_exenta  | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.no_sujeta     | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.inter_gravada | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.impor_gravada | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.iva | currency:'USD':'symbol':'1.2'}}</td>
+
+                    <td class="text-center">{{compra.reb_dev | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.reb_dev_iva | currency:'USD':'symbol':'1.2' }}</td>
+
+                    <td class="text-center">{{compra.iva_retenido | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+
+                </tr>
+                <tr>
+                    <td colspan="6" class="text-center"><b>Total</b></td>                                
+                    <td class="text-center"><b>{{ compras | sum:'inter_exenta' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'impor_exenta' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'inter_gravada' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'impor_gravada' | currency:'USD':'symbol':'1.2' }}</b></td>
+
+                    <td class="text-center"><b>{{ compras | sum:'iva' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'reb_dev' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ compras | sum:'reb_dev_iva' | currency:'USD':'symbol':'1.2' }}</b></td>
+
+                    <td class="text-center"><b>{{ compras | sum:'iva_retenido' | currency:'USD':'symbol':'1.2' }}</b></td>
+
+                    <td class="text-center"><b>{{ compras | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
+                </tr>
+            </tbody>
+            <tfoot *ngIf="compras?.length > 10">
+                <tr>
+                    <th>ID</th>
+                    <th class="text-center hidden-xs">Fecha</th>
+                    <th class="text-center hidden-xs">Documento</th>
+                    <th class="text-center">Registro</th>
+                    <th>Proveedor</th>
+                    <th class="text-center">Internos</th>
+                    <th class="text-center">IVA</th>
+                    <th class="text-center">CESC</th>
+                    <th class="text-center">Fovial</th>
+                    <th class="text-center">Cotrans</th>
+                    <th class="text-center">Total</th>
+                </tr>
+            </tfoot>
+
+        </table>
+        </div>
+    </div>
+</div>

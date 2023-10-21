@@ -1,0 +1,65 @@
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { FocusModule } from 'angular2-focus';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TagInputModule } from 'ngx-chips';
+import { PipesModule } from '../../../pipes/pipes.module';
+import { SharedModule } from '../../../shared/shared.module';
+import { TabsModule } from 'ngx-bootstrap/tabs';
+import { NgChartsModule } from 'ng2-charts';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+
+import { ClientesComponent } from './clientes.component';
+import { ClienteComponent } from './cliente/cliente.component';
+import { ClienteDatosComponent } from './cliente/datos/cliente-datos.component';
+import { ClientesDashComponent } from './dash/clientes-dash.component';
+import { ClienteInformacionComponent } from './cliente/informacion/cliente-informacion.component';
+import { ClienteVentasComponent } from './cliente/ventas/cliente-ventas.component';
+import { ClienteFletesComponent } from './cliente/fletes/cliente-fletes.component';
+import { ClienteDocumentosComponent } from './cliente/documentos/cliente-documentos.component';
+import { ClienteCreditosComponent } from './cliente/creditos/cliente-creditos.component';
+import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.component';
+
+@NgModule({
+  imports: [
+    CommonModule,
+    BrowserAnimationsModule,
+    FormsModule,
+    RouterModule,
+    SharedModule,
+    PipesModule,
+    TagInputModule,
+    NgChartsModule,
+    PopoverModule.forRoot(),
+    TabsModule.forRoot(),
+    TooltipModule.forRoot()
+  ],
+  declarations: [
+    ClientesComponent,
+  	ClienteComponent,
+    ClienteDatosComponent,
+    ClientesDashComponent,
+    ClienteInformacionComponent,
+    ClienteDocumentosComponent,
+    ClienteVentasComponent,
+    ClienteFletesComponent,
+    ClienteCreditosComponent,
+    CuentasCobrarComponent
+  ],
+  exports: [
+    ClientesComponent,
+  	ClienteComponent,
+    ClienteDatosComponent,
+    ClientesDashComponent,
+    ClienteInformacionComponent,
+    ClienteDocumentosComponent,
+    ClienteVentasComponent,
+    ClienteFletesComponent,
+    ClienteCreditosComponent,
+    CuentasCobrarComponent
+  ]
+})
+export class ClientesModule { }

@@ -1,0 +1,44 @@
+<a href="" (click)="loadAll()" class="nav-link" data-toggle="modal" data-target="#exampleModal"> <i class="fa fa-image"></i> </a>
+
+<!-- Modal -->
+<div class="modal fade" data-backdrop="static" data-keyboard="false" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 text-center" *ngIf="multimedia?.total < 1 && !loading">
+                    <span class="label label-info">No hay multimedia</span>
+                </div>
+                <div class="col-12 text-center" *ngIf="loading">
+                    <span class="label label-info">Cargando...</span>
+                </div>
+                <div class="col col-6 col-md-4 col-lg-3" *ngFor="let foto of multimedia; let i = index">
+                    <img src="{{ apiService.baseUrl + '/' + foto.url }}" alt="" class="img-thumbnail">
+                    <p class="text-center">
+                        <a class="btn btn-light btn-sm" (click)="delete(foto)" tooltip="Eliminar">
+                            <i class="fa fa-trash"></i>
+                        </a>
+                        <a class="btn btn-light btn-sm" (click)="copyLink(foto.url)" tooltip="Copiar url">
+                            <i class="fa fa-link"></i>
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" (change)="setFile($event)" accept="image/png, image/jpeg">
+                <label class="custom-file-label">Subir imagen</label>
+            </div>
+      </div>
+    </div>
+  </div>
+</div>

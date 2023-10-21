@@ -1,0 +1,306 @@
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                    <!-- <app-planilla-servicios (servicioSelect)="servicioSelect($event)"></app-planilla-servicios> -->
+                <th rowspan="2" class="text-center align-middle">N°</th>
+                <th rowspan="2" class="align-middle">Empleado</th>
+                <th rowspan="2" class="text-center align-middle">Dias</th>
+                <!-- <th rowspan="2" class="text-center align-middle">Horas</th> -->
+                <th rowspan="2" class="text-center align-middle">Sueldo</th>
+                <th colspan="4" class="text-center align-middle">Ingresos</th>
+                <th rowspan="2" class="text-center align-middle">Total<br>Bruto</th>
+                <th colspan="3" class="text-center align-middle">Descuentos</th>
+                <th rowspan="2" class="text-center align-middle">Total<br>Neto</th>
+                <th rowspan="2" class="text-center align-middle"><i class="fa fa-cog"></i></th>
+            </tr>
+            <tr>
+                <th class="text-center align-middle">Extras</th>
+                <th class="text-center align-middle">Comisiones</th>
+                <!-- <th class="text-center align-middle">Otros</th> -->
+                <!-- <th class="text-center align-middle">Bonificaciones</th> -->
+                <th class="text-center align-middle">Vacaciones</th>
+                <!-- <th class="text-center align-middle">Indemnización</th> -->
+                <th class="text-center align-middle">Aguinaldo</th>
+
+                <th class="text-center align-middle">ISSS</th>
+                <th class="text-center align-middle">AFP</th>
+                <th class="text-center align-middle">Renta</th>
+                <!-- <th class="text-center align-middle">Anticipos</th> -->
+                <!-- <th class="text-center align-middle">Prestamos Int.</th> -->
+                <!-- <th class="text-center align-middle">Int. Financieras</th> -->
+                <!-- <th class="text-center align-middle">Otros</th> -->
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="17" class="text-center" *ngIf="planilla.detalles?.length < 1 && !loading">
+                    <span class="badge badge-info">No tiene empleados agregados</span>
+                    <!-- <p>
+                        <button [disabled]="loading" class="btn btn-link" (click)="generarPlanilla()">Agregar todos los empleados</button>
+                        <button class="btn btn-link" (click)="openModal(mdetalle, {})">Agregar un empleado</button>
+                    </p> -->
+                </td>
+                <td colspan="17" class="text-center" *ngIf="loading">
+                    <span class="badge badge-info">Cargando...</span>
+                </td>
+            </tr>
+            <tr *ngFor="let detalle of planilla.detalles, let i = index">
+                <td>{{ i + 1 }}</td>
+                <td class="text-nowrap"> {{ detalle.nombre_empleado }} <a class="float-end d-none"  tooltip="Ver información del empleado" target="_blank" routerLink="/empleado/{{detalle.empleado_id}}"><i class="fa fa-edit"></i></a></td>
+                <td class="text-center">{{ detalle.dias_trabajados }}</td>
+                <!-- <td class="text-center">{{ detalle.horas_trabajadas }}</td> -->
+                <td class="text-center">{{ detalle.sueldo_base | currency:'USD':'symbol':'2.2' }}</td>
+
+                <td class="text-center">{{ detalle.horas_extras | currency:'USD':'symbol':'2.2' }}</td>
+                <td class="text-center">{{ detalle.comisiones | currency:'USD':'symbol':'2.2' }}</td>
+                <!-- <td class="text-center">{{ detalle.otros_ingresos | currency:'USD':'symbol':'2.2' }}</td> -->
+                <!-- <td class="text-center">{{ detalle.bonificaciones | currency:'USD':'symbol':'2.2' }}</td> -->
+                <td class="text-center">{{ detalle.vacaciones | currency:'USD':'symbol':'2.2' }}</td>
+                <!-- <td class="text-center">{{ detalle.indemnizacion | currency:'USD':'symbol':'2.2' }}</td> -->
+                <td class="text-center">{{ detalle.aguinaldo | currency:'USD':'symbol':'2.2' }}</td>
+                <td class="text-center">{{ detalle.total_bruto | currency:'USD':'symbol':'2.2' }}</td>
+
+                <td class="text-center">{{ detalle.isss | currency:'USD':'symbol':'2.2' }}</td>
+                <td class="text-center">{{ detalle.afp | currency:'USD':'symbol':'2.2' }}</td>
+                <td class="text-center">{{ detalle.renta | currency:'USD':'symbol':'2.2' }}</td>
+                <!-- <td class="text-center">{{ detalle.anticipos | currency:'USD':'symbol':'2.2' }}</td> -->
+                <!-- <td class="text-center">{{ detalle.prestamos | currency:'USD':'symbol':'2.2' }}</td> -->
+                <!-- <td class="text-center">{{ detalle.institucion_financiera | currency:'USD':'symbol':'2.2' }}</td> -->
+                <!-- <td class="text-center">{{ detalle.otros_descuentos | currency:'USD':'symbol':'2.2' }}</td> -->
+                <td class="text-center">{{ detalle.total | currency:'USD':'symbol':'2.2' }}</td>
+                <td>
+                    <div class="input-group" style="width:81px;" >
+                        <a class="btn btn-default" tooltip="Eliminar"  (click)="eliminarDetalle(detalle)">
+                          <i class="fa fa-trash-alt"></i>
+                        </a>
+                        <a class="btn btn-default" tooltip="Editar" (click)="openModal(mdetalle, detalle)">
+                          <i class="fa fa-pencil-alt"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" class="text-right"><b>Totales:</b></td>
+                <td class="text-center"><b>{{ planilla?.sueldo_base | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td class="text-center"><b>{{ planilla?.horas_extras | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td class="text-center"><b>{{ planilla?.comisiones | currency:'USD':'symbol':'2.2' }}</b></td>
+                <!-- <td class="text-center"><b>{{ planilla?.otros_ingresos | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <!-- <td class="text-center"><b>{{ planilla?.bonificaciones | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <td class="text-center"><b>{{ planilla?.vacaciones | currency:'USD':'symbol':'2.2' }}</b></td>
+                <!-- <td class="text-center"><b>{{ planilla?.indemnizacion | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <td class="text-center"><b>{{ planilla?.aguinaldo | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td class="text-center"><b>{{ planilla?.total_bruto | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td class="text-center"><b>{{ planilla?.isss | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td class="text-center"><b>{{ planilla?.afp | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td class="text-center"><b>{{ planilla?.renta | currency:'USD':'symbol':'2.2' }}</b></td>
+                <!-- <td class="text-center"><b>{{ planilla?.anticipos | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <!-- <td class="text-center"><b>{{ planilla?.prestamos | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <!-- <td class="text-center"><b>{{ planilla?.institucion_financiera | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <!-- <td class="text-center"><b>{{ planilla?.otros_descuentos | currency:'USD':'symbol':'2.2' }}</b></td> -->
+                <td class="text-center"><b>{{ planilla?.total | currency:'USD':'symbol':'2.2' }}</b></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Detalle</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+        <!-- <form autocomplete="off" (ngSubmit)="onSubmit()"> -->
+        <div class="row">
+            <div class="form-group col-md-3">
+                <label for="empleado_id">Empleado:</label>
+                <select [(ngModel)]="detalle.empleado_id" class="form-control form-select" name="detalle.empleado_id">
+                    <option *ngFor="let usuario of empleados" [value]="usuario.id">
+                        {{ usuario.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="dias_trabajados">Dias trabajados:</label>
+                <input type="number" class="form-control" name="dias_trabajados" [(ngModel)]="detalle.dias_trabajados">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="horas_trabajadas">Horas:</label>
+                <input type="number" class="form-control" name="horas_trabajadas" [(ngModel)]="detalle.horas_trabajadas">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="sueldo_base">Sueldo:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="sueldo_base" (keyup)="calDeducciones()" [(ngModel)]="detalle.sueldo_base">
+                </div>
+            </div>
+
+            <h4>Ingresos:</h4>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="horas_extras">Horas extras:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="horas_extras" (keyup)="sumTotales()" [(ngModel)]="detalle.horas_extras">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="comisiones">Comisiones:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="comisiones" (keyup)="sumTotales()" [(ngModel)]="detalle.comisiones">
+                </div>
+            </div>
+            <!-- <div class="form-group col-md-6 col-lg-3">
+                <label for="otros_ingresos">Otros ingresos:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="otros_ingresos" (keyup)="sumTotales()" [(ngModel)]="detalle.otros_ingresos">
+                </div>
+            </div> -->
+            <!-- <div class="form-group col-md-6 col-lg-3">
+                <label for="bonificaciones">Bonificaciones:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="bonificaciones" (keyup)="sumTotales()" [(ngModel)]="detalle.bonificaciones">
+                </div>
+            </div> -->
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="indemnizacion">Indemnizacion:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="indemnizacion" (keyup)="sumTotales()" [(ngModel)]="detalle.indemnizacion">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="aguinaldo">Aguinaldo:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="aguinaldo" (keyup)="sumTotales()" [(ngModel)]="detalle.aguinaldo">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="vacaciones">Vacaciones:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="vacaciones" (keyup)="sumTotales()" [(ngModel)]="detalle.vacaciones">
+                </div>
+            </div>
+            <h4>Descuentos:</h4>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="isss">ISSS: (3%)</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="isss" (keyup)="sumTotales()" [(ngModel)]="detalle.isss">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="afp">AFP: (7.25%)</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="afp" (keyup)="sumTotales()" [(ngModel)]="detalle.afp">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="renta">Renta: (10%)</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="renta" (keyup)="sumTotales()" [(ngModel)]="detalle.renta">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="anticipos">Anticipos:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="anticipos" (keyup)="sumTotales()" [(ngModel)]="detalle.anticipos">
+                </div>
+            </div>
+            <!-- <div class="form-group col-md-6 col-lg-3">
+                <label for="prestamos">Prestamos:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="prestamos" (keyup)="sumTotales()" [(ngModel)]="detalle.prestamos">
+                </div>
+            </div> -->
+            <!-- <div class="form-group col-md-6 col-lg-3">
+                <label for="institucion_financiera">Ins. financieras:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="institucion_financiera" (keyup)="sumTotales()" [(ngModel)]="detalle.institucion_financiera">
+                </div>
+            </div> -->
+            <!-- <div class="form-group col-md-6 col-lg-3">
+                <label for="otros_descuentos">Otros descuentos:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="otros_descuentos" (keyup)="sumTotales()" [(ngModel)]="detalle.otros_descuentos">
+                </div>
+            </div> -->
+            <div class="col-md-12 mt-5">
+                <button [disabled]="loading" (click)="modalRef.hide()" class="btn btn-primary btn-block" [disabled]="loading">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+        <!-- </form> -->
+  </div>
+</ng-template>
+
+<ng-template #mempleados>
+    <form autocomplete="off" (ngSubmit)="generarPlanilla()">
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h4 class="text-center no-margin">Seleccione los empleados a agregar</h4>
+        </div>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Nombre</th>
+                            <th>Cargo</th>
+                            <th>Sueldo</th>
+                            <th class="text-center"><input type="checkbox" title="Seleccionar todos" class="form-check d-inline-block" (click)="selectedAll()"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let empleado of empleados; let i = index">
+                            <td>{{ i+1 }}</td>
+                            <td>{{ empleado.nombre }}</td>
+                            <td>{{ empleado.nombre_cargo }}</td>
+                            <td>
+                                <span *ngIf="empleado.nombre_cargo == 'Motorista' && empleado.sueldo == 0">
+                                    {{ empleado.total_fletes | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                                <span *ngIf="empleado.nombre_cargo != 'Motorista' || empleado.sueldo != 0">
+                                    {{ empleado.sueldo | currency:'USD':'symbol':'1.2'}}
+                                </span>
+                            </td>
+                            <td class="text-center"><input type="checkbox" class="form-check d-inline-block" name="selected" [(ngModel)]="empleado.selected"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+            <span *ngIf="!loading">Agregar</span>
+            <span *ngIf="loading">Agregando...</span>
+        </button>
+    </div>
+    </form>
+</ng-template>

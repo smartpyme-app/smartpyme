@@ -1,0 +1,15 @@
+
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" routerLink="/ordenes">Ordenes </a>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" routerLink="/dash/vendedor/productos">Productos </a>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes">Clientes </a>
+    </li>
+    <li class="nav-item dropdown me-3" *ngIf="usuario.caja_chica_id">
+        <a class="nav-link" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" routerLink="/caja-chica/{{ usuario.caja_chica_id }}" >Caja chica</a>
+    </li>
+</ul>

@@ -1,0 +1,187 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Ordenes <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/ordenes">Ordenes</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <span class="text-muted col-12 col-md-6">
+                {{ ordenes?.total ? ordenes?.total : 0 + ' registros' }}
+                <span *ngIf="filtrado">{{ ordenes?.data | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
+            </span>
+            <div class="col-12 col-md-6">
+                <form name="form" (ngSubmit)="search()" autocomplete="off">
+                <div class="input-group float-end">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+                    <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+                    <a tooltip="Actualizar" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></a>
+                    <a tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F8"><i class="fa fa-filter"></i></a>
+                    <a routerLink="/orden/nueva" tooltip="Crear" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></a>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Cliente</th>
+                        <th>Canal</th>
+                        <th>Estado</th>
+                        <!-- <th class="text-center">Tiempo</th> -->
+                        <th class="text-right">Total</th>
+                        <th class="text-right"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="11" class="text-center" *ngIf="ordenes?.total < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene ordenes registrados</span>
+                        </td>
+                        <td colspan="11" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let orden of ordenes?.data">
+                        <td>{{ orden.id }}</td>
+                        <td>{{ orden.fecha  | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ orden.nombre_usuario }}</td>
+                        <td>{{ orden.nombre_cliente }}</td>
+                        <td>{{orden.nombre_canal}}</td>
+                        <td class="click" *ngIf="apiService.auth_user().tipo != 'Administrador'">
+                            <span class="badge" [ngClass]="{ 
+                                'badge-warning' : orden.estado == 'En Proceso', 
+                                'badge-info' : orden.estado == 'Facturada', 
+                                'badge-dark' : orden.estado == 'Cancelada'}">
+                                {{ orden.estado }}
+                            </span>
+                        </td>
+                        <td class="click" *ngIf="apiService.auth_user().tipo == 'Administrador'">
+                            <span class="badge" [ngClass]="{ 
+                                'badge-dark' : orden.estado == 'En Proceso', 
+                                'badge-warning' : orden.estado == 'Pendiente', 
+                                'badge-info' : orden.estado == 'Facturada', 
+                                'badge-dark' : orden.estado == 'Cancelada'}" [popover]="popTemplate" [outsideClick]="true">
+                                {{ orden.estado }}
+                            </span>
+                            <ng-template #popTemplate>
+                                <button class="btn btn-default btn-xs" (click)="setEstado(orden, 'En Proceso')">En Proceso</button>
+                                <button class="btn btn-default btn-xs" (click)="setEstado(orden, 'Pendiente')">Pendiente</button>
+                                <button class="btn btn-default btn-xs" (click)="setEstado(orden, 'Facturada')">Facturada</button>
+                                <button class="btn btn-default btn-xs" (click)="setEstado(orden, 'Cancelada')">Cancelada</button>
+                            </ng-template>
+                        </td>
+                        <!-- <td class="text-center">{{ orden.tiempo }}  <span *ngIf="orden.tiempo != null">min</span></td> -->
+                        <td class="text-right">{{ orden.total  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">
+                            <div role="group" class="btn-group">
+                                <a tooltip="Eliminar" class="btn btn-default" (click)="delete(orden)">
+                                    <i class="fa fa-trash-alt"></i>
+                                </a>
+                                <a tooltip="Editar" class="btn btn-default" routerLink="/orden/{{ orden.id }}" >
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="ordenes?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="ordenes" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef!.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+
+            <div class="form-group col-sm-6">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group col-sm-6">
+                <label for="filtro.usuario">Empleado:</label>
+                <select [(ngModel)]="filtro.usuario_id" class="form-control form-select" name="filtro.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.estado">Estado:</label>
+                <select [(ngModel)]="filtro.estado" class="form-control form-select" name="filtro.estado">
+                    <option value="">Todos</option>
+                    <option value="Solicitada">Solicitada</option>
+                   <option value="En Proceso">En Proceso</option>
+                   <option value="Entregada">Entregada</option>
+                   <option value="Finalizada">Finalizada</option>
+                   <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.tipo_servicio">Tipo:</label>
+                <select [(ngModel)]="filtro.tipo_servicio" class="form-control form-select" name="filtro.tipo_servicio">
+                    <option value="">Todos</option>
+                    <option value="Sala de Venta">Sala de Venta</option>
+                    <option value="Ruta">Ruta</option>
+                    <option value="A Domicilio">A Domicilio</option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

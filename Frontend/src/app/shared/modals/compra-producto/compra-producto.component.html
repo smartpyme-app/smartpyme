@@ -1,0 +1,90 @@
+<button (click)="openModal(inventario)" class="btn btn-default tcla-F4" tooltip="Crear">
+    <i class="glyphicon glyphicon-list-alt"></i> Producto <small>(F4)</small>
+</button>
+
+<ng-template #inventario>
+  <div class="modal-header text-center">
+    <h3 class="modal-title">Producto</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="producto" autocomplete="off" (ngSubmit)="agregarDetalle()">
+        <div class="form-group col-sm-12">
+            <label for="cantidad">Producto:</label>
+            <form autocomplete="off" class="buscador">
+                <input id="producto" type="text" name="producto.nombre" class="form-control" placeholder="Nombre" [(ngModel)]="producto.nombre" focus="true" id="example" (blur)="clear()">
+                <ul class="list-group info">
+                  <a href="javascript:void(0);" class="list-group-item text-primary" *ngIf="searching"> Buscando... </a>
+                  <a href="javascript:void(0);" class="list-group-item text-warning" *ngIf="!searching && productos?.data?.length == 0"> Ningun registro encontrado </a>
+                </ul>
+                <ul class="list-group opciones" *ngIf="productos?.total > 0">
+                  <a href="javascript:void(0);" class="list-group-item" (click)="selectProducto(producto)" *ngFor=" let producto of productos?.data">
+                    {{producto.nombre}} - <small>{{producto.categoria}}</small>
+                  </a>
+                </ul>
+            </form>
+        </div>
+        <div class="form-group col-sm-3">
+            <label for="cantidad">Cantidad:</label>
+            <input type="number" min="1" class="form-control" id="cantidad" name="cantidad" [(ngModel)]="detalle.cantidad" (change)="calcularImpuestos()">
+        </div>
+        <div class="form-group col-sm-3">
+            <label for="costo">Costo:</label>
+            <div class="input-group">
+                <span class="input-group-addon">$</span>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.costo" name="costo" (change)="calcularImpuestos()">
+            </div>
+        </div>
+        <div class="form-group col-sm-3">
+            <label for="descuento">Descuento:</label>
+            <div class="input-group">
+                <span class="input-group-addon">$</span>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.descuento" name="descuento" placeholder="%" (change)="calcularImpuestos()">
+            </div>
+        </div>
+        <div class="form-group col-sm-3">
+            <label for="precio">Precio:</label>
+            <div class="input-group">
+                <span class="input-group-addon">$</span>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.precio" name="precio">
+            </div>
+        </div>
+        <div class="form-group col-sm-3">
+            <label for="otros">Otros:</label>
+            <div class="input-group">
+                <span class="input-group-addon">$</span>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.otros" name="otros" (change)="calcularImpuestos()">
+            </div>
+        </div>
+        <div class="form-group col-sm-3">
+            <label for="iva">IVA:</label>
+            <div class="input-group">
+                <span class="input-group-addon">$</span>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.iva" name="iva">
+            </div>
+        </div>
+        <div class="form-group col-sm-4">
+            <label for="bodega_id">* Bodega:</label>
+            <select [(ngModel)]="detalle.bodega_id" class="form-control" name="bodega_id">
+                <option value="1">Bodega</option>
+                <option value="2">Sala de Venta</option>
+            </select>
+        </div>
+        <div class="form-group col-sm-2">
+            <label for="tipo">Tipo:</label>
+            <select class="form-control" [(ngModel)]="detalle.tipo" name="tipo" (change)="calcularImpuestos()">
+                <option value="Exenta">Exenta</option>
+                <option value="Gravada">Gravada</option>
+                <option value="No Sujeta">No Sujeta</option>
+            </select>
+        </div>
+        <div class="row text-center">
+            <div class="col-xs-12 mr-top">
+                <button type="submit" [disabled]="!detalle.producto_id || !detalle.cantidad || !detalle.costo" class="btn btn-primary btn-block"> Agregar </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

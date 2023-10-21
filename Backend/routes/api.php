@@ -1,0 +1,93 @@
+<?php
+
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "api" middleware group. Enjoy building your API!
+|
+*/
+
+Route::get('/prueba', function(){ return Response()->json(['message' => 'Success'], 200); });
+
+require base_path('routes/modulos/auth.php');
+		
+// Route::group(['middleware' => ['jwt.auth', 'ips']], function () {
+
+
+		require base_path('routes/modulos/dash.php');
+		require base_path('routes/modulos/facturacion.php');
+	
+	// Ventas
+		require base_path('routes/modulos/ventas/ventas.php');
+		require base_path('routes/modulos/ventas/detalles.php');
+		require base_path('routes/modulos/ventas/devoluciones.php');
+	    require base_path('routes/modulos/ventas/ordenes.php');
+		require base_path('routes/modulos/ventas/abonos.php');
+		require base_path('routes/modulos/ventas/clientes.php');
+
+	// Compras
+		require base_path('routes/modulos/compras/compras.php');
+		require base_path('routes/modulos/compras/detalles.php');
+		require base_path('routes/modulos/compras/devoluciones.php');
+		require base_path('routes/modulos/compras/gastos.php');
+		require base_path('routes/modulos/compras/proveedores.php');
+
+	// Transporte
+	    require base_path('routes/modulos/transporte/fletes.php');
+	    require base_path('routes/modulos/transporte/flotas.php');
+	    require base_path('routes/modulos/transporte/motoristas.php');
+	    require base_path('routes/modulos/transporte/mantenimientos.php');
+
+	// Inventario
+		require base_path('routes/modulos/inventario/productos.php');
+		require base_path('routes/modulos/inventario/servicios.php');
+		require base_path('routes/modulos/inventario/materias-primas.php');
+		require base_path('routes/modulos/inventario/inventarios.php');
+		require base_path('routes/modulos/inventario/categorias.php');
+		require base_path('routes/modulos/inventario/traslados.php');
+		require base_path('routes/modulos/inventario/ajustes.php');
+		require base_path('routes/modulos/inventario/bodegas.php');
+
+	// Creditos
+		require base_path('routes/modulos/creditos/creditos.php');
+		require base_path('routes/modulos/creditos/pagos.php');
+		require base_path('routes/modulos/creditos/fiadores.php');
+		
+	// Empleados
+		require base_path('routes/modulos/empleados/empleados.php');
+		require base_path('routes/modulos/empleados/planillas.php');
+		require base_path('routes/modulos/empleados/comisiones.php');
+		require base_path('routes/modulos/empleados/asistencias.php');
+        require base_path('routes/modulos/empleados/metas.php');
+		
+	// Contabilidad
+		require base_path('routes/modulos/contabilidad/activos.php');
+		require base_path('routes/modulos/contabilidad/cajas-chicas.php');
+		require base_path('routes/modulos/contabilidad/presupuestos.php');
+
+	// Admin
+		require base_path('routes/modulos/admin/empresas.php');
+		require base_path('routes/modulos/admin/cajas.php');
+		require base_path('routes/modulos/admin/impuestos.php');
+		require base_path('routes/modulos/admin/formasdepago.php');
+		require base_path('routes/modulos/admin/canales.php');
+		require base_path('routes/modulos/admin/notificaciones.php');
+		require base_path('routes/modulos/admin/bancos.php');
+		require base_path('routes/modulos/admin/usuarios.php');
+		require base_path('routes/modulos/admin/accesos.php');
+		require base_path('routes/modulos/admin/departamentos.php');
+		require base_path('routes/modulos/admin/mensajes.php');
+		require base_path('routes/modulos/admin/transacciones.php');
+
+		
+// });
+
+
+Route::get('/prueba/factura', function () { 
+	return view('reportes/pruebas/factura');	
+});

@@ -1,0 +1,41 @@
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
+import { ApiService } from '../../../services/api.service';
+import { AlertService } from '../../../services/alert.service';
+
+@Component({
+  selector: 'app-busqueda-cliente',
+  templateUrl: './busqueda-cliente.component.html'
+})
+export class BusquedaClienteComponent implements OnInit {
+
+  public cliente: any = {};
+  public loading = false;
+  @Output() clienteSelect = new EventEmitter();
+
+	modalRef?: BsModalRef;
+
+	constructor( 
+	    private apiService: ApiService, private alertService: AlertService,
+	    private modalService: BsModalService
+	) { }
+
+    ngOnInit() {
+    }
+
+	  openModal(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+
+    public submit():void{
+        this.loading = true;
+        this.apiService.store('cliente', this.cliente).subscribe(cliente => { 
+            this.clienteSelect.emit({item: cliente});
+            this.loading = false;
+            this.modalRef?.hide()
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+}

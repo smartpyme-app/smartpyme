@@ -1,0 +1,122 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Flotas <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/flotas">Flotas</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="flotas?.total">{{ flotas?.total + ' registros' }}</span>
+
+        <form name="form" (ngSubmit)="search()" autocomplete="off">
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+            <button tooltip="Actualizar" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+            <button type="button" tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F8"><i class="fa fa-filter"></i></button>
+            <button routerLink="/flota/nueva" tooltip="Crear" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+        </div>
+        </form>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="text-center">ID</th>
+                        <th>N° de placa</th>
+                        <th class="d-none d-md-table-cell">Tipo</th>
+                        <th class="d-none d-md-table-cell">Marca</th>
+                        <th class="d-none d-md-table-cell">Modelo</th>
+                        <th class="d-none d-md-table-cell">Capacidad</th>
+                        <th class="d-none d-md-table-cell">Mantenimiento</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="flotas?.length < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene flotas registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let flota of flotas">
+                        <td class="text-center">{{ flota.id }}</td>
+                        <td>{{ flota.placa }}</td>
+                        <td class="d-none d-md-table-cell">{{ flota.tipo }}</td>
+                        <td class="d-none d-md-table-cell">{{ flota.marca }}</td>
+                        <td class="d-none d-md-table-cell">{{ flota.modelo }}</td>
+                        <td class="d-none d-md-table-cell">{{ flota.capacidad }}</td>
+                        <td class="d-none d-md-table-cell">
+                            <span tooltip="Último mantenimiento: {{ flota.ultimo_mantenimiento | date:'dd/MM/yyyy' }}" [ngClass]="{ 'text-danger' : flota.proximo_mantenimiento <= apiService.date() }">{{ flota.proximo_mantenimiento | date:'dd/MM/yyyy' }}</span>
+                        </td>
+                        <td class="text-center">
+                            <div role="group" class="btn-group">
+                                <a *ngIf="apiService.auth_user().tipo == 'Administrador'" tooltip="Eliminar" class="btn btn-default" (click)="delete(flota)">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a tooltip="Editar" class="btn btn-default" routerLink="/flota/{{ flota.id }}" >
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="flotas?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="flotas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef!.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="filtro.tipo">Tipo:</label>
+                <select [(ngModel)]="filtro.tipo" class="form-select" name="filtro.tipo">
+                    <option value="">Todos</option>
+                    <option value="Cabezal">Cabezal</option>
+                    <option value="Remolque">Remolque</option>
+                    <option value="Automóvil">Automóvil</option>
+                    <option value="Furgón">Furgón</option>
+                    <option value="Camión">Camión</option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-md-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

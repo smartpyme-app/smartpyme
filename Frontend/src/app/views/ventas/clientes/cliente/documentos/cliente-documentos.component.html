@@ -1,0 +1,120 @@
+<div class="row">
+    <h5 class="col-12 pb-2 mb-2">Documentos</h5>
+    <div id="main-content" class="file_manager">
+        <div class="container">            
+            <div class="row clearfix">
+                <div class="col-lg-3 col-md-4 col-6">
+                    <div class="card">
+                        <div class="file">
+                            <figure class="img-thumbnail file-upload d-flex flex-column justify-content-center align-items-center" tooltip="Agregar" style="min-height: 200px;">
+                                <i class="fa fa-image fa-2x text-muted"></i>
+                                <small class="text-muted">Agregar</small>
+                                <input type="file" name="img" (change)="setFile($event)" accept="image/jpeg, image/jpg, application/pdf" title="Agregar documento (jpg o pdf)">
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" *ngFor="let documento of documentos; let i = index">
+                    <div class="card">
+                        <div class="file">
+                            <a class="click">
+                                <div class="hover">
+                                    <button type="button" class="btn btn-icon btn-danger" (click)="delete(documento)" tooltip="Eliminar" placement="bottom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-icon btn-default ml-3" (click)="verDocumento(documento)" tooltip="Ver" placement="bottom">
+                                        <i class="fa fa-expand"></i>
+                                    </button>
+                                </div>
+                                <div class="icon">
+                                    <i *ngIf="documento.tipo == 'jpeg' || documento.tipo == 'jpg'" class="fa fa-image text-warning"></i>
+                                    <i *ngIf="documento.tipo == 'pdf'" class="fa fa-file-pdf text-primary"></i>
+                                </div>
+                            </a>
+                            <div class="file-name">
+                                <p class="m-b-5 text-muted"><input type="text" class="border-0" [(ngModel)]="documento.nombre" name="nombre" (change)="updateNombre(documento)" title="Edita el nombre desde acá"/><span class="float-end"> {{ documento.tipo }}</span></p>
+                                <small>Tamaño: {{ documento.tamano }} <span class="date text-muted">{{ documento.created_at | date:'MMM d, YYYY'}}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- <div class="row">
+    <h5 class="col-12 pb-2 mb-2">Documentos:</h5>
+    <div class="col-md-3" *ngFor="let documento of documentos">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title"> {{ documento.nombre }} </h3>
+                {{ documento.nota }} <br>
+                <a class="click" tooltip="Ver archivo" (click)="preview(documento)">
+                    <i class="fa fa-image fa-4x"></i>
+                </a>
+            </div>
+            <div class="card-footer">
+                <div role="group" class="btn-group">
+                    <a tooltip="Eliminar" class="btn btn-default" (click)="delete(documento.id)">
+                        <i class="fa fa-trash"></i>
+                    </a>
+                    <a tooltip="Editar" class="btn btn-default" (click)="openModal(mdocumento, documento)" >
+                        <i class="fa fa-pencil-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <a class="click" (click)="openModal(mdocumento, {})">
+            <div class="card py-3">
+                <div class="card-body text-center py-5">
+                    <i class="fa fa-file fa-2x"></i>
+                    <p>Agregar</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div> -->
+
+<!-- <ng-template #mdocumento>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Documento</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef!.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+
+            <div class="form-group col-sm-12">
+                <label for="">Nombre *:</label>
+                <input type="text" class="form-control" name="documento.nombre" [(ngModel)]="documento.nombre" focus="true"/>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="">Nota:</label>
+                <input type="text" class="form-control" name="documento.nota" [(ngModel)]="documento.nota"/>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="">Archivo:</label>
+                <input type="file" accept="image/jpeg,image/png,application/pdf,image/x-eps" class="form-control" name="documento.file" (change)="setFile($event)"/>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading || !documento.nombre" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template> -->

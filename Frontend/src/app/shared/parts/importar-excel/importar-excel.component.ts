@@ -1,0 +1,57 @@
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
+import { ApiService } from '../../../services/api.service';
+import { AlertService } from '../../../services/alert.service';
+
+@Component({
+  selector: 'app-importar-excel',
+  templateUrl: './importar-excel.component.html'
+})
+export class ImportarExcelComponent implements OnInit {
+
+    @Input() nombre:string = '';
+    @Output() loadAll = new EventEmitter();
+    public loading:boolean = false;
+    public file:any = {};
+
+    modalRef!: BsModalRef;
+
+    constructor( 
+        private apiService: ApiService, private alertService: AlertService,
+        private modalService: BsModalService
+    ) { }
+
+    ngOnInit() {
+           
+    }
+
+    openModal(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    }
+
+    setFile(event:any){
+        this.file.file = event.target.files[0];
+    }
+
+    onSubmit(event:any) {
+
+        console.log(this.file);
+        
+        let formData:FormData = new FormData();
+        for (var key in this.file) {
+            formData.append(key, this.file[key]);
+        }
+
+        console.log(formData);
+        this.loading = true;
+        this.apiService.store(this.nombre.toLowerCase() + '/import', formData).subscribe(data => {
+            this.loading = false;
+            this.alertService.success(data + ' ' + this.nombre + ' agregados');
+            this.modalRef.hide();
+            this.loadAll.emit()
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+
+}

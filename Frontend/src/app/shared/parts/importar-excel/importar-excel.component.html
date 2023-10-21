@@ -1,0 +1,36 @@
+<button (click)="openModal(importar)" class="btn btn-default tcla-F4" title="Importar {{ nombre }} desde Excel">
+    <i class="fa fa-arrow-up-from-bracket"></i>
+</button>
+
+<ng-template #importar>
+  <div class="modal-header text-center">
+    <h3 class="modal-title">Importar {{ nombre }}</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+        <form #form="ngForm" class="text-center" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+        <div class="row mb-4">
+            <div class="col-md-12 text-center">
+              <div class="alert alert-info">
+                <p>Seleccionar un archivo de Excel con el listado de sus {{ nombre }}. <br>
+                Puede descargar la plantilla acá: <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Aquí</a>
+                </p>
+              </div>
+            </div>
+            
+              <div class="mb-5 form-group col-md-12 text-center">
+                <input type="file" class="form-control" name="file"  (change)="setFile($event)" required>
+              </div>
+
+              <div class="form-group col-md-12 text-center">
+                  <button type="submit" class="btn btn-primary btn-block" [disabled]="!form.form.valid || loading">
+                      <span *ngIf="!loading">Importar</span>
+                      <span *ngIf="loading">Importando...</span>
+                  </button>
+              </div>
+        </div>
+        </form>
+  </div>
+</ng-template>

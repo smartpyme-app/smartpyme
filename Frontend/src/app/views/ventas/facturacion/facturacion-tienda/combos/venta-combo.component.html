@@ -1,0 +1,78 @@
+<button (click)="openModal(mcombos)" class="btn btn-warning tcla-F2" tooltip="Combos">
+    <i class="fa fa-cubes"></i> Combos <small>(F2)</small>
+</button>
+
+<ng-template #mcombos>
+  <div class="modal-header">
+    <h4 class="modal-title pull-left">Combos</h4>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+        <form autocomplete="off">
+        <div class="col-xs-6">
+            <input type="text" [(ngModel)]="buscador" name="search" class="form-control" placeholder="Buscar" focus="true">
+        </div>
+        <div class="col-xs-6">
+            <select [(ngModel)]="combo.categoria" class="form-control" name="categoria">
+                <option value="">Todos</option>
+                <option *ngFor="let cat of categorias" [ngValue]="cat.nombre">
+                    {{ cat.nombre }}
+                </option>
+            </select>
+        </div>
+        
+        <div class="col-xs-12 mr-top" style="max-height: 350px; overflow-y: auto;">
+            <a *ngIf="combos?.length < 1 && !loading" href="javascript:void(0);" class="list-group-item text-center"><span class="label label-info">No hay combos</span></a>
+                <a *ngIf="combos?.length < 1 && loading" href="javascript:void(0);" class="list-group-item text-center"><span class="label label-info">Cargando...</span></a>
+            <ul class="list-group" *ngIf="combos?.length > 0">
+              <a href="javascript:void(0);" (click)="selectCombo(combo)" class="list-group-item" *ngFor=" let combo of combos | filter:'nombre':buscador | filter:'categoria':combo.categoria">
+                <span class="badge">{{combo.precio | currency:'USD':'symbol':'1.2'}}</span>
+                <b style="margin-right: 15px;">{{combo.nombre}}</b>
+                <small class="label label-primary">{{combo.categoria}}</small>
+              </a>
+            </ul>
+        </div>
+        </form>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #mcomboDetalle>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">{{combo.nombre}}</h4>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="agregarDetalle(combo)">
+        <div class="row">
+            <div class="col-xs-12 mr-top">
+                <ul class="list-group" focus="true">
+                  <a href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true" class="list-group-item" *ngFor=" let detalle of combo.detalles">
+                    <b>{{detalle.producto}} X {{detalle.cantidad}}</b>
+                    <span class="badge">{{ detalle?.opciones?.length }} Opciones</span>
+                      <ng-template #popTemplate>
+                          <ul class="list-group">
+                              <button type="button" class="list-group-item" *ngFor="let opcion of detalle.opciones" (click)="changeOpcion(detalle, opcion); pop.hide();" >
+                                  {{ opcion.producto }}
+                              </button>
+                          </ul>
+                      </ng-template>
+                  </a>
+                </ul>
+            </div>
+        </div>
+        <div class="row text-center mr-top">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block tcla-Enter">
+                  Guardar
+                </button>
+            </div>
+        </div>        
+    </form>
+  </div>
+</ng-template>

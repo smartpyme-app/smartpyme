@@ -1,0 +1,125 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Ajustes <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Ajustes</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="ajustes?.total">{{ ajustes?.total + ' registros' }}</span>
+
+        <form name="form" (ngSubmit)="search()" autocomplete="off">
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+            <div class="input-group-btn">
+                <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+                <a tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F8"><i class="fa fa-filter"></i></a>
+                <a tooltip="Actualizar" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></a>
+            </div>
+        </div>
+        </form>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th class="text-center">Stock Inicial</th>
+                        <th class="text-center">Stock Final</th>
+                        <th class="text-center">Ajuste</th>
+                        <th class="text-center">Bodega</th>
+                        <th class="text-center">Usuario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="ajustes?.total < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene ajustes registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let ajuste of ajustes?.data">
+                        <td>{{ ajuste.created_at  | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ ajuste.nombre_producto }}</td>
+                        <td class="text-center">{{ ajuste.stock_inicial }}</td>
+                        <td class="text-center">{{ ajuste.stock_final }}</td>
+                        <td class="text-center">{{ ajuste.ajuste }}</td>
+                        <td class="text-center">{{ ajuste.nombre_bodega }}</td>
+                        <td class="text-center">{{ ajuste.usuario }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer"  *ngIf="ajustes?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="ajustes" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+
+            <div class="form-group col-sm-12">
+                <label for="filtro.bodega_id">Bodegas:</label>
+                <select [(ngModel)]="filtro.bodega_id" class="form-control form-select" name="filtro.bodega_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let bodega of bodegas" [ngValue]="bodega.id">
+                        {{ bodega.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="filtro.producto_id">Productos:</label>
+                <select [(ngModel)]="filtro.producto_id" class="form-control form-select" name="filtro.producto_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let producto of productos" [ngValue]="producto.id">
+                        {{ producto.nombre }}
+                    </option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

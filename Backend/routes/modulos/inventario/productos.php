@@ -1,0 +1,59 @@
+<?php 
+
+use App\Http\Controllers\Api\Inventario\ProductosController;
+use App\Http\Controllers\Api\Inventario\ComposicionesController;
+use App\Http\Controllers\Api\Inventario\PreciosController;
+use App\Http\Controllers\Api\Inventario\PromocionesController;
+use App\Http\Controllers\Api\Inventario\ImagenesController;
+use App\Http\Controllers\Api\Inventario\KardexController;
+use App\Http\Controllers\Api\Inventario\SucursalesController;
+
+    Route::get('/productos',         		    [ProductosController::class, 'index']);
+    Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
+    Route::get('/productos/list',                [ProductosController::class, 'list']);
+    Route::get('/productos/buscar/{text}',      [ProductosController::class, 'search']);
+    Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
+    Route::post('/productos/filtrar',			[ProductosController::class, 'filter']);
+    Route::post('/producto',                    [ProductosController::class, 'store']);
+    Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
+
+    Route::post('/compra/guardar-producto', [ProductosController::class, 'storeDesdeCompras']);
+
+    Route::get('/productos/buscar-codigo/{codigo}', [ProductosController::class, 'porCodigo']);
+
+    Route::post('/producto/kardex',  	        [KardexController::class, 'index']);
+
+    Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
+    Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
+
+// Composisiones
+    Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
+    Route::delete('/producto/composicion/{id}', [ComposicionesController::class, 'delete']);
+
+// Precios
+    Route::post('/producto/precio',        [PreciosController::class, 'store']);
+    Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
+
+
+// Sucursales
+    Route::get('/producto/sucursales/{id}',    [SucursalesController::class, 'index']);
+    Route::post('/producto/sucursal',          [SucursalesController::class, 'store']);
+    Route::delete('/producto/sucursal/{id}',   [SucursalesController::class, 'delete']);
+    
+// Promociones
+    Route::get('/productos/promociones',        [PromocionesController::class, 'index']);
+    Route::post('/producto/promocion',          [PromocionesController::class, 'store']);
+    Route::delete('/producto/promocion/{id}',   [PromocionesController::class, 'delete']);
+    Route::get('/producto/promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
+
+// Imagenes
+    Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
+    Route::delete('/producto/imagen/{id}', [ImagenesController::class, 'delete']);
+
+    Route::get('/producto/compras/{id}',          [ProductosController::class, 'compras']);
+    Route::get('/producto/ajustes/{id}',          [ProductosController::class, 'ajustes']);
+    Route::get('/producto/ventas/{id}',          [ProductosController::class, 'ventas']);
+
+    Route::post('/productos/import',          [ProductosController::class, 'import']);
+
+?>

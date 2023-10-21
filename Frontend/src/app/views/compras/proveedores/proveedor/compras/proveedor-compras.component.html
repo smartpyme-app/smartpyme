@@ -1,0 +1,82 @@
+<h3 class="modal-title text-center no-print">Estado de cuenta</h3>
+<div class="row col-xs-12 no-print" style="height: 45px;">
+    <span class="label label-default" *ngIf="compras?.total">Compras: {{compras?.total}}</span>
+    <div class="input-group-btn" style="position: absolute;right: 255px;top: 0px;">
+        <form (ngSubmit)="onFiltrar()" class="form-inline">        
+            <select class="form-control" name="filtro.estado" [(ngModel)]="filtro.estado">
+                <option value="" disabled>Estado</option>
+                <option value="">Todos</option>
+                <option value="Cobrada">Cobradas</option>
+                <option value="Pendiente">Pendientes</option>
+            </select>
+            <button type="submit" class="btn btn-default" tooltip="Filtrar"> <i class="fa fa-filter"></i> </button>
+            <button type="button" (click)="loadAll()" class="btn btn-default tcla-F5" tooltip="Actualizar"><i class="fa fa-sync-alt"></i></button>
+            <!-- <button type="button" (click)="openModal(mcuenta)" class="btn btn-default" tooltip="Imprimir estado de cuenta"><i class="fa fa-list"></i></button> -->
+        </form>
+    </div>
+</div>
+
+<div class="no-padding">
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th class="text-center">ID</th>
+                <th class="hidden-xs">Fecha</th>
+                <th class="hidden-xs">Hora</th>
+                <th>Referencia</th>
+                <th class="text-center">Estado</th>
+                <th class="hidden-xs">Fecha de pago</th>
+                <th class="text-center">Total</th>
+                <th class="text-center"><i class="fa fa-cog"></i></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="8" class="text-center" *ngIf="compras?.total < 1 && !loading">
+                    <span class="label label-info">No tiene compras registradas</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                    <span class="label label-info">Cargando...</span>
+                </td>
+            </tr>
+
+            <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
+                
+                <td class="text-center">{{compra.id}}</td>
+                <td class="hidden-xs">{{compra.created_at | date:'dd-MM-yyyy' }}</td>
+                <td class="hidden-xs">{{compra.created_at | date:'HH:mm' }}</td>
+                <td>{{compra.referencia}}</td>
+                <td class="text-center">
+                    <span class="label" [ngClass]="{'label-warning' : compra?.estado == 'Pendiente', 'label-danger' : compra?.estado == 'Anulada', 'label-success' : compra?.estado == 'Pagada'}">
+                        {{compra.estado}}
+                    </span>
+                </td>
+                <td class="hidden-xs">{{compra.fecha_pago | date:'dd-MM-yyyy'}}</td>
+                <td class="text-center">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                <td class="text-center">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fa fa-action"></i> <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a (click)="setEstado(compra, 'Pagada')">Marcar como pagada</a></li>
+                            <li><a (click)="setEstado(compra, 'Pendiente')">Marcar como pendiente</a></li>
+                        </ul>
+                        <a class="btn btn-default" [routerLink]="['/compra/', compra.id]" tooltip="Editar">
+                        <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>  
+                </td>
+
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr *ngIf="compras?.last_page > 1">
+                <td colspan="8" class="text-center">
+                    <app-pagination [items]="compras" (setPagination)="setPagination($event)"></app-pagination>
+                </td>
+            </tr>
+        </tfoot>
+        
+    </table>
+</div>

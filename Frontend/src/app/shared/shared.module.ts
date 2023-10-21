@@ -1,0 +1,91 @@
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+
+import { FocusModule } from 'angular2-focus';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+
+import { MultimediaComponent } from './multimedia/multimedia.component';
+import { PipesModule } from './../pipes/pipes.module';
+import { TagInputModule } from 'ngx-chips';
+
+import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
+import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
+import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
+
+import { BuscadorProductosComponent } from './parts/buscador-productos/buscador-productos.component';
+import { CrearProductoComponent } from './modals/crear-producto/crear-producto.component';
+import { BuscadorClientesComponent } from './parts/buscador-clientes/buscador-clientes.component';
+import { BuscadorMateriasPrimasComponent } from './parts/buscador-materias-primas/buscador-materias-primas.component';
+import { CrearCategoriaComponent } from './modals/crear-categoria/crear-categoria.component';
+import { CrearSubCategoriaComponent } from './modals/crear-subcategoria/crear-subcategoria.component';
+import { CrearCategoriaActivoComponent } from './modals/crear-categoria-activo/crear-categoria-activo.component';
+import { CrearCategoriaGastoComponent } from './modals/crear-categoria-gasto/crear-categoria-gasto.component';
+import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear-cargo-empleado.component';
+import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
+import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
+import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
+
+import { PaginationComponent } from './parts/pagination/pagination.component';
+import { TimerComponent } from './parts/timer/timer.component';
+import { NotFoundComponent } from './404/not-found.component';
+
+import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
+
+@NgModule({
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    PipesModule,
+    TagInputModule,
+    TooltipModule.forRoot(),
+    FocusModule.forRoot()
+  ],
+  declarations: [
+    BusquedaClienteComponent,
+    BusquedaProductoComponent,
+    CrearProductoComponent,
+    ClienteDireccionComponent,
+    MultimediaComponent,
+    BuscadorProductosComponent,
+    BuscadorClientesComponent,
+    BuscadorMateriasPrimasComponent,
+    PaginationComponent,
+    TimerComponent,
+    NotFoundComponent,
+    ImportarExcelComponent,
+    CrearCategoriaActivoComponent,
+    CrearCategoriaComponent,
+    CrearSubCategoriaComponent,
+    CrearCategoriaGastoComponent,
+    CrearCargoEmpleadoComponent,
+    CrearProveedorComponent,
+    CrearClienteComponent,
+    CrearAjusteComponent
+  ],
+  exports: [
+    BusquedaClienteComponent,
+    BusquedaProductoComponent,
+    CrearProductoComponent,
+    ClienteDireccionComponent,
+    MultimediaComponent,
+    BuscadorProductosComponent,
+    BuscadorClientesComponent,
+    BuscadorMateriasPrimasComponent,
+    PaginationComponent,
+    TimerComponent,
+    NotFoundComponent,
+    ImportarExcelComponent,
+    CrearCategoriaActivoComponent,
+    CrearCategoriaComponent,
+    CrearSubCategoriaComponent,
+    CrearCategoriaGastoComponent,
+    CrearCargoEmpleadoComponent,
+    CrearProveedorComponent,
+    CrearClienteComponent,
+    CrearAjusteComponent
+  ]
+})
+export class SharedModule { }

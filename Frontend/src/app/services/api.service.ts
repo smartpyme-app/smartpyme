@@ -1,0 +1,118 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
+import { map, catchError, retry } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { AlertService } from '../services/alert.service';
+import { environment } from './../../environments/environment';
+
+declare let $:any;
+
+@Injectable()
+
+export class ApiService {
+
+    public baseUrl: string = environment.API_URL;
+    public apiUrl =  this.baseUrl + '/api/';
+
+    constructor(private http: HttpClient, private alertService: AlertService) { }
+   
+    getAll(url:string) {return this.http.get<any>(this.apiUrl + url).pipe(retry(0), catchError(this.handleError) )}
+
+    read(url:string, id: number) {return this.http.get<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
+
+    filter(url:string, filter: any) {return this.http.get<any>(this.apiUrl + url + filter).pipe(retry(0), catchError(this.handleError) )}
+
+    store(url:string, model:any) {return this.http.post<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError) )}
+
+    delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
+
+    paginate(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
+
+    upload (url: string, formData: any) {let headers = new HttpHeaders(); headers.append('Accept', 'application/json'); headers.append('Authorization','Bearer ' + JSON.parse(localStorage.getItem('SP_token')!) ); let options = {headers}; return this.http.post(this.apiUrl + url, formData, options).pipe(retry(0), catchError(this.handleError)) }
+
+    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
+
+    register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
+
+    logout() { 
+        let data:any = {};
+        if (this.autenticated()) {
+            data.usuario_id = this.auth_user().id;
+            this.store('logout', data).subscribe(ivas => { 
+            }, error => {this.alertService.error(error); });
+        }
+        localStorage.removeItem('SP_token');
+        localStorage.removeItem('SP_auth_user');
+        localStorage.removeItem('worder_corte');
+    }
+
+    saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
+
+    autenticated(){ let token = JSON.parse(localStorage.getItem('SP_token')!); if(token) { return true; } else {return false; } }
+    
+    auth_user(){ return JSON.parse(localStorage.getItem('SP_auth_user')!); }
+
+    auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
+
+    date():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let d; let m; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} let date:string = yyyy+'-'+m+'-'+d; return date; }
+
+    dataURItoBlob(dataURI: any) {
+        let byteString: any;
+        if (dataURI.split(',')[0].indexOf('base64') >= 0) {
+            byteString = atob(dataURI.split(',')[1]);
+        } else {
+            byteString = unescape(dataURI.split(',')[1]);
+        }
+        const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+        const ia = new Uint8Array(byteString.length);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ia], {type: mimeString});
+    }
+
+    datetime():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let hh = today.getHours(); let min = today.getMinutes(); let sec = today.getSeconds(); let d; let m; let h; let se; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} if(sec<10){se='0'+sec;} else{se=sec;} let datetime:string = yyyy+'-'+m+'-'+d + ' ' + hh + ':' + min + ':' + se; return datetime; }
+
+    slug(str:any) {str = str.replace(/^\s+|\s+$/g, ''); str = str.toLowerCase(); var from = "àáäâèéëêìíïîòóöôùúüûñç·/_,:;"; var to   = "aaaaeeeeiiiioooouuuunc------"; for (var i=0, l=from.length ; i<l ; i++) {str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i)); } str = str.replace(/[^a-z0-9 -]/g, '') .replace(/\s+/g, '-') .replace(/-+/g, '-'); return str; }
+
+    toggleTheme(){
+
+        if (localStorage.getItem('worder_theme') == 'light') {
+            localStorage.setItem('worder_theme', 'dark');
+        }else{
+            localStorage.setItem('worder_theme', 'light');
+        }
+        this.loadTheme();
+    }
+
+    loadTheme(){
+        let theme:any = localStorage.getItem('worder_theme');
+        if (!theme){
+            localStorage.setItem('worder_theme', 'light');
+        }
+        if (localStorage.getItem('worder_theme') == 'dark') {
+            $('body').attr('data-theme-version', 'dark');
+            $('.icon-theme').removeClass('far');
+            $('.icon-theme').addClass('fas');
+        }else{
+            $('body').attr('data-theme-version', 'light');
+            $('.icon-theme').removeClass('fas');
+            $('.icon-theme').addClass('far');
+        }
+    }
+
+    getPosition(): Promise<any> {
+       return new Promise((resolve, reject) => {
+           navigator.geolocation.getCurrentPosition(resp => {
+                   resolve({lng: resp.coords.longitude, lat: resp.coords.latitude});
+               },
+               err => {
+                   reject(err);
+             });
+       });
+   }
+
+    private handleError(error: HttpErrorResponse) {
+      return throwError(error);
+    };
+}

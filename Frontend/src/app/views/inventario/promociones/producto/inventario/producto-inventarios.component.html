@@ -1,0 +1,169 @@
+<p class="text-center" *ngIf="loading">Cargando...</p>
+<div class="row" *ngIf="!loading">
+    <div class="col-md-12" *ngFor=" let sucursal of producto.sucursales">
+        <div class="card">
+            <div class="card-header">
+                <div class="col col-12">
+                    <h3 class="text-center">
+                        {{ sucursal.nombre_sucursal }}
+                        <small class="btn-option text-muted float-end" *ngIf="sucursal.inventario">{{ sucursal.inventarios | sum:'stock' }} en stock </small>
+                    </h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="form-group col-md-3">
+                        <label>Activo:</label>
+                        <input type="checkbox" class="form-check" (change)="agregarSucursal(sucursal)" [(ngModel)]="sucursal.activo" name="activo">
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Llevar control de Inventario: </label>
+                        <input type="checkbox" class="form-check" (change)="agregarSucursal(sucursal)" [(ngModel)]="sucursal.inventario" name="inventario">
+                    </div>
+                    <div class="form-group col-md-3" *ngIf="sucursal.inventario">
+                        <label for="bodega_venta_id">Bodega de venta :</label>
+                        <select name="bodega_venta_id" (change)="agregarSucursal(sucursal)" [(ngModel)]="sucursal.bodega_venta_id" class="form-control form-select">
+                            <option [value]="bodega.id" *ngFor="let bodega of sucursal.bodegas">{{ bodega.nombre }}</option>
+                        </select>
+                </div>
+                <div *ngIf="sucursal.inventario">
+
+                    <h3 class="text-center mb-3">Bodegas</h3>
+                    <div class="row">
+
+                        <div class="col-sm-6 col-md-4 col-lg-3" *ngFor=" let inventario of sucursal.inventarios">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4>
+                                        {{ inventario.stock | number:'1.0'}} en stock <br>
+                                        <small>{{ inventario.nombre_bodega }}</small>
+                                    </h4>
+                                    <small *ngIf="inventario.bodega_id == sucursal.bodega_venta_id" class="badge badge-success">Bodega de venta</small>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group float-end" role="group">
+                                        <a class="btn btn-default"  (click)="delete(inventario.id)" tooltip="Eliminar">
+                                            <i class="fa fa-trash-alt"></i>
+                                        </a>
+                                        <a class="btn btn-default"  (click)="openModalInventario(minventario, inventario)" tooltip="Configurar">
+                                            <i class="fa fa-pencil-alt"></i>
+                                        </a>
+                                        <app-ajuste [producto]="producto" [inventario]="inventario" (setAjuste)="setAjuste($event)"></app-ajuste>
+                                    </div> 
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6 col-md-4 col-lg-3">
+                            <div class="card" style="min-height: 150px;">
+                                <div class="card-body text-center py-3 d-flex align-items-center justify-content-center">
+                                    <a href="javascript:void(0)" class="tcla-F7" (click)="openModalInventario(minventario, sucursal, {})" tooltip="Agregar"  tabindex="0">
+                                        <i class="fa fa-inbox"></i> <br> Agregar control <br> en otra bodega
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!--      <div class="col-md-12">
+        <div class="card">
+            <div class="card-body text-center py-3 d-flex align-items-center justify-content-center">
+                <a href="javascript:void(0)" class="tcla-F7" (click)="openModalSucursal(msucursal, {})" tooltip="Agregar"  tabindex="0">
+                    <i class="fa fa-inbox"></i> <br> Agregar control <br> en otra sucursal
+                </a>
+            </div>
+        </div>
+
+    </div> -->
+
+</div>
+
+<ng-template #minventario>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">{{ sucursal.nombre_sucursal }}</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="agregarInventario(sucursal)">
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="bodega_id">Bodega *:</label>
+                <select name="inventario.bodega_id" [(ngModel)]="inventario.bodega_id" class="form-control form-select">
+                    <option [value]="bodega.id" *ngFor="let bodega of sucursal.bodegas">{{ bodega.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="stock_min">Stock mínimo *:</label>
+                <input type="number" name="stock_min" [(ngModel)]="inventario.stock_min" placeholder="Stock minimo" class="form-control">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="stock_max">Stock deseado *:</label>
+                <input type="number" name="stock_max" [(ngModel)]="inventario.stock_max" placeholder="Stock deseado" class="form-control">
+            </div>
+            <!-- <div class="form-group col-sm-6">
+                <label for="lote">Lote:</label>
+                <input type="text" name="lote" [(ngModel)]="inventario.lote" placeholder="Lote" class="form-control">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="vencimiento">Vencimiento:</label>
+                <input type="date" name="vencimiento" [(ngModel)]="inventario.vencimiento" placeholder="Vencimiento" class="form-control">
+            </div> -->
+            <div class="form-group col-sm-12">
+                <label for="nota">Nota:</label>
+                <input type="text" class="form-control" [(ngModel)]="inventario.nota" name="nota" placeholder="Nota">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+
+<ng-template #msucursal>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">{{ producto.nombre }}</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="agregarSucursal()">
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="sucursal_id">Sucursal *:</label>
+                <select [(ngModel)]="sucursal.sucursal_id" (change)="onSucursal($event.target.value)" class="form-control form-select" name="sucursal_id">
+                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+

@@ -1,0 +1,92 @@
+<button type="button" class="btn btn-default" (click)="openModal(mProducto)" tooltip="Crear nuevo producto">
+    <i class="fa fa-plus"></i>
+</button>
+
+<ng-template #mProducto>
+    <div class="modal-header text-center">
+        <h3 class="modal-title">Producto</h3>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <form name="form" (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.nombre" name="nombre" placeholder="Nombre" required focus="true">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="codigo">Código:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Código" required>
+                        <span class="input-group-text">
+                            <a class="click" tooltip="Generar codigo" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                        </span>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="subcategoria_id" class="w-100">Categoria:</label>
+                    <div class="input-group">
+                        <select [(ngModel)]="producto.categoria_id" (change)="onSelectCategoria(producto.categoria_id)" class="form-control form-select" name="categoria_id">
+                            <option [value]="categoria.id" *ngFor="let categoria of categorias">{{ categoria.nombre }}</option>
+                        </select>
+                        <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="subcategoria_id" class="w-100">Sub Categoria:</label>
+                    <div class="input-group">
+                        <select [(ngModel)]="producto.subcategoria_id" class="form-control form-select" name="subcategoria_id">
+                            <option [value]="subcategoria.id" *ngFor="let subcategoria of subcategorias">{{ subcategoria.nombre }}</option>
+                        </select>
+                        <app-crear-subcategoria [categoria_id]="producto.categoria_id" (update)="setSubCategoria($event)"></app-crear-subcategoria>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="marca">Marca:</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Marca">
+                </div>
+                <div class="form-group col-lg-6">
+                    <label for="etiquetas">Etiquetas:</label>
+                    <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="medida">Medida:</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.medida" name="medida" placeholder="Unidad, Lb, Cm etc." required>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="costo">Costo:</label>
+                    <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="$0.00" required>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="precio">Precio:</label>
+                    <input type="number" class="form-control" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
+                </div>
+                <!-- <div class="form-group col-md-3">
+                    <label for="precio2">Precio 2:</label>
+                    <input type="number" class="form-control" [(ngModel)]="producto.precio2" name="precio2" placeholder="$0.00">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="precio3">Precio 3:</label>
+                    <input type="number" class="form-control" [(ngModel)]="producto.precio3" name="precio3" placeholder="$0.00">
+                </div> -->
+        <!--         <div class="form-group col-md-3">
+                    <label for="precio4">Precio 4:</label>
+                    <input type="number" class="form-control" [(ngModel)]="producto.precio4" name="precio4" placeholder="$0.00">
+                </div> -->
+                <div class="form-group col-md-12">
+                    <label for="descripcion">Descripción:</label>
+                    <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Descripción" cols="30" rows="2"></textarea>
+                </div>
+                <div class="form-group col-md-12">
+                    <button [disabled]="loading" class="btn btn-primary float-end tcla-F4">
+                        <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                        <span *ngIf="loading">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</ng-template>

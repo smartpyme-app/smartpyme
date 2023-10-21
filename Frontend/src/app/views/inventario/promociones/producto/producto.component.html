@@ -1,0 +1,102 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading" (click)="loadAll()">Producto <small class="text-muted p-2"> Edición</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/productos">Productos</a></li>
+            <li class="breadcrumb-item active"><a>Producto</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card mb-5">
+    <div class="card-body">
+        <div class="row" *ngIf="loading">
+            <div class="text-muted text-center thumbler">
+              Cargando...
+            </div>
+        </div>
+
+        <div class="row" *ngIf="!loading">   
+            <h3 class="text-center mb-2">{{ producto.nombre }}</h3>
+            <div class="col-md-12">
+                <tabset type="pills" [justified]="true">
+                    <tab class="pt-3">
+                        <ng-template tabHeading>
+                            <i class="fa fa-info-circle"></i> Información
+                        </ng-template>
+                        <div class="card">
+                            <div class="card-body">
+                                <app-producto-informacion [producto]='producto'></app-producto-informacion>
+                            </div>
+                        </div>
+                    </tab>
+                    <tab class="pt-3" [disabled]="!producto.id">
+                        <ng-template tabHeading>
+                            <i class="fa fa-inbox"></i> Inventario
+                        </ng-template>
+                        <app-producto-inventarios [producto]='producto'></app-producto-inventarios>
+                    </tab>
+                    <tab class="pt-3" [disabled]="!producto.id">
+                        <ng-template tabHeading>
+                            <i class="fa fa-object-group"></i> Composición
+                        </ng-template>
+                        <div class="card">
+                            <div class="card-body">
+                                <app-producto-composicion  [producto]='producto'></app-producto-composicion>
+                            </div>
+                        </div>
+                    </tab>
+                    <tab class="pt-3" [disabled]="!producto.id">
+                        <ng-template tabHeading>
+                            <i class="fa fa-percent"></i> Promociones
+                        </ng-template>
+                        <div class="card">
+                            <div class="card-body">
+                                <app-producto-promociones  [producto]='producto'></app-producto-promociones>
+                            </div>
+                        </div>
+                    </tab>
+                    <tab class="pt-3" [disabled]="!producto.id">
+                        <ng-template tabHeading>
+                            <i class="fa fa-images"></i> Imagenes
+                        </ng-template>
+                        <div class="card">
+                            <div class="card-body">
+                                <app-producto-imagenes  [producto]='producto'></app-producto-imagenes>
+                            </div>
+                        </div>
+                    </tab>
+                    <tab class="pt-3" [disabled]="!producto.id">
+                        <ng-template tabHeading>
+                            <i class="fa fa-history"></i> Historial
+                        </ng-template>
+                        <div class="card">
+                            <div class="card-body">
+
+                                <tabset #staticTabs *ngIf="producto.id">
+                                    <tab class="pt-4" heading="Compras">
+                                        <app-producto-compras></app-producto-compras>
+                                    </tab>
+                                    <tab class="pt-4" heading="Ajustes">
+                                        <app-producto-ajustes></app-producto-ajustes>
+                                    </tab>
+                                    <tab class="pt-4" heading="Ventas">
+                                        <app-producto-ventas></app-producto-ventas>
+                                    </tab>
+                                    <tab class="pt-4" heading="Precios">
+                                        <app-producto-precios></app-producto-precios>
+                                    </tab>
+                                </tabset>
+
+                            </div>
+                        </div>
+                    </tab>
+                </tabset>
+            </div>
+
+        </div>
+    </div>
+</div>

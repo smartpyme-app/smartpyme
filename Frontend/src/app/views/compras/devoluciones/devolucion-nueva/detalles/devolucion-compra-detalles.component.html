@@ -1,0 +1,132 @@
+<div class="row" >
+    <div class="col-md-12">
+        <table class="table table-sm table-bordered table-condensed mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 100px;" class="text-center"><i class="fa fa-cog"></i></th>
+                    <th style="width: 50px;" class="text-center">N°</th>
+                    <th>Producto</th>
+                    <th style="width: 100px;" class="text-center">Cantidad</th>
+                    <th style="width: 100px;" class="text-center">Precio</th>
+                    <th style="width: 100px;" class="text-center">Descuento</th>
+                    <th style="width: 100px;" class="text-center">Total</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+    <div class="col-md-12" id="detalles">
+        <table class="table table-sm table-bordered table-condensed mb-0">
+            <tbody>
+                <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                    <td style="width: 100px;" class="text-center">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default" (click)="modalSupervisor(detalle)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                            <button type="button" class="btn btn-default tcla-F7" (click)="openModalEdit(mcantidad, detalle)">
+                              <i class="fa fa-pencil-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td style="width: 50px;" class="text-center">{{ i + 1 }}</td>
+                    <td>{{ detalle.nombre_producto }}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.cantidad }}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.costo | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                    <td style="width: 100px;" class="text-center">
+                        {{ detalle.total | currency:'USD':'symbol':'1.2'}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-12">
+        <table class="table table-sm table-borderless table-condensed mb-0">
+            <tbody>
+                <!-- <tr>
+                    <td colspan="6" class="text-right"> Descuento: </td>
+                    <td><input type="number" class="form-control text-center" [(ngModel)]="compra.descuento" (change)="sumTotalEmit()"> </td>
+                </tr> -->
+                <tr>
+                    <td colspan="6" class="text-right"> Sub Total: </td>
+                    <td class="text-center"> {{ compra.subtotal | currency:'USD':'symbol':'1.2'}} </td>
+                </tr>
+                <tr>
+                    <td colspan="6" class="text-right"> IVA: </td>
+                    <td class="text-center"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+                </tr>
+                <tr>
+                    <td colspan="6" class="text-right">
+                       <input type="checkbox" (change)="sumTotalEmit()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
+                        Retención (1%):
+                    </td>
+                    <td class="text-center" width="100">
+                       {{ (compra.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="6" class="text-right"> <b>Total:</b> </td>
+                    <td class="text-center"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<ng-template #mcantidad>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Cantidad a devolver</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+        <form autocomplete="off" (ngSubmit)="setCantidad()">
+            <div class="col-md-12">
+                <input type="number" [(ngModel)]="cantidad" name="cantidad" class="form-control text-center" placeholder="Cantidad" focus="true">
+            </div>
+            <div class="col-md-12" *ngIf="detalle.precio2">
+                <label for="">Precios:</label>
+                <div class="row">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <button *ngIf="detalle.precio1 > 0" type="button" [ngClass]="precio == detalle.precio1 ? 'btn col-md-4 btn-primary' : 'btn btn-default col-md-4'" (click)="setPrecio(detalle.precio1)">{{ detalle.precio1 }}</button>
+                        <button *ngIf="detalle.precio2 > 0" type="button" [ngClass]="precio == detalle.precio2 ? 'btn col-md-4 btn-primary' : 'btn btn-default col-md-4'" (click)="setPrecio(detalle.precio2)">{{ detalle.precio2 }}</button>
+                        <button *ngIf="detalle.precio3 > 0" type="button" [ngClass]="precio == detalle.precio3 ? 'btn col-md-4 btn-primary' : 'btn btn-default col-md-4'" (click)="setPrecio(detalle.precio3)">{{ detalle.precio3 }}</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12 mt-4">
+                <button [disabled]="loading" class="btn btn-primary btn-block" [disabled]="loading || !cantidad">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>
+
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" focus="true">
+            </div>
+            <div class="col-md-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

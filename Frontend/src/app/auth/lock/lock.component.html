@@ -1,0 +1,42 @@
+<div id="login-box" style="height: calc(100vh - 100px);">
+    <div class="container h-100">
+        <div class="row align-content-center justify-content-center h-100">
+            <h3 class="text-center">Lista de vendores</h3>
+            <p class="text-center mb-4">
+                Seleccione su usuario para ingresar la clave de acceso.
+                <br>
+                <span class="badge badge-info mt-3" *ngIf="loading">Cargando...</span>
+            </p>
+            <div class="col-12 col-md-6 col-lg-3" *ngFor="let usuario of usuarios.data">
+                <div class="card click" (click)="openModal(mpin, usuario)">
+                    <div class="card-body text-center">
+                        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
+                        <h2 class="text-center no-margin">{{ usuario.name }}</h2>
+                        <p class="login-box-msg text-info">Bienvenido</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ng-template #mpin>
+  <div class="modal-header text-center">
+    <h4 class="modal-title text-center w-100">Ingrese la Clave</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="onSubmit()">
+            <div class="form-group col-md-12">
+                <input type="password" [(ngModel)]="user.password" name="password" class="form-control text-center" focus="true">
+            </div>
+            <div class="col-md-12">
+                <button type="submit" [disabled]="loading || !user.password" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Entrar</span>
+                    <span *ngIf="loading">Verificando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

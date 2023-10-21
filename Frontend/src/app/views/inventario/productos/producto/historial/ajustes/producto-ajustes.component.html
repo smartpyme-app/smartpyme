@@ -1,0 +1,38 @@
+<div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th class="text-center">Stock Inicial</th>
+                <th class="text-center">Stock Final</th>
+                <th class="text-center">Ajuste</th>
+                <th class="text-center">Inventario</th>
+                <th class="text-center">Usuario</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="8" class="text-center" *ngIf="ajustes?.total < 1 && !loading">
+                    <span class="badge badge-primary">No tiene ajustes registrados</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                    <span class="badge badge-primary">Cargando...</span>
+                </td>
+            </tr>
+            <tr *ngFor=" let ajuste of ajustes?.data">
+                <td>{{ ajuste.id }}</td>
+                <td>{{ ajuste.created_at  | date:'dd/MM/yyyy' }}</td>
+                <td class="text-center">{{ ajuste.stock_inicial }}</td>
+                <td class="text-center">{{ ajuste.stock_final }}</td>
+                <td class="text-center">{{ ajuste.ajuste }}</td>
+                <td class="text-center">{{ ajuste.nombre_inventario }}</td>
+                <td class="text-center">{{ ajuste.usuario }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="text-center" *ngIf="ajustes?.last_page > 1">
+        <app-pagination [items]="ajustes" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+</div>
+           

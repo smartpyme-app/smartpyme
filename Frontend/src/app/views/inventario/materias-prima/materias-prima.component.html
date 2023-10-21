@@ -1,0 +1,197 @@
+
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Materias Primas <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Materias Primas</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="productos?.total">{{ productos?.total + ' registros' }}</span>
+
+        <form name="form" (ngSubmit)="search()" autocomplete="off">
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+            <div class="input-group-btn">
+                <button type="submit" tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+                <button type="button" tooltip="Actualizar" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+                <a tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F8"><i class="fa fa-filter"></i></a>
+                <a routerLink="/materia-prima/nuevo" tooltip="Crear" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></a>
+            </div>
+        </div>
+        </form>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Categoria</th>
+                        <th>Sucursales</th>
+                        <th>Medida</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-center">Costo</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene productos registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let producto of productos?.data">
+                        <td>{{ producto.id }}</td>
+                        <td>{{ producto.nombre }}</td>
+                        <td> {{ producto.nombre_categoria }} &rsaquo; {{ producto.nombre_subcategoria }} </td>
+                        <td>
+                            <div class="btn-group" role="group" *ngIf="producto?.lista_sucursales?.length">
+                                <span *ngFor="let sucursal of producto.lista_sucursales; let i=index">
+                                    <input type="checkbox" (click)="checked(producto, sucursal)" [checked]="sucursal.agregado" class="btn-check" id="btncheck{{producto.id}}{{sucursal.id}}" autocomplete="off">
+                                    <label title="{{ sucursal?.nombre }}" class="btn btn-outline-primary rounded-circle" for="btncheck{{producto.id}}{{sucursal.id}}">
+                                        {{ sucursal?.nombre?.substring(0, 1) }}
+                                    </label>
+                                </span>
+                            </div>
+                        </td>
+                        <td>{{ producto.medida }} </td>
+                        <td class="text-center">
+                            <span *ngIf="producto.inventario"  class="click" [popover]="popTemplate" [outsideClick]="true" triggers="mouseenter:mouseleave">
+                                {{ producto.inventarios | sum:'stock' | number:'1.2' }}
+                            </span>
+                            <ng-template #popTemplate>
+                                <span *ngIf="producto?.inventarios?.length > 0">
+                                    <p *ngFor="let inventario of producto?.inventarios">
+                                        <b>{{ inventario.nombre_bodega }}:</b> {{ inventario.stock }}
+                                    </p>
+                                </span>
+                                <span *ngIf="producto?.inventarios?.length == 0">
+                                    <p> Sin inventarios configurados </p>
+                                </span>
+                            </ng-template>
+                            <span *ngIf="!producto.inventario">
+                                Sin control
+                            </span>
+                        </td>
+                        <td class="text-center">{{ producto.costo  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center">
+                            <div role="group" class="btn-group">
+                                <a *ngIf="apiService.auth_user().tipo == 'Administrador'" tooltip="Eliminar" class="btn btn-default" (click)="delete(producto.id)">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                
+                                <a tooltip="Cardex" class="btn btn-default" routerLink="/kardex/{{ producto.id }}" >
+                                    <i class="fa fa-list-alt"></i>
+                                </a>
+                                <a tooltip="Editar" class="btn btn-default" routerLink="/materia-prima/{{ producto.id }}" >
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="productos?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="filtro.categoria_id">Categoria:</label>
+                <select [(ngModel)]="filtro.categoria_id" class="form-control" name="filtro.categoria_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
+                        {{ categoria.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.stock_bodega">Inventario bajo en Bodega:</label>
+                <input type="checkbox" [(ngModel)]="filtro.stock_bodega" class="form-check" name="filtro.stock_bodega">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.stock_venta">Inventario bajo en Sala Venta:</label>
+                <input type="checkbox" [(ngModel)]="filtro.stock_venta" class="form-check" name="filtro.stock_venta">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_control_inventario">Sin control de inventario:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_control_inventario" class="form-check" name="filtro.sin_control_inventario">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_condigo">Sin código de barras:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_condigo" class="form-check" name="filtro.sin_condigo">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mprecio>
+  <div class="modal-header">
+    <h2 class="modal-title text-center">{{ producto.nombre}}</h2>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row text-center">
+  
+            <div class="form-group col-md-12">
+                <label for="precio">Precio:</label>
+                <input type="number" class="form-control text-center" [(ngModel)]="producto.precio" name="precio" placeholder="Precio" focus="true">
+            </div>
+
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block tcla-F4" [disabled]="loading || !producto.precio">
+                    <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

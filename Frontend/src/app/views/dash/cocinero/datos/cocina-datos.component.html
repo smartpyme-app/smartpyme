@@ -1,0 +1,49 @@
+<div class="row">
+    <div class="col-12">
+        <div class="card my-2">
+            <div class="card-body py-0">
+                <div class="row counter-wrapper">
+                    <div class="col-md-2 col-6 border-right">
+                        <div class="card-body text-center">
+                            <h4 class="counter">{{ dash?.ordenes }}</h4>
+                            <span>Ordenes</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="card-body text-center">
+                            <h4 class="counter">{{ dash?.despachadas }}</h4>
+                            <span>Despachadas</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="card-body text-center">
+                            <h4 class="counter">{{ dash?.en_proceso }}</h4>
+                            <span>En Proceso</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-6 border-right">
+                        <div class="card-body text-center">
+                            <h4 class="counter">{{ dash?.pendientes }}</h4>
+                            <span>Pendientes</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-12">
+                        <div class="card-body text-center">
+                            <h4 class="counter">{{ dash?.tiempo }} (min)</h4>
+                            <span>Tiempo promedio</span>
+                        </div>
+                    </div>
+                </div>    
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link" [ngClass]="{'active' : dash?.departamento == 0}" aria-current="page" routerLink="/dash/cocina/general">General</a>
+  </li>
+  <li class="nav-item" *ngFor="let dep of departamentos">
+    <a class="nav-link" [ngClass]="{'active' : dash?.departamento == dep.id}" routerLink="/dash/cocina/departamento/{{dep.id}}">{{ dep.nombre }}</a>
+  </li>
+</ul>

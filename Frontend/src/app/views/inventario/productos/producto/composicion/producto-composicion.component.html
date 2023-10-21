@@ -1,0 +1,76 @@
+<div class="row">
+    <h6 class="my-3 font-weight-bold">Composiciones</h6>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th class="text-center">Medida</th>
+                    <th class="text-center">Cantidad</th>
+                    <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="8" class="text-center" *ngIf="loading">
+                        <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                    </td>
+                </tr>
+
+                <tr class="animated fadeIn" *ngFor=" let composicion of producto?.composiciones">
+                    <td>{{ composicion.nombre_compuesto }}</td>
+                    <td class="text-center">{{ composicion.medida }}</td>
+                    <td class="text-center">{{ composicion.cantidad | number:'1.1' }}</td>
+                    <td width="100" class="text-center">
+                        <div class="btn-group">
+                            <a (click)="deleteComposicion(composicion)" class="btn btn-danger"><i class="fa fa-trash"></i></a>
+                            <a (click)="openModal(mComposicion, composicion)" class="btn btn-default"><i class="fa fa-pencil-alt"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="!loading">
+                    <td colspan="8" class="text-center">
+                        <a class="btn btn-link" (click)="openModal(mComposicion, {})" tooltip="Agregar producto">
+                            Agregar producto
+                        </a>
+                    </td>
+                </tr> 
+            </tbody>
+        </table>
+    </div>
+</div>        
+
+<ng-template #mComposicion>
+    <div class="modal-header">
+        <h3 class="modal-title text-center">Agregar producto</h3>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <app-buscador-productos *ngIf="!composicion.id" class="p-0" (selectProducto)="selectProducto($event)"></app-buscador-productos>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="medida">Medida:</label>
+                <input id="medida" type="text" class="form-control" [(ngModel)]="composicion.medida" name="medida" placeholder="Unidad de medida">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="cantidad">Cantidad:</label>
+                <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad">
+            </div>
+        </div>
+        <br><br>
+        <div class="row">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading || !composicion.compuesto_id" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Agregar</span>
+                    <span *ngIf="loading">Agregando...</span>
+                </button>
+            </div>
+        </div>
+        </form>
+  </div>
+</ng-template>

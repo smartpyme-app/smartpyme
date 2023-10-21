@@ -1,0 +1,79 @@
+<div class="row">
+    <table class="table table-borderless table-hover">
+        <thead>
+            <tr>
+                <th class="text-center">
+                    <a (click)="openModal(mPromocion, {})" class="btn btn-sm btn-primary" tooltip="Agregar">
+                        <i class="fa fa-plus"></i>
+                    </a>
+                </th>
+                <th class="text-center">Precio</th>
+                <th class="text-center">Activa</th>
+                <th class="text-center">Inicia</th>
+                <th class="text-center">Finaliza</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="6" class="text-center" *ngIf="producto?.promociones?.length < 1 && !loading">
+                    <span class="label label-info">No tiene promociones asignados</span>
+                </td>
+            </tr>
+
+            <tr class="animated fadeIn" *ngFor=" let promocion of producto?.promociones">
+                <td class="text-center">
+                    <a (click)="deletePromocion(promocion)" class="btn btn-danger btn-sm"><i class="fa fa-minus"></i></a>
+                    <a (click)="openModal(mPromocion, promocion)" class="btn btn-default btn-sm"><i class="fa fa-pencil-alt"></i></a>
+                </td>
+                <td class="text-center">{{ promocion.precio | currency:'USD':'symbol':'1.2' }}</td>
+                <td class="text-center">
+                    <span class="badge badge-pop" [ngClass]="{'badge-danger' : !promocion?.activa, 'badge-success' : promocion?.activa}" [popover]="popTemplate" [outsideClick]="true">
+                        <span *ngIf="promocion.activa">Si</span>
+                        <span *ngIf="!promocion.activa">No</span>
+                    </span>
+                </td>
+                <td class="text-center">{{ promocion.inicio | date:'dd-MM-yyyy hh:mm:ss a' }}</td>
+                <td class="text-center">{{ promocion.fin | date:'dd-MM-yyyy hh:mm:ss a' }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div> 
+
+
+<ng-template #mPromocion>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Promoción</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="precio">Precio:</label> <small class="text-muted float-end">Precio actual: {{ producto.precio | currency:'USD':'symbol':'1.2' }} </small>
+                <input type="number" name="precio" [(ngModel)]="promocion.precio" placeholder="Precio de promoción" class="form-control" focus="true">
+            </div>
+
+            <div class="form-group col-sm-12">
+                <label for="inicio">Inicio:</label>
+                <input type='datetime-local' class="form-control" name="inicio" #dateP1 [(ngModel)]="promocion.inicio"/>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="fin">Fin:</label>
+                <input type='datetime-local' class="form-control" name="fin" #dateP2 [(ngModel)]="promocion.fin"/>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="!promocion.precio || !promocion.inicio || !promocion.fin">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

@@ -1,0 +1,148 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Traslados <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Traslados</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="traslados?.total">{{ traslados?.total + ' registros' }}</span>
+
+        <form name="form" (ngSubmit)="search()" autocomplete="off">
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+            <a tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></a>
+            <a tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></a>
+            <app-descargar-excel *ngIf="filtrado && traslados?.total" [nombre]="'Productos'"></app-descargar-excel>
+            <button routerLink="/traslado/nuevo" tooltip="Crear (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+        </div>
+        </form>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>De</th>
+                        <th>Para</th>
+                        <th class="text-center">Estado</th>
+                        <th class="hidden-xs text-center">Productos</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="traslados?.total < 1 && !loading">
+                            <span class="badge badge-primary">No tiene traslados registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr class="animated fadeIn" *ngFor=" let traslado of traslados?.data">
+                        
+                        <td>{{ traslado.id }}</td>
+                        <td>{{ traslado.fecha | date:'dd-MM-yyyy' }}</td>
+                        <td>{{ traslado?.origen.nombre }}</td>
+                        <td>{{ traslado?.destino.nombre }}</td>
+                        <td class="text-center">
+                            <span class="badge" [ngClass]="{'badge-warning' : traslado?.estado == 'En Proceso', 'badge-success' : traslado?.estado == 'Aprobado'}">
+                                {{traslado.estado}}
+                            </span>
+                        </td>
+                        <td class="text-center">{{ traslado.total }}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-default" href="{{ apiService.baseUrl + '/api/reporte/traslado/' + traslado.id + '?token=' + apiService.auth_token() }}" target="_blank" tooltip="Imprimir">
+                                    <i class="fa fa-print"></i>
+                                </a>
+                                <a class="btn btn-default" routerLink="/traslado/{{ traslado.id }}" tooltip="Ver">
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>  
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="traslados?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="traslados" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.usuario">Empleado:</label>
+                <select [(ngModel)]="filtro.usuario_id" class="form-control form-select" name="filtro.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.estado">Estado:</label>
+                <select [(ngModel)]="filtro.estado" class="form-control form-select" name="filtro.estado">
+                    <option value="">Todos</option>
+                    <option value="En Proceso">En Proceso</option>
+                    <option value="Aprobado">Aprobado</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.tipo">Tipo:</label>
+                <select [(ngModel)]="filtro.tipo" class="form-control form-select" name="filtro.tipo">
+                    <option value="">Todos</option>
+                    <option value="1">Bodega a Sala de venta</option>
+                    <option value="2">Sala de venta a Bodega</option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

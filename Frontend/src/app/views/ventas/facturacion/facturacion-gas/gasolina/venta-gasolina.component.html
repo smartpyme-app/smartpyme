@@ -1,0 +1,59 @@
+<button (click)="setGasolina(gasolinas[0], mgasolina)" class="btn btn-danger tcla-F1" tooltip="Crear">
+    <i class="glyphicon glyphicon-tint"></i> Especial <small>(F1)</small>
+</button>
+<button (click)="setGasolina(gasolinas[1], mgasolina)" class="btn btn-warning tcla-F2" tooltip="Crear">
+    <i class="glyphicon glyphicon-tint"></i> Regular <small>(F2)</small>
+</button>
+<button (click)="setGasolina(gasolinas[2], mgasolina)" class="btn btn-success tcla-F3" tooltip="Crear">
+    <i class="glyphicon glyphicon-tint"></i> Diesel <small>(F3)</small>
+</button>
+
+<ng-template #mgasolina>
+  <div class="modal-header text-center">
+    <h2 class="modal-title">{{ producto.nombre }}
+       <br><small><span class="label label-primary">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</span></small>
+    </h2>
+
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="form-gasolina" autocomplete="off" (ngSubmit)="agregarDetalle()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="bomba">* Cantidad:</label>
+                <input type="number" min="1" step="any" class="form-control text-center" [(ngModel)]="producto.cantidad" name="cantidad" id="cantidad" focus="true">
+            </div>
+            <div class="form-group col-sm-12" *ngIf="producto.id == 3">
+                <label for="tanque">* Tanque:</label>
+                <select class="form-control" [(ngModel)]="producto.tanque_id" name="tanque_id" (change)="setTanque()">
+                    <option *ngFor="let tanque of producto.tanques" [ngValue]="tanque.id">
+                        {{ tanque.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="tipo">* Tipo:</label><br>
+                <input type="radio" [(ngModel)]="producto.tipo" name="tipo" value="dinero"> $
+                <input style="margin-left: 15px;" type="radio" [(ngModel)]="producto.tipo" name="tipo" value="galones"> Gal
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="tipo_impuesto">Impuestos:</label>
+                <select class="form-control" [(ngModel)]="producto.tipo_impuesto" name="tipo_impuesto">
+                    <option value="Exenta">Exenta</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Sujeta">No Sujeta</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row text-center">
+            <br><br>
+            <div class="col-xs-12">
+                <button id="submit" type="submit" class="btn btn-primary btn-block" [disabled]="!producto.id || !producto.cantidad || !producto.tipo"> Agregar </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

@@ -1,0 +1,74 @@
+<a class="btn btn-default float-right" (click)="openModal(mDireccion)" tooltip="Agregar">
+    <i class="fa fa-plus"></i>
+</a>
+
+<ng-template #mDireccion>
+    <div class="modal-header text-center">
+        <h3 class="modal-title">Direccion</h3>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <form (ngSubmit)="submit()">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="control-label"> Direccion:</label>
+                        <input type="text" class="form-control" name="nombre_recibe" [(ngModel)]="direccion.nombre_recibe" required autofocus />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="control-label"> Correo:</label>
+                        <input type="email" class="form-control" name="correo" [(ngModel)]="direccion.correo" required autofocus />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="control-label">* Teléfono:</label>
+                        <input type="tel" class="form-control" name="telefono" [(ngModel)]="direccion.telefono" required/>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="control-label">* Pais:</label>
+                        <select [(ngModel)]="direccion.codigo_pais" class="form-control" name="codigo_pais">
+                            <option *ngFor="let country of countries" [ngValue]="country.code">
+                                {{ country.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="control-label">* Código postal:</label>
+                        <input type="text" class="form-control" name="codigo_postal" [(ngModel)]="direccion.codigo_postal" required/>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="control-label">* Estado:</label>
+                        <input type="text" class="form-control" name="estado" [(ngModel)]="direccion.estado" required />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="control-label">* Ciudad:</label>
+                        <input type="text" class="form-control" name="ciudad" [(ngModel)]="direccion.ciudad" required/>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="control-label">* Dirección:</label>
+                        <div class="row px-3">        
+                            <input type="text" class="form-control col-6" name="linia1" [(ngModel)]="direccion.linia1"/>
+                            <input type="text" class="form-control col-6" name="linia2" [(ngModel)]="direccion.linia2"/>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</ng-template>

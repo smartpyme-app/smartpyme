@@ -1,0 +1,64 @@
+
+<div class="table-responsive no-padding">
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th class="text-center hidden-xs">Fecha</th>
+                <th class="text-center hidden-xs">Hora</th>
+                <th>Referencia</th>
+                <th class="text-center">Tipo</th>
+                <th class="text-center">Abono</th>
+                <th class="text-center">Cargo</th>
+                <th class="text-center"><i class="fa fa-cog"></i></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="8" class="text-center" *ngIf="anticipos?.total < 1 && !loading">
+                    <span class="label label-info">No tiene anticipos registrados</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                    <span class="label label-info">Cargando...</span>
+                </td>
+            </tr>
+
+            <tr class="animated fadeIn" *ngFor=" let pago of anticipos?.data">
+                
+                <td class="text-center hidden-xs">{{pago.fecha | date:'dd/MM/yyyy'}}</td>
+                <td class="text-center hidden-xs">{{pago.fecha | date:'hh:mm:ss a'}}</td>
+                <td>{{pago.referencia}}</td>
+                <td class="text-center">
+                    <span class="label" [ngClass]="{'label-success' : pago?.tipo == 'Abono', 'label-warning' : pago?.tipo == 'Cargo'}">
+                        {{pago.tipo}}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span *ngIf="pago.tipo == 'Abono'">{{pago.total | currency:'USD':'symbol':'1.2'}}</span>
+                </td>
+                <td class="text-center">
+                    <span *ngIf="pago.tipo == 'Cargo'">{{pago.total | currency:'USD':'symbol':'1.2'}}</span>
+                </td>
+                <td class="text-center">
+                    <div class="btn-group" role="group">
+                        <a *ngIf="pago.tipo == 'Abono'" class="btn btn-default" routerLink="/pago-anticipado/{{ pago.id }}" tooltip="Editar">
+                            <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a *ngIf="pago.tipo == 'Cargo'" class="btn btn-default" routerLink="/venta/{{ pago.referencia }}" tooltip="Ver">
+                            <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <!-- <a class="btn btn-default" (click)="delete(pago.id)" tooltip="Eliminar">
+                        <i class="fa fa-trash"></i></a> -->
+                    </div>  
+                </td>
+
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr *ngIf="anticipos?.last_page > 1">
+                <td colspan="8" class="text-center">
+                    <app-pagination [items]="anticipos" (setPagination)="setPagination($event)"></app-pagination>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

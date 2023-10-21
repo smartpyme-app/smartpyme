@@ -1,0 +1,73 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ producto.id ? 'Editar ' : 'Crear ' }} {{ producto.tipo }}</h3>
+    <button class="btn btn-light text-danger" routerLink="/productos">Cancelar <i class="fa fa-close"></i></button>
+</div>
+
+<div class="bg-white rounded p-3">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <app-producto-informacion [producto]='producto'></app-producto-informacion>
+        </div>
+    </div>
+    <!-- <div class="col-lg-12" *ngIf="producto.id">
+        <div class="card">
+            <div class="card-body">
+                <app-producto-sucursales [producto]='producto'></app-producto-sucursales>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12" *ngIf="producto.id && producto.tipo !='Servicio'">
+        <div class="card">
+            <div class="card-body">
+                <app-producto-inventarios [producto]='producto'></app-producto-inventarios>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12" *ngIf="producto.id">
+        <div class="card">
+            <div class="card-body">
+                <app-producto-imagenes [producto]='producto'></app-producto-imagenes>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12" *ngIf="producto.id">
+        <div class="card">
+            <div class="card-body">
+                <app-producto-precios [producto]='producto'></app-producto-precios>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12" *ngIf="producto.id && producto.tipo =='Producto'">
+        <div class="card">
+            <div class="card-body">
+                <app-producto-composicion [producto]='producto'></app-producto-composicion>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12" *ngIf="producto.id && producto.tipo !='Servicio'">
+        <div class="card">
+            <div class="card-body">
+                <app-producto-promociones [producto]='producto'></app-producto-promociones>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12" *ngIf="producto.id">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="my-3 font-weight-bold">Historial</h6>
+                <tabset #staticTabs *ngIf="producto.id">
+                    <tab class="pt-4" heading="Compras" *ngIf="producto.tipo !='Servicio'">
+                        <app-producto-compras></app-producto-compras>
+                    </tab>
+                    <tab class="pt-4" heading="Ajustes" *ngIf="producto.tipo !='Servicio'">
+                        <app-producto-ajustes></app-producto-ajustes>
+                    </tab>
+                    <tab class="pt-4" heading="Ventas" *ngIf="producto.tipo !='Repuesto'">
+                        <app-producto-ventas></app-producto-ventas>
+                    </tab>
+                </tabset>
+
+            </div>
+        </div>
+    </div> -->
+</div>

@@ -1,0 +1,107 @@
+
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Ventas
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/ventas">Ventas</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/devoluciones/ventas">Devoluciones</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/clientes">Clientes</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/clientes/cuentas-cobrar">Cuentas por cobrar</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/creditos">Creditos</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/pagos">Pagos</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/plan-de-pagos">Crear plan de pagos</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/ventas/historial">Ventas por Fecha</a> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/ventas/detalle">Ventas por Producto</a> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/ventas/categorias">Ventas por Categorias</a> </li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Transporte
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/fletes">Fletes</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/flotas">Flota de transporte</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/mantenimientos">Mantenimientos</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/motoristas">Motoristas</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/repuestos">Repuestos</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/motoristas/fletes">Fletes por motoristas</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Inventario
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/productos">Productos</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/servicios">Servicios</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/promociones">Promociones</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/traslados">Traslados</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/bodegas">Bodegas</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/categorias">Categorias</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/analisis/productos">Rentabilidad de productos</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Compras
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/compras">Compras</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/devoluciones/compras">Devoluciones</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/gastos">Gastos</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/proveedores">Proveedores</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/proveedores/cuentas-pagar">Cuentas por pagar</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/compras/historial">Compras por Fecha</a> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/compras/detalle">Compras por Producto</a> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/compras/categorias">Compras por Categorias</a> </li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Contabilidad
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/activos">Activos</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/cajas-chicas">Cajas Chicas</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/libro-iva">Libro de IVA</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/libro-compras">Libro de Compras</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Planilla
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/empleados">Empleados</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/comisiones">Comisiones</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/planillas">Planillas</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/asistencias">Asistencias</a></li>
+            <li><hr class="dropdown-divider"> </li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/reporte/empleados/ventas">Ventas por empleado</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown me-3">
+        <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Administración
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/negocio">Negocio</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/sucursales">Sucursales</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/usuarios">Usuarios</a></li>
+            <li><a class="dropdown-item" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" data-bs-dismiss="offcanvas" routerLink="/cajas">Cajas</a></li>
+        </ul>
+    </li>
+</ul>

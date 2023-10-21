@@ -1,0 +1,56 @@
+<button tooltip="Ventas pendientes (F3)" (click)="openModal(mventas)" class="btn btn-default tcla-F3"> <i class="fa fa-clock"></i> </button>
+
+<ng-template #mventas>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Ventas pendientes</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+        <form autocomplete="off">
+        <div class="col-md-12">
+            <input type="text" name="search" class="form-control" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+        </div>
+
+        <div class="col-md-12 mr-top">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Nota</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-center"><i class="fa fa-cog"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="text-center" *ngIf="ventas?.total < 1 && !loading">
+                                <span class="badge badge-primary">No tiene ventas en proceso</span>
+                            </td>
+                            <td colspan="6" class="text-center" *ngIf="loading">
+                                <span class="badge badge-primary">Cargando...</span>
+                            </td>
+                        </tr>
+
+                        <tr class="animated fadeIn" *ngFor=" let orden of ventas?.data | filter:['nombre_cliente', 'id']:buscador">
+                            
+                            <td>{{ orden.id }}</td>
+                            <td>{{orden.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td>{{orden.nombre_cliente | truncate:30}}</td>
+                            <td>{{orden.nota | truncate:30}}</td>
+                            <td class="text-right">{{orden.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right"><a class="btn btn-default" (click)="selectOrden(orden)"><i class="fa fa-arrow-right"></i></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

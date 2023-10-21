@@ -1,0 +1,45 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading" (click)="loadAll()">Ajueste <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/ajustes">Ajustes</a></li>
+            <li class="breadcrumb-item"><a>Ajuste</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h4 class="card-title text-center">
+            Ajuste
+        </h4>
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Producto</th>
+                    <th>Bodega</th>
+                    <th>Nota</th>
+                    <th>Stock inicial</th>
+                    <th>Stock final</th>
+                    <th>Ajuste</th>
+                </tr>
+                <tr>
+                    <td>{{ ajuste.created_at | date:'yy/MM/yyyy'}}</td>
+                    <td>{{ ajuste.nombre_usuario }}</td>
+                    <td>{{ ajuste.nombre_producto }}</td>
+                    <td>{{ ajuste.nombre_bodega }}</td>
+                    <td>{{ ajuste.nota }}</td>
+                    <td>{{ ajuste.stock_inicial }}</td>
+                    <td>{{ ajuste.stock_final }}</td>
+                    <td>{{ ajuste.ajuste }}</td>
+                </tr>
+            </table>
+        </div>    
+    </div>
+
+</div>

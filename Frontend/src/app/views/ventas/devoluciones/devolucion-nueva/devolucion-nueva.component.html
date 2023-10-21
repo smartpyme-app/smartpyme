@@ -1,0 +1,122 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Devolución de venta <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/devoluciones">Devoluciónes</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Devolución de venta</a></li>
+        </ol>
+    </div>
+</div>
+
+<section class="card">
+<form  name="facturacion" autocomplete="off" (ngSubmit)="onDevolucion()">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                    <th>Forma de pago</th>
+                    <th>Tipo de documento</th>
+                </tr>
+                <tr>
+                    <td>{{ venta.fecha | date:'yy/MM/yyyy'}}</td>
+                    <td>{{ venta.nombre_cliente }}</td>
+                    <td>{{ venta.nombre_usuario }}</td>
+                    <td>{{ venta.estado }}</td>
+                    <td>{{ venta.metodo_pago }}</td>
+                    <td>{{ venta.tipo_documento }}</td>
+                </tr>
+            </table>
+        </div>    
+    </div>
+
+    <div class="card-body">
+        <div class="row">
+            <app-devolucion-venta-detalles [venta]="venta" (update)="updateVenta($event)" (sumTotal)="sumTotal()"></app-devolucion-venta-detalles>
+            <div class="col-md-12">
+                <table class="table table-sm table-borderless table-condensed mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-right"> Sub Total: </td>
+                            <td width="70px" class="text-right"> {{ venta.subtotal | currency:'USD':'symbol':'1.2'}} </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right"> IVA: </td>
+                            <td width="70px" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">
+                                <div class="form-check form-switch w-100">
+                                    <label class="form-check-label" for="venta.percepcion">
+                                        <input id="venta.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.percepcion" name="venta.percepcion" *ngIf="!loading">
+                                        IVA percibido:
+                                    </label>
+                                </div>
+                            </td>
+                            <td  width="70px" class="text-right">
+                               {{ (venta.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">
+                                <div class="form-check form-switch w-100">
+                                    <label class="form-check-label" for="venta.retencion">
+                                        <input id="venta.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="venta.retencion" *ngIf="!loading">
+                                        IVA retenido:
+                                    </label>
+                                </div>
+                            </td>
+                            <td  width="70px" class="text-right">
+                               {{ (venta.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">No Sujeta:</td>
+                            <td width="70px" class="text-right">{{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Exenta:</td>
+                            <td width="70px" class="text-right">{{ venta.exenta | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Gravada:</td>
+                            <td width="70px" class="text-right">{{ venta.gravada | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right"> <b>Total:</b> </td>
+                            <td width="70px" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label for="">Nota sobre la devolución:</label>
+                    <textarea class="form-control" [(ngModel)]="venta.nota" name="nota" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="loading">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+</section>

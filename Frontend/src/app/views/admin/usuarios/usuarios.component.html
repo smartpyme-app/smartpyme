@@ -1,0 +1,221 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading" (click)="loadAll()">Usuarios <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/usuarios">Usuarios</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="usuarios?.total">{{ usuarios?.total + ' registros' }}</span>
+
+        <div class="input-group float-end w-50">
+            <input type="text" name="buscador" [(ngModel)]="buscador" placeholder="Buscar" focus="true" class="form-control">
+            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+            <button tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+            <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            <button routerLink="/usuario/nuevo" tooltip="Crear (F7)" class="btn btn-primary tcla-F7"><i class="fa fa-plus"></i></button>
+        </div>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Sucursal</th>
+                        <th class="text-center">Activo</th>
+                        <th class="text-center">Último inicio de sesión</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="usuarios?.total < 1 && !loading">
+                            <span class="badge badge-primary">No tiene usuarios registrados</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor=" let usuario of usuarios.data">
+                        
+                        <td>{{usuario.id}}</td>
+                        <td>{{usuario.name}}</td>
+                        <td>{{usuario.tipo}}</td>
+                        <td>{{usuario.nombre_sucursal}}</td>
+                        <td class="text-center" >
+                            <input type="checkbox" [(ngModel)]="usuario.activo" (change)="setEstado(usuario)">
+                        </td>
+                        <td class="text-center"><span tooltip="{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}"> {{ usuario.ultimo_login_human }}</span></td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a class="btn btn-default" routerLink="/usuario/{{usuario.id}}" data-toggle="tooltip" title="Ver">
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>  
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+         </div>
+    </div>
+</div>
+
+
+<ng-template #musuario>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Usuario</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef!.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">   
+            <div class="form-group col-md-6">
+                <label for="nombre">* Nombre:</label>
+                <input type="text" class="form-control" [(ngModel)]="usuario.name" name="nombre" placeholder="Nombre" focus="true">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="username">Usuario:</label>
+                <input type="text" class="form-control" [(ngModel)]="usuario.username" name="username" placeholder="Usuario" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="tipo">* Tipo:</label>
+                <select name="tipo" [(ngModel)]="usuario.tipo" class="form-control form-select">
+                    <option value="Administrador">Administrador</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <!-- <option value="Mesero">Mesero</option> -->
+                    <option value="Vendedor">Vendedor</option>
+                    <option value="Cajero">Cajero</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6" *ngIf="usuario.tipo == 'Supervisor'">
+                <label for="codigo">* Codigo:</label>
+                <input type="password" class="form-control" [(ngModel)]="usuario.codigo" name="codigo" placeholder="Código para autorizaciones">
+            </div>
+            <div class="form-group col-md-6" *ngIf="usuario.id != 1">
+                <label for="sucursal_id">* Sucursal:</label>
+                <select [(ngModel)]="usuario.sucursal_id" class="form-control form-select" name="sucursal_id">
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Cajero'">
+                <label for="caja_id">* Caja:</label>
+                <select [(ngModel)]="usuario.caja_id" class="form-control form-select" name="caja_id">
+                    <option *ngFor="let caja of cajas" [ngValue]="caja.id">
+                        {{ caja.tipo }} - {{ caja.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Cocinero'">
+                <label for="departamento_id">* Departamento:</label>
+                <select [(ngModel)]="usuario.departamento_id" class="form-control form-select" name="departamento_id">
+                    <option value="0">General</option>
+                    <option *ngFor="let departamento of departamentos.data" [ngValue]="departamento.id">
+                        {{ departamento.nombre }}
+                    </option>
+                </select>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label>Es empleado:</label>
+                <input type="checkbox" class="form-check" [(ngModel)]="usuario.empleado" name="empleado">
+            </div>
+            <div class="form-group col-md-6">
+                <label>Esta activo </label>
+                <input type="checkbox" class="form-check" [(ngModel)]="usuario.activo" name="activo">
+            </div>
+            <p class="col-xs-12" *ngIf="!usuario.id"><b>Nota:</b> <br> La contraseña por defecto es "emple", el usuario puede cambiarla al iniciar sesión.</p>
+        </div>
+
+        <div class="row" *ngIf="usuario.id == apiService.auth_user().id">
+            <div class="form-group col-md-6">
+              <label for="password">* Contraseña:</label>
+              <input type="password" class="form-control" [(ngModel)]="usuario.password" name="password" placeholder="Ingrese una contraseña para reemplazar la actual">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="password_confirmation">* Confirmar contraseña:</label>
+              <input type="password" class="form-control" [(ngModel)]="usuario.password_confirmation" name="password_confirmation" placeholder="Confirme la contraseña">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+
+            <div class="form-group col-sm-12">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="tipo">* Tipo:</label>
+                <select name="tipo" [(ngModel)]="filtro.tipo" class="form-control form-select">
+                    <option value="">Todos</option>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Vendedor">Vendedor</option>
+                    <option value="Cajero">Cajero</option>
+                </select>
+            </div>
+
+        </div>
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

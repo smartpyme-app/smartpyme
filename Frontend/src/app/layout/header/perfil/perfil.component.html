@@ -1,0 +1,32 @@
+<li class="icons nav-item dropdown">
+
+    <a class="nav-link dropdown-toggle user-img c-pointer-x px-0" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="true">
+        <span class="activity active"></span>
+        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="40" width="40" alt="">
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end text-center" style="margin-top: 54px;">
+        <li class="dropdown-item user-header disabled">
+            <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
+            <p>
+              {{ usuario.name }} <br>
+              <small>{{usuario.tipo }}</small>
+            </p>
+        </li>
+        <li>
+            <a class="dropdown-item" routerLink="/usuario/{{ usuario.id }}"><i class="fa-fw fa fa-user-circle mr-2"></i> Perfil</a>
+        </li>
+        <li>
+           <a class="dropdown-item" routerLink="/login"><i class="fa-fw fa fa-power-off mr-2"></i> Salir</a>
+        </li>
+    </ul>
+</li>
+<!-- <li class="icons d-flex d-lg-none">
+    <a class="nav-link user-img" routerLink="/admin/usuario/{{ usuario.id }}">
+        <span class="activity active"></span>
+        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="40" width="40" alt="">
+    </a>
+</li>
+<li class="icons d-flex d-lg-none">
+    <a class="nav-link" routerLink="/login"><i class="fa-fw fa fa-power-off mr-2"></i></a>
+</li>
+ -->

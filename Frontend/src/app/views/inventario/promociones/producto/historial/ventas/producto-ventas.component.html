@@ -1,0 +1,56 @@
+
+<div class="table-responsive">
+    <table class="table table-borderless table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="text-center">Correlativo</th>
+                <th class="text-center">Documento</th>
+                <th class="text-center">Forma de pago</th>
+                <th class="text-center">Estado</th>
+                <th class="text-center">Total</th>
+                <th class="text-center"><i class="fa fa-cog"></i></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="8" class="text-center" *ngIf="ventas?.total < 1 && !loading">
+                    <span class="badge badge-primary">No tiene ventas registradas</span>
+                </td>
+                <td colspan="8" class="text-center" *ngIf="loading">
+                    <span class="badge badge-primary">Cargando...</span>
+                </td>
+            </tr>
+
+            <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                
+                <td>{{venta.id }}</td>
+                <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                <td><a routerLink="/cliente/{{venta.cliente_id}}">{{venta.nombre_cliente | truncate:30 }}</a></td>
+                <td class="text-center">{{venta.correlativo}}</td>
+                <td class="text-center">{{venta.tipo_documento}}</td>
+                <td class="text-center">{{venta.metodo_pago}}</td>
+                <td>
+                    <span class="badge" [ngClass]="{'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Cobrada'}">
+                        {{venta.estado}}
+                    </span>
+                </td>
+                <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                <td class="text-center">
+                    <div class="btn-group" role="group">
+                        <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver">
+                            <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>  
+                </td>
+
+            </tr>
+        </tbody>
+    </table>
+    <div class="text-center" *ngIf="ventas?.last_page > 1">
+        <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+</div>
+           

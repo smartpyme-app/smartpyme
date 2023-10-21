@@ -1,0 +1,184 @@
+
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Promociones <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Promociones</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="form-group col-md-12 text-center">
+                <div class="btn-group">
+                    <button type="button" tooltip="Mostrar solo los productos en promoción" (click)="loadAll()" class="btn btn-default tcla-F5">Mostrar promociones</button>
+                    <button type="button" tooltip="Eliminar todas las promociones" (click)="deleteAll()" class="btn btn-default tcla-F5">Eliminar promociones</button>
+                    <button (click)="loadProductos()" tooltip="Mostrar todos los productos" class="btn btn-default tcla-F5">Mostrar productos</button>
+                    <button (click)="openModalProductos(mproductos)" tooltip="Configura una promoción para los productos fitrados" class="btn btn-primary tcla-F7" tabindex="0">Configura promoción</button>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-md-6 col-lg-6">
+                <label for="">Producto:</label>
+                <input type="text" name="nombre_producto" class="form-control" placeholder="Buscar..." [(ngModel)]="filtro.nombre_producto" focus="true">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="">Categoria:</label>
+                <select [(ngModel)]="filtro.categoria" (change)="onSelectCategoria($event.target.value)" class="form-control form-select" name="categoria">
+                    <option value="">Todas</option>
+                    <option [value]="categoria.nombre" *ngFor="let categoria of categorias">{{ categoria.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="subcategoria">Sub Categoria:</label>
+                <select [(ngModel)]="filtro.subcategoria" class="form-control form-select" name="subcategoria">
+                    <option value="">Todas</option>
+                    <option [value]="subcategoria.nombre" *ngFor="let subcategoria of subcategorias">{{ subcategoria.nombre }}</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <span class="text-muted float-start p-2" *ngIf="promociones?.length">{{ promociones?.length + ' registros' }}</span>
+            <table class="table table-bordered table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Nombre</th>
+                        <th rowspan="2">Categoria</th>
+                        <th rowspan="2">Sub Categoria</th>
+                        <th rowspan="2">Periodo</th>
+                        <th rowspan="2" class="text-center">Precio<br>Normal</th>
+                        <th rowspan="2" class="text-center">Precio<br>Promoción</th>
+                        <th colspan="2" class="text-center">Descuento</th>
+                        <th rowspan="2" class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="promociones?.length < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene productos con promociones</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let promocion of promociones | filter:['nombre_producto']:filtro.nombre_producto | filter:['nombre_categoria']:filtro.categoria | filter:['nombre_subcategoria']:filtro.subcategoria">
+                        <td>{{ promocion.nombre_producto }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{ promocion.producto_id }}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{ promocion.nombre_categoria }}</td>
+                        <td>{{ promocion.nombre_subcategoria }}</td>
+                        <td><span *ngIf="promocion.id">{{promocion.inicio | date:'dd '}} al {{promocion.fin | date:'dd MMM '}}</span></td>
+                        <td class="text-center">{{ promocion.producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center"><span *ngIf="promocion.id">{{ promocion.precio  | currency:'USD':'symbol':'1.2' }}</span></td>
+                        <td class="text-center"><span *ngIf="promocion.id">${{ (promocion.producto.precio - promocion.precio) | number:'1.2'}}</span></td>
+                        <td class="text-center"><span *ngIf="promocion.id">{{ (100 - ((promocion.precio / promocion.producto.precio) * 100)) | number:'1.2'}}%</span></td>
+                        <td class="text-center">
+                            <div role="group" class="btn-group">
+                                <a tooltip="Eliminar" class="btn btn-default" (click)="delete(promocion.id)">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a tooltip="Editar" class="btn btn-default" (click)="openModalPromocion(mpromocion, promocion)" >
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="promociones?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="promociones" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+<ng-template #mpromocion>
+  <div class="modal-header">
+    <h2 class="modal-title text-center">Promoción</h2>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-lg-12">
+                <label for="inicio">Inicio:</label>
+                <input type='datetime-local' class="form-control" name="inicio" [(ngModel)]="promocion.inicio"/>
+            </div>
+            <div class="form-group col-lg-12">
+                <label for="fin">Fin:</label>
+                <input type='datetime-local' class="form-control" name="fin" [(ngModel)]="promocion.fin"/>
+            </div>
+
+            <div class="form-group col-lg-12">
+                <label>Precio </label>
+                <input type='number' class="form-control" name="precio" [(ngModel)]="promocion.precio"/>
+            </div>
+
+        </div>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block tcla-F4" [disabled]="loading">
+                    <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mproductos>
+    <form autocomplete="off" (ngSubmit)="generarPromociones()">
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h4 class="text-center no-margin">Configure una promoción</h4>
+        </div>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="form-group col-lg-6">
+                <label for="inicio">Inicio:</label>
+                <input type='datetime-local' class="form-control" name="inicio" [(ngModel)]="promocion.inicio"/>
+            </div>
+            <div class="form-group col-lg-6">
+                <label for="fin">Fin:</label>
+                <input type='datetime-local' class="form-control" name="fin" [(ngModel)]="promocion.fin"/>
+            </div>
+
+            <div class="form-group col-lg-6">
+                <label>Tipo de descuento </label>
+                <select class="form-select" (change)="setTipoComision()" [(ngModel)]="promocion.tipo_descuento" name="tipo_descuento">
+                    <option value="Porcentaje">Porcentaje</option>
+                    <option value="Monto Fijo">Monto Fijo</option>
+                </select>
+            </div>
+            <div class="form-group col-lg-6">
+                <label>Descuento </label>
+                <div class="input-group">
+                    <span *ngIf="promocion.tipo_descuento == 'Monto Fijo'" class="input-group-text">$</span>
+                    <input type="number" class="form-control" [(ngModel)]="promocion.descuento" name="descuento">
+                    <span *ngIf="promocion.tipo_descuento == 'Porcentaje'" class="input-group-text">%</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+            <span *ngIf="!loading">Aplicar a <small>{{ promocionesFiltradas.length }} productos</small></span>
+            <span *ngIf="loading">Aplicando...</span>
+        </button>
+    </div>
+    </form>
+</ng-template>

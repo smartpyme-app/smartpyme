@@ -1,0 +1,74 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-5 p-md-0">
+        <h2 class="page-heading" (click)="cargarOrden()">Orden de venta<small class="text-muted p-2"> <span *ngIf="loading">Cargando...</span></small></h2>
+    </div>
+    <div class="col-sm-7 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/ordenes">Ordenes</a></li>
+            <li class="breadcrumb-item"><a>Orden</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="row">
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="fecha">Fecha:</label>
+                <input type="date" name="fecha" [(ngModel)]="orden.fecha" class="form-control">
+            </div>
+
+            <div class="form-group col-md-4 col-lg-3">
+                <label>Canal:</label>
+                <select name="canal" class="form-control form-select" [(ngModel)]="orden.canal">
+                    <option [value]="canal.id" *ngFor="let canal of canales">{{canal.nombre}}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Cliente:</label>
+                <div class="input-group">
+                    <input id="cliente" type="text" class="form-control" [(ngModel)]="orden.nombre" (keyup)="clearCliente()" name="cliente" placeholder="Nombre de cliente">
+                    <!-- <app-venta-cliente-tienda [cliente]="orden.cliente" (clienteSelect)="clienteSelect($event)"></app-venta-cliente-tienda> -->
+                </div>
+            </div>
+            <div class="form-group col-md-2 col-lg-2">
+                <label for="">Estado:</label><br>
+                <label>
+                    <span class="badge" [ngClass]="{ 
+                        'badge-default' : orden.estado == 'Creada', 
+                        'badge-danger' : orden.estado == 'Solicitada', 
+                        'badge-warning' : orden.estado == 'En Proceso', 
+                        'badge-info' : orden.estado == 'Entregada', 
+                        'badge-success' : orden.estado == 'Finalizada', 
+                        'badge-dark' : orden.estado == 'Cancelada'}">
+                        {{ orden.estado }}
+                    </span>
+                </label>
+            </div>
+        </div>
+        
+
+        <div class="card mb-0">
+            <div class="card-body p-0">
+                <h5 class="text-center my-4">{{ orden?.detalles?.length }} detalles:</h5>
+                <app-orden-detalles [loadingOrden]="loading" [orden]="orden" (update)="updateOrden($event)"></app-orden-detalles>
+
+            </div>
+        </div>
+
+
+    </div>
+    <div class="card-footer">
+        <app-orden-productos [loadingOrden]="guardar" (productoSelect)="productoSelect($event)"></app-orden-productos>
+        <button type="submit" [disabled]="guardar" (click)="onSubmit()" class="btn btn-primary tcla-F9 float-end">
+            <span *ngIf="!guardar"> Guardar <small>(F9)</small></span>
+            <span *ngIf="guardar"> Guardando... </span>
+        </button>
+        <button *ngIf="pendientes" type="submit" [disabled]="solicitar" (click)="onSolicitar()" class="btn btn-primary tcla-F10 float-end mr-2">
+            <span *ngIf="!solicitar"> Confirmar orden <small>(F10)</small></span>
+            <span *ngIf="solicitar"> Solicitando... </span>
+        </button>
+    </div>
+</div>

@@ -1,0 +1,53 @@
+<div class="card">
+    <div class="card-body">
+        <button (click)="estadoDeCuenta()" class="btn btn-default btn-option tcla-F9" tooltip="Imprimir estado de cuenta"><i class="fa fa-print"></i></button>
+        <div class="row justify-content-center">
+            <div class="col-12 text-center">
+                <div class="btn-group btn-group-sm mb-3">
+                    <a style="min-width: 60px;" class="btn" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="onFiltrar('week')">Semana</a>
+                    <a style="min-width: 60px;" class="btn" [ngClass]="{'btn-primary': filtro.time == 'month', 'btn-default': filtro.time != 'month' }" (click)="onFiltrar('month')">Mes</a>
+                    <a style="min-width: 60px;" class="btn" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="onFiltrar('year')">Año</a>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 4ol-lg-2">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-success mb-3"><i class="fa fa-money-bill-trend-up"></i> Ventas</h5>
+                                <h3 class="text-success">{{ (dash?.total_ventas_pagadas ? dash?.total_ventas_pagadas : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                                <p>Pendientes:<span class="float-end">{{ (dash?.total_ventas_pendientes ? dash?.total_ventas_pendientes : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-4" *ngIf="dash?.total_fletes_pagados">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-warning mb-3"><i class="fa fa-screwdriver-wrench"></i> Fletes</h5>
+                                <h3 class="text-warning">{{ (dash?.total_fletes_pagados ? dash?.total_fletes_pagados : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                                <p>Pendientes:<span class="float-end">{{ (dash?.total_fletes_pendientes ? dash?.total_fletes_pendientes : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-4">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-primary mb-3"><i class="fa fa-sack-dollar"></i> Balance</h5>
+                                <h3 class="text-primary">{{ (dash?.total_balance ? dash?.total_balance : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                                <!-- <p class="">Utilidad: <span class="float-end">{{ (dash?.total_utilidad ? dash?.total_utilidad : 0) | currency:'USD':'symbol':'1.2' }}</span></p> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

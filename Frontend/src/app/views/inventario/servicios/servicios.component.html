@@ -1,0 +1,175 @@
+
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Servicios <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Servicios</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="servicios?.total">{{ servicios?.total + ' registros' }}</span>
+
+        <form name="form" (ngSubmit)="search()" autocomplete="off">
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+            <button type="submit" tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+            <button type="button" tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+            <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            <button routerLink="/servicio/nuevo" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+        </div>
+        </form>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Categoria</th>
+                        <th class="text-center">Precio</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="servicios?.total < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene servicios registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let servicio of servicios?.data">
+                        <td>{{ servicio.id }}</td>
+                        <td>{{ servicio.nombre }}</td>
+                        <td>
+                            {{ servicio.nombre_categoria }}
+                            &rsaquo;
+                            {{ servicio.nombre_subcategoria }}
+                        </td>
+                        <td class="text-center">{{ servicio.precio  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center">
+                            <div role="group" class="btn-group">
+                                <a *ngIf="apiService.auth_user().tipo == 'Administrador'"  tooltip="Eliminar" class="btn btn-default" (click)="delete(servicio.id)">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <!-- <a tooltip="Cardex" class="btn btn-default" routerLink="/kardex/{{ servicio.id }}" >
+                                    <i class="fa fa-list-alt"></i>
+                                </a> -->
+                                <a tooltip="Editar" class="btn btn-default" routerLink="/servicio/{{ servicio.id }}" [queryParams]="{ tipo:'Servicio' }">
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="servicios?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="servicios" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="categoria_id">Categoria:</label>
+                <select [(ngModel)]="filtro.categoria_id" class="form-control form-select" name="categoria_id">
+                    <option value="">Todas</option>
+                    <optgroup label="{{ categoria.nombre }}" *ngFor="let categoria of categorias">
+                        <option [value]="sub.id" *ngFor="let sub of categoria.subcategorias">{{ sub.nombre }}</option>
+                      </optgroup>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.stock_bodega">Inventario bajo en Bodega:</label>
+                <input type="checkbox" [(ngModel)]="filtro.stock_bodega" class="form-check" name="filtro.stock_bodega">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.stock_venta">Inventario bajo en Sala Venta:</label>
+                <input type="checkbox" [(ngModel)]="filtro.stock_venta" class="form-check" name="filtro.stock_venta">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_control_inventario">Sin control de inventario:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_control_inventario" class="form-check" name="filtro.sin_control_inventario">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_condigo">Sin código de barras:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_condigo" class="form-check" name="filtro.sin_condigo">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mprecio>
+  <div class="modal-header">
+    <h2 class="modal-title text-center">{{ servicio.nombre}}</h2>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row text-center">
+  
+            <div class="form-group col-md-12">
+                <label for="precio">Precio:</label>
+                <input type="number" class="form-control text-center" [(ngModel)]="servicio.precio" name="precio" placeholder="Precio" focus="true">
+            </div>
+
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block tcla-F4" [disabled]="loading || !servicio.precio">
+                    <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

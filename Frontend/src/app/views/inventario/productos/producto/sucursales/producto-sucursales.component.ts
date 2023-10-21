@@ -1,0 +1,71 @@
+import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+@Component({
+  selector: 'app-producto-sucursales',
+  templateUrl: './producto-sucursales.component.html'
+})
+export class ProductoSucursalesComponent implements OnInit {
+
+    @Input() producto: any = {};
+    public sucursales: any = [];
+    public sucursal: any = {};
+    public sucursalSelected: any = {};
+    public ajuste:any = {};
+    public buscador:string = '';
+    public loading:boolean = false;
+
+    modalRef!: BsModalRef;
+
+    constructor(private apiService: ApiService, private alertService: AlertService,  
+        private route: ActivatedRoute, private router: Router,
+        private modalService: BsModalService
+    ){ }
+
+    ngOnInit() {
+        this.loadAll();
+    }
+
+    public loadAll(){
+        this.loading = true;
+        this.apiService.getAll('sucursales').subscribe(sucursales => {
+            this.sucursales = sucursales;
+            this.validate();
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    public validate(){
+        for (let i = 0; i < this.sucursales.length; i++){
+            let sucursal = this.producto.sucursales.find((item:any) => item.sucursal_id == this.sucursales[i].id);
+            console.log (sucursal);
+            if (sucursal) {
+                this.sucursales[i].activo = sucursal.activo;
+                this.sucursales[i].sucursal_id = sucursal.id;
+            }else{
+                this.sucursales[i].activo = false;
+                this.sucursales[i].sucursal_id = null;
+            }
+        }
+    }
+
+    public onSubmit(sucursal:any) {
+        this.sucursal.producto_id = this.producto.id;
+        this.sucursal.activo = sucursal.activo;
+        this.sucursal.sucursal_id = sucursal.id;
+        this.sucursal.id = sucursal.sucursal_id;
+
+        this.loading = true;
+        this.apiService.store('producto/sucursal', this.sucursal).subscribe(sucursal => {
+            this.sucursal = {};
+            this.loading = false;
+            this.alertService.success("Registro guardado");
+        },error => {this.alertService.error(error); this.loading = false; });
+    }
+
+
+}

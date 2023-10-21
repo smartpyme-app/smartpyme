@@ -1,0 +1,226 @@
+
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Productos</h2>
+    <button routerLink="/producto/crear" tooltip="Crear producto (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir producto</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="productos?.total">
+                Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col">
+            <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel>
+                <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+                </form>
+                <button tooltip="Filtrar (F6)" (ngSubmit)="search()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary">Todos</button>
+            <button class="btn btn-default">Traslados</button>
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+            </select>
+            <select name="" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-borderless table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="d-none d-lg-table-cell">Estado</th>
+                        <th class="d-none d-md-table-cell">Categoria</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-right">Precio</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene productos registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let producto of productos?.data">
+                        <td>
+                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
+                            {{ producto.nombre }}
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </td>
+                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
+                        <td class="text-center">
+                            <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                {{ producto.inventarios | sum:'stock' }}
+                            </span>
+                            <span *ngIf="producto?.inventarios?.length == 0" >
+                                Sin control
+                            </span>
+                            <ng-template #popTemplate>
+                                <span *ngIf="producto?.inventarios?.length > 0">
+                                    <table width="200px">
+                                        <thead>
+                                            <tr>
+                                                <td>Sucursal</td>
+                                                <td class="text-right">Stock</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let inventario of producto?.inventarios">
+                                                <td>{{ inventario.nombre_sucursal}}</td>
+                                                <td class="text-right">{{ inventario.stock }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </span>
+                                <span *ngIf="producto?.inventarios?.length == 0">
+                                    <p> Sin inventarios configurados </p>
+                                </span>
+                            </ng-template>
+                        </td>
+                        <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column align-items-start">
+                                    <a routerLink="/producto/editar/{{producto.id}}" class="btn">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn">
+                                        <i class="fa fa-fw fa-right-left"></i> Kardex
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn">
+                                        <i class="fa fa-fw fa-wrench"></i> Ajustar
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn">
+                                        <i class="fa fa-fw fa-arrow-right-from-bracket"></i> Trasladar
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="productos?.last_page > 1">
+            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="subcategoria_id">Categoria:</label>
+                <select [(ngModel)]="filtro.subcategoria_id" class="form-control form-select" name="subcategoria_id">
+                    <option value="">Todas</option>
+                    <optgroup label="{{ categoria.nombre }}" *ngFor="let categoria of categorias">
+                        <option [value]="sub.id" *ngFor="let sub of categoria.subcategorias">{{ sub.nombre }}</option>
+                      </optgroup>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_subcategoria">Sin categoria:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_subcategoria" class="form-check" name="filtro.sin_subcategoria">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_control_inventario">Sin control de inventario:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_control_inventario" class="form-check" name="filtro.sin_control_inventario">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_condigo">Sin código de barras:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_condigo" class="form-check" name="filtro.sin_condigo">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mprecio>
+  <div class="modal-header">
+    <h2 class="modal-title text-center">{{ producto.nombre}}</h2>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row text-center">
+  
+            <div class="form-group col-md-12">
+                <label for="precio">Precio:</label>
+                <input type="number" class="form-control text-center" [(ngModel)]="producto.precio" name="precio" placeholder="Precio" focus="true">
+            </div>
+
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block tcla-F4" [disabled]="loading || !producto.precio">
+                    <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

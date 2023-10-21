@@ -1,0 +1,164 @@
+
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Productos <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Productos</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+
+<div class="col-12">
+    <div class="card">
+        <div class="card-header">
+            <div class="row">
+                <span class="text-muted col-12 col-md-6"> {{ productos?.total ? productos?.total : 0 + ' registros' }} </span>
+                <div class="col-12 col-md-6">
+                    <form name="form" (ngSubmit)="search()" autocomplete="off">
+                    <div class="input-group float-end">
+                        <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+                        <button type="submit" tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
+                        <button type="button" tooltip="Actualizar" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+                        <!-- <a tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F8"><i class="fa fa-filter"></i></a> -->
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="text-center" *ngIf="loading">
+                    <span class="badge mb-3 badge-primary">Cargando...</span>
+                </div>
+
+                <div class="col-6 col-md-4 col-lg-3" *ngFor=" let producto of productos?.data">
+                    <div class="card">
+                        <img src="{{ apiService.baseUrl + '/img/' + producto.img }}" class="card-img-top">
+                        <div class="card-body">
+                            <h5>{{ producto.nombre }}</h5>
+                            <p>Precio: {{ producto.precio  | currency:'USD':'symbol':'1.2' }}</p>
+                            <p class="text-muted mb-0">
+                                {{ producto.nombre_categoria }} <br> 
+                                {{ producto.nombre_subcategoria }}
+                            </p>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between">
+                            <a tooltip="Ver detalles" class="btn btn-default btn-block" (click)="openModal(mproducto, producto)" >
+                                Más Detalles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="row" *ngIf="productos?.last_page > 1">
+                <div class="d-flex justify-content-center">
+                    <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="categoria_id">Categoria:</label>
+                <select [(ngModel)]="filtro.categoria_id" class="form-control form-select" name="categoria_id">
+                    <option value="">Todas</option>
+                    <optgroup label="{{ categoria.nombre }}" *ngFor="let categoria of categorias">
+                        <option [value]="sub.id" *ngFor="let sub of categoria.subcategorias">{{ sub.nombre }}</option>
+                      </optgroup>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.stock_bodega">Inventario bajo en Bodega:</label>
+                <input type="checkbox" [(ngModel)]="filtro.stock_bodega" class="form-check" name="filtro.stock_bodega">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.stock_venta">Inventario bajo en Sala Venta:</label>
+                <input type="checkbox" [(ngModel)]="filtro.stock_venta" class="form-check" name="filtro.stock_venta">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_control_inventario">Sin control de inventario:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_control_inventario" class="form-check" name="filtro.sin_control_inventario">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sin_condigo">Sin código de barras:</label>
+                <input type="checkbox" [(ngModel)]="filtro.sin_condigo" class="form-check" name="filtro.sin_condigo">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+
+
+<ng-template #mproducto>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Producto</h2>
+        </div>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <img src="{{ apiService.baseUrl + '/img/' + producto.img }}" class="card-img-top w-50 mb-3">
+            <p class="col-sm-12"><b>Nombre:</b> {{ producto.nombre}}</p>
+            <p class="col-sm-6"><b>Código:</b> {{ producto.codigo}}</p>
+            <p class="col-sm-6"><b>Medida:</b> {{ producto.medida}}</p>
+            <p class="col-sm-6"><b>Precio:</b> {{ producto.precio | currency:'USD':'symbol':'1.2' }}</p>
+            <p class="col-sm-4"><b>Stock:</b>  {{ producto.inventarios | sum:'stock' | number:'1.2' }} </p>
+            <!-- <p class="col-sm-6"><b>Costo:</b> {{ producto.costo}}</p> -->
+            <!-- <p class="col-sm-6"><b>Costo_anterior:</b> {{ producto.costo_anterior}}</p> -->
+            <p class="col-sm-6"><b>Categoria:</b> {{ producto.nombre_categoria}}</p>
+            <p class="col-sm-6"><b>Sub categoria:</b> {{ producto.nombre_subcategoria}}</p>
+            <p class="col-sm-6"><b>Tipo:</b> {{ producto.tipo}}</p>
+            <p class="col-sm-6"><b>Marca:</b> {{ producto.marca}}</p>
+            <p class="col-sm-12"><b>Descripcion:</b> {{ producto.descripcion}}</p>
+            <!-- <p class="col-sm-6"><b>Tipo_impuesto:</b> {{ producto.tipo_impuesto}}</p> -->
+            <!-- <p class="col-sm-6"><b>Compuesto:</b> {{ producto.compuesto}}</p> -->
+            <!-- <p class="col-sm-6"><b>Activo:</b> {{ producto.activo}}</p> -->
+            <p class="col-sm-12"><b>Nota:</b> {{ producto.nota}}</p>
+            <!-- <p><b>Empresa_id:</b> {{ producto.empresa_id}}</p> -->
+        </div>
+    </div>
+</ng-template>

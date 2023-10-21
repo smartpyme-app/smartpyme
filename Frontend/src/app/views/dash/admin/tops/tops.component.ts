@@ -1,0 +1,46 @@
+import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { ChartData, ChartEvent, ChartType } from 'chart.js';
+import { BaseChartDirective } from 'ng2-charts';
+
+import { AlertService } from '../../../../services/alert.service';
+import { ApiService } from '../../../../services/api.service';
+
+@Component({
+  selector: 'app-tops',
+  templateUrl: './tops.component.html'
+})
+export class TopsComponent implements OnInit {
+	@ViewChild(BaseChartDirective)
+	public chart!: BaseChartDirective;
+
+    @Input() dash:any = {};
+    @Input() loading:boolean = false;
+
+    public chartOptions:any = {maintainAspectRatio: false,};
+    public chartLabels: string[] = [];
+    public chartData: ChartData<'doughnut'> = {
+        labels: [],
+        datasets: [
+          { data: [] }
+        ]
+    };
+    public chartType: ChartType = 'doughnut';
+
+	constructor( private alertService:AlertService, private apiService:ApiService
+	) { }
+
+	ngOnInit() {
+
+	}
+
+	ngOnChanges(){
+    // setTimeout(()=>{  
+  	// 	this.chartData.labels = this.dash?.productos.map(function(a:any) {return a.nombre});
+  	// 	this.chartData.datasets[0].data = this.dash?.productos.map(function(a:any) {return a.total});
+  	// 	if (this.chart)
+  	// 		this.chart!.chart!.update();
+    // },2000);
+	}
+
+}

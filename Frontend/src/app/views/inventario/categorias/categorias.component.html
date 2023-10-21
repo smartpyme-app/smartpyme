@@ -1,0 +1,146 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading click" (click)="loadAll()">Categorias <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/categorias">Categorias</a></li>
+        </ol>
+    </div>
+</div>
+<div class="card" id="categorias">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-4 col-lg-6">
+                {{ categorias.length }} categorias
+            </div>
+            <div class="col-8 col-lg-6 btn-group">
+                <input type="search" placeholder="Buscar..." class="form-control" [(ngModel)]="buscador">
+                <button class="btn btn-default" (click)="loadAll()" tooltip="Actualizar"><i class="fa fa-sync-alt"></i></button>
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'Categorias'"></app-importar-excel>
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'SubCategorias'"></app-importar-excel>
+                <button class="btn btn-primary" (click)="openModal(mcategoria, {})" tooltip="Agregar Categoria"><i class="fa fa-plus"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row justify-content-center">
+            <div class="col-md-12 mb-3">
+                <p class="text-center" *ngIf="categorias?.length < 1 && !loading">
+                    <span class="badge badge-primary">No tiene categorias registrados</span>
+                </p>
+                <p class="text-center" *ngIf="loading">
+                    <span class="badge badge-primary">Cargando...</span>
+                </p>
+            </div>
+
+            <div class="col-md-12 col-lg-10 mb-3" *ngFor="let categoria of categorias | filter:['nombre', 'nombre_categoria']:buscador">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="p-1 pb-2 border">
+                            <h5 class="d-inline-block ml-3">
+                            <!-- <h5 class="d-inline-block ml-3" contentEditable (blur)="onNameChange(categoria, $event.target.innerHTML)"> -->
+                                {{ categoria.nombre }} <br>
+                                <small class="text-muted">{{ categoria.subcategorias | sum:'total_productos' }} productos</small>
+                            </h5>
+                            <div class="btn-group float-end">
+                                <a *ngIf="categoria?.subcategorias?.length == 0" class="btn btn-default" (click)="delete(categoria)" tooltip="Eliminar"> <i class="fa fa-trash-alt"></i> </a>
+                                <a class="btn btn-default" (click)="openModal(mcomision, categoria)" tooltip="Agregar comisión de ventas a los productos de esta categoria"> <i class="fa fa-tag"></i> </a>
+                                <a class="btn btn-default" (click)="openModal(mcategoria, categoria)"  tooltip="Editar"> <i class="fa fa-pencil-alt"></i> </a>
+                            </div>
+                        </div>
+                        <app-subcategorias [categoria]="categoria" (update)="loadAll()" [subcategorias]="categoria.subcategorias"></app-subcategorias>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<ng-template #mcategoria>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Categoria</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row text-center">
+<!--             <div class="col-12 text-center">
+                <figure style="min-height: 100px;" class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar">
+                    <i *ngIf="!categoria.img && !preview" class="fa fa-image fa-2x text-muted"></i>
+                    <img *ngIf="categoria.img && !preview" src="{{ apiService.baseUrl + '/img/' + categoria.img }}" height="100">
+                    <img *ngIf="url_img_preview && preview" src="{{ url_img_preview }}" height="100">
+                    <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                </figure>
+            </div> -->
+
+            <div class="form-group col-12">
+                <label for="categoria.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="categoria.nombre" focus="true" (change)="slug()">
+            </div>
+            <!-- <div class="form-group col-12">
+                <label for="categoria.descripcion">Descripción</label>
+                <textarea name="categoria.descripcion" class="form-control" cols="30" rows="3" [(ngModel)]="categoria.descripcion"></textarea>
+            </div> -->
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mcomision>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Comisión</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <p>Comisión de venta para los productos de la categoria {{ categoria.nombre }}</p>
+            <div class="form-group col-12">
+                <label>Tipo de comisión </label>
+                <select class="form-select" (change)="setTipoComision()" [(ngModel)]="categoria.tipo_comision" name="tipo_comision">
+                    <option value="Ninguna">Ninguna</option>
+                    <option value="Porcentaje">Porcentaje</option>
+                    <option value="Monto Fijo">Monto Fijo</option>
+                </select>
+            </div>
+            <div class="form-group col-12">
+                <label>Comisión </label>
+                <div class="input-group">
+                    <span *ngIf="categoria.tipo_comision == 'Monto Fijo'" class="input-group-text">$</span>
+                    <input type="number" class="form-control" [(ngModel)]="categoria.comision" name="comision">
+                    <span *ngIf="categoria.tipo_comision == 'Porcentaje'" class="input-group-text">%</span>
+                </div>
+            </div>
+        </div>
+        <div class="row text-center mt-4">
+            <div class="col-md-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

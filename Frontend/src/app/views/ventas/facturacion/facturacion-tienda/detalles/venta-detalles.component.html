@@ -1,0 +1,136 @@
+<div class="row">
+    <div class="col-md-12 d-inline-flex mb-3">
+        <div class="btn-group">
+            <app-tienda-venta-producto (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
+            <app-ventas-pendientes></app-ventas-pendientes>
+        </div>
+        <app-codigo-barra class="w-100" (productoSelect)="productoSelect($event)"></app-codigo-barra>
+    </div>
+    <div class="col-md-12 table-responsive">
+        <table class="table table-sm table-bordered table-condensed mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 50px;" class="text-center">#</th>
+                    <th>Producto</th>
+                    <th style="width: 100px;" class="text-center">Cantidad</th>
+                    <th style="width: 100px;" class="text-center">Precio</th>
+                    <th style="width: 100px;" class="text-center">Descuento</th>
+                    <th style="width: 100px;" class="text-center">No Sujeta</th>
+                    <th style="width: 100px;" class="text-center">Exenta</th>
+                    <th style="width: 100px;" class="text-center">Gravada</th>
+                    <th style="width: 100px;" class="text-center">Total</th>
+                    <th style="width: 100px;" class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+    <div class="col-md-12 table-responsive" id="detalles">
+        <table class="table table-sm table-bordered table-condensed mb-0">
+            <tbody>
+                <tr *ngIf="venta?.detalles?.length < 1">
+                    <td colspan="7" class="text-center text-muted">
+                        Ningún detalle agregado
+                    </td>
+                </tr>
+                <tr *ngFor="let detalle of venta?.detalles; let i = index">
+                    <td style="width: 50px;" class="text-center">{{ i + 1 }}</td>
+                    <td>{{ detalle.nombre_producto }}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.cantidad }}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.precio | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.exenta | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.gravada | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 100px;" class="text-center">
+                        <div class="btn-group">
+                            <button class="btn btn-default" (click)="modalSupervisor(detalle)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                            <button class="btn btn-default tcla-F7" (click)="openModalEdit(mdetalle, detalle)">
+                              <i class="fa fa-pencil-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Editar</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="modalRef.hide();">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="cantidad">Cantidad:</label>
+                <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal()" (keyup)="updateTotal()" name="cantidad" class="form-control" focus="true">
+            </div>
+            <div class="col-md-6">
+                <label for="precio">Precio<span *ngIf="detalle.precios">s</span></label>
+                <input type="number" class="form-control" step="any" (change)="updateTotal()" (keyup)="updateTotal()" [(ngModel)]="detalle.precio" name="precio" *ngIf="!detalle.precios?.length">
+                <select class="form-select" [(ngModel)]="detalle.precio" name="precio" (change)="updateTotal()" *ngIf="detalle.precios?.length">
+                    <option value="{{detalle.precio}}">{{ detalle.precio | currency:'USD':'symbol':'1.2'}} - ({{ detalle.precio_final | currency:'USD':'symbol':'1.2'}})</option>
+                    <option value="{{precio.precio}}" *ngFor="let precio of detalle.precios">{{ precio.precio | currency:'USD':'symbol':'1.2'}} - ({{ precio.precio_final | currency:'USD':'symbol':'1.2'}})</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="no_sujeta">No sujeta:</label>
+                <input type="number" [(ngModel)]="detalle.no_sujeta" name="no_sujeta" class="form-control" (change)="updateTotal()">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="exenta">Exenta:</label>
+                <input type="number" [(ngModel)]="detalle.exenta" name="exenta" class="form-control" (change)="updateTotal()">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="gravada">Gravada:</label>
+                <input type="number" [(ngModel)]="detalle.gravada" name="gravada" class="form-control" (keyup)="updateTotal()">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="iva">IVA:</label>
+                <input type="number" [(ngModel)]="detalle.iva" name="iva" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="total">Total:</label>
+                <input type="number" [(ngModel)]="detalle.total" name="total" class="form-control">
+            </div>
+            <div class="col-md-12 mt-4">
+                <button [disabled]="loading" class="btn btn-primary btn-block" [disabled]="loading">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" focus="true">
+            </div>
+            <div class="col-md-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Autorizar</span>
+                    <span *ngIf="loading">Autorizando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

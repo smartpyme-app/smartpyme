@@ -1,0 +1,235 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Venta <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/ventas">Ventas</a></li>
+            <li class="breadcrumb-item"><a>Venta</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="container">
+    
+<section class="content-header">
+    <h1> Facturación <small>{{ venta.fecha | date:'dd/MM/yyyy' }}</small> </h1>
+    <ol class="breadcrumb">
+        <li><a routerLink="/"><i class="fa fa-dashboard"></i> Dashboard</a></li>
+        <li><a routerLink="/ventas]">Ventas</a></li>
+        <li class="active">Facturación</li>
+    </ol>
+</section>
+
+<section class="content animated fadeIn">
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <!-- Cliente -->
+            <div class="row">
+                <div class="text-center" >
+                    <!-- <app-venta-cliente [cliente]="venta.cliente" (clienteSelect)="clienteSelect($event)"></app-venta-cliente> -->
+                </div>
+            </div>
+                <!-- Saldo cliente -->
+                <div class="row mr-top" *ngIf="venta?.cliente?.pago_anticipado && !venta.id">
+                    <div class="col-md-4 col-md-offset-4">
+                        <div class="well text-center" style="margin-bottom: 0px;">
+                            <strong>Disponible: </strong> {{ venta?.cliente?.pago_anticipado | currency:'USD':'symbol':'1.2' }}
+                            <strong> Final:</strong> 
+                            <span *ngIf="!cliente?.pagoAnticipado">{{ venta?.cliente?.pago_anticipado | currency:'USD':'symbol':'1.2' }}</span>
+                            <span *ngIf="cliente?.pagoAnticipado">{{ venta?.cliente?.pago_anticipado - venta.total | currency:'USD':'symbol':'1.2' }}</span>
+                            <input type="checkbox" [(ngModel)]="venta?.cliente.pagoAnticipado" name="cliente.pagoAnticipado">
+                        </div>
+                    </div>
+                </div>
+            <!-- Productos -->
+            <div class="row mr-top">
+                <div class="col-xs-12 text-center">                        
+                    <app-venta-gasolina (productoSelect)="productoSelect($event)"></app-venta-gasolina>
+                    <!-- <app-venta-producto (productoSelect)="productoSelect($event)"></app-venta-producto> -->
+                </div>
+            </div>
+
+            <!-- Detalle venta -->
+            <app-venta-detalles [venta]="venta" (update)="updateVenta($event)"></app-venta-detalles>
+
+        </div>
+
+        <div class="panel-footer">
+            <div class="row">
+                <div class="col-xs-12">
+                    <a  routerLink="/control/caja/1" class="btn btn-default" tooltip="Cambiar correlativos">
+                        <i class="fa fa-cog"></i>
+                    </a>
+
+                    <button *ngIf="!venta.id || venta.estado == 'Pendiente'" type="submit" (click)="openModalFacturar(facturar, 0)" [disabled]="loading || venta?.detalles?.length < 1" class="btn btn-primary pull-right tcla-F12" style="margin-left: 15px;">
+                        <i class="fa fa-money"></i> Crédito Fiscal <small>(F12)</small>
+                    </button>
+
+                    <button *ngIf="!venta.id || venta.estado == 'Pendiente'" type="submit" (click)="openModalFacturar(facturar, 1)" [disabled]="loading || venta?.detalles?.length < 1" class="btn btn-primary pull-right tcla-F11" style="margin-left: 15px;">
+                        <i class="fa fa-money"></i> Factura <small>(F11)</small>
+                    </button>
+
+                    <button *ngIf="!venta.id || venta.estado == 'Pendiente'" type="submit" (click)="openModalFacturaSimple(facturarSimple)" [disabled]="loading || venta?.detalles?.length < 1" class="btn btn-primary pull-right tcla-F10" style="margin-left: 15px;">
+                        <i class="fa fa-money"></i> Factura Simple <small>(F10)</small>
+                    </button>
+                    <button *ngIf="!venta.id || venta.estado == 'Pendiente'" type="submit" (click)="onGuardar()" [disabled]="loading || venta?.detalles?.length < 1" class="btn btn-primary pull-right tcla-F9" style="margin-left: 15px;">
+                        <i class="fa fa-money"></i> Cobrar <small>(F9)</small>
+                    </button>
+                    <button *ngIf="!venta.id || venta.estado == 'Pendiente'" type="submit" (click)="openModalFacturar(facturar, 'Devolucion')" [disabled]="loading || venta?.detalles?.length < 1 || !venta?.cliente?.nombre" class="btn btn-primary pull-right tcla-F8" style="margin-left: 15px;">
+                        <i class="fa fa-money"></i> Devolución <small>(F8)</small>
+                    </button>
+                   <!--  <button *ngIf="!venta.id || venta.estado == 'Pendiente'" (click)="onPosponer()" [disabled]="loading || venta?.detalles?.length < 1 || !venta?.cliente?.nombre" class="btn btn-primary pull-right tcla-F7">
+                        <i class="fa fa-clock-o"></i> Guardar <small>(F7)</small>
+                    </button> -->
+                    <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">
+                        Limpiar <small>(Home)</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+</div>
+
+<ng-template #facturar>
+  <div class="modal-header">
+    <div class="modal-title text-center" *ngIf="imprimir">
+        <label for="correlativo">Correlativo:</label>
+        <p>{{ this.venta.tipo_documento }}</p>
+        <h2 class="text-center no-margin">{{ venta.correlativo ? venta.correlativo : '-' }}</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
+        <div class="row text-center">
+            <div class="form-group col-sm-12" *ngIf="venta.tipo_documento != 'Devolucion'">
+                <label for="metodo_pago">Forma de pago:</label>
+                <select name="metodo_pago"(change)="onSelectForma($event.target.value)" class="form-control" id="metodo_pago" focus="true">
+                    <option value="" disabled selected>Seleccione o presione la letra</option>
+                    <option value="{{ metodo.nombre.substring(0, 1) }}-{{ metodo.nombre }}" *ngFor="let metodo of metodospago">{{ metodo.nombre.substring(0, 1) }} - {{ metodo.nombre }}</option>
+                </select>
+            </div>
+
+            <div class="form-group col-sm-12" *ngIf="venta.tipo_documento == 'Devolucion'">
+                <label for="nota">Nota:</label>
+                <input id="nota" type="text" name="nota" [(ngModel)]="venta.nota" class="form-control">
+            </div>
+            <div class="form-group col-sm-12" *ngIf="venta.metodo_pago != 'Efectivo' && venta.metodo_pago != 'Credito' || venta.tipo_documento == 'Devolucion'">
+                <label for="referencia">Referencia:</label><br>
+                <input id="referencia" type="text" class="form-control" [(ngModel)]="venta.referencia" name="referencia">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="placa">Placa:</label><br>
+                <input id="placa" type="text" class="form-control" [(ngModel)]="venta.placa" name="placa">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="kilometraje">Kilometraje:</label><br>
+                <input id="kilometraje" type="text" class="form-control" [(ngModel)]="venta.kilometraje" name="kilometraje">
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="observacion">Observacion:</label><br>
+                <input id="observacion" type="text" class="form-control" [(ngModel)]="venta.observacion" name="observacion">
+            </div>
+            <div class="form-group col-sm-12" *ngIf="venta.metodo_pago == 'Tarjeta' && venta.tipo_documento != 'Devolucion'">
+                <label for="telefono">Teléfono:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="venta?.cliente.telefono" name="telefono">
+            </div>
+
+            <label style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
+
+        </div>
+        
+        <br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button id="submit" type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+                    <i class="fa fa-money"></i>
+                    <span *ngIf="!loading"> Cobrar</span>
+                    <span *ngIf="loading"> Cobrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #facturarSimple>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Factura Simple</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturarSimple()">
+        <div class="row text-center">
+
+            <div class="form-group col-sm-12">
+                <label for="nombre">Nombre:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="venta.nombre" name="venta.nombre" focus="true">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="placa">Placa:</label><br>
+                <input id="placa" type="text" class="form-control" [(ngModel)]="venta.placa" name="placa">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="kilometraje">Kilometraje:</label><br>
+                <input id="kilometraje" type="text" class="form-control" [(ngModel)]="venta.kilometraje" name="kilometraje">
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="observacion">Observacion:</label><br>
+                <input id="observacion" type="text" class="form-control" [(ngModel)]="venta.observacion" name="observacion">
+            </div>
+            <div class="form-group col-sm-12" *ngIf="venta.metodo_pago == 'Tarjeta' && venta.tipo_documento != 'Devolucion'">
+                <label for="telefono">Teléfono:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="venta?.cliente.telefono" name="telefono">
+            </div>
+            <label style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
+
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+                    <i class="fa fa-money"></i>
+                    <span *ngIf="!loading"> Cobrar</span>
+                    <span *ngIf="loading"> Cobrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" focus="true">
+            </div>
+            <div class="col-xs-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

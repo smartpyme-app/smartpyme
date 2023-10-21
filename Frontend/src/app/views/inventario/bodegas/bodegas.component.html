@@ -1,0 +1,108 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Bodegas <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/bodegas">Bodegas</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-2">
+        <span class="text-muted float-start p-2" *ngIf="bodegas?.length">{{ bodegas?.length + ' registros' }}</span>
+
+        <div class="input-group float-end w-50">
+            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+            <button type="button" tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
+            <button (click)="openModal(mbodega, {})" tooltip="Crear bodega (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Sucursal</th>
+                        <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="bodegas?.length < 1 && !loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene bodegas registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let bodega of bodegas">
+                        <td>{{ bodega.id }}</td>
+                        <td>{{ bodega.nombre }}</td>
+                        <td>{{ bodega.nombre_sucursal }}</td>
+                        <td class="text-center">
+                            <div role="group" class="btn-group">
+                                <a  (click)="delete(bodega.id)" class="btn btn-default" tooltip="Eliminar">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a (click)="openModal(mbodega, bodega)" class="btn btn-default" tooltip="Editar">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                                <a routerLink="/bodega/{{bodega.id}}" class="btn btn-default" tooltip="Productos">
+                                    <i class="fa fa-list-alt"></i>
+                                </a>
+                                <a target="_blank" href="{{ this.apiService.baseUrl + '/api/reporte/bodegas/' + bodega.id + '/[]?token=' + this.apiService.auth_token()}}" class="btn btn-default" tooltip="Imprimir inventario">
+                                    <i class="fa fa-print"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<ng-template #mbodega>
+  <div class="modal-header">
+    <h4 class="modal-title pull-left">Bodega</h4>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="nombre">Nombre:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="bodega.nombre" name="nombre" focus="true">
+            </div>
+            <div class="form-group col-md-12">
+                <label for="sucursal_id">Sucursal:</label>
+                <select [(ngModel)]="bodega.sucursal_id" class="form-control form-select" name="sucursal_id">
+                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="descripcion">Descripción:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="bodega.descripcion" name="descripcion">
+            </div>
+
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !bodega.nombre">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

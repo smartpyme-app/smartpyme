@@ -1,0 +1,53 @@
+<button (click)="openModal(mproducto)" class="btn btn-default float-end tcla-F1" tooltip="Agregar productos y servicios (F1)">
+    <i class="fa fa-plus"></i>
+</button>
+
+<ng-template #mproducto>
+<form name="producto" autocomplete="off" (ngSubmit)="agregarDetalle()">
+  <div class="modal-header text-center">
+    <h3 class="modal-title">Respuesto</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="cantidad">Repuesto o servicio:</label>
+                <small class="float-end text-info" *ngIf="searching"> Buscando...</small>
+                <small class="float-end text-warning" *ngIf="!searching && productos?.data?.length == 0"> Ningun registro encontrado </small>
+                <form autocomplete="off" class="buscador">
+                    <div class="btn-group w-100">
+                        <input type="text" name="producto.nombre" class="form-control" placeholder="Nombre o código" [(ngModel)]="producto.nombre" focus="true" id="example" (blur)="clear()">
+                        <app-crear-producto></app-crear-producto>
+                    </div>
+                    <ul class="list-group opciones" *ngIf="productos?.total > 0">
+                      <a href="javascript:void(0);" class="list-group-item" (click)="selectProducto(producto)" *ngFor=" let producto of productos?.data">
+                        {{producto.nombre}} <small class="float-end"> {{producto.nombre_tipo}} </small>
+                      </a>
+                    </ul>
+                </form>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="cantidad">Cantidad:</label>
+                <input type="number" min="1" class="form-control" id="cantidad" name="cantidad" [(ngModel)]="detalle.cantidad" (keyup)="calcularTotal()">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="costo">Costo:</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.costo" name="costo" (keyup)="calcularTotal()">
+            </div>
+            <!-- <div class="form-group col-md-3">
+                <label for="inventario_id">* Inventarios:</label>
+                <select [(ngModel)]="detalle.inventario_id" class="form-control form-select" name="inventario">
+                    <option *ngFor="let inventario of detalle.inventarios" [ngValue]="inventario.id">
+                        {{ inventario.nombre_bodega }}
+                    </option>
+                </select>
+            </div> -->
+        </div>
+    </div>
+    <div class="modal-footer justify-content-between">
+        <button type="submit" [disabled]="!detalle.producto_id || !detalle.cantidad || !detalle.costo" class="btn btn-primary btn-block"> Agregar </button>
+    </div>
+</form>
+</ng-template>

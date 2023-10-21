@@ -1,0 +1,21 @@
+<nav class="d-flex justify-content-between w-100">
+    <button class="btn btn-link text-decoration-none" [ngClass]="{'disabled': items?.current_page == 1}" (click)="setPage(items?.current_page - 1)">
+        <i class="fa fa-arrow-left"></i> Anterior
+    </button>
+    <ul class="pagination m-0">
+        <!-- <li class="page-item d-none d-md-inline-block" [ngClass]="{'disabled': items?.current_page == 1}">
+            <a class="page-link" href="javascript:void(0)" (click)="setPage(1)" >Primero</a>
+        </li> -->
+        
+        <li class="page-item">
+            <a class="page-link"> {{ items.current_page }} / {{ items.last_page }} </a>
+        </li>
+
+        <!-- <li class="page-item d-none d-md-inline-block" [ngClass]="{'disabled': items?.current_page == items?.last_page}">
+            <a class="page-link" href="javascript:void(0)" (click)="setPage(items?.last_page)" >Ultimo</a>
+        </li> -->
+    </ul>
+    <button class="btn btn-link text-decoration-none" [ngClass]="{'disabled': items?.current_page == items?.last_page}" (click)="setPage(items?.current_page + 1)">
+        Siguiente <i class="fa fa-arrow-right"></i>
+    </button>
+</nav>

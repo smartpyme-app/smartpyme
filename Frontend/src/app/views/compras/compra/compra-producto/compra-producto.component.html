@@ -1,0 +1,71 @@
+<button (click)="openModal(mproducto)" class="btn btn-default tcla-F2" tooltip="Productos (F2)"> <i class="fa fa-list-alt"></i> </button>
+
+<ng-template #mproducto>
+<form name="producto" autocomplete="off" (ngSubmit)="onSubmit()">
+  <div class="modal-header text-center">
+    <h3 class="modal-title">Producto</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="cantidad">Producto:</label>
+                <small class="float-end text-info" *ngIf="searching"> Buscando...</small>
+                <small class="float-end text-warning" *ngIf="!searching && productos?.data?.length == 0"> Ningun registro encontrado </small>
+                <form autocomplete="off" class="buscador">
+                    <div class="input-group">
+                        <input type="text" name="detalle.nombre_producto" class="form-control" placeholder="Nombre o código" [(ngModel)]="detalle.nombre_producto" focus="true" id="example" (blur)="clear()">
+                        <app-crear-producto (update)="setProducto($event)"></app-crear-producto>
+                    </div>
+                    <ul class="list-group opciones" *ngIf="productos?.total > 0">
+                      <a href="javascript:void(0);" class="list-group-item" (click)="setProducto(producto)" *ngFor=" let producto of productos?.data">
+                        {{producto.nombre}} <small class="float-end"> {{producto.nombre_tipo}} </small>
+                      </a>
+                    </ul>
+                </form>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="cantidad">Cantidad:</label>
+                <input type="number" min="1" class="form-control" id="cantidad" name="cantidad" [(ngModel)]="detalle.cantidad" (keyup)="calcularByCosto()" (change)="calcularByCosto()">
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="costo">Costo: <small *ngIf="detalle.costo_actual">{{detalle.costo_actual | currency:'USD':'symbol':'1.2'}}</small></label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.costo" name="costo" (keyup)="calcularByCosto()" (change)="calcularByCosto()">
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="descuento">Descuento:</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.descuento" name="descuento" (keyup)="calcularByCosto()" (change)="calcularByCosto()">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="iva">IVA:</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.iva" name="iva">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="gravada">Gravada</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.gravada" name="gravada" (change)="updateTotal()" (keyup)="updateTotal()">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="exenta">Excenta</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.exenta" name="exenta">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="no_sujeta">No Sujeta</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.no_sujeta" name="no_sujeta">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="precio">Precio:</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.precio" name="precio">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="precio_nuevo">Nuevo Precio:</label>
+                <input type="number" min="1" class="form-control" [(ngModel)]="detalle.precio_nuevo" name="precio_nuevo">
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer justify-content-between">
+        <button type="submit" [disabled]="!detalle.producto_id || !detalle.cantidad || !detalle.costo" class="btn btn-primary btn-block"> Agregar </button>
+    </div>
+</form>
+</ng-template>

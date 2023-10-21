@@ -1,0 +1,75 @@
+<form name="form" (ngSubmit)="onSubmit()">
+    <div class="row">
+        <div class="form-group col-md-6">
+            <label for="nombre">* Nombre:</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.nombre" name="nombre" placeholder="Nombre" required focus="true">
+        </div>
+        <div class="form-group col-md-3">
+            <label for="codigo">Código:</label>
+            <div class="input-group">
+                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Código" required>
+                <span class="input-group-text">
+                    <a class="click" tooltip="Generar codigo" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                </span>
+            </div>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="subcategoria_id">* Categoria:</label>
+            <select [(ngModel)]="producto.subcategoria_id" class="form-control form-select" name="subcategoria_id">
+                <optgroup label="{{ categoria.nombre }}" *ngFor="let categoria of categorias">
+                    <option [value]="sub.id" *ngFor="let sub of categoria.subcategorias">{{ sub.nombre }}</option>
+                  </optgroup>
+            </select>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="marca">Marca:</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Marca">
+        </div>
+        <div class="form-group col-lg-6">
+            <label for="etiquetas">Etiquetas:</label>
+            <tag-input theme='bootstrap' [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="medida">* Medida:</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.medida" name="medida" placeholder="Unidad, Lb, Cm etc." required>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="costo">* Costo:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="$0.00" required>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="costo_anterior">Costo Anterior:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.costo_anterior" name="costo_anterior" placeholder="$0.00" required>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="costo_promedio">Costo Promedio:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="$0.00" required>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="precio">* Precio:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="precio2">Precio 2:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.precio2" name="precio2" placeholder="$0.00">
+        </div>
+        <div class="form-group col-md-3">
+            <label for="precio3">Precio 3:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.precio3" name="precio3" placeholder="$0.00">
+        </div>
+        <div class="form-group col-md-3">
+            <label for="precio4">Precio 4:</label>
+            <input type="number" class="form-control" [(ngModel)]="producto.precio4" name="precio4" placeholder="$0.00">
+        </div>
+        <div class="form-group col-md-12">
+            <label for="descripcion">Descripción:</label>
+            <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Descripción" cols="30" rows="2"></textarea>
+        </div>
+        <div class="form-group col-md-12">
+            <button [disabled]="loading" class="btn btn-primary float-end tcla-F4">
+                <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
+        </div>
+    </div>
+</form>

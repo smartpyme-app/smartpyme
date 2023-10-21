@@ -1,0 +1,49 @@
+<div id="login-box" style="height: calc(100vh - 100px);">
+    <div class="container h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-md-7 col-lg-5">
+                <div class="form-input-content text-center">
+                    <div class="card mt-4">
+                        <div class="card-header text-center border-bottom">
+                            <h3 class="modal-title">
+                                Control de Asistencia <br>
+                                <small>
+                                    {{ fechaHora | date:'dd/M/yyy' }} <br>
+                                    {{ fechaHora | date:'hh:mm:ss a' }}
+                                </small>
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <form autocomplete="off" (ngSubmit)="onSubmit()">
+                                <div class="row text-center">
+                                    <div class="form-group">
+                                        <input type="text" class="form-control" name="username" [(ngModel)]="user.username" placeholder="Ingrese su usuario" required focus="true"/>
+                                    </div>
+                                    <div class="form-group">
+                                         <input type="password" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Ingrese su contraseña" required />
+                                    </div>
+                                </div>
+                                
+                                <span class="text-muted">Localización: <span *ngIf="loading">Cargando...</span> {{ asistencia.ubicacion }}</span>
+                                <br><br>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <a routerLink="/" class="btn btn-default btn-block">
+                                            <i class="fa fa-angle-left"></i> Volver
+                                        </a>
+                                    </div>
+                                    <div class="col-8">
+                                        <button type="submit" [disabled]="guardar || !user.username || !user.password" class="btn btn-primary btn-block">
+                                            <span *ngIf="!guardar">Registrar</span>
+                                            <span *ngIf="guardar">Registrando...</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

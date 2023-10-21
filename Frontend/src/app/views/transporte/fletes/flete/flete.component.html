@@ -1,0 +1,270 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Flete <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/fletes">Fletes</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Flete</a></li>
+        </ol>
+    </div>
+</div>
+<div *ngIf="loading" class="spinner-border text-primary" role="status" style="position: absolute; top: 50vh;right: 50vw; z-index: 2000;">
+    <span class="sr-only">Loading...</span>
+</div>
+
+<form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+<section class="card">
+    <div class="dropdown float-end btn-option" *ngIf="flete.id">
+      <a class="btn btn-default" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" tooltip="Generar documentos de impresión">
+        <i class="fa fa-print"></i>
+      </a>
+
+      <ul class="dropdown-menu">
+        <li><a type="button" class="dropdown-item click" (click)="imprimirOrdenDeCarga(flete)">Orden de carga</a></li>
+        <li><a type="button" class="dropdown-item click" (click)="imprimirCartaDePorte(flete)">Carta de porte</a></li>
+        <li><a type="button" class="dropdown-item click" (click)="imprimirManifiestoDeCarga(flete)">Manifiesto de carga</a></li>
+      </ul>
+    </div>
+    <div class="card-body">
+        <div class="row mt-3">
+            <h6 class="my-3 font-weight-bold">Información general</h6>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="fecha">Fecha:</label>
+                <input type="date" name="fecha" [(ngModel)]="flete.fecha" class="form-control">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label>Tipo:</label>
+                <select name="tipo" class="form-control form-select" [(ngModel)]="flete.tipo">
+                    <option value="Local">Local</option>
+                    <option value="Importación">Importación</option>
+                    <option value="Exportación">Exportación</option>
+                </select>
+            </div>
+            <!-- <div class="form-group col-md-4 col-lg-2">
+                <label>Estado:</label>
+                <select name="estado" class="form-control form-select" [(ngModel)]="flete.estado">
+                    <option value="Pagado">Pagado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Cotización">Cotización</option>
+                </select>
+            </div> -->
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="motorista_id">Motorista:</label>
+                <ng-select name="motorista_id" [(ngModel)]="flete.motorista_id" class="form-select p-0 border-0">
+                    <ng-option *ngFor="let motorista of motoristas" [value]="motorista.id">
+                        {{motorista.nombre}}
+                    </ng-option>
+                </ng-select>
+            </div>
+
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="cabezal_id">Cabezal:</label>
+                <ng-select name="cabezal_id" [(ngModel)]="flete.cabezal_id" class="form-select p-0 border-0">
+                    <ng-option *ngFor="let flota of flotas | filter:['tipo']:'Cabezal'" [value]="flota.id">
+                        {{ flota.placa }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="remolque_id">Remolque:</label>
+                <ng-select name="remolque_id" [(ngModel)]="flete.remolque_id" class="form-select p-0 border-0">
+                    <ng-option *ngFor="let flota of flotas | filter:['tipo']:'Remolque'" [value]="flota.id">
+                        {{ flota.placa }}
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <h6 class="my-3 font-weight-bold">
+                Información del remitente y el destinatario
+                <!-- <app-flete-cliente *ngIf="flete.estado != 'Pagado'" [cliente]="cliente" (clienteSelect)="clienteSelect($event)"></app-flete-cliente> -->
+            </h6>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="proveedor_id" class="w-100">Proveedor:</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="proveedor_id" [(ngModel)]="flete.proveedor_id" class="form-select p-0 border-0">
+                        <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                            {{ proveedor.nombre }} - {{ proveedor.registro }}
+                        </ng-option>
+                    </ng-select>
+                    <!-- <app-crear-proveedor (update)="setProveedor($event)"></app-crear-proveedor> -->
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="">Cliente:</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="cliente_id" [(ngModel)]="flete.cliente_id" class="form-select p-0 border-0">
+                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                            {{ cliente.nombre }} - {{ cliente.registro }}
+                        </ng-option>
+                    </ng-select>
+                    <!-- <app-crear-cliente (update)="setCliente($event)"></app-crear-cliente> -->
+                </div>
+            </div>
+            <!-- <div class="form-group col-md-4 col-lg-3">
+                <label for="cliente.nombre">Nombre:</label>
+                <p>{{ cliente.nombre }} </p>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label>Registro:</label>
+                <p>{{ cliente.registro }} </p>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label>Teléfono:</label>
+                <p>{{ cliente.telefono }} </p>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label>Correo:</label>
+                <p>{{ cliente.correo }} </p>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label>Departamento:</label>
+                <p>{{ cliente.departamento }} </p>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label>Municipio:</label>
+                <p>{{ cliente.municipio }} </p>
+            </div>
+            <div class="form-group col-md-4 col-lg-6">
+                <label>Dirección:</label>
+                <p>{{ cliente.direccion }} </p>
+            </div> -->
+        </div>
+        <div class="row mt-3">
+            <h6 class="my-3 font-weight-bold">Detalles de la carga</h6>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="tipo_transporte">Tipo de transporte:</label>
+                <select name="tipo_transporte" class="form-control form-select" [(ngModel)]="flete.tipo_transporte">
+                    <option value="Furgón">Furgón</option>
+                    <option value="Camión">Camión</option>
+                    <option value="Barco">Barco</option>
+                    <option value="Avión">Avión</option>
+                    <option value="Tren">Tren</option>
+                    <option value="Automóvil">Automóvil</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="fecha_carga">Fecha y hora de carga:</label>
+                <input type="datetime-local" name="fecha_carga" [(ngModel)]="flete.fecha_carga" class="form-control">
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="fecha_descarga">Fecha y hora de descarga:</label>
+                <input type="datetime-local" name="fecha_descarga" [(ngModel)]="flete.fecha_descarga" class="form-control">
+            </div>
+
+            <div class="form-group col-md-3">
+                <label for="num_pedido">Número de pedido:</label>
+                <input type="text" name="num_pedido" [(ngModel)]="flete.num_pedido" class="form-control">
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="punto_origen">Punto de origen:</label>
+                <input type="text" name="punto_origen" [(ngModel)]="flete.punto_origen" class="form-control">
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="punto_destino">Punto de destino:</label>
+                <input type="text" name="punto_destino" [(ngModel)]="flete.punto_destino" class="form-control">
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="aduana_entrada">Aduana Entrada:</label>
+                <input type="text" list="aduanas" name="aduana_entrada" [(ngModel)]="flete.aduana_entrada" class="form-control">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="aduana_salida">Aduana salida:</label>
+                <input type="text" list="aduanas" name="aduana_salida" [(ngModel)]="flete.aduana_salida" class="form-control">
+            </div>
+            
+            <datalist id="aduanas">
+                <option>El Amatillo</option>
+                <option>San Cristóbal</option>
+                <option>La Hachadura</option>
+                <option>La Chinamas</option>
+                <option>San Jerónimo</option>
+                <option>El Poy</option>
+                <option>Aeropuerto Internacional de El Salvador</option>
+                <option>Puerto de Acajutla</option>
+            </datalist>
+
+
+        </div>
+        <div class="row mt-3">
+            <app-flete-detalles [flete]="flete" (update)="updateFlete($event)"></app-flete-detalles>
+        </div>
+        <div class="row mt-3">
+            <h6 class="my-3 font-weight-bold">Costos y pagos</h6>
+
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="subtotal">Tarifa base:</label>
+                <input type="number" step="any" min="0" name="subtotal" (keyup)="setTotal()" [(ngModel)]="flete.subtotal" class="form-control">
+            </div>
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="motorista">Motorista:</label>
+                <input type="number" step="any" min="0" name="motorista" (keyup)="setTotal()" [(ngModel)]="flete.motorista" class="form-control">
+            </div>
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="combustible">Combustible:</label>
+                <input type="number" step="any" min="0" name="combustible" (keyup)="setTotal()" [(ngModel)]="flete.combustible" class="form-control">
+            </div>
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="gastos">Gastos:</label>
+                <input type="number" step="any" min="0" name="gastos" (keyup)="setTotal()" [(ngModel)]="flete.gastos" class="form-control">
+            </div>
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="seguro">Seguro:</label>
+                <input type="number" step="any" min="0" name="seguro" (keyup)="setTotal()" [(ngModel)]="flete.seguro" class="form-control">
+            </div>
+            <!-- <div class="form-group col-md-6 col-lg-2">
+                <label for="otros">Otros:</label>
+                <input type="number" step="any" min="0" name="otros" (keyup)="setTotal()" [(ngModel)]="flete.otros" class="form-control">
+            </div> -->
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="total" class="font-weight-bold">Total:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" step="any" name="total" readonly [(ngModel)]="flete.total" class="form-control text-right">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="no_sujeto">No sujeto:</label>
+                <input type="number" step="any" name="no_sujeto" [(ngModel)]="flete.no_sujeto" class="form-control">
+            </div>
+        </div>
+        <div class="row mt-3">
+            <h6 class="my-3 font-weight-bold">Nota de facturación</h6>
+            <div class="form-group col-md-12">
+                <textarea placeholder="Aparecerá en el detalle de la factura" name="nota_facturacion" [(ngModel)]="flete.nota_facturacion" class="form-control" cols="30" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <h6 class="my-3 font-weight-bold">Observaciones y notas</h6>
+            <div class="form-group col-md-6 col-lg-2">
+                <label for="galones">Galones:</label>
+                <input type="number" step="any" min="0" name="galones" [(ngModel)]="flete.galones" class="form-control">
+            </div>
+            <div class="form-group col-md-12">
+                <textarea placeholder="Cualquier comentario adicional o instrucciones especiales" name="nota" [(ngModel)]="flete.nota" class="form-control" cols="30" rows="3"></textarea>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary float-right tcla-F10" tooltip="Guardar (F10)">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</section>
+</form>

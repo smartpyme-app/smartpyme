@@ -1,0 +1,65 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Devolución de compra <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a routerLink="/devoluciones">Devoluciónes</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Devolución de compra</a></li>
+        </ol>
+    </div>
+</div>
+
+<section class="card">
+<form  name="facturacion" autocomplete="off" (ngSubmit)="onDevolucion()">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Proveedor</th>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                    <th>Forma de pago</th>
+                    <th>Tipo de documento</th>
+                </tr>
+                <tr>
+                    <td>{{ compra.fecha | date:'yy/MM/yyyy'}}</td>
+                    <td>{{ compra.nombre_proveedor }}</td>
+                    <td>{{ compra.nombre_usuario }}</td>
+                    <td>{{ compra.estado }}</td>
+                    <td>{{ compra.metodo_pago }}</td>
+                    <td>{{ compra.tipo_documento }}</td>
+                </tr>
+            </table>
+        </div>    
+    </div>
+
+    <div class="card-body" style="min-height: calc(100vh - 350px);">
+
+        <app-devolucion-compra-detalles [compra]="compra" (update)="updateVenta($event)" (sumTotal)="sumTotal()"></app-devolucion-compra-detalles>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label for="">Nota sobre la devolución:</label>
+                    <textarea class="form-control" [(ngModel)]="compra.nota" name="nota" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card-footer">
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary float-end tcla-F10" id="submit" [disabled]="loading" tooltip="Guardar (F10)">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+</section>

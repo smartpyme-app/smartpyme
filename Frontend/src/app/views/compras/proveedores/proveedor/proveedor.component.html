@@ -1,0 +1,111 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Proveedor <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/proveedores">Proveedores</a></li>
+            <li class="breadcrumb-item"><a>Proveedor</a></li>
+        </ol>
+    </div>
+</div>
+<div *ngIf="!proveedor" class="row"> <p class="col-md-12 text-center text-muted mt-5">Cargando...</p> </div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        
+    <form (ngSubmit)="submit()">
+        <div class="row" *ngIf="proveedor">
+            <h5 class="col-12 pb-2 mb-2">Información</h5>
+            <div class="form-group col-lg-6">
+                <label for="nombre">Nombre:</label>
+                <input type="text" class="form-control" name="nombre" [(ngModel)]="proveedor.nombre">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="telefono">Teléfono:</label>
+                <input type="text" class="form-control" name="telefono" [(ngModel)]="proveedor.telefono">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="correo">Correo:</label>
+                <input type="email" class="form-control" name="correo" [(ngModel)]="proveedor.correo">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="tipo_contribuyente">Tipo de contribuyente:</label>
+                <select class="form-control" [(ngModel)]="proveedor.tipo_contribuyente" name="tipo_contribuyente">
+                    <option value="Pequeño">Pequeño</option>
+                    <option value="Mediano">Mediano</option>
+                    <option value="Grande">Grande</option>
+                </select>
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="registro">NRC:</label>
+                <input type="text" class="form-control" name="registro" [(ngModel)]="proveedor.registro">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="dui">DUI:</label>
+                <input type="text" class="form-control" name="dui" [(ngModel)]="proveedor.dui">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="nit">NIT:</label>
+                <input type="text" class="form-control" name="nit" [(ngModel)]="proveedor.nit">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="municipio">Municipio:</label>
+                <input type="text" class="form-control" name="municipio" [(ngModel)]="proveedor.municipio">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="departamento">Departamento:</label>
+                <input type="text" class="form-control" name="departamento" [(ngModel)]="proveedor.departamento">
+            </div>
+            <div class="form-group col-6 col-lg-6">
+                <label for="direccion">Dirección:</label>
+                <input type="text" class="form-control" name="direccion" [(ngModel)]="proveedor.direccion">
+            </div>
+            <div class="form-group col-lg-6">
+                <label for="etiquetas">Etiquetas:</label>
+                <tag-input theme='bootstrap' secondaryPlaceholder="" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="proveedor.etiquetas" name="etiquetas"></tag-input>
+            </div>
+            <div class="form-group col-lg-6">
+                <label for="descripcion">Descripción:</label>
+                <input type="text" class="form-control" name="descripcion" [(ngModel)]="proveedor.descripcion">
+            </div>
+            <div class="form-group col-lg-12">
+                <label for="nota">Nota:</label>
+                <input type="text" class="form-control" name="nota" [(ngModel)]="proveedor.nota">
+            </div>            
+            
+            <div class="form-group col-md-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary float-right tcla-F10" tooltip="Guardar (F10)">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+    </div>
+</div>
+
+<!-- <app-proveedor-direcciones></app-proveedor-direcciones> -->
+<!-- <app-proveedor-ordenes></app-proveedor-ordenes> -->
+
+<div class="card mb-3">
+    <div class="card-body">
+    <div class="row">
+        <h5 class="col-12 pb-2 mb-2">Datos</h5>
+        <div class="form-group col-6 col-lg-3">
+            <label for="pais">Fecha de registro:</label>
+            <p>{{ proveedor.created_at | date:'d/M/y h:m:s a' }}</p>
+        </div>
+        <div class="form-group col-6 col-lg-3">
+            <label for="pais">Última actualización:</label>
+            <p>{{ proveedor.updated_at  | date:'d/M/y h:m:s a' }}</p>
+        </div>
+        <div class="form-group col-6 col-lg-3">
+            <label for="pais">Número de Compras:</label>
+            <p>{{ proveedor.num_compras }}</p>
+        </div>
+    </div>
+
+    </div>
+</div>

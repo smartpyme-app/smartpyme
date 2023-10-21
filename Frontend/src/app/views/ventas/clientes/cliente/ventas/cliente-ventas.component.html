@@ -1,0 +1,137 @@
+<div class="card">
+    <div class="card-header p-2">
+        <h5 class="col-12 pb-2 mb-2">Historial de ventas:</h5>
+        <span class="text-muted float-start p-2" *ngIf="ventas?.total">
+            {{ ventas?.total + ' registros' }}
+            <span *ngIf="filtrado">{{ ventas?.data | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
+        </span>
+
+        <form name="form" autocomplete="off" (ngSubmit)="onFiltrar()">
+            <div class="input-group float-end w-50">
+                <select class="form-control form-select" name="filtro.estado" [(ngModel)]="filtro.estado">
+                    <option value="" disabled>Estado</option>
+                    <option value="">Todos</option>
+                    <option value="Pagada">Pagadas</option>
+                    <option value="Anulada">Anuladas</option>
+                    <option value="Pendiente">Pendientes</option>
+                </select>
+                <select name="metodo_pago" [(ngModel)]="filtro.metodo_pago" class="form-control form-select" id="metodo_pago">
+                    <option value="" disabled>Forma de pago</option>
+                    <option value="">Todos</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Credito">Credito</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Chivo Wallet">Chivo Wallet</option>
+                </select>
+                <button type="button" (click)="loadAll()" class="btn btn-default tcla-F5" tooltip="Actualizar"><i class="fa fa-sync-alt"></i></button>
+                <button type="submit" class="btn btn-default" tooltip="Filtrar"> <i class="fa fa-filter"></i> </button>
+                <button type="button" (click)="openModal(mcuenta)" class="btn btn-default" tooltip="Imprimir estado de cuenta"><i class="fa fa-print"></i></button>
+            </div>
+        </form>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <!-- <th>Cliente</th> -->
+                        <th>Documento</th>
+                        <th>Metodo de pago</th>
+                        <th>Condición</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
+                            <span class="badge badge-primary">No tiene ventas registradas</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge badge-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                        
+                        <td>{{ venta.id }}</td>
+                        <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{venta.nombre_usuario | truncate:30}}</td>
+                        <!-- <td>{{venta.nombre_cliente | truncate:30}} <a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.cliente_id}}"><i class="fa fa-edit"></i></a></td>  -->
+                        <td> {{venta.tipo_documento }} # {{venta.correlativo }} </td>
+                        <td><span tooltip="{{ venta.referencia }}">{{venta.metodo_pago}}</span></td>
+                        <td> <span tooltip="Fecha de pago: {{ venta.fecha_pago | date:'dd/MM/yyyy'}}">{{venta.condicion }}</span> </td>
+                        <td class="text-center" *ngIf="apiService.auth_user().tipo != 'Administrador'">
+                            <span class="badge click" [ngClass]="{'badge-dark' : venta?.estado == 'En Proceso', 'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Pagada'}">
+                                {{venta.estado}}
+                            </span>
+                        </td>
+                        <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Administrador'">
+                            <span class="badge click" [ngClass]="{'badge-dark' : venta?.estado == 'En Proceso', 'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
+                                {{venta.estado}}
+                            </span>
+                            <ng-template #popTemplate>
+                                <button class="btn btn-default" (click)="setEstado(venta, 'Pagada')">Pagada</button>
+                                <button class="btn btn-default" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
+                                <button class="btn btn-default" (click)="setEstado(venta, 'Anulada')">Anulada</button>
+                            </ng-template>
+                        </td>
+
+                        <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a *ngIf="apiService.auth_user().tipo == 'Administrador'"  class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a *ngIf="venta.credito" routerLink="/credito/{{venta.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
+                                    <i class="fa fa-money-check"></i>
+                                </a>
+                                <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver">
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                                <!-- <a *ngIf="apiService.auth_user().tipo == 'Empleado'" class="btn btn-default" (click)="reemprimir(venta)" tooltip="Reemprimir">
+                                    <i class="fa fa-print"></i>
+                                </a> -->
+                            </div>  
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer" *ngIf="ventas?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mcuenta>
+    <div class="modal-header">
+      <div class="modal-title text-center">
+          <h2 class="text-center no-margin">Estado de cuenta</h2>
+      </div>
+      <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+
+        <div class="row text-center no-print">
+            <br><br><br>
+            <div class="col-xs-12">
+                <button (click)="cobrarTodo()" class="btn btn-lg btn-default btn-block"> Marcar pendientes como cobrados </button>
+                <button (click)="imprimir()" class="btn btn-lg btn-default btn-block"> Imprimir estado de cuenta </button>
+                <button (click)="imprimirCobrar()" class="btn btn-lg btn-default btn-block"> Marcar como cobrado e Imprimir </button>
+            </div>
+        </div>
+        
+    </div>
+</ng-template>

@@ -1,0 +1,74 @@
+<div class="card" *ngIf="filtro.id">
+    <div class="card-body">
+        <div class="row justify-content-center">
+            <div class="col-12 text-center">
+                <div class="btn-group btn-group-sm">
+                    <a style="min-width: 60px;" class="btn" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="onFiltrar('week')">Semana</a>
+                    <a style="min-width: 60px;" class="btn" [ngClass]="{'btn-primary': filtro.time == 'month', 'btn-default': filtro.time != 'month' }" (click)="onFiltrar('month')">Mes</a>
+                    <a style="min-width: 60px;" class="btn" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="onFiltrar('year')">Año</a>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-success mb-3"><i class="fa fa-money-bill-trend-up"></i> Fletes</h5>
+                                <h3 class="text-success">{{ (dash?.total_fletes ? dash?.total_fletes : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-info mb-3"><i class="fa fa-heart-circle-check"></i> Mantenimientos</h5>
+                                <h3 class="text-info">{{ (dash?.total_mantenimientos ? dash?.total_mantenimientos : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-danger mb-3"><i class="fa fa-screwdriver-wrench"></i> Reparaciones</h5>
+                                <h3 class="text-danger">{{ (dash?.total_reparaciones ? dash?.total_reparaciones : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-warning mb-3"><i class="fa fa-gas-pump"></i> Combustible</h5>
+                                <h3 class="text-warning">{{ (dash?.total_combustible ? dash?.total_combustible : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card">
+                    <div class="card-body pb-0">
+                        <div class="row justify-content-between">
+                            <div class="col py-4">
+                                <h5 class="text-primary mb-3"><i class="fa fa-sack-dollar"></i> Balance</h5>
+                                <h3 class="text-primary">{{ (dash?.total_balance ? dash?.total_balance : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                                <!-- <p class="">Utilidad: <span class="float-end">{{ (dash?.total_utilidad ? dash?.total_utilidad : 0) | currency:'USD':'symbol':'1.2' }}</span></p> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

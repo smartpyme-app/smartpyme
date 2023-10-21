@@ -1,0 +1,66 @@
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body pt-2 pb-0">
+                <div class="row justify-content-between">
+                    <div class="col py-4">
+                        <h6 class="text-dark mb-3"><i class="fa fa-arrow-trend-up"></i> Ventas</h6>
+                        <h3 class="text-dark">{{ (dash?.total_ventas ? dash?.total_ventas : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                        <p class="mb-1">Por cobrar: <span class="float-end">{{ (dash?.total_motoristas ? dash?.total_motoristas : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <div id="chart-ventas" class="home_chart_widget chart-primary"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body pt-2 pb-0">
+                <div class="row justify-content-between">
+                    <div class="col py-4">
+                        <h6 class="text-dark mb-3"><i class="fa fa-right-from-bracket"></i> Salidas</h6>
+                        <h3 class="text-dark">{{ (dash?.total_salidas ? dash?.total_salidas : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                        <p class="mb-1">Por pagar: <span class="float-end">{{ (dash?.total_motoristas ? dash?.total_motoristas : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <div id="chart-salidas" class="home_chart_widget chart-warning"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body pt-2 pb-0">
+                <div class="row justify-content-between">
+                    <div class="col py-4">
+                        <h6 class="text-dark mb-3"><i class="fa fa-right-left"></i> Transacciones</h6>
+                        <h3 class="text-dark">{{ (dash?.total_transacciones ? dash?.total_transacciones : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                        <p class="mb-1">Por cobrar: <span class="float-end">{{ (dash?.total_motoristas ? dash?.total_motoristas : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <div id="chart-transacciones" class="home_chart_widget chart-primary"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body pt-2 pb-0">
+                <div class="row justify-content-between">
+                    <div class="col py-4">
+                        <h6 class="text-dark mb-3"><i class="fa fa-circle-dollar-to-slot"></i> Balance</h6>
+                        <h3 class="text-dark">{{ (dash?.total_balance ? dash?.total_balance : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                        <p class="mb-1">Utilidad: <span class="float-end">{{ (dash?.total_motoristas ? dash?.total_motoristas : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <div id="chart-balance" class="home_chart_widget chart-success"></div>
+            </div>
+        </div>
+    </div>
+</div>

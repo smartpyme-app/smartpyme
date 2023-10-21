@@ -1,0 +1,43 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading" (click)="loadAll()">Cliente <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/clientes">Clientes</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Cliente</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-12" *ngIf="cliente.id">
+        <app-cliente-datos></app-cliente-datos>
+    </div>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body"> 
+                <app-cliente-informacion></app-cliente-informacion>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12" *ngIf="cliente.id">
+        <div class="card">
+            <div class="card-body">
+                <app-cliente-documentos></app-cliente-documentos>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12" *ngIf="cliente.id">
+        <app-cliente-ventas></app-cliente-ventas>
+    </div>
+    <div class="col-lg-12" *ngIf="cliente.id">
+        <app-cliente-fletes></app-cliente-fletes>
+    </div>
+    <div class="col-lg-12" *ngIf="cliente.id">
+        <app-cliente-creditos></app-cliente-creditos>
+    </div>
+</div>
+
+

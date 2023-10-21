@@ -1,0 +1,95 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading" (click)="loadAll()">Gasto <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/gastos">Gastos</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Gasto</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card mb-5">
+    <div class="card-body">
+        <div class="row justify-content-center">   
+            <div class="col-md-12">
+                <form autocomplete="off" (ngSubmit)="onSubmit()">
+                    <div class="row">
+
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="">Fecha:</label>
+                            <input type='date' class="form-control" name="gasto.fecha" [(ngModel)]="gasto.fecha"/>
+                        </div>
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="metodo_pago">Método de pago:</label>
+                            <select name="metodo_pago" [(ngModel)]="gasto.metodo_pago" class="form-select" id="metodo_pago">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Chivo Wallet">Chivo Wallet</option>
+                                <option value="Crédito">Crédito</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="categoria_id" class="w-100">Categoria:</label>
+                            <div class="input-group flex-nowrap">
+                                <ng-select name="categoria_id" [(ngModel)]="gasto.categoria_id" class="form-select p-0">
+                                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
+                                        {{categoria.nombre}}
+                                    </ng-option>
+                                </ng-select>
+                                <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="proveedor_id" class="w-100">Proveedor:</label>
+                            <div class="input-group flex-nowrap">
+                                <ng-select name="proveedor_id" [(ngModel)]="gasto.proveedor_id" class="form-select p-0">
+                                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                                        {{ proveedor.nombre }}
+                                    </ng-option>
+                                </ng-select>
+                                <app-crear-proveedor (update)="setProveedor($event)"></app-crear-proveedor>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="referencia">Referencia:</label>
+                            <input type='text' class="form-control" name="gasto.referencia" [(ngModel)]="gasto.referencia"/>
+                        </div>
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="condicion">Condición:</label>
+                            <select name="condicion" [(ngModel)]="gasto.condicion" (change)="setFechaPago()" class="form-select" id="condicion">
+                                <option value="Contado">Contado</option>
+                                <option value="8 días">8 días</option>
+                                <option value="15 días">15 días</option>
+                                <option value="30 días">30 días</option>
+                                <option value="60 días">60 días</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4 col-lg-3">
+                            <label for="">Total:</label>
+                            <input type='number' class="form-control" name="gasto.total" [(ngModel)]="gasto.total"/>
+                        </div>
+
+                        <div class="form-group col-sm-12">
+                            <label for="">Descripción:</label>
+                            <textarea name="gasto.descripcion" class="form-control" cols="30" placeholder="Opcional" rows="3" [(ngModel)]="gasto.descripcion"></textarea>
+                        </div>
+
+                        <div class="form-group col-sm-12 mt-5">
+                            <button type="submit" [disabled]="loading" class="btn btn-primary float-end">
+                                <span *ngIf="!loading">Guardar</span>
+                                <span *ngIf="loading">Guardando...</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+

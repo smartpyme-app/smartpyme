@@ -1,0 +1,57 @@
+<div id="login-box" class="bg-white vh-100">
+    <div class="container-fluid h-100">
+        <div class="row d-flex align-items-center h-100">
+            <div class="col-12 col-md-6">
+                <div class="card border-0 px-5 mx-0 mx-lg-5">
+                    <div class="card-body">
+                        <h2>Inicio de sesión</h2>
+                        <p>¡Bienvenido de regreso!</p>
+                        <form class="row mt-5" name="form" autocomplete="off" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                            <div class="form-group mb-4 has-feedback" [ngClass]="{ 'has-error': f.submitted && !email.valid }">
+                                <label>Correo</label>
+                                <input type="text" class="form-control" name="email" [(ngModel)]="user.email" #email="ngModel" placeholder="Usuario" required focus="true"/>
+                            </div>
+                            <div class="form-group mb-4 has-feedback" [ngClass]="{ 'has-error': f.submitted && !password.valid }">
+                                <label>Contraseña</label>
+                                <div class="input-group">
+                                    <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Contraseña" #password="ngModel" id="password" required />
+                                    <button class="btn btn-light" type="button" (click)="mostrarPassword()">
+                                        <i class="fa" [ngClass]="{'fa-eye-slash': showpassword, 'fa-eye': !showpassword }"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4 col-6">
+                                <div class="form-check">
+                                  <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                                  <label class="form-check-label" for="flexCheckDefault">
+                                    Recordarme
+                                  </label>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4 col-6 text-right">
+                                <a href="" class="d-block text-right float-end">Olvidé mi contraseña</a>
+                            </div>
+                            <div class="d-grid gap-1">
+                                <button type="submit" [disabled]="loading" class="btn btn-primary d-block">
+                                    <span *ngIf="!loading">Iniciar sesión</span>
+                                    <span *ngIf="loading">Verificando...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-white text-center mt-3">
+                        <p class="my-3">
+                            <a href="https://websis.me" target="_blank">
+                                <img src="assets/img/smartpyme.png" width="150px" alt="smartpyme logo">
+                            </a>
+                        </p>
+                        <p>&copy; {{ anio }} SmartPyme</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-8 col-md-6 d-none d-md-flex" style="background-image: url('/assets/img/icon-bg.png'); background-size: 40%; background-position: bottom -100px right -100px; background-color: rgba(23,117,229,0.35)!important; height: 100vh;">
+            </div>
+        </div>
+    </div>
+</div>
+

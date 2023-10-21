@@ -1,0 +1,73 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Gastos <small class="text-muted p-2"> Listado</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Gastos</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body position-relative">
+                <button (click)="loadAll()" class="btn btn-default float-end"><i class="fa fa-sync-alt"></i></button>
+                <h4 class="card-title">Municipios</h4>
+                <div class="row" style="min-height: 350px;" *ngIf="dash?.municipios?.length">
+                    <div class="col-md-12">
+                        <div class="chart-wrapper h-100">
+                            <canvas baseChart id="chart"
+                                [data]="chartData"
+                                [options]="chartOptions"
+                                [labels]="chartLabels"
+                                [legend]="false"
+                                [type]="'bar'">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="row" *ngIf="!dash?.municipios?.length"  style="min-height: 350px;">
+                    <div class="text-muted text-center py-5 h-100">
+                        <i class="fa fa-chart-pie fa-5x"></i>
+                        <br>
+                        Aún no hay datos
+                        <br>
+                    </div>
+                </div>
+            </div> 
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body position-relative">
+                <button (click)="loadAll()" class="btn btn-default float-end"><i class="fa fa-sync-alt"></i></button>
+                <h4 class="card-title">Ventas</h4>
+                <div class="row" style="min-height: 350px;" *ngIf="dash?.ventas?.length">
+                    <div class="col-md-12">
+                        <div class="chart-wrapper h-100">
+                            <canvas baseChart id="chart2"
+                                [data]="chartData2"
+                                [options]="chartOptions"
+                                [labels]="chartLabels"
+                                [legend]="false"
+                                [type]="'bar'">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="row" *ngIf="!dash?.ventas?.length"  style="min-height: 350px;">
+                    <div class="text-muted text-center py-5 h-100">
+                        <i class="fa fa-chart-pie fa-5x"></i>
+                        <br>
+                        Aún no hay datos
+                        <br>
+                    </div>
+                </div>
+            </div> 
+        </div>
+    </div>
+</div>

@@ -1,0 +1,15 @@
+<div class="form-group col-sm-12">
+    <label for="cantidad">* Producto:</label>
+    <form autocomplete="off" class="buscador">
+        <input id="producto" type="text" name="producto.nombre" class="form-control" placeholder="Nombre o código" [(ngModel)]="producto.nombre" focus="true" id="example">
+        <ul class="list-group info">
+          <a href="javascript:void(0);" class="list-group-item text-primary" *ngIf="searching"> Buscando... </a>
+          <a href="javascript:void(0);" class="list-group-item text-warning" *ngIf="!searching && productos?.data?.length == 0"> Ningun registro encontrado </a>
+        </ul>
+        <ul class="list-group opciones" *ngIf="productos?.total > 0">
+          <a href="javascript:void(0);" class="list-group-item" (click)="productoSelect(producto)" *ngFor=" let producto of productos?.data">
+            {{producto.nombre}}
+          </a>
+        </ul>
+    </form>
+</div>

@@ -1,0 +1,81 @@
+<!-- <form name="form" class="form-inline mr-top"> -->
+    <label for="cliente">Cliente: </label>
+    <div class="input-group">
+        <input type="text" class="form-control" [(ngModel)]="cliente.nombre" name="cliente" placeholder="Nombre" (focus)="openModal(mcliente)">
+        <button (click)="openModal(mcliente)" class="btn btn-default tcla-F6" tooltip="Crear">
+            <i class="fa fa-search"></i> <small> (F6)</small>
+        </button>
+      <!-- <span class="input-group-text" id="basic-addon1">@</span> -->
+    </div>
+<!-- </form> -->
+
+<ng-template #mcliente>
+<form autocomplete="off" (ngSubmit)="onSubmit(cliente)">
+  <div class="modal-header text-center">
+    <h3 class="modal-title">Cliente</h3>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+    <div class="modal-body">
+        <div class="row">
+            
+            <div class="form-group col-sm-12">
+                <label for="nombre" class="w-100">* Nombre: <small class="text-warning float-right" *ngIf="!searching && clientes?.data?.length == 0"> Ninguna coincidencia </small></label>
+                <div class="buscador">
+                    <input id="cliente" type="text" name="cliente.nombre" class="form-control" placeholder="Nombre, registro, etc..." [(ngModel)]="cliente.nombre" focus="true" id="example" (blur)="clear()">
+                    <ul class="list-group info">
+                      <a href="javascript:void(0);" class="list-group-item text-primary" *ngIf="searching"> Buscando... </a>
+                    </ul>
+                    <ul class="list-group opciones" *ngIf="clientes?.total > 0">
+                      <a href="javascript:void(0);" class="list-group-item" (click)="selectCliente(cliente)" *ngFor=" let cliente of clientes?.data">
+                        {{cliente.nombre}} <small *ngIf="cliente.registro"> - {{cliente.registro}}</small>
+                      </a>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- <div class="form-group col-sm-6">
+                <label for="registro">* Registro:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.registro" name="registro" placeholder="Registro" >  
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="giro">Giro:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.giro" name="giro" placeholder="Giro">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="nit">NIT:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.nit" name="nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0' placeholder="xxxx-xxxxxx-xxx-x">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="nit">DUI:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.dui" name="dui" [dropSpecialCharacters]="false" mask='00000000-0' placeholder="xxxxxxx-x">
+            </div> -->
+
+            <div class="form-group col-sm-6">
+                <label for="telefono">Teléfono:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.telefono" [dropSpecialCharacters]="false" name="telefono" mask='0000-0000' placeholder="0000-0000">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="municipio">Municipio:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.municipio" name="municipio" placeholder="Municipio">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="departamento">Departamento:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.departamento" name="departamento" placeholder="Departamento">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="direccion">Dirección:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.direccion" name="direccion" placeholder="Dirección">
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="nota">Nota:</label>
+                <input type="text" class="form-control" [(ngModel)]="cliente.nota" name="nota" placeholder="Nota sobre el cliente">
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary btn-block"> Guardar </button>
+    </div>
+</form>
+</ng-template>

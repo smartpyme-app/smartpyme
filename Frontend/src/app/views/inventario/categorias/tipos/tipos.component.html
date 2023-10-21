@@ -1,0 +1,55 @@
+<div class="ml-5">
+    <div class="p-1 pb-2 border" *ngFor="let tipo of tipos">
+        <h5 class="d-inline-block ml-3" contentEditable (blur)="onNameChange(tipo, $event.target.innerHTML)">{{ tipo.nombre }}</h5>
+        <a class="btn btn-outline-light btn-sm float-end" (click)="delete(tipo)" tooltip="Eliminar"> <i class="fa fa-trash-alt"></i> </a>
+        <a class="btn btn-outline-light btn-sm float-end" (click)="openModal(mtipo, tipo)"  tooltip="Editar"> <i class="fa fa-pencil-alt"></i> </a>
+    </div>
+    <div class="p-1 pb-2 border">
+        <a href="javascript:void(0)" class="d-inline-block ml-3" (click)="openModal(mtipo, {})" tooltip="Agregar tipo">Agregar</a>
+    </div>
+</div>
+                          
+
+<ng-template #mtipo>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Tipo</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row text-center">
+<!--             <div class="col-12 text-center">
+                <figure style="min-height: 100px;" class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar">
+                    <i *ngIf="!tipo.img && !preview" class="fa fa-image fa-2x text-muted"></i>
+                    <img *ngIf="tipo.img && !preview" src="{{ apiService.baseUrl + '/img/' + tipo.img }}" height="100">
+                    <img *ngIf="url_img_preview && preview" src="{{ url_img_preview }}" height="100">
+                    <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                </figure>
+            </div>
+ -->
+            <div class="form-group col-12">
+                <label for="tipo.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="tipo.nombre" name="tipo.nombre" focus="true" (change)="slug()">
+            </div>
+            <div class="form-group col-12">
+                <label for="tipo.descripcion">Descripción</label>
+                <input type="text" class="form-control" [(ngModel)]="tipo.descripcion" name="tipo.descripcion">
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

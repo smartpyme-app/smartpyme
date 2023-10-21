@@ -1,0 +1,72 @@
+import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
+import { AlertService } from '../../../../../services/alert.service';
+import { ApiService } from '../../../../../services/api.service';
+import * as moment from 'moment';
+
+declare var $:any;
+@Component({
+  selector: 'app-producto-promociones',
+  templateUrl: './producto-promociones.component.html'
+})
+export class ProductoPromocionesComponent implements OnInit {
+
+    @Input() producto: any = {};
+	public promocion: any = {};
+	public loading:boolean = false;
+
+	modalRef!: BsModalRef;
+
+    constructor(private apiService: ApiService, private alertService: AlertService,  
+    	private route: ActivatedRoute, private router: Router,
+    	private modalService: BsModalService
+    ){ }
+
+	ngOnInit() {
+        // this.loadAll();
+    }
+
+    // Promociones
+    openModal(template: TemplateRef<any>, promocion:any) {
+        this.promocion = promocion;
+        if (!this.promocion.id) {
+            this.promocion.inicio = moment(new Date()).format('YYYY-MM-DDTHH:mm');
+            this.promocion.fin = moment(new Date()).format('YYYY-MM-DDTHH:mm');
+        }else{
+            this.promocion.inicio = moment(this.promocion.inicio).format('YYYY-MM-DDTHH:mm');
+            this.promocion.fin = moment(this.promocion.fin).format('YYYY-MM-DDTHH:mm');
+        }
+        this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+    }
+
+    onSubmit(){
+        this.promocion.producto_id = this.producto.id;
+        console.log(this.promocion);
+        this.loading = true;
+        this.apiService.store('producto/promocion', this.promocion).subscribe(promocion => {
+            if(!this.promocion.id) {
+                this.promocion.id = promocion.id;
+                this.producto.promociones.unshift(this.promocion);
+            }
+            this.promocion = {};
+            this.loading = false;
+            this.modalRef.hide();
+        },error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    deletePromocion(promocion:any){
+        if (confirm('¿Desea eliminar el Registro?')) {        
+            this.apiService.delete('producto/promocion/', promocion.id).subscribe(promocion => {
+                for (var i = 0; i < this.producto.promociones.length; ++i) {
+                    if (this.producto.promociones[i].id === promocion.id ){
+                        this.producto.promociones.splice(i, 1);
+                    }
+                }
+            },error => {this.alertService.error(error); this.loading = false;});
+        }
+    }
+
+
+}

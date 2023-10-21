@@ -1,0 +1,127 @@
+<div class="card mb-3">
+    <div class="card-body">
+    <div class="row" *ngIf="direcciones">
+        <h5 class="col-12 pb-2 mb-2">Direcciones
+            <a class="btn btn-default float-right" (click)="openModal(mdireccion, {})" tooltip="Nueva">
+                <i class="fa fa-plus"></i>
+            </a>
+        </h5>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th class="d-none d-md-table-cell">Pais</th>
+                        <th class="d-none d-md-table-cell">Estado</th>
+                        <th class="d-none d-md-table-cell">Ciudad</th>
+                        <th>Teléfono</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="direcciones.length < 1 && !loading">
+                            <span class="label label-info">No tiene direcciones registrados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="label label-info">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let direccion of direcciones">
+                        <td>{{ direccion.nombre_recibe }}</td>
+                        <td class="d-none d-md-table-cell">{{ direccion.codigo_pais }}</td>
+                        <td class="d-none d-md-table-cell">{{ direccion.estado }}</td>
+                        <td class="d-none d-md-table-cell">{{ direccion.ciudad }}</td>
+                        <td>{{ direccion.telefono }}</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a class="btn btn-secondary" (click)="openModal(mdireccion, direccion)" tooltip="Editar">
+                                    <i class="fa fa-pen"></i>
+                                </a>
+                            </div>  
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    </div>
+</div>
+
+
+<ng-template #mdireccion>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Dirección</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">       
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="nombre_recibe"> * Nombre:</label>
+                    <input type="text" class="form-control" name="nombre_recibe" [(ngModel)]="direccion.nombre_recibe" placeholder="Nombre" required autofocus />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="telefono"> Teléfono:</label>
+                    <input type="tel" class="form-control" name="telefono" [(ngModel)]="direccion.telefono" placeholder="XXXX-XXXX" />
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label for="linia1"> Linea 1:</label>
+                    <input type="text" class="form-control" name="linia1" [(ngModel)]="direccion.linia1" placeholder="Lugar, Calle etc..." />
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label for="linia2"> Linea 2:</label>
+                    <input type="text" class="form-control" name="linia2" [(ngModel)]="direccion.linia2" placeholder="Lugar, Calle etc..." />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="control-label"> Zip Code:</label>
+                    <input type="text" class="form-control" name="codigo_postal" [(ngModel)]="direccion.codigo_postal" placeholder="Zip Code" />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="control-label"> País:</label>
+                    <select name="codigo_pais" class="form-control" [(ngModel)]="direccion.codigo_pais">
+                        <option *ngFor="let country of countries" [value]="country.code">{{ country.code }} - {{ country.name }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="control-label"> Estado:</label>
+                    <input type="text" class="form-control" name="estado" [(ngModel)]="direccion.estado" placeholder="Estado" />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="control-label"> Ciudad:</label>
+                    <input type="text" class="form-control" name="ciudad" [(ngModel)]="direccion.ciudad" placeholder="Ciudad" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="row text-center">
+            <div class="col-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

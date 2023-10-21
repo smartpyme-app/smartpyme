@@ -1,0 +1,136 @@
+<div class="row page-titles mx-0 px-0 pb-2">
+    <div class="col-sm-6 p-md-0">
+        <h2 class="page-heading">Ventas <small class="text-muted p-2"> Historial</small></h2>
+    </div>
+    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
+            <li class="breadcrumb-item"><a routerLink="/ventas">Ventas</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Historial</a></li>
+        </ol>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header text-center">
+        <form name="form" class="form-inline d-flex justify-content-center" (ngSubmit)="loadAll()" autocomplete="off">
+            <div class="form-group">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group" style="margin-left: 15px;">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-default" tooltip="Filtrar"><i class="fa fa-filter"></i></button>
+                <app-descargar-excel *ngIf="ventas?.length > 0" [nombre]="'Ventas Historial'"></app-descargar-excel>
+            </div>
+        </form>
+    </div>
+    <div class="card-body table-responsive no-padding">
+        <table class="table table-borderless table-hover" id="tablaReporte">
+            <thead>
+                <tr>
+                    <th class="text-center">Fecha</th>
+                    <th class="text-center">Numero de Ventas</th>
+                    <th class="text-center">Venta Neta</th>
+                    <th class="text-center">Costo de Venta</th>
+                    <th class="text-center">Utilidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="8" class="text-center" *ngIf="ventas?.length < 1 && !loading">
+                        <span class="badge badge-info">No tiene ventas registradas</span>
+                    </td>
+                    <td colspan="8" class="text-center" *ngIf="loading">
+                        <span class="badge badge-info">Cargando...</span>
+                    </td>
+                </tr>
+
+                <tr class="animated fadeIn" *ngFor=" let venta of ventas">
+                    
+                    <td class="text-center">{{venta.fecha | date:'dd-MM-yyyy'}}</td>
+                    <td class="text-center">{{venta.cantidad}}</td>
+                    <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{venta.costo | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{venta.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                </tr>
+
+                <tr *ngIf="ventas?.length > 0 && !loading">
+                    <td class="text-center"><b>Total</b></td>                                
+                    <td class="text-center"><b>{{ ventas | sum:'cantidad'}}</b></td>
+                    <td class="text-center"><b>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ ventas | sum:'costo' | currency:'USD':'symbol':'1.2' }}</b></td>
+                    <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row text-center">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type="date" class="form-control" [(ngModel)]="filtro.fecha_ini" name="fecha_ini">
+                <input type="time" class="form-control" [(ngModel)]="filtro.hora_ini" name="hora_ini">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type="date" class="form-control" [(ngModel)]="filtro.fecha_fin" name="fecha_fin">
+                <input type="time" class="form-control" [(ngModel)]="filtro.hora_fin" name="hora_fin">
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.usuario">Empleado:</label>
+                <select [(ngModel)]="filtro.usuario_id" class="form-control" name="filtro.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.estado">Estado:</label>
+                <select [(ngModel)]="filtro.estado" class="form-control" name="filtro.estado">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Cobrada">Cobrada</option>
+                    <option value="Anulada">Anulada</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-4">
+                <label for="filtro.forma_de_pago">Forma de Pago:</label>
+                <select [(ngModel)]="filtro.forma_de_pago" class="form-control" name="filtro.forma_de_pago">
+                    <option value="">Todos</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Consumo Interno">Consumo Interno</option>
+                    <option value="Credito Empleado">Crédito Empleado</option>
+                </select>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

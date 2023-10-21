@@ -1,0 +1,29 @@
+<button type="button" class="btn btn-default" (click)="openModal(mCategoria)" tooltip="Crear nueva">
+    <i class="fa fa-plus"></i>
+</button>
+
+<ng-template #mCategoria>
+    <div class="modal-header text-center">
+        <h3 class="modal-title">Categoria</h3>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <form name="form" (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="form-group col-md-12">
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" class="form-control" [(ngModel)]="subcategoria.nombre" name="nombre" placeholder="Nombre" required focus="true">
+                </div>
+
+                <div class="form-group col-md-12 mt-3">
+                    <button [disabled]="loading" class="btn btn-primary btn-block tcla-F4">
+                        <span *ngIf="!loading">Guardar <small>(F4)</small></span>
+                        <span *ngIf="loading">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</ng-template>

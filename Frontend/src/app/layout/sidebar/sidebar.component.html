@@ -1,0 +1,113 @@
+<div class="sidebar shadow-sm" [ngClass]="{'collapsed': isCollapsed}">
+    <div class="d-flex justify-content-between align-items-center px-0 pb-3 mb-3 border-bottom position-relative" style="height: 5vh;">
+        <a href="/" class="btn-home link-body-emphasis text-decoration-none">
+          <span class="fs-5 fw-semibold">
+            <a routerLink="/" >
+                <img src="assets/img/smartpyme.png" width="120px" alt="smartpyme logo">
+            </a>
+          </span>
+        </a>
+        <button class="btn btn-link text-decoration-none" type="button" (click)="toggleSidebar()">
+            <i class="fa fa-bars"></i>
+        </button>
+    </div>
+    <div class="mb-3">
+        <div class="form-group bg-white rounded px-2">
+            <div class="input-group align-items-center flex-nowrap">
+                <span> <i class="fa fa-search"></i> </span>
+                <input type="text" placeholder="Busca acá" class="form-control border-0">
+            </div>
+        </div>
+    </div>
+    <div style="height: 50vh; overflow-y: auto; overflow-x: hidden;">
+        <ul class="list-unstyled ps-0">
+            <li class="mb-1">
+                <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#producto" aria-expanded="false">
+                  <i class="fa fa-bag-shopping me-3"></i> Inventario
+                </button>
+                <div class="collapse" id="producto">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li><a routerLink="/productos" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Productos</a></li>
+                    <li><a routerLink="/categorias"class="link-body-emphasis d-inline-flex text-decoration-none rounded">Categorias</a></li>
+                    <li><a routerLink="/consignas" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Consignas</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Materia prima</a></li>
+                  </ul>
+                </div>
+            </li>
+            <li class="mb-1">
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded p-2">
+                    <i class="fa fa-cog me-3"></i>  Servicios
+                </a>
+            </li>
+          <li class="mb-1">
+            <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#ventas" aria-expanded="false">
+              <i class="fa fa-arrow-trend-up me-3"></i> Ventas
+            </button>
+            <div class="collapse" id="ventas">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Registros</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Cotizaciones</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Clientes</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Canales de venta</a></li>
+              </ul>
+            </div>
+          </li>
+          <li class="mb-1">
+            <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#compras" aria-expanded="false">
+              <i class="fa fa-right-from-bracket me-3"></i> Compras
+            </button>
+            <div class="collapse" id="compras">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Registros</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Proveedores</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Gastos</a></li>
+              </ul>
+            </div>
+          </li>
+          <li class="mb-1">
+            <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#finanzas" aria-expanded="false">
+              <i class="fa fa-circle-dollar-to-slot me-3"></i> Finanzas
+            </button>
+            <div class="collapse" id="finanzas">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Presupuestos</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Documentos</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Reportes</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Formas de pago</a></li>
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Cierre de caja</a></li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+    </div>
+    <div style="height: 35vh; overflow-y: auto; overflow-x: hidden;">
+        <ul class="list-unstyled ps-0">
+            <li class="border-top my-3"></li>
+            <li>
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2">
+                    <i class="fa fa-user-circle me-3"></i> Cuenta
+                </a>
+            </li>
+            <li>
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2">
+                    <i class="fa fa-sliders-h me-3"></i> Preferencias
+                </a>
+            </li>
+            <li>
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2">
+                    <i class="fa fa-bell me-3"></i> Notificaciones
+                </a>
+            </li>
+            <li>
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2">
+                    <i class="fa fa-life-ring me-3"></i> Ayuda
+                </a>
+            </li>
+            <li>
+                <a routerLink="/login" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2">
+                    <i class="fa fa-sign-out-alt me-3"></i> Cerrar Sesión
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>

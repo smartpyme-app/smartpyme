@@ -1,0 +1,85 @@
+<div class="card">
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-12">
+                <form name="form" (ngSubmit)="onFiltrar()" class="form-inline justify-content-center mb-3">
+                    <div class="form-group">
+                        <label>Del:</label>
+                        <input type='date' class="mx-2 form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Al:</label>
+                        <input type='date' class="mx-2 form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Usuario:</label>
+                        <select style="min-width: 200px;" [(ngModel)]="filtro.usuario_id" class="ml-2 form-control form-select" name="usuario_id">
+                            <option value="">Todos</option>
+                            <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                                {{ usuario.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" [disabled]="loading" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <!-- <th>ID</th> -->
+                    <th class="d-none d-md-table-cell">Fecha</th>
+                    <th>Usuario</th>
+                    <th class="d-none d-md-table-cell">Hora de apertura</th>
+                    <th class="d-none d-md-table-cell">Hora de cierre</th>
+                    <th class="d-none d-md-table-cell">Estado</th>
+                    <th class="text-center">Monto Inicial</th>
+                    <th class="text-center">Venta</th>
+                    <th class="text-center">Monto Final</th>
+                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="9" class="text-center" *ngIf="cortes?.total < 1 && !loading">
+                        <span class="badge badge-info">No tiene cortes registrados</span>
+                    </td>
+                    <td colspan="9" class="text-center" *ngIf="loading">
+                        <span class="badge badge-info">Cargando...</span>
+                    </td>
+                </tr>
+
+                <tr class="animated fadeIn" *ngFor=" let corte of cortes?.data">
+                    
+                    <!-- <td>{{corte.id}}</td> -->
+                    <td class="d-none d-md-table-cell">{{corte.fecha | date:'dd/MM/yyyy'}}</td>
+                    <td>{{corte.usuario}}</td>
+                    <td class="d-none d-md-table-cell">{{corte.apertura | date:'h:mm a'}}</td>
+                    <td class="d-none d-md-table-cell">{{corte.cierre ? (corte.cierre | date:'h:mm a') : 'Actual'}}</td>
+                    <td class="d-none d-md-table-cell"><span class="badge"  [ngClass]="{'badge-danger' : corte.estado == 'Cerrada','badge-success' : corte.estado == 'Abierta' }" >{{ corte.estado }}</span></td>
+                    <td class="text-center">{{corte.saldo_inicial | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{corte.total_ventas | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">{{(corte.saldo_inicial * 1) + (corte.total_ventas * 1) | currency:'USD':'symbol':'1.2'}}</td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <a (click)="print(corte)" class="btn btn-default" tooltip="Generar reporte">
+                                <i class="fa fa-print"></i>
+                            </a>
+                        </div>  
+                    </td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer" *ngIf="cortes?.last_page > 1">
+        <div class="d-flex justify-content-center">
+            <app-pagination [items]="cortes" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</div>
+</div>

@@ -1,0 +1,49 @@
+<form name="form" (ngSubmit)="onSubmit()">
+<section class="card">
+    <div class="card-body">
+        <div class="row">
+            <h5 class="my-3">Cuenta</h5>   
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="username">Usuario:</label>
+                <input type="text" class="form-control" [(ngModel)]="empleado?.cuenta.username" name="username" placeholder="Usuario" required>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+              <label for="password">* Contraseña:</label>
+              <input type="password" class="form-control" [(ngModel)]="empleado?.cuenta.password" name="password" placeholder="Ingrese una contraseña para reemplazar la actual">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+              <label for="password_confirmation">* Confirmar contraseña:</label>
+              <input type="password" class="form-control" [(ngModel)]="empleado?.cuenta.password_confirmation" name="password_confirmation" placeholder="Confirme la contraseña">
+            </div>
+            <div class="form-group col-md-6 col-lg-3" *ngIf="apiService.auth_user().tipo == 'Administrador' && empleado?.cuenta.id != 1">
+                <label for="tipo">Tipo:</label>
+                <select name="tipo" [(ngModel)]="empleado?.cuenta.tipo" class="form-control form-select">
+                    <option value="Administrador">Administrador</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Vendedor">Vendedor</option>
+                    <option value="Cajero">Cajero</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6" *ngIf="empleado?.cuenta.tipo == 'Supervisor'">
+                <label for="codigo">Codigo para autorizaciones:</label>
+                <input type="password" class="form-control" [(ngModel)]="empleado?.cuenta.codigo" name="codigo" placeholder="Código para autorizaciones">
+            </div>
+            <div class="form-group col-md-6 col-lg-3" *ngIf="apiService.auth_user().tipo == 'Administrador' && empleado?.cuenta.tipo == 'Cajero'">
+                <label for="caja_id">* Caja:</label>
+                <select [(ngModel)]="empleado?.cuenta.caja_id" class="form-control form-select" name="caja_id">
+                    <option *ngFor="let caja of cajas" [value]="caja.id">
+                        {{ caja.nombre }}
+                    </option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <button [disabled]="loading" class="btn btn-primary float-end tcla-F4">
+            <span *ngIf="!loading">Guardar</span>
+            <span *ngIf="loading">Guardando...</span>
+        </button>
+    </div>
+</section>
+
+</form>

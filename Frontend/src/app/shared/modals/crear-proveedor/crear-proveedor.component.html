@@ -1,0 +1,71 @@
+<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mCategoria)" tooltip="Crear nuevo proveedor (F1)">
+    <i class="fa fa-plus"></i>
+</button>
+
+
+<ng-template #mCategoria>
+    <div class="modal-header text-center">
+        <h3 class="modal-title">Proveedor</h3>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <form name="form" (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="cantidad">* Nombre:</label>
+                    <input id="proveedor" type="text" name="proveedor.nombre" class="form-control" placeholder="Nombre" [(ngModel)]="proveedor.nombre" focus="true">
+                </div>
+
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="registro">NRC:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.registro" name="registro" placeholder="xxxx-x"> 
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="nit">NIT:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.nit" name="nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0' placeholder="xxxx-xxxxxx-xxx-x">
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="nit">DUI:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.dui" name="dui" [dropSpecialCharacters]="false" mask='00000000-0' placeholder="xxxxxxx-x">
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="giro">Giro:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.giro" name="giro" placeholder="Giro">
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="tipo_contribuyente">Tipo de contribuyente:</label>
+                    <select class="form-select" [(ngModel)]="proveedor.tipo_contribuyente" name="tipo_contribuyente">
+                        <option value="Pequeño">Pequeño</option>
+                        <option value="Mediano">Mediano</option>
+                        <option value="Grande">Grande</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="telefono">Teléfono:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.telefono" name="telefono" [dropSpecialCharacters]="false" mask='0000-0000' placeholder="0000-0000">
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="municipio">Municipio:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.municipio" name="municipio" placeholder="Municipio">
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="departamento">Departamento:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.departamento" name="departamento" placeholder="Departamento">
+                </div>
+                <div class="form-group col-lg-8">
+                    <label for="direccion">Dirección:</label>
+                    <input type="text" class="form-control" [(ngModel)]="proveedor.direccion" name="direccion" placeholder="Dirección">
+                </div>
+
+                <div class="form-group col-md-12 mt-3">
+                    <button [disabled]="loading" class="btn btn-primary btn-block">
+                        <span *ngIf="!loading">Guardar</span>
+                        <span *ngIf="loading">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</ng-template>

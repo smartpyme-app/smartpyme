@@ -1,0 +1,13 @@
+<div class="row page-titles mx-0 px-0 pb-3">
+    <div class="col-lg-12 p-md-0 text-center">
+        <h3 class="my-3" (click)="loadAll()">
+            Hola <span class="text-info"> {{ apiService.auth_user().name }}</span>
+            <br>
+            <span class="text-muted"> {{ apiService.date() | date:'dd/MM/YYYY' }}</span>
+        </h3>
+        <h4 class="my-3 text-center text-dark">Datos del mes</h4>
+    </div>
+</div>
+
+<button class="tcla-F5 d-none" (click)="loadAll()"></button>
+<app-vendedor-datos [dash]="dash" [loading]="loading" (loadAll)="loadAll()"></app-vendedor-datos>
