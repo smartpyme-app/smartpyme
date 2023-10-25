@@ -6,8 +6,10 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
 use Carbon\Carbon;
+use JWTAuth;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -32,6 +34,18 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at' => 'datetime',
         'enable' => 'boolean'
     ];
+
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+        
+    }
 
     public function empresa(){
         return $this->belongsTo('App\Models\Empresa', 'id_empresa');

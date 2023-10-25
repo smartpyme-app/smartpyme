@@ -12,6 +12,16 @@ class Usuario extends Model
         'id_usuario',
     ];
 
+    protected $appends = ['nombre', 'avatar'];
+
+    public function getNombreAttribute(){
+        return $this->usuario()->pluck('name')->first();
+    }
+
+    public function getAvatarAttribute(){
+        return $this->usuario()->pluck('avatar')->first();
+    }
+
     public function producto(){
         return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }

@@ -31,7 +31,7 @@ class VentasController extends Controller
        
         $ventas = Venta::orderBy('id','desc')
                             // ->where('estado', '!=', 'Pendiente')
-                            ->with('credito')->paginate(10);
+                            ->paginate(10);
        
         return Response()->json($ventas, 200);
 
@@ -41,7 +41,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'credito')->first();
+        $venta = Venta::where('id', $id)->with('detalles', 'cliente')->first();
 
         return Response()->json($venta, 200);
 

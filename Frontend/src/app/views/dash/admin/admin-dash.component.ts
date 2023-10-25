@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 
-declare var $: any;
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-admin-dash',
@@ -31,7 +31,8 @@ export class AdminDashComponent implements OnInit {
         this.filtro.fin     = this.apiService.date();
         this.filtro.sucursal_id = '';
         
-        this.loadAll();
+        this.filtro.time = 'day';
+        this.onFiltrar();
 
         this.apiService.getAll('sucursales').subscribe(sucursales => { 
             this.sucursales = sucursales;
@@ -39,13 +40,21 @@ export class AdminDashComponent implements OnInit {
 
 
     }
-    
-    public loadAll(){
+
+    public setTime($time:any){
+        this.filtro.time = $time;
+        this.onFiltrar();
+    }     
+    public onFiltrar(){     
+        this.filtro.inicio = moment().startOf(this.filtro.time).format('YYYY-MM-DD');
+        this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
+
         this.loading = true;
-        this.apiService.store('dash', this.filtro).subscribe(dash => {
+        this.apiService.store('dash', this.filtro).subscribe(dash => { 
             this.dash = dash;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
     }
 
 

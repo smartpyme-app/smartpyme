@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Abono extends Model {
 
-    protected $table = 'venta_abonos';
+    protected $table = 'recibos';
     protected $fillable = array(
         'fecha',
         'concepto',
@@ -17,28 +17,28 @@ class Abono extends Model {
         'comision',
         'total',
         'nota',
-        'caja_id',
-        'corte_id',
-        'venta_id',
-        'cliente_id',
-        'usuario_id',
-        'sucursal_id',
+        'id_caja',
+        'id_corte',
+        'id_venta',
+        'id_cliente',
+        'id_usuario',
+        'id_sucursal',
     );
 
     public function venta(){
-        return $this->belongsTo('App\Models\Ventas\Venta','venta_id');
+        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
     }
 
     public function cliente(){
-        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','cliente_id');
+        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','id_cliente');
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
     public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','sucursal_id');
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
 

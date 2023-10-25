@@ -36,12 +36,9 @@ export class ProductoInformacionComponent implements OnInit {
 
     public setCategoria(categoria:any){
         this.categorias.push(categoria);
-        this.producto.categoria_id = categoria.id;
+        this.producto.id_categoria = categoria.id;
     }
 
-    public setSubCategoria(subcategoria:any){
-        this.producto.subcategoria_id = subcategoria.id;
-    }
 
     public onSubmit() {
         this.guardar = true;

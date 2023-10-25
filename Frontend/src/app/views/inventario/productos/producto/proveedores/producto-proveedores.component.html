@@ -1,0 +1,64 @@
+<div class="row">
+    <h6 class="my-3 font-weight-bold" (click)="loadAll()">
+        Proveedores
+
+        <a class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar proveedor">
+            <i class="fa fa-plus"></i> Agregar proveedor
+        </a>
+    </h6>
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <th>Proveedor</th>
+                    <th class="text-center"><i class="fa fa-cog"></i> </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="8" class="text-center" *ngIf="loading">
+                        <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-center" *ngIf="!loading && producto?.proveedores.length == 0">
+                        <span class="text-muted">No tiene proveedores agregados</span>
+                    </td>
+                </tr>        
+                <tr *ngFor=" let proveedor of producto.proveedores">
+                    <td>{{ proveedor.nombre_proveedor }}</td>
+                    <td class="text-center">
+                        <a (click)="delete(proveedor)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<ng-template #mbodega>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">{{ producto.nombre }}</h3>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="id_proveedor">Proveedor:</label>
+                <select [(ngModel)]="proveedor.id_proveedor" class="form-select" name="id_proveedor">
+                    <option [value]="proveedor.id" *ngFor="let proveedor of proveedores">{{ proveedor.nombre }}</option>
+                </select>
+            </div>
+        </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-block">
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+

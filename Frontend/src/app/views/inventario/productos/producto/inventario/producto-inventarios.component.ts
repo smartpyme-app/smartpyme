@@ -32,14 +32,15 @@ export class ProductoInventariosComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('bodegas').subscribe(bodegas => {
+        this.apiService.getAll('sucursales').subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setAjuste(event:any){
-        this.inventario.stock = event.stock_final;
+        console.log(event);
+        this.inventario.stock = event.stock_real;
     }
 
 
@@ -48,7 +49,7 @@ export class ProductoInventariosComponent implements OnInit {
         if (!this.inventario.id){
             this.inventario.stock = 0;
             // this.inventario.bodega_id = 1;
-            this.inventario.producto_id = this.producto.id;
+            this.inventario.id_producto = this.producto.id;
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }

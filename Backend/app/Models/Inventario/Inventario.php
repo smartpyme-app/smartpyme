@@ -105,8 +105,8 @@ class Inventario extends Model {
 
         Kardex::create([
             'fecha'             => date('Y-m-d'),
-            'producto_id'       => $this->producto_id,
-            'bodega_id'         => $this->bodega_id,
+            'id_producto'       => $this->id_producto,
+            'id_inventario'     => $this->id_sucursal,
             'detalle'           => $clase,
             'referencia'        => $modelo->id,
             'precio_unitario'   => $salidaCantidad ? $precio : null,
@@ -115,8 +115,9 @@ class Inventario extends Model {
             'entrada_valor'     => $entradaCantidad ? $entradaCantidad * $costo : null,
             'salida_cantidad'   => $salidaCantidad,
             'salida_valor'      => $salidaCantidad ? $salidaCantidad * $precio : null,
-            'total'             => $this->stock,
-            'usuario_id'        => $modelo->usuario_id,
+            'total_cantidad'    => $this->stock,
+            'total_valor'       => $this->stock * ($salidaCantidad ? $precio : $costo),
+            'id_usuario'        => $modelo->id_usuario,
         ]);
     }
 

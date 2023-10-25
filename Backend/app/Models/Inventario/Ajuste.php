@@ -6,17 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Ajuste extends Model {
 
-    protected $table = 'producto_ajustes';
+    protected $table = 'ajustes';
     protected $fillable = array(
-        'nota',
-        'producto_id',
-        'bodega_id',
-        'stock_inicial',
-        'stock_final',
-        'usuario_id'
+        'concepto',
+        'id_producto',
+        'id_sucursal',
+        'stock_actual',
+        'stock_real',
+        'ajuste',
+        'estado',
+        'id_empresa',
+        'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega', 'ajuste'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_sucursal'];
 
     public function getNombreUsuarioAttribute()
     {
@@ -28,26 +31,21 @@ class Ajuste extends Model {
         return  $this->producto()->first() ? $this->producto()->pluck('nombre')->first() : '';
     }
 
-    public function getNombreBodegaAttribute()
+    public function getNombreSucursalAttribute()
     {
-        return  $this->bodega()->first() ? $this->bodega()->pluck('nombre')->first() : '';
+        return  $this->sucursal()->first() ? $this->sucursal()->pluck('nombre')->first() : '';
     }
 
-    public function getAjusteAttribute()
-    {
-        return $this->stock_final - $this->stock_inicial;
-    }
-
-    public function bodega(){
-        return $this->belongsTo('App\Models\Inventario\Bodega','bodega_id');
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
 }

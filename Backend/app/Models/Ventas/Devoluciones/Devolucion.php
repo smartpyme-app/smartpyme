@@ -8,7 +8,7 @@ use JWTAuth;
 
 class Devolucion extends Model {
 
-    protected $table = 'ventas_devoluciones';
+    protected $table = 'devoluciones_venta';
     protected $fillable = array(
         'fecha',
         'estado',
@@ -26,12 +26,12 @@ class Devolucion extends Model {
         'iva',
         'total',
         'nota',
-        'venta_id',
-        'caja_id',
-        'corte_id',
-        'cliente_id',
-        'usuario_id',
-        'sucursal_id'
+        'id_venta',
+        'id_caja',
+        'id_corte',
+        'id_cliente',
+        'id_usuario',
+        'id_sucursal'
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'exenta', 'gravada', 'no_sujeta'];
@@ -42,7 +42,7 @@ class Devolucion extends Model {
 
         if ($usuario->tipo != 'Administrador') {
             static::addGlobalScope('sucursal', function (Builder $builder) use ($usuario) {
-                $builder->where('sucursal_id', $usuario->sucursal_id);
+                $builder->where('id_sucursal', $usuario->id_sucursal);
             });
         }
     }
@@ -79,23 +79,23 @@ class Devolucion extends Model {
     // Relaciones
 
     public function cliente(){
-        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','cliente_id');
+        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','id_cliente');
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
     public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','sucursal_id');
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
     public function venta(){
-        return $this->belongsTo('App\Models\Ventas\Venta','venta_id');
+        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
     }
 
     public function detalles(){
-        return $this->hasMany('App\Models\Ventas\Devoluciones\Detalle','devolucion_id');
+        return $this->hasMany('App\Models\Ventas\Devoluciones\Detalle','id_devolucion');
     }
 
 

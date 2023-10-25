@@ -24,7 +24,7 @@ export class ProductoImagenesComponent implements OnInit {
 
     setFile(event:any) {
         this.imagen.file = event.target.files[0];
-        this.imagen.producto_id = this.producto.id;
+        this.imagen.id_producto = this.producto.id;
         // this.imagen.orden = this.imagenes.length + 1;
         
         let formData:FormData = new FormData();

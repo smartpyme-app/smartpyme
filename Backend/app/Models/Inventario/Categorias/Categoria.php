@@ -13,8 +13,11 @@ class Categoria extends Model
         'nombre',
         'img',
         'descripcion',
+        'enable',
         'id_empresa'
     );
+
+    protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
     {

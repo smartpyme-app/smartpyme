@@ -1,30 +1,37 @@
-<button type="button" class="btn btn-default" (click)="openModal(mCategoria)" tooltip="Crear nueva">
+<button type="button" class="btn btn-default" (click)="openModal(mcategoria)" tooltip="Crear nueva categoria">
     <i class="fa fa-plus"></i>
 </button>
 
 
-<ng-template #mCategoria>
-    <div class="modal-header text-center">
-        <h3 class="modal-title">Categoria</h3>
-        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<ng-template #mcategoria>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Categoria</h2>
     </div>
-    <div class="modal-body">
-        <form name="form" (ngSubmit)="onSubmit()">
-            <div class="row">
-                <div class="form-group col-md-12">
-                    <label for="nombre">Nombre:</label>
-                    <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="nombre" placeholder="Nombre" required focus="true">
-                </div>
-
-                <div class="form-group col-md-12 mt-3">
-                    <button [disabled]="loading" class="btn btn-primary btn-block tcla-F4">
-                        <span *ngIf="!loading">Guardar <small>(F4)</small></span>
-                        <span *ngIf="loading">Guardando...</span>
-                    </button>
-                </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-12">
+                <label for="categoria.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="categoria.nombre" focus="true">
             </div>
-        </form>
-    </div>
+            <div class="form-group col-12">
+                <label for="categoria.enable">Activo</label>
+                <input type="checkbox" class="form-check" [(ngModel)]="categoria.enable" name="categoria.enable">
+            </div>
+            <div class="form-group col-12">
+                <label for="categoria.descripcion">Descripción</label>
+                <textarea name="categoria.descripcion" class="form-control" cols="30" rows="3" [(ngModel)]="categoria.descripcion"></textarea>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                <span *ngIf="!loading">Añadir</span>
+                <span *ngIf="loading">Añadiendo...</span>
+            </button>
+        </div>
+    </form>
+  </div>
 </ng-template>

@@ -6,15 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Imagen extends Model {
 
-    protected $table = 'producto_imagenes';
+    protected $table = 'productos_imagenes';
     protected $fillable = array(
         'img',
-        'producto_id'
+        'id_producto'
     );
 
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto', 'producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
 

@@ -14,7 +14,10 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
+
 use App\Imports\Productos;
+use App\Exports\ProductosExport;
+
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 
@@ -63,7 +66,7 @@ class ProductosController extends Controller
     public function read($id) {
 
         $producto = Producto::where('id', $id)
-                                ->with('inventarios')
+                                ->with('inventarios', 'precios.usuarios', 'imagenes', 'proveedores')
                                 ->first();
         return Response()->json($producto, 200);
 
@@ -74,10 +77,6 @@ class ProductosController extends Controller
         $productos = Producto:://whereIn('tipo', ['Producto', 'Servicio'])->
                                 with('inventarios', 'precios')
                                 ->where('nombre', 'like' ,'%' . $txt . '%')
-                                ->wherehas('sucursales', function($q){
-                                    $q->where('sucursal_id', \JWTAuth::parseToken()->authenticate()->sucursal_id)
-                                        ->where('activo', true);
-                                })
                                 ->orwhere('codigo', 'like' ,"%" . $txt . "%")
                                 ->paginate(10);
         return Response()->json($productos, 200);
@@ -96,31 +95,9 @@ class ProductosController extends Controller
 
     public function filter(Request $request) {
 
-            $productos = Producto::where('tipo', 'Producto')->with('inventarios', 'sucursales')
-                                ->when($request->categoria_id, function($query) use ($request){
-                                    return $query->where('categoria_id', $request->categoria_id);
-                                })
-                                ->when($request->subcategoria_id, function($query) use ($request){
-                                    return $query->where('subcategoria_id', $request->subcategoria_id);
-                                })
-                                ->when($request->stock_bodega, function($query) use ($request){
-                                    return $query->where('inventario', true)->whereHas('inventarios', function($query){
-                                        return $query->where('bodega_id', 1)->whereRaw('stock <= stock_min');
-                                    });
-                                })
-                                ->when($request->stock_venta, function($query) use ($request){
-                                    return $query->where('inventario', true)->whereHas('inventarios', function($query){
-                                        return $query->where('bodega_id', 2)->whereRaw('stock <= stock_min');
-                                    });
-                                })
-                                ->when($request->sin_control_inventario, function($query) use ($request){
-                                    return $query->where('inventario', false);
-                                })
-                                ->when($request->sin_subcategoria, function($query) use ($request){
-                                    return $query->whereNull('subcategoria_id');
-                                })
-                                ->when($request->sin_condigo, function($query) use ($request){
-                                    return $query->whereNull('codigo');
+            $productos = Producto::where('tipo', 'Producto')->with('inventarios')
+                                ->when($request->id_categoria, function($query) use ($request){
+                                    return $query->where('id_categoria', $request->id_categoria);
                                 })
                                 ->orderBy('id','desc')->paginate(100000);
 

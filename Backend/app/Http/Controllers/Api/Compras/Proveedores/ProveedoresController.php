@@ -17,14 +17,14 @@ class ProveedoresController extends Controller
     public function index() {
        
         $proveedores = Proveedor::orderBy('id','desc')->paginate(10);
+        return Response()->json($proveedores, 200);
 
-        foreach ($proveedores as $proveedor) {
-            $compras = $proveedor->compras();
-            $proveedor->num_compras = $compras->count();
-            $proveedor->num_compras_pendientes = $compras->where('estado', 'Pendiente')->count();
-            $proveedor->pago_pendiente = $compras->where('estado', 'Pendiente')->get()->sum('total');
-        }
+    }
 
+    public function list() {
+
+        $proveedores = Proveedor::orderBy('nombre','asc')->get();
+        
         return Response()->json($proveedores, 200);
 
     }
@@ -126,13 +126,6 @@ class ProveedoresController extends Controller
 
     }
 
-    public function list() {
-       
-        $proveedores = Proveedor::orderBy('nombre','asc')->get();
-
-        return Response()->json($proveedores, 200);
-
-    }
 
     public function cxp() {
        

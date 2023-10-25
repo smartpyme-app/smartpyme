@@ -1,44 +1,39 @@
-<a class="btn btn-default" (click)="openModalAjuste(majuste)" tooltip="Ajustar stock en inventario">
+<a class="btn btn-light" (click)="openModalAjuste(majuste)" tooltip="Ajustar stock en inventario">
     <i class="fa fa-sliders-h"></i>
 </a>
 
 <ng-template #majuste>
   <div class="modal-header d-block text-center">
-    <h4 class="modal-title mb-0"> {{ inventario.nombre_bodega }} </h4>
-    <button type="button" class="close" style="position: absolute; top: 15px; right:15px;" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <h5 class="modal-title mb-0"> {{ inventario.nombre_sucursal }} </h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <form (ngSubmit)="onSubmitAjuste()" autocomplete="off">
+    <form (ngSubmit)="onSubmit()" autocomplete="off">
         <div class="row text-center">
             <p>{{ producto.nombre }}</p>
-            <p><span class="badge badge-info">{{ ajuste.stock_inicial | number:'1.0' }} unidades</span></p>
+            <p><span class="badge bg-info">{{ ajuste.stock_actual | number:'1.0' }} unidades</span></p>
             <div class="form-group col-md-12">
-                <label for="stock_final">Ingrese la cantidad que debe haber en existencias:</label>
-                <input type="text" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_final" name="stock_final" focus="true">
+                <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
+                <input type="text" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real" focus="true">
             </div>
             
-            <div class="form-groumdcol-xs-12" *ngIf="ajuste.stock_final">
+            <div class="form-groumdcol-xs-12" *ngIf="ajuste.stock_real">
                 <label for="ajuste">Se realizá un ajuste de:</label>
-                <p *ngIf="ajuste.stock_final"> {{ ajuste.stock_final - ajuste.stock_inicial }}</p>
-                <p *ngIf="!ajuste.stock_final"> 0</p>
+                <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>
+                <p *ngIf="!ajuste.stock_real"> 0</p>
             </div>
 
             <div class="form-group col-md-12">
-                <label for="nota">Nota:</label>
-                <input type="text" class="form-control" [(ngModel)]="ajuste.nota" name="nota">
+                <label for="concepto">Concepto:</label>
+                <input type="text" class="form-control" [(ngModel)]="ajuste.concepto" name="concepto">
             </div>
 
         </div>
-        <br><br>
-        <div class="row text-center">
-            <div class="col-md-12">
-                <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !ajuste.stock_final">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
-                </button>
-            </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !ajuste.stock_real">
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
         </div>
 
     </form>

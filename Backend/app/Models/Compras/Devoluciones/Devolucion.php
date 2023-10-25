@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Devolucion extends Model {
 
-    protected $table = 'compras_devoluciones';
+    protected $table = 'devoluciones_compra';
     protected $fillable = array(
         'fecha',
         'estado',
         'referencia',
-        'proveedor_id',
+        'id_proveedor',
         'descuento',
         'subtotal',
         'no_sujeta',
@@ -22,9 +22,9 @@ class Devolucion extends Model {
         'iva',
         'total',
         'nota',
-        'compra_id',
-        'usuario_id',
-        'empresa_id',
+        'id_compra',
+        'id_usuario',
+        'id_empresa',
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario'];
@@ -41,19 +41,19 @@ class Devolucion extends Model {
     }
 
     public function proveedor(){
-        return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor','proveedor_id');
+        return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor','id_proveedor');
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
     public function compra(){
-        return $this->belongsTo('App\Models\Compras\Compra','compra_id');
+        return $this->belongsTo('App\Models\Compras\Compra','id_compra');
     }
 
     public function detalles(){
-        return $this->hasMany('App\Models\Compras\Devoluciones\Detalle','devolucion_id');
+        return $this->hasMany('App\Models\Compras\Devoluciones\Detalle','id_devolucion');
     }
 
 

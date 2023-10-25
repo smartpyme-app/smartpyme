@@ -20,6 +20,7 @@ import { ProductoComponent } from './productos/producto/producto.component';
 import { ProductoInformacionComponent } from './productos/producto/informacion/producto-informacion.component';
 import { ProductoInventariosComponent } from './productos/producto/inventario/producto-inventarios.component';
 import { ProductoSucursalesComponent } from './productos/producto/sucursales/producto-sucursales.component';
+import { ProductoProveedoresComponent } from './productos/producto/proveedores/producto-proveedores.component';
 import { ProductoComposicionComponent } from './productos/producto/composicion/producto-composicion.component';
 import { ProductoPromocionesComponent } from './productos/producto/promociones/producto-promociones.component';
 import { ProductoImagenesComponent } from './productos/producto/imagenes/producto-imagenes.component';
@@ -74,6 +75,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     ProductoInformacionComponent,
     ProductoInventariosComponent,
     ProductoSucursalesComponent,
+    ProductoProveedoresComponent,
     ProductoComposicionComponent,
     ProductoImagenesComponent,
     ProductoPromocionesComponent,
@@ -103,6 +105,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     ProductoInformacionComponent,
     ProductoInventariosComponent,
     ProductoSucursalesComponent,
+    ProductoProveedoresComponent,
     ProductoComposicionComponent,
     ProductoImagenesComponent,
     ProductoPromocionesComponent,

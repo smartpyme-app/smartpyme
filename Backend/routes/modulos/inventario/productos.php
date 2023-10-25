@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Inventario\ComposicionesController;
 use App\Http\Controllers\Api\Inventario\PreciosController;
 use App\Http\Controllers\Api\Inventario\PromocionesController;
 use App\Http\Controllers\Api\Inventario\ImagenesController;
+use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 
@@ -34,6 +35,10 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::post('/producto/precio',        [PreciosController::class, 'store']);
     Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
 
+// Proveedor
+    Route::post('/producto/proveedor',        [ProveedorController::class, 'store']);
+    Route::delete('/producto/proveedor/{id}', [ProveedorController::class, 'delete']);
+
 
 // Sucursales
     Route::get('/producto/sucursales/{id}',    [SucursalesController::class, 'index']);
@@ -55,5 +60,6 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::get('/producto/ventas/{id}',          [ProductosController::class, 'ventas']);
 
     Route::post('/productos/import',          [ProductosController::class, 'import']);
+    Route::get('/productos/export',          [ProductosController::class, 'export']);
 
 ?>

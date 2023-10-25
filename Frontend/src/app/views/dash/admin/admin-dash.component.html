@@ -2,11 +2,11 @@
     <div class="card-body">
         <div class="row align-items-center">
             <div class="col-lg-9">
-                <h3 class="mb-1" (click)="loadAll()">{{ saludo }} {{ usuario.name }} </h3>
+                <h3 class="mb-1" (click)="onFiltrar()">{{ saludo }} {{ usuario.name }} </h3>
                 <p class="text-muted">¡Aquí podrás gestionar tu empresa de mejor manera!</p>
             </div>
             <div class="col-lg-3">
-                <select [(ngModel)]="filtro.sucursal_id" (change)="loadAll()"  class="form-select bg-default" name="filtro.sucursal_id">
+                <select [(ngModel)]="filtro.sucursal_id" (change)="onFiltrar()"  class="form-select bg-default" name="filtro.sucursal_id">
                     <option value="">Todas las sucursales</option>
                     <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
                         {{ sucursal.nombre }}
@@ -19,10 +19,10 @@
 
 <div class="my-3 d-flex justify-content-around">
     <div class="col">
-        <button class="btn btn-primary">Hoy</button>
-        <button class="btn btn-default mx-2">Semana</button>
-        <button class="btn btn-default">Mes</button>
-        <button class="btn btn-default ms-2">Año</button>
+        <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'day', 'btn-default': filtro.time != 'day' }" (click)="setTime('day')">Hoy</a>
+        <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="setTime('week')">Semana</a>
+        <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'month', 'btn-default': filtro.time != 'month' }" (click)="setTime('month')">Mes</a>
+        <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a>
     </div>
     <div class="col d-none d-md-flex justify-content-end">
         <button class="btn btn-default"><i class="fa fa-filter"></i></button>

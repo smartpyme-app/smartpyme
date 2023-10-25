@@ -13,6 +13,7 @@ export class ProductoPreciosComponent implements OnInit {
 
     @Input() producto: any = {};
     public precio: any = {};
+    public usuarios: any = [];
     public loading:boolean = false;
     public buscador:string = '';
 
@@ -27,18 +28,33 @@ export class ProductoPreciosComponent implements OnInit {
 
     openModal(template: TemplateRef<any>, precio:any) {
         this.precio = precio;
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+
+        this.apiService.store('usuarios/filtrar', { tipo : 'Ventas'}).subscribe(usuarios => { 
+            this.usuarios = usuarios.data;
+            // this.marcarTodos();
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
+
+        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+    }
+
+    public marcarTodos(){
+        this.usuarios.forEach((item:any) =>{
+            item.autorizado = !item.autorizado;
+        });
     }
 
     onSubmit(){
        
         this.loading = true;
-        this.precio.producto_id = this.producto.id;
+        this.precio.id_producto = this.producto.id;
+        this.precio.usuarios = this.usuarios;
         this.apiService.store('producto/precio', this.precio).subscribe(precio => {
             if(!this.precio.id) {
                 this.precio.id = precio.id;
-                this.producto.precios.unshift(this.precio);
+                this.producto.precios.unshift(precio);
             }
+            this.alertService.success("Precio agregado");
             this.precio = {};
             this.loading = false;
             this.modalRef.hide();

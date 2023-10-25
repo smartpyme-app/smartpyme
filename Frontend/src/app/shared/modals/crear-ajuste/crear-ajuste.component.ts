@@ -30,26 +30,29 @@ export class CrearAjusteComponent implements OnInit {
 	ngOnInit() {
 	}
 
-    calAjuste(){
-        this.ajuste.ajuste = this.ajuste.stock_final - this.ajuste.stock_inicial;
-    }
 	
 
 	openModalAjuste(template: TemplateRef<any>) {
 	   this.ajuste = {};
-	   this.ajuste.stock_inicial = this.inventario.stock;
+	   this.ajuste.stock_actual = this.inventario.stock;
 	   this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
 	}
+
+    public calAjuste(){
+        this.ajuste.ajuste = parseFloat(this.ajuste.stock_real) - parseFloat(this.ajuste.stock_actual);
+    }
 	
-	public onSubmitAjuste() {
+	public onSubmit() {
         this.loading = true;
-        this.ajuste.producto_id = this.producto.id;
-        this.ajuste.bodega_id = this.inventario.bodega_id;
-        this.ajuste.usuario_id = this.apiService.auth_user().id;
+        this.ajuste.id_producto = this.producto.id;
+        this.ajuste.id_sucursal = this.apiService.auth_user().id_sucursal;
+        this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
+        this.ajuste.id_usuario = this.apiService.auth_user().id;
+
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
-            this.inventario.stock = ajuste.stock_final;
+            this.inventario.stock = ajuste.stock_real;
             this.modalRef.hide();
-            this.setAjuste.emit({ajuste});
+            this.setAjuste.emit(ajuste);
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
 

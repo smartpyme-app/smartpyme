@@ -3,7 +3,9 @@
 namespace App\Models\Compras\Proveedores;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 // use Illuminate\Database\Eloquent\SoftDeletes;
+use JWTAuth;
 
 class Proveedor extends Model {
     
@@ -24,9 +26,20 @@ class Proveedor extends Model {
         'correo',
         'etiquetas',
         'nota',
-        'usuario_id',
-        'empresa_id'
+        'id_usuario',
+        'id_empresa'
     );
+
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+    }
 
 
     public function getEtiquetasAttribute($value) 
@@ -35,15 +48,15 @@ class Proveedor extends Model {
     }
 
     public function categoria(){
-        return $this->belongsTo('App\Models\Admin\Categoria', 'categoria_id');
+        return $this->belongsTo('App\Models\Admin\Categoria', 'id_categoria');
     }
 
     public function comprasPendientes(){
-        return $this->hasMany('App\Models\Compras\Compra', 'proveedor_id')->where('estado', 'Pendiente');
+        return $this->hasMany('App\Models\Compras\Compra', 'id_proveedor')->where('estado', 'Pendiente');
     }
 
     public function compras(){
-        return $this->hasMany('App\Models\Compras\Compra', 'proveedor_id');
+        return $this->hasMany('App\Models\Compras\Compra', 'id_proveedor');
     }
 
 }

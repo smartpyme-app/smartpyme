@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Gasto extends Model {
 
-    protected $table = 'gastos';
+    protected $table = 'egresos';
     protected $fillable = array(
         'fecha',
         'referencia',

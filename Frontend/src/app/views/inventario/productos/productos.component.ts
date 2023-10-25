@@ -17,6 +17,7 @@ export class ProductosComponent implements OnInit {
     public producto:any = {};
     public sucursales:any = [];
     public categorias:any = [];
+
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
@@ -25,9 +26,19 @@ export class ProductosComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+
+        this.apiService.getAll('categorias').subscribe(categorias => {
+            this.categorias = categorias;
+        }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
+        this.filtro.id_sucursal = '';
+        this.filtro.id_categoria = '';
         this.loading = true;
         this.apiService.getAll('productos').subscribe(productos => { 
             this.productos = productos;
@@ -69,26 +80,7 @@ export class ProductosComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-    openFilter(template: TemplateRef<any>) {
-        this.filtro.sucursal_id = '';
-        this.filtro.categoria_id = '';
-
-
-        if(!this.categorias.lenght){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
-                this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
-
-    onFiltrar(){
+    public onFiltrar(){
         this.loading = true;
         this.apiService.store('productos/filtrar', this.filtro).subscribe(productos => { 
             this.productos = productos;
@@ -98,24 +90,19 @@ export class ProductosComponent implements OnInit {
 
     }
 
-    openModalPrecio(template: TemplateRef<any>, producto:any) {
-        if(this.apiService.auth_user().tipo == 'Administrador') {
-            this.producto = producto;
-            this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
-        }
-
-    }
 
     public onSubmit() {
         this.loading = true;
-        // Guardamos la caja
         this.apiService.store('producto', this.producto).subscribe(producto=> {
-            this.producto= {};
+            this.producto = {};
             this.alertService.success("Datos guardados");
             this.loading = false;
             this.modalRef.hide();
-        },error => {this.alertService.error(error); this.loading = false;
-        });
+        },error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    public descargar(){
+        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
 }

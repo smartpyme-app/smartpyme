@@ -94,6 +94,10 @@ class Producto extends Model {
         return $this->hasMany('App\Models\Inventario\Imagen','id_producto');
     }
 
+    public function proveedores(){
+        return $this->hasMany('App\Models\Inventario\Proveedor', 'id_producto');
+    }
+
     public function ventas(){
         return $this->hasMany('App\Models\Ventas\Detalle','id_producto');
     }

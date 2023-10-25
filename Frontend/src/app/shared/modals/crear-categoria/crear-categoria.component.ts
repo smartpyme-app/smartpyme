@@ -27,12 +27,13 @@ export class CrearCategoriaComponent implements OnInit {
 
     openModal(template: TemplateRef<any>) {
         this.categoria = {};
+        this.categoria.enable = true;
+        this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
         this.modalRef = this.modalService.show(template, { class: 'modal-sm', backdrop: 'static' });
     }
 
     public onSubmit() {
         this.loading = true;
-        this.categoria.empresa_id = this.apiService.auth_user().empresa_id;
         this.apiService.store('categoria', this.categoria).subscribe(categoria => {
             this.update.emit(categoria);
             this.modalRef?.hide();

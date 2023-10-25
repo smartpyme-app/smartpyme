@@ -16,11 +16,10 @@ class KardexController extends Controller
     public function index(Request $request) {
 
         $producto = Producto::with('inventarios')->findOrFail($request->producto_id);
-        $kardex = Kardex::
-                        where('producto_id', $request->producto_id)
+        $kardex = Kardex::where('id_producto', $producto->id)
                         ->when($request->bodega_id, function($query) use ($request){
                             return $query->whereHas('inventario', function($q) use ($request){
-                                $q->where('bodega_id', $request->bodega_id);
+                                $q->where('id_inventario', $request->bodega_id);
                             });
                         })
                         // ->where('bodega_id', $request->bodega_id)
@@ -53,8 +52,8 @@ class KardexController extends Controller
                                     $q->where('bodega_id', $request->bodega_id);
                                 });
                             })
-                            ->when($request->producto_id, function($query) use ($request){
-                                return $query->where('producto_id', $request->producto_id);
+                            ->when($request->id_producto, function($query) use ($request){
+                                return $query->where('id_producto', $request->id_producto);
                             })
                             ->orderBy('id','desc')->paginate(100000);
 
@@ -66,7 +65,7 @@ class KardexController extends Controller
     {
         $request->validate([
             'fecha'         => 'required',
-            'producto_id'   => 'required',
+            'id_producto'   => 'required',
             'bodega_id' => 'required|numeric',
             'detalle'       => 'required',
             'referencia'    => 'sometimes|max:255',
@@ -85,8 +84,8 @@ class KardexController extends Controller
             $kardex = new Kardex;
 
         // Actualizar inventario
-            $producto = Producto::withoutGlobalScopes()->findOrFail($request->producto_id);
-            $inventario = Inventario::where('id', $request->bodega_id)->where('producto_id', $producto->id)->first();
+            $producto = Producto::withoutGlobalScopes()->findOrFail($request->id_producto);
+            $inventario = Inventario::where('id', $request->bodega_id)->where('id_producto', $producto->id)->first();
             $inventario->stock += ($request->stock_final - $request->stock_inicial);
             $inventario->save();
 

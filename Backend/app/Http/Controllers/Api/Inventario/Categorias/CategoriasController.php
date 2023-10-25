@@ -30,13 +30,23 @@ class CategoriasController extends Controller
 
     }
 
+    public function filter(Request $request) {
+
+        $categorias = Categoria::when($request->estado, function($query) use ($request){
+                                return $query->where('enable', $request->estado);
+                            })
+                            ->orderBy('nombre', 'asc')->get();
+
+        return Response()->json($categorias, 200);
+    }
+
 
     public function store(Request $request)
     {
         $request->validate([
             'nombre'        => 'required|max:255',
             'descripcion'   => 'sometimes|max:255',
-            'empresa_id'    => 'required|numeric',
+            'id_empresa'    => 'required|numeric',
         ]);
 
         if($request->id)
@@ -46,14 +56,6 @@ class CategoriasController extends Controller
 
         $categoria->fill($request->all());        
         $categoria->save();
-
-        if ($request->tipo_comision) {
-            foreach ($categoria->productos as $producto) {
-                $producto->tipo_comision = $request->tipo_comision;
-                $producto->comision = $request->comision ? $request->comision : 0;
-                $producto->save();
-            }
-        }
 
         return Response()->json($categoria, 200);
 

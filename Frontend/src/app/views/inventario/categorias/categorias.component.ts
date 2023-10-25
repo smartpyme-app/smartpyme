@@ -12,20 +12,18 @@ export class CategoriasComponent implements OnInit {
 
     public categorias:any = [];
     public categoria:any = {};
+    public filtro:any = {};
     public buscador:any = '';
     public loading:boolean = false;
 
     modalRef?: BsModalRef;
-    // Img Upload
-    public file!:File;
-    public preview = false;
-    public url_img_preview:string = '';
 
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
     ngOnInit() {
+        this.filtro.estado = '';
         this.loadAll();
     }
 
@@ -33,40 +31,30 @@ export class CategoriasComponent implements OnInit {
         this.loading = true;
         this.apiService.getAll('categorias').subscribe(categorias => { 
             this.categorias = categorias;
-            this.file = null!;
             this.loading = false;
         }, error => {this.alertService.error(error); });
     }
 
 
-    openModal(template: TemplateRef<any>, categoria:any) {
+    public openModal(template: TemplateRef<any>, categoria:any) {
         this.categoria = categoria;
+        if (!this.categoria.id) {
+            this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
+            this.categoria.enable = true;
+        }
         this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
     }
 
-
-    slug(){
-        this.categoria.slug = this.apiService.slug(this.categoria.nombre);
+    public setEstado(categoria:any){
+        this.categoria = categoria;
+        this.onSubmit();
     }
 
-    public setTipoComision(){
-        if (this.categoria.tipo_comision == 'Ninguna') {
-            this.categoria.comision = 0.0;
-        }
-    }
 
-    onSubmit():void{
-        this.categoria.empresa_id = this.apiService.auth_user().empresa_id;
-        
-        let formData:FormData = new FormData();
-        for (var key in this.categoria) {
-            formData.append(key, this.categoria[key] ? this.categoria[key] : '');
-        }
-
+    public onSubmit():void{
         this.loading = true;
-        this.apiService.store('categoria', formData).subscribe(categoria => {
+        this.apiService.store('categoria', this.categoria).subscribe(categoria => {
             if(!this.categoria.id){
-                categoria.subcategoria = [];
                 this.categorias.push(categoria);
             }
             this.loadAll();
@@ -77,14 +65,7 @@ export class CategoriasComponent implements OnInit {
 
     }
 
-    onNameChange(categoria:any, name:string):void{
-        this.categoria = categoria;
-        this.categoria.nombre = name;
-        this.onSubmit();
-    }
-
-
-    delete(categoria:any) {
+    public delete(categoria:any) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('categoria/', categoria.id) .subscribe(data => {
                 for (let i = 0; i < this.categorias.length; i++) { 
@@ -97,18 +78,12 @@ export class CategoriasComponent implements OnInit {
 
     }
 
-    
-    setFile(event:any){
-        this.file = event.target.files[0];
-        this.categoria.file = this.file;
-        var reader = new FileReader();
-        reader.onload = ()=> {
-            var url:any;
-            url = reader.result;
-            this.url_img_preview = url;
-            this.preview = true;
-           };
-        reader.readAsDataURL(this.file!);
+    public onFiltrar() {
+        this.loading = true;
+        this.apiService.store('categorias/filtrar', this.filtro).subscribe(categorias => { 
+            this.categorias = categorias;
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
     }
 
 

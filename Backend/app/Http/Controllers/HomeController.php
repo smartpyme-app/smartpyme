@@ -14,16 +14,6 @@ class HomeController extends Controller
         return view('index');
     }
 
-    public function registro()
-    {
-        return view('sections.registro');
-    }
-
-    public function demo()
-    {
-        return view('sections.demo');
-    }
-
     public function demoPost(Request $request)
     {
 

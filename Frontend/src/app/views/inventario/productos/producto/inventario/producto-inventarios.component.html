@@ -1,10 +1,10 @@
 <div class="row">
-    <h6 class="my-3 font-weight-bold">Control de inventario</h6>
+    <h6 class="my-3 font-weight-bold" (click)="loadAll()">Inventario <span class="badge bg-default text-dark">{{ producto.inventarios | sum:'stock' }} unidades</span></h6>
     <div class="table-responsive">
-        <table class="table table-bordered">
+        <table class="table table-borderless table-hover">
             <thead>
                 <tr>
-                    <th>Bodega</th>
+                    <th>Sucursal</th>
                     <th class="text-center d-none d-lg-table-cell">Stock minino</th>
                     <th class="text-center d-none d-lg-table-cell">Stock máximo</th>
                     <th class="text-center">Stock</th>
@@ -16,15 +16,20 @@
                     <td colspan="8" class="text-center" *ngIf="loading">
                         <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
                     </td>
-                </tr>             
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-center" *ngIf="!loading && producto?.inventarios.length == 0">
+                        <span class="text-muted">No tiene inventarios configurados</span>
+                    </td>
+                </tr>       
                 <tr *ngFor=" let bodega of producto.inventarios">
-                    <td>{{ bodega.nombre_bodega }} <br> <small class="text-muted">{{bodega.nombre_sucursal}}</small></td>
-                    <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_min }}</td>
-                    <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_max }}</td>
+                    <td>{{ bodega.nombre_sucursal }}</td>
+                    <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_minimo }}</td>
+                    <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_maximo }}</td>
                     <td class="text-center">{{ bodega.stock }}</td>
                     <td class="text-center">
-                        <div class="btn-group">
-                            <a class="btn btn-default" (click)="openModal(mbodega, bodega)" tooltip="Editar" >
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Editar" >
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
                             <app-crear-ajuste [producto]="producto" [inventario]="bodega" (setAjuste)="setAjuste($event)"></app-crear-ajuste>
@@ -47,37 +52,32 @@
 <ng-template #mbodega>
   <div class="modal-header">
     <h3 class="modal-title text-center">{{ producto.nombre }}</h3>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-md-12">
-                <label for="bodega_id">Bodega:</label>
-                <select [(ngModel)]="inventario.bodega_id" class="form-select" name="bodega_id">
+                <label for="id_sucursal">Bodega:</label>
+                <select [(ngModel)]="inventario.id_sucursal" class="form-select" name="id_sucursal">
                     <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
                 </select>
             </div>
             <div class="form-group col-md-6">
-                <label for="stock_min">Stock minimo:</label>
-                <input type="text" [(ngModel)]="inventario.stock_min" class="form-control" name="stock_min">
+                <label for="stock_minimo">Stock minimo:</label>
+                <input type="text" [(ngModel)]="inventario.stock_minimo" class="form-control" name="stock_minimo">
             </div>
             <div class="form-group col-md-6">
-                <label for="stock_max">Stock maximo:</label>
-                <input type="text" [(ngModel)]="inventario.stock_max" class="form-control" name="stock_max">
+                <label for="stock_maximo">Stock maximo:</label>
+                <input type="text" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo">
             </div>
         </div>
         
-        <br><br>
-        <div class="row">
-            <div class="col-xs-12">
-                <button type="submit" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
-                </button>
-            </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-block">
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
         </div>
     </form>
   </div>

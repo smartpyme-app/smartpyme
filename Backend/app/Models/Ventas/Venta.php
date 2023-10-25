@@ -39,7 +39,8 @@ class Venta extends Model {
         'cliente_id',
         'usuario_id',
         'vendedor_id',
-        'sucursal_id'
+        'id_empresa',
+        'id_sucursal'
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_canal'];
@@ -48,9 +49,9 @@ class Venta extends Model {
     {
         $usuario = JWTAuth::parseToken()->authenticate();
 
-        if ($usuario && $usuario->tipo != 'Administrador'){
-            static::addGlobalScope('sucursal', function (Builder $builder) use ($usuario) {
-                $builder->where('sucursal_id', $usuario->sucursal_id);
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
             });
         }
     }
@@ -76,9 +77,9 @@ class Venta extends Model {
         return $this->canal()->pluck('nombre')->first();
     }
 
-    public function getSaldoAttribute(){
-        return $this->total - $this->credito()->pagos()->sum('abono');
-    }
+    // public function getSaldoAttribute(){
+    //     return $this->total - $this->credito()->pagos()->sum('abono');
+    // }
 
     // Relaciones
 
@@ -107,15 +108,12 @@ class Venta extends Model {
     }
 
     public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','sucursal_id');
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
-    public function credito(){
-        return $this->hasOne('App\Models\Creditos\Credito','venta_id');
-    }
 
     public function detalles(){
-        return $this->hasMany('App\Models\Ventas\Detalle','venta_id');
+        return $this->hasMany('App\Models\Ventas\Detalle','id_venta');
     }
 
 

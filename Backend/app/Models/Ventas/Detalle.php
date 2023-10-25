@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Detalle extends Model {
 
-    protected $table = 'venta_detalles';
+    protected $table = 'detalles_venta';
     protected $fillable = array(
-        'producto_id',
+        'id_producto',
         'cantidad',
         'precio',
         'costo',
@@ -20,7 +20,7 @@ class Detalle extends Model {
         'gravada',
         'iva',
         'total',
-        'venta_id'
+        'id_venta'
     );
 
     protected $appends = ['nombre_producto', 'medida'];
@@ -34,11 +34,11 @@ class Detalle extends Model {
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
     public function venta(){
-        return $this->belongsTo('App\Models\Ventas\Venta','venta_id');
+        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
     }
 
 

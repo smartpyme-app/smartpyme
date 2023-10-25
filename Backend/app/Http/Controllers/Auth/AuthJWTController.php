@@ -49,7 +49,7 @@ class AuthJWTController extends Controller
         // $user->ultimo_logout = Carbon::now();
         // $user->save();
 
-        return response()->json(['user' => $user], 200);
+        // return response()->json(['user' => $user], 200);
 
     }
 

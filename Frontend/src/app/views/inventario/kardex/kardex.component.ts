@@ -21,7 +21,7 @@ export class KardexComponent implements OnInit {
 	ngOnInit() {
         this.filtro.inicio = this.apiService.date();
         this.filtro.fin = this.apiService.date();
-        this.filtro.bodega_id = 1;
+        this.filtro.bodega_id = this.apiService.auth_user().id_sucursal;
         this.filtro.detalle = '';
         const id = +this.route.snapshot.paramMap.get('id')!;
         if(!isNaN(id)){
@@ -29,7 +29,7 @@ export class KardexComponent implements OnInit {
             this.loadAll();
         }
 
-        this.apiService.getAll('bodegas').subscribe(bodegas => {
+        this.apiService.getAll('sucursales').subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });

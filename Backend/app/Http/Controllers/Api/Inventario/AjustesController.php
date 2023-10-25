@@ -36,13 +36,13 @@ class AjustesController extends Controller
         $ajustes = Ajuste::when($request->fecha_fin, function($query) use ($request){
                                 return $query->whereBetween('fecha', [$request->fecha_ini, $request->fecha_fin]);
                             })
-                            ->when($request->bodega_id, function($query) use ($request){
+                            ->when($request->id_sucursal, function($query) use ($request){
                                 return $query->whereHas('inventario', function($q) use ($request){
-                                    $q->where('bodega_id', $request->bodega_id);
+                                    $q->where('id_sucursal', $request->id_sucursal);
                                 });
                             })
-                            ->when($request->producto_id, function($query) use ($request){
-                                return $query->where('producto_id', $request->producto_id);
+                            ->when($request->id_producto, function($query) use ($request){
+                                return $query->where('id_producto', $request->id_producto);
                             })
                             ->orderBy('id','desc')->paginate(100000);
 
@@ -53,11 +53,14 @@ class AjustesController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'producto_id'       => 'required|numeric',
-            'bodega_id'         => 'required|numeric',
-            'stock_inicial'     => 'required|numeric',
-            'stock_final'       => 'required|numeric',
-            'usuario_id'        => 'required|numeric'
+            'id_producto'       => 'required|numeric',
+            'id_sucursal'       => 'required|numeric',
+            'stock_actual'      => 'required|numeric',
+            'stock_real'        => 'required|numeric',
+            'ajuste'            => 'required|numeric',
+            'concepto'          => 'required|max:255',
+            'id_empresa'        => 'required|numeric',
+            'id_usuario'        => 'required|numeric',
         ]);
 
         if($request->id)
@@ -69,14 +72,12 @@ class AjustesController extends Controller
         $ajuste->save(); 
 
         // Actualizar inventario
-            
-            $valorAjuste = $request->stock_final - $request->stock_inicial;
-            
-            $inventario = Inventario::where('bodega_id', $request['bodega_id'])->where('producto_id', $ajuste->producto_id)->first();
+                        
+            $inventario = Inventario::where('id_sucursal', $request['id_sucursal'])->where('id_producto', $ajuste->id_producto)->first();
             if ($inventario) {
-                $inventario->stock += $valorAjuste;
+                $inventario->stock += $request->ajuste;
                 $inventario->save();
-                $inventario->kardex($ajuste, $valorAjuste);
+                $inventario->kardex($ajuste, $request->ajuste);
             }
 
 

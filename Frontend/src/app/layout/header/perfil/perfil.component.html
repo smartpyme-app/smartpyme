@@ -1,16 +1,25 @@
-<li class="icons nav-item dropdown">
+<li class="dropdown">
 
-    <a class="nav-link dropdown-toggle user-img c-pointer-x px-0" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="true">
+    <a class="nav-link dropdown-toggle user-img c-pointer-x px-2" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="true">
         <span class="activity active"></span>
-        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="40" width="40" alt="">
+        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="rounded-circle" height="35px">
     </a>
-    <ul class="dropdown-menu dropdown-menu-end text-center" style="margin-top: 54px;">
-        <li class="dropdown-item user-header disabled">
-            <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
-            <p>
-              {{ usuario.name }} <br>
-              <small>{{usuario.tipo }}</small>
-            </p>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+            <a class="dropdown-item text-center">
+                <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="rounded-circle" height="35px">
+                <p class="mt-3"> {{ usuario.name }} <br> <small>{{usuario.tipo }}</small> </p>
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item">
+                <i class="fa fa-user-circle"></i> Cuenta
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item">
+                <i class="fa fa-sliders-h"></i> Preferencias
+            </a>
         </li>
         <li>
             <a class="dropdown-item" routerLink="/usuario/{{ usuario.id }}"><i class="fa-fw fa fa-user-circle mr-2"></i> Perfil</a>

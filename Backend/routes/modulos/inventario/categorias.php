@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Inventario\Categorias\TiposController;
     Route::get('/categorias',               [CategoriasController::class, 'index']);
     Route::get('/categoria/{id}',           [CategoriasController::class, 'read']);
     Route::get('/categorias/buscar/{text}', [CategoriasController::class, 'search']);
+    Route::post('/categorias/filtrar',      [CategoriasController::class, 'filter']);
     Route::post('/categoria',               [CategoriasController::class, 'store']);
     Route::delete('/categoria/{id}',        [CategoriasController::class, 'delete']);
 

@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Kardex extends Model {
 
-    protected $table = 'producto_kardex';
+    protected $table = 'kardexs';
     protected $fillable = array(
         'fecha',
-        'producto_id',
-        'bodega_id',
+        'id_producto',
+        'id_inventario',
         'detalle',
         'referencia',
         'entrada_cantidad',
@@ -19,8 +19,9 @@ class Kardex extends Model {
         'salida_cantidad',
         'precio_unitario',
         'salida_valor',
-        'total',
-        'usuario_id',
+        'total_cantidad',
+        'total_valor',
+        'id_usuario',
     );
 
     protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega', 'ajuste'];
@@ -37,7 +38,7 @@ class Kardex extends Model {
 
     public function getNombreBodegaAttribute()
     {
-        return  $this->inventario()->first() ? $this->inventario()->first()->nombre_bodega : '';
+        return  $this->inventario()->first() ? $this->inventario()->first()->nombre : '';
     }
 
     public function getAjusteAttribute()
@@ -46,15 +47,15 @@ class Kardex extends Model {
     }
 
     public function inventario(){
-        return $this->belongsTo('App\Models\Inventario\Inventario','bodega_id');
+        return $this->belongsTo('App\Models\Inventario\Inventario','id_inventario');
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id')->withoutGlobalScopes();
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto')->withoutGlobalScopes();
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
 }

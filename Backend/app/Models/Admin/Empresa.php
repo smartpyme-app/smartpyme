@@ -3,11 +3,11 @@
 namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+// use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Empresa extends Model {
 
-    use SoftDeletes;
+    // use SoftDeletes;
     protected $table = 'empresas';
     protected $fillable = [
         'nombre',

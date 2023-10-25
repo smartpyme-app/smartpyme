@@ -1,107 +1,56 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
-  <div class="container">
-    <a class="navbar-brand d-none d-lg-flex" routerLink="/">Dashboad</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <ul class="d-flex d-lg-none mb-0">
-        <li class="icons">
-            <a href="javascript:void(0)" tooltip="Pantalla completa" (click)="fullscreen()" class="nav-link">
-                <i class="fa fa-expand"></i>
-            </a>
-        </li>
-        <app-theme></app-theme>
-        <li class="icons mr-0 mr-md-2">
-            <a routerLink="/lock" class="nav-link" tooltip="Bloquear pantalla" > <i class="fa fa-lock"></i> </a>
-        </li>
-        <app-perfil></app-perfil>
+<nav class="w-100 shadow-sm position-absolute" style="height: 60px; margin-left: 250px; top: 0px; right: 0px;">
+  <div class="container-fluid d-flex justify-content-end">
+    <ul class="d-flex mt-3">
+        <ul class="list-unstyled ps-0 d-inline-flex">
+            <li class="border-top my-3"></li>
+            <li>
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2" tooltip="Ayuda">
+                    <i class="fa fa-life-ring me-3"></i>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2" tooltip="Pantalla completa">
+                    <i class="fa fa-expand me-3"></i>
+                </a>
+            </li>
+            <li>
+                <a class="btn d-inline-flex align-items-center text-decoration-none rounded px-2 dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="icon-bell"></i>
+                    <!-- <span class="badge badge-primary">3</span> -->
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
+                    <li  class="notification-unread">
+                        <a href="javascript:void()" class="dropdown-item">
+                            <span class="mr-3 avatar-icon bg-success-lighten-2"><i class="icon-calender"></i></span>
+                            <div class="notification-content">
+                                <h6 class="notification-heading">Event Started</h6>
+                                <span class="notification-text">One hour ago</span> 
+                            </div>
+                        </a>
+                    </li>
+                    <li  class="notification-unread">
+                        <a href="javascript:void()" class="dropdown-item">
+                            <span class="mr-3 avatar-icon bg-danger-lighten-2"><i class="icon-calender"></i></span>
+                            <div class="notification-content">
+                                <h6 class="notification-heading">Event Started</h6>
+                                <span class="notification-text">One hour ago</span> 
+                            </div>
+                        </a>
+                    </li>
+                    <li class="notification-unread">
+                        <a class="dropdown-item bg-primary px-4 text-white" href="email-inbox.html">
+                            <span>See all messagese </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <app-theme></app-theme>
+            <app-perfil></app-perfil>
+        </ul>
+
+
     </ul>
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Wlogic</h5>
-        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body justify-content-between">
-        
-        <app-admin-header [usuario]="usuario" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'"></app-admin-header>
-        <app-cocinero-header [usuario]="usuario" *ngIf="usuario.tipo == 'Cocinero'"></app-cocinero-header>
-        <app-mesero-header [usuario]="usuario" *ngIf="usuario.tipo == 'Mesero'"></app-mesero-header>
-        <app-vendedor-header [usuario]="usuario" *ngIf="usuario.tipo == 'Vendedor'"></app-vendedor-header>
-        <app-caja-header [usuario]="usuario" *ngIf="usuario.tipo == 'Cajero'"></app-caja-header>
-
-        <div class="ms-2 d-none d-lg-flex">
-
-            <ul class="navbar-nav">
-                <li class="icons">
-                    <a href="javascript:void(0)" tooltip="Pantalla completa" (click)="fullscreen()" class="nav-link">
-                        <i class="fa fa-expand"></i>
-                    </a>
-                </li>
-                <app-theme></app-theme>
-                <!-- <li class="icons mr-0 mr-md-2">
-                    <a routerLink="/lock" class="nav-link" tooltip="Bloquear pantalla" > <i class="fa fa-lock"></i> </a>
-                </li> -->
-                <app-perfil></app-perfil>
-            </ul>
-        </div>
-
-      </div>
-    </div>
   </div>
 </nav>
 
 
-<!-- <li class="icons nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="icon-envelope"></i>
-                        <span class="badge badge-danger">3</span>
-                  </a>
-                    <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
-                        <li class="notification-unread">
-                            <a href="javascript:void()" class="dropdown-item">
-                                <img class="float-left mr-3 avatar-img" src="assets/images/avatar/1.jpg" alt="">
-                                <div class="notification-content">
-                                    <div class="notification-text">Hey, What's up! You have a good news !!!</div>
-                                    <div class="notification-timestamp">08 Hours ago</div>
-                                </div>
-                            </a>
-                        </li>
-                        <li class="notification-unread">
-                            <a class="dropdown-item bg-primary px-4 text-white" href="email-inbox.html">
-                                <span>See all messagese </span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="icons nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="icon-bell"></i>
-                        <span class="badge badge-primary">3</span>
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
-                        <li  class="notification-unread">
-                            <a href="javascript:void()" class="dropdown-item">
-                                <span class="mr-3 avatar-icon bg-success-lighten-2"><i class="icon-calender"></i></span>
-                                <div class="notification-content">
-                                    <h6 class="notification-heading">Event Started</h6>
-                                    <span class="notification-text">One hour ago</span> 
-                                </div>
-                            </a>
-                        </li>
-                        <li  class="notification-unread">
-                            <a href="javascript:void()" class="dropdown-item">
-                                <span class="mr-3 avatar-icon bg-danger-lighten-2"><i class="icon-calender"></i></span>
-                                <div class="notification-content">
-                                    <h6 class="notification-heading">Event Started</h6>
-                                    <span class="notification-text">One hour ago</span> 
-                                </div>
-                            </a>
-                        </li>
-                        <li class="notification-unread">
-                            <a class="dropdown-item bg-primary px-4 text-white" href="email-inbox.html">
-                                <span>See all messagese </span>
-                            </a>
-                        </li>
-                    </ul>
-                </li> -->
