@@ -1,80 +1,121 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading" (click)="loadAll()">Usuarios <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a routerLink="/usuarios">Usuarios</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Usuarios</h2>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear canal (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir usuario</button>
+</section>
 
-<div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="usuarios?.total">{{ usuarios?.total + ' registros' }}</span>
-
-        <div class="input-group float-end w-50">
-            <input type="text" name="buscador" [(ngModel)]="buscador" placeholder="Buscar" focus="true" class="form-control">
-            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-            <button tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
-            <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
-            <button routerLink="/usuario/nuevo" tooltip="Crear (F7)" class="btn btn-primary tcla-F7"><i class="fa fa-plus"></i></button>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="usuarios?.lenght">
+                Mostrando {{ usuarios?.lenght + ' registros' }}
+            </span>
         </div>
 
+        <div class="col">
+            <div class="d-flex gap-2">
+                <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre" focus="true">
+                <button tooltip="Filtrar (F6)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-borderless table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Tipo</th>
-                        <th>Sucursal</th>
-                        <th class="text-center">Activo</th>
-                        <th class="text-center">Último inicio de sesión</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="9" class="text-center" *ngIf="usuarios?.total < 1 && !loading">
-                            <span class="badge badge-primary">No tiene usuarios registrados</span>
-                        </td>
-                        <td colspan="9" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
-                        </td>
-                    </tr>
 
-                    <tr *ngFor=" let usuario of usuarios.data">
-                        
-                        <td>{{usuario.id}}</td>
-                        <td>{{usuario.name}}</td>
-                        <td>{{usuario.tipo}}</td>
-                        <td>{{usuario.nombre_sucursal}}</td>
-                        <td class="text-center" >
-                            <input type="checkbox" [(ngModel)]="usuario.activo" (change)="setEstado(usuario)">
-                        </td>
-                        <td class="text-center"><span tooltip="{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}"> {{ usuario.ultimo_login_human }}</span></td>
-                        <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                <a class="btn btn-default" routerLink="/usuario/{{usuario.id}}" data-toggle="tooltip" title="Ver">
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>  
-                        </td>
-
-                    </tr>
-                </tbody>
-            </table>
-         </div>
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado"  [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
     </div>
-</div>
+    <div class="row">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Sucursal</th>
+                    <th class="text-center">Activo</th>
+                    <th class="text-center">Último inicio de sesión</th>
+                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="9" class="text-center" *ngIf="usuarios?.total < 1 && !loading">
+                        <span class="badge bg-primary">No tiene usuarios registrados</span>
+                    </td>
+                    <td colspan="9" class="text-center" *ngIf="loading">
+                        <span class="badge bg-primary">Cargando...</span>
+                    </td>
+                </tr>
 
+                <tr *ngFor=" let usuario of usuarios | filter:'name':filtro.nombre | filter:'enable':filtro.estado">                    
+                    <td>{{usuario.name}}</td>
+                    <td>{{usuario.tipo}}</td>
+                    <td>{{usuario.nombre_sucursal}}</td>
+                    <td class="text-center" >
+                        <input type="checkbox" [(ngModel)]="usuario.enable" (change)="setEstado(usuario)">
+                    </td>
+                    <td class="text-center">{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                            <a class="btn btn-default" routerLink="/usuario/{{usuario.id}}" data-toggle="tooltip" title="Ver">
+                                <i class="fa fa-arrow-right"></i>
+                            </a>
+                        </div>  
+                    </td>
+
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="col-12" *ngIf="usuarios?.last_page > 1">
+            <app-pagination [items]="usuarios" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Canal</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-12">
+                <label for="canal.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="canal.nombre" name="canal.nombre" focus="true">
+            </div>
+            <div class="form-group col-12">
+                <label for="canal.enable">Activo</label>
+                <input type="checkbox" class="form-check" [(ngModel)]="canal.enable" name="canal.enable">
+            </div>
+            <div class="form-group col-12">
+                <label for="canal.descripcion">Descripción</label>
+                <textarea name="canal.descripcion" class="form-control" cols="30" rows="3" [(ngModel)]="canal.descripcion"></textarea>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                <span *ngIf="!loading">Añadir</span>
+                <span *ngIf="loading">Añadiendo...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
 
 <ng-template #musuario>
   <div class="modal-header">

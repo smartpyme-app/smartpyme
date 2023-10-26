@@ -33,12 +33,17 @@ class AjustesController extends Controller
 
     public function filter(Request $request) {
 
-        $ajustes = Ajuste::when($request->fecha_fin, function($query) use ($request){
-                                return $query->whereBetween('fecha', [$request->fecha_ini, $request->fecha_fin]);
+        $ajustes = Ajuste::when($request->fin, function($query) use ($request){
+                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
                             ->when($request->id_sucursal, function($query) use ($request){
-                                return $query->whereHas('inventario', function($q) use ($request){
+                                return $query->whereHas('sucursal', function($q) use ($request){
                                     $q->where('id_sucursal', $request->id_sucursal);
+                                });
+                            })
+                            ->when($request->nombre, function($query) use ($request){
+                                return $query->whereHas('producto', function($q) use ($request){
+                                    $q->where('nombre', $request->nombre);
                                 });
                             })
                             ->when($request->id_producto, function($query) use ($request){
@@ -48,7 +53,6 @@ class AjustesController extends Controller
 
         return Response()->json($ajustes, 200);
     }
-
 
     public function store(Request $request)
     {
@@ -94,23 +98,6 @@ class AjustesController extends Controller
 
     }
 
-
-    public function search($txt) {
-
-        $ajustes = Ajuste::whereHas('producto', function($query) use ($txt)
-                            {
-                                $query->where('nombre', 'like' ,'%' . $txt . '%')
-                                ->orWhere('codigo', 'like' ,'%' . $txt . '%');
-                            })
-                            ->orwhereHas('bodega', function($query) use ($txt)
-                            {
-                                $query->where('nombre', 'like' ,'%' . $txt . '%');
-                            })
-                            ->paginate(10);
-
-        return Response()->json($ajustes, 200);
-
-    }
 
 
 }

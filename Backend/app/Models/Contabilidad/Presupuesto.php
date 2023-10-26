@@ -3,14 +3,16 @@
 namespace App\Models\Contabilidad;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Presupuesto extends Model {
 
-    protected $table = 'empresa_wompi';
+    protected $table = 'presupuestos';
     protected $fillable = array(
-        'nombre',
-        'inicio',
-        'fin',
+        'titulo',
+        'fecha_inicio',
+        'fecha_fin',
         'ingresos',
         'egresos',
         'alquiler',
@@ -24,11 +26,26 @@ class Presupuesto extends Model {
         'servicios',
         'prestamos',
         'publicidad',
-        'empresa_id',
+        'enable',
+        'id_empresa',
     );
 
+    protected $casts = ['enable' => 'string'];
+
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+        
+    }
+
     public function empresa(){
-        return $this->belongsTo('App\Models\Admin\Empresa', 'empresa_id');
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
 

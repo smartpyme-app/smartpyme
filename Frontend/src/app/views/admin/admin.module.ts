@@ -29,7 +29,9 @@ import { CajaUsuariosComponent } from './cajas/caja/usuarios/caja-usuarios.compo
 import { CajaDocumentosComponent } from './cajas/caja/documentos/caja-documentos.component';
 import { CajaEstadisticasComponent } from './cajas/estadisticas/caja-estadisticas.component';
 
+import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { ReportesComponent } from './reportes/reportes.component';
+import { DocsComponent } from './docs/docs.component';
 
 @NgModule({
   imports: [
@@ -57,7 +59,9 @@ import { ReportesComponent } from './reportes/reportes.component';
     SucursalComponent,
     UsuariosComponent,
     UsuarioComponent,
-    ReportesComponent
+    ReportesComponent,
+    NotificacionesComponent,
+    DocsComponent
   ],
   exports: [
     EmpresaComponent,
@@ -71,7 +75,9 @@ import { ReportesComponent } from './reportes/reportes.component';
     SucursalComponent,
     UsuariosComponent,
     UsuarioComponent,
-    ReportesComponent
+    ReportesComponent,
+    NotificacionesComponent,
+    DocsComponent
   ]
 })
 export class AdminModule { }

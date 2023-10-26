@@ -67,7 +67,7 @@ class ProductosController extends Controller
 
         $producto = Producto::where('id', $id)
                                 ->with('inventarios', 'precios.usuarios', 'imagenes', 'proveedores')
-                                ->first();
+                                ->firstOrFail();
         return Response()->json($producto, 200);
 
     }
@@ -95,13 +95,13 @@ class ProductosController extends Controller
 
     public function filter(Request $request) {
 
-            $productos = Producto::where('tipo', 'Producto')->with('inventarios')
-                                ->when($request->id_categoria, function($query) use ($request){
-                                    return $query->where('id_categoria', $request->id_categoria);
-                                })
-                                ->orderBy('id','desc')->paginate(100000);
+        $productos = Producto::where('tipo', 'Producto')->with('inventarios')
+                            ->when($request->id_categoria, function($query) use ($request){
+                                return $query->where('id_categoria', $request->id_categoria);
+                            })
+                            ->orderBy('id','desc')->paginate(100000);
 
-            return Response()->json($productos, 200);
+        return Response()->json($productos, 200);
     }
 
     public function store(Request $request)
@@ -118,6 +118,10 @@ class ProductosController extends Controller
             'medida'            => 'required',
             'id_categoria'      => 'required',
             'id_empresa'        => 'required',
+        ],[
+            'nombre.required' => 'Agregue un nombre',
+            'id_categoria.required' => 'Agregue una categoria',
+            'costo.required' => 'Agregue el costo'
         ]);
 
         if($request->id)

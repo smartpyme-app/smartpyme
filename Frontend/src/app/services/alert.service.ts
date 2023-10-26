@@ -43,7 +43,7 @@ export class AlertService {
             }
         }
         else if(message.status == 500) {
-            this.notifier.notify( 'error', message.error.error );
+            this.notifier.notify( 'error', message.error.message );
         }
         else {
             this.notifier.notify( 'warning', message);

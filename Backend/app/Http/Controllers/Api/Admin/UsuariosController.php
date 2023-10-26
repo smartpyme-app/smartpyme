@@ -15,7 +15,7 @@ class UsuariosController extends Controller
 
     public function index() {
        
-        $usuarios = Usuario::orderBy('id','desc')->paginate(15);
+        $usuarios = Usuario::orderBy('id','desc')->get();
 
         return Response()->json($usuarios, 200);
 
@@ -62,9 +62,9 @@ class UsuariosController extends Controller
     {
         $request->validate([
             'name'      => 'required|max:255',
-            'username'  => 'required|unique:users,username,'.$request->id,
+            'email'  => 'required|unique:users,email,'.$request->id,
             'tipo'      => 'required',
-            'caja_id'   => 'required_if:tipo,"Cajero"',
+            // 'caja_id'   => 'required_if:tipo,"Cajero"',
 
         ]);
 

@@ -1,10 +1,94 @@
-<div class="d-flex flex-column align-items-center justify-content-center vh-100">
-    <p class="display-6 text-muted text-center">
-        <i class="fa fa-box-open fa-3x"></i>
-        <br>
-        No encontramos lo que buscas :(
-    </p>
-    <p>
-        <a routerLink="/" class="btn btn-default">Ir al inicio</a>
-    </p>
-</div>
+<style>
+    body {
+        font-family: 'Nunito', sans-serif;
+       }            
+    #btn-error{
+        text-decoration: none;
+        background-color: #1775e5;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    #btn-contact{
+        text-decoration: none;
+        color: white;
+        font-size: 50px;
+        
+    }
+    #btn-contact i{
+        background: #25D366;
+        padding: 10px;
+        animation: myAnim 2s ease 0s 1 normal forwards;
+    }
+    #btn-contact i:hover{
+        
+        background: #128c7e;
+    }
+    
+    @keyframes myAnim {
+        0% {
+            animation-timing-function: ease-in;
+            opacity: 0;
+            transform: translateY(-250px);
+        }
+        38% {
+            animation-timing-function: ease-out;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        55% {
+            animation-timing-function: ease-in;
+            transform: translateY(-65px);
+        }
+        72% {
+            animation-timing-function: ease-out;
+            transform: translateY(0);
+        }
+        81% {
+            animation-timing-function: ease-in;
+            transform: translateY(-28px);
+        }
+        90% {
+            animation-timing-function: ease-out;
+            transform: translateY(0);
+        }
+        95% {
+            animation-timing-function: ease-in;
+            transform: translateY(-8px);
+        }
+        100% {
+            animation-timing-function: ease-out;
+            transform: translateY(0);
+        }
+    }
+</style>
+        
+<section  style="background: url('../img/icon-bg.png') repeat; background-size: 40%; background-position: bottom -100px right -100px;background-color: rgba(23,117,229,0.35)!important;">
+    
+    <div class="position-absolute" style="right: 20px;bottom:20px">
+        <a href="https://api.whatsapp.com/send?phone=50377325932&text=Hola SmartPyme" target="_blank" id="btn-contact">
+            <i class="fa-brands fa-whatsapp rounded-circle" ></i>
+        </a>    
+    </div>
+
+    <div class="container-fluid " >
+        
+        <div class="row" style="height: 100vh;">
+            <div class="bg-light rounded-3 p-5  col-sm-6 col-lg-4" style="height: 100vh">
+                <div class="d-flex align-items-center h-100">
+                    <div>
+                        <img class="img-fluid" id="img" src="{{ apiService.baseUrl + '/img/logo.png' }}">
+                        <h3 class="text-primary mt-3" >No hemos encontrado lo que buscas</h3>
+                        <p class="text-secondary col-12 col-xl-9" >Por favor, regresa a la página de inicio e intenta nuevamente. Si continúas experimentando dificultades, no dudes de contactar a nuestro equipo de soprte.</p>
+                        <p class="text-secondary col-12 col-xl-9" >Gracias por tu comprensión, <br>El equipo de SmartPyme.</p>
+                        
+                        <a class="btn btn-primary col-12 col-xl-9" routerLink="/" id="btn-error" style="border-style: none;">Ir a inicio</a>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+</section>

@@ -64,11 +64,11 @@ class DevolucionVentasController extends Controller
         $ventas = Devolucion::when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
-                        ->when($request->usuario_id, function($query) use ($request){
-                            return $query->where('usuario_id', $request->usuario_id);
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
                         })
                         ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
+                            return $query->where('enable', $request->estado);
                         })
                         ->when($request->forma_de_pago, function($query) use ($request){
                             return $query->where('forma_de_pago', $request->forma_de_pago);
@@ -87,8 +87,8 @@ class DevolucionVentasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
-            // 'cliente_id'        => 'required',
-            'usuario_id'        => 'required',
+            // 'id_cliente'        => 'required',
+            'id_usuario'        => 'required',
         ]);
 
         if($request->id)
@@ -123,18 +123,18 @@ class DevolucionVentasController extends Controller
             'fecha'             => 'required',
             'tipo'              => 'required|max:255',
             'tipo_documento'    => 'required|max:255',
-            // 'cliente_id'           => 'required',
+            // 'id_cliente'           => 'required',
             'detalles'          => 'required',
             'iva'               => 'required|numeric',
             'subcosto'          => 'required|numeric',
             'subtotal'          => 'required|numeric',
             'total'             => 'required|numeric',
             'nota'              => 'required|max:255',
-            'venta_id'          => 'required|numeric',
-            // 'caja_id'           => 'required|numeric',
-            // 'corte_id'          => 'required|numeric',
-            'usuario_id'        => 'required|numeric',
-            'sucursal_id'       => 'required|numeric',
+            'id_venta'          => 'required|numeric',
+            // 'id_caja'           => 'required|numeric',
+            // 'id_corte'          => 'required|numeric',
+            'id_usuario'        => 'required|numeric',
+            'id_sucursal'       => 'required|numeric',
         ]);
 
         DB::beginTransaction();
@@ -155,18 +155,18 @@ class DevolucionVentasController extends Controller
 
             foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
-                $det['devolucion_id'] = $venta->id;
+                $det['id_devolucion'] = $venta->id;
                 $detalle->fill($det);
                 $detalle->save();
 
                 // Actualizar inventario
-                $producto = Producto::where('id', $det['producto_id'])->with('composiciones')->firstOrFail();
+                $producto = Producto::where('id', $det['id_producto'])->with('composiciones')->firstOrFail();
 
                 // Inventario compuestos
                 foreach ($producto->composiciones as $comp) {
                     $productoCompuesto = $comp->compuesto()->first();
                     if ($productoCompuesto->bodega_venta) {
-                        $inventario = Inventario::where('producto_id', $comp->compuesto_id)->where('bodega_id', $venta->venta->bodega_id)->first();
+                        $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->venta->id_bodega)->first();
                         if ($inventario) {
                             $inventario->stock += $det['cantidad'] * $comp->cantidad;
                             $inventario->save();
@@ -176,7 +176,7 @@ class DevolucionVentasController extends Controller
                 }
                 // Inventario individual
                 if ($producto->bodega_venta) {
-                    $inventario = Inventario::where('producto_id', $producto->id)->where('bodega_id', $venta->venta->bodega_id)->first();
+                    $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $venta->venta->id_bodega)->first();
                     if ($inventario) {
                         $inventario->stock += $det['cantidad'];
                         $inventario->save();

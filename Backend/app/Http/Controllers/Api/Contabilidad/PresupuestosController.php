@@ -32,7 +32,7 @@ class PresupuestosController extends Controller
 
 
         $presupuestos = Presupuesto::when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            return $query->whereBetween('fecha_inicio', [$request->inicio, $request->fin]);
                         })
                         ->when($request->sucursal_id, function($query) use ($request){
                             return $query->where('sucursal_id', $request->sucursal_id);
@@ -40,8 +40,8 @@ class PresupuestosController extends Controller
                         ->when($request->usuario_id, function($query) use ($request){
                             return $query->where('usuario_id', $request->usuario_id);
                         })
-                        ->when($request->categoria, function($query) use ($request){
-                            return $query->where('categoria', $request->categoria);
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('enable', $request->estado);
                         })
                         ->orderBy('id','desc')->paginate(100000);
 

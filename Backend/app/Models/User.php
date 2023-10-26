@@ -29,10 +29,11 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     protected $hidden = ['password', 'remember_token'];
+    protected $appends = ['nombre_sucursal'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'enable' => 'boolean'
+        'enable' => 'string'
     ];
 
     protected static function booted()
@@ -47,8 +48,16 @@ class User extends Authenticatable implements JWTSubject
         
     }
 
+    public function getNombreSucursalAttribute(){
+        return $this->sucursal()->pluck('nombre')->first();
+    }
+
     public function empresa(){
-        return $this->belongsTo('App\Models\Empresa', 'id_empresa');
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
     public function getJWTIdentifier() {

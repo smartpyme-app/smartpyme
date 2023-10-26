@@ -1,6 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
+use App\Http\Controllers\Api\Inventario\ConsignasController;
 use App\Http\Controllers\Api\Inventario\ComposicionesController;
 use App\Http\Controllers\Api\Inventario\PreciosController;
 use App\Http\Controllers\Api\Inventario\PromocionesController;
@@ -44,6 +45,11 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::get('/producto/sucursales/{id}',    [SucursalesController::class, 'index']);
     Route::post('/producto/sucursal',          [SucursalesController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [SucursalesController::class, 'delete']);
+
+// Consignas
+    Route::get('/productos/consignas',         [ConsignasController::class, 'index']);
+    Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
+    Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     
 // Promociones
     Route::get('/productos/promociones',        [PromocionesController::class, 'index']);

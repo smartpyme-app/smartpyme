@@ -33,11 +33,20 @@ class GastosController extends Controller
         $gastos = Gasto::when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
-                        ->when($request->sucursal_id, function($query) use ($request){
-                            return $query->where('sucursal_id', $request->sucursal_id);
+                        ->when($request->id_sucursal, function($query) use ($request){
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
+                        ->when($request->id_proveedor, function($query) use ($request){
+                            return $query->where('id_proveedor', $request->id_proveedor);
+                        })
+                        ->when($request->concepto, function($query) use ($request){
+                            return $query->where('concepto', $request->concepto);
                         })
                         ->when($request->usuario_id, function($query) use ($request){
                             return $query->where('usuario_id', $request->usuario_id);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('estado', $request->estado);
                         })
                         ->when($request->categoria, function($query) use ($request){
                             return $query->where('categoria', $request->categoria);
@@ -52,16 +61,16 @@ class GastosController extends Controller
     {
         $request->validate([
             'fecha'         => 'required|date',
-            'descripcion'   => 'nullable|max:255',
-            'categoria_id'     => 'required|max:255',
-            'metodo_pago'     => 'required|max:255',
+            'concepto'   => 'nullable|max:255',
+            'id_categoria'     => 'required|max:255',
+            'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
-            'condicion'     => 'required|max:255',
-            'fecha_pago'         => 'required|date',
+            // 'fecha_pago'         => 'required|date',
             'total'         => 'required|numeric',
-            'proveedor_id'    => 'sometimes|numeric',
-            'usuario_id'    => 'required|numeric',
-            'sucursal_id'   => 'required|numeric',
+            'id_proveedor'    => 'sometimes|numeric',
+            // 'id_usuario'    => 'required|numeric',
+            'id_sucursal'   => 'required|numeric',
+            'id_empresa'   => 'required|numeric',
         ]);
 
         if($request->id)
@@ -93,10 +102,10 @@ class GastosController extends Controller
         $datos->categorias   = Gasto::selectRaw('sum(total) AS total, categoria')
                                     ->groupBy('categoria')
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     // ->orderBy('total', 'desc')
                                     ->take(5)
@@ -105,10 +114,10 @@ class GastosController extends Controller
         $datos->meses   = Gasto::selectRaw('sum(total) AS total, MONTH(fecha) as mes, MONTHNAME(fecha) as nombre_mes')
                                     ->groupBy('mes', 'nombre_mes')
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     ->orderBy('mes', 'desc')
                                     ->take(5)

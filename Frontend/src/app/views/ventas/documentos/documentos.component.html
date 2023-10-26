@@ -1,0 +1,143 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Documentos</h2>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear documento (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir documento</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="documentos?.lenght">
+                Mostrando {{ documentos?.lenght + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col">
+            <div class="d-flex gap-2">
+                <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre" focus="true">
+                <button tooltip="Filtrar (F6)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado"  [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Sucursal</th>
+                        <th>Nombre</th>
+                        <th>Correlativo</th>
+                        <th>Predeterminado</th>
+                        <th>Estado</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="documentos?.lenght < 1 && !loading">
+                            <span class="badge bg-primary">No tiene documentos registradas</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor="let documento of documentos | filter:['nombre']:filtro.nombre | filter:'activo':filtro.estado">
+                        <td>{{documento.nombre_sucursal}}</td>
+                        <td>{{documento.nombre }}</td>
+                        <td>{{documento.correlativo}}</td>
+                        <td>
+                            <select name="predeterminado" [(ngModel)]="documento.predeterminado" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.predeterminado == 0, 'bg-light-success' : documento.predeterminado == 1}">
+                                <option value="1">Si</option>
+                                <option value="0">No</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </td>
+                        <td class="text-center">
+                            <a class="btn btn-light" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
+                                <i class="fa fa-edit"></i>
+                            </a>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="documentos?.last_page > 1">
+            <app-pagination [items]="documentos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Documento</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="documento.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="documento.nombre" name="documento.nombre" focus="true">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="documento.correlativo">Correlativo</label>
+                <input type="text" class="form-control" [(ngModel)]="documento.correlativo" name="documento.correlativo">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="documento.rangos">Serie</label>
+                <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="documento.numero_autorizacion">Autorización</label>
+                <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="documento.resolucion">Resolución</label>
+                <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="documento.fecha">Fecha</label>
+                <input type="date" class="form-control" [(ngModel)]="documento.fecha" name="documento.fecha">
+            </div>
+            <div class="form-group col-12">
+                <label for="documento.predeterminado">Activo</label>
+                <input type="checkbox" class="form-check" [(ngModel)]="documento.predeterminado" name="documento.predeterminado">
+            </div>
+            <div class="form-group col-12">
+                <label for="documento.nota">Nota</label>
+                <textarea name="documento.nota" class="form-control" cols="30" rows="3" [(ngModel)]="documento.nota"></textarea>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

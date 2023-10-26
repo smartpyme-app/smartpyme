@@ -25,7 +25,10 @@
     ],
     "paths": {
       "@shared/*": ["src/app/shared/*"],
+      "@layout/*": ["src/app/layout/*"],
+      "@guards/*": ["src/app/guards/*"],
       "@services/*": ["src/app/services/*"],
+      "@views/*": ["src/app/views/*"],
       "@pipes/*": ["src/app/pipes/*"]
     }
   },

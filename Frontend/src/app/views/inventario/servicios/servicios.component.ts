@@ -26,16 +26,18 @@ export class ServiciosComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.filtro.id_categoria = '';
+        this.filtro.estado = '';
+
+        this.apiService.getAll('categorias').subscribe(categorias => {
+            this.categorias = categorias;
+        }, error => {this.alertService.error(error);});
     }
 
     public loadAll() {
         this.loading = true;
         this.apiService.getAll('servicios').subscribe(servicios => { 
             this.servicios = servicios;
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-                this.checkSucursales();
-            }, error => {this.alertService.error(error); this.loading = false;});
             this.loading = false; this.filtrado = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -47,7 +49,6 @@ export class ServiciosComponent implements OnInit {
             this.apiService.read('servicios/buscar/', this.buscador).subscribe(servicios => { 
                 this.servicios = servicios;
                 this.loading = false; this.filtrado = true;
-                this.checkSucursales();
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
             this.loadAll();
@@ -67,105 +68,20 @@ export class ServiciosComponent implements OnInit {
 
     }
 
-    // sucursales
-
-        public checkSucursales(){
-
-            for(let i = 0; i < this.servicios.data.length; i++){            
-                var servicio = this.servicios.data[i];
-                servicio.lista_sucursales = JSON.parse(JSON.stringify(this.sucursales));
-
-                for(let j = 0; j < servicio.sucursales.length; j++){
-                    var servicio_sucursal = servicio.sucursales[j];
-                    
-                    for(let k = 0; k < servicio.lista_sucursales.length; k++){
-                        var lista_sucursal = servicio.lista_sucursales[k];
-
-                        if (lista_sucursal.id == servicio_sucursal.sucursal_id) {
-                            lista_sucursal.agregado = true;
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
-
-        checked(servicio:any, sucursal:any){
-            if(!sucursal.agregado) {
-                this.addSucursal(servicio, sucursal);
-            }else{
-                this.deleteSucursal(servicio, sucursal);
-            }
-
-        }
-
-        public addSucursal(servicio:any, sucursal:any){
-            let item:any = {};
-            item.servicio_id = servicio.id;
-            item.activo = true;
-            item.inventario = false;
-            item.sucursal_id = sucursal.id;
-            this.apiService.store('servicio/sucursal', item).subscribe(data => {
-                servicio.sucursales.push(data);
-                let sucursal = servicio.lista_sucursales.find((x:any) => x.id == data.sucursal_id);
-                sucursal.agregado = true;
-                this.alertService.success("Agregado");
-            },error => {this.alertService.error(error); this.loading = false; });
-        }
-
-        public deleteSucursal(servicio:any, sucursal:any) {
-            if (confirm('¿Desea eliminar el Registro?')) {
-                let psucursal = servicio.sucursales.find((x:any) => x.sucursal_id == sucursal.id);
-                this.apiService.delete('servicio/sucursal/', psucursal.id) .subscribe(data => {
-                    this.loadAll();
-                    this.alertService.success("Eliminado");
-                }, error => {this.alertService.error(error); });
-                       
-            }
-
-        }
-
-
     public setPagination(event:any):void{
         this.loading = true;
         this.apiService.paginate(this.servicios.path + '?page='+ event.page).subscribe(servicios => { 
             this.servicios = servicios;
-            this.checkSucursales();
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-    openFilter(template: TemplateRef<any>) {
-        if(!this.filtrado) {
-            this.filtro.sucursal_id = '';
-            this.filtro.categoria_id = '';
-        }
-
-
-        if(!this.categorias.lenght){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
-                this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
 
     onFiltrar(){
         this.loading = true;
         this.apiService.store('servicios/filtrar', this.filtro).subscribe(servicios => { 
             this.servicios = servicios;
-            this.checkSucursales();
             this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

@@ -2,23 +2,28 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 
-import { OrdenesComponent } from '../../views/ordenes/ordenes.component';
-import { OrdenComponent } from '../../views/ordenes/orden/orden.component';
-import { VentasComponent } from '../../views/ventas/ventas.component';
-import { VentaComponent } from '../../views/ventas/venta/venta.component';
-import { DevolucionesVentasComponent } from '../../views/ventas/devoluciones/devoluciones-ventas.component';
-import { DevolucionVentaComponent } from '../../views/ventas/devoluciones/devolucion/devolucion-venta.component';
-import { DevolucionVentaNuevaComponent } from '../../views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
+import { OrdenesComponent } from '@views/ordenes/ordenes.component';
+import { OrdenComponent } from '@views/ordenes/orden/orden.component';
+
+import { VentasComponent } from '@views/ventas/ventas.component';
+import { VentaComponent } from '@views/ventas/venta/venta.component';
+
+import { CanalesComponent } from '@views/ventas/canales/canales.component';
+import { DocumentosComponent } from '@views/ventas/documentos/documentos.component';
+
+import { DevolucionesVentasComponent } from '@views/ventas/devoluciones/devoluciones-ventas.component';
+import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
+import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
 import { FacturacionComponent } from './facturacion/facturacion.component';
 
-import { ClientesComponent } from '../../views/ventas/clientes/clientes.component';
-import { CuentasCobrarComponent } from '../../views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
-import { ClienteComponent } from '../../views/ventas/clientes/cliente/cliente.component';
-import { ClientesDashComponent } from '../../views/ventas/clientes/dash/clientes-dash.component';
+import { ClientesComponent } from '@views/ventas/clientes/clientes.component';
+import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
+import { ClienteComponent } from '@views/ventas/clientes/cliente/cliente.component';
+import { ClientesDashComponent } from '@views/ventas/clientes/dash/clientes-dash.component';
 
-import { HistorialVentasComponent } from '../../views/reportes/ventas/historial/historial-ventas.component';
-import { DetalleVentasComponent } from '../../views/reportes/ventas/detalle/detalle-ventas.component';
-import { CategoriasVentasComponent } from '../../views/reportes/ventas/categorias/categorias-ventas.component';
+import { HistorialVentasComponent } from '@views/reportes/ventas/historial/historial-ventas.component';
+import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-ventas.component';
+import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/categorias-ventas.component';
 
 
 const routes: Routes = [
@@ -30,11 +35,17 @@ const routes: Routes = [
         { path: 'facturacion', component: FacturacionComponent, title: 'Facturación'},
         { path: 'ordenes', component: OrdenesComponent },
         { path: 'orden/:id', component: OrdenComponent },
+
         { path: 'ventas', component: VentasComponent, title: 'Ventas'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
+    // 
+        { path: 'canales', component: CanalesComponent, title: 'Canales de venta'},
+        { path: 'documentos', component: DocumentosComponent, title: 'Documentos'},
+
         { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas'},
         { path: 'devolucion/venta/:id', component: DevolucionVentaComponent, title: 'Devolución de venta'},
         { path: 'devolucion-venta/nueva', component: DevolucionVentaNuevaComponent, title: 'Devolución de venta'},
+    
     // Clientes
         { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },

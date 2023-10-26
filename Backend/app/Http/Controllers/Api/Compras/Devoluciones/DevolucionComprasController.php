@@ -49,12 +49,12 @@ class DevolucionComprasController extends Controller
                                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                             })
                             ->when($request->estado, function($query) use ($request){
-                                return $query->where('estado', $request->estado);
+                                return $query->where('enable', $request->estado);
                             })
-                            ->when($request->proveedor_id, function($query) use ($request){
+                            ->when($request->id_proveedor, function($query) use ($request){
                                 return $query->whereHas('proveedor', function($query) use ($request)
                                 {
-                                    $query->where('proveedor_id', $request->proveedor_id);
+                                    $query->where('id_proveedor', $request->id_proveedor);
 
                                 });
                             })

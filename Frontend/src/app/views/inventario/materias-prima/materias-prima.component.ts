@@ -26,15 +26,20 @@ export class MateriasPrimaComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        if(!this.categorias.lenght){
+            this.apiService.getAll('categorias').subscribe(categorias => { 
+                this.categorias = categorias;
+            }, error => {this.alertService.error(error); });
+        }
     }
 
     public loadAll() {
+        this.filtro.id_categoria = '';
         this.loading = true;
         this.apiService.getAll('materias-primas').subscribe(productos => { 
             this.productos = productos;
             this.apiService.getAll('sucursales').subscribe(sucursales => { 
                 this.sucursales = sucursales;
-                this.checkSucursales();
             }, error => {this.alertService.error(error); this.loading = false;});
             this.loading = false; this.filtrado = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -65,66 +70,9 @@ export class MateriasPrimaComponent implements OnInit {
 
     }
 
-    // sucursales
-
-        public checkSucursales(){
-
-            for(let i = 0; i < this.productos.data.length; i++){            
-                var producto = this.productos.data[i];
-                producto.lista_sucursales = JSON.parse(JSON.stringify(this.sucursales));
-
-                for(let j = 0; j < producto.sucursales.length; j++){
-                    var producto_sucursal = producto.sucursales[j];
-                    
-                    for(let k = 0; k < producto.lista_sucursales.length; k++){
-                        var lista_sucursal = producto.lista_sucursales[k];
-
-                        if (lista_sucursal.id == producto_sucursal.sucursal_id) {
-                            lista_sucursal.agregado = true;
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
-
-        checked(producto:any, sucursal:any){
-            if(!sucursal.agregado) {
-                this.addSucursal(producto, sucursal);
-            }else{
-                this.deleteSucursal(producto, sucursal);
-            }
-
-        }
-
-        public addSucursal(producto:any, sucursal:any){
-            let item:any = {};
-            item.producto_id = producto.id;
-            item.activo = true;
-            item.inventario = false;
-            item.sucursal_id = sucursal.id;
-            this.apiService.store('producto/sucursal', item).subscribe(data => {
-                producto.sucursales.push(data);
-                let sucursal = producto.lista_sucursales.find((x:any) => x.id == data.sucursal_id);
-                sucursal.agregado = true;
-                this.alertService.success("Agregado");
-            },error => {this.alertService.error(error); this.loading = false; });
-        }
-
-        public deleteSucursal(producto:any, sucursal:any) {
-            if (confirm('¿Desea eliminar el Registro?')) {
-                let psucursal = producto.sucursales.find((x:any) => x.sucursal_id == sucursal.id);
-                this.apiService.delete('producto/sucursal/', psucursal.id) .subscribe(data => {
-                    this.loadAll();
-                    this.alertService.success("Eliminado");
-                }, error => {this.alertService.error(error); });
-                       
-            }
-
-        }
+    public descargar(){
+        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+    }
 
     public setPagination(event:any):void{
         this.loading = true;
@@ -136,7 +84,7 @@ export class MateriasPrimaComponent implements OnInit {
 
     // Filtros
     openFilter(template: TemplateRef<any>) {
-        this.filtro.categoria_id = '';
+        this.filtro.id_categoria = '';
         if(!this.categorias.lenght){
             this.apiService.getAll('categorias').subscribe(categorias => { 
                 this.categorias = categorias;

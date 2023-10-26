@@ -27,6 +27,7 @@ export class ProveedoresComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
+        this.filtro.estado = '';
         this.apiService.getAll('proveedores').subscribe(proveedores => { 
             this.proveedores = proveedores;
             this.loading = false;
@@ -45,14 +46,10 @@ export class ProveedoresComponent implements OnInit {
         }
     }
 
-    public setEstado(cliente:any, activo:any):void{
-        this.loading = true;
-        cliente.activo = activo;
-        this.apiService.store('cliente', cliente).subscribe(data => {
-            this.loading = false;
-            cliente = data;
-            this.alertService.success('Guardado');
-        },error => {this.alertService.error(error); this.loading = false; });
+    public setEstado(proveedor:any){
+        this.apiService.store('proveedor', proveedor).subscribe(proveedor => { 
+            this.alertService.success('Actualizado');
+        }, error => {this.alertService.error(error); });
     }
 
     public delete(cliente:any){
@@ -75,23 +72,11 @@ export class ProveedoresComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-    openFilter(template: TemplateRef<any>) {
-        this.filtro.categoria_id = '';
-        if(!this.categorias.lenght){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
-                this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
-
     onFiltrar(){
         this.loading = true;
         this.apiService.store('proveedores/filtrar', this.filtro).subscribe(proveedores => { 
             this.proveedores = proveedores;
             this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

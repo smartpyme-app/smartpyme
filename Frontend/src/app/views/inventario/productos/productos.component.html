@@ -67,11 +67,11 @@
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
+                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                             {{ producto.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>

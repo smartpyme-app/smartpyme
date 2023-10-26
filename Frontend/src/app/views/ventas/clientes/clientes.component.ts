@@ -27,6 +27,7 @@ export class ClientesComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
+        this.filtro.estado = '';
         this.apiService.getAll('clientes').subscribe(clientes => { 
             this.clientes = clientes;
             this.loading = false;
@@ -73,17 +74,6 @@ export class ClientesComponent implements OnInit {
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-    // Filtros
-    openFilter(template: TemplateRef<any>) {
-        this.filtro.categoria_id = '';
-        if(!this.categorias.lenght){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
-                this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
     }
 
     onFiltrar(){

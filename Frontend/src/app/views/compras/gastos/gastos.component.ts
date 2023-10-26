@@ -18,6 +18,7 @@ export class GastosComponent implements OnInit {
     public clientes:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
+    public proveedores:any = [];
     public filtro:any = {};
     public filtrado:boolean = false;
 
@@ -29,9 +30,18 @@ export class GastosComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+            this.proveedores = proveedores;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
+        this.filtro.estado = '';
+        this.filtro.id_proveedor = '';
+        this.filtro.inicio = this.apiService.date();
+        this.filtro.fin = this.apiService.date();
+        
         this.loading = true;
         this.apiService.getAll('gastos').subscribe(gastos => { 
             this.gastos = gastos;
@@ -49,8 +59,7 @@ export class GastosComponent implements OnInit {
         }
     }
 
-    public setEstado(gasto:any, estado:string){
-        gasto.estado = estado;
+    public setEstado(gasto:any){
         this.apiService.store('gasto', gasto).subscribe(gasto => { 
             this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); });
@@ -78,34 +87,9 @@ export class GastosComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-
-    openFilter(template: TemplateRef<any>) {     
-
-        if(!this.filtrado) {
-            this.filtro.inicio = this.apiService.date();
-            this.filtro.fin = this.apiService.date();
-            this.filtro.sucursal_id = '';
-            this.filtro.usuario_id = '';
-            this.filtro.categoria = 'Todas';
-        }
-        if(!this.usuarios.data){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-                this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
 
     onFiltrar(){
         this.loading = true;
-        if (this.filtro.categoria == 'Todas')
-            this.filtro.categoria = '';
 
         this.apiService.store('gastos/filtrar', this.filtro).subscribe(gastos => { 
             this.gastos = gastos;
@@ -114,5 +98,10 @@ export class GastosComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }
+
+    public descargar(){
+        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+    }
+
 
 }

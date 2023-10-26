@@ -24,12 +24,12 @@ class Producto extends Model {
         'marca',
         'etiquetas',
         'tipo',
-        'activo',
+        'enable',
         'id_empresa',
     );
 
-    protected $appends = ['nombre_categoria'];
-    protected $casts = ['activo' => 'boolean'];
+    protected $appends = ['nombre_categoria', 'img'];
+    protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
     {
@@ -55,6 +55,12 @@ class Producto extends Model {
     public function getEtiquetasAttribute($value) 
     {
         return is_string($value) ? json_decode($value) : $value;
+    }
+    
+
+    public function getImgAttribute() 
+    {
+        return 'productos/default.jpg';
     }
     
     public function getNombreCategoriaAttribute()

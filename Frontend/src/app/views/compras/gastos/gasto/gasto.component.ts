@@ -17,6 +17,7 @@ export class GastoComponent implements OnInit {
     public gasto:any = {};
     public categorias:any = [];
     public proveedores:any = [];
+    public formaspago:any = [];
     public loading = false;
     modalRef?: BsModalRef;
 
@@ -39,14 +40,13 @@ export class GastoComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
             this.gasto = {};
-            this.gasto.metodo_pago = 'Efectivo';
-            this.gasto.condicion = 'Contado';
-            this.gasto.estado = 'Pagado';
-            this.gasto.fecha_pago = this.apiService.date();
+            this.gasto.forma_pago = 'Efectivo';
+            this.gasto.estado = 'Confirmado';
+            // this.gasto.fecha_pago = this.apiService.date();
             this.gasto.fecha = this.apiService.date();
-            this.gasto.empresa_id = this.apiService.auth_user().empresa_id;
-            this.gasto.sucursal_id = this.apiService.auth_user().sucursal_id;
-            this.gasto.usuario_id = this.apiService.auth_user().id;
+            this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
+            this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
+            // this.gasto.id_usuario = this.apiService.auth_user().id;
         }
 
         this.apiService.getAll('gastos/categorias').subscribe(categorias => {
@@ -56,6 +56,11 @@ export class GastoComponent implements OnInit {
 
         this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('formas-de-pago').subscribe(formaspago => {
+            this.formaspago = formaspago;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }

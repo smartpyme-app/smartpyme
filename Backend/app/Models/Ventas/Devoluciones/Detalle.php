@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Detalle extends Model {
 
-    protected $table = 'venta_devolucion_detalles';
+    protected $table = 'detalles_devolucion_venta';
     protected $fillable = array(
         'producto_id',
         'cantidad',
@@ -20,7 +20,7 @@ class Detalle extends Model {
         'gravada',
         'iva',
         'total',
-        'devolucion_id'
+        'id_devolucion_venta'
     );
     protected $appends = ['nombre_producto', 'medida', 'exenta', 'gravada', 'no_sujeta'];
 
@@ -58,7 +58,7 @@ class Detalle extends Model {
     }
 
     public function venta(){
-        return $this->belongsTo('App\Models\Ventas\Devoluciones\Devolucion','devolucion_id');
+        return $this->belongsTo('App\Models\Ventas\Devoluciones\Devolucion','id_devolucion_venta');
     }
 
 

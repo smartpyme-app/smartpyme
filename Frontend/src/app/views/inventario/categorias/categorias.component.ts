@@ -13,7 +13,6 @@ export class CategoriasComponent implements OnInit {
     public categorias:any = [];
     public categoria:any = {};
     public filtro:any = {};
-    public buscador:any = '';
     public loading:boolean = false;
 
     modalRef?: BsModalRef;
@@ -23,12 +22,12 @@ export class CategoriasComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.filtro.estado = '';
         this.loadAll();
     }
 
     public loadAll() {
         this.loading = true;
+        this.filtro.estado = '';
         this.apiService.getAll('categorias').subscribe(categorias => { 
             this.categorias = categorias;
             this.loading = false;

@@ -17,7 +17,7 @@ class Categoria extends Model
         'id_empresa'
     );
 
-    protected $casts = ['enable' => 'boolean'];
+    protected $casts = ['enable' => 'string'];
 
     protected static function booted()
     {

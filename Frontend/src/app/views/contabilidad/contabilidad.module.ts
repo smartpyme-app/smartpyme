@@ -5,8 +5,8 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
-import { PipesModule } from '../../pipes/pipes.module';
-import { SharedModule } from '../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 import { NgChartsModule } from 'ng2-charts';
 import { NgSelectModule } from '@ng-select/ng-select';
 
@@ -14,7 +14,7 @@ import { ContabilidadRoutingModule } from './contabilidad.routing.module';
 
 import { LibroIvaComponent } from './libro-iva/libro-iva.component';
 import { LibroComprasComponent } from './libro-compras/libro-compras.component';
-import { GalonajeComponent } from './galonaje/galonaje.component';
+import { PresupuestosComponent } from './presupuestos/presupuestos.component';
 
 import { CajasChicasComponent } from './cajas-chicas/cajas-chicas.component';
 import { CajaChicaComponent } from './cajas-chicas/caja-chica/caja-chica.component';
@@ -41,7 +41,7 @@ import { ActivosCategoriasComponent } from './activos/categorias/activos-categor
   declarations: [
     LibroIvaComponent,
   	LibroComprasComponent,
-    GalonajeComponent,
+    PresupuestosComponent,
     CajasChicasComponent,
     CajaChicaComponent,
     CajaChicaDetallesComponent,
@@ -52,7 +52,7 @@ import { ActivosCategoriasComponent } from './activos/categorias/activos-categor
   exports: [
     LibroIvaComponent,
   	LibroComprasComponent,
-    GalonajeComponent,
+    PresupuestosComponent,
     CajasChicasComponent,
     CajaChicaComponent,
     CajaChicaDetallesComponent,

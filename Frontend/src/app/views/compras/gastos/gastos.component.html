@@ -1,41 +1,58 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Gastos <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a routerLink="/gastos">Gastos</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Gastos</h2>
+    <button routerLink="/gasto/crear" tooltip="Crear gasto (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir gasto</button>
+</section>
 
-<div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="gastos?.total"> {{ gastos?.total + ' registros' }} </span>
-
-        <form name="form" (ngSubmit)="search()" autocomplete="off">
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-            <button tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
-            <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
-            <button routerLink="/gasto/nuevo" tooltip="Crear (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="gastos?.total">
+                Mostrando {{ gastos?.to }} de {{ gastos?.total + ' registros' }}
+            </span>
         </div>
-        </form>
 
+        <div class="col">
+            <div class="d-flex gap-2">
+                <button tooltip="Descargar gastos" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.concepto" focus="true">
+                </form>
+                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <input type="date" name="inicio" [(ngModel)]="filtro.inicio" class="form-control bg-default">
+            <input type="date" name="fin" [(ngModel)]="filtro.fin" (change)="onFiltrar()"  class="form-control bg-default">
+            <select name="estado" (change)="onFiltrar()" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Cancelado">Cancelado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Confirmado">Confirmado</option>
+            </select>
+            <ng-select name="id_proveedor" (change)="onFiltrar()" [(ngModel)]="filtro.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
+                <ng-option value="">Proveedor</ng-option>
+                <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                    {{proveedor.nombre}}
+                </ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row">
         <div class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
                         <th>Fecha</th>
                         <th>Proveedor</th>
-                        <th>Categoría</th>
-                        <th>Referencia</th>
+                        <th>Concepto</th>
                         <th>Método de pago</th>
-                        <th>Condición</th>
                         <th>Estado</th>
                         <!-- <th>Descripción</th> -->
                         <th class="text-center">Total</th>
@@ -45,10 +62,10 @@
                 <tbody>
                     <tr>
                         <td colspan="10" class="text-center" *ngIf="gastos?.total < 1 && !loading">
-                            <span class="badge badge-primary">No tiene gastos registradas</span>
+                            <span class="badge bg-primary">No tiene gastos registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
+                            <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
@@ -56,43 +73,32 @@
                         
                         <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{gasto.nombre_proveedor }}</td>
-                        <td>{{gasto.nombre_categoria}} </td>
-                        <td>{{gasto.referencia}} </td>
-                        <td>{{gasto.metodo_pago}} </td>
-                        <td> <span tooltip="Fecha de pago: {{ gasto.fecha_pago | date:'dd/MM/yyyy'}}">{{gasto.condicion }}</span> </td>
-                        <!-- <td>{{gasto.descripcion | truncate:'30'}}</td> -->
+                        <td>{{gasto.concepto}}</td>
+                        <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <span class="badge click" [ngClass]="{'badge-warning' : gasto?.estado == 'Pendiente', 'badge-success' : gasto?.estado == 'Pagado'}" [popover]="popTemplate" [outsideClick]="true">
-                                {{gasto.estado}}
-                            </span>
-                            <ng-template #popTemplate>
-                                <button class="btn btn-default btn-xs" (click)="setEstado(gasto, 'Pagado')">Pagado</button>
-                                <button class="btn btn-default btn-xs" (click)="setEstado(gasto, 'Pendiente')">Pendiente</button>
-                            </ng-template>
+                            <select name="estado" [(ngModel)]="gasto.estado" class="form-select w-auto border-0" (change)="setEstado(gasto)" [ngClass]="{'bg-light-danger' : gasto.estado == 'Cancelado', 'bg-light-warning' : gasto.estado == 'Pendiente', 'bg-light-success' : gasto.estado == 'Confirmado'}">
+                                <option value="Confirmado">Confirmado</option>
+                                <option value="Cancelado">Cancelado</option>
+                                <option value="Pendiente">Pendiente</option>
+                            </select>
                         </td>
                         <td class="text-center">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a class="btn btn-default" (click)="delete(gasto.id)" tooltip="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                <a class="btn btn-default" routerLink="/gasto/{{gasto.id}}" tooltip="Ver">
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>  
+                            <a class="btn btn-light" routerLink="/gasto/{{gasto.id}}" tooltip="Ver y editar">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </td>
 
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="card-footer" *ngIf="gastos?.last_page > 1">
-        <div class="d-flex justify-content-center">
+
+        <div class="col-12" *ngIf="gastos?.last_page > 1">
             <app-pagination [items]="gastos" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
-</div>
+</section>
 
 
 <ng-template #mfilter>

@@ -1,116 +1,139 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Materias primas</h2>
+    <button routerLink="/materia-prima/crear" [queryParams]="{ tipo:'Materia prima' }" tooltip="Crear materia prima (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir materia prima</button>
+</section>
 
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Materias Primas <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Materias Primas</a></li>
-        </ol>
-    </div>
-</div>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="productos?.total">
+                Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
+            </span>
+        </div>
 
-<div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="productos?.total">{{ productos?.total + ' registros' }}</span>
-
-        <form name="form" (ngSubmit)="search()" autocomplete="off">
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <div class="input-group-btn">
-                <button type="submit" tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-                <button type="button" tooltip="Actualizar" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
-                <a tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F8"><i class="fa fa-filter"></i></a>
-                <a routerLink="/materia-prima/nuevo" tooltip="Crear" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></a>
+        <div class="col">
+            <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel>
+                <button tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+                </form>
+                <button tooltip="Filtrar (F6)" (click)="search()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
             </div>
         </div>
-        </form>
-
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-borderless table-hover mb-0">
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <ng-select name="id_categoria" (change)="onFiltrar()" [(ngModel)]="filtro.id_categoria" class="form-select p-0 border-0 bg-default" style="width: 150px;">
+                <ng-option value="">Categoria</ng-option>
+                <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
+                    {{categoria.nombre}}
+                </ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-borderless table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Categoria</th>
-                        <th>Sucursales</th>
-                        <th>Medida</th>
+                        <th>Producto</th>
+                        <th class="d-none d-lg-table-cell">Estado</th>
+                        <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="text-center">Stock</th>
-                        <th class="text-center">Costo</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                        <th class="text-right">Costo</th>
+                        <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
-                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene productos registrados</span>
+                            <span class="badge bg-primary">No tiene productos registrados</span>
                         </td>
                         <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                            <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
-                        <td>{{ producto.id }}</td>
-                        <td>{{ producto.nombre }}</td>
-                        <td> {{ producto.nombre_categoria }} &rsaquo; {{ producto.nombre_subcategoria }} </td>
                         <td>
-                            <div class="btn-group" role="group" *ngIf="producto?.lista_sucursales?.length">
-                                <span *ngFor="let sucursal of producto.lista_sucursales; let i=index">
-                                    <input type="checkbox" (click)="checked(producto, sucursal)" [checked]="sucursal.agregado" class="btn-check" id="btncheck{{producto.id}}{{sucursal.id}}" autocomplete="off">
-                                    <label title="{{ sucursal?.nombre }}" class="btn btn-outline-primary rounded-circle" for="btncheck{{producto.id}}{{sucursal.id}}">
-                                        {{ sucursal?.nombre?.substring(0, 1) }}
-                                    </label>
-                                </span>
-                            </div>
+                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
+                            {{ producto.nombre }}
                         </td>
-                        <td>{{ producto.medida }} </td>
+                        <td class="d-none d-lg-table-cell">
+                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </td>
+                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="text-center">
-                            <span *ngIf="producto.inventario"  class="click" [popover]="popTemplate" [outsideClick]="true" triggers="mouseenter:mouseleave">
-                                {{ producto.inventarios | sum:'stock' | number:'1.2' }}
+                            <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                {{ producto.inventarios | sum:'stock' }}
+                            </span>
+                            <span *ngIf="producto?.inventarios?.length == 0" >
+                                Sin control
                             </span>
                             <ng-template #popTemplate>
                                 <span *ngIf="producto?.inventarios?.length > 0">
-                                    <p *ngFor="let inventario of producto?.inventarios">
-                                        <b>{{ inventario.nombre_bodega }}:</b> {{ inventario.stock }}
-                                    </p>
+                                    <table width="200px">
+                                        <thead>
+                                            <tr>
+                                                <td>Sucursal</td>
+                                                <td class="text-right">Stock</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let inventario of producto?.inventarios">
+                                                <td>{{ inventario.nombre_sucursal}}</td>
+                                                <td class="text-right">{{ inventario.stock }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </span>
                                 <span *ngIf="producto?.inventarios?.length == 0">
                                     <p> Sin inventarios configurados </p>
                                 </span>
                             </ng-template>
-                            <span *ngIf="!producto.inventario">
-                                Sin control
-                            </span>
                         </td>
-                        <td class="text-center">{{ producto.costo  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ producto.costo  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div role="group" class="btn-group">
-                                <a *ngIf="apiService.auth_user().tipo == 'Administrador'" tooltip="Eliminar" class="btn btn-default" (click)="delete(producto.id)">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                
-                                <a tooltip="Cardex" class="btn btn-default" routerLink="/kardex/{{ producto.id }}" >
-                                    <i class="fa fa-list-alt"></i>
-                                </a>
-                                <a tooltip="Editar" class="btn btn-default" routerLink="/materia-prima/{{ producto.id }}" >
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column align-items-start">
+                                    <a routerLink="/materia-prima/editar/{{producto.id}}" class="btn">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a routerLink="/kardex/{{producto.id}}" class="btn">
+                                        <i class="fa fa-fw fa-right-left"></i> Kardex
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn">
+                                        <i class="fa fa-fw fa-wrench"></i> Ajustar
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn">
+                                        <i class="fa fa-fw fa-arrow-right-from-bracket"></i> Trasladar
+                                    </a>
+                                    <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="card-footer" *ngIf="productos?.last_page > 1">
-        <div class="d-flex justify-content-center">
+
+        <div class="col-12" *ngIf="productos?.last_page > 1">
             <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
-</div>
+</section>
 
 
 <ng-template #mfilter>

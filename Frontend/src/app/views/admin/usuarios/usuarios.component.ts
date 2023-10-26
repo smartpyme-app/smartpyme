@@ -33,6 +33,10 @@ export class UsuariosComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
+        this.filtro.id_sucursal = '';
+        this.filtro.tipo = '';
+        this.filtro.estado = '';
+        
         this.apiService.getAll('usuarios').subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;
@@ -105,21 +109,6 @@ export class UsuariosComponent implements OnInit {
         }
     }
 
-    // Filtros
-
-    openFilter(template: TemplateRef<any>) {     
-
-        if(!this.filtrado) {
-            this.filtro.sucursal_id = '';
-            this.filtro.tipo = '';
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
 
     onFiltrar(){
         this.loading = true;

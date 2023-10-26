@@ -1,67 +1,80 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Proveedores <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Proveedores</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Proveedores</h2>
+    <button routerLink="/proveedor/crear" tooltip="Crear proveedor (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir proveedor</button>
+</section>
 
-<div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="proveedores?.total">{{ proveedores?.total + ' registros' }}</span>
-
-        <form name="form" (ngSubmit)="search()" autocomplete="off">
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-            <a tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></a>
-            <a tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></a>
-            <app-importar-excel (loadAll)="loadAll()" [nombre]="'Proveedores'"></app-importar-excel>
-            <button routerLink="/proveedor/nuevo" tooltip="Crear proveedor (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="proveedores?.total">
+                Mostrando {{ proveedores?.to }} de {{ proveedores?.total + ' registros' }}
+            </span>
         </div>
-        </form>
 
+        <div class="col">
+            <div class="d-flex gap-2">
+                <!-- <button tooltip="Descargar proveedores" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button> -->
+                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
+                    <input type="search" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre" focus="true">
+                </form>
+                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado" (change)="onFiltrar()" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
         <div class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nombre</th>
-                        <th class="d-none d-md-table-cell">Registro</th>
                         <th class="d-none d-md-table-cell">Municipio</th>
                         <th>Giro</th>
+                        <th>Registro</th>
+                        <th>NIT</th>
                         <th>Teléfono</th>
+                        <th>Estado</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td colspan="8" class="text-center" *ngIf="proveedores?.total < 1 && !loading">
-                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene proveedores registrados</span>
+                            <span class="badge bg-primary">No tiene proveedores registrados</span>
                         </td>
                         <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                            <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor=" let proveedor of proveedores?.data">
-                        <td>{{ proveedor.id }}</td>
                         <td>{{ proveedor.nombre  | truncate:30 }}</td>
-                        <td class="d-none d-md-table-cell">{{ proveedor.registro }}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.municipio }}</td>
                         <td>{{ proveedor.giro | truncate:20 }}</td>
+                        <td>{{ proveedor.registro }}</td>
+                        <td>{{ proveedor.nit | truncate:20 }}</td>
                         <td>{{ proveedor.telefono }}</td>
+                        <td class="d-none d-lg-table-cell">
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(proveedor)" [(ngModel)]="proveedor.enable" [ngClass]="{'bg-light-danger' : proveedor?.enable == false, 'bg-light-success' : proveedor?.enable == true}">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </td>
                         <td class="text-center">
-                            <div role="group" class="btn-group">
-                                <a tooltip="Eliminar" class="btn btn-default" (click)="delete(proveedor)">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                <a tooltip="Editar" class="btn btn-default" routerLink="/proveedor/{{ proveedor.id }}" >
+                            <div class="d-flex gap-2">
+                                <a tooltip="Editar" class="btn btn-light" routerLink="/proveedor/{{ proveedor.id }}" >
                                     <i class="fa fa-arrow-right"></i>
                                 </a>
                             </div>
@@ -70,13 +83,12 @@
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="card-footer" *ngIf="proveedores?.last_page > 1">
-        <div class="d-flex justify-content-center">
+
+        <div class="col-12" *ngIf="proveedores?.last_page > 1">
             <app-pagination [items]="proveedores" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
-</div>
+</section>
 
 
 

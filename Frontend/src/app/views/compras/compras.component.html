@@ -1,41 +1,60 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Compras <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Compras</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Compras</h2>
+    <button routerLink="/compra/crear" tooltip="Crear compra (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir compra</button>
+</section>
 
-<div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="compras?.total">{{ compras?.total + ' registros' }}</span>
-
-        <form name="form" (ngSubmit)="search()" autocomplete="off">
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-            <button tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
-            <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
-            <button routerLink="/compra/nuevo" tooltip="Crear compra (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="compras?.total">
+                Mostrando {{ compras?.to }} de {{ compras?.total + ' registros' }}
+            </span>
         </div>
-        </form>
 
+        <div class="col">
+            <div class="d-flex gap-2">
+                <button tooltip="Descargar compras" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.referencia" focus="true">
+                </form>
+                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <input type="date" name="inicio" [(ngModel)]="filtro.inicio" class="form-control bg-default">
+            <input type="date" name="fin" [(ngModel)]="filtro.fin" (change)="onFiltrar()"  class="form-control bg-default">
+            <select name="estado" (change)="onFiltrar()" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Anulada">Anulada</option>
+                <option value="Consigna">Consigna</option>
+                <option value="Pagada">Pagada</option>
+            </select>
+            <ng-select name="id_proveedor" (change)="onFiltrar()" [(ngModel)]="filtro.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
+                <ng-option value="">Proveedor</ng-option>
+                <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                    {{proveedor.nombre}}
+                </ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row">
         <div class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th class="d-none d-md-table-cell">Fecha</th>
+                        <th>Fecha</th>
                         <th>Proveedor</th>
-                        <th>Documento</th>
-                        <th>Método de pago</th>
-                        <th>Condición</th>
+                        <th class="d-none d-md-table-cell">Documento</th>
+                        <th class="d-none d-md-table-cell">Método de pago</th>
+                        <th>Fecha pago</th>
                         <th>Estado</th>
                         <th class="text-right">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
@@ -44,55 +63,58 @@
                 <tbody>
                     <tr>
                         <td colspan="10" class="text-center" *ngIf="compras?.total < 1 && !loading">
-                            <span class="badge badge-primary">No tiene compras registradas</span>
+                            <span class="badge bg-primary">No tiene compras registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
+                            <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
                         
-                        <td>{{compra.id}}</td>
-                        <td class="d-none d-md-table-cell">{{compra.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/{{compra.proveedor_id}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
-                        <td>{{compra.metodo_pago}}</td>
-                        <td> <span tooltip="Fecha de pago: {{ compra.fecha_pago | date:'dd/MM/yyyy'}}">{{compra.condicion }}</span> </td>
+                        <td>{{compra.forma_pago}}</td>
+                        <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge click" [ngClass]="{'badge-warning' : compra?.estado == 'Pendiente', 'badge-success' : compra?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
-                                {{compra.estado}}
-                            </span>
-                            <ng-template #popTemplate>
-                                <button class="btn btn-default btn-xs" (click)="setEstado(compra, 'Pagada')">Pagada</button>
-                                <button class="btn btn-default btn-xs" (click)="setEstado(compra, 'Pendiente')">Pendiente</button>
-                            </ng-template>
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(compra)" [(ngModel)]="compra.estado" [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-info' : compra?.estado == 'Consigna', 'bg-light-success' : compra?.estado == 'Pagada'}">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Pagada">Pagada</option>
+                                <option value="Anulada">Anulada</option>
+                                <option value="Consigna">Consigna</option>
+                            </select>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a class="btn btn-default" (click)="delete(compra.id)" tooltip="Eliminar">
-                                    <i class="fa fa-trash-alt"></i>
-                                </a>
-                                <a routerLink="/devolucion-compra-nueva" [queryParams]="{ compra_id: compra.id }" class="btn btn-default" tooltip="Hacer devolucion"><i class="fa fa-right-left"></i></a>
-                                <a class="btn btn-default" routerLink="/compra/{{compra.id}}" tooltip="Ver detalle">
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>  
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column align-items-start">
+                                    <a routerLink="/compra/editar/{{compra.id}}" class="btn">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a routerLink="/compra/{{compra.id}}" class="btn">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                                    </a>
+                                    <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a> -->
+                                </div>
+                            </ng-template>
                         </td>
 
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="card-footer" *ngIf="compras?.last_page > 1">
-        <div class="d-flex justify-content-center">
+
+        <div class="col-12" *ngIf="compras?.last_page > 1">
             <app-pagination [items]="compras" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
-</div>
-
+</section>
 
 
 <ng-template #mfilter>
@@ -106,16 +128,8 @@
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onFiltrar()">
-        <div class="row">
-            <div class="form-group col-sm-12">
-                <label for="">Proveedor:</label>
-                <ng-select name="proveedor_id" [(ngModel)]="filtro.proveedor_id">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.nombre }}
-                    </ng-option>
-                </ng-select>
-            </div>
+        <div class="row text-center">
+
             <div class="form-group col-sm-6">
                 <label for="">Del:</label>
                 <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
@@ -124,13 +138,42 @@
                 <label for="">Al:</label>
                 <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
             </div>
+
             <div class="form-group col-sm-12">
-                <label for="filtro.estado">Estado:</label>
-                <select [(ngModel)]="filtro.estado" class="form-select" name="filtro.estado">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.sucursal_id" class="form-select" name="filtro.sucursal_id">
                     <option value="">Todos</option>
-                    <option value="Pagada">Pagada</option>
-                    <option value="Pendiente">Pendiente</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
                 </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.usuario">Empleado:</label>
+                <select [(ngModel)]="filtro.usuario_id" class="form-select" name="filtro.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.categoria">Categoría:</label>
+                <input type="text" list="compras" [(ngModel)]="filtro.categoria" class="form-control" name="filtro.categoria">
+                <datalist id="compras">
+                    <option value="Todas">
+                    <option value="Transporte">
+                    <option value="Alimentación">
+                    <option value="Viaticos">
+                    <option value="Agua">
+                    <option value="Luz">
+                    <option value="Teléfono">
+                    <option value="Internet">
+                    <option value="Cable">
+                    <option value="Material de oficina">
+                    <option value="Material de limpieza">
+                    <option value="Otros">
+                </datalist>
             </div>
         </div>
         

@@ -66,22 +66,6 @@ export class AjustesComponent implements OnInit {
     }
 
 
-    // Filtros
-    openFilter(template: TemplateRef<any>) {
-        this.filtro.categoria_id = '';
-        if(!this.bodegas.length){
-            this.apiService.getAll('bodegas').subscribe(bodegas => { 
-                this.bodegas = bodegas;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.productos.length){
-            this.apiService.getAll('productos/list').subscribe(productos => { 
-                this.productos = productos;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
-
     onFiltrar(){
         this.loading = true;
         this.apiService.store('ajustes/filtrar', this.filtro).subscribe(ajustes => { 

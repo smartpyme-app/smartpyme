@@ -1,74 +1,72 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Traslados <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Traslados</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Traslados</h2>
+    <button routerLink="/traslado/crear" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+</section>
 
-<div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="traslados?.total">{{ traslados?.total + ' registros' }}</span>
-
-        <form name="form" (ngSubmit)="search()" autocomplete="off">
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button>
-            <a tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></a>
-            <a tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></a>
-            <app-descargar-excel *ngIf="filtrado && traslados?.total" [nombre]="'Productos'"></app-descargar-excel>
-            <button routerLink="/traslado/nuevo" tooltip="Crear (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="traslados?.total">
+                Mostrando {{ traslados?.to }} de {{ traslados?.total + ' registros' }}
+            </span>
         </div>
-        </form>
 
+        <div class="col">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre" focus="true">
+                    <input type="date" name="inicio" class="form-control pull-right" [(ngModel)]="filtro.inicio">
+                    <input type="date" name="filtro" class="form-control pull-right" [(ngModel)]="filtro.fin">
+                </form>
+                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Fecha</th>
+                        <th>Producto</th>
                         <th>De</th>
                         <th>Para</th>
-                        <th class="text-center">Estado</th>
-                        <th class="hidden-xs text-center">Productos</th>
+                        <th>Estado</th>
+                        <th class="text-center">Cantidad</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td colspan="8" class="text-center" *ngIf="traslados?.total < 1 && !loading">
-                            <span class="badge badge-primary">No tiene traslados registrados</span>
+                            <span class="badge bg-primary">No tiene traslados registrados</span>
                         </td>
                         <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
+                            <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let traslado of traslados?.data">
                         
-                        <td>{{ traslado.id }}</td>
-                        <td>{{ traslado.fecha | date:'dd-MM-yyyy' }}</td>
-                        <td>{{ traslado?.origen.nombre }}</td>
-                        <td>{{ traslado?.destino.nombre }}</td>
-                        <td class="text-center">
-                            <span class="badge" [ngClass]="{'badge-warning' : traslado?.estado == 'En Proceso', 'badge-success' : traslado?.estado == 'Aprobado'}">
+                        <td>{{ traslado.created_at | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ traslado.nombre_producto }}</td>
+                        <td>{{ traslado.nombre_origen }}</td>
+                        <td>{{ traslado.nombre_destino }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="{'bg-warning' : traslado.estado == 'Cancelado', 'bg-success' : traslado.estado == 'Confirmado'}">
                                 {{traslado.estado}}
                             </span>
                         </td>
-                        <td class="text-center">{{ traslado.total }}</td>
+                        <td class="text-center">{{ traslado.cantidad }}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
-                                <a class="btn btn-default" href="{{ apiService.baseUrl + '/api/reporte/traslado/' + traslado.id + '?token=' + apiService.auth_token() }}" target="_blank" tooltip="Imprimir">
-                                    <i class="fa fa-print"></i>
-                                </a>
-                                <a class="btn btn-default" routerLink="/traslado/{{ traslado.id }}" tooltip="Ver">
-                                    <i class="fa fa-arrow-right"></i>
+                                <a class="btn btn-light" tooltip="Cancelar traslado">
+                                    <i class="fa fa-ban"></i>
                                 </a>
                             </div>  
                         </td>
@@ -77,13 +75,12 @@
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="card-footer" *ngIf="traslados?.last_page > 1">
-        <div class="d-flex justify-content-center">
+
+        <div class="col-12" *ngIf="traslados?.last_page > 1">
             <app-pagination [items]="traslados" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
-</div>
+</section>
 
 
 

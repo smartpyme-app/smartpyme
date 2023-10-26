@@ -3,6 +3,8 @@
 namespace App\Models\Ventas\Clientes;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cliente extends Model {
@@ -11,7 +13,7 @@ class Cliente extends Model {
     protected $table = 'clientes';
     protected $fillable = [
        'nombre',
-       'registro',
+       'ncr',
        'giro',
        'tipo_contribuyente',
        'dui',
@@ -31,6 +33,18 @@ class Cliente extends Model {
        'empresa_id',
     ];
 
+    protected $casts = ['enable' => 'boolean'];
+
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+    }
 
     public function getEtiquetasAttribute($value) 
     {

@@ -4,7 +4,7 @@
         <span class="activity active"></span>
         <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="rounded-circle" height="35px">
     </a>
-    <ul class="dropdown-menu dropdown-menu-end">
+    <ul class="dropdown-menu dropdown-menu-end" style="min-width: 250px;">
         <li>
             <a class="dropdown-item text-center">
                 <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="rounded-circle" height="35px">
@@ -12,12 +12,17 @@
             </a>
         </li>
         <li>
-            <a class="dropdown-item">
-                <i class="fa fa-user-circle"></i> Cuenta
+            <a class="dropdown-item" routerLink="/suscripcion">
+                <i class="fa fa-star"></i> Suscripción
             </a>
         </li>
         <li>
-            <a class="dropdown-item">
+            <a class="dropdown-item" routerLink="/cuenta">
+                <i class="fa fa-briefcase"></i> Cuenta
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" routerLink="/preferencias">
                 <i class="fa fa-sliders-h"></i> Preferencias
             </a>
         </li>

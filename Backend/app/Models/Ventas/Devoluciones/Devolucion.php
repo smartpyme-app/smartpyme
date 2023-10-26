@@ -26,6 +26,7 @@ class Devolucion extends Model {
         'iva',
         'total',
         'nota',
+        'enable',
         'id_venta',
         'id_caja',
         'id_corte',
@@ -35,14 +36,15 @@ class Devolucion extends Model {
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'exenta', 'gravada', 'no_sujeta'];
+    protected $casts = ['enable' => 'string'];
 
     protected static function booted()
     {
         $usuario = JWTAuth::parseToken()->authenticate();
 
-        if ($usuario->tipo != 'Administrador') {
-            static::addGlobalScope('sucursal', function (Builder $builder) use ($usuario) {
-                $builder->where('id_sucursal', $usuario->id_sucursal);
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
             });
         }
     }
@@ -95,7 +97,7 @@ class Devolucion extends Model {
     }
 
     public function detalles(){
-        return $this->hasMany('App\Models\Ventas\Devoluciones\Detalle','id_devolucion');
+        return $this->hasMany('App\Models\Ventas\Devoluciones\Detalle','id_devolucion_venta');
     }
 
 

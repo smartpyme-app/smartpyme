@@ -28,10 +28,20 @@ export class DevolucionesVentasComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
         this.loading = true;
+        this.filtro.inicio = null;
+        this.filtro.fin = this.apiService.date();
+        this.filtro.id_sucursal = '';
+        this.filtro.estado = '';
+        this.filtro.id_cliente = '';
+        this.filtro.id_usuario = '';
+
         this.apiService.getAll('devoluciones/ventas').subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;this.filtrado = false;
@@ -53,6 +63,10 @@ export class DevolucionesVentasComponent implements OnInit {
         this.apiService.store('venta', venta).subscribe(venta => { 
             this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); });
+    }
+
+    public descargar(){
+        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     public delete(id:number) {

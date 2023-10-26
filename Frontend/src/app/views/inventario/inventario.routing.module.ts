@@ -5,6 +5,9 @@ import { LayoutComponent } from '../../layout/layout.component';
 import { ProductosComponent } from '../../views/inventario/productos/productos.component';
 import { ProductoComponent } from '../../views/inventario/productos/producto/producto.component';
 import { PromocionesComponent } from '../../views/inventario/promociones/promociones.component';
+
+import { ProductosConsignasComponent } from '../../views/inventario/consignas/productos-consignas.component';
+
 import { MateriasPrimaComponent } from '../../views/inventario/materias-prima/materias-prima.component';
 import { MateriaPrimaComponent } from '../../views/inventario/materias-prima/materia-prima/materia-prima.component';
 import { KardexComponent } from '../../views/inventario/kardex/kardex.component';
@@ -29,23 +32,28 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Inventario',
     children: [
-        { path: 'productos', component: ProductosComponent},
-        { path: 'producto/crear', component: ProductoComponent },
-        { path: 'producto/editar/:id', component: ProductoComponent },
+        { path: 'productos', component: ProductosComponent, title: 'Productos' },
+        { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
+        { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
 
-        { path: 'materias-primas', component: MateriasPrimaComponent},
-        { path: 'materia-prima/:id', component: MateriaPrimaComponent},
+        { path: 'productos/consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
+        
+        { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
+        { path: 'materia-prima', component: MateriasPrimaComponent, title: 'Materias primas' },
+        { path: 'materia-prima/crear', component: ProductoComponent, title: 'Materia prima' },
+        { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
+
         { path: 'producto/:id', component: ProductoComponent },
         { path: 'kardex/:id', component: KardexComponent },
         { path: 'promociones', component: PromocionesComponent},
         
-        { path: 'traslados', component: TrasladosComponent },
-        { path: 'traslado/:id', component: TrasladoComponent },
+        { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
+        { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado'  },
 
-        { path: 'categorias', component: CategoriasComponent },
+        { path: 'categorias', component: CategoriasComponent, title: 'Categorias' },
         
-        { path: 'ajustes', component: AjustesComponent },
-        { path: 'ajuste/:id', component: AjusteComponent },
+        { path: 'ajustes', component: AjustesComponent, title: 'Ajustes'  },
+        { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste'  },
         
         { path: 'bodegas', component: BodegasComponent },
         { path: 'bodega/:id', component: BodegaComponent },
@@ -53,8 +61,10 @@ const routes: Routes = [
         { path: 'analisis', component: AjustesComponent },
         { path: 'analisis/productos', component: AnalisisProductosComponent },
 
-        { path: 'servicios', component: ServiciosComponent},
-        { path: 'servicio/:id', component: ProductoComponent },
+        { path: 'servicios', component: ServiciosComponent, title: 'Servicios'},
+        { path: 'servicio', component: ServiciosComponent, title: 'Servicios'},
+        { path: 'servicio/crear', component: ProductoComponent, title: 'Servicio' },
+        { path: 'servicio/editar/:id', component: ProductoComponent, title: 'Servicio' },
 
 
     ]

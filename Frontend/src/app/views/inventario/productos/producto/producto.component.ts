@@ -17,7 +17,7 @@ export class ProductoComponent implements OnInit {
     public loading = false;
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
+	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
 	) {
 		this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -37,6 +37,12 @@ export class ProductoComponent implements OnInit {
 				this.producto.tipo = 'Producto';
 				this.producto.medida = 'Unidad';
 				this.producto.id_empresa = this.apiService.auth_user().id_empresa;
+
+				if (this.route.snapshot.queryParamMap.get('tipo')!) {
+				    this.producto.tipo = this.route.snapshot.queryParamMap.get('tipo')!;
+				    this.producto.precio = 0;
+				}
+
 	      	}
 	    });
 	}

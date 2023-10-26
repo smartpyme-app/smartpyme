@@ -43,19 +43,18 @@ class ProveedoresController extends Controller
 
     public function filter(Request $request) {
 
-        if ($request->estado != '') {
-            if ($request->estado == 'con') {
-                $proveedores = Proveedor::wherehas('compras', function($q){
-                                        $q->where('estado', 'Pendiente');
-                                    })->orderBy('id','desc')->paginate(100000);
-            }else{
-                $proveedores = Proveedor::whereDoesntHave('compras', function($q){
-                                        $q->where('estado', 'Pendiente');
-                                    })->orderBy('id','desc')->paginate(100000);
-            }
-        }else{
-            $proveedores = Proveedor::whereBetween('created_at', [$star, $end])->orderBy('id','desc')->paginate(100000);
-        }
+        $proveedores = Proveedor::when($request->nombre, function($query) use ($request){
+                                return $query->where('nombre', 'like',  '%'.$request->nombre .'%')
+                                            ->orwhere('nit', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('giro', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('telefono', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('ncr', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('dui', 'like',  '%'. $request->nombre .'%');
+                            })
+                            ->when($request->estado, function($query) use ($request){
+                                return $query->where('enable', $request->estado);
+                            })
+                            ->orderBy('id','desc')->paginate(100000);
 
         return Response()->json($proveedores, 200);
     }
@@ -75,11 +74,11 @@ class ProveedoresController extends Controller
 
         $request->validate([
             'nombre'    => 'required|max:255',
-            'registro'  => 'nullable|unique:proveedores,registro,'. $request->id,
+            'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,
             'dui'       => 'nullable|unique:proveedores,dui,'. $request->id,
             'nit'       => 'nullable|unique:proveedores,nit,'. $request->id,
-            'usuario_id'     => 'required|integer|exists:users,id',
-            'empresa_id'     => 'required|integer|exists:empresas,id',
+            // 'id_usuario'     => 'required|integer|exists:users,id',
+            'id_empresa'     => 'required|integer|exists:empresas,id',
         ]);
 
         if($request->id)

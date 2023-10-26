@@ -59,6 +59,12 @@ export class ProductosComponent implements OnInit {
         }
     }
 
+    public setEstado(producto:any){
+        this.apiService.store('producto', producto).subscribe(producto => { 
+            this.alertService.success('Actualizado');
+        }, error => {this.alertService.error(error); });
+    }
+
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('producto/', id) .subscribe(data => {

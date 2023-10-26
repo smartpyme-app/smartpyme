@@ -9,7 +9,7 @@ class Categoria extends Model {
     protected $table = 'gastos_categorias';
     protected $fillable = array(
         'nombre',
-        'empresa_id',
+        'id_empresa',
     );
 
 

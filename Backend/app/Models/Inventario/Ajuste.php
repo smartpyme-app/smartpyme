@@ -3,6 +3,8 @@
 namespace App\Models\Inventario;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Ajuste extends Model {
 
@@ -20,6 +22,18 @@ class Ajuste extends Model {
     );
 
     protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_sucursal'];
+
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+        
+    }
 
     public function getNombreUsuarioAttribute()
     {

@@ -50,7 +50,7 @@
         </div>
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="precio">Precio</label>
             <input type="number" class="form-control" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
         </div>
@@ -58,14 +58,14 @@
             <label for="costo">Costo</label>
             <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="$0.00" required>
         </div>
-        <div class="form-group col-md-4 col-lg-2">
+        <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="tipo_impuesto">Ganancia</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
                 <input type="number" class="form-control" disabled value="{{ producto.precio - producto.costo }}">
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-2">
+        <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="impuesto">Margen</label>
             <div class="input-group">
                 <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo) / producto.precio * 100 }}">

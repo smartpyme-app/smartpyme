@@ -49,23 +49,20 @@ class ClientesController extends Controller
 
     public function filter(Request $request) {
 
-        if ($request->pagos != '') {
-            if ($request->pagos == 1) {
-                $clientes = Cliente::where('id','!=', 1)
-                                    ->wherehas('ventas', function($q){
-                                        $q->where('estado', 'Pendiente');
-                                    })->orderBy('id','desc')->paginate(1000);
-            }else{
-                $clientes = Cliente::where('id','!=', 1)
-                                    ->whereDoesntHave('ventas', function($q){
-                                        $q->where('estado', 'Pendiente');
-                                    })->orderBy('id','desc')->paginate(1000);
-            }
-        }
-
+        $clientes = Cliente::when($request->nombre, function($query) use ($request){
+                                return $query->where('nombre', 'like',  '%'.$request->nombre .'%')
+                                            ->orwhere('nit', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('giro', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('telefono', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('ncr', 'like',  '%'. $request->nombre .'%')
+                                            ->orwhere('dui', 'like',  '%'. $request->nombre .'%');
+                            })
+                            ->when($request->estado, function($query) use ($request){
+                                return $query->where('enable', $request->estado);
+                            })
+                            ->orderBy('id','desc')->paginate(100000);
 
         return Response()->json($clientes, 200);
-
     }
 
     public function read($id) {

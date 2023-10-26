@@ -1,7 +1,7 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 
 @Component({
@@ -31,10 +31,19 @@ export class VentasComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
         this.loading = true;
+        this.filtro.estado = '';
+        this.filtro.id_cliente = '';
+        this.filtro.inicio = this.apiService.date();
+        this.filtro.fin = this.apiService.date();
+
         this.apiService.getAll('ventas').subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;this.filtrado = false;
@@ -51,14 +60,14 @@ export class VentasComponent implements OnInit {
         }
     }
 
-    public setEstado(venta:any, estado:string){
-        venta.estado = estado;
-        if (estado == 'Pagada') {
-            venta.fecha_pago = this.apiService.date();
-        }
+    public setEstado(venta:any){
         this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Venta ' + estado);
+            this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); });
+    }
+    
+    public descargar(){
+        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     public delete(id:number) {
@@ -118,31 +127,6 @@ export class VentasComponent implements OnInit {
 
     }
 
-    // Filtros
-
-    openFilter(template: TemplateRef<any>) {     
-
-        if(!this.filtrado) {
-            this.filtro.inicio = this.apiService.date();
-            this.filtro.fin = this.apiService.date();
-            this.filtro.sucursal_id = '';
-            this.filtro.usuario_id = '';
-            this.filtro.estado = '';
-            this.filtro.metodo_pago = '';
-            this.filtro.tipo_documento = '';
-        }
-        if(!this.usuarios.data){
-            this.apiService.store('usuarios/filtrar', {tipo: 'Vendedor'}).subscribe(usuarios => { 
-                this.usuarios = usuarios.data;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
 
     onFiltrar(){
         this.loading = true;

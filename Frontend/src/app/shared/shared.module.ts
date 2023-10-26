@@ -7,7 +7,7 @@ import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { MultimediaComponent } from './multimedia/multimedia.component';
-import { PipesModule } from './../pipes/pipes.module';
+import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
@@ -29,6 +29,7 @@ import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.compone
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { TimerComponent } from './parts/timer/timer.component';
+
 import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';

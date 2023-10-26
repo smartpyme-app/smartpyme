@@ -19,18 +19,28 @@ main {
     .text-right{
       text-align: right !important;
     }
-
     .bg-light-success{
       background-color: #DCFCE7 !important;
     }
     .bg-light-danger{
       background-color: #FFDAD6 !important;
     }
+    .bg-light-warning{
+      background-color: #FFDCC4 !important;
+    }
+    .bg-light-info{
+      background-color: #E6F2FF !important;
+    }
     .btn-close{
         position: absolute;
         top: 15px;
         right: 15px;
     }
+
+    .text-primary{
+        color: #005CBB !important;
+    }
+
     .ng-select .ng-select-container {
         color: inherit; 
         background-color: transparent !important; 
@@ -39,7 +49,6 @@ main {
         min-height: 36px; 
         align-items: center;
     }
-
 
     .ng-arrow {
         display: none !important;
@@ -171,6 +180,7 @@ main {
     .sidebar li.active a{
         border-left: 3px solid #1775e5;
         color: #1775e5 !important;
+        border-radius: 0px;
     }
 
 .content {
@@ -189,6 +199,12 @@ main {
     table .popover-content.popover-body {
         padding: 5px 10px;
         min-width: 160px;
+    }
+
+    .table tr:hover a.d-none, .card:hover > .d-none{
+        display: inline !important;
+        position: absolute;
+        margin-left: 5px;
     }
 
 

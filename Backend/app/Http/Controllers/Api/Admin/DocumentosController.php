@@ -12,7 +12,7 @@ class DocumentosController extends Controller
 
     public function index() {
        
-        $documentos = Documento::all();
+        $documentos = Documento::orderBy('id_sucursal', 'asc')->get();
         return Response()->json($documentos, 200);
 
     }
@@ -30,10 +30,13 @@ class DocumentosController extends Controller
 
         $request->validate([
             'nombre'        => 'required|max:255',
-            'inicial'       => 'required|numeric',
-            'actual'        => 'required|numeric',
-            'final'         => 'required|numeric',
-            'caja_id'       => 'required|numeric'
+            'correlativo'   => 'sometimes|max:255',
+            'rangos'        => 'sometimes|max:255',
+            'numero_autorizacion'         => 'sometimes|max:255',
+            'resolucion'         => 'sometimes|max:255',
+            'nota'         => 'sometimes|max:500',
+            'id_empresa'    => 'required|numeric',
+            'id_sucursal'    => 'required|numeric'
         ]);
 
         if($request->id)

@@ -38,7 +38,8 @@ class ComprasController extends Controller
         $compras = Compra::whereHas('proveedor', function($query) use ($txt)
                     {
                         $query->where('nombre', 'like' ,'%' . $txt . '%');
-                    })->paginate(10);
+                    })
+                    ->paginate(10);
 
         return Response()->json($compras, 200);
 
@@ -48,6 +49,9 @@ class ComprasController extends Controller
 
         $compras = Compra::when($request->inicio, function($query) use ($request){
                                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            })
+                            ->when($request->referencia, function($query) use ($request){
+                                return $query->where('referencia', $request->referencia);
                             })
                             ->when($request->estado, function($query) use ($request){
                                 return $query->where('estado', $request->estado);
@@ -73,9 +77,11 @@ class ComprasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
-            'metodo_pago'       => 'required',
-            'proveedor_id'      => 'required',
-            'usuario_id'        => 'required',
+            'forma_pago'        => 'required',
+            'id_proveedor'      => 'required',
+            'id_empresa'        => 'required',
+            'id_sucursal'       => 'required',
+            'id_usuario'        => 'required',
         ]);
 
         if($request->id)

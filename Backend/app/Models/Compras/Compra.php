@@ -3,6 +3,8 @@
 namespace App\Models\Compras;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Compra extends Model {
 
@@ -37,33 +39,18 @@ class Compra extends Model {
         'id_empresa',
     );
 
-    protected $appends = ['detalles_num', 'nombre_proveedor', 'nombre_usuario'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario'];
 
-
-    public function getDetallesNumAttribute()
+    protected static function booted()
     {
-        return $this->detalles()->count();
-    }
+        $usuario = JWTAuth::parseToken()->authenticate();
 
-    public function getExentaAttribute()
-    {
-        $detalles = $this->detalles()->get();
-        $interno = $detalles->sum('excenta');
-        return $interno;
-    }
-
-    public function getGravadaAttribute()
-    {
-        $detalles = $this->detalles()->get();
-        $interno = $detalles->sum('gravada');
-        return $interno;
-    }
-
-    public function getNoSujetaAttribute()
-    {
-        $detalles = $this->detalles()->get();
-        $interno = $detalles->sum('no_sujeta');
-        return $interno;
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+        
     }
 
     public function getNombreProveedorAttribute()

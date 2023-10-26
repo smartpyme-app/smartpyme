@@ -2,24 +2,26 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { PipesModule } from '../../pipes/pipes.module';
+import { PipesModule } from '@pipes/pipes.module';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { FocusModule } from 'angular2-focus';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
-import { SharedModule } from '../../shared/shared.module';
+import { SharedModule } from '@shared/shared.module';
+import { NgSelectModule } from '@ng-select/ng-select';
 
-import { VentasRoutingModule } from './ventas.routing.module';
+import { VentasRoutingModule } from '@views/ventas/ventas.routing.module';
+import { VentasComponent } from '@views/ventas/ventas.component';
+import { VentaComponent } from '@views/ventas/venta/venta.component';
 
-import { CreditosModule } from '../creditos/creditos.module';
+import { CanalesComponent } from '@views/ventas/canales/canales.component';
+import { DocumentosComponent } from '@views/ventas/documentos/documentos.component';
 
-import { VentasComponent } from './ventas.component';
-import { VentaComponent } from './venta/venta.component';
-import { DevolucionesVentasComponent } from './devoluciones/devoluciones-ventas.component';
-import { DevolucionVentaNuevaComponent } from '../../views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
-import { DevolucionVentaDetallesComponent } from '../../views/ventas/devoluciones/devolucion-nueva/detalles/devolucion-venta-detalles.component';
-import { DevolucionVentaComponent } from './devoluciones/devolucion/devolucion-venta.component';
+import { DevolucionesVentasComponent } from '@views/ventas/devoluciones/devoluciones-ventas.component';
+import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
+import { DevolucionVentaDetallesComponent } from '@views/ventas/devoluciones/devolucion-nueva/detalles/devolucion-venta-detalles.component';
+import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
 
 @NgModule({
   imports: [
@@ -28,8 +30,8 @@ import { DevolucionVentaComponent } from './devoluciones/devolucion/devolucion-v
     RouterModule,
     SharedModule,
     PipesModule,
-    CreditosModule,
     VentasRoutingModule,
+    NgSelectModule,
     PopoverModule.forRoot(),
     FocusModule.forRoot(),
     ModalModule.forRoot(),
@@ -39,6 +41,8 @@ import { DevolucionVentaComponent } from './devoluciones/devolucion/devolucion-v
   declarations: [
     VentasComponent,
     VentaComponent,
+    CanalesComponent,
+    DocumentosComponent,
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
     DevolucionVentaNuevaComponent,
@@ -47,6 +51,8 @@ import { DevolucionVentaComponent } from './devoluciones/devolucion/devolucion-v
   exports: [
     VentasComponent,
     VentaComponent,
+    CanalesComponent,
+    DocumentosComponent,
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
     DevolucionVentaNuevaComponent,

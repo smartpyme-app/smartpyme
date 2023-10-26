@@ -4,8 +4,8 @@ namespace App\Models\Compras\Proveedores;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-// use Illuminate\Database\Eloquent\SoftDeletes;
 use JWTAuth;
+// use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Proveedor extends Model {
     
@@ -13,7 +13,7 @@ class Proveedor extends Model {
     protected $table = 'proveedores';
     protected $fillable = array(
         'nombre',
-        'registro',
+        'ncr',
         'dui',
         'nit',
         'giro',
@@ -25,10 +25,13 @@ class Proveedor extends Model {
         'tipo_contribuyente',
         'correo',
         'etiquetas',
+        'enable',
         'nota',
         'id_usuario',
         'id_empresa'
     );
+
+    protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
     {

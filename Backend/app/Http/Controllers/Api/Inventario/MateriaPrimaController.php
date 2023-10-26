@@ -18,7 +18,7 @@ class MateriaPrimaController extends Controller
 
     public function index() {
        
-        $materiaPrima = MateriaPrima::where('tipo', 'Materia Prima')->with('inventarios', 'sucursales')
+        $materiaPrima = MateriaPrima::where('tipo', 'Materia Prima')->with('inventarios')
                                 ->orderBy('id','desc')->paginate(10);
 
         return Response()->json($materiaPrima, 200);
@@ -62,25 +62,8 @@ class MateriaPrimaController extends Controller
     public function filter(Request $request) {
 
             $materiaPrima = MateriaPrima::where('tipo', 'Materia Prima')->with('inventarios')
-                                ->when($request->categoria_id, function($query) use ($request){
-                                    return $query->where('categoria_id', $request->categoria_id);
-                                })
-                                ->when($request->stock_bodega, function($query) use ($request){
-                                    return $query->where('inventario', true)->whereHas('inventarios', function($query){
-                                        return $query->where('bodega_id', 1)->whereRaw('stock <= stock_min');
-                                    });
-                                })
-                                ->when($request->stock_venta, function($query) use ($request){
-                                    return $query->where('inventario', true)->whereHas('inventarios', function($query){
-                                        return $query->where('bodega_id', 2)->whereRaw('stock <= stock_min');
-                                    });
-                                })
-                                ->when($request->sin_control_inventario, function($query) use ($request){
-                                    // return $query->whereDoesntHave('inventarios')->orwhere('inventario', false);
-                                    return $query->where('inventario', false);
-                                })
-                                ->when($request->sin_condigo, function($query) use ($request){
-                                    return $query->whereNull('codigo');
+                                ->when($request->id_categoria, function($query) use ($request){
+                                    return $query->where('id_categoria', $request->id_categoria);
                                 })
                                 ->orderBy('id','desc')->paginate(100000);
 
@@ -147,8 +130,8 @@ class MateriaPrimaController extends Controller
             $materiaPrima = MateriaPrima::where('tipo', 'Materia Prima')->when($request->nombre, function($query) use ($request){
                                         return $query->where('nombre', 'like' ,'%' . $request->nombre . '%');
                                     })
-                                    ->when($request->categoria_id, function($query) use ($request){
-                                        return $query->where('categoria_id', $request->categoria_id);
+                                    ->when($request->id_categoria, function($query) use ($request){
+                                        return $query->where('id_categoria', $request->id_categoria);
                                     })
 
                                     ->get();

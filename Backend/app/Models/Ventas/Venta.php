@@ -14,7 +14,8 @@ class Venta extends Model {
         'correlativo',
         'estado',
         'tipo',
-        'canal_id',
+        'id_canal',
+        'id_documento',
         'metodo_pago',
         'tipo_documento',
         'condicion',
@@ -33,17 +34,17 @@ class Venta extends Model {
         'gravada',
         'total',
         'nota',
-        'caja_id',
-        'bodega_id',
-        'corte_id',
-        'cliente_id',
-        'usuario_id',
-        'vendedor_id',
+        'id_caja',
+        'id_bodega',
+        'id_corte',
+        'id_cliente',
+        'id_usuario',
+        'id_vendedor',
         'id_empresa',
         'id_sucursal'
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_canal'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_canal', 'nombre_documento'];
 
     protected static function booted()
     {
@@ -73,6 +74,10 @@ class Venta extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
+    public function getNombreDocumentoAttribute(){
+        return $this->documento()->pluck('nombre')->first();
+    }
+
     public function getNombreCanalAttribute(){
         return $this->canal()->pluck('nombre')->first();
     }
@@ -84,27 +89,27 @@ class Venta extends Model {
     // Relaciones
 
     public function cliente(){
-        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','cliente_id');
+        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','id_cliente');
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
     public function vendedor(){
-        return $this->belongsTo('App\Models\Empleados\Empleados\Empleado','vendedor_id');
+        return $this->belongsTo('App\Models\Empleados\Empleados\Empleado','id_vendedor');
     }
 
     public function bodega(){
-        return $this->belongsTo('App\Models\Inventario\Bodega','bodega_id');
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
     }
 
     public function canal(){
-        return $this->belongsTo('App\Models\Admin\Canal','canal_id');
+        return $this->belongsTo('App\Models\Admin\Canal','id_canal');
     }
 
     public function documento(){
-        return $this->belongsTo('App\Models\Admin\Documento','tipo_documento', 'nombre');
+        return $this->belongsTo('App\Models\Admin\Documento','id_documento');
     }
 
     public function sucursal(){

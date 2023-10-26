@@ -21,56 +21,66 @@
     </div>
     <div style="height: 70vh; overflow-y: auto; overflow-x: hidden;">
         <ul class="list-unstyled ps-0">
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a routerLink="/" class="btn d-inline-flex align-items-center text-decoration-none p-2">
+                    <i class="fa fa-dashboard me-2"></i>  Dashboard
+                </a>
+            </li>
             <li class="mb-1">
                 <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#producto" aria-expanded="false">
-                  <i class="fa fa-bag-shopping me-3"></i> Inventario
+                  <i class="fa fa-bag-shopping me-2"></i> Inventario
                 </button>
                 <div class="collapse" id="producto">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/productos" class="link-body-emphasis d-inline-flex text-decoration-none">Productos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/categorias" class="link-body-emphasis d-inline-flex text-decoration-none">Categorias</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/consignas" class="link-body-emphasis d-inline-flex text-decoration-none">Consignas</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Materia prima</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/productos/consignas" class="link-body-emphasis d-inline-flex text-decoration-none">Consignas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/materias-primas" class="link-body-emphasis d-inline-flex text-decoration-none">Materia prima</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/ajustes" class="link-body-emphasis d-inline-flex text-decoration-none">Ajustes</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/traslados" class="link-body-emphasis d-inline-flex text-decoration-none">Traslados</a></li>
                   </ul>
                 </div>
             </li>
-            <li class="mb-1">
-                <a href="#" class="btn d-inline-flex align-items-center text-decoration-none p-2">
-                    <i class="fa fa-cog me-3"></i>  Servicios
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a routerLink="/servicios" class="btn d-inline-flex align-items-center text-decoration-none p-2">
+                    <i class="fa fa-cog me-2"></i>  Servicios
                 </a>
             </li>
           <li class="mb-1">
             <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#ventas" aria-expanded="false">
-              <i class="fa fa-arrow-trend-up me-3"></i> Ventas
+              <i class="fa fa-arrow-trend-up me-2"></i> Ventas
             </button>
             <div class="collapse" id="ventas">
               <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li><a routerLink="/ventas" class="link-body-emphasis d-inline-flex text-decoration-none">Registros</a></li>
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Cotizaciones</a></li>
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Clientes</a></li>
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Canales de venta</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/ventas" class="link-body-emphasis d-inline-flex text-decoration-none">Registros</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/cotizaciones" class="link-body-emphasis d-inline-flex text-decoration-none">Cotizaciones</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/clientes" class="link-body-emphasis d-inline-flex text-decoration-none">Clientes</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/canales" class="link-body-emphasis d-inline-flex text-decoration-none">Canales de venta</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/documentos" class="link-body-emphasis d-inline-flex text-decoration-none">Documentos</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/devoluciones/ventas" class="link-body-emphasis d-inline-flex text-decoration-none">Devoluciones</a></li>
               </ul>
             </div>
           </li>
           <li class="mb-1">
             <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#compras" aria-expanded="false">
-              <i class="fa fa-right-from-bracket me-3"></i> Compras
+              <i class="fa fa-right-from-bracket me-2"></i> Compras
             </button>
             <div class="collapse" id="compras">
               <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Registros</a></li>
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Proveedores</a></li>
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Gastos</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/compras" class="link-body-emphasis d-inline-flex text-decoration-none">Registros</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/proveedores"class="link-body-emphasis d-inline-flex text-decoration-none">Proveedores</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/gastos" class="link-body-emphasis d-inline-flex text-decoration-none">Gastos</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/devoluciones/compras" class="link-body-emphasis d-inline-flex text-decoration-none">Devoluciones</a></li>
               </ul>
             </div>
           </li>
           <li class="mb-1">
             <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed p-2" data-bs-toggle="collapse" data-bs-target="#finanzas" aria-expanded="false">
-              <i class="fa fa-circle-dollar-to-slot me-3"></i> Finanzas
+              <i class="fa fa-circle-dollar-to-slot me-2"></i> Finanzas
             </button>
             <div class="collapse" id="finanzas">
               <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Presupuestos</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/presupuestos" class="link-body-emphasis d-inline-flex text-decoration-none">Presupuestos</a></li>
                 <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Documentos</a></li>
                 <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Reportes</a></li>
                 <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none">Formas de pago</a></li>
@@ -85,27 +95,27 @@
             <li class="border-top my-3"></li>
             <li>
                 <a href="#" class="btn d-inline-flex align-items-center text-decoration-none px-2">
-                    <i class="fa fa-user-circle me-3"></i> Cuenta
+                    <i class="fa fa-user-circle me-2"></i> Cuenta
                 </a>
             </li>
             <li>
                 <a href="#" class="btn d-inline-flex align-items-center text-decoration-none px-2">
-                    <i class="fa fa-sliders-h me-3"></i> Preferencias
+                    <i class="fa fa-sliders-h me-2"></i> Preferencias
                 </a>
             </li>
             <li>
                 <a href="#" class="btn d-inline-flex align-items-center text-decoration-none px-2">
-                    <i class="fa fa-bell me-3"></i> Notificaciones
+                    <i class="fa fa-bell me-2"></i> Notificaciones
                 </a>
             </li>
             <li>
                 <a href="#" class="btn d-inline-flex align-items-center text-decoration-none px-2">
-                    <i class="fa fa-life-ring me-3"></i> Ayuda
+                    <i class="fa fa-life-ring me-2"></i> Ayuda
                 </a>
             </li>
             <li>
                 <a routerLink="/login" class="btn d-inline-flex align-items-center text-decoration-none px-2">
-                    <i class="fa fa-sign-out-alt me-3"></i> Cerrar Sesión
+                    <i class="fa fa-sign-out-alt me-2"></i> Cerrar Sesión
                 </a>
             </li>
         </ul>

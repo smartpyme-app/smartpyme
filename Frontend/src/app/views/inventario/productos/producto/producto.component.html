@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ producto.id ? 'Editar ' : 'Crear ' }} {{ producto.tipo }}</h3>
-    <button class="btn btn-light text-danger" routerLink="/productos">Cancelar <i class="fa fa-close"></i></button>
+    <button class="btn btn-light text-danger" routerLink="/{{ apiService.slug(producto.tipo) }}">Cancelar <i class="fa fa-close"></i></button>
 </div>
 
 <div class="bg-white rounded p-3 mb-3">
@@ -20,7 +20,7 @@
         <app-producto-precios [producto]='producto'></app-producto-precios>
     </div>
 </div>
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id">
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
     <div class="col-lg-12">
         <app-producto-proveedores [producto]='producto'></app-producto-proveedores>
     </div>

@@ -13,7 +13,7 @@ class CanalesController extends Controller
 
     public function index() {
        
-        $canales = Canal::all();
+        $canales = Canal::orderBy('nombre', 'asc')->get();
 
         return Response()->json($canales, 200);
 
@@ -32,10 +32,8 @@ class CanalesController extends Controller
 
         $request->validate([
             'nombre'        => 'required|max:255',
-            'inicial'       => 'required|numeric',
-            'actual'        => 'required|numeric',
-            'final'         => 'required|numeric',
-            'caja_id'       => 'required|numeric'
+            'descripcion'   => 'required|max:255',
+            'id_empresa'    => 'required|numeric',
         ]);
 
         if($request->id)

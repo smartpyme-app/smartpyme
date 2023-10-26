@@ -46,9 +46,9 @@ export class ProductoInformacionComponent implements OnInit {
             this.guardar = false;
             if(!this.producto.id) {
                 this.producto = producto;
-                this.router.navigate(['/producto/'+ producto.id]);
+                this.router.navigate(['/' + this.apiService.slug(this.producto.tipo) +'/editar/'+ producto.id]);
             }
-            this.alertService.success("Producto guardado");
+            this.alertService.success(this.producto.tipo + " guardado");
         },error => {this.alertService.error(error); this.guardar = false; });
     }
 

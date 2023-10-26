@@ -3,6 +3,8 @@
 namespace App\Models\Compras\Devoluciones;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Devolucion extends Model {
 
@@ -28,7 +30,18 @@ class Devolucion extends Model {
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario'];
+    protected $casts = ['enable' => 'string'];
 
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+    }
 
     public function getNombreProveedorAttribute()
     {

@@ -28,10 +28,18 @@ export class ComprasComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+            this.proveedores = proveedores;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
         this.loading = true;
+        this.filtro.estado = '';
+        this.filtro.id_proveedor = '';
+        this.filtro.inicio = this.apiService.date();
+        this.filtro.fin = this.apiService.date();
+
         this.apiService.getAll('compras').subscribe(compras => { 
             this.compras = compras;
             this.loading = false;this.filtrado = false;
@@ -48,11 +56,14 @@ export class ComprasComponent implements OnInit {
         }
     }
 
-    public setEstado(compra:any, estado:string){
-        compra.estado = estado;
+    public setEstado(compra:any){
         this.apiService.store('compra', compra).subscribe(compra => { 
             this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); });
+    }
+    
+    public descargar(){
+        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     public delete(id:number) {
@@ -67,6 +78,7 @@ export class ComprasComponent implements OnInit {
         }
 
     }
+
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
@@ -85,30 +97,11 @@ export class ComprasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-
-    openFilter(template: TemplateRef<any>) {
-
-        if(!this.filtrado) {
-            this.filtro.inicio = null;
-            this.filtro.fin = null;
-            this.filtro.proveedor_id = '';
-            this.filtro.estado = '';
-        }
-        if(!this.proveedores.length){
-            this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
-                this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
-    }
-
     onFiltrar(){
         this.loading = true;
         this.apiService.store('compras/filtrar', this.filtro).subscribe(compras => { 
             this.compras = compras;
             this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }
