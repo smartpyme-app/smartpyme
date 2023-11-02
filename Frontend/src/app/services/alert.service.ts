@@ -38,9 +38,11 @@ export class AlertService {
             this.notifier.notify( 'info', message.error.error );
         }
         else if(message.status == 422) {
+            let alerts='';
             for (var i = 0; i < message.error.error.length; ++i) {
-                this.notifier.notify( 'warning', message.error.error[i] );
+                alerts += ' ' + message.error.error[i] + '\n';
             }
+            this.notifier.notify( 'warning', alerts );
         }
         else if(message.status == 500) {
             this.notifier.notify( 'error', message.error.message );

@@ -40,7 +40,7 @@ class Indicador extends Model
         parent::__construct($attributes);
 
         $this->ventas = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', '!=', 'Pre-venta')
@@ -48,7 +48,7 @@ class Indicador extends Model
                         ->get();
 
         $this->ventas_pagadas = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', 'Pagada')
@@ -56,7 +56,7 @@ class Indicador extends Model
                         ->get();
 
         $this->ventas_anuladas = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', 'Anulada')
@@ -66,7 +66,7 @@ class Indicador extends Model
         $this->devoluciones_ventas = DevolucionVenta::where('enable', '=', true)
                         ->whereHas('venta', function($q){
                             $q->where('id_empresa', $this->id_empresa)
-                            ->when($this->sucursal, function($q){
+                            ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             });
                         })
@@ -74,7 +74,7 @@ class Indicador extends Model
                         ->get();
 
         $this->cxc = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', 'Pendiente')
@@ -84,13 +84,13 @@ class Indicador extends Model
         $this->recibos = Abono::where('estado', 'Confirmado')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->whereHas('venta', function($q){
-                            $q->when($this->sucursal, function($q){
+                            $q->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })->where('id_empresa', $this->id_empresa);
                         })->get();
 
         $this->compras = Compra::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', 'Pagada')
@@ -100,7 +100,7 @@ class Indicador extends Model
         $this->devoluciones_compras = DevolucionCompra::where('enable', '=', true)
                         ->whereHas('compra', function($q){
                             $q->where('id_empresa', $this->id_empresa)
-                            ->when($this->sucursal, function($q){
+                            ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             });
                         })
@@ -108,7 +108,7 @@ class Indicador extends Model
                         ->get();
 
         $this->cxp = Compra::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', 'Pendiente')
@@ -116,7 +116,7 @@ class Indicador extends Model
                         ->get();
 
         $this->gastos = Gasto::where('id_empresa', $this->id_empresa)
-                        ->when($this->sucursal, function($q){
+                        ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', '!=', 'Cancelado')
@@ -126,7 +126,7 @@ class Indicador extends Model
 
     public function getTotalVentasPagadas(){
 
-        return $this->ventas_pagadas->sum('saldo');
+        return $this->ventas_pagadas->sum('total');
     }
 
     public function getCantidadVentasPagadas(){
@@ -137,7 +137,7 @@ class Indicador extends Model
 
     public function getTotalRecibos(){
 
-        return $this->recibos->sum('monto');
+        return $this->recibos->sum('total');
     }
 
     public function getCantidadRecibos(){
@@ -157,7 +157,7 @@ class Indicador extends Model
 
     public function getTotalVentasPendientes(){
 
-        return $this->cxc->sum('total_venta');
+        return $this->cxc->sum('total');
     }
 
     public function getCantidadVentasPendientes(){
@@ -167,7 +167,7 @@ class Indicador extends Model
 
     public function getTotalComprasPagadas(){
 
-        return $this->compras->sum('total_compra');
+        return $this->compras->sum('total');
     }
 
     public function getTotalDevolucionesCompra(){
@@ -187,12 +187,12 @@ class Indicador extends Model
 
     public function getTotalComprasPendientes(){
 
-        return $this->cxp->sum('total_compra');
+        return $this->cxp->sum('total');
     }
 
     public function getTotalGastosPagados(){
 
-        return $this->gastos->where('estado', 'Confirmado')->sum('monto');
+        return $this->gastos->where('estado', 'Confirmado')->sum('total');
     }
 
     public function getCantidadGastosPagados(){
@@ -202,7 +202,7 @@ class Indicador extends Model
 
     public function getTotalGastosPendientes(){
 
-        return $this->gastos->where('estado', 'Pendiente')->sum('monto');
+        return $this->gastos->where('estado', 'Pendiente')->sum('total');
     }
 
 
@@ -213,7 +213,7 @@ class Indicador extends Model
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()->canal()->pluck('nombre')->first(),
                         'cantidad' => $group->count() - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->count(),
-                        'total' => $group->sum('saldo') - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->sum('total'),
+                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->sum('total'),
                     ];
                 })->sortByDesc('total')->values()->all();
     }
@@ -225,7 +225,7 @@ class Indicador extends Model
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()['forma_pago'],
                         'cantidad' => $group->count() - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->count(),
-                        'total' => $group->sum('saldo') - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->sum('total'),
+                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->sum('total'),
                     ];
                  })->sortByDesc('total')->values()->all();
     }
@@ -242,9 +242,9 @@ class Indicador extends Model
                                 + $this->gastos->where('forma_pago', $forma['nombre'])->count()
                                 + $this->recibos->where('forma_pago', $forma['nombre'])->count()
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->count();
-            $forma->total = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->sum('saldo') 
-                                + $this->gastos->where('forma_pago', $forma['nombre'])->sum('monto')
-                                + $this->recibos->where('forma_pago', $forma['nombre'])->sum('monto')
+            $forma->total = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->sum('total') 
+                                + $this->gastos->where('forma_pago', $forma['nombre'])->sum('total')
+                                + $this->recibos->where('forma_pago', $forma['nombre'])->sum('total')
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->sum('total');
         }
 
@@ -258,7 +258,7 @@ class Indicador extends Model
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()['detalle_banco'],
                         'cantidad' => $group->count() - $this->devoluciones_ventas->where('detalle_banco', $group->first()['detalle_banco'])->count(),
-                        'total' => $group->sum('saldo') - $this->devoluciones_ventas->where('detalle_banco', $group->first()['detalle_banco'])->sum('total'),
+                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('detalle_banco', $group->first()['detalle_banco'])->sum('total'),
                     ];
                  })->sortByDesc('total')->values()->all();
     }
@@ -273,7 +273,7 @@ class Indicador extends Model
                         'inicio' => $group->first()->correlativo,
                         'fin' => $group->last()->correlativo,
                         'cantidad' => $group->count(),
-                        'total' => $group->sum('total_venta'),
+                        'total' => $group->sum('total'),
                     ];
                 })->sortByDesc('id')->values()->all();
     }
@@ -286,6 +286,46 @@ class Indicador extends Model
     public function getDocumentosAnulados(){
 
         return $this->ventas_anuladas;
+    }
+
+    public function getTotalSalidasSemana(){
+
+        return Compra::selectRaw('DAY(fecha) as dia')
+                                    ->selectRaw('sum(total) as total')
+                                    ->groupBy('dia')
+                                    ->where('fecha', '>=', Carbon::now()->subDays(8))
+                                    ->orderBy('dia')
+                                    ->get();
+    }
+
+    public function getTotalVentasSemana(){
+
+        return Venta::selectRaw('DAY(fecha) as dia')
+                                        ->selectRaw('sum(total) as total')
+                                        ->groupBy('dia')
+                                        ->where('fecha', '>=', Carbon::now()->subDays(8))
+                                        ->orderBy('dia')
+                                        ->get();
+    }
+
+    public function getTotalTransaccionesSemana(){
+
+        return Venta::selectRaw('DAY(fecha) as dia')
+                                        ->selectRaw('count(*) as total')
+                                        ->groupBy('dia')
+                                        ->where('fecha', '>=', Carbon::now()->subDays(8))
+                                        ->orderBy('dia')
+                                        ->get();
+    }
+
+    public function getTotalBalancesSemana(){
+
+        return Venta::selectRaw('DAY(fecha) as dia')
+                                        ->selectRaw('count(*) as total')
+                                        ->groupBy('dia')
+                                        ->where('fecha', '>=', Carbon::now()->subDays(8))
+                                        ->orderBy('dia')
+                                        ->get();
     }
 
 }

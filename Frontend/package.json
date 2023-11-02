@@ -34,7 +34,6 @@
     "ngx-chips": "^3.0.0",
     "ngx-quicklink": "^0.3.0",
     "rxjs": "~7.5.0",
-    "simple-line-icons": "^2.5.5",
     "tslib": "^2.3.0",
     "zone.js": "~0.12.0"
   },

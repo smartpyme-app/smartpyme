@@ -8,19 +8,25 @@ import { ApiService } from '../../services/api.service';
 })
 
 export class SidebarComponent implements OnInit {
-    public isCollapsed = false;
+    public isCollapsed:boolean = false;
+    public isCollapsedMenu:boolean = false;
     public usuario: any = {};
 
-    constructor(private apiService: ApiService) { }
+    constructor(private apiService: ApiService) {
+        const sidebarState = localStorage.getItem('sidebarCollapsed');
+          if (sidebarState !== null) {
+            this.isCollapsed = sidebarState === 'true';
+          }
+    }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
-
     }
 
 
     toggleSidebar() {
         this.isCollapsed = !this.isCollapsed;
+        localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
     }
 
 

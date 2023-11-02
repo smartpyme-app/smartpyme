@@ -31,7 +31,6 @@
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/animate.css/animate.min.css",
-              "node_modules/simple-line-icons/css/simple-line-icons.css",
               "src/assets/css/template.min.css",
               "node_modules/angular-notifier/styles.scss",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",

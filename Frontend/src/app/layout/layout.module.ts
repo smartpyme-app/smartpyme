@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
+import { NotifierModule } from 'angular-notifier';
+
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
@@ -27,7 +29,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     FormsModule,
     RouterModule,
     TooltipModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
   ],
   declarations: [
     FooterComponent,

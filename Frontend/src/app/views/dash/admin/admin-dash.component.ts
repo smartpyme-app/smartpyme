@@ -29,7 +29,7 @@ export class AdminDashComponent implements OnInit {
         this.usuario  = this.apiService.auth_user();
         this.filtro.inicio  = this.apiService.date();
         this.filtro.fin     = this.apiService.date();
-        this.filtro.sucursal_id = '';
+        this.filtro.id_sucursal = '';
         
         this.filtro.time = 'day';
         this.onFiltrar();

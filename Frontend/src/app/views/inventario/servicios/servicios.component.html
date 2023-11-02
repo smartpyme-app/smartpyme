@@ -30,8 +30,8 @@
         <div class="col d-flex gap-2 justify-content-end">
             <select name="filtro.estado" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto" (change)="onFiltrar()">
                 <option value="">Estado</option>
-                <option value="true">Activo</option>
-                <option value="false">Inactivo</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
             </select>
             <ng-select name="id_categoria" (change)="onFiltrar()" [(ngModel)]="filtro.id_categoria" class="form-select p-0 border-0 bg-default" style="width: 150px;">
                 <ng-option value="">Categoria</ng-option>
@@ -68,9 +68,9 @@
                             {{ servicio.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="servicio.enable" [ngClass]="{'bg-light-danger' : servicio?.enable == false, 'bg-light-success' : servicio?.enable == true}">
-                                <option value="true">Activo</option>
-                                <option value="false">Inactivo</option>
+                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="servicio.enable" [ngClass]="{'bg-light-danger' : servicio?.enable == 0, 'bg-light-success' : servicio?.enable == 1}">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
                             </select>
                         </td>
                         <td class="d-none d-md-table-cell">{{ servicio.nombre_categoria }}</td>

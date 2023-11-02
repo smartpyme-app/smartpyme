@@ -29,7 +29,7 @@ class Producto extends Model {
     );
 
     protected $appends = ['nombre_categoria', 'img'];
-    protected $casts = ['enable' => 'boolean'];
+    protected $casts = ['enable' => 'string'];
 
     protected static function booted()
     {

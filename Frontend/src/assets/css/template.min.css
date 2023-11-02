@@ -15,6 +15,10 @@ main {
   overflow-y: hidden;
 }
 
+img.icon{
+    width: 20px;
+    height: 20px;
+}
 /* General */
     .text-right{
       text-align: right !important;
@@ -101,11 +105,11 @@ main {
 
 /* sidebar  */
     .sidebar {
-    width: 250px;
-    padding: 20px;
-    transition: width 0.3s;
-    overflow: hidden;
-    height: 100%;
+        width: 300px;
+        padding: 20px;
+        transition: width 0.3s;
+        overflow: hidden;
+        height: 100%;
     }
 
     .sidebar.collapsed {
@@ -116,7 +120,7 @@ main {
       margin-left: 68px;
     }
 
-    .sidebar.collapsed button:before, .sidebar.collapsed .btn-home{
+    .sidebar.collapsed button:before, .sidebar.collapsed .toggle, .sidebar.collapsed .logo{
         display: none;
     }
 

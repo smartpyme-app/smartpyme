@@ -33,31 +33,22 @@ class DashController extends Controller
                                 + $indicadores->getTotalGastosPendientes()
                                 - $indicadores->getTotalDevolucionesCompra();
         
-            // $datos->total_salidas_semana   = Compra::
-            //                             selectRaw('DAY(fecha) as dia')
-            //                             ->selectRaw('sum(total_compra) as total')
-            //                             ->groupBy('dia')
-            //                             ->where('fecha', '>=', Carbon::now()->subDays(8))
-            //                             ->orderBy('dia')
-            //                             ->get();
+            $indicadores->total_compras = $indicadores->getTotalComprasPagadas();
+            $indicadores->total_gastos = $indicadores->getTotalGastosPagados();
 
-            // $ultima = $datos->total_salidas_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
-            // if ($ultima)
-            //     $datos->total_salidas_percent = round((($datos->total_salidas / $ultima) - 1) * 100, 2);
-            // else
-            //     $datos->total_ventas_percent = 0;
-
-            // $datos->total_cxp = $indicadores->getTotalComprasPendientes();
+            $indicadores->total_salidas_semana = $indicadores->getTotalSalidasSemana();
 
         // Ingresos
-            $indicadores->total_ventas = $indicadores->getTotalVentasPagadas() + $indicadores->getTotalVentasPendientes() - $indicadores->getTotalDevolucionesVenta();
-            // $datos->total_ventas_semana   = Venta::
-            //                             selectRaw('DAY(fecha) as dia')
-            //                             ->selectRaw('sum(total_venta) as total')
-            //                             ->groupBy('dia')
-            //                             ->where('fecha', '>=', Carbon::now()->subDays(8))
-            //                             ->orderBy('dia')
-            //                             ->get();
+            $indicadores->total_ventas = $indicadores->getTotalVentasPagadas()
+                                        + $indicadores->getTotalVentasPendientes()
+                                        - $indicadores->getTotalDevolucionesVenta();
+            
+            $indicadores->total_ventas_semana = $indicadores->getTotalVentasSemana();
+            
+            $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
+            $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
+
+
             // $ultima = $datos->total_ventas_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
             // if ($ultima)
             //     $datos->total_ventas_percent = round((($datos->total_ventas / $ultima) - 1) * 100, 2);
@@ -69,13 +60,8 @@ class DashController extends Controller
         // Transacciones
 
             $indicadores->total_transacciones = $indicadores->getCantidadVentasPagadas() + $indicadores->getCantidadVentasPendientes() - $indicadores->getCantidadDevolucionesVenta();
-            // $datos->total_transacciones_semana   = Venta::
-            //                             selectRaw('DAY(fecha) as dia')
-            //                             ->selectRaw('count(*) as total')
-            //                             ->groupBy('dia')
-            //                             ->where('fecha', '>=', Carbon::now()->subDays(8))
-            //                             ->orderBy('dia')
-            //                             ->get();
+            $indicadores->total_transacciones_semana = $indicadores->getTotalTransaccionesSemana();
+
             // $ultima = $datos->total_transacciones_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
             // if ($ultima)
             //     $datos->total_transacciones_percent = round((($datos->total_transacciones / $ultima) - 1) * 100, 2);
@@ -84,16 +70,9 @@ class DashController extends Controller
 
         // Balance
 
-            $indicadores->total_balance = ($indicadores->getTotalVentasPagadas() - $indicadores->getTotalDevolucionesVenta()) - 
-                                    ($indicadores->getTotalComprasPagadas() + $indicadores->getTotalGastosPagados() - $indicadores->getTotalDevolucionesCompra());
+            $indicadores->total_balance = $indicadores->total_ventas - $indicadores->total_salidas;
             
-            // $datos->total_balance_semana   = Venta::
-            //                             selectRaw('DAY(fecha) as dia')
-            //                             ->selectRaw('sum(total_venta) as total')
-            //                             ->groupBy('dia')
-            //                             ->where('fecha', '>=', Carbon::now()->subDays(8))
-            //                             ->orderBy('dia')
-            //                             ->get();
+            $indicadores->total_balance_semana   = $indicadores->getTotalBalancesSemana();
             // $ultima = $datos->total_balance_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
             // if ($ultima)
             //     $datos->total_balance_percent = round((($datos->total_balance / $ultima) - 1) * 100, 2);

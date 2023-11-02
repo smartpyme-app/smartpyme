@@ -1,14 +1,14 @@
 <div class="card bg-white border-0">
     <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-lg-9">
-                <h3 class="mb-1" (click)="onFiltrar()">{{ saludo }} {{ usuario.name }} </h3>
+        <div class="d-flex justify-content-between">
+            <div>
+                <h3 class="mb-1" (click)="onFiltrar()">Bienvenida de vuelta, {{ usuario.name }} </h3>
                 <p class="text-muted">¡Aquí podrás gestionar tu empresa de mejor manera!</p>
             </div>
-            <div class="col-lg-3">
-                <select [(ngModel)]="filtro.sucursal_id" (change)="onFiltrar()"  class="form-select bg-default" name="filtro.sucursal_id">
-                    <option value="">Todas las sucursales</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+            <div>
+                <select [(ngModel)]="filtro.id_sucursal" (change)="onFiltrar()"  class="form-select bg-default w-auto" name="filtro.id_sucursal">
+                    <option value="">Sucursal</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>
@@ -25,7 +25,7 @@
         <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a>
     </div>
     <div class="col d-none d-md-flex justify-content-end">
-        <button class="btn btn-default"><i class="fa fa-filter"></i></button>
+        <button class="btn btn-default"><img src="/assets/icons/filter.png" class="icon"></button>
     </div>    
 </div>
 

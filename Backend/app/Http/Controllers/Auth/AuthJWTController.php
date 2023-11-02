@@ -30,12 +30,12 @@ class AuthJWTController extends Controller
         if (!$user->enable)
             return  Response()->json(['error' => 'Usuario bloqueado', 'code' => 401], 401);
         
-        $user->last_login = Carbon::now();
+        $user->ultimo_login = Carbon::now();
         $user->save();
 
         $acceso = new Acceso;
         $acceso->id_usuario = $user->id;
-        $acceso->fecha = $user->last_login;
+        $acceso->fecha = $user->ultimo_login;
         $acceso->save();
 
         
@@ -45,11 +45,11 @@ class AuthJWTController extends Controller
     }
 
     public function logout(Request $request){
-        // $user = User::findOrFail($request->usuario_id);
+        $user = User::findOrFail($request->id_usuario);
         // $user->ultimo_logout = Carbon::now();
-        // $user->save();
+        $user->save();
 
-        // return response()->json(['user' => $user], 200);
+        return response()->json(['user' => $user], 200);
 
     }
 

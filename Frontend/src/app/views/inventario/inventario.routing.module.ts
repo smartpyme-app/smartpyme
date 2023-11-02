@@ -39,7 +39,6 @@ const routes: Routes = [
         { path: 'productos/consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
         
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
-        { path: 'materia-prima', component: MateriasPrimaComponent, title: 'Materias primas' },
         { path: 'materia-prima/crear', component: ProductoComponent, title: 'Materia prima' },
         { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
 
@@ -62,7 +61,6 @@ const routes: Routes = [
         { path: 'analisis/productos', component: AnalisisProductosComponent },
 
         { path: 'servicios', component: ServiciosComponent, title: 'Servicios'},
-        { path: 'servicio', component: ServiciosComponent, title: 'Servicios'},
         { path: 'servicio/crear', component: ProductoComponent, title: 'Servicio' },
         { path: 'servicio/editar/:id', component: ProductoComponent, title: 'Servicio' },
 

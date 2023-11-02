@@ -36,17 +36,17 @@ class User extends Authenticatable implements JWTSubject
         'enable' => 'string'
     ];
 
-    protected static function booted()
-    {
-        $usuario = JWTAuth::parseToken()->authenticate();
+    // protected static function booted()
+    // {
+    //     $usuario = JWTAuth::parseToken()->authenticate();
 
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
-            });
-        }
+    //     if ($usuario){
+    //         static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+    //             $builder->where('id_empresa', $usuario->id_empresa);
+    //         });
+    //     }
         
-    }
+    // }
 
     public function getNombreSucursalAttribute(){
         return $this->sucursal()->pluck('nombre')->first();

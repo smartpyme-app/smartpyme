@@ -115,7 +115,7 @@ class ProductosController extends Controller
             // 'codigo'         => 'nullable|unique:productos,codigo,'. $request->id,
             'precio'            => 'required|numeric',
             'costo'             => 'required|numeric',
-            'medida'            => 'required',
+            // 'medida'            => 'required',
             'id_categoria'      => 'required',
             'id_empresa'        => 'required',
         ],[

@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ producto.id ? 'Editar ' : 'Crear ' }} {{ producto.tipo }}</h3>
-    <button class="btn btn-light text-danger" routerLink="/{{ apiService.slug(producto.tipo) }}">Cancelar <i class="fa fa-close"></i></button>
+    <button class="btn btn-light text-danger" routerLink="/{{ apiService.slug(producto.tipo) }}s">Cancelar <i class="fa fa-close"></i></button>
 </div>
 
 <div class="bg-white rounded p-3 mb-3">
