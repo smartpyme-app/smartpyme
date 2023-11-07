@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\Inventario\InventariosController;
 
     Route::get('/inventario/{id}',                 	[InventariosController::class, 'index']);
     Route::get('/inventario/{id}',                  [InventariosController::class, 'read']);
-	Route::post('/inventario/filtrar',              [InventariosController::class, 'filter']);
+	Route::get('/inventario/filtrar',              [InventariosController::class, 'filter']);
     Route::post('/inventario',                 		[InventariosController::class, 'store']);
     Route::delete('/inventario/{id}',               [InventariosController::class, 'delete']);
     

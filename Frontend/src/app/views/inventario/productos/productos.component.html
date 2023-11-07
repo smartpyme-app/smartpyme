@@ -35,13 +35,13 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <ng-select name="id_categoria" (change)="onFiltrar()" [(ngModel)]="filtro.id_categoria" class="form-select p-0 border-0 bg-default">
+            <ng-select name="id_categoria" (change)="loadAll()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
                     {{categoria.nombre}}
                 </ng-option>
             </ng-select>
-            <ng-select name="id_sucursal" (change)="onFiltrar()" [(ngModel)]="filtro.id_sucursal" class="form-select p-0 border-0 bg-default">
+            <ng-select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Sucursal</ng-option>
                 <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
@@ -54,12 +54,12 @@
             <table class="table table-borderless table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Producto</th>
-                        <th class="d-none d-lg-table-cell">Estado</th>
-                        <th class="d-none d-md-table-cell">Categoría</th>
-                        <th class="d-none d-md-table-cell">Código</th>
-                        <th class="text-right">Precio</th>
-                        <th class="text-center">Stock</th>
+                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Producto</th>
+                        <th (click)="setOrden('enable')" [ngClass]="{'sorted-asc': filtros.orden == 'enable' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'enable' && filtros.direccion == 'desc'}" class="click d-none d-lg-table-cell">Estado</th>
+                        <th (click)="setOrden('categoria')" [ngClass]="{'sorted-asc': filtros.orden == 'categoria' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'categoria' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Categoría</th>
+                        <th (click)="setOrden('codigo')" [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Código</th>
+                        <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio</th>
+                        <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
                         <th class="text-center">Más</th>
                     </tr>
                 </thead>

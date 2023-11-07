@@ -13,7 +13,7 @@ export class ProductosComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     
-    public filtro:any = {};
+    public filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
     public categorias:any = [];
@@ -25,6 +25,12 @@ export class ProductosComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
         this.loadAll();
 
         this.apiService.getAll('categorias').subscribe(categorias => {
@@ -34,13 +40,12 @@ export class ProductosComponent implements OnInit {
         this.apiService.getAll('sucursales').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+        
     }
 
     public loadAll() {
-        this.filtro.id_sucursal = '';
-        this.filtro.id_categoria = '';
         this.loading = true;
-        this.apiService.getAll('productos').subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -78,24 +83,24 @@ export class ProductosComponent implements OnInit {
 
     }
 
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.loadAll();
+      }
+
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page).subscribe(productos => { 
+        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
-
-    public onFiltrar(){
-        this.loading = true;
-        this.apiService.store('productos/filtrar', this.filtro).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
-    }
-
 
     public onSubmit() {
         this.loading = true;

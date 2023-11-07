@@ -15,7 +15,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::get('/productos/list',                [ProductosController::class, 'list']);
     Route::get('/productos/buscar/{text}',      [ProductosController::class, 'search']);
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
-    Route::post('/productos/filtrar',			[ProductosController::class, 'filter']);
+    Route::get('/productos/filtrar',			[ProductosController::class, 'filter']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
     Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
 

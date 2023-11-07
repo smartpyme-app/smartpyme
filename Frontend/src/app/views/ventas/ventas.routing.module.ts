@@ -2,8 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 
-import { OrdenesComponent } from '@views/ordenes/ordenes.component';
-import { OrdenComponent } from '@views/ordenes/orden/orden.component';
+import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
 
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
@@ -33,8 +32,8 @@ const routes: Routes = [
     title: 'Ventas',
     children: [
         { path: 'facturacion', component: FacturacionComponent, title: 'Facturación'},
-        { path: 'ordenes', component: OrdenesComponent },
-        { path: 'orden/:id', component: OrdenComponent },
+
+        { path: 'cotizaciones', component: CotizacionesComponent },
 
         { path: 'ventas', component: VentasComponent, title: 'Ventas'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},

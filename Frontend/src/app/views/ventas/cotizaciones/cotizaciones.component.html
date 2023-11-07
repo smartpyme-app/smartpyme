@@ -1,21 +1,21 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Ventas</h2>
+    <h2 class="page-heading">Cotizaciones</h2>
     <button routerLink="/venta/crear" tooltip="Crear venta (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir venta</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="ventas?.total">
-                Mostrando {{ ventas?.to }} de {{ ventas?.total + ' registros' }}
+            <span class="text-muted" *ngIf="cotizaciones?.total">
+                Mostrando {{ cotizaciones?.to }} de {{ cotizaciones?.total + ' registros' }}
             </span>
         </div>
 
         <div class="col">
             <div class="d-flex gap-2">
-                <button tooltip="Descargar ventas" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <button tooltip="Descargar cotizaciones" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.referencia">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.referencia" focus="true">
                 </form>
                 <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
             </div>
@@ -62,15 +62,15 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene ventas registradas</span>
+                        <td colspan="10" class="text-center" *ngIf="cotizaciones?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene cotizaciones registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
-                    <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                    <tr class="animated fadeIn" *ngFor=" let venta of cotizaciones?.data">
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
@@ -110,8 +110,8 @@
             </table>
         </div>
 
-        <div class="col-12" *ngIf="ventas?.last_page > 1">
-            <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+        <div class="col-12" *ngIf="cotizaciones?.last_page > 1">
+            <app-pagination [items]="cotizaciones" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
 </section>
@@ -159,8 +159,8 @@
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtro.categoria">Categoría:</label>
-                <input type="text" list="ventas" [(ngModel)]="filtro.categoria" class="form-control" name="filtro.categoria">
-                <datalist id="ventas">
+                <input type="text" list="cotizaciones" [(ngModel)]="filtro.categoria" class="form-control" name="filtro.categoria">
+                <datalist id="cotizaciones">
                     <option value="Todas">
                     <option value="Transporte">
                     <option value="Alimentación">

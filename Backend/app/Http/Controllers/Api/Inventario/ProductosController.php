@@ -25,15 +25,16 @@ class ProductosController extends Controller
 {
     
 
-    public function index() {
-       
+    public function index(Request $request) {
         $productos = Producto::where('tipo', 'Producto')
                                 ->whereNotIn('id_categoria', [1,2])
                                 ->orderBy('enable', 'desc')
-                                ->orderBy('nombre', 'asc')
+                                ->orderBy($request->orden, $request->direccion)
                                 ->with('inventarios')
-                                // ->whereNull('codigo')
-                                ->orderBy('id','desc')->paginate(10);
+                                ->when($request->id_categoria, function($query) use ($request){
+                                    return $query->where('id_categoria', $request->id_categoria);
+                                })
+                                ->paginate($request->paginate);
 
         return Response()->json($productos, 200);
 
@@ -99,7 +100,8 @@ class ProductosController extends Controller
                             ->when($request->id_categoria, function($query) use ($request){
                                 return $query->where('id_categoria', $request->id_categoria);
                             })
-                            ->orderBy('id','desc')->paginate(100000);
+                            ->orderBy($request->orden, $request->direccion)
+                            ->paginate($request->paginate);
 
         return Response()->json($productos, 200);
     }

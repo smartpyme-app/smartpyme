@@ -45,7 +45,7 @@ export class AlertService {
             this.notifier.notify( 'warning', alerts );
         }
         else if(message.status == 500) {
-            this.notifier.notify( 'error', message.error.message );
+            this.notifier.notify( 'error', message.error.error );
         }
         else {
             this.notifier.notify( 'warning', message);

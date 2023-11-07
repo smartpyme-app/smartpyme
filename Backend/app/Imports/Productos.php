@@ -82,7 +82,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
                 $ajuste->producto_id  = $producto->id;
                 $ajuste->bodega_id    = 1;
                 $ajuste->stock_inicial= 0;
-                $ajuste->stock_final  = isset($row['stock1']) ? $row['stock1'] : 0;;
+                $ajuste->stock_final  = isset($row['stock1']) ? $row['stock1'] : 0;
                 $ajuste->usuario_id   = 1;
                 $ajuste->nota         = 'Inventario Inicial';
                 $ajuste->save();

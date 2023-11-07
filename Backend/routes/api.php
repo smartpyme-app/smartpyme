@@ -26,7 +26,7 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/ventas/ventas.php');
 		require base_path('routes/modulos/ventas/detalles.php');
 		require base_path('routes/modulos/ventas/devoluciones.php');
-	    require base_path('routes/modulos/ventas/ordenes.php');
+	    require base_path('routes/modulos/ventas/cotizaciones.php');
 		require base_path('routes/modulos/ventas/abonos.php');
 		require base_path('routes/modulos/ventas/clientes.php');
 

@@ -75,7 +75,7 @@ ALTER TABLE egresos
 CHANGE monto total DECIMAL(10,2) NOT NULL;
 
 ALTER TABLE users 
-CHANGE last_logi ultimo_login DATETIME NULL DEFAULT NULL;
+CHANGE last_login ultimo_login DATETIME NULL DEFAULT NULL;
 
 RENAME TABLE recordatorios TO notificaciones;
 

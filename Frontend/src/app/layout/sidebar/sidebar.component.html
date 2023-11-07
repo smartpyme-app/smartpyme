@@ -1,9 +1,10 @@
-<div class="sidebar shadow-sm" [ngClass]="{'collapsed': isCollapsed}">
+<div class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
     <div class="d-flex justify-content-between align-items-center px-0 pb-3 mb-3 border-bottom position-relative" style="height: 5vh;">
-        <a href="/" class="btn-home link-body-emphasis text-decoration-none" (click)="toggleSidebar()">
+        <a [routerLink]="['/']" class="btn-home link-body-emphasis text-decoration-none" (click)="toggleSidebar()">
           <span class="fs-5 fw-semibold">
-            <a routerLink="/" >
-                <img src="assets/img/smartpyme.png" class="ms-1" width="120px" alt="smartpyme logo">
+            <a [routerLink]="['/']" class="d-inline text-nowrap ps-2">
+                <img src="assets/img/icon.png" height="25px">
+                <img src="assets/img/logo.png" class="logo" height="25px">
             </a>
           </span>
         </a>
@@ -12,106 +13,101 @@
         </button>
     </div>
     <div class="mb-3" style="height: 5vh;">
-        <div class="form-group bg-white px-2">
-            <div class="input-group align-items-center flex-nowrap">
-                <span> <i class="fa fa-search"></i> </span>
-                <input type="text" placeholder="Busca acá" class="form-control border-0">
-            </div>
-        </div>
-    </div>
-    <div style="height: 40vh; overflow-y: auto; overflow-x: hidden;">
         <ul class="list-unstyled ps-0">
-            <li class="mb-1">
-                <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" data-bs-toggle="collapse" data-bs-target="#producto" aria-expanded="false">
-                  <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
-                </button>
-                <div class="collapse" id="producto">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/productos" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/categorias" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
-                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/productos/consignas" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/droplet.png" class="icon me-2">Consignas</a></li> -->
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/materias-primas" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/droplet.png" class="icon me-2">Materia prima</a></li>
-                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/ajustes" class="link-body-emphasis d-inline-flex text-decoration-none">Ajustes</a></li> -->
-                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/traslados" class="link-body-emphasis d-inline-flex text-decoration-none">Traslados</a></li> -->
-                  </ul>
+            <li class="mb-1 d-flex">
+                <div (click)="toggleSidebarMenu()" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/search.png" class="icon me-2">
+                    <input type="text" name="search" class="form-control" id="search" placeholder="Buscar" >
                 </div>
             </li>
-            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a routerLink="/servicios" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/tool.png" class="icon me-2">Servicios
-                </a>
-            </li>
-          <li class="mb-1">
-            <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" data-bs-toggle="collapse" data-bs-target="#ventas" aria-expanded="false">
-                <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
-            </button>
-            <div class="collapse" id="ventas">
-              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/ventas" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/cotizaciones" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/clientes" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/clientes" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/canales" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
-                <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/documentos" class="link-body-emphasis d-inline-flex text-decoration-none">Documentos</a></li> -->
-                <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/devoluciones/ventas" class="link-body-emphasis d-inline-flex text-decoration-none">Devoluciones</a></li> -->
-              </ul>
-            </div>
-          </li>
-          <li class="mb-1">
-            <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" data-bs-toggle="collapse" data-bs-target="#compras" aria-expanded="false">
-                <img src="/assets/icons/log-in.png" class="icon me-2">Compras
-            </button>
-            <div class="collapse" id="compras">
-              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/compras" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/proveedores"class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
-                <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/devoluciones/compras" class="link-body-emphasis d-inline-flex text-decoration-none">Devoluciones</a></li> -->
-              </ul>
-            </div>
-          </li>
-          <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-              <a routerLink="/gastos" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                  <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
-              </a>
-          </li>
-          <li class="mb-1">
-            <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" data-bs-toggle="collapse" data-bs-target="#finanzas" aria-expanded="false">
-                <img src="/assets/icons/dollar-sign.png" class="icon me-2">Finanzas
-            </button>
-            <div class="collapse" id="finanzas">
-              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/presupuestos" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/documentos" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/reportes" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/pie-chart.png" class="icon me-2">Reportes</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/formas-de-pagos" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Formas de pago</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/cierre-de-caja" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/check-square.png" class="icon me-2">Cierre de caja</a></li>
-              </ul>
-            </div>
-          </li>
         </ul>
     </div>
     <div style="height: 40vh; overflow-y: auto; overflow-x: hidden;">
         <ul class="list-unstyled ps-0">
-            <li class="border-top my-3"></li>
-            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/venta/crear" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/plus-circle.png" class="icon me-2">Crear venta</a></li>
-            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/cierre-de-caja" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</a></li>
-            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/notificaciones" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/inbox.png" class="icon me-2">Cerrar caja</a></li>
-            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/citas" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
-            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/ayuda" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
             <li class="mb-1">
-                <button (click)="toggleSidebarMenu()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" data-bs-toggle="collapse" data-bs-target="#preferencias" aria-expanded="false">
+                <button (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
+                  <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
+                </button>
+                <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/materias-primas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/droplet.png" class="icon me-2">Materia prima</a></li>
+                  </ul>
+                </div>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/tool.png" class="icon me-2">Servicios
+                </a>
+            </li>
+            <li class="mb-1">
+                <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
+                    <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
+                </button>
+                <div [collapse]="ventasIsCollapsed" [isAnimated]="true" id="ventas">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/promociones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
+                  </ul>
+                </div>
+             </li>
+            <li class="mb-1">
+                <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
+                    <img src="/assets/icons/log-in.png" class="icon me-2">Compras
+                </button>
+                <div [collapse]="ventasIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
+                  </ul>
+                </div>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/gastos']" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
+                </a>
+            </li>
+            <li class="mb-1">
+                <button (click)="toggleFinanzas()" tooltip="Finanzas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed" aria-controls="collapseBasic">
+                    <img src="/assets/icons/dollar-sign.png" class="icon me-2">Finanzas
+                </button>
+                <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/pie-chart.png" class="icon me-2">Reportes</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pagos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Formas de pago</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/check-square.png" class="icon me-2">Cierre de caja</a></li>
+                  </ul>
+                </div>
+            </li>
+        </ul>
+    </div>
+    <div style="height: 40vh; overflow-y: auto; overflow-x: hidden;">
+        <ul class="list-unstyled ps-0 border-top pt-2">
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/plus-circle.png" class="icon me-2">Crear venta</a></li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</a></li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
+            <li class="mb-1">
+                <button (click)="togglePreferencias()" tooltip="Preferencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Preferencias
                 </button>
-                <div class="collapse" id="preferencias">
+                <div [collapse]="preferenciasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/usuarios" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-plus.png" class="icon me-2">Usuarios</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/suscripcion" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="/configuracion" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-plus.png" class="icon me-2">Usuarios</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/configuracion']" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
                   </ul>
                 </div>
             </li>
             <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a routerLink="/login" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión
                 </a>
             </li>

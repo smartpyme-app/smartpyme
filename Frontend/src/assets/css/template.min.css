@@ -19,6 +19,9 @@ img.icon{
     width: 20px;
     height: 20px;
 }
+.click{
+    cursor: pointer;
+}
 /* General */
     .text-right{
       text-align: right !important;
@@ -105,29 +108,33 @@ img.icon{
 
 /* sidebar  */
     .sidebar {
-        width: 300px;
-        padding: 20px;
+        width: 280px;
+        padding: 20px 12px;
         transition: width 0.3s;
         overflow: hidden;
         height: 100%;
     }
 
     .sidebar.collapsed {
-        width: 68px;
+        width: 70px;
+    }
+
+    .sidebar.collapsed li button, .sidebar.collapsed li a , .sidebar.collapsed li.active a {
+        color: transparent !important;
+        width: 60px;
     }
 
     .sidebar.collapsed + .content {
-      margin-left: 68px;
+      margin-left: 60px;
     }
 
-    .sidebar.collapsed button:before, .sidebar.collapsed .toggle, .sidebar.collapsed .logo{
-        display: none;
+    .sidebar.collapsed button:before, .sidebar.collapsed .toggle, .sidebar.collapsed .logo, .sidebar.collapsed #search{
+        display: none !important;
     }
 
     .dropdown-toggle { outline: 0; }
 
     .btn-toggle {
-      padding: .25rem .5rem;
       font-weight: 600;
       color: var(--bs-emphasis-color);
       background-color: transparent;
@@ -187,6 +194,10 @@ img.icon{
         border-radius: 0px;
     }
 
+    .sidebar li{
+        text-wrap: nowrap;
+    }
+
 .content {
   flex-grow: 1;
   padding: 20px;
@@ -209,6 +220,16 @@ img.icon{
         display: inline !important;
         position: absolute;
         margin-left: 5px;
+    }
+
+    .table th.sorted-asc::after {
+      content: "↑";
+      margin-left: 5px;
+    }
+
+    .table th.sorted-desc::after {
+      content: "↓";
+      margin-left: 5px;
     }
 
 

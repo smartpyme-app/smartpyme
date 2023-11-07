@@ -15,6 +15,8 @@ import { VentasRoutingModule } from '@views/ventas/ventas.routing.module';
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
 
+import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
+
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
 import { DocumentosComponent } from '@views/ventas/documentos/documentos.component';
 
@@ -41,6 +43,7 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
   declarations: [
     VentasComponent,
     VentaComponent,
+    CotizacionesComponent,
     CanalesComponent,
     DocumentosComponent,
     DevolucionesVentasComponent,
@@ -51,6 +54,7 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
   exports: [
     VentasComponent,
     VentaComponent,
+    CotizacionesComponent,
     CanalesComponent,
     DocumentosComponent,
     DevolucionesVentasComponent,

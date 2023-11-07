@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Ordenes;
+namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -13,7 +13,7 @@ use App\Models\Ventas\Detalle;
 use Carbon\Carbon;
 use JWTAuth;
 
-class OrdenesController extends Controller
+class CotizacionesController extends Controller
 {
     
     public function index() {

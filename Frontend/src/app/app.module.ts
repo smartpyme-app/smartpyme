@@ -22,7 +22,6 @@ import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
 
 // Ventas
-  import { OrdenesModule } from '@views/ordenes/ordenes.module';
   import { VentasModule } from '@views/ventas/ventas.module';
   import { ClientesModule } from '@views/ventas/clientes/clientes.module';
   import { FacturacionModule } from '@views/ventas/facturacion/facturacion.module';
@@ -64,7 +63,6 @@ import { LayoutModule } from '@layout/layout.module';
     LayoutModule,
     AuthModule,
     DashModule,
-    OrdenesModule,
     VentasModule,
     FacturacionModule,
     ClientesModule,

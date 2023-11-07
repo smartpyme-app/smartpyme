@@ -14,7 +14,6 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SharedModule } from '../../shared/shared.module';
 
 import { DashRoutingModule } from './dash.routing.module';
-import { OrdenesModule } from '../ordenes/ordenes.module';
 
 // import { FullCalendarModule } from '@fullcalendar/angular';
 
@@ -54,7 +53,6 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
     PipesModule,
     SharedModule,
     DashRoutingModule,
-    OrdenesModule,
     // FullCalendarModule,
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
