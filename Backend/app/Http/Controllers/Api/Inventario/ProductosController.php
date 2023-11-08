@@ -26,14 +26,33 @@ class ProductosController extends Controller
     
 
     public function index(Request $request) {
+
         $productos = Producto::where('tipo', 'Producto')
                                 ->whereNotIn('id_categoria', [1,2])
-                                ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
                                 ->with('inventarios')
                                 ->when($request->id_categoria, function($query) use ($request){
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
+                                ->when($request->id_sucursal, function($q) use ($request){
+                                    $q->whereHas('inventarios', function($q) use ($request){
+                                        return $q->where('id_sucursal', $request->id_sucursal);
+                                    });
+                                })
+                                ->when($request->id_proveedor, function($q) use ($request){
+                                    $q->whereHas('proveedores', function($q) use ($request){
+                                        return $q->where('id_proveedor', $request->id_proveedor);
+                                    });
+                                })
+                                ->when($request->search, function($query) use ($request){
+                                    return $query->where('nombre', 'like' ,'%' . $request->search . '%')
+                                                 ->orwhere('codigo', 'like' ,"%" . $request->search . "%")
+                                                 ->orwhere('barcode', 'like' ,"%" . $request->search . "%")
+                                                 ->orwhere('etiquetas', 'like' ,"%" . $request->search . "%")
+                                                 ->orwhere('marca', 'like' ,"%" . $request->search . "%")
+                                                 ->orwhere('descripcion', 'like' ,"%" . $request->search . "%");
+                                })
+                                ->orderBy('enable', 'desc')
+                                ->orderBy($request->orden, $request->direccion)
                                 ->paginate($request->paginate);
 
         return Response()->json($productos, 200);
@@ -42,8 +61,7 @@ class ProductosController extends Controller
 
     public function list() {
        
-        $productos = Producto:://where('tipo', 'Producto')->
-                                orderby('nombre')->get();
+        $productos = Producto::orderby('nombre')->with('inventarios')->get();
 
         return Response()->json($productos, 200);
 
@@ -52,13 +70,13 @@ class ProductosController extends Controller
 
     public function porCodigo($codigo) {
        
-        $producto = Producto:://where('tipo', 'Producto')->
-                                    where('codigo', $codigo )
-                                    ->wherehas('sucursales', function($q){
-                                        $q->where('sucursal_id', \JWTAuth::parseToken()->authenticate()->sucursal_id)
-                                            ->where('activo', true);
-                                    })
-                                    ->with('inventarios', 'precios')->get();
+        $producto = Producto::
+                            where('codigo', $codigo )
+                            ->wherehas('sucursales', function($q){
+                                $q->where('sucursal_id', \JWTAuth::parseToken()->authenticate()->sucursal_id)
+                                    ->where('activo', true);
+                            })
+                            ->with('inventarios', 'precios')->get();
 
         return Response()->json($producto, 200);
 
@@ -69,18 +87,8 @@ class ProductosController extends Controller
         $producto = Producto::where('id', $id)
                                 ->with('inventarios', 'precios.usuarios', 'imagenes', 'proveedores')
                                 ->firstOrFail();
+
         return Response()->json($producto, 200);
-
-    }
-
-    public function search($txt) {
-
-        $productos = Producto:://whereIn('tipo', ['Producto', 'Servicio'])->
-                                with('inventarios', 'precios')
-                                ->where('nombre', 'like' ,'%' . $txt . '%')
-                                ->orwhere('codigo', 'like' ,"%" . $txt . "%")
-                                ->paginate(10);
-        return Response()->json($productos, 200);
 
     }
 
@@ -94,18 +102,6 @@ class ProductosController extends Controller
 
     }
 
-    public function filter(Request $request) {
-
-        $productos = Producto::where('tipo', 'Producto')->with('inventarios')
-                            ->when($request->id_categoria, function($query) use ($request){
-                                return $query->where('id_categoria', $request->id_categoria);
-                            })
-                            ->orderBy($request->orden, $request->direccion)
-                            ->paginate($request->paginate);
-
-        return Response()->json($productos, 200);
-    }
-
     public function store(Request $request)
     {
         if(empty($request->codigo)){
@@ -114,10 +110,8 @@ class ProductosController extends Controller
 
         $request->validate([
             'nombre'            => 'required|max:255',
-            // 'codigo'         => 'nullable|unique:productos,codigo,'. $request->id,
             'precio'            => 'required|numeric',
             'costo'             => 'required|numeric',
-            // 'medida'            => 'required',
             'id_categoria'      => 'required',
             'id_empresa'        => 'required',
         ],[
@@ -198,8 +192,11 @@ class ProductosController extends Controller
     public function delete($id)
     {
         $producto = Producto::findOrFail($id);
-        $producto->inventarios->delete();
-        $producto->delete();
+        // $producto->inventarios->delete();
+        // $producto->delete();
+        $producto->enable = false;
+
+        $producto->save();
 
         return Response()->json($producto, 201);
 

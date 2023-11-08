@@ -37,7 +37,7 @@ class Ajuste extends Model {
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->first() ? $this->usuario()->pluck('name')->first() : '';
+        return $this->usuario()->pluck('name')->first();
     }
 
     public function getNombreProductoAttribute()

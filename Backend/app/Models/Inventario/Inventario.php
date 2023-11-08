@@ -54,16 +54,28 @@ class Inventario extends Model {
         }
         else if ($clase == 'App\Models\Inventario\Ajuste') {
             if ($cantidad > 0) {
-                $entradaCantidad =  $cantidad;
+                if ($modelo->estado == 'Cancelado') {
+                    $clase = 'Ajuste cancelado';
+                    $salidaCantidad =  $cantidad;
+                }else{
+                    $entradaCantidad =  $cantidad;
+                    $clase = 'Ajuste';
+                }
             }else{
+                if ($modelo->estado == 'Cancelado') {
+                    $clase = 'Ajuste cancelado';
+                    $salidaCantidad =  $cantidad;
+                }else{
+                    $entradaCantidad =  $cantidad;
+                    $clase = 'Ajuste';
+                }
                 $salidaCantidad =  abs($cantidad);
             }
-            $clase = 'Ajuste';
         }
-        else if ($clase == 'App\Models\Inventario\Traslados\Traslado') {
+        else if ($clase == 'App\Models\Inventario\Traslado') {
             if ($cantidad > 0) {
                 if ($modelo->estado == 'Cancelado') {
-                    $clase = 'Cancelación de traslado de ' . $modelo->destino()->pluck('nombre')->first();
+                    $clase = 'Traslado de ' . $modelo->destino()->pluck('nombre')->first() . ' cancelado';
                     $salidaCantidad =  $cantidad;
                 }else{
                     $entradaCantidad =  $cantidad;
@@ -71,7 +83,7 @@ class Inventario extends Model {
                 }
             }else{
                 if ($modelo->estado == 'Cancelado') {
-                    $clase = 'Cancelación de traslado a ' . $modelo->origen()->pluck('nombre')->first();
+                    $clase = 'Traslado a ' . $modelo->origen()->pluck('nombre')->first() . ' cancelado';
                     $entradaCantidad =  abs($cantidad);
                 }else{
                     $salidaCantidad =  abs($cantidad);

@@ -10,9 +10,7 @@ import { ApiService } from '@services/api.service';
 export class ProductosComponent implements OnInit {
 
     public productos:any = [];
-    public buscador:any = '';
     public loading:boolean = false;
-    
     public filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
@@ -27,6 +25,7 @@ export class ProductosComponent implements OnInit {
     ngOnInit() {
         this.filtros.id_sucursal = '';
         this.filtros.id_categoria = '';
+        this.filtros.search = '';
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -45,23 +44,18 @@ export class ProductosComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
+        if (this.filtros.id_categoria == null) {
+            this.filtros.id_categoria = '';
+        }
+        if (this.filtros.id_sucursal == null) {
+            this.filtros.id_sucursal = '';
+        }
+
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
-    }
-
-    public search(){
-        if(this.buscador && this.buscador.length > 2) {
-            this.loading = true;
-            this.apiService.read('productos/buscar/', this.buscador).subscribe(productos => { 
-                this.productos = productos;
-                this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }else{
-            this.loadAll();
-        }
     }
 
     public setEstado(producto:any){
@@ -92,7 +86,7 @@ export class ProductosComponent implements OnInit {
         }
 
         this.loadAll();
-      }
+    }
 
     public setPagination(event:any):void{
         this.loading = true;

@@ -13,16 +13,18 @@
         </button>
     </div>
     <div class="mb-3" style="height: 5vh;">
-        <ul class="list-unstyled ps-0">
-            <li class="mb-1 d-flex">
-                <div (click)="toggleSidebarMenu()" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/search.png" class="icon me-2">
-                    <input type="text" name="search" class="form-control" id="search" placeholder="Buscar" >
-                </div>
-            </li>
-        </ul>
+        <form action="" autocomplete="off">
+            <ul class="list-unstyled ps-0">
+                <li class="mb-1 d-flex rounded" style="background-color: #F2F0F4; height: 40px;">
+                    <div (click)="toggleSidebarMenu()" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                        <img src="/assets/icons/search.png" class="icon me-2">
+                        <input type="text" name="search" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
+                    </div>
+                </li>
+            </ul>
+        </form>
     </div>
-    <div style="height: 40vh; overflow-y: auto; overflow-x: hidden;">
+    <div style="height: 45vh; overflow-y: auto; overflow-x: hidden;">
         <ul class="list-unstyled ps-0">
             <li class="mb-1">
                 <button (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
@@ -59,7 +61,7 @@
                 <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/log-in.png" class="icon me-2">Compras
                 </button>
-                <div [collapse]="ventasIsCollapsed" [isAnimated]="true">
+                <div [collapse]="comprasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
@@ -87,11 +89,11 @@
             </li>
         </ul>
     </div>
-    <div style="height: 40vh; overflow-y: auto; overflow-x: hidden;">
+    <div style="height: 37vh; overflow-y: auto; overflow-x: hidden;">
         <ul class="list-unstyled ps-0 border-top pt-2">
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/plus-circle.png" class="icon me-2">Crear venta</a></li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img src="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</a></li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
             <li class="mb-1">

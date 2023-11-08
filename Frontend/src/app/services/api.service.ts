@@ -43,7 +43,7 @@ export class ApiService {
         }
         localStorage.removeItem('SP_token');
         localStorage.removeItem('SP_auth_user');
-        localStorage.removeItem('worder_corte');
+        localStorage.removeItem('SP_corte');
     }
 
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }

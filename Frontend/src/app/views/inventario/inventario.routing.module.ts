@@ -36,7 +36,7 @@ const routes: Routes = [
         { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
 
-        { path: 'productos/consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
+        { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
         
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
         { path: 'materia-prima/crear', component: ProductoComponent, title: 'Materia prima' },

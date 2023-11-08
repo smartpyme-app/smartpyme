@@ -1,8 +1,8 @@
-<div class="card bg-white border-0">
+<div class="card bg-white border-0 mb-4">
     <div class="card-body">
         <div class="d-flex justify-content-between">
             <div>
-                <h3 class="mb-1" (click)="onFiltrar()">Bienvenida de vuelta, {{ usuario.name }} </h3>
+                <h3 class="mb-1" (click)="onFiltrar()">Bienvenida de vuelta, {{ usuario.name.split(' ')[0] }}. </h3>
                 <p class="text-muted">¡Aquí podrás gestionar tu empresa de mejor manera!</p>
             </div>
             <div>
@@ -17,15 +17,15 @@
     </div>
 </div>
 
-<div class="my-3 d-flex justify-content-around">
+<div class="mb-4 d-flex justify-content-around">
     <div class="col">
-        <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'day', 'btn-default': filtro.time != 'day' }" (click)="setTime('day')">Hoy</a>
+        <a class="btn me-2" [ngClass]="{'btn-primary': filtro.time == 'day', 'btn-default': filtro.time != 'day' }" (click)="setTime('day')">Hoy</a>
         <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="setTime('week')">Semana</a>
         <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'month', 'btn-default': filtro.time != 'month' }" (click)="setTime('month')">Mes</a>
         <a class="btn mx-2" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a>
     </div>
     <div class="col d-none d-md-flex justify-content-end">
-        <button class="btn btn-default"><img src="/assets/icons/filter.png" class="icon"></button>
+        <button type="button" (click)="openModal(mfilter)" class="btn btn-default"><img src="/assets/icons/filter.png" class="icon"></button>
     </div>    
 </div>
 
@@ -40,3 +40,44 @@
         <app-tops [loading]="loading" [dash]="dash"></app-tops>
     </div>
 </div>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+        <div class="row mb-3">
+            <div class="form-group col-md-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+            </div>
+
+            <div class="form-group col-md-12">
+                <label for="filtro.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtro.id_sucursal" class="form-select" name="filtro.id_sucursal">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+

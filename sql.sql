@@ -16,6 +16,11 @@ CHANGE descripcion descripcion VARCHAR(255) NULL;
 ALTER TABLE ajustes
 CHANGE estado estado VARCHAR(100) NOT NULL DEFAULT 'Confirmado';
 
+ALTER TABLE ajustes
+CHANGE created_at created_at DATETIME NULL DEFAULT NULL;
+
+ALTER TABLE traslados
+ADD id_usuario INT NULL after id_sucursal;
 
 ALTER TABLE kardexs
 CHANGE valor_unitario costo_unitario DECIMAL(10,2) NULL;

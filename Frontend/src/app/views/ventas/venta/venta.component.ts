@@ -14,7 +14,6 @@ import { ApiService } from '../../../services/api.service';
 export class VentaComponent implements OnInit {
 
     public venta:any = {};
-
     public loading = false;
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,

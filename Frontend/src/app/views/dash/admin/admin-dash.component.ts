@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { Component, OnInit, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 
@@ -17,9 +17,11 @@ export class AdminDashComponent implements OnInit {
     public saludo:string = '';
     public usuario:any = {};
     public loading:boolean = false;
+    modalRef!: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService
+        private apiService: ApiService, private alertService: AlertService,
+        private modalService: BsModalService
     ) { }
 
 
@@ -32,6 +34,8 @@ export class AdminDashComponent implements OnInit {
         this.filtro.id_sucursal = '';
         
         this.filtro.time = 'day';
+        this.filtro.inicio = moment().startOf(this.filtro.time).format('YYYY-MM-DD');
+        this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
         this.onFiltrar();
 
         this.apiService.getAll('sucursales').subscribe(sucursales => { 
@@ -43,14 +47,18 @@ export class AdminDashComponent implements OnInit {
 
     public setTime($time:any){
         this.filtro.time = $time;
-        this.onFiltrar();
-    }     
-    public onFiltrar(){     
         this.filtro.inicio = moment().startOf(this.filtro.time).format('YYYY-MM-DD');
         this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
+        this.onFiltrar();
+    }
 
+    public openModal(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    } 
+    
+    public onFiltrar(){     
         this.loading = true;
-        this.apiService.store('dash', this.filtro).subscribe(dash => { 
+        this.apiService.getAll('dash', this.filtro).subscribe(dash => { 
             this.dash = dash;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

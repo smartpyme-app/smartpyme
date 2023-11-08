@@ -82,33 +82,32 @@ export class DatosComponent implements OnInit {
 
     ngOnInit() {
 
-        setTimeout(()=>{                           // <<<---using ()=> syntax
+        if (this.dash?.total_ventas_semana) {
             new Chartist.Line('#chart-ventas', {
                 labels:[this.dash?.total_ventas_semana.map(function(a:any) {return a.dia})],
                 series: [this.dash?.total_ventas_semana.map(function(a:any) {return a.total})]
             }, this.option);
-
+        }
+        
+        if (this.dash?.total_salidas_semana) {
             new Chartist.Line('#chart-salidas', {
                 labels:[this.dash?.total_salidas_semana.map(function(a:any) {return a.dia})],
                 series: [this.dash?.total_salidas_semana.map(function(a:any) {return a.total})]
             }, this.option);
+        }
 
+        if (this.dash?.total_transacciones_semana) {
             new Chartist.Line('#chart-transacciones', {
                 labels:[this.dash?.total_transacciones_semana.map(function(a:any) {return a.dia})],
                 series: [this.dash?.total_transacciones_semana.map(function(a:any) {return a.total})]
             }, this.option);
-
+        }
+        if (this.dash?.total_balance_semana) {
             new Chartist.Line('#chart-balance', {
                 labels:[this.dash?.total_balance_semana.map(function(a:any) {return a.dia})],
                 series: [this.dash?.total_balance_semana.map(function(a:any) {return a.total})]
             }, this.option);
-
-        }, 2000);
-
-        // new Chartist.Line('#utilidad', {
-        //     labels:[this.dash?.total_utilidad_semana.map(function(a:any) {return a.dia})],
-        //     series: [this.dash?.total_utilidad_semana.map(function(a:any) {return a.total})]
-        // }, this.option);
+        }
 
     }
 

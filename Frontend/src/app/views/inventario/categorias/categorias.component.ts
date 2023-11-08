@@ -41,7 +41,7 @@ export class CategoriasComponent implements OnInit {
             this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
             this.categoria.enable = true;
         }
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(categoria:any){

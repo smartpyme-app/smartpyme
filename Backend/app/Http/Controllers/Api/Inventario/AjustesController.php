@@ -15,9 +15,29 @@ class AjustesController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $ajustes = Ajuste::orderBy('id','desc')->paginate(10);
+        $ajustes = Ajuste::when($request->fin, function($query) use ($request){
+                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
+                            })
+                            ->when($request->id_sucursal, function($query) use ($request){
+                                return $query->whereHas('sucursal', function($q) use ($request){
+                                    $q->where('id_sucursal', $request->id_sucursal);
+                                });
+                            })
+                            ->when($request->search, function($query) use ($request){
+                                return $query->whereHas('producto', function($q) use ($request){
+                                    $q->where('nombre', 'like',  '%'. $request->search . '%');
+                                });
+                            })
+                            ->when($request->estado, function($query) use ($request){
+                                $query->where('estado', $request->estado);
+                            })
+                            ->when($request->id_producto, function($query) use ($request){
+                                return $query->where('id_producto', $request->id_producto);
+                            })
+                            ->orderBy($request->orden, $request->direccion)
+                            ->paginate($request->paginate);
 
         return Response()->json($ajustes, 200);
 
@@ -31,28 +51,6 @@ class AjustesController extends Controller
 
     }
 
-    public function filter(Request $request) {
-
-        $ajustes = Ajuste::when($request->fin, function($query) use ($request){
-                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
-                            })
-                            ->when($request->id_sucursal, function($query) use ($request){
-                                return $query->whereHas('sucursal', function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                });
-                            })
-                            ->when($request->nombre, function($query) use ($request){
-                                return $query->whereHas('producto', function($q) use ($request){
-                                    $q->where('nombre', $request->nombre);
-                                });
-                            })
-                            ->when($request->id_producto, function($query) use ($request){
-                                return $query->where('id_producto', $request->id_producto);
-                            })
-                            ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($ajustes, 200);
-    }
 
     public function store(Request $request)
     {
@@ -92,7 +90,18 @@ class AjustesController extends Controller
     public function delete($id)
     {
         $ajuste = Ajuste::findOrFail($id);
-        $ajuste->delete();
+        $ajuste->estado = 'Cancelado';
+        $ajuste->save();
+
+        // Ajustar inventario
+            $inventario = Inventario::where('id_producto', $ajuste->id_producto)
+                                    ->where('id_sucursal', $ajuste->id_sucursal)
+                                    ->first();
+            if ($inventario) {
+                $inventario->stock -= $ajuste->ajuste;
+                $inventario->save();
+                $inventario->kardex($ajuste, $ajuste->ajuste * -1);
+            }
 
         return Response()->json($ajuste, 201);
 

@@ -3,18 +3,12 @@
 namespace App\Imports;
 
 use App\Models\Inventario\Producto;
-use App\Models\Inventario\Precio;
-use App\Models\Inventario\Inventario;
-use App\Models\Inventario\Ajuste;
 use App\Models\Inventario\Categorias\Categoria;
-use App\Models\Inventario\Categorias\SubCategoria;
-
-
-use App\Models\Inventario\Sucursal as ProductoSucursal;
-use App\Models\Admin\Sucursal as AdminSucursal;
-
+use App\Models\Admin\Sucursal;
+use App\Models\Inventario\Inventario;
+use App\Models\Compras\Proveedores\Proveedor;
+use App\ModelsInventario\ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -24,115 +18,101 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class Productos implements ToModel, WithHeadingRow, WithValidation
 {
-    private $numRows = 0;
+    // use Importable;
 
+    private $numRows = 0;
+    
     public function model(array $row)
     {
         ++$this->numRows;
 
+        $id_categoria = Categoria::where('nombre', $row['categoria'])
+                                ->where('id_empresa', Auth::user()->id_empresa)
+                                ->pluck('id')->first();
         
-        $producto = new Producto;
+
+        if(!$id_categoria){
+            $categoria = new Categoria();
+            $categoria->nombre = $row['categoria'];
+            $categoria->descripcion = $row['categoria'];
+            $categoria->enable = true;
+            $categoria->id_empresa = Auth::user()->id_empresa;
+            $categoria->save();
+            $id_categoria = $categoria->id;
+        }
+
+        if ($row['proveedor']) {
+            $id_proveedor = Proveedor::where('nombre', $row['proveedor'])
+                                    ->where('id_empresa', Auth::user()->id_empresa)
+                                    ->pluck('id')->first();
+            if(!$id_proveedor){
+                $proveedor = new Proveedor();
+                $proveedor->nombre = $row['proveedor'];
+                $proveedor->enable = true;
+                $proveedor->id_empresa = Auth::user()->id_empresa;
+                $proveedor->save();
+                $id_proveedor = $proveedor->id;
+            }
+        }
+
+        $producto = new Producto();
         $producto->nombre = $row['nombre'];
         $producto->precio = $row['precio'];
-        
-        $producto->medida = 'Unidad';
-        $producto->costo = isset($row['costo']) ? $row['costo'] : 0;
-
-        $categoria = Categoria::where('descripcion', $row['id_categoria'])->first();
-        $subcategoria = SubCategoria::where('descripcion', $row['id_subcategoria'])->first();
-
-        $producto->categoria_id = isset($categoria->id) ? $categoria->id : null;
-        $producto->subcategoria_id = isset($subcategoria->id) ? $subcategoria->id : null;
+        $producto->costo = $row['costo'];
+        $producto->stock = $row['stock'];
+        $producto->id_categoria = $id_categoria;
         $producto->codigo = $row['codigo'];
-        $producto->tipo_impuesto = 'Gravada';
-        $producto->impuesto = 0.13;
-        $producto->tipo = 'Producto';
-        $producto->empresa_id = 1;
+        $producto->descripcion = $row['descripcion'];
+        $producto->marca = $row['marca'];
+        $producto->barcode = $row['codigo_de_barra'];
+        $producto->enable  = true;
+        $producto->id_empresa =  Auth::user()->id_empresa;
         $producto->save();
 
-        if ($row['precio2']) {
-            Precio::create(['precio' => $row['precio2'], 'producto_id' => $producto->id]);
+        if (isset($id_proveedor)) {
+            ProductoProveedor::create([
+                'id_proveedor' => $id_proveedor,
+                'id_producto' => $producto->id,
+            ]);
         }
 
-        if ($row['precio3']) {
-            Precio::create(['precio' => $row['precio3'], 'producto_id' => $producto->id]);
+        $sucursales = Sucursal::all();
+
+        for($i = 0; $i < $sucursales->count(); $i++){
+            if (isset($row['stock']) && $i == 0) {
+                $inventario = new Inventario();
+                $inventario->id_producto = $producto->id;
+                $inventario->id_sucursal = $sucursales[$i]->id;
+                $inventario->stock = isset($row['stock']) ? $row['stock'] : 0;
+                $inventario->save(); 
+            }
+            else{
+                $inventario = new Inventario();
+                $inventario->id_producto = $producto->id;
+                $inventario->id_sucursal = $sucursales[$i]->id;
+                $inventario->stock = 0;
+                $inventario->save(); 
+            }
         }
 
-        if ($row['precio4']) {
-            Precio::create(['precio' => $row['precio4'], 'producto_id' => $producto->id]);
-        }
 
-        // Sucursal 1
-            $producto_sucursal = new ProductoSucursal();
-            $producto_sucursal->producto_id = $producto->id;
-            $producto_sucursal->activo = true;
-            $producto_sucursal->sucursal_id = 1;
-            $producto_sucursal->save();
-
-                $inventario = new Inventario;
-                $inventario->producto_id = $producto->id;
-                $inventario->stock = isset($row['stock1']) ? $row['stock1'] : 0;
-                $inventario->stock_min = 10;
-                $inventario->stock_max = 100;
-                $inventario->nota = '';
-                $inventario->bodega_id = 1;
-                $inventario->save();
-
-                $ajuste = new Ajuste;
-                $ajuste->producto_id  = $producto->id;
-                $ajuste->bodega_id    = 1;
-                $ajuste->stock_inicial= 0;
-                $ajuste->stock_final  = isset($row['stock1']) ? $row['stock1'] : 0;
-                $ajuste->usuario_id   = 1;
-                $ajuste->nota         = 'Inventario Inicial';
-                $ajuste->save();
-                $valorAjuste = $ajuste->stock_final - $ajuste->stock_inicial;
-                $inventario->kardex($ajuste, $valorAjuste);
-
-        // Sucursal 2
-            $producto_sucursal = new ProductoSucursal();
-            $producto_sucursal->producto_id = $producto->id;
-            $producto_sucursal->activo = true;
-            $producto_sucursal->sucursal_id = 2;
-            $producto_sucursal->save();
-
-                $inventario = new Inventario;
-                $inventario->producto_id = $producto->id;
-                $inventario->stock = isset($row['stock2']) ? $row['stock2'] : 0;
-                $inventario->stock_min = 10;
-                $inventario->stock_max = 100;
-                $inventario->nota = '';
-                $inventario->bodega_id = 2;
-                $inventario->save();
-
-                $ajuste = new Ajuste;
-                $ajuste->producto_id  = $producto->id;
-                $ajuste->bodega_id    = 2;
-                $ajuste->stock_inicial= 0;
-                $ajuste->stock_final  = isset($row['stock2']) ? $row['stock2'] : 0;;
-                $ajuste->usuario_id   = 1;
-                $ajuste->nota         = 'Inventario Inicial';
-                $ajuste->save();
-                $valorAjuste = $ajuste->stock_final - $ajuste->stock_inicial;
-                $inventario->kardex($ajuste, $valorAjuste);
-
-        
         return $producto;
-
 
     }
 
     public function rules(): array
     {
         return [
-            'nombre'        => 'required|string',
-            'precio'        => 'required|numeric',
-            'costo'         => 'sometimes|numeric|nullable',
-            'id_categoria'     => 'sometimes|string|nullable',
-            'id_subcategoria'     => 'sometimes|string|nullable',
-            'stock1'        => 'sometimes|numeric|nullable',
+            'nombre' => 'required|string',
+            'precio' => 'required|numeric',
+            'costo' => 'required|numeric',
+            'stock' => 'required|numeric',
+            'categoria' => 'required|string',
+            // 'codigo' => 'sometimes|string',
+            // 'codigo_de_barra' => 'sometimes|string',
         ];
     }
+
 
     public function getRowCount(): int
     {

@@ -29,7 +29,7 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     protected $hidden = ['password', 'remember_token'];
-    protected $appends = ['nombre_sucursal'];
+    // protected $appends = ['nombre_sucursal'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',

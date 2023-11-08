@@ -5,11 +5,11 @@ use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Api\Ventas\Ordenes\OrdenesController;
 
     
-    Route::post('/dash',                        [DashController::class, 'index']);
-    Route::post('/admin',                       [DashController::class, 'admin']);
-    Route::post('/galonajes',                   [DashController::class, 'galonaje']);
-    Route::post('/estadistica',                 [DashController::class, 'estadistica']);
-    Route::post('/telefonia-datos',             [DashController::class, 'telefoniaDatos']);
+    Route::get('/dash',                        [DashController::class, 'index']);
+    Route::get('/admin',                       [DashController::class, 'admin']);
+    Route::get('/galonajes',                   [DashController::class, 'galonaje']);
+    Route::get('/estadistica',                 [DashController::class, 'estadistica']);
+    Route::get('/telefonia-datos',             [DashController::class, 'telefoniaDatos']);
 
     Route::get('/dash/cocinero',                [DashController::class, 'cocinero']);
     Route::get('/dash/cocinero/departamento/{id}',  [DashController::class, 'cocineroDepartamento']);

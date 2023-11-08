@@ -1,10 +1,7 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
-
-declare var $:any;
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-traslados',
@@ -12,87 +9,132 @@ declare var $:any;
 })
 export class TrasladosComponent implements OnInit {
 
-	public traslados:any = [];
-    public buscador:any = '';
-
-    public filtro:any = {};
-    public filtrado:boolean = false;
-    public usuarios:any = [];
+    public traslados:any = [];
+    public traslado:any = {};
     public loading:boolean = false;
+    public saving:boolean = false;
+
+    public filtros:any = {};
+    public productos:any = [];
+    public sucursales:any = [];
+    public producto:any = {};
+    public sucursalDe:any = {};
+    public sucursalPara:any = {};
+
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService, 
-        private modalService: BsModalService
-    ){ }
+    constructor(public apiService: ApiService, private alertService: AlertService,
+                private modalService: BsModalService
+    ){}
 
     ngOnInit() {
+        this.filtros.id_sucursal_de = '';
+        this.filtros.estado = '';
+        this.filtros.search = '';
+        this.filtros.orden = 'created_at';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
         this.loadAll();
+
+        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('traslados').subscribe(traslados => { 
+        this.apiService.getAll('traslados', this.filtros).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-    	if(this.buscador && this.buscador.length > 2) {
-	    	this.apiService.read('traslados/buscar/', this.buscador).subscribe(traslados => { 
-	    	    this.traslados = traslados;
-
-	    	}, error => {this.alertService.error(error); });
-    	}
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('traslado/', id) .subscribe(data => {
-                for (let i = 0; i < this.traslados['data'].length; i++) { 
-                    if (this.traslados['data'][i].id == data.id )
-                        this.traslados['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
         }
 
+        this.loadAll();
     }
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.traslados.path + '?page='+ event.page).subscribe(traslados => { 
+        this.apiService.paginate(this.traslados.path + '?page='+ event.page, this.filtros).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-    openFilter(template: TemplateRef<any>) {
+    public setEstado(traslado:any){
+        this.traslado = traslado;
+        if (this.traslado.estado == 'Cancelado') {
+            if (confirm('¿Confirma cancelar el traslado?')) {
+                this.delete(this.traslado.id);
+            }
+        }else{
+            if (confirm('¿Confirma confirmar el traslado?')) {
+                this.onSubmit();
+            }
+        }
+    }
 
-        if(!this.filtrado) {
-            this.filtro.inicio = null;
-            this.filtro.fin = null;
-            this.filtro.usuario_id = '';
-            this.filtro.estado = '';
-            this.filtro.tipo = '';
-        }
-        if(!this.usuarios.data){
-            this.apiService.getAll('usuarios/filtrar/tipo/Empleado').subscribe(usuarios => { 
-                this.usuarios = usuarios.data;
-            }, error => {this.alertService.error(error); });
-        }
+    public setProducto(){
+        this.producto = this.productos.find((item:any) => item.id == this.traslado.id_producto);
+    }
+
+    public setSucursalDe(){
+        this.sucursalDe = this.producto?.inventarios.find((item:any) => item.id_sucursal == this.traslado.id_sucursal_de);
+    }
+
+    public setSucursalPara(){
+        this.sucursalPara = this.producto?.inventarios.find((item:any) => item.id_sucursal == this.traslado.id_sucursal);
+    }
+
+    public openModal(template: TemplateRef<any>) {
+        this.traslado.id_producto = '';
+        this.traslado.id_sucursal = '';
+        this.traslado.id_sucursal_de = '';
+
+        this.traslado.id_usuario = this.apiService.auth_user().id;
+        this.traslado.id_empresa = this.apiService.auth_user().id_empresa;
+        this.traslado.estado = 'Confirmado';
+
+        this.apiService.getAll('productos/list').subscribe(productos => {
+            this.productos = productos;
+        }, error => {this.alertService.error(error);});
+
         this.modalRef = this.modalService.show(template);
     }
 
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('traslados/filtrar', this.filtro).subscribe(traslados => { 
-            this.traslados = traslados;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public openFilter(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    }
 
+    public onSubmit() {
+        this.saving = true;
+        this.traslado.id_usuario = this.apiService.auth_user().id;
+        this.apiService.store('traslado', this.traslado).subscribe(traslado => { 
+            this.traslado = {};
+            this.alertService.success("Traslado realizado");
+            this.modalRef.hide();
+            this.loadAll();
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public delete(id:number) {
+        this.saving = true;
+        this.apiService.delete('traslado/', id).subscribe(traslado => { 
+            this.traslado = {};
+            this.alertService.success("Traslado cancelado");
+            this.modalRef.hide();
+            this.loadAll();
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
 }

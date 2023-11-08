@@ -12,6 +12,7 @@
 */
 
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Api\Inventario\ProductosController;
 
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');

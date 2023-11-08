@@ -10,12 +10,16 @@ import { ApiService } from '@services/api.service';
 export class AjustesComponent implements OnInit {
 
 	public ajustes:any = [];
-    public buscador:any = '';
+    public ajuste:any = {};
     public loading:boolean = false;
-    public token:string = '';
-    public filtro:any = {};
-    public bodegas:any = [];
+    public saving:boolean = false;
+
+    public filtros:any = {};
     public productos:any = [];
+    public sucursales:any = [];
+    public producto:any = {};
+    public sucursal:any = {};
+
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
@@ -23,58 +27,112 @@ export class AjustesComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.token = this.apiService.auth_token();
+        this.filtros.id_sucursal = '';
+        this.filtros.estado = '';
+        this.filtros.search = '';
+        this.filtros.orden = 'created_at';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
         this.loadAll();
+
+        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('ajustes').subscribe(ajustes => { 
+        this.apiService.getAll('ajustes', this.filtros).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-    	if(this.buscador && this.buscador.length > 2) {
-	    	this.apiService.read('ajustes/buscar/', this.buscador).subscribe(ajustes => { 
-	    	    this.ajustes = ajustes;
-
-	    	}, error => {this.alertService.error(error); });
-    	}
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('ajuste/', id) .subscribe(data => {
-                for (let i = 0; i < this.ajustes['data'].length; i++) { 
-                    if (this.ajustes['data'][i].id == data.id )
-                        this.ajustes['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
         }
 
+        this.loadAll();
     }
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.ajustes.path + '?page='+ event.page).subscribe(ajustes => { 
+        this.apiService.paginate(this.ajustes.path + '?page='+ event.page, this.filtros).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+    public setEstado(ajuste:any){
+        this.ajuste = ajuste;
+        if (this.ajuste.estado == 'Cancelado') {
+            if (confirm('¿Confirma cancelar el ajuste?')) {
+                this.delete(this.ajuste.id);
+            }
+        }else{
+            if (confirm('¿Confirma confirmar el ajuste?')) {
+                this.onSubmit();
+            }
+        }
+    }
 
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('ajustes/filtrar', this.filtro).subscribe(ajustes => { 
-            this.ajustes = ajustes;
-            this.loading = false;
+    public setProducto(){
+        this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
+    }
+
+    public setSucursal(){
+        this.sucursal = this.producto?.inventarios.find((item:any) => item.id_sucursal == this.ajuste.id_sucursal);
+        console.log(this.sucursal);
+        this.ajuste.stock_actual = this.sucursal.stock;
+    }
+
+    public calAjuste(){
+        this.ajuste.ajuste =  this.ajuste.stock_real - this.ajuste.stock_actual;
+    }
+
+    public openModal(template: TemplateRef<any>) {
+        this.ajuste.id_producto = '';
+        this.ajuste.id_sucursal = '';
+
+        this.ajuste.id_usuario = this.apiService.auth_user().id;
+        this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
+
+        this.apiService.getAll('productos/list').subscribe(productos => {
+            this.productos = productos;
+        }, error => {this.alertService.error(error);});
+
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public openFilter(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public onSubmit() {
+        this.saving = true;
+        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => { 
+            this.ajuste = {};
+            this.alertService.success("Ajuste guardado");
             this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
+            this.loadAll();
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    public delete(id:number) {
+        this.saving = true;
+        this.apiService.delete('ajuste/', id).subscribe(ajuste => { 
+            this.ajuste = {};
+            this.alertService.success("Ajuste guardado");
+            this.modalRef.hide();
+            this.loadAll();
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
+    }
 
 }

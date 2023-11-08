@@ -3,6 +3,8 @@
 namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Sucursal extends Model {
 
@@ -17,6 +19,18 @@ class Sucursal extends Model {
         'direccion',
         'id_empresa',
     ];
+
+    protected static function booted()
+    {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+        
+    }
 
     public function cajas(){
         return $this->hasMany('App\Models\Admin\Caja', 'id_sucursal');

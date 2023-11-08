@@ -1,6 +1,7 @@
+
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button routerLink="/traslado/crear" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+    <button (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,34 +14,48 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre" focus="true">
-                    <input type="date" name="inicio" class="form-control pull-right" [(ngModel)]="filtro.inicio">
-                    <input type="date" name="filtro" class="form-control pull-right" [(ngModel)]="filtro.fin">
+                <form class="d-flex input-group" name="form" (ngSubmit)="loadAll()" autocomplete="off">
+                    <div class="input-group">
+                        <div class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-search text-muted"></i>
+                        </div>
+                        <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.search">
+                    </div>
                 </form>
-                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
             </div>
         </div>
     </div>
     <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
+        <div class="col-md-6 d-flex gap-2">
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/productos">Todos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/traslados">Traslados</button>
+        </div>
+        <div class="col-md-6 d-flex justify-content-end gap-2">
+            <select name="estado" (change)="loadAll()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Confirmado">Confirmado</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+            <select name="id_sucursal_de" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal_de" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+            </select>
         </div>
     </div>
     <div class="row">
         <div class="col-12 table-responsive">
-            <table class="table table-borderless table-hover mb-0">
+            <table class="table table-borderless table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
+                        <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Producto</th>
+                        <th class="d-none d-lg-table-cell">Descripción</th>
+                        <th>Estado</th>
                         <th>De</th>
                         <th>Para</th>
-                        <th>Estado</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                        <th (click)="setOrden('cantidad')" [ngClass]="{'sorted-asc': filtros.orden == 'cantidad' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'cantidad' && filtros.direccion == 'desc'}" class="click text-center">Cantidad</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,27 +67,19 @@
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
-
-                    <tr class="animated fadeIn" *ngFor=" let traslado of traslados?.data">
-                        
-                        <td>{{ traslado.created_at | date:'dd/MM/yyyy' }}</td>
-                        <td>{{ traslado.nombre_producto }}</td>
+                    <tr *ngFor=" let traslado of traslados?.data">
+                        <td>{{ traslado.created_at  | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ traslado.nombre_producto }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{traslado.id_producto}}"><i class="fa fa-edit"></i></a></td>
+                        <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20 }}</span></td>
+                        <td>
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)" [(ngModel)]="traslado.estado" [ngClass]="{'bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">
+                                <option value="Confirmado">Confirmado</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                        </td>
                         <td>{{ traslado.nombre_origen }}</td>
                         <td>{{ traslado.nombre_destino }}</td>
-                        <td>
-                            <span class="badge" [ngClass]="{'bg-warning' : traslado.estado == 'Cancelado', 'bg-success' : traslado.estado == 'Confirmado'}">
-                                {{traslado.estado}}
-                            </span>
-                        </td>
-                        <td class="text-center">{{ traslado.cantidad }}</td>
-                        <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a class="btn btn-light" tooltip="Cancelar traslado">
-                                    <i class="fa fa-ban"></i>
-                                </a>
-                            </div>  
-                        </td>
-
+                        <td class="text-center"> {{ traslado.cantidad | number:'1.0' }} </td>
                     </tr>
                 </tbody>
             </table>
@@ -84,64 +91,118 @@
     </div>
 </section>
 
+<ng-template #mtraslado>
+  <div class="modal-header d-block">
+    <h5 class="modal-title mb-0">Nuevo traslado </h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="onSubmit()" autocomplete="off">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="">Producto</label>
+                <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="traslado.id_producto" class="form-select p-0">
+                    <ng-option value="" selected>Seleccionar producto</ng-option>
+                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
+                        {{producto.nombre}}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="">De</label>
+                <ng-select [disabled]="!traslado.id_producto" name="id_sucursal_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_sucursal_de" class="form-select p-0">
+                    <ng-option value="" selected>Seleccionar sucursal</ng-option>
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_sucursal">
+                        {{inventario.nombre_sucursal}}
+                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="">Para</label>
+                <ng-select [disabled]="!traslado.id_producto" name="id_sucursal" (change)="setSucursalPara()" [(ngModel)]="traslado.id_sucursal" class="form-select p-0">
+                    <ng-option value="" selected>Seleccionar sucursal</ng-option>
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_sucursal">
+                        {{inventario.nombre_sucursal}}
+                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="stock_real">Cantidad a trasladar:</label>
+                <input type="number" [disabled]="!traslado.id_sucursal_de && !traslado.id_sucursal" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
+            </div>
+            
+            <div class="form-group col-md-6" *ngIf="traslado.id_sucursal_de">
+                <label for="traslado">Stock luego del traslado:</label>
+                <p>{{ sucursalDe.stock - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+            </div>
+            
+            <div class="form-group col-md-6" *ngIf="traslado.id_sucursal">
+                <label for="traslado">Stock luego del traslado:</label>
+                <p>{{ sucursalPara.stock + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+            </div>
 
+            <div class="form-group col-md-12">
+                <label for="concepto">Concepto:</label>
+                <input type="text" class="form-control" [(ngModel)]="traslado.concepto" name="concepto">
+            </div>
+
+        </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+
+    </form>
+  </div>
+</ng-template>
 
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
         <h2 class="text-center no-margin">Filtros</h2>
     </div>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="onFiltrar()">
-        <div class="row text-center">
-            <div class="form-group col-sm-6">
+    <form autocomplete="off" (ngSubmit)="loadAll()">
+        <div class="row mb-3">
+            <div class="form-group col-md-6">
                 <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
             </div>
-            <div class="form-group col-sm-6">
+            <div class="form-group col-md-6">
                 <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
-            <div class="form-group col-sm-4">
-                <label for="filtro.usuario">Empleado:</label>
-                <select [(ngModel)]="filtro.usuario_id" class="form-control form-select" name="filtro.usuario_id">
+            <div class="form-group col-md-12">
+                <label for="">Estado:</label>
+                <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
+                    <option value="">Estado</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">Sucursal:</label>
+                <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
-                        {{ usuario.name }}
+                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                        {{ sucursal.nombre }}
                     </option>
                 </select>
             </div>
-            <div class="form-group col-sm-4">
-                <label for="filtro.estado">Estado:</label>
-                <select [(ngModel)]="filtro.estado" class="form-control form-select" name="filtro.estado">
-                    <option value="">Todos</option>
-                    <option value="En Proceso">En Proceso</option>
-                    <option value="Aprobado">Aprobado</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-4">
-                <label for="filtro.tipo">Tipo:</label>
-                <select [(ngModel)]="filtro.tipo" class="form-control form-select" name="filtro.tipo">
-                    <option value="">Todos</option>
-                    <option value="1">Bodega a Sala de venta</option>
-                    <option value="2">Sala de venta a Bodega</option>
-                </select>
-            </div>
         </div>
-        
-        <br><br>
-        <div class="row text-center">
-            <div class="col-xs-12">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
-                </button>
-            </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
         </div>
     </form>
   </div>
 </ng-template>
+

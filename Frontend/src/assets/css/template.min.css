@@ -44,8 +44,16 @@ img.icon{
         right: 15px;
     }
 
+    .btn.text-start:hover{
+        background-color: #FDFBFF;
+    }
+
     .text-primary{
         color: #005CBB !important;
+    }
+
+    .text-secondary{
+        color: #914C00 !important;
     }
 
     .ng-select .ng-select-container {
@@ -55,6 +63,16 @@ img.icon{
         border: none !important; 
         min-height: 36px; 
         align-items: center;
+    }
+
+    .form-check{
+        height: 20px;
+        width: 20px;
+        border-radius: 6px;
+    }
+
+    table.table-hover tbody tr:hover td{
+        background-color: #FDFBFF !important;
     }
 
     .ng-arrow {
@@ -99,14 +117,32 @@ img.icon{
     }
 
     .form-control, .form-select, .form-check-input{
-    /*    border-radius: 8px !important;*/
-    /*    border: 1px solid #C4C6D0;*/
         outline: 0 none !important;
         box-shadow: none !important;
+    }
+    .form-control:focus, .form-select:focus, .form-check-input:focus{
+        border-color: var(--bs-border-color) !important;
+    }
+
+    .ng-value-label, .ng-value{
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding-right: 15px;
+    }
+
+    .form-switch{
+        padding: 6px 15px;
+    }
+
+    .form-switch .form-check-input{
+        height: 20px;
+        width: 40px;
     }
 
 
 /* sidebar  */
+
     .sidebar {
         width: 280px;
         padding: 20px 12px;
@@ -188,21 +224,43 @@ img.icon{
         right: 0px;
     }
 
-    .sidebar li.active a{
-        border-left: 3px solid #1775e5;
-        color: #1775e5 !important;
-        border-radius: 0px;
+    .sidebar li a:hover, .sidebar li a:active, .sidebar li a:focus{
+        background-color: transparent;
+    }
+
+    .sidebar li.active{
+        background-color: #CAE6FF;
+        border-radius: 8px;
     }
 
     .sidebar li{
         text-wrap: nowrap;
     }
 
-.content {
-  flex-grow: 1;
-  padding: 20px;
-  transition: margin-left 0.3s;
-}
+
+    @media(max-width: 768px){
+        .sidebar {
+            display: none;
+           /* width: 0px;
+            padding: 20px 12px;
+            transition: width 0.3s;
+            overflow: hidden;
+            height: 100%;*/
+        }
+    }
+
+    .content {
+        flex-grow: 1;
+        padding: 20px;
+        transition: margin-left 0.3s;
+    }
+
+    @media(max-width: 768px){
+        .content {
+            width: 100%;
+            padding: 0px;
+        }
+    }
 
 
 /* Tablas  */
@@ -231,6 +289,31 @@ img.icon{
       content: "↓";
       margin-left: 5px;
     }
+
+
+    .pace.pace-inactive {
+        display: none;
+    }
+
+    .pace {
+        -webkit-pointer-events: none;
+        pointer-events: none;
+
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+    }
+
+    .pace .pace-progress {
+        background: #29d;
+        position: fixed;
+        z-index: 2000;
+        top: 0;
+        right: 100%;
+        width: 100%;
+        height: 5px;
+    }
+
 
 
 /*Dashboard */

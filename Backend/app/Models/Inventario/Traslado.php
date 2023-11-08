@@ -17,6 +17,7 @@ class Traslado extends Model
         'id_sucursal',
         'cantidad',
         'id_empresa',
+        'id_usuario',
         'concepto',
         'estado'
     ];
@@ -42,23 +43,23 @@ class Traslado extends Model
 
     public function getNombreOrigenAttribute(){
 
-        return $this->sucursalDe()->pluck('nombre')->first();
+        return $this->origen()->pluck('nombre')->first();
     }
 
     public function getNombreDestinoAttribute(){
 
-        return $this->sucursal()->pluck('nombre')->first();
+        return $this->destino()->pluck('nombre')->first();
     }
 
     public function producto(){
         return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
-    public function sucursal(){
+    public function destino(){
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
-    public function sucursalDe(){
+    public function origen(){
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal_de');
     }
 

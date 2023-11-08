@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Traslado;
 use App\Models\Inventario\Inventario;
 
-
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,9 +16,35 @@ class TrasladosController extends Controller
 {   
 
 
-    public function index(){
+    public function index(Request $request) {
+       
+        $traslados = Traslado::when($request->fin, function($query) use ($request){
+                                return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
+                            })
+                            ->when($request->id_sucursal_de, function($query) use ($request){
+                                return $query->whereHas('origen', function($q) use ($request){
+                                    $q->where('id_sucursal_de', $request->id_sucursal_de);
+                                });
+                            })
+                            ->when($request->id_sucursal_para, function($query) use ($request){
+                                return $query->whereHas('destino', function($q) use ($request){
+                                    $q->where('id_sucursal', $request->id_sucursal_para);
+                                });
+                            })
+                            ->when($request->search, function($query) use ($request){
+                                return $query->whereHas('producto', function($q) use ($request){
+                                    $q->where('nombre', 'like',  '%'. $request->search . '%');
+                                });
+                            })
+                            ->when($request->estado, function($query) use ($request){
+                                $query->where('estado', $request->estado);
+                            })
+                            ->when($request->id_producto, function($query) use ($request){
+                                return $query->where('id_producto', $request->id_producto);
+                            })
+                            ->orderBy($request->orden, $request->direccion)
+                            ->paginate($request->paginate);
 
-        $traslados = Traslado::orderBy('id', 'DESC')->paginate(10);
 
         return Response()->json($traslados, 200);
     }
@@ -28,13 +53,13 @@ class TrasladosController extends Controller
 
         $request->validate([
           // 'fecha'         => 'required',
-          // 'estado'        => 'required',
-          'id_producto'        => 'required',
-          'id_sucursal_de'     => 'required|numeric',
-          'id_sucursal'    => 'required|numeric',
-          'concepto'      => 'required',
-          // 'detalles'     => 'required',
-          // 'usuario_id'    => 'required|numeric'
+          'estado'          => 'required',
+          'id_producto'     => 'required',
+          'id_sucursal_de' => 'required|numeric',
+          'id_sucursal'     => 'required|numeric',
+          'concepto'        => 'required',
+          'cantidad'      => 'required|numeric',
+          'id_usuario'      => 'required|numeric'
         ]);
 
         $traslado = new Traslado();
@@ -47,11 +72,15 @@ class TrasladosController extends Controller
         if ($origen->id_sucursal == $destino->id_sucursal) {
             return  Response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
         }
+
+        if ($origen->stock < $request->cantidad) {
+            return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+        }
+        
         if ($origen && $destino) {
             $origen->stock -= $traslado->cantidad;
             $origen->save();
             $origen->kardex($traslado, $traslado->cantidad * -1);
-
 
             $destino->stock += $traslado->cantidad;
             $destino->save();
@@ -63,45 +92,33 @@ class TrasladosController extends Controller
       
       $traslado->save();
 
-      return redirect('traslados')->with(['message' => 'Traslado guardado correctamente.', 'alert' => 'alert-success']);
+      return Response()->json($traslado, 200);
 
     }
     
-     public function update($id){
+    public function delete($id){
 
-      DB::beginTransaction();
-      $traslado = Traslado::findOrfail($id);
-      try {
+        $traslado = Traslado::findOrfail($id);
         $traslado->estado = 'Cancelado';
         $traslado->save();
 
-        $inventario = Inventario::where('id_producto', $traslado->id_producto)
-                                  ->where('id_sucursal', $traslado->id_sucursal)->first();
-
-        $origen = Inventario::where('id_producto', $inventario->id_producto)->where('id_sucursal', $traslado->id_sucursal_de)->first();
-        $destino = Inventario::where('id_producto', $inventario->id_producto)->where('id_sucursal', $traslado->id_sucursal)->first();
+        $origen = Inventario::where('id_producto', $traslado->id_producto)->where('id_sucursal', $traslado->id_sucursal_de)->first();
+        $destino = Inventario::where('id_producto', $traslado->id_producto)->where('id_sucursal', $traslado->id_sucursal)->first();
+        
         if ($origen && $destino) {
-          $origen->stock += $traslado->cantidad;
-          $origen->save();
-          $origen->kardex($traslado, $traslado->cantidad * -1);
-          
-          $destino->stock -= $traslado->cantidad;
-          $destino->save();
-          $destino->kardex($traslado, $traslado->cantidad);
+            $origen->stock += $traslado->cantidad;
+            $origen->save();
+            $origen->kardex($traslado, $traslado->cantidad * -1);
+
+            $destino->stock -= $traslado->cantidad;
+            $destino->save();
+            $destino->kardex($traslado, $traslado->cantidad);
         }else{
-          return redirect('traslados')->with(['message' => 'Una de las sucursales no tiene inventario.', 'alert' => 'alert-warning']);
+            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario', 'code' => 400], 400);
         }
 
-        DB::commit();
+        return Response()->json($traslado, 201);
 
-        return redirect('traslados')->with(['message' => 'Traslado cancelado correctamente.', 'alert' => 'alert-warning']);
-      } catch (Exception $e) {
-          DB::rollBack(); // Tell Laravel, "It's not you, it's me. Please don't persist to DB"
-            return response([
-                'message' => $e->getMessage(),
-                'status' => 'failed'
-            ], 400);
-      }
     }
 
 }

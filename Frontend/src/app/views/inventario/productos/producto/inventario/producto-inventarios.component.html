@@ -13,12 +13,12 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="8" class="text-center" *ngIf="loading">
+                    <td colspan="5" class="text-center" *ngIf="loading">
                         <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="3" class="text-center" *ngIf="!loading && producto?.inventarios.length == 0">
+                    <td colspan="5" class="text-center" *ngIf="!loading && producto?.inventarios.length == 0">
                         <span class="text-muted">No tiene inventarios configurados</span>
                     </td>
                 </tr>       

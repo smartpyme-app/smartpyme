@@ -33,38 +33,41 @@
             </div>
             <div class="form-group col-md-5 col-lg-3">
                 <label for="">Al: </label>
-                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
-            </div>
-            <div class="form-group col-md-2 col-lg-1" style="margin-top: 32px;">
-                <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar datos (F6)">
-                    <i *ngIf="!loading" class="fa fa-search"></i>
-                    <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
-                </button>
+                <div class="input-group">
+                    <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+                    <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar datos (F6)">
+                        <i *ngIf="!loading" class="fa fa-search"></i>
+                        <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+                    </button>
+                </div>
             </div>
         </form>
     </div>
     <div class="col-12">
         <div class="table-responsive">
-            <table class="table table-bordered table-hover mr-top" id="tablaReporte">
+            <table class="table table-bordered table-hover">
                 <thead>
                     <tr>
                         <!-- <th colspan="4"></th> -->
-                        <th rowspan="2" class="text-center">Fecha</th>
+                        <th rowspan="2">Fecha</th>
                         <th rowspan="2">Usuario</th>
                         <th rowspan="2">Detalle</th>
                         <th rowspan="2">Ref</th>
                         <th colspan="3" class="text-center">Entradas</th>
                         <th colspan="3" class="text-center">Salidas</th>
-                        <th rowspan="2" class="text-center">Saldo</th>
+                        <th colspan="2" class="text-center">Saldo</th>
                     </tr>
                     <tr>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-center">Costo U.</th>
-                        <th class="text-center">Total</th>
+                        <th width="100" class="text-center">Cantidad</th>
+                        <th width="100" class="text-center">Costo U.</th>
+                        <th width="100" class="text-center">Total</th>
                         
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-center">Precio U.</th>
-                        <th class="text-center">Total</th>
+                        <th width="100" class="text-center">Cantidad</th>
+                        <th width="100" class="text-center">Precio U.</th>
+                        <th width="100" class="text-center">Total</th>
+                        
+                        <th width="100" class="text-center">Cantidad</th>
+                        <th width="100" class="text-center">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -79,7 +82,7 @@
 
                     <tr class="animated fadeIn" *ngFor=" let movimiento of producto?.movimientos">
                         
-                        <td class="text-center">{{movimiento.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{movimiento.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{movimiento.nombre_usuario}}</td>
                         <td>{{movimiento.detalle}}</td>
                         <td>
@@ -87,15 +90,16 @@
                             <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{apiService.slug(movimiento.detalle)}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
                         </td>
 
-                        <td class="text-center">{{movimiento.entrada_cantidad }}</td>
+                        <td class="text-center">{{movimiento.entrada_cantidad | number:'1.0' }}</td>
                         <td class="text-center">{{movimiento.costo_unitario  | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">{{movimiento.entrada_valor  | currency:'USD':'symbol':'1.2'}}</td>
 
-                        <td class="text-center">{{movimiento.salida_cantidad }}</td>
+                        <td class="text-center">{{movimiento.salida_cantidad | number:'1.0' }}</td>
                         <td class="text-center">{{movimiento.precio_unitario  | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">{{movimiento.salida_valor  | currency:'USD':'symbol':'1.2'}}</td>
 
-                        <td class="text-center">{{movimiento.total }}</td>
+                        <td class="text-center">{{movimiento.total_cantidad | number:'1.0' }}</td>
+                        <td class="text-center">{{movimiento.total_valor  | currency:'USD':'symbol':'1.2'}}</td>
                     </tr>
 
                 </tbody>

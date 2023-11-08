@@ -16,7 +16,7 @@ class Venta extends Model {
         'tipo',
         'id_canal',
         'id_documento',
-        'metodo_pago',
+        'forma_pago',
         'tipo_documento',
         'condicion',
         'referencia',
