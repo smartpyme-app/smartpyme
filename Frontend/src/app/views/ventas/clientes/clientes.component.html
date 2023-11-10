@@ -41,12 +41,10 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
-                        <th class="d-none d-md-table-cell">Municipio</th>
-                        <th>Giro</th>
-                        <th>Registro</th>
-                        <th>NIT</th>
-                        <th>Teléfono</th>
-                        <th>Estado</th>
+                        <th class="d-none d-md-table-cell">Correo</th>
+                        <th>DUI</th>
+                        <th>NCR</th>
+                        <th class="d-none d-lg-table-cell">Tipo</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -60,24 +58,30 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let cliente of clientes?.data">
-                        <td>{{ cliente.nombre  | truncate:30 }}</td>
-                        <td class="d-none d-md-table-cell">{{ cliente.municipio }}</td>
-                        <td>{{ cliente.giro | truncate:20 }}</td>
-                        <td>{{ cliente.registro }}</td>
-                        <td>{{ cliente.nit | truncate:20 }}</td>
-                        <td>{{ cliente.telefono }}</td>
+                        <td>{{ (cliente.nombre + ' ' + (cliente.apellido ? cliente.apellido : ''))  | truncate:30 }}</td>
+                        <td class="d-none d-md-table-cell">{{ cliente.correo }}</td>
+                        <td>{{ cliente.dui}}</td>
+                        <td>{{ cliente.ncr }}</td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(cliente)" [(ngModel)]="cliente.enable" [ngClass]="{'bg-light-danger' : cliente?.enable == false, 'bg-light-success' : cliente?.enable == true}">
-                                <option value="true">Activo</option>
-                                <option value="false">Inactivo</option>
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(cliente)" [(ngModel)]="cliente.tipo" [ngClass]="{'bg-light-danger' : cliente?.tipo == 'Empresa', 'bg-light-info' : cliente?.tipo == 'Persona'}">
+                                <option value="Persona">Persona</option>
+                                <option value="Empresa">Empresa</option>
                             </select>
                         </td>
                         <td class="text-center">
-                            <div class="d-flex gap-2">
-                                <a tooltip="Editar" class="btn btn-light" routerLink="/cliente/{{ cliente.id }}" >
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column align-items-start">
+                                    <a routerLink="/cliente/editar/{{cliente.id}}" class="btn">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a  class="btn text-danger">
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                 </tbody>

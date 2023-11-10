@@ -68,8 +68,6 @@ class ClientesController extends Controller
     public function read($id) {
 
         $cliente = Cliente::findOrFail($id);
-        $cliente->num_ventas = $cliente->ventas()->count();
-        $cliente->num_creditos = $cliente->creditos()->count();
 
         return Response()->json($cliente, 200);
 
@@ -83,8 +81,8 @@ class ClientesController extends Controller
             'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
             'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
             'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
-            'usuario_id'     => 'required|integer|exists:users,id',
-            'empresa_id'     => 'required|integer|exists:empresas,id',
+            'id_usuario'     => 'required|integer|exists:users,id',
+            'id_empresa'     => 'required|integer|exists:empresas,id',
         ]);
 
         if($request->id)
@@ -110,7 +108,7 @@ class ClientesController extends Controller
 
     public function ventas($id) {
 
-        $ventas = Venta::where('cliente_id', $id)
+        $ventas = Venta::where('id_cliente', $id)
                         ->where('estado', '!=', 'Anulada')
                         ->orderBy('id', 'desc')
                         ->paginate(10);
@@ -120,7 +118,7 @@ class ClientesController extends Controller
 
     public function creditos($id) {
 
-        $creditos = Credito::where('cliente_id', $id)
+        $creditos = Credito::where('id_cliente', $id)
                         ->orderBy('id', 'desc')
                         ->paginate(10);
         return Response()->json($creditos, 200);
@@ -130,7 +128,7 @@ class ClientesController extends Controller
     public function ventasFilter(Request $request) {
 
         if ($request->estado == 'Anulada') {
-            $ventas = Venta::where('cliente_id', $request->id)
+            $ventas = Venta::where('id_cliente', $request->id)
                         ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
                         })
@@ -140,7 +138,7 @@ class ClientesController extends Controller
                         ->orderBy('id','desc')->paginate(100000);
         }else{
 
-            $ventas = Venta::where('cliente_id', $request->id)
+            $ventas = Venta::where('id_cliente', $request->id)
                         ->where('estado', '!=', 'Anulada')
                         ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
@@ -158,7 +156,7 @@ class ClientesController extends Controller
     public function cxc() {
        
         $clientes = Cliente::where('id','!=', 1)
-                        ->whereRaw('clientes.id in (select cliente_id from ventas where estado = ?)', ['Pendiente'])
+                        ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
                         ->paginate(10);
 
         foreach ($clientes as $cliente) {
@@ -175,7 +173,7 @@ class ClientesController extends Controller
         $clientes = Cliente::where('id','!=', 1)->where('nombre', 'like' ,'%' . $txt . '%')
                         ->orWhere('registro', 'like' , $txt . '%')
                         ->orWhereRaw('REPLACE(registro, "-", "") like "'.$txt.'"')
-                        ->whereRaw('clientes.id in (select cliente_id from ventas where estado = ?)', ['Pendiente'])
+                        ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
                         ->paginate(10);
 
         return Response()->json($clientes, 200);
@@ -197,13 +195,13 @@ class ClientesController extends Controller
 
         $datos = new \stdClass();
 
-        $datos->ventas   = \App\Models\Ventas\Venta::selectRaw('count(id) AS total, cliente_id, (select nombre from clientes where cliente_id = id) as nombre')
-                                    ->groupBy('cliente_id')
+        $datos->ventas   = \App\Models\Ventas\Venta::selectRaw('count(id) AS total, id_cliente, (select nombre from clientes where id_cliente = id) as nombre')
+                                    ->groupBy('id_cliente')
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     ->orderBy('total', 'desc')
                                     ->take(5)
@@ -212,10 +210,10 @@ class ClientesController extends Controller
         $datos->municipios   = Cliente::selectRaw('count(id) AS total, municipio')
                                     ->groupBy('municipio')
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('sucursal_id', $request->sucursal_id);
+                                    //     $q->where('id_sucursal', $request->id_sucursal);
                                     // })
                                     ->orderBy('total', 'desc')
                                     ->take(5)

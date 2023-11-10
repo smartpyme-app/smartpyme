@@ -47,8 +47,9 @@ const routes: Routes = [
     
     // Clientes
         { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
+        { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
+        { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },
-        { path: 'cliente/:id', component: ClienteComponent, title: 'Cliente'},
         { path: 'clientes/crm', component: ClientesDashComponent },
 
     // Reportes 

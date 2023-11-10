@@ -1,32 +1,27 @@
-ALTER TABLE productos
-ADD tipo varchar(255) DEFAULT 'Producto' after etiquetas;
+ALTER TABLE clientes CHANGE email correo VARCHAR(100) NULL DEFAULT NULL;
+ALTER TABLE clientes CHANGE tipo tipo_contribuyente VARCHAR(255) NULL DEFAULT NULL;
+ALTER TABLE clientes CHANGE comentarios nota VARCHAR(1500) NULL DEFAULT NULL;
+ALTER TABLE clientes CHANGE celular telefono VARCHAR(100) NULL;
+ALTER TABLE clientes CHANGE enable enable TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE clientes ADD id_usuario INT NOT NULL after nota;
+ALTER TABLE clientes ADD tipo varchar(250) NOT NULL DEFAULT 'Persona' after tipo_contribuyente;
 
-ALTER TABLE productos
-CHANGE enable enable Boolean NOT NULL DEFAULT true;
+ALTER TABLE productos ADD tipo varchar(255) DEFAULT 'Producto' after etiquetas;
+ALTER TABLE productos CHANGE enable enable Boolean NOT NULL DEFAULT true;
 
-ALTER TABLE users
-ADD avatar varchar(255) DEFAULT 'usuarios/default.jpg' after tipo;
+ALTER TABLE users ADD avatar varchar(255) DEFAULT 'usuarios/default.jpg' after tipo;
 
-ALTER TABLE categorias
-CHANGE enable enable Boolean NOT NULL DEFAULT false;
+ALTER TABLE categorias CHANGE enable enable Boolean NOT NULL DEFAULT false;
+ALTER TABLE categorias CHANGE descripcion descripcion VARCHAR(255) NULL;
 
-ALTER TABLE categorias
-CHANGE descripcion descripcion VARCHAR(255) NULL;
+ALTER TABLE ajustes CHANGE estado estado VARCHAR(100) NOT NULL DEFAULT 'Confirmado';
 
-ALTER TABLE ajustes
-CHANGE estado estado VARCHAR(100) NOT NULL DEFAULT 'Confirmado';
+ALTER TABLE ajustes CHANGE created_at created_at DATETIME NULL DEFAULT NULL;
 
-ALTER TABLE ajustes
-CHANGE created_at created_at DATETIME NULL DEFAULT NULL;
+ALTER TABLE traslados ADD id_usuario INT NULL after id_sucursal;
 
-ALTER TABLE traslados
-ADD id_usuario INT NULL after id_sucursal;
+ALTER TABLE kardexs CHANGE valor_unitario costo_unitario DECIMAL(10,2) NULL;
 
-ALTER TABLE kardexs
-CHANGE valor_unitario costo_unitario DECIMAL(10,2) NULL;
-
-ALTER TABLE clientes
-CHANGE celular telefono VARCHAR(100) NULL;
 
 ALTER TABLE kardexs
 ADD precio_unitario DECIMAL(10,2) NULL;

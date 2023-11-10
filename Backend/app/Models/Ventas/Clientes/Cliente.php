@@ -13,12 +13,14 @@ class Cliente extends Model {
     protected $table = 'clientes';
     protected $fillable = [
        'nombre',
+       'apellido',
        'ncr',
        'giro',
+       'tipo',
        'tipo_contribuyente',
        'dui',
        'nit',
-       'fecha_nacimiento',
+       'nombre_empresa',
        'direccion',
        'municipio',
        'departamento',
@@ -29,8 +31,8 @@ class Cliente extends Model {
        'estado_civil',
        'nota',
        'etiquetas',
-       'usuario_id',
-       'empresa_id',
+       'id_usuario',
+       'id_empresa',
     ];
 
     protected $casts = ['enable' => 'boolean'];
@@ -51,33 +53,28 @@ class Cliente extends Model {
         return is_string($value) ? json_decode($value) : $value;
     }
 
-    public function ordenes() 
+    public function cotizaciones() 
     {
-        return $this->hasMany('App\Models\Ordenes\Orden', 'cliente_id');
+        return $this->hasMany('App\Models\Cotizaciones\Cotizacion', 'id_cliente');
     }
 
     public function eventos() 
     {
-        return $this->hasMany('App\Models\Eventos\Evento', 'cliente_id');
+        return $this->hasMany('App\Models\Eventos\Evento', 'id_cliente');
     }
 
     public function ventas() 
     {
-        return $this->hasMany('App\Models\Ventas\Venta', 'cliente_id');
+        return $this->hasMany('App\Models\Ventas\Venta', 'id_cliente');
     }
 
-    public function fletes() 
-    {
-        return $this->hasMany('App\Models\Transporte\Fletes\Flete', 'cliente_id');
-    }
-    
     public function creditos() 
     {
-        return $this->hasMany('App\Models\Creditos\Credito', 'cliente_id');
+        return $this->hasMany('App\Models\Creditos\Credito', 'id_cliente');
     }
     
     public function empresa() 
     {
-        return $this->belongsTo('App\Models\Admin\Empresa', 'empresa_id');
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 }

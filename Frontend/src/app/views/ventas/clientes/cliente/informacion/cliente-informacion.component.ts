@@ -13,8 +13,9 @@ import { ApiService } from '@services/api.service';
 export class ClienteInformacionComponent implements OnInit {
 
     public cliente:any = {};
-
     public loading = false;
+    public saving = false;
+
     modalRef?: BsModalRef;
 
     constructor( 
@@ -23,39 +24,37 @@ export class ClienteInformacionComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        const id = +this.route.snapshot.paramMap.get('id')!;
-        if(isNaN(id)){
-            this.cliente = {};
-            this.cliente.empresa_id = this.apiService.auth_user().empresa_id;
-            this.cliente.usuario_id = this.apiService.auth_user().id;
-        }
-        else{
-            this.loadAll(id);
-        }
-
+        this.loadAll();
     }
 
-    public loadAll(id:number){
-        this.loading = true;
-        this.apiService.read('cliente/', id).subscribe(cliente => {
-            this.cliente = cliente;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public loadAll(){
+        this.route.params.subscribe((params:any) => {
+            if (params.id) {
+                this.loading = true;
+                this.apiService.read('cliente/', params.id).subscribe(cliente => {
+                    this.cliente = cliente;
+                    this.loading = false;
+                }, error => {this.alertService.error(error); this.loading = false;});
+            }else{
+                this.cliente = {};
+                this.cliente.tipo_contribuyente = '';
+                this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
+                this.cliente.id_usuario = this.apiService.auth_user().id;
+            }
+        });
     }
 
     public submit():void{
-        this.loading = true;
-        
-        console.log(this.cliente.etiquetas);
+        this.saving = true;
 
         this.apiService.store('cliente', this.cliente).subscribe(cliente => { 
             if(!this.cliente.id) {
                this.router.navigate(['/cliente/'+   cliente.id]);
             }
             this.cliente = cliente;
-            this.loading = false;
-            this.alertService.success('Guardado');
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.saving = false;
+            this.alertService.success('Cliente guardado');
+        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
 

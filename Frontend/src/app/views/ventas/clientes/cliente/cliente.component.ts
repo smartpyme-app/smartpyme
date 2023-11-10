@@ -26,18 +26,19 @@ export class ClienteComponent implements OnInit {
     }
 
     public loadAll(){
-        const id = +this.route.snapshot.paramMap.get('id')!;
-        if (id) {
-            this.loading = true;
-            this.apiService.read('cliente/', id).subscribe(cliente => {
-                this.cliente = cliente;
-                this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }else{
-            this.cliente = {};
-            this.cliente.empresa_id = this.apiService.auth_user().empresa_id;
-            this.cliente.usuario_id = this.apiService.auth_user().id;
-        }
+        this.route.params.subscribe((params:any) => {
+            if (params.id) {
+                this.loading = true;
+                this.apiService.read('cliente/', params.id).subscribe(cliente => {
+                    this.cliente = cliente;
+                    this.loading = false;
+                }, error => {this.alertService.error(error); this.loading = false;});
+            }else{
+                this.cliente = {};
+                this.cliente.empresa_id = this.apiService.auth_user().empresa_id;
+                this.cliente.usuario_id = this.apiService.auth_user().id;
+            }
+        });
     }
 
 }
