@@ -43,6 +43,9 @@ img.icon{
         top: 15px;
         right: 15px;
     }
+    .btn-link{
+        color: #005CBB;
+    }
 
     .btn.text-start:hover{
         background-color: #FDFBFF;

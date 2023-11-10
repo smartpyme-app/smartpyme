@@ -11,8 +11,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
+use Illuminate\Support\Facades\Password;
+use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+
 class AuthJWTController extends Controller
 {
+    use SendsPasswordResetEmails;
     
 
     public function login(Request $request){
@@ -76,6 +80,30 @@ class AuthJWTController extends Controller
 
         return response()->json(['token' => $token, 'user' => $user], 200);       
 
+    }
+
+    protected function sendResetLinkEmail(Request $request)
+    {
+
+        $this->validateEmail($request);
+
+        $response = $this->broker()->sendResetLink(
+            $this->credentials($request)
+        );
+
+        return $response == Password::RESET_LINK_SENT
+                    ? $this->sendResetLinkResponse($response)
+                    : $this->sendResetLinkFailedResponse($request, $response);
+    }
+
+    protected function sendResetLinkResponse($response)
+    {
+        return  Response()->json(['error' => '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!', 'code' => 400], 400);
+    }
+
+    protected function sendResetLinkFailedResponse($response)
+    {
+        return response()->json(['error' => "El correo no esta en nuestros registros"], 500);
     }
 
 

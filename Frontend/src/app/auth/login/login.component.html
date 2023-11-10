@@ -6,17 +6,17 @@
                     <div class="card-body">
                         <h2>Inicio de sesión</h2>
                         <p>¡Bienvenido de regreso!</p>
-                        <form class="row mt-5" name="form" autocomplete="off" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                        <form class="row mt-5" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
                             <div class="form-group mb-4 has-feedback" [ngClass]="{ 'has-error': f.submitted && !email.valid }">
                                 <label>Correo</label>
-                                <input type="text" class="form-control" name="email" [(ngModel)]="user.email" #email="ngModel" placeholder="Usuario" required focus="true"/>
+                                <input type="email" class="form-control" name="correo" [(ngModel)]="user.email" #email="ngModel" placeholder="Escribe aquí" required focus="true"/>
                             </div>
                             <div class="form-group mb-4 has-feedback" [ngClass]="{ 'has-error': f.submitted && !password.valid }">
                                 <label>Contraseña</label>
                                 <div class="input-group">
-                                    <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Contraseña" #password="ngModel" id="password" required />
+                                    <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Escribe aquí" #password="ngModel" id="password" required />
                                     <button class="btn btn-light" type="button" (click)="mostrarPassword()">
-                                        <i class="fa" [ngClass]="{'fa-eye-slash': showpassword, 'fa-eye': !showpassword }"></i>
+                                        <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
                                     </button>
                                 </div>
                             </div>
@@ -29,7 +29,7 @@
                                 </div>
                             </div>
                             <div class="form-group mb-4 col-6 text-right">
-                                <a href="" class="d-block text-right float-end">Olvidé mi contraseña</a>
+                                <a routerLink="/restablecer-cuenta" class="d-block text-right float-end btn btn-link py-0 text-decoration-none">Olvidé mi contraseña</a>
                             </div>
                             <div class="d-grid gap-1">
                                 <button type="submit" [disabled]="loading" class="btn btn-primary d-block">

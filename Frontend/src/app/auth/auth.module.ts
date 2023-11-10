@@ -7,6 +7,7 @@ import { FocusModule } from 'angular2-focus';
 import { LoginComponent } from './../auth/login/login.component';
 import { LockComponent } from './../auth/lock/lock.component';
 import { RegisterComponent } from './../auth/register/register.component';
+import { ForgetComponent } from './../auth/forget/forget.component';
 
 @NgModule({
   imports: [
@@ -18,11 +19,13 @@ import { RegisterComponent } from './../auth/register/register.component';
   declarations: [
   	LoginComponent,
     LockComponent,
+    ForgetComponent,
     RegisterComponent
   ],
   exports: [
   	LoginComponent,
     LockComponent,
+    ForgetComponent,
     RegisterComponent
   ]
 })

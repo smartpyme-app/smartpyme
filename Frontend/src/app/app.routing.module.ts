@@ -7,6 +7,7 @@ import { AdminGuard } from './guards/admin.guard';
 import { NotFoundComponent }    from './shared/404/not-found.component';
 import { LoginComponent }    from './auth/login/login.component';
 import { LockComponent }    from './auth/lock/lock.component';
+import { ForgetComponent }    from './auth/forget/forget.component';
 import { AsistenciaComponent }     from './views/empleados/asistencias/asistencia/asistencia.component';
 
 import { QuicklinkStrategy } from 'ngx-quicklink';
@@ -14,6 +15,7 @@ import { QuicklinkStrategy } from 'ngx-quicklink';
 const routes: Routes = [
 
     { path: 'login',    component: LoginComponent, title: 'Inicio de sesión' },
+    { path: 'restablecer-cuenta',    component: ForgetComponent, title: 'Restablecer contraseña' },
     { path: 'lock',     component: LockComponent },
     { path: 'asistencia', component: AsistenciaComponent, title: 'Asistencia' },
 

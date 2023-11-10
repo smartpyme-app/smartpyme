@@ -7,31 +7,28 @@ import { ApiService } from '../../services/api.service';
 declare let $:any;
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html'
+  selector: 'app-forget',
+  templateUrl: './forget.component.html'
 })
-export class LoginComponent implements OnInit {
+export class ForgetComponent implements OnInit {
 
     public user: any = {};
     public loading = false;
-    public saludo:string = '';
     public anio:any = '';
-    public showpassword:boolean = false;
 
     constructor( private apiService: ApiService, private router: Router, private alertService: AlertService) { }
 
     ngOnInit() {
-        this.saludo = this.apiService.saludar();
         this.anio = new Date().getFullYear();
     }
 
     submit() {
         this.loading = true;
 
-        this.apiService.login(this.user)
+        this.apiService.store('password/email', this.user)
         .subscribe(
             data => {
-                this.router.navigate(['/']);
+                this.router.navigate(['/login']);
                 this.loading = false;
             },
             error => {
@@ -40,10 +37,6 @@ export class LoginComponent implements OnInit {
                 this.loading = false;
             });
     }
-
-    public mostrarPassword(){
-        this.showpassword = !this.showpassword;
-        console.log(this.showpassword);
-    }  
+  
 
 }

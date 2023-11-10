@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\Admin\CajasController;
 use App\Http\Controllers\Api\Admin\CortesController;
 use App\Http\Controllers\Api\Admin\DocumentosController;
-use App\Http\Controllers\Api\Admin\FormasPagosController;
 
 // Cajas
 	Route::get('/cajas',               [CajasController::class, 'index']);
@@ -29,9 +28,3 @@ use App\Http\Controllers\Api\Admin\FormasPagosController;
     Route::get('/documento/{id}',         [DocumentosController::class, 'read']);
     Route::post('/documento',             [DocumentosController::class, 'store']);
     Route::delete('/documento/{id}',       [DocumentosController::class, 'delete']);
-
-// Formas de pago
-    Route::get('/formas-pagos',             [FormasPagosController::class, 'index']);
-    Route::get('/forma-pago/{id}',          [FormasPagosController::class, 'read']);
-    Route::post('/forma-pago',              [FormasPagosController::class, 'store']);
-    Route::delete('/forma-pago/{id}',       [FormasPagosController::class, 'delete']);

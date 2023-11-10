@@ -1,0 +1,40 @@
+<div id="login-box" class="bg-white vh-100">
+    <div class="container-fluid h-100">
+        <div class="row d-flex align-items-center h-100">
+            <div class="col-12 col-md-6">
+                <div class="card border-0 px-5 mx-0 mx-lg-2 shadow-none">
+                    <div class="card-body">.
+                        <a routerLink="/login" class="btn btn-link text-decoration-none mb-3 ps-0">
+                            <img src="/assets/icons/arrow-left-stoke.png" style="height: 13px; width: 13px;" class="icon me-2">Regresar
+                        </a>
+                        <h2>¿Olvidaste tu contraseña?</h2>
+                        <p>
+                            No te preocupes, te enviaremos un correo con instrucciones para que la puedas recuperar.
+                        </p>
+                        <form class="row mt-5" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                            <div class="form-group has-feedback" [ngClass]="{ 'has-error': f.submitted && !email.valid }">
+                                <label>Correo</label>
+                                <input type="email" class="form-control mb-3" name="correo" [(ngModel)]="user.email" #email="ngModel" placeholder="Escribe aquí" required focus="true"/>
+                            </div>
+                            
+                            <div class="d-grid gap-1">
+                                <button type="submit" [disabled]="loading && f.form.valid" class="btn btn-primary d-block">
+                                    <span *ngIf="!loading">Recuperar contraseña</span>
+                                    <span *ngIf="loading">Enviando...</span>
+                                </button>
+                            </div>
+                            <p class="mt-3 d-flex justify-content-center align-items-center">¿No recibiste un correo? <a (click)="submit()" class="btn btn-link text-decoration-none py-0">Enviar de nuevo</a></p>
+                        </form>
+                    </div>
+                    <div class="bg-white text-center mt-3">
+                        <p> <img src="assets/img/smartpyme.png" width="150px" alt="smartpyme logo"> </p>
+                        <p class="my-4">&copy; {{ anio }} SmartPyme</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-8 col-md-6 d-none d-md-flex" style="background-image: url('/assets/img/icon-bg.png'); background-size: 40%; background-position: bottom -100px right -100px; background-color: rgba(23,117,229,0.35)!important; height: 100vh;">
+            </div>
+        </div>
+    </div>
+</div>
+

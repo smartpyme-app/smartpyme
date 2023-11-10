@@ -37,12 +37,6 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/compras/gastos.php');
 		require base_path('routes/modulos/compras/proveedores.php');
 
-	// Transporte
-	    require base_path('routes/modulos/transporte/fletes.php');
-	    require base_path('routes/modulos/transporte/flotas.php');
-	    require base_path('routes/modulos/transporte/motoristas.php');
-	    require base_path('routes/modulos/transporte/mantenimientos.php');
-
 	// Inventario
 		require base_path('routes/modulos/inventario/productos.php');
 		require base_path('routes/modulos/inventario/servicios.php');
@@ -80,8 +74,6 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/admin/bancos.php');
 		require base_path('routes/modulos/admin/usuarios.php');
 		require base_path('routes/modulos/admin/accesos.php');
-		require base_path('routes/modulos/admin/departamentos.php');
-		require base_path('routes/modulos/admin/mensajes.php');
 		require base_path('routes/modulos/admin/transacciones.php');
 
 		

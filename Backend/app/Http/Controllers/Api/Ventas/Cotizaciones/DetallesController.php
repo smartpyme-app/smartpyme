@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Ventas\Ordenes;
+namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

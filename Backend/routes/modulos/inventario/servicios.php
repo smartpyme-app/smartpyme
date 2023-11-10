@@ -1,6 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Inventario\ServiciosController;
+use App\Http\Controllers\Api\Inventario\KardexController;
 
     Route::get('/servicios',                    [ServiciosController::class, 'index']);
     Route::get('/servicio/{id}',                [ServiciosController::class, 'read']);

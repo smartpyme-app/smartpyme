@@ -9,7 +9,8 @@ import { QuicklinkModule } from 'ngx-quicklink';
 import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 
-import { AlertService } from '@services/alert.service';
+import { NotifierModule } from 'angular-notifier';
+import { AlertService } from './services/alert.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
 
@@ -52,12 +53,13 @@ import { LayoutModule } from '@layout/layout.module';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
   ],
   imports: [
     BrowserModule,
     HttpClientModule,
     AppRoutingModule,
+    NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
     SharedModule,
     QuicklinkModule,
     LayoutModule,

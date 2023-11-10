@@ -1,7 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Empleados\Planillas\PlanillasController;
-use App\Http\Controllers\Api\Empleados\Planillas\PlanillaDetallesController;
+use App\Http\Controllers\Api\Empleados\Planillas\DetallesController;
 
 
 // Planilla
@@ -15,9 +15,9 @@ use App\Http\Controllers\Api\Empleados\Planillas\PlanillaDetallesController;
     Route::get('/planilla/reporte/{id}',       [PlanillasController::class, 'planilla']);
     Route::get('/planilla/boletas/{id}',       [PlanillasController::class, 'boletas']);
 
-    Route::post('/planilla/detalle',            [PlanillaDetallesController::class, 'store']);
-    Route::get('/planilla/detalle/{id}',        [PlanillaDetallesController::class, 'read']);
-    Route::delete('/planilla/detalle/{id}',     [PlanillaDetallesController::class, 'delete']);
+    Route::post('/planilla/detalle',            [DetallesController::class, 'store']);
+    Route::get('/planilla/detalle/{id}',        [DetallesController::class, 'read']);
+    Route::delete('/planilla/detalle/{id}',     [DetallesController::class, 'delete']);
 
 
     

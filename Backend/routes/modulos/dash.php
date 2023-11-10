@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\DashController;
 use App\Http\Controllers\Api\Inventario\ProductosController;
-use App\Http\Controllers\Api\Ventas\Ordenes\OrdenesController;
+use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
 
     
     Route::get('/dash',                        [DashController::class, 'index']);
@@ -19,8 +19,8 @@ use App\Http\Controllers\Api\Ventas\Ordenes\OrdenesController;
     Route::get('/dash/vendedor/productos',                [ProductosController::class, 'vendedor']);
     Route::get('/dash/vendedor/productos/buscar/{txt}',   [ProductosController::class, 'vendedorBuscador']);
 
-    Route::get('/dash/vendedor/ordenes',                [OrdenesController::class, 'vendedor']);
-    Route::get('/dash/vendedor/ordenes/buscar/{txt}',   [OrdenesController::class, 'vendedorBuscador']);
+    Route::get('/dash/vendedor/Cotizaciones',                [CotizacionesController::class, 'vendedor']);
+    Route::get('/dash/vendedor/Cotizaciones/buscar/{txt}',   [CotizacionesController::class, 'vendedorBuscador']);
 
     Route::get('/dash/cajero/{id}',             [DashController::class, 'cajero']);
 

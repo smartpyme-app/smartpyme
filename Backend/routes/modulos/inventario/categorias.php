@@ -3,7 +3,6 @@
 
 use App\Http\Controllers\Api\Inventario\Categorias\CategoriasController;
 use App\Http\Controllers\Api\Inventario\Categorias\SubCategoriasController;
-use App\Http\Controllers\Api\Inventario\Categorias\TiposController;
 
     Route::get('/categorias',               [CategoriasController::class, 'index']);
     Route::get('/categoria/{id}',           [CategoriasController::class, 'read']);
@@ -25,13 +24,6 @@ use App\Http\Controllers\Api\Inventario\Categorias\TiposController;
     Route::delete('/subcategoria/{id}',        [SubCategoriasController::class, 'delete']);
 
     Route::post('/subcategoria/cambio',               [SubCategoriasController::class, 'change']);
-
-    Route::get('/tipos',                    [TiposController::class, 'index']);
-    Route::get('/subcategoria/{id}/tipos', [TiposController::class, 'bySubcategoria']);
-    Route::get('/tipo/{id}',           [TiposController::class, 'read']);
-    Route::get('/tipos/buscar/{text}', [TiposController::class, 'search']);
-    Route::post('/tipo',               [TiposController::class, 'store']);
-    Route::delete('/tipo/{id}',        [TiposController::class, 'delete']);
 
     Route::post('/subcategorias/import',          [SubCategoriasController::class, 'import']);
 
