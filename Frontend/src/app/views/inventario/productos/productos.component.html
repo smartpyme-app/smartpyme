@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button routerLink="/producto/crear" tooltip="Crear producto (F7)" class="btn btn-default tcla-F7 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+    <button routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
@@ -15,33 +15,33 @@
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
-                <form class="d-flex input-group" name="form" (ngSubmit)="loadAll()" autocomplete="off">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">
                             <i class="fa fa-search text-muted"></i>
                         </div>
-                        <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.search">
+                        <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F6)" (click)="loadAll()" class="btn btn-default tcla-F6"><img src="/assets/icons/filter.png" class="icon"></button>
+                <button tooltip="Filtrar (F3)" (click)="filtrarProductos()" class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
     <div class="row">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/productos">Todos</button>
+            <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/productos">Todos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ajustes">Ajustes</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
-            <ng-select name="id_categoria" (change)="loadAll()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
+            <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
                     {{categoria.nombre}}
                 </ng-option>
             </ng-select>
-            <ng-select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default">
+            <ng-select name="id_sucursal" (change)="filtrarProductos()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Sucursal</ng-option>
                 <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
@@ -131,15 +131,16 @@
                                     <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">
                                         <img  src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
-                                    <button type="button" class="btn text-start border-0">
+                                    <!-- <button type="button" class="btn text-start border-0">
                                         <img  src="/assets/icons/tool.png" class="icon me-2">Ajustar
                                     </button>
                                     <button type="button" class="btn text-start border-0">
                                         <img  src="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
-                                    </button>
-                                    <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
+                                    </button> -->
+                                    
+                                    <!-- <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
                                         <img  src="/assets/icons/trash-2.png" class="icon me-2">Eliminar
-                                    </button>
+                                    </button> -->
                                 </div>
                             </ng-template>
                         </td>

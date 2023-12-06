@@ -1,5 +1,10 @@
-<nav class="w-100 shadow-sm position-absolute" style="height: 60px; margin-left: 250px; top: 0px; right: 0px;">
-  <div class="container-fluid d-flex justify-content-end">
+<nav class="w-100 shadow-sm d-flex d-md-none">
+  <div class="container-fluid d-flex justify-content-between">
+    <div class="d-flex justify-content-between align-items-center px-0">
+        <button class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
+            <img src="/assets/icons/sidebar.png">
+        </button>
+    </div>
     <ul class="d-flex mt-3">
         <ul class="list-unstyled ps-0 d-inline-flex">
             <li>
@@ -9,7 +14,7 @@
             </li>
             <li>
                 <a class="btn d-inline-flex align-items-center text-decoration-none rounded px-2 dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="icon-bell"></i>
+                    <i class="fa fa-bell"></i>
                     <span class="badge badge-primary">3</span>
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
@@ -38,8 +43,12 @@
                     </li>
                 </ul>
             </li>
-            <app-theme></app-theme>
-            <app-perfil></app-perfil>
+            <!-- <app-theme></app-theme> -->
+            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/log-out.png" class="icon me-2">
+                </a>
+            </li>
         </ul>
 
 

@@ -1,59 +1,59 @@
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
-import { NotifierService } from 'angular-notifier';
+import { Subject, Observable } from 'rxjs';
+import { Router, ActivatedRoute } from '@angular/router';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
+
 export class AlertService {
 
-    public notifier: NotifierService;
+    private alertSubject = new Subject<any>();
+
+    getAlert(): Observable<any> { return this.alertSubject.asObservable(); }
      
-    constructor(private router: Router, notifierService: NotifierService ) {
-        this.notifier = notifierService;
+    constructor(private router: Router) {
     }
 
-    success(message: any) {
-        console.log(message);
-        this.notifier.notify( 'success', message );
+    success(titulo: any = null, message: any) {
+        this.alertSubject.next({'tipo': 'alert-success' ,'titulo': titulo, 'mensaje' : message});
     }
 
     info(message: any) {
-        console.log(message);
-        this.notifier.notify( 'info', message );
-
+        this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message});
     }
 
     error(message: any) {
         console.log(message);
+
         if(message.status == 0) {
-            this.notifier.notify( 'error', 'No hay conección, intentar nuevamente' );
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
         }
         else if(message.status == 404) {
-            this.notifier.notify( 'error', 'El registro no ha sido encontrado' );
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : 'El registro no ha sido encontrado'});
         }
         else if(message.status == 401) {
-            this.notifier.notify( 'error', message.error.error );
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.message});
             this.router.navigate(['/login']);
         }
         else if(message.status == 400) {
-            this.notifier.notify( 'info', message.error.error );
+            // this.notifier.notify( 'info', message.error.error );
+            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message.error.error});
         }
-        // else if(message.status == 422) {
-        //     let alerts='';
-        //     for (var i = 0; i < message.error.error.length; ++i) {
-        //         alerts += ' ' + message.error.error[i] + '\n';
-        //     }
-        //     this.notifier.notify( 'warning', alerts );
-        // }
         else if(message.status == 422) {
+            let alerts='';
             for (var i = 0; i < message.error.error.length; ++i) {
-                this.notifier.notify( 'warning', message.error.error[i] );
+                alerts += '- ' + message.error.error[i] + '<br>';
             }
+            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
         }
         else if(message.status == 500) {
-            this.notifier.notify( 'error', message.error.error );
+            // this.notifier.notify( 'error', message.message );
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.message});
         }
         else {
-            this.notifier.notify( 'warning', message);
+            // this.notifier.notify( 'warning', message);
+            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': message.statusText, 'mensaje' : message});
         }
         
     }

@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\Admin\CanalesController;
     Route::post('/empresa',                 [EmpresasController::class, 'store']);
     Route::get('/empresa/{id}',             [EmpresasController::class, 'read']);
 
+    Route::get('/suscripcion',             [EmpresasController::class, 'suscripcion']);
+
     Route::get('/sucursales',               [SucursalesController::class, 'index']);
     Route::post('/sucursal',                [SucursalesController::class, 'store']);
     Route::get('/sucursal/{id}',            [SucursalesController::class, 'read']);

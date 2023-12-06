@@ -1,243 +1,106 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Compra <small class="text-muted p-2"> Info</small></h2>
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading">Compra</h2>
+    <button class="btn btn-light text-danger" routerLink="/compras">Cancelar <i class="fa fa-close"></i></button>
+</section>
+
+<div class="card border-0">
+    <div class="card-body">
+        <div class="row">
+            <h6 class="col-12"> Información </h6>
+            <div class="form-group col-lg-4">
+                <label>Fecha</label>
+                <p>{{ compra.fecha | date:'yy/MM/yyyy'}} {{ compra.created_at | date:'hh:mm a'}}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Usuario</label>
+                <p>{{ compra.nombre_usuario }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Proveedor</label>
+                <p>{{ compra.nombre_proveedor }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Estado</label>
+                <p>{{ compra.estado }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Forma de pago</label>
+                <p>{{ compra.forma_pago }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Fecha pago</label>
+                <p>{{ compra.fecha_pago | date:'dd/MM/yyyy' }}</p>
+            </div> 
+        </div>
     </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item"><a routerLink="/compras">Compras</a></li>
-            <li class="breadcrumb-item"><a>Compra</a></li>
-        </ol>
-    </div>
+
 </div>
 
 <div class="card">
     <div class="card-body">
-        <div class="row">
-            <div class="form-group col-md-4 col-lg-2">
-                <label for="fecha">Fecha:</label><br>
-                <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
-            </div>
-            <!-- <div class="col-md-6 col-lg-2">
-                <label for="tipo">Tipo:</label>
-                <select class="form-control form-select" [(ngModel)]="compra.tipo" name="tipo">
-                    <option value="Interna">Interna</option>
-                    <option value="Importacion">Importacion</option>
-                </select>
-            </div> -->
-            <div class="form-group col-md-4 col-lg-2">
-                <label for="metodo_pago">Método de pago:</label>
-                <select name="metodo_pago" [(ngModel)]="compra.metodo_pago" class="form-select" id="metodo_pago">
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Tarjeta">Tarjeta</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="Contra entrega">Contra entrega</option>
-                    <option value="Chivo Wallet">Chivo Wallet</option>
-                </select>
-            </div>
-            <div class="form-group col-md-4 col-lg-2">
-                <label for="tipo_documento">Documento:</label>
-                <select class="form-control form-select" [(ngModel)]="compra.tipo_documento" name="tipo_documento">
-                    <option value="Ticket">Ticket</option>
-                    <option value="Factura">Factura</option>
-                    <option value="Crédito fiscal">Crédito fiscal</option>
-                </select>
-            </div>
-            <div class="form-group col-md-4 col-lg-1">
-                <label for="referencia">Referencia:</label><br>
-                <input type="text" class="form-control" [(ngModel)]="compra.referencia" name="referencia" id="referencia">
-            </div>
-            <div class="form-group col-md-4 col-lg-3">
-                <label for="proveedor_id" class="w-100">Proveedor:</label>
-                <div class="input-group flex-nowrap">
-                    <ng-select name="proveedor_id" [(ngModel)]="compra.proveedor_id" class="form-select p-0">
-                        <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                            {{ proveedor.nombre }} - {{ proveedor.registro }}
-                        </ng-option>
-                    </ng-select>
-                    <app-crear-proveedor (update)="setProveedor($event)"></app-crear-proveedor>
-                </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-2">
-                <label for="condicion">Condición:</label>
-                <select name="condicion" [(ngModel)]="compra.condicion" (change)="setFechaPago()" class="form-select" id="condicion">
-                    <option value="Contado">Contado</option>
-                    <!-- <option value="Crédito">Crédito</option> -->
-                    <option value="8 días">8 días</option>
-                    <option value="15 días">15 días</option>
-                    <option value="30 días">30 días</option>
-                    <option value="60 días">60 días</option>
-                    <!-- <option value="Adelantado">Adelantado</option> -->
-                </select>
-            </div>
-            <!-- <div class="form-group col-md-4 col-lg-2">
-                <label for="fecha_pago">Fecha de pago:</label><br>
-                <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
-            </div> -->
+        <h5 class="card-title">Productos o servicios</h5>
+        <div class="table-responsive" style="min-height: 300px;">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <!-- <th>N°</th> -->
+                        <th>Producto</th>
+                        <th width="100">Cantidad</th>
+                        <th width="100">Costo</th>
+                        <th width="100">Descuento</th>
+                        <th width="100" class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="compra.detalles?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene productos agregados</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let detalle of compra.detalles; let i=index">
+                        <!-- <td> {{ i + 1 }} </td> -->
+                        <td>
+                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            {{ detalle.nombre_producto }}
+                        </td>
+                        <td>{{ detalle.cantidad }}</td>
+                        <td>{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+                        <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"></td>
+                        <td class="text-end"><b>Sub Total:</b></td>
+                        <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"></td>
+                        <td class="text-end"><b>Descuento:</b></td>
+                        <td class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr colspan="3" class="text-end">
+                        <td colspan="3" class="text-end"></td>
+                        <td class="text-end"><b>IVA</b></td>
+                        <td class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"></td>
+                        <td class="text-end"><b>Total:</b></td>
+                        <td class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-
-
-        <div class="row">
-            <app-compra-detalles [compra]="compra" (update)="updateOrden($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
-            <div class="col-md-12">
-                <table class="table table-sm table-borderless table-condensed mb-0">
-                    <tbody>
-                        <tr>
-                            <td class="text-right"> Sub Total: </td>
-                            <td width="70px" class="text-right"> {{ compra.subtotal | currency:'USD':'symbol':'1.2'}} </td>
-                        </tr>
-                        <tr>
-                            <td class="text-right"> IVA: </td>
-                            <td width="70px" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">
-                                <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="compra.percepcion">
-                                        <input id="compra.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.percepcion" name="compra.percepcion" *ngIf="!loading">
-                                        IVA percibido:
-                                    </label>
-                                </div>
-                            </td>
-                            <td  width="70px" class="text-right">
-                               {{ (compra.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">
-                                <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="compra.retencion">
-                                        <input id="compra.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
-                                        IVA retenido:
-                                    </label>
-                                </div>
-                            </td>
-                            <td  width="70px" class="text-right">
-                               {{ (compra.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">No Sujeta:</td>
-                            <td width="70px" class="text-right">{{ compra.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">Exenta:</td>
-                            <td width="70px" class="text-right">{{ compra.exenta | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">Gravada:</td>
-                            <td width="70px" class="text-right">{{ compra.gravada | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right"> <b>Total:</b> </td>
-                            <td width="70px" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-<!--         <div class="d-flex mt-3">
-            <div class="form-switch ml-3 mb-2">
-                <input type="checkbox" id="forma_pago" (change)="onChangeFormaPago($event)" class="form-check-input"> 
-                <label style="width: 200px;" for="forma_pago">Compra al crédito</label>
-            </div>
-            <div class="form-inline" *ngIf="compra.forma_pago == 'Crédito'">
-                <label for="cuotas">N° de pagos:</label>
-                <input type="number" class="ml-3 form-control" [(ngModel)]="compra.cuotas" name="cuotas">
-            </div>
-            <div class="form-inline ml-3" *ngIf="compra.forma_pago == 'Crédito'">
-                <label for="plazo">Frecuencia:</label>
-                <div class="ml-3 input-group">
-                    <input type="number" class="ml-3 form-control" [(ngModel)]="compra.plazo" name="plazo">
-                    <span class="input-group-text">Dias</span>
-                </div>
-            </div>
-        </div> -->
-    </div> 
-    <div class="card-footer">
-        <button (click)="onSubmit()" [disabled]="loading" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-            <span *ngIf="!loading"> Guardar</span>
-            <span *ngIf="loading"> Guardando...</span>
-        </button>
     </div>
 </div>
 
-<ng-template #mproducto>
-  <div class="modal-header text-center">
-    <h3 class="modal-title">{{ detalle.producto_nombre }}</h3>
-    <button type="button" class="close float-end" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  <div class="modal-body">
-    <form name="producto" autocomplete="off" (ngSubmit)="guardarDetalle()">
-        <div class="form-group col-sm-3">
-            <label for="cantidad">Cantidad:</label>
-            <input type="number" min="1" class="form-control" id="cantidad" name="cantidad" [(ngModel)]="detalleModificado.cantidad" (change)="calcular()">
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="costo">Costo:</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.costo" name="costo" (change)="calcular()">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="descuento">Descuento:</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.descuento" name="descuento" placeholder="%" (change)="calcular()">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="iva">IVA:</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.iva" name="iva">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="subtotal">Sub Total</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.subtotal" name="subtotal" (change)="calcularCosto()">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="total">Total</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.total" name="total" (change)="calcular()">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="precio">Precio:</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.precio" name="precio">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="precio_nuevo">Nuevo Precio:</label>
-            <div class="input-group">
-                <span class="input-group-addon">$</span>
-                <input type="number" min="1" class="form-control" [(ngModel)]="detalleModificado.precio_nuevo" name="precio_nuevo">
-            </div>
-        </div>
-        <div class="form-group col-sm-3">
-            <label for="tipo">Tipo:</label>
-            <select class="form-control" [(ngModel)]="detalleModificado.tipo" name="tipo" (change)="calcular()">
-                <option value="Exenta">Exenta</option>
-                <option value="Gravada">Gravada</option>
-                <option value="No Sujeta">No Sujeta</option>
-            </select>
-        </div>
-        <div class="row">
-            <div class="col-md-12 mr-top">
-                <button type="submit" [disabled]="!detalleModificado.cantidad || !detalleModificado.costo" class="btn btn-primary float-end"> Guardar </button>
-            </div>
-        </div>
-    </form>
-  </div>
-</ng-template>
+<div class="card" *ngIf="compra.observaciones">
+    <div class="card-body">
+        <h5 class="card-title"> Observaciones </h5>
+        <p>{{ compra.observaciones }}</p>  
+    </div>
+
+</div>

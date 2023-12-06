@@ -98,7 +98,7 @@ export class ProductosConsignasComponent implements OnInit {
         this.loading = true;
         this.apiService.store('producto', this.producto).subscribe(producto=> {
             this.producto = {};
-            this.alertService.success("Datos guardados");
+            this.alertService.success('Consigna guardada', 'La consigna fue guardado exitosamente.');
             this.loading = false;
             this.modalRef.hide();
         },error => {this.alertService.error(error); this.loading = false; });

@@ -26,18 +26,9 @@ import { DashOrdenesComponent }  from './admin/ordenes/dash-ordenes.component';
 // import { CalendarioComponent }   from './admin/calendario/calendario.component';
 import { TopsComponent }   from './admin/tops/tops.component';
 
-import { MeseroDashComponent }   from './mesero/mesero-dash.component';
-import { MesasDashComponent }   from './mesero/mesas/mesas-dash.component';
-import { MeseroDatosComponent }   from './mesero/datos/mesero-datos.component';
-
 import { VendedorDashComponent }   from './vendedor/vendedor-dash.component';
 import { VendedorDatosComponent }   from './vendedor/datos/vendedor-datos.component';
 import { VendedorProductosComponent }   from './vendedor/productos/vendedor-productos.component';
-
-import { CocineroDashComponent }   from './cocinero/cocinero-dash.component';
-import { CocinaGeneralComponent }   from './cocinero/general/cocina-general.component';
-import { CocinaDatosComponent }   from './cocinero/datos/cocina-datos.component';
-import { CocinaDepartamentoComponent }   from './cocinero/departamento/cocina-departamento.component';
 
 import { CajaDashComponent }   from './caja/caja-dash.component';
 import { CajaOrdenesComponent }   from './caja/ordenes/caja-ordenes.component';
@@ -68,17 +59,10 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
     // CalendarioComponent,
     TopsComponent,
     AdminDashComponent,
-    MeseroDashComponent,
-    MesasDashComponent,
-    MeseroDatosComponent,
-    CocineroDashComponent,
-    CocinaDatosComponent,
-    CocinaGeneralComponent,
     CajaDashComponent,
     CajaOrdenesComponent,
     CajaVentasComponent,
     CajaDevolucionesComponent,
-    CocinaDepartamentoComponent,
     VendedorDashComponent,
     VendedorDatosComponent,
     VendedorProductosComponent,
@@ -87,20 +71,12 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
   	DashComponent,
     DatosComponent,
     DashOrdenesComponent,
-    // CalendarioComponent,
     TopsComponent,
     AdminDashComponent,
-    MeseroDashComponent,
-    MesasDashComponent,
-    MeseroDatosComponent,
-    CocineroDashComponent,
-    CocinaDatosComponent,
-    CocinaGeneralComponent,
     CajaDashComponent,
     CajaOrdenesComponent,
     CajaVentasComponent,
     CajaDevolucionesComponent,
-    CocinaDepartamentoComponent,
     VendedorDashComponent,
     VendedorDatosComponent,
     VendedorProductosComponent,

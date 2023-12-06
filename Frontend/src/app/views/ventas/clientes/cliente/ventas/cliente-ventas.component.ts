@@ -84,7 +84,7 @@ export class ClienteVentasComponent implements OnInit {
         venta.estado = estado;
         this.apiService.store('venta', venta).subscribe(venta => {
             this.loadAll();
-            this.alertService.success('Actualizado');
+            this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 

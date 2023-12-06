@@ -63,7 +63,7 @@ export class ProveedorComprasComponent implements OnInit {
             compra.estado = estado;
             this.apiService.store('compra', compra).subscribe(compra => {
                 this.loadAll();
-                this.alertService.success('Actualizado');
+                this.alertService.success('Compra guardada', 'La compra fue guardada exitosamente.');
             }, error => {this.alertService.error(error); });
         }
 

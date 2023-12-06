@@ -119,7 +119,7 @@ export class TrasladosComponent implements OnInit {
         this.traslado.id_usuario = this.apiService.auth_user().id;
         this.apiService.store('traslado', this.traslado).subscribe(traslado => { 
             this.traslado = {};
-            this.alertService.success("Traslado realizado");
+            this.alertService.success('Traslado realizado', 'El traslado fue añadido exitosamente.');
             this.modalRef.hide();
             this.loadAll();
             this.saving = false;
@@ -130,7 +130,7 @@ export class TrasladosComponent implements OnInit {
         this.saving = true;
         this.apiService.delete('traslado/', id).subscribe(traslado => { 
             this.traslado = {};
-            this.alertService.success("Traslado cancelado");
+            this.alertService.success('Traslado cancelado', 'El traslado fue cancelado exitosamente.');
             this.modalRef.hide();
             this.loadAll();
             this.saving = false;

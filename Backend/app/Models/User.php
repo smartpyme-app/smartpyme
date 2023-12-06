@@ -9,7 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
 use Carbon\Carbon;
-use JWTAuth;
+use Auth;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -36,17 +36,16 @@ class User extends Authenticatable implements JWTSubject
         'enable' => 'string'
     ];
 
-    // protected static function booted()
-    // {
-    //     $usuario = JWTAuth::parseToken()->authenticate();
+    protected static function boot()
+    {
+        parent::boot();
 
-    //     if ($usuario){
-    //         static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-    //             $builder->where('id_empresa', $usuario->id_empresa);
-    //         });
-    //     }
-        
-    // }
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+    }
 
     public function getNombreSucursalAttribute(){
         return $this->sucursal()->pluck('nombre')->first();

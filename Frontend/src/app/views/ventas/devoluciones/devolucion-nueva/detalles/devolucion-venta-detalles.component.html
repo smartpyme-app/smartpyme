@@ -1,47 +1,43 @@
-<div class="row" >
-    <div class="col-md-12">
-        <table class="table table-sm table-bordered table-condensed mb-0">
+<div class="row">
+    <div class="col-md-12 table-responsive">
+        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
             <thead>
                 <tr>
-                    <th style="width: 50px;" class="text-center">#</th>
                     <th>Producto</th>
-                    <th style="width: 100px;" class="text-center">Cantidad</th>
-                    <th style="width: 100px;" class="text-center">Precio</th>
-                    <!-- <th style="width: 100px;" class="text-center">Descuento</th> -->
-                    <th style="width: 100px;" class="text-center">No Sujeta</th>
-                    <th style="width: 100px;" class="text-center">Exenta</th>
-                    <th style="width: 100px;" class="text-center">Gravada</th>
-                    <th style="width: 100px;" class="text-center">Total</th>
-                    <th style="width: 100px;" class="text-center"><i class="fa fa-cog"></i></th>
+                    <th style="width: 150px;">Cantidad</th>
+                    <th style="width: 150px;">Precio</th>
+                    <th style="width: 150px;">Descuento</th>
+                    <th style="width: 100px;" class="text-right">Total</th>
+                    <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
-        </table>
-    </div>
-    <div class="col-md-12" id="detalles">
-        <table class="table table-sm table-bordered table-condensed mb-0">
             <tbody>
                 <tr *ngIf="venta?.detalles?.length < 1">
-                    <td colspan="7" class="text-center text-muted">
-                        Ningún detalle agregado
+                    <td colspan="7" class="text-center">
+                        <p class="text-muted my-3">
+                            Agregue productos y servicios
+                        </p>
                     </td>
                 </tr>
                 <tr *ngFor="let detalle of venta?.detalles; let i = index">
-                    <td style="width: 50px;" class="text-center">{{ i + 1 }}</td>
-                    <td>{{ detalle.nombre_producto }}</td>
-                    <td style="width: 100px;" class="text-center">{{ detalle.cantidad }}</td>
-                    <td style="width: 100px;" class="text-center">{{ detalle.precio | currency:'USD':'symbol':'1.2'}}</td>
-                    <!-- <td style="width: 100px;" class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2'}}</td> -->
-                    <td style="width: 100px;" class="text-center">{{ detalle.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
-                    <td style="width: 100px;" class="text-center">{{ detalle.exenta | currency:'USD':'symbol':'1.2'}}</td>
-                    <td style="width: 100px;" class="text-center">{{ detalle.gravada | currency:'USD':'symbol':'1.2'}}</td>
-                    <td style="width: 100px;" class="text-center">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
-                    <td style="width: 100px;" class="text-center">
+                    <td>
+                        <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                        {{ detalle.nombre_producto }}
+                    </td>
+                    <td style="width: 150px;">
+                        <input type="number" [min]="1" [max]="detalle.cantidad" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="cantidad">
+                    </td>
+                    <td style="width: 150px;">
+                        {{ detalle.precio | currency:'USD':'symbol':'1.2'}}
+                    </td>
+                    <td style="width: 150px;">
+                        {{ detalle.descuento | currency:'USD':'symbol':'1.2'}}
+                    </td>
+                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
-                            <button class="btn btn-default" (click)="modalSupervisor(detalle)">
+                            <button class="btn btn-link" (click)="delete(detalle)">
                               <i class="fa fa-trash"></i>
-                            </button>
-                            <button class="btn btn-default tcla-F7" (click)="openModalEdit(mdetalle, detalle)">
-                              <i class="fa fa-pencil-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -49,7 +45,6 @@
             </tbody>
         </table>
     </div>
-    
 </div>
 
 

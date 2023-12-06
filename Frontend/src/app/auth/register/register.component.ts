@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
 
-declare let $:any;
+import { Router, ActivatedRoute } from '@angular/router';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
 
 @Component({
   selector: 'app-register',
@@ -14,27 +14,100 @@ export class RegisterComponent implements OnInit {
     public user: any = {};
     public loading = false;
     public saludo:string = '';
+    public anio:any = '';
+    public showpassword:boolean = false;
 
-    constructor( private apiService: ApiService, private router: Router, private alertService: AlertService) { }
+    constructor( 
+        public apiService: ApiService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router,
+    ) { }
 
     ngOnInit() {
-        sessionStorage.removeItem('auth_user');
-        sessionStorage.removeItem('token');
+        this.user = this.apiService.register_user();
+        if(!this.user){
+            this.user = {};
+            this.user.empresa = {};
+            
+            // this.user.name = 'Jesus Alvarado';
+            // this.user.email = 'alvarado.websis22@gmail.com';
+            // this.user.telefono = '7891-2933';
+            // this.user.password = 'Asd4#sasd351';
+            
+            // this.user.empresa.nombre = 'websis';
+            // this.user.empresa.industria = 'Comercio';
+
+            this.user.empresa.industria = '';
+            this.user.empresa.iva = 13; 
+            this.user.empresa.moneda = 'USD';
+            this.user.empresa.plan = 'Emprendedor';
+            this.user.empresa.tipo_plan = 'Mensual';
+
+            if (this.route.snapshot.queryParamMap.get('plan')!) {
+                this.user.empresa.plan = this.route.snapshot.queryParamMap.get('plan')!;
+            }
+
+            if (this.route.snapshot.queryParamMap.get('tipo_plan')!) {
+                this.user.empresa.tipo_plan = this.route.snapshot.queryParamMap.get('tipo_plan')!;
+            }
+
+            this.setPlan();
+        }
+
     }
 
-    register() {
+    public setPlan(){
+        if(this.user.empresa.plan == 'Emprendedor'){
+            this.user.empresa.user_limit = 1;
+            this.user.empresa.sucursal_limit = 1;
+
+            if(this.user.empresa.tipo_plan == 'Mensual'){
+                this.user.empresa.total = 16.95;
+            }else{
+                this.user.empresa.total = 169.5;
+            }
+        }
+
+        if(this.user.empresa.plan == 'Estándar'){
+            this.user.empresa.user_limit = 2;
+            this.user.empresa.sucursal_limit = 1;
+
+            if(this.user.empresa.tipo_plan == 'Mensual'){
+                this.user.empresa.total = 28.25;
+            }else{
+                this.user.empresa.total = 282.5;
+            }
+        }
+
+        if(this.user.empresa.plan == 'Avanzado'){
+            this.user.empresa.user_limit = 5;
+            this.user.empresa.sucursal_limit = 2;
+
+            if(this.user.empresa.tipo_plan == 'Mensual'){
+                this.user.empresa.total = 56.5;
+            }else{
+                this.user.empresa.total = 565;
+            }
+        }
+
+    }
+
+    submit() {
         this.loading = true;
+
         this.apiService.register(this.user)
         .subscribe(
             data => {
-                this.alertService.success("Gracias por registrarse.");
-                this.router.navigate(['/']);
+                this.router.navigate(['/pago']);
+                this.loading = false;
             },
             error => {
-                $('.container').addClass("animated shake");
                 this.alertService.error(error);
                 this.loading = false;
             });
     }
+
+    public mostrarPassword(){
+        this.showpassword = !this.showpassword;
+    }  
 
 }

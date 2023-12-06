@@ -11,22 +11,20 @@ class Devolucion extends Model {
     protected $table = 'devoluciones_compra';
     protected $fillable = array(
         'fecha',
-        'estado',
-        'referencia',
+        // 'referencia',
         'id_proveedor',
         'descuento',
-        'subtotal',
-        'no_sujeta',
-        'exenta',
-        'gravada',
+        'sub_total',
         'iva_percibido',
         'iva_retenido',
         'iva',
         'total',
-        'nota',
+        'enable',
+        'observaciones',
         'id_compra',
         'id_usuario',
         'id_empresa',
+
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario'];

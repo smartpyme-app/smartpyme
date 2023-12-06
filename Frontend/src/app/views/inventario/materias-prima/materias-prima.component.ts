@@ -116,7 +116,7 @@ export class MateriasPrimaComponent implements OnInit {
         // Guardamos la caja
         this.apiService.store('producto', this.producto).subscribe(producto=> {
             this.producto= {};
-            this.alertService.success("Datos guardados");
+            this.alertService.success('Materia prima actualizada', 'La materia prima fue guardada exitosamente.');
             this.loading = false;
             this.modalRef.hide();
         },error => {this.alertService.error(error); this.loading = false;

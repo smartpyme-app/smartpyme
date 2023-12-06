@@ -1,18 +1,12 @@
-<div class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
-    <div class="d-flex justify-content-between align-items-center px-0 pb-3 mb-3 border-bottom position-relative" style="height: 5vh;">
-        <a [routerLink]="['/']" class="btn-home link-body-emphasis text-decoration-none" (click)="toggleSidebar()">
-          <span class="fs-5 fw-semibold">
-            <a [routerLink]="['/']" class="d-inline text-nowrap ps-2">
-                <img src="assets/img/icon.png" height="25px">
-                <img src="assets/img/logo.png" class="logo" height="25px">
-            </a>
-          </span>
-        </a>
-        <button class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
+<div id="sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
+    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
+        <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
+        <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
+        <button  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
             <img src="/assets/icons/sidebar.png">
         </button>
     </div>
-    <div class="mb-3" style="height: 5vh;">
+    <div class="mb-3" style="min-height: 5vh;">
         <form action="" autocomplete="off">
             <ul class="list-unstyled ps-0">
                 <li class="mb-1 d-flex rounded" style="background-color: #F2F0F4; height: 40px;">
@@ -24,7 +18,7 @@
             </ul>
         </form>
     </div>
-    <div style="height: 45vh; overflow-y: auto; overflow-x: hidden;">
+    <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
             <li class="mb-1">
                 <button (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
@@ -82,14 +76,14 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/pie-chart.png" class="icon me-2">Reportes</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pagos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Formas de pago</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Formas de pago</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/check-square.png" class="icon me-2">Cierre de caja</a></li>
                   </ul>
                 </div>
             </li>
         </ul>
     </div>
-    <div style="height: 37vh; overflow-y: auto; overflow-x: hidden;">
+    <div style="min-height: 37vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img src="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li>

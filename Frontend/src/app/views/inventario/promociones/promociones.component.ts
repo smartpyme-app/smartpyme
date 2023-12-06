@@ -37,7 +37,7 @@ export class PromocionesComponent implements OnInit {
         this.loadAll();
 
         this.filtro.nombre_producto = '';
-        this.filtro.categoria = '';
+        this.filtro.enable = '';
         this.filtro.subcategoria = '';
         this.apiService.getAll('categorias').subscribe(categorias => {
             this.categorias = categorias;
@@ -47,7 +47,7 @@ export class PromocionesComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('productos/promociones').subscribe(promociones => { 
+        this.apiService.getAll('promociones').subscribe(promociones => { 
             this.promociones = promociones;
             this.loading = false; this.filtrado = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -146,7 +146,8 @@ export class PromocionesComponent implements OnInit {
         // Guardamos la caja
         this.apiService.store('producto/promocion', this.promocion).subscribe(promocion => {
             this.promocion = promocion;
-            this.alertService.success("Promoción guardada");
+            this.alertService.success('Promoción guardada', 'La promoción fue guardad exitosamente.');
+
             this.loading = false;
             this.modalRef.hide();
         },error => {this.alertService.error(error); this.loading = false;
@@ -169,7 +170,7 @@ export class PromocionesComponent implements OnInit {
 
             this.apiService.store('producto/promocion', this.promocionesFiltradas[i]).subscribe(promocion=> {
                 if (this.promocionesFiltradas.length == i + 1) {
-                    this.alertService.success((i + 1) + " promociones configuradas");
+                    this.alertService.success('Promociones agregadas', (i + 1) + " promociones configuradas");
                     this.loading = false;
                     this.modalRef.hide();
                     this.loadAll();

@@ -2,8 +2,8 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild 
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
-import { ApiService } from '../../../../../services/api.service';
-import { AlertService } from '../../../../../services/alert.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-devolucion-compra-detalles',
@@ -14,8 +14,6 @@ export class DevolucionCompraDetallesComponent implements OnInit {
     @Input() compra: any = {};
     public detalle:any = {};
     public supervisor:any = {};
-    public cantidad!:any;
-    public costo!:any;
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
@@ -38,33 +36,13 @@ export class DevolucionCompraDetallesComponent implements OnInit {
 
     openModalEdit(template: TemplateRef<any>, detalle:any) {
         this.detalle = detalle;
-        this.costo = this.detalle.costo;
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
-    // Actualizar detalle
-    actualizarDetalle(){
-        this.detalle.subtotal = (this.detalle.costo - this.detalle.descuento) * this.detalle.cantidad;
-        
-        if(this.detalle.tipo == "Gravada") {
-            this.detalle.iva     = this.detalle.subtotal * 0.13;
-        }
-
-        this.detalle.total = this.detalle.iva + this.detalle.subtotal;
-        console.log(this.detalle);
+    public updateTotal(detalle:any){
+        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(2);
+        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(2);
         this.update.emit(this.compra);
-    }
-
-    public setCantidad(){
-        this.detalle.cantidad = this.cantidad;
-        this.detalle.costo = this.costo;
-        this.actualizarDetalle()
-        this.modalRef.hide();
-    }
-
-    public setPrecio(costo:any){
-        this.costo = costo;
-        this.actualizarDetalle();
     }
 
     public modalSupervisor(detalle:any){
@@ -76,15 +54,15 @@ export class DevolucionCompraDetallesComponent implements OnInit {
         this.loading = true;
         this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
             this.modalRef.hide();
-            this.eliminarDetalle(this.detalle);
+            this.delete(this.detalle);
             this.loading = false;
             this.supervisor = {};
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
     // Eliminar detalle
-        public eliminarDetalle(detalle:any){
-            if (confirm('Confirma que desea quitar el detalle')) { 
+        public delete(detalle:any){
+            if (confirm('Confirma eliminar el detalle')) { 
 
                 for (var i = 0; i < this.compra.detalles.length; ++i) {
                     if (this.compra.detalles[i].producto_id === detalle.producto_id ){
@@ -93,7 +71,6 @@ export class DevolucionCompraDetallesComponent implements OnInit {
                     }
                 }
             }
-
 
         }
 

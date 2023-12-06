@@ -15,14 +15,12 @@ class KardexController extends Controller
 
     public function index(Request $request) {
 
-        $producto = Producto::with('inventarios')->findOrFail($request->producto_id);
+        $producto = Producto::with('inventarios')->findOrFail($request->id_producto);
+
         $kardex = Kardex::where('id_producto', $producto->id)
-                        ->when($request->bodega_id, function($query) use ($request){
-                            return $query->whereHas('inventario', function($q) use ($request){
-                                $q->where('id_inventario', $request->bodega_id);
-                            });
+                        ->when($request->id_sucursal, function($q) use ($request){
+                                $q->where('id_inventario', $request->id_sucursal);
                         })
-                        // ->where('bodega_id', $request->bodega_id)
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->orderBy('id','desc')
                         ->get();
@@ -47,9 +45,9 @@ class KardexController extends Controller
         $kardexs = Kardex::when($request->fecha_fin, function($query) use ($request){
                                 return $query->whereBetween('fecha', [$request->fecha_ini, $request->fecha_fin]);
                             })
-                            ->when($request->bodega_id, function($query) use ($request){
+                            ->when($request->id_sucursal, function($query) use ($request){
                                 return $query->whereHas('inventario', function($q) use ($request){
-                                    $q->where('bodega_id', $request->bodega_id);
+                                    $q->where('id_sucursal', $request->id_sucursal);
                                 });
                             })
                             ->when($request->id_producto, function($query) use ($request){
@@ -66,7 +64,7 @@ class KardexController extends Controller
         $request->validate([
             'fecha'         => 'required',
             'id_producto'   => 'required',
-            'bodega_id' => 'required|numeric',
+            'id_sucursal' => 'required|numeric',
             'detalle'       => 'required',
             'referencia'    => 'sometimes|max:255',
             'entrada_cantidad'      => 'required|numeric',
@@ -75,7 +73,7 @@ class KardexController extends Controller
             'salida_valor'         => 'required|numeric',
             'total_cantidad'      => 'required|numeric',
             'total_valor'         => 'required|numeric',
-            'usuario_id'    => 'required|numeric',
+            'id_usuario'    => 'required|numeric',
         ]);
 
         if($request->id)
@@ -85,7 +83,7 @@ class KardexController extends Controller
 
         // Actualizar inventario
             $producto = Producto::withoutGlobalScopes()->findOrFail($request->id_producto);
-            $inventario = Inventario::where('id', $request->bodega_id)->where('id_producto', $producto->id)->first();
+            $inventario = Inventario::where('id', $request->id_sucursal)->where('id_producto', $producto->id)->first();
             $inventario->stock += ($request->stock_final - $request->stock_inicial);
             $inventario->save();
 

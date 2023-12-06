@@ -22,14 +22,14 @@ class Detalle extends Model {
 
     );
 
-    protected $appends = ['nombre_producto', 'medida'];
+    protected $appends = ['nombre_producto', 'img'];
 
     public function getNombreProductoAttribute(){
-        return $this->producto()->pluck('nombre')->first();
+        return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
     }
 
-    public function getMedidaAttribute(){
-        return $this->producto()->pluck('medida')->first();
+    public function getImgAttribute(){
+        return $this->producto()->withoutGlobalScopes()->first()->img;
     }
 
     public function producto(){

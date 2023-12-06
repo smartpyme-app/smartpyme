@@ -19,12 +19,26 @@ img.icon{
     width: 20px;
     height: 20px;
 }
+
+img.icon-2{
+    width: 15px;
+    height: 15px;
+}
 .click{
     cursor: pointer;
 }
 /* General */
     .text-right{
       text-align: right !important;
+    }
+    .without-label{
+        padding-top: 29px !important;
+    }
+    .without-label .form-switch{
+        height: 37.6px !important;
+    }
+    .form-control.border-danger, .form-control.border-danger:focus{
+      border-color: #BA1A1A !important;
     }
     .bg-light-success{
       background-color: #DCFCE7 !important;
@@ -38,6 +52,28 @@ img.icon{
     .bg-light-info{
       background-color: #E6F2FF !important;
     }
+
+    .bg-warning{
+        background-color: #FFDCC4 !important;
+        color: #2F1500 !important;
+    }
+    .bg-danger{
+        background-color: #FFDAD6 !important;
+        color: #2F1500 !important;
+    }
+    .bg-info{
+        background-color: #D7E2FF !important;
+        color: #001B3F !important;
+    }
+    .bg-success{
+        background: #DCFCE7 !important;
+        color: #14532D !important;
+    }
+    .bg-primary{
+        background-color: #00458F !important;
+        color: #fff !important;
+    }
+
     .btn-close{
         position: absolute;
         top: 15px;
@@ -143,6 +179,11 @@ img.icon{
         width: 40px;
     }
 
+    /* Validaciones */
+    .ng-touched.ng-invalid{
+        border-color: red;
+    }
+
 
 /* sidebar  */
 
@@ -152,6 +193,7 @@ img.icon{
         transition: width 0.3s;
         overflow: hidden;
         height: 100%;
+        transition: all 1s ease;
     }
 
     .sidebar.collapsed {
@@ -243,12 +285,11 @@ img.icon{
 
     @media(max-width: 768px){
         .sidebar {
-            display: none;
-           /* width: 0px;
-            padding: 20px 12px;
-            transition: width 0.3s;
-            overflow: hidden;
-            height: 100%;*/
+            margin-left: -280px;
+        }
+
+        #toggleBtn {
+            display: none !important;
         }
     }
 
@@ -350,6 +391,18 @@ img.icon{
         stroke-width: 5px; }
       .home_chart_widget .ct-area {
         fill-opacity: .5; }
+
+/*Buscador*/
+    .buscador>ul.list-group.opciones{
+        width: 100%;
+        position: absolute;
+        z-index: 1000;
+        max-height: 300px;
+        top: 39px;
+        overflow-y: auto;
+        background-color: #FDFBFF !important;
+    }
+
 
 /* File */
 

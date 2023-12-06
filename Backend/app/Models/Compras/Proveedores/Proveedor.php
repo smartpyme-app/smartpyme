@@ -13,22 +13,24 @@ class Proveedor extends Model {
     protected $table = 'proveedores';
     protected $fillable = array(
         'nombre',
+        'apellido',
         'ncr',
+        'giro',
+        'tipo',
+        'tipo_contribuyente',
         'dui',
         'nit',
-        'giro',
-        'descripcion',
+        'nombre_empresa',
         'direccion',
         'municipio',
         'departamento',
         'telefono',
-        'tipo_contribuyente',
         'correo',
-        'etiquetas',
-        'enable',
         'nota',
+        'enable',
+        'etiquetas',
         'id_usuario',
-        'id_empresa'
+        'id_empresa',
     );
 
     protected $casts = ['enable' => 'boolean'];

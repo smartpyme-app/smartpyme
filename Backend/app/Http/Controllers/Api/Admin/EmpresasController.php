@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
+use JWTAuth;
 
 class EmpresasController extends Controller
 {
@@ -64,6 +65,22 @@ class EmpresasController extends Controller
     {
         $empresa = Empresa::findOrFail($id);
         $empresa->delete();
+
+        return Response()->json($empresa, 201);
+
+    }
+
+    public function suscripcion()
+    {
+        $empresa = Empresa::with('pagos')->where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->firstOrFail();
+        $empresa->next_pay  = $empresa->getNextPayAttribute();
+        $empresa->total  = 15;
+
+        if ($empresa->next_pay < date('Y-m-d')) {
+            $empresa->estado  = 'Activo';
+        }else{
+            $empresa->estado  = 'Vencido';
+        }
 
         return Response()->json($empresa, 201);
 

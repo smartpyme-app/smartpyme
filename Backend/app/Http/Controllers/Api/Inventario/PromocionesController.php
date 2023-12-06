@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Api\Inventario;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Inventario\Promocion;
+use App\Models\Inventario\Promociones\Promocion;
 
 class PromocionesController extends Controller
 {
 
     public function index()
     {
-        $promociones = Promocion::with('producto')->orderBy('id','desc')->get();
+        $promociones = Promocion::with('producto')->orderBy('id','desc')->paginate(10);
 
         return Response()->json($promociones, 201);
 

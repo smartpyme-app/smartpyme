@@ -1,25 +1,35 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { TestBed, async } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { CompraComponent } from './compra.component';
 
 describe('CompraComponent', () => {
-  let component: CompraComponent;
-  let fixture: ComponentFixture<CompraComponent>;
-
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ CompraComponent ]
-    })
-    .compileComponents();
+      imports: [
+        RouterTestingModule
+      ],
+      declarations: [
+        CompraComponent
+      ],
+    }).compileComponents();
   }));
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(CompraComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(CompraComponent);
+    const app = fixture.debugElement.componentInstance;
+    expect(app).toBeTruthy();
   });
 
-  it('should be created', () => {
-    expect(component).toBeTruthy();
+  it(`should have as title 'wproject'`, () => {
+    const fixture = TestBed.createComponent(CompraComponent);
+    const app = fixture.debugElement.componentInstance;
+    expect(app.title).toEqual('wproject');
+  });
+
+  it('should render title in a h1 tag', () => {
+    const fixture = TestBed.createComponent(CompraComponent);
+    fixture.detectChanges();
+    const compiled = fixture.debugElement.nativeElement;
+    expect(compiled.querySelector('h1').textContent).toContain('Welcome to wproject!');
   });
 });

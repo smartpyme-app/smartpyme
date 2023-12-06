@@ -25,10 +25,37 @@ class DevolucionVentasController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $ventas = Devolucion::orderBy('id','desc')->paginate(10);
-       
+        $ventas = Devolucion::when($request->buscador, function($query) use ($request){
+                            return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
+                        })
+                        ->when($request->inicio, function($query) use ($request){
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('enable', $request->estado);
+                        })
+                        ->when($request->forma_de_pago, function($query) use ($request){
+                            return $query->where('forma_de_pago', $request->forma_de_pago);
+                        })
+                        ->when($request->id_cliente, function($query) use ($request){
+                            return $query->whereHas('cliente', function($query) use ($request)
+                            {
+                                $query->where('id_cliente', $request->id_cliente);
+
+                            });
+                        })
+                        ->when($request->tipo_documento, function($query) use ($request){
+                            return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
+
         return Response()->json($ventas, 200);
 
     }
@@ -42,51 +69,13 @@ class DevolucionVentasController extends Controller
 
     }
 
-    public function search($txt) {
-
-        $ventas = Devolucion::whereHas('cliente', function($query) use ($txt) {
-                                    $query->where('nombre', 'like' ,'%' . $txt . '%');
-                                })
-                                ->orwhere('correlativo', 'like', '%'.$txt.'%')
-                                ->orwhere('tipo_documento', 'like', '%'.$txt.'%')
-                                ->orwhere('estado', 'like', '%'.$txt.'%')
-                                ->orwhere('forma_de_pago', 'like', '%'.$txt.'%')
-                                ->orwhere('referencia', 'like', '%'.$txt.'%')
-                                ->paginate(10);
-
-        return Response()->json($ventas, 200);
-
-    }
-
-    public function filter(Request $request) {
-
-
-        $ventas = Devolucion::when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('enable', $request->estado);
-                        })
-                        ->when($request->forma_de_pago, function($query) use ($request){
-                            return $query->where('forma_de_pago', $request->forma_de_pago);
-                        })
-                        ->when($request->tipo_documento, function($query) use ($request){
-                            return $query->where('tipo_documento', $request->tipo_documento);
-                        })
-                        ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($ventas, 200);
-
-    }
 
     public function store(Request $request)
     {
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
+            'observaciones'            => 'required',
             // 'id_cliente'        => 'required',
             'id_usuario'        => 'required',
         ]);
@@ -122,19 +111,21 @@ class DevolucionVentasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'tipo'              => 'required|max:255',
-            'tipo_documento'    => 'required|max:255',
-            // 'id_cliente'           => 'required',
+            'id_documento'      => 'required|max:255',
+            // 'id_cliente'        => 'required',
             'detalles'          => 'required',
             'iva'               => 'required|numeric',
-            'subcosto'          => 'required|numeric',
-            'subtotal'          => 'required|numeric',
+            'total_costo'       => 'required|numeric',
+            'sub_total'         => 'required|numeric',
             'total'             => 'required|numeric',
-            'nota'              => 'required|max:255',
+            'observaciones'     => 'required|max:255',
             'id_venta'          => 'required|numeric',
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
+        ],[
+            'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
 
         DB::beginTransaction();
@@ -155,33 +146,17 @@ class DevolucionVentasController extends Controller
 
             foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
-                $det['id_devolucion'] = $venta->id;
+                $det['id_devolucion_venta'] = $venta->id;
                 $detalle->fill($det);
                 $detalle->save();
 
-                // Actualizar inventario
-                $producto = Producto::where('id', $det['id_producto'])->with('composiciones')->firstOrFail();
+                $inventario = Inventario::where('id_producto', $det['id_producto'])
+                                    ->where('id_sucursal', $request->id_sucursal)->first();
 
-                // Inventario compuestos
-                foreach ($producto->composiciones as $comp) {
-                    $productoCompuesto = $comp->compuesto()->first();
-                    if ($productoCompuesto->bodega_venta) {
-                        $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->venta->id_bodega)->first();
-                        if ($inventario) {
-                            $inventario->stock += $det['cantidad'] * $comp->cantidad;
-                            $inventario->save();
-                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad));
-                        }
-                    }
-                }
-                // Inventario individual
-                if ($producto->bodega_venta) {
-                    $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $venta->venta->id_bodega)->first();
-                    if ($inventario) {
-                        $inventario->stock += $det['cantidad'];
-                        $inventario->save();
-                        $inventario->kardex($venta, $det['cantidad']);
-                    }
+                if ($inventario) {
+                    $inventario->stock += $det['cantidad'];
+                    $inventario->save();
+                    $inventario->kardex($venta, $det['cantidad']);
                 }
                 
             }

@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
-
+import { AlertService } from '@services/alert.service';
 import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
@@ -28,6 +28,7 @@ import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.comp
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
+import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
 import { TimerComponent } from './parts/timer/timer.component';
 
 import { NotFoundComponent } from './404/not-found.component';
@@ -55,6 +56,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     BuscadorMateriasPrimasComponent,
     PaginationComponent,
     TimerComponent,
+    NotificacionesContainerComponent,
     NotFoundComponent,
     ImportarExcelComponent,
     CrearCategoriaActivoComponent,
@@ -77,6 +79,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     BuscadorMateriasPrimasComponent,
     PaginationComponent,
     TimerComponent,
+    NotificacionesContainerComponent,
     NotFoundComponent,
     ImportarExcelComponent,
     CrearCategoriaActivoComponent,
@@ -87,6 +90,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent
-  ]
+  ],
+  providers: [AlertService],
 })
 export class SharedModule { }

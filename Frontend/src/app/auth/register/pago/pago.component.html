@@ -1,0 +1,61 @@
+<div id="login-box" class="bg-white vh-100">
+    <div class="container-fluid h-100">
+        <div class="row d-flex align-items-center h-100">
+            <!-- <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/icon-bg.png'); background-size: 40%; background-position: bottom -100px right -100px; background-color: rgba(23,117,229,0.35)!important; height: 100vh;"> -->
+            <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/login.jpg'); background-size: cover; background-repeat: no-repeat; height: 100vh;">
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card border-0 px-5 mx-0 mx-lg-2 shadow-none">
+                    <div class="card-body px-3 px-lg-5">
+                    <app-notificaciones-container></app-notificaciones-container>
+                    <h2>Pago</h2>
+                    <p>{{ user.name }} realiza el pago de tu plan {{ user.empresa.plan }} {{ user.empresa.tipo_plan }} a través de N1co.</p>
+
+                    <div class="col-md-12">
+                        <table class="table table-bordered my-3">
+                            <tbody>
+                                <tr>
+                                    <th>Plan</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ user.empresa.plan }}</td>
+                                    <td>{{ user.empresa.tipo_plan }}</td>
+                                    <td class="text-end">{{ user.empresa.total | currency:'USD':'symbol':'1.2' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>
+                        <b>Solo se realizará el cobro una vez pase el periodo de prueba de 15 días</b>. <br>
+                            Puedes desactivar tu suscripción en cualquier momento.
+                    </p>
+                    <div class="d-grid gap-1">
+                        <h4 class="text-center my-4">
+                            Suscribite a través de
+                            <img src="assets/img/logo-n1co.png" height="30px;" alt="N1co">
+                        </h4>
+
+                        <button type="button" class="btn btn-lg btn-primary btn-block" (click)="checkout()">
+                                Suscribirme
+                        </button>
+                    </div>
+
+
+                    <!-- <p class="text-center">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p> -->
+                    <div class="bg-white text-center mt-5">
+                        <p class="my-3">
+                            <a href="https://websis.me" target="_blank">
+                                <img src="assets/img/smartpyme.png" width="150px" alt="smartpyme logo">
+                            </a>
+                        </p>
+                        <p>&copy; {{ anio }} SmartPyme</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+

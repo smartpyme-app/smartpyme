@@ -47,9 +47,11 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="id_proveedor">Proveedor:</label>
-                <select [(ngModel)]="proveedor.id_proveedor" class="form-select" name="id_proveedor">
-                    <option [value]="proveedor.id" *ngFor="let proveedor of proveedores">{{ proveedor.nombre }}</option>
-                </select>
+                <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{ proveedor.nombre }} <span *ngIf="proveedor.ncr">- {{ proveedor.ncr }}</span>
+                    </ng-option>
+                </ng-select>
             </div>
         </div>
         <div class="d-grid mt-3">

@@ -7,7 +7,7 @@ use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Inventario;
 use App\Models\Compras\Proveedores\Proveedor;
-use App\ModelsInventario\ProductoProveedor;
+use App\Models\Inventario\Proveedor as ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Validation\Rule;
@@ -15,6 +15,7 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use JWTAuth;
 
 class Productos implements ToModel, WithHeadingRow, WithValidation
 {
@@ -25,9 +26,10 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
     public function model(array $row)
     {
         ++$this->numRows;
+        $usuario = JWTAuth::parseToken()->authenticate();
 
         $id_categoria = Categoria::where('nombre', $row['categoria'])
-                                ->where('id_empresa', Auth::user()->id_empresa)
+                                ->where('id_empresa', $usuario->id_empresa)
                                 ->pluck('id')->first();
         
 
@@ -36,20 +38,21 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             $categoria->nombre = $row['categoria'];
             $categoria->descripcion = $row['categoria'];
             $categoria->enable = true;
-            $categoria->id_empresa = Auth::user()->id_empresa;
+            $categoria->id_empresa = $usuario->id_empresa;
             $categoria->save();
             $id_categoria = $categoria->id;
         }
 
         if ($row['proveedor']) {
             $id_proveedor = Proveedor::where('nombre', $row['proveedor'])
-                                    ->where('id_empresa', Auth::user()->id_empresa)
+                                    ->where('id_empresa', $usuario->id_empresa)
                                     ->pluck('id')->first();
             if(!$id_proveedor){
                 $proveedor = new Proveedor();
                 $proveedor->nombre = $row['proveedor'];
                 $proveedor->enable = true;
-                $proveedor->id_empresa = Auth::user()->id_empresa;
+                $proveedor->id_empresa = $usuario->id_empresa;
+                $proveedor->id_usuario = $usuario->id;
                 $proveedor->save();
                 $id_proveedor = $proveedor->id;
             }
@@ -66,7 +69,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $producto->marca = $row['marca'];
         $producto->barcode = $row['codigo_de_barra'];
         $producto->enable  = true;
-        $producto->id_empresa =  Auth::user()->id_empresa;
+        $producto->id_empresa =  $usuario->id_empresa;
         $producto->save();
 
         if (isset($id_proveedor)) {

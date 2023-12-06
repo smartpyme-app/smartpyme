@@ -18,11 +18,33 @@ class DevolucionComprasController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $compras = Devolucion::orderBy('id','desc')->paginate(10);
-        return Response()->json($compras, 200);
-           
+        $ventas = Devolucion::when($request->buscador, function($query) use ($request){
+                            return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
+                        })
+                        ->when($request->inicio, function($query) use ($request){
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('enable', $request->estado);
+                        })
+                        ->when($request->id_proveedor, function($query) use ($request){
+                            return $query->whereHas('proveedor', function($query) use ($request)
+                            {
+                                $query->where('id_proveedor', $request->id_proveedor);
+
+                            });
+                        })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
+
+        return Response()->json($ventas, 200);
+
     }
 
     public function read($id) {
@@ -30,38 +52,6 @@ class DevolucionComprasController extends Controller
         $compra = Devolucion::where('id', $id)->with('detalles', 'proveedor')->first();
         return Response()->json($compra, 200);
  
-    }
-
-    public function search($txt) {
-
-        $compras = Devolucion::whereHas('proveedor', function($query) use ($txt)
-                    {
-                        $query->where('nombre', 'like' ,'%' . $txt . '%');
-                    })->paginate(10);
-
-        return Response()->json($compras, 200);
-
-    }
-
-    public function filter(Request $request) {
-
-        $compras = Devolucion::when($request->inicio, function($query) use ($request){
-                                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                            })
-                            ->when($request->estado, function($query) use ($request){
-                                return $query->where('enable', $request->estado);
-                            })
-                            ->when($request->id_proveedor, function($query) use ($request){
-                                return $query->whereHas('proveedor', function($query) use ($request)
-                                {
-                                    $query->where('id_proveedor', $request->id_proveedor);
-
-                                });
-                            })
-                            ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($compras, 200);
-
     }
 
 
@@ -72,8 +62,8 @@ class DevolucionComprasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
-            'proveedor_id'      => 'required',
-            'usuario_id'        => 'required',
+            'id_proveedor'      => 'required',
+            'id_usuario'        => 'required',
         ]);
 
         if($request->id)
@@ -104,16 +94,16 @@ class DevolucionComprasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'tipo'              => 'required',
-            'proveedor_id'      => 'required',
+            'id_proveedor'      => 'required',
             'detalles'          => 'required',
             'iva'               => 'required|numeric',
             // 'subcosto'          => 'required|numeric',
-            'subtotal'          => 'required|numeric',
+            'sub_total'          => 'required|numeric',
             'total'             => 'required|numeric',
-            'nota'              => 'required|max:255',
-            'compra_id'         => 'required',
-            'usuario_id'        => 'required',
-            'empresa_id'        => 'required',
+            'observaciones'     => 'required|max:255',
+            'id_compra'         => 'required',
+            'id_usuario'        => 'required',
+            'id_empresa'        => 'required',
         ],[
             'detalles.required' => 'No hay detalles agregados'
         ]);
@@ -137,14 +127,12 @@ class DevolucionComprasController extends Controller
 
             foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
-                $det['devolucion_id'] = $compra->id;
+                $det['id_devolucion_compra'] = $compra->id;
                 $detalle->fill($det);
                 $detalle->save();
                 
                 // Actualizar inventario
-                $producto = Producto::findOrFail($det['producto_id']);
-
-                $inventario = Inventario::where('producto_id', $producto->id)->where('bodega_id', $compra->compra->bodega_id)->first();
+                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_sucursal', $request->id_sucursal)->first();
 
                 if ($inventario) {
                     $inventario->stock -= $det['cantidad'];

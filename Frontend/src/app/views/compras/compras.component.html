@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Compras</h2>
-    <button routerLink="/compra/crear" tooltip="Crear compra (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir compra</button>
+    <button routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,31 +13,29 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <button tooltip="Descargar compras" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
-                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.referencia" focus="true">
+                <button tooltip="Descargar compras" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCompras()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
-                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F3)" (click)="filtrarCompras()" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
             </div>
         </div>
     </div>
 
-    <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
-            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
-            <!-- <button class="btn btn-default">Traslados</button> -->
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/compras">Todas</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/compras">Devoluciones</button>
         </div>
-        <div class="col d-flex gap-2 justify-content-end">
-            <input type="date" name="inicio" [(ngModel)]="filtro.inicio" class="form-control bg-default">
-            <input type="date" name="fin" [(ngModel)]="filtro.fin" (change)="onFiltrar()"  class="form-control bg-default">
-            <select name="estado" (change)="onFiltrar()" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+            <select name="estado" (change)="filtrarCompras()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Anulada">Anulada</option>
                 <option value="Consigna">Consigna</option>
                 <option value="Pagada">Pagada</option>
             </select>
-            <ng-select name="id_proveedor" (change)="onFiltrar()" [(ngModel)]="filtro.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
+            <ng-select name="id_proveedor" (change)="filtrarCompras()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
                 <ng-option value="">Proveedor</ng-option>
                 <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
                     {{proveedor.nombre}}
@@ -50,13 +48,13 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
+                        <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Proveedor</th>
                         <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
                         <th>Fecha pago</th>
                         <th>Estado</th>
-                        <th class="text-right">Total</th>
+                        <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -73,17 +71,12 @@
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/{{compra.proveedor_id}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{compra.nombre_proveedor | truncate:30 }}<a *ngIf="compra.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.proveedor_id}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
                         <td>{{compra.forma_pago}}</td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(compra)" [(ngModel)]="compra.estado" [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-info' : compra?.estado == 'Consigna', 'bg-light-success' : compra?.estado == 'Pagada'}">
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Pagada">Pagada</option>
-                                <option value="Anulada">Anulada</option>
-                                <option value="Consigna">Consigna</option>
-                            </select>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -91,16 +84,31 @@
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
                             <ng-template #accionesTemplate>
-                                <div class="d-flex flex-column align-items-start">
-                                    <a routerLink="/compra/editar/{{compra.id}}" class="btn">
+                                <div class="list-group border-0">
+                                    <a (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a routerLink="/compra/{{compra.id}}" class="btn">
+                                    <a *ngIf="compra.estado == 'Pendiente'" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar compra
+                                    </a>
+                                    <a *ngIf="compra.estado != 'Anulada'" (click)="setEstado(compra, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular compra
+                                    </a>
+                                    <a *ngIf="compra.estado == 'Anulada'" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a routerLink="/compra/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
-                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    <!-- <a (click)="imprimir(compra)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a> -->
+                                    <a *ngIf="compra.forma_pago == 'Wompi' && compra.estado == 'Pendiente'" (click)="linkWompi(compra)" class="list-group-item list-group-item-action border-0 click">
+                                        <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
+                                    </a>
+                                    <a routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-right-left"></i> Hacer devolucion
+                                    </a>
                                 </div>
                             </ng-template>
                         </td>
@@ -116,6 +124,29 @@
     </div>
 </section>
 
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de compras</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+        <div class="row">
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Descargar los detalles de compras</span>
+                    <span *ngIf="saving">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" (click)="descargarCompras()" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Descargar las compras</span>
+                    <span *ngIf="saving">Descargando...</span>
+                </button>
+            </div>
+        </div>
+  </div>
+</ng-template>
+
 
 <ng-template #mfilter>
   <div class="modal-header">
@@ -127,21 +158,21 @@
     </button>
   </div>
   <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+    <form autocomplete="off" (ngSubmit)="filtrarCompras()">
         <div class="row text-center">
 
             <div class="form-group col-sm-6">
                 <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
             </div>
             <div class="form-group col-sm-6">
                 <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
 
             <div class="form-group col-sm-12">
-                <label for="filtro.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtro.sucursal_id" class="form-select" name="filtro.sucursal_id">
+                <label for="filtros.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtros.sucursal_id" class="form-select" name="filtros.sucursal_id">
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
                         {{ sucursal.nombre }}
@@ -149,8 +180,8 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.usuario">Empleado:</label>
-                <select [(ngModel)]="filtro.usuario_id" class="form-select" name="filtro.usuario_id">
+                <label for="filtros.usuario">Empleado:</label>
+                <select [(ngModel)]="filtros.usuario_id" class="form-select" name="filtros.usuario_id">
                     <option value="">Todos</option>
                     <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
                         {{ usuario.name }}
@@ -158,8 +189,8 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.categoria">Categoría:</label>
-                <input type="text" list="compras" [(ngModel)]="filtro.categoria" class="form-control" name="filtro.categoria">
+                <label for="filtros.categoria">Categoría:</label>
+                <input type="text" list="compras" [(ngModel)]="filtros.categoria" class="form-control" name="filtros.categoria">
                 <datalist id="compras">
                     <option value="Todas">
                     <option value="Transporte">
@@ -183,6 +214,45 @@
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
                     <span *ngIf="!loading">Filtrar</span>
                     <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mcompra>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Editar compra</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form name="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="fecha">Fecha:</label>
+                <input type="date" [(ngModel)]="compra.fecha" name="fecha" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="forma_pago">Método de pago:</label>
+                <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
+                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="tipo_documento">Documento</label>
+                <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
+                    <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="correlativo">Correlativo:</label><br>
+                <input type="number" class="form-control" [(ngModel)]="compra.correlativo" name="correlativo">
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Guardar</span>
+                    <span *ngIf="saving">Guardando...</span>
                 </button>
             </div>
         </div>

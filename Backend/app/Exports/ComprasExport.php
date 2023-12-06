@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\Compra;
+use App\Models\Compras\Compra;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -14,17 +14,11 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
     /**
     * @return \Illuminate\Support\Collection
     */
-    private $dateFrom;
-    private $dateTo;
-    private $state;
-    private $id_proveedor;
+    private $request;
 
     public function filter(Request $request)
     {
-        $this->dateFrom = $request->fecha_de;
-        $this->dateTo = $request->fecha_hasta;
-        $this->state = $request->estado;
-        $this->id_proveedor = $request->id_proveedor;
+        $this->request = $request;
     }
 
     public function headings():array{
@@ -48,21 +42,39 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
-        $id_proveedor = $this->id_proveedor;
-        $dateFrom = $this->dateFrom;
-        $state = $this->state;
-        $dateTo = $this->dateTo;
+        $request = $this->request;
         
-        $compras = Compra::where('id_empresa', Auth::user()->id_empresa)
-                      ->when($id_proveedor, function($q) use ($id_proveedor){
-                          return $q->where('id_proveedor', $id_proveedor);
-                      })
-                      ->when($state, function($q) use ($state){
-                        return $q->where('estado', $state);
-                      })
-                      ->when($dateFrom, function($q) use ($dateFrom, $dateTo){
-                        return $q->whereBetween('fecha', [$dateFrom, $dateTo]);
-                      })->orderBy('fecha', 'desc')->get();
+        $compras = Compra::when($request->buscador, function($query) use ($request){
+                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                        })
+                        ->when($request->inicio, function($query) use ($request){
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                        })
+                        ->when($request->id_sucursal, function($query) use ($request){
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->id_proveedor, function($query) use ($request){
+                            return $query->where('id_proveedor', $request->id_proveedor);
+                        })
+                        ->when($request->forma_pago, function($query) use ($request){
+                            return $query->where('forma_pago', $request->forma_pago);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('estado', $request->estado);
+                        })
+                        ->when($request->metodo_pago, function($query) use ($request){
+                            return $query->where('metodo_pago', $request->metodo_pago);
+                        })
+                        ->where('estado', '!=', 'Pre-compra')
+                        ->orderBy($request->orden, $request->direccion)
+                        ->orderBy('id', 'desc')
+                        ->get();
 
         return $compras; 
         
@@ -74,15 +86,15 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
               $row->proveedor()->pluck('nombre')->first(),
               $row->proveedor()->pluck('dui')->first(),
               $row->proveedor()->pluck('nit')->first(),
-              $row->documento,
-              $row->num_referencia,
+              $row->tipo_documento,
+              $row->referencia,
               $row->estado,
-              $row->vencimiento,
+              $row->fecha_pago,
               $row->sub_total,
               $row->iva,
               $row->percepcion,
               $row->descuento,
-              $row->total_compra,
+              $row->total,
          ];
         return $fields;
     }

@@ -1,1 +1,94 @@
-registro
+<div id="login-box" class="bg-white vh-100">
+    <div class="container-fluid h-100">
+        <div class="row d-flex align-items-center h-100  flex-column">
+            <!-- <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/icon-bg.png'); background-size: 40%; background-position: bottom -100px right -100px; background-color: rgba(23,117,229,0.35)!important; height: 100vh;"> -->
+            <div class="col-sm-8 col-md-5 d-none d-md-flex flex-fill" style="background-image: url('/assets/img/login.jpg'); background-size: cover; background-repeat: no-repeat; min-height: 100vh;">
+            </div>
+            <div class="col-12 col-md-7">
+                <div class="card border-0 px-5 mx-0 mx-lg-2 shadow-none">
+                    <div class="card-body px-3 px-lg-5">
+                        <app-notificaciones-container></app-notificaciones-container>
+                        <h2>Registro</h2>
+                        <p>¡Bienvenido a SmartPyme!</p>
+                        <form class="row mt-3" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                            <div class="form-group col-6 mb-4">
+                                <label>Nombre y apellido</label>
+                                <input type="text" class="form-control" name="name" [(ngModel)]="user.name" #name="ngModel" placeholder="Escribe aquí" required focus="true"/>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Nombre de la empresa</label>
+                                <input type="text" class="form-control" name="empresa" [(ngModel)]="user.empresa.nombre" #empresa="ngModel" placeholder="Escribe aquí" required/>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Tipo de negocio</label>
+                                <select class="form-select" name="industria" [(ngModel)]="user.empresa.industria">
+                                    <option value="">Selecciona aquí</option>
+                                    <option value="Comercio">Comercio</option>
+                                    <option value="Servicio">Servicio</option>
+                                    <option value="Ambos">Ambos</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label class="w-100">Plan <span class="float-end">Total: {{ user.empresa.total  | currency:'USD':'symbol':'1.2'}}</span></label>
+                                <div class="input-group">
+                                    <select class="form-select" (change)="setPlan()" name="plan" [(ngModel)]="user.empresa.plan">
+                                        <option value="">Selecciona aquí</option>
+                                        <option value="Emprendedor">Emprendedor</option>
+                                        <option value="Estándar">Estándar</option>
+                                        <option value="Avanzado">Avanzado</option>
+                                    </select>
+                                    <select class="form-select" (change)="setPlan()" name="tipo_plan" [(ngModel)]="user.empresa.tipo_plan">
+                                        <option value="">Selecciona aquí</option>
+                                        <option value="Mensual">Mensual</option>
+                                        <option value="Anual">Anual</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Correo</label>
+                                <input type="email" class="form-control" name="correo" [(ngModel)]="user.email" #email="ngModel" placeholder="Escribe aquí" required/>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Teléfono</label>
+                                <div class="input-group">
+                                    <select class="form-select">
+                                        <option value="+503">+503</option>
+                                    </select>
+                                    <input type="tel" class="form-control" name="telefono" [(ngModel)]="user.telefono" #telefono="ngModel" placeholder="Escribe aquí" required [dropSpecialCharacters]="false" mask='0000-0000'/>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label>Contraseña</label>
+                                <div class="input-group">
+                                    <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Escribe aquí" #password="ngModel" id="password" required />
+                                    <button class="btn btn-light" type="button" (click)="mostrarPassword()">
+                                        <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
+                                    </button>
+                                </div>
+                                <p>La contraseña debe tener entre 8 y 16 caracteres, al menos un dígito, una minúscula y una mayúscula.</p>
+                            </div>
+                            <div class="d-grid gap-1">
+                                <button type="submit" [disabled]="loading" class="btn btn-primary d-block">
+                                    <span *ngIf="!loading">Registrarme</span>
+                                    <span *ngIf="loading">Registrando...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <p class="text-center">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
+                    <div class="bg-white text-center mt-3">
+                        <p class="mb-3">
+                            <a href="https://websis.me" target="_blank">
+                                <img src="assets/img/smartpyme.png" width="150px" alt="smartpyme logo">
+                            </a>
+                        </p>
+                        <p>&copy; {{ anio }} SmartPyme</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+

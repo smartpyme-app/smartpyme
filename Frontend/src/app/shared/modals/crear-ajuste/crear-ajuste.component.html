@@ -10,6 +10,7 @@
   <div class="modal-body">
     <form (ngSubmit)="onSubmit()" autocomplete="off">
         <div class="row text-center">
+            <app-notificaciones-container></app-notificaciones-container>
             <p>{{ producto.nombre }}</p>
             <p><span class="badge bg-info">{{ ajuste.stock_actual | number:'1.0' }} unidades</span></p>
             <div class="form-group col-md-12">

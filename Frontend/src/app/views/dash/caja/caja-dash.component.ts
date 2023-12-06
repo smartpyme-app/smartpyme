@@ -117,7 +117,7 @@ export class CajaDashComponent implements OnInit {
             this.apiService.store('corte', this.caja.corte).subscribe(corte => {
                 this.router.navigate(['/login']);
                 this.corteZ();
-                this.alertService.success("Caja cerrada");
+                this.alertService.success('Caja cerrada', 'La caja fue cerrada exitosamente.');
                 this.loading = false;
                 if (this.modalRef){
                     this.modalRef.hide();

@@ -11,10 +11,8 @@ import { ApiService } from '../../../../services/api.service';
 export class UsuarioComponent implements OnInit {
 
 	public usuario: any = {};
-	public cajas: any = [];
 	public sucursales: any = [];
     public empleados: any = [];
-	public departamentos: any = [];
     public loading = false;
 
   // Img Upload
@@ -40,12 +38,6 @@ export class UsuarioComponent implements OnInit {
 	    else{
 	        this.loadAll(id);
 	    }
-
-	    this.apiService.getAll('cajas').subscribe(cajas => { 
-	        this.cajas = cajas;
-	        this.loading = false;
-	    }, error => {this.alertService.error(error); });
-
 	    this.apiService.getAll('sucursales').subscribe(sucursales => { 
 	        this.sucursales = sucursales;
 	        this.loading = false;
@@ -56,11 +48,6 @@ export class UsuarioComponent implements OnInit {
             this.empleados = empleados;
             this.loading = false;
         }, error => {this.alertService.error(error); });
-
-	    this.apiService.getAll('departamentos').subscribe(departamentos => { 
-	        this.departamentos = departamentos;
-	        this.loading = false;
-	    }, error => {this.alertService.error(error); });
 
 	}
 
@@ -97,7 +84,7 @@ export class UsuarioComponent implements OnInit {
 	        this.usuario = usuario;
 	        this.loading = false;
 	        this.preview = false;
-	        this.alertService.success("Usuario guardado");
+	        this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
 	    },error => {this.alertService.error(error); this.loading = false; });
 
 	}

@@ -2,10 +2,10 @@ import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { SumPipe }     from '../../../pipes/sum.pipe';
+import { SumPipe }     from '@pipes/sum.pipe';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-venta',

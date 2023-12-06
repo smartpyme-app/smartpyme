@@ -1,37 +1,37 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Proveedores</h2>
-    <button routerLink="/proveedor/crear" tooltip="Crear proveedor (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir proveedor</button>
+    <button routerLink="/proveedor/crear" tooltip="Crear proveedor (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proveedor</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
-    <div class="row mb-3">
-        <div class="col">
+    <div class="row">
+        <div class="col-md-6 mb-3">
             <span class="text-muted" *ngIf="proveedores?.total">
                 Mostrando {{ proveedores?.to }} de {{ proveedores?.total + ' registros' }}
             </span>
         </div>
 
-        <div class="col">
+        <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <!-- <button tooltip="Descargar proveedores" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button> -->
-                <form class="d-flex input-group" name="form" (ngSubmit)="onFiltrar()" autocomplete="off">
-                    <input type="search" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre" focus="true">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProveedores()" autocomplete="off">
+                    <input type="search" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
-                <button tooltip="Filtrar (F6)" (click)="onFiltrar()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F3)" (click)="filtrarProveedores()" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
             </div>
         </div>
     </div>
 
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
-            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
             <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <select name="estado" (change)="onFiltrar()" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+            <select name="estado" (change)="filtrarProveedores()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
-                <option value="true">Activo</option>
-                <option value="false">Inactivo</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
             </select>
         </div>
     </div>
@@ -40,13 +40,12 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Nombre</th>
-                        <th class="d-none d-md-table-cell">Municipio</th>
-                        <th>Giro</th>
-                        <th>Registro</th>
-                        <th>NIT</th>
+                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
+                        <th>Correo</th>
                         <th>Teléfono</th>
-                        <th>Estado</th>
+                        <th class="d-none d-md-table-cell">DUI</th>
+                        <th class="d-none d-md-table-cell">NCR</th>
+                        <th class="d-none d-lg-table-cell">Tipo</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -60,24 +59,34 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let proveedor of proveedores?.data">
-                        <td>{{ proveedor.nombre  | truncate:30 }}</td>
-                        <td class="d-none d-md-table-cell">{{ proveedor.municipio }}</td>
-                        <td>{{ proveedor.giro | truncate:20 }}</td>
-                        <td>{{ proveedor.registro }}</td>
-                        <td>{{ proveedor.nit | truncate:20 }}</td>
+                        <td>{{ proveedor.nombre | truncate:30 }}</td>
+                        <td>{{ proveedor.correo }}</td>
                         <td>{{ proveedor.telefono }}</td>
+                        <td class="d-none d-md-table-cell">{{ proveedor.dui}}</td>
+                        <td class="d-none d-md-table-cell">{{ proveedor.ncr }}</td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(proveedor)" [(ngModel)]="proveedor.enable" [ngClass]="{'bg-light-danger' : proveedor?.enable == false, 'bg-light-success' : proveedor?.enable == true}">
-                                <option value="true">Activo</option>
-                                <option value="false">Inactivo</option>
+                            <select name="enable" class="form-select w-auto border-0" (change)="setTipo(proveedor)" [(ngModel)]="proveedor.tipo" [ngClass]="{'bg-light-danger' : proveedor?.tipo == 'Empresa', 'bg-light-info' : proveedor?.tipo == 'Persona'}">
+                                <option value="Persona">Persona</option>
+                                <option value="Empresa">Empresa</option>
                             </select>
                         </td>
                         <td class="text-center">
-                            <div class="d-flex gap-2">
-                                <a tooltip="Editar" class="btn btn-light" routerLink="/proveedor/{{ proveedor.id }}" >
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/proveedor/editar/{{proveedor.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a *ngIf="proveedor.enable" (click)="setActivo(proveedor, false)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-ban"></i> Deshabilitar
+                                    </a>
+                                    <a *ngIf="!proveedor.enable" (click)="setActivo(proveedor, true)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-check"></i> Habilitar
+                                    </a>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                 </tbody>
@@ -102,21 +111,21 @@
     </button>
   </div>
   <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="onFiltrar()">
+    <form autocomplete="off" (ngSubmit)="filtrarProveedores()">
         <div class="row text-center">
 
             <div class="form-group col-sm-6">
                 <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
             </div>
             <div class="form-group col-sm-6">
                 <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
 
             <div class="form-group col-sm-6">
-                <label for="filtro.usuario">Empleado:</label>
-                <select [(ngModel)]="filtro.usuario_id" class="form-control" name="filtro.usuario_id">
+                <label for="filtros.usuario">Empleado:</label>
+                <select [(ngModel)]="filtros.usuario_id" class="form-control" name="filtros.usuario_id">
                     <option value="">Todos</option>
                     <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
                         {{ usuario.name }}
@@ -124,8 +133,8 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.estado">Estado:</label>
-                <select [(ngModel)]="filtro.estado" class="form-control" name="filtro.estado">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control" name="filtros.estado">
                     <option value="">Todos</option>
                     <option value="Pendiente">Pendiente</option>
                     <option value="Lista">Lista</option>
@@ -134,8 +143,8 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.metodo_pago">Forma de Pago:</label>
-                <select [(ngModel)]="filtro.metodo_pago" class="form-control" name="filtro.metodo_pago">
+                <label for="filtros.metodo_pago">Forma de Pago:</label>
+                <select [(ngModel)]="filtros.metodo_pago" class="form-control" name="filtros.metodo_pago">
                     <option value="">Todos</option>
                     <option value="Efectivo">Efectivo</option>
                     <option value="Credito">Crédito Fiscal</option>
@@ -146,8 +155,8 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.tipo_documento">Tipo de Transacción:</label>
-                <select [(ngModel)]="filtro.tipo_documento" class="form-control" name="filtro.tipo_documento">
+                <label for="filtros.tipo_documento">Tipo de Transacción:</label>
+                <select [(ngModel)]="filtros.tipo_documento" class="form-control" name="filtros.tipo_documento">
                     <option value="">Todos</option>
                     <option value="Credito Fiscal">Crédito Fiscal</option>
                     <option value="Factura">Factura</option>

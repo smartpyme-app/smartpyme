@@ -15,6 +15,7 @@ export class SidebarComponent implements OnInit {
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public usuario: any = {};
+    public isVisible: boolean = false;
 
     constructor(private apiService: ApiService) {}
 
@@ -70,6 +71,38 @@ export class SidebarComponent implements OnInit {
             this.finanzasIsCollapsed = true;
             localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
         };
+
+    }
+
+
+    toggleSidebarMin() {
+        // this.sidebarCollapsed = !this.sidebarCollapsed;
+        // localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
+
+        // if (this.sidebarCollapsed) {
+        //     this.productosIsCollapsed = true;
+        //     localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
+        //     this.ventasIsCollapsed = true;
+        //     localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
+        //     this.comprasIsCollapsed = true;
+        //     localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        //     this.preferenciasIsCollapsed = true;
+        //     localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
+        //     this.finanzasIsCollapsed = true;
+        //     localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
+        // };
+
+        const myDiv = document.getElementById('sidebar')!;
+        const toggleBtn = document.getElementById('toggleBtn')!;
+        if (this.isVisible) {
+          myDiv.style.marginLeft  = '-280px';
+          toggleBtn.style.visibility  = 'visible';
+        } else {
+          myDiv.style.marginLeft  = '0px';
+          toggleBtn.style.visibility  = 'hidden';
+        }
+        this.isVisible = !this.isVisible;
+
     }
 
     toggleProductos() {

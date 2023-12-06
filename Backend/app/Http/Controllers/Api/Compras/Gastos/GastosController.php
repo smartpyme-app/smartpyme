@@ -7,13 +7,27 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Compras\Gastos\Gasto;
 
+use App\Exports\GastosExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 class GastosController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $gastos = Gasto::orderBy('id', 'desc')->paginate(10);
+        $gastos = Gasto::when($request->id_proveedor, function($query) use ($request){
+                            return $query->where('id_proveedor', $request->id_proveedor);
+                        })
+                    ->when($request->estado, function($query) use ($request){
+                            return $query->where('estado', $request->estado);
+                        })
+                    ->when($request->buscador, function($query) use ($request){
+                        return $query->where('concepto', 'like' ,'%' . $request->buscador . '%');
+                    })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
 
         return Response()->json($gastos, 200);
 
@@ -67,10 +81,15 @@ class GastosController extends Controller
             'estado'     => 'required|max:255',
             // 'fecha_pago'         => 'required|date',
             'total'         => 'required|numeric',
-            'id_proveedor'    => 'sometimes|numeric',
-            // 'id_usuario'    => 'required|numeric',
+            'id_proveedor'    => 'required|numeric',
+            'id_usuario'    => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
+        ],[
+            'id_categoria.required' => 'El campo categoria es obligatorio.',
+            'id_proveedor.required' => 'El campo proveedor es obligatorio.',
+            'id_usuario.required' => 'El campo usuario es obligatorio.',
+            'id_empresa.required' => 'El campo empresa es obligatorio.'
         ]);
 
         if($request->id)
@@ -126,6 +145,14 @@ class GastosController extends Controller
 
         return Response()->json($datos, 200);
     }
+
+     public function export(Request $request){
+        $gastos = new GastosExport();
+        $gastos->filter($request);
+
+        return Excel::download($gastos, 'gastos.xlsx');
+    }
+
 
 
 }

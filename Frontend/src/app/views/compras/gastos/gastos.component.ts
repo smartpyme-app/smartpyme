@@ -19,8 +19,7 @@ export class GastosComponent implements OnInit {
     public usuarios:any = [];
     public sucursales:any = [];
     public proveedores:any = [];
-    public filtro:any = {};
-    public filtrado:boolean = false;
+    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -37,31 +36,42 @@ export class GastosComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtro.estado = '';
-        this.filtro.id_proveedor = '';
-        this.filtro.inicio = this.apiService.date();
-        this.filtro.fin = this.apiService.date();
-        
+        this.filtros.id_sucursal = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
+        this.filtros.forma_pago = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
         this.loading = true;
-        this.apiService.getAll('gastos').subscribe(gastos => { 
+        this.filtrarGastos();
+    }
+
+    public filtrarGastos(){
+        this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
             this.gastos = gastos;
-            this.loading = false;this.filtrado = false;
+            this.loading = false;
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('gastos/buscar/', this.buscador).subscribe(gastos => { 
-                this.gastos = gastos;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
         }
+
+        this.loadAll();
     }
+
 
     public setEstado(gasto:any){
         this.apiService.store('gasto', gasto).subscribe(gasto => { 
-            this.alertService.success('Actualizado');
+            this.alertService.success('Gasto guardado', 'El gasto fue guardado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
@@ -88,19 +98,19 @@ export class GastosComponent implements OnInit {
     }
 
 
-    onFiltrar(){
-        this.loading = true;
-
-        this.apiService.store('gastos/filtrar', this.filtro).subscribe(gastos => { 
-            this.gastos = gastos;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
-    }
-
     public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+        this.apiService.export('gastos/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gastos.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar gastos:', error); }
+        );
     }
 
 

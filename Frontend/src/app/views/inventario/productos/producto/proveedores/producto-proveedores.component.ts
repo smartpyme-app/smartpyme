@@ -51,7 +51,7 @@ export class ProductoProveedoresComponent implements OnInit {
             this.proveedor = {};
             this.loading = false;
             this.modalRef.hide();
-            this.alertService.success("Proveedor agregado");
+            this.alertService.success('Proveedor agregado', 'El proveedor fue agregado exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
@@ -62,7 +62,7 @@ export class ProductoProveedoresComponent implements OnInit {
                     if (this.producto.proveedores[i].id == data.id )
                         this.producto.proveedores.splice(i, 1);
                 }
-                this.alertService.success("Proveedor eliminado");
+                this.alertService.success('Proveedor eliminado', 'El proveedor fue eliminado exitosamente.');
             }, error => {this.alertService.error(error); });
                    
         }

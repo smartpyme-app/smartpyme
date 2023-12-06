@@ -11,23 +11,20 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { TagInputModule } from 'ngx-chips';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { PipesModule } from '../../pipes/pipes.module';
 import { SharedModule } from '../../shared/shared.module';
 import { AdminRoutingModule } from './admin.routing.module';
 
 import { EmpresaComponent } from './empresa/empresa.component';
+import { SuscripcionComponent } from './suscripcion/suscripcion.component';
+
 import { SucursalesComponent } from './sucursales/sucursales.component';
 import { SucursalComponent } from './sucursales/sucursal/sucursal.component';
 
 import { UsuariosComponent } from './usuarios/usuarios.component';
 import { UsuarioComponent } from './usuarios/usuario/usuario.component';
-import { CajasComponent } from './cajas/cajas.component';
-import { CajaComponent } from './cajas/caja/caja.component';
-import { CajaCortesComponent } from './cajas/caja/cortes/caja-cortes.component';
-import { CajaUsuariosComponent } from './cajas/caja/usuarios/caja-usuarios.component';
-import { CajaDocumentosComponent } from './cajas/caja/documentos/caja-documentos.component';
-import { CajaEstadisticasComponent } from './cajas/estadisticas/caja-estadisticas.component';
 
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { ReportesComponent } from './reportes/reportes.component';
@@ -41,6 +38,7 @@ import { DocsComponent } from './docs/docs.component';
     SharedModule,
     PipesModule,
     TagInputModule,
+    NgSelectModule,
     AdminRoutingModule,
     FocusModule.forRoot(),
     PopoverModule.forRoot(),
@@ -49,12 +47,7 @@ import { DocsComponent } from './docs/docs.component';
   ],
   declarations: [
     EmpresaComponent,
-    CajasComponent,
-    CajaComponent,
-    CajaUsuariosComponent,
-    CajaCortesComponent,
-    CajaDocumentosComponent,
-    CajaEstadisticasComponent,
+    SuscripcionComponent,
     SucursalesComponent,
     SucursalComponent,
     UsuariosComponent,
@@ -65,12 +58,7 @@ import { DocsComponent } from './docs/docs.component';
   ],
   exports: [
     EmpresaComponent,
-    CajasComponent,
-    CajaComponent,
-    CajaUsuariosComponent,
-    CajaCortesComponent,
-    CajaDocumentosComponent,
-    CajaEstadisticasComponent,
+    SuscripcionComponent,
     SucursalesComponent,
     SucursalComponent,
     UsuariosComponent,

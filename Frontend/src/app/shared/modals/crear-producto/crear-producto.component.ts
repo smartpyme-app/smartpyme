@@ -70,7 +70,7 @@ export class CrearProductoComponent implements OnInit {
         this.apiService.store('compra/guardar-producto', this.producto).subscribe(producto => {
             this.update.emit(producto);
             this.modalRef?.hide();
-            this.alertService.success("Producto guardado");
+            this.alertService.success('Producto creado', 'Tu producto fue añadido exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

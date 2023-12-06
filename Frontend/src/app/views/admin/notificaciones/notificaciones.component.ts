@@ -85,7 +85,7 @@ export class NotificacionesComponent implements OnInit {
             }
             this.usuario = usuario;
             this.loading = false;
-            this.alertService.success("Usuario guardado");
+            // this.alertService.success("Usuario guardado");
             this.modalRef?.hide();
         },error => {this.alertService.error(error); this.loading = false; });
 
@@ -93,7 +93,7 @@ export class NotificacionesComponent implements OnInit {
 
     public setEstado(usuario:any){
         this.apiService.store('usuario', usuario).subscribe(usuario => { 
-            this.alertService.success('Actualizado');
+            // this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

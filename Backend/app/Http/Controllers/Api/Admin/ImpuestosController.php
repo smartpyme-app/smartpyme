@@ -33,7 +33,7 @@ class ImpuestosController extends Controller
         $request->validate([
             'nombre'        => 'required|max:255',
             'porcentaje'        => 'required|numeric',
-            'empresa_id'       => 'required|numeric'
+            'id_empresa'       => 'required|numeric'
         ]);
 
         if($request->id)

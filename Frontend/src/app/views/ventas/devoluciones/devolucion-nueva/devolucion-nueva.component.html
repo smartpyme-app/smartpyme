@@ -1,19 +1,24 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Devolución de venta <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a routerLink="/devoluciones">Devoluciónes</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Devolución de venta</a></li>
-        </ol>
-    </div>
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>Nueva devolucion de venta</h3>
+    <button class="btn btn-light text-danger" routerLink="/devoluciones/ventas">Cancelar <i class="fa fa-close"></i></button>
 </div>
 
 <section class="card">
 <form  name="facturacion" autocomplete="off" (ngSubmit)="onDevolucion()">
     <div class="card-body">
+        <div class="row">
+            <div class="form-group col-md-2">
+                <label for="fecha">Fecha</label><br>
+                <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha" required>
+            </div>
+            <div class="form-group col-md-10">
+                <div class="form-group">
+                    <label for="">Observaciones:</label>
+                    <input type="text" class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" placeholder="Escribe aquí" required>
+                </div>
+            </div>
+        </div>
+        <h6 class="my-3">Datos de la venta</h6>
         <div class="table-responsive">
             <table class="table table-borderless">
                 <tr>
@@ -29,8 +34,8 @@
                     <td>{{ venta.nombre_cliente }}</td>
                     <td>{{ venta.nombre_usuario }}</td>
                     <td>{{ venta.estado }}</td>
-                    <td>{{ venta.metodo_pago }}</td>
-                    <td>{{ venta.tipo_documento }}</td>
+                    <td>{{ venta.forma_pago }}</td>
+                    <td>{{ venta.nombre_documento }} #{{ venta.correlativo }}</td>
                 </tr>
             </table>
         </div>    
@@ -44,13 +49,13 @@
                     <tbody>
                         <tr>
                             <td class="text-right"> Sub Total: </td>
-                            <td width="70px" class="text-right"> {{ venta.subtotal | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ venta.sub_total | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                         <tr>
                             <td class="text-right"> IVA: </td>
                             <td width="70px" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
-                        <tr>
+                       <!--  <tr>
                             <td class="text-right">
                                 <div class="form-check form-switch w-100">
                                     <label class="form-check-label" for="venta.percepcion">
@@ -75,8 +80,8 @@
                             <td  width="70px" class="text-right">
                                {{ (venta.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
                             </td>
-                        </tr>
-                        <tr>
+                        </tr> -->
+                      <!--   <tr>
                             <td class="text-right">No Sujeta:</td>
                             <td width="70px" class="text-right">{{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
                         </tr>
@@ -87,7 +92,7 @@
                         <tr>
                             <td class="text-right">Gravada:</td>
                             <td width="70px" class="text-right">{{ venta.gravada | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                        </tr> -->
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
                             <td width="70px" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -97,23 +102,12 @@
             </div>
             
         </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div class="form-group">
-                    <label for="">Nota sobre la devolución:</label>
-                    <textarea class="form-control" [(ngModel)]="venta.nota" name="nota" rows="3"></textarea>
-                </div>
-            </div>
-        </div>
 
-    </div>
-
-    <div class="card-footer">
-        <div class="row">
+        <div class="row mt-4">
             <div class="col-md-12">
-                <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="loading">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="saving">
+                    <span *ngIf="!saving">Guardar</span>
+                    <span *ngIf="saving">Guardando...</span>
                 </button>
             </div>
         </div>

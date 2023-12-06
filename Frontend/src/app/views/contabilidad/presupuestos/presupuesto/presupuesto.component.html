@@ -1,0 +1,100 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">Presupuesto</h3>
+    <button class="btn btn-light text-danger" routerLink="/presupuestos">Cancelar <i class="fa fa-close"></i></button>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form (ngSubmit)="onSubmit()">
+            <div class="row">
+                <h6 class="col-12 pb-2 mb-3">Información general</h6>
+                <div class="form-group col-lg-6">
+                    <label for="nombre">Titulo</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="titulo" [(ngModel)]="presupuesto.titulo">
+                </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="fecha_inicio">Desde</label>
+                    <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_inicio" [(ngModel)]="presupuesto.fecha_inicio">
+                </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="fecha_fin">Hasta</label>
+                    <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_fin" [(ngModel)]="presupuesto.fecha_fin">
+                </div>
+
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="ingresos">Ingresos mensuales estimados</label>
+                    <input type="number" class="form-control" placeholder="Escribe aquí" name="ingresos" [(ngModel)]="presupuesto.ingresos">
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="egresos">Egresos mensuales estimados</label>
+                    <input type="number" class="form-control" placeholder="Escribe aquí" name="egresos" [(ngModel)]="presupuesto.egresos">
+                </div>
+                
+                <div class="form-group col-lg-4 without-label">
+                    <div class="form-switch border rounded">
+                      <label for="credito">Detallar presupuesto</label>
+                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="presupuesto.detalle" name="presupuesto.detalle">
+                    </div>
+                </div>
+
+                <div class="row" *ngIf="presupuesto.detalle">
+                    <h6 class="col-12 pb-2 my-3">Calcule el total de egresos estimados (por mes) rellenando las siguientes categorías</h6>
+                    
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Alquiler:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="alquiler" [(ngModel)]="presupuesto.alquiler">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Gastos varios:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="varios" [(ngModel)]="presupuesto.varios">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Mantenimiento:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="mantenimiento" [(ngModel)]="presupuesto.mantenimiento">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Marketing:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="marketing" [(ngModel)]="presupuesto.marketing">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Materia_prima:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="materia_prima" [(ngModel)]="presupuesto.materia_prima">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Comisiones:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="comisiones" [(ngModel)]="presupuesto.comisiones">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Combustible:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="combustible" [(ngModel)]="presupuesto.combustible">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Planilla:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="planilla" [(ngModel)]="presupuesto.planilla">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Servicios:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="servicios" [(ngModel)]="presupuesto.servicios">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Prestamos:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="prestamos" [(ngModel)]="presupuesto.prestamos">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Publicidad:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="publicidad" [(ngModel)]="presupuesto.publicidad">
+                    </div>
+                </div>
+                
+                
+                            
+                <div class="form-group col-md-12 mt-3">
+                    <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                        <span *ngIf="!saving">Guardar presupuesto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

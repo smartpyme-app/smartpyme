@@ -27,9 +27,7 @@ class ProductosController extends Controller
 
     public function index(Request $request) {
 
-        $productos = Producto::where('tipo', 'Producto')
-                                ->whereNotIn('id_categoria', [1,2])
-                                ->with('inventarios')
+        $productos = Producto::with('inventarios')
                                 ->when($request->id_categoria, function($query) use ($request){
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
@@ -43,14 +41,16 @@ class ProductosController extends Controller
                                         return $q->where('id_proveedor', $request->id_proveedor);
                                     });
                                 })
-                                ->when($request->search, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->search . '%')
-                                                 ->orwhere('codigo', 'like' ,"%" . $request->search . "%")
-                                                 ->orwhere('barcode', 'like' ,"%" . $request->search . "%")
-                                                 ->orwhere('etiquetas', 'like' ,"%" . $request->search . "%")
-                                                 ->orwhere('marca', 'like' ,"%" . $request->search . "%")
-                                                 ->orwhere('descripcion', 'like' ,"%" . $request->search . "%");
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('codigo', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('barcode', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('etiquetas', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('marca', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
                                 })
+                                ->whereIn('tipo', ['Producto', 'Compuesto'])
+                                // ->whereNotIn('id_categoria', [1,2])
                                 ->orderBy('enable', 'desc')
                                 ->orderBy($request->orden, $request->direccion)
                                 ->paginate($request->paginate);
@@ -61,7 +61,26 @@ class ProductosController extends Controller
 
     public function list() {
        
-        $productos = Producto::orderby('nombre')->with('inventarios')->get();
+        $productos = Producto::orderby('nombre')
+                                ->with('inventarios')
+                                ->where('enable', true)
+                                ->get();
+
+        return Response()->json($productos, 200);
+
+    }
+
+    public function search($txt) {
+
+        $productos = Producto::with('inventarios')
+                                ->with('precios')
+                                ->where('barcode', $txt)
+                                ->where('id_categoria', '!=', 1)
+                                ->orwhere('nombre','LIKE', '%' .$txt. '%')
+                                ->orwhere('codigo','LIKE', '%' .$txt. '%')
+                                ->where('enable', true)
+                                ->take(10)
+                                ->get();
 
         return Response()->json($productos, 200);
 
@@ -85,7 +104,7 @@ class ProductosController extends Controller
     public function read($id) {
 
         $producto = Producto::where('id', $id)
-                                ->with('inventarios', 'precios.usuarios', 'imagenes', 'proveedores')
+                                ->with('inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores')
                                 ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -97,6 +116,7 @@ class ProductosController extends Controller
         $productos = Producto::whereIn('tipo', ['Producto', 'Repuesto'])->with('inventarios')
                                 ->where('nombre', 'like' ,'%' . $txt . '%')
                                 ->orwhere('codigo', 'like' ,'%' . $txt . '%')
+                                ->where('enable', true)
                                 ->paginate(10);
         return Response()->json($productos, 200);
 
@@ -115,9 +135,9 @@ class ProductosController extends Controller
             'id_categoria'      => 'required',
             'id_empresa'        => 'required',
         ],[
-            'nombre.required' => 'Agregue un nombre',
-            'id_categoria.required' => 'Agregue una categoria',
-            'costo.required' => 'Agregue el costo'
+            // 'nombre.required' => 'Agregue un nombre.',
+            'id_categoria.required' => 'El campo categoria es obligatorio.',
+            // 'costo.required' => 'Agregue el costo.'
         ]);
 
         if($request->id)
@@ -328,11 +348,10 @@ class ProductosController extends Controller
     }
 
     public function export(Request $request){
+        $productos = new ProductosExport();
+        $productos->filter($request);
 
-      $productos = new ProductosExport();
-      $productos->filter($request);
-
-      return Excel::download($productos, 'productos.xlsx');
+        return Excel::download($productos, 'productos.xlsx');
     }
 
 }

@@ -18,9 +18,7 @@ import { ClienteDatosComponent } from './cliente/datos/cliente-datos.component';
 import { ClientesDashComponent } from './dash/clientes-dash.component';
 import { ClienteInformacionComponent } from './cliente/informacion/cliente-informacion.component';
 import { ClienteVentasComponent } from './cliente/ventas/cliente-ventas.component';
-import { ClienteFletesComponent } from './cliente/fletes/cliente-fletes.component';
 import { ClienteDocumentosComponent } from './cliente/documentos/cliente-documentos.component';
-import { ClienteCreditosComponent } from './cliente/creditos/cliente-creditos.component';
 import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.component';
 
 @NgModule({
@@ -45,8 +43,6 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
     ClienteInformacionComponent,
     ClienteDocumentosComponent,
     ClienteVentasComponent,
-    ClienteFletesComponent,
-    ClienteCreditosComponent,
     CuentasCobrarComponent
   ],
   exports: [
@@ -57,8 +53,6 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
     ClienteInformacionComponent,
     ClienteDocumentosComponent,
     ClienteVentasComponent,
-    ClienteFletesComponent,
-    ClienteCreditosComponent,
     CuentasCobrarComponent
   ]
 })

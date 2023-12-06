@@ -53,8 +53,10 @@ export class ProductoPreciosComponent implements OnInit {
             if(!this.precio.id) {
                 this.precio.id = precio.id;
                 this.producto.precios.unshift(precio);
+                this.alertService.success('Precio creado', 'El precio fue añadido exitosamente.');
+            }else{
+                this.alertService.success('Precio guardado', 'El precio fue guardado exitosamente.');
             }
-            this.alertService.success("Precio agregado");
             this.precio = {};
             this.loading = false;
             this.modalRef.hide();

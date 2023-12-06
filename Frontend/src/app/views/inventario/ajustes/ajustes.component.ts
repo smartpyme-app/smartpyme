@@ -117,7 +117,7 @@ export class AjustesComponent implements OnInit {
         this.saving = true;
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => { 
             this.ajuste = {};
-            this.alertService.success("Ajuste guardado");
+            this.alertService.success('Ajuste guardado', 'El ajuste fue guardado exitosamente.');
             this.modalRef.hide();
             this.loadAll();
             this.saving = false;
@@ -128,7 +128,7 @@ export class AjustesComponent implements OnInit {
         this.saving = true;
         this.apiService.delete('ajuste/', id).subscribe(ajuste => { 
             this.ajuste = {};
-            this.alertService.success("Ajuste guardado");
+            this.alertService.success('Ajuste eliminado', 'El ajuste fue eliminado exitosamente.');
             this.modalRef.hide();
             this.loadAll();
             this.saving = false;

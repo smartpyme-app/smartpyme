@@ -1,11 +1,12 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { ApiService } from '../../../../../services/api.service';
-import { AlertService } from '../../../../../services/alert.service';
+import { FormControl } from '@angular/forms';
+import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
-import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
-import { fromEvent, timer } from 'rxjs';
+import { SumPipe }     from '@pipes/sum.pipe';
+import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
 
 @Component({
   selector: 'app-tienda-venta-producto',
@@ -13,64 +14,131 @@ import { fromEvent, timer } from 'rxjs';
 })
 export class TiendaVentaProductoComponent implements OnInit {
 
+    @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
     modalRef!: BsModalRef;
+    searchControl = new FormControl();
 
-    public detalle:any = {};
     public productos:any = [];
+    public productosData:any = [];
+    public categorias:any = [];
+    public sucursales:any = [];
+    public detalle:any = {};
+    public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
+        private modalService: BsModalService, private sumPipe:SumPipe
     ) { }
 
     ngOnInit() {
-        this.buscador = '';
+
+        this.searchControl.valueChanges
+              .pipe(
+                debounceTime(500),
+                filter((query: string) => query.trim().length > 0),
+                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+              )
+              .subscribe((results: any[]) => {
+                this.productos = Array.isArray(results) ? results : [];
+                this.loading = false;
+
+                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
+                    this.selectProducto(results[0]);
+                }
+              });
+
+        // this.buscador = '';
+        // const input = document.getElementById('producto')!;
+        // const producto = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
+        // const debouncedInput = producto.pipe(debounceTime(500));
+        // const subscribe = debouncedInput.subscribe(val => { this.searchProducto(); });
     }
 
-    openModal(template: TemplateRef<any>) {
-        this.productos.total = 0;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
-        const input = document.getElementById('example')!;
-        const example = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
-        const debouncedInput = example.pipe(debounceTime(500));
-        const subscribe = debouncedInput.subscribe(val => { this.searchProducto(); });
+    // searchProducto(){
+    //     if(this.buscador) {
+    //         this.loading = true;
+    //         this.apiService.read('productos/buscar/', this.buscador).subscribe(productos => {
+    //            this.productos = productos;
+    //            this.loading = false;
+
+    //            if (productos && (productos.length == 1 ) && (this.buscador == productos[0].codigo)) { 
+    //                this.selectProducto(productos[0]);
+    //            }
+
+    //         }, error => {this.alertService.error(error);this.loading = false;});
+    //     }else if (!this.buscador  || this.buscador.length < 1 ){ this.loading = false; this.buscador = ''; this.productos.total = 0; }
+    // }
+
+    public openModal(template: TemplateRef<any>) {
+
+        this.apiService.getAll('categorias').subscribe(categorias => {
+            this.categorias = categorias;
+        }, error => {this.alertService.error(error);});
+
+        this.loadAll();
+        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
-    searchProducto(){
-        if(this.buscador && this.buscador.length > 2) {
-            this.loading = true;
-            this.apiService.read('productos/buscar/', this.buscador).subscribe(productos => {
-               this.productos = productos;
-               this.loading = false;
-            }, error => {this.alertService.error(error);this.loading = false;});
-        }else if (!this.buscador  || this.buscador.length < 1 ){ this.loading = false; this.buscador = ''; this.productos.total = 0; }
+    public loadAll(){
+        this.filtros.id_sucursal = this.venta.id_sucursal;
+        this.filtros.id_categoria = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 5;
+
+        this.loading = true;
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+            this.productosData = productos;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+
     }
 
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
-        this.detalle.producto_id  = producto.id;
-        this.detalle.nombre_producto     = producto.nombre;
-        this.detalle.escombo      = false;
-        this.detalle.cantidad     = 1;
-        this.detalle.descuento    = 0;
+        this.detalle.id_producto    = producto.id;
+        this.detalle.nombre_producto = producto.nombre;
+        this.detalle.img            = producto.img;
+        this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.costo          = parseFloat(producto.costo);
+        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+        this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        this.detalle.cantidad       = 1;
+        this.detalle.descuento      = 0;
+        this.onSubmit();
+    }
 
-        // Descuento promoción si esta en fecha
-        if (producto.promocion) {
-            this.detalle.descuento = parseFloat((producto.precio - producto.promocion.precio).toFixed(2));
+    onCheckProducto(producto:any){
+        this.detalle = Object.assign({}, producto);
+        this.detalle.id_producto    = producto.id;
+        this.detalle.nombre_producto = producto.nombre;
+        this.detalle.img            = producto.img;
+        this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.costo          = parseFloat(producto.costo);
+        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+        this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        this.detalle.cantidad       = 1;
+        this.detalle.descuento      = 0;
+
+        console.log(this.detalle);
+        let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;
+        if(radio){
+            radio.checked = true
         }
-        document.getElementById('pcantidad')!.focus();
-        // this.productos.data = [];
-        this.buscador = '';
     }
 
     onSubmit(){
+        this.productos = [];
+        this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
-        this.detalle = {};
-        this.modalRef.hide();
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
     }
 
 }

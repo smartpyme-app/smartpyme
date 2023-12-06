@@ -22,64 +22,117 @@ class DashController extends Controller
     public function index(Request $request) {
 
         $usuario = JWTAuth::parseToken()->authenticate();
+        $tiempo = 'DAY';
+        $fecha = Carbon::now()->subDays(8);
+
+        if (strtoupper($request->time) == 'DAY') {
+            $tiempo = 'HOUR';
+            $fecha = Carbon::now()->subHours(12);
+        }
+        if (strtoupper($request->time) == 'WEEK') {
+            $tiempo = 'DAY';
+            $fecha = Carbon::now()->subDays(8);
+        }
+        if (strtoupper($request->time) == 'MONTH') {
+            $fecha = Carbon::now()->subWeeks(8);
+            $tiempo = 'WEEK';
+        }
+        if (strtoupper($request->time) == 'YEAR') {
+            $fecha = Carbon::now()->subMonths(8);
+            $tiempo = 'MONTH';
+        }
 
         $indicadores = new Indicador(['inicio' => $request->inicio, 'fin' => $request->fin, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal]);
         // return $indicadores;
         // Salidas
 
             $indicadores->total_salidas = $indicadores->getTotalComprasPagadas() 
-                                + $indicadores->getTotalComprasPendientes()
                                 + $indicadores->getTotalGastosPagados()
+                                + $indicadores->getTotalComprasPendientes()
                                 + $indicadores->getTotalGastosPendientes()
                                 - $indicadores->getTotalDevolucionesCompra();
         
-            $indicadores->total_compras = $indicadores->getTotalComprasPagadas();
-            $indicadores->total_gastos = $indicadores->getTotalGastosPagados();
+            $indicadores->total_compras = $indicadores->getTotalComprasPagadas() + $indicadores->getTotalComprasPendientes();
+            $indicadores->total_gastos = $indicadores->getTotalGastosPagados() + $indicadores->getTotalGastosPendientes();
 
-            $indicadores->total_salidas_semana = $indicadores->getTotalSalidasSemana();
+            $indicadores->total_cxp = $indicadores->getTotalComprasPendientes() + $indicadores->getTotalGastosPendientes();
+
+            $indicadores->totales_salidas = $indicadores->getTotalesSalidas($tiempo, $fecha);
 
         // Ingresos
             $indicadores->total_ventas = $indicadores->getTotalVentasPagadas()
-                                        + $indicadores->getTotalVentasPendientes()
+                                        // + $indicadores->getTotalVentasPendientes()
                                         - $indicadores->getTotalDevolucionesVenta();
             
-            $indicadores->total_ventas_semana = $indicadores->getTotalVentasSemana();
+            $indicadores->totales_ventas = $indicadores->getTotalesVentas($tiempo, $fecha);
             
             $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
             $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
 
-
-            // $ultima = $datos->total_ventas_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
-            // if ($ultima)
-            //     $datos->total_ventas_percent = round((($datos->total_ventas / $ultima) - 1) * 100, 2);
-            // else
-            //     $datos->total_ventas_percent = 0;
-
-            // $datos->total_cxc = $indicadores->getTotalVentasPendientes();
+            $indicadores->total_cxc = $indicadores->getTotalVentasPendientes();
 
         // Transacciones
 
             $indicadores->total_transacciones = $indicadores->getCantidadVentasPagadas() + $indicadores->getCantidadVentasPendientes() - $indicadores->getCantidadDevolucionesVenta();
-            $indicadores->total_transacciones_semana = $indicadores->getTotalTransaccionesSemana();
+            $indicadores->totales_transacciones = $indicadores->getTotalesTransacciones($tiempo, $fecha);
 
-            // $ultima = $datos->total_transacciones_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
-            // if ($ultima)
-            //     $datos->total_transacciones_percent = round((($datos->total_transacciones / $ultima) - 1) * 100, 2);
-            // else
-            //     $datos->total_transacciones_percent = 0;
+            $indicadores->total_transacciones = $indicadores->getCantidadVentasPendientes();
 
         // Balance
 
+            // ($indicadores->getTotalVentasPagadas() - $indicadores->getTotalDevolucionesVenta()) - 
+            // ($indicadores->getTotalComprasPagadas() + $indicadores->getTotalGastosPagados() - $indicadores->getTotalDevolucionesCompra())
+
             $indicadores->total_balance = $indicadores->total_ventas - $indicadores->total_salidas;
             
-            $indicadores->total_balance_semana   = $indicadores->getTotalBalancesSemana();
-            // $ultima = $datos->total_balance_semana->sortByDesc('dia')->skip(1)->take(1)->pluck('total')->first();
-            // if ($ultima)
-            //     $datos->total_balance_percent = round((($datos->total_balance / $ultima) - 1) * 100, 2);
-            // else
-            //     $datos->total_balance_percent = 0;
+            $indicadores->totales_balance   = $indicadores->getTotalesBalances($tiempo, $fecha);
 
         return Response()->json($indicadores, 200);
+    }
+
+    public function corte(Request $request){
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal]);
+        
+        $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();
+        $indicadores->totalRecibos = $indicadores->getTotalRecibos();
+        $indicadores->totalVentasPendientes = $indicadores->getTotalVentasPendientes();
+        $indicadores->totalDevolucionesVenta = $indicadores->getTotalDevolucionesVenta();
+        $indicadores->totalGastosPagados = $indicadores->getTotalGastosPagados();
+
+        $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
+        $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
+        $indicadores->total_ventas_banco = $indicadores->getVentasByBanco();
+        $indicadores->total_documentos_emitidos = $indicadores->getDocumentoEmitidos();
+        $indicadores->total_documentos_con_devoluciones = $indicadores->getDocumentoConDevolucion();
+        $indicadores->total_documentos_anulados = $indicadores->getDocumentosAnulados();
+
+        $indicadores->cantidadRecibos = $indicadores->getCantidadRecibos();
+        $indicadores->totalRecibos = $indicadores->getTotalRecibos();
+        $indicadores->cantidadDevolucionesVenta = $indicadores->getCantidadDevolucionesVenta();
+        $indicadores->totalDevolucionesVenta = $indicadores->getTotalDevolucionesVenta();
+        $indicadores->cantidadGastosPagados = $indicadores->getCantidadGastosPagados();
+        $indicadores->totalGastosPagados = $indicadores->getTotalGastosPagados();
+        $indicadores->cantidadVentasPendientes = $indicadores->getCantidadVentasPendientes();
+        $indicadores->totalVentasPendientes = $indicadores->getTotalVentasPendientes();
+
+
+        return Response()->json($indicadores, 200);
+    }
+
+    public function cortePdf($id_sucursal = null, $fechaDe = null)
+    {
+
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if (!$fechaDe)
+            $fechaDe = date("Y-m-d");
+
+        $indicadores = new Indicador(['inicio' => $fechaDe, 'fin' => $fechaDe, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $id_sucursal]);
+
+        $pdf = \PDF::loadView('reportes.corte', compact('indicadores'));
+        return $pdf->stream();
     }
 
 

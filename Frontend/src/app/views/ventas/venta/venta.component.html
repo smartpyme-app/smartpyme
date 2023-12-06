@@ -3,38 +3,31 @@
     <button class="btn btn-light text-danger" routerLink="/ventas">Cancelar <i class="fa fa-close"></i></button>
 </section>
 
-<div class="card">
+<div class="card border-0">
     <div class="card-body">
-        <h5 class="card-title">
-            Información
-            <a *ngIf="venta.credito" routerLink="/credito/{{venta.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
-                <i class="fa fa-money-check"></i>
-            </a>
-        </h5>
-        <div class="table-responsive">
-            <table class="table table-borderless">
-                <tr>
-                    <th>Fecha</th>
-                    <th>Usuario</th>
-                    <th>Cliente</th>
-                    <th>Estado</th>
-                    <th>Fecha pago</th>
-                    <th>Forma de pago</th>
-                    <th>Banco</th>
-                    <th>Documento</th>
-                </tr>
-                <tr>
-                    <td>{{ venta.fecha | date:'yy/MM/yyyy'}} {{ venta.created_at | date:'hh:mm a'}}</td>
-                    <td>{{ venta.nombre_usuario }}</td>
-                    <td>{{ venta.nombre_cliente }}</td>
-                    <td>{{ venta.estado }}</td>
-                    <td>{{ venta.fecha_pago }}</td>
-                    <td>{{ venta.forma_pago }}</td>
-                    <td>{{ venta.detalle_banco }}</td>
-                    <td>{{ venta.tipo_documento }} # {{ venta.correlativo }}</td>
-                </tr>
-            </table>
-        </div>    
+        <div class="row">
+            <h6 class="col-12"> Información </h6>
+            <div class="form-group col-lg-4">
+                <label>Fecha</label>
+                <p>{{ venta.fecha | date:'yy/MM/yyyy'}} {{ venta.created_at | date:'hh:mm a'}}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Usuario</label>
+                <p>{{ venta.nombre_usuario }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Cliente</label>
+                <p>{{ venta.nombre_cliente }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Estado</label>
+                <p>{{ venta.estado }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label>Fecha pago</label>
+                <p>{{ venta.fecha_pago }}</p>
+            </div> 
+        </div>
     </div>
 
 </div>
@@ -46,7 +39,7 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
-                        <th>N°</th>
+                        <!-- <th>N°</th> -->
                         <th>Producto</th>
                         <th width="100">Cantidad</th>
                         <th width="100">Precio</th>
@@ -64,30 +57,33 @@
                         </td>
                     </tr>
                     <tr *ngFor="let detalle of venta.detalles; let i=index">
-                        <td> {{ i + 1 }} </td>
-                        <td> {{ detalle.nombre_producto }} </td>
+                        <!-- <td> {{ i + 1 }} </td> -->
+                        <td>
+                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            {{ detalle.nombre_producto }}
+                        </td>
                         <td>{{ detalle.cantidad }}</td>
                         <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
-                        <td colspan="4" class="text-end"></td>
+                        <td colspan="3" class="text-end"></td>
                         <td class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.sub_total + venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="4" class="text-end"></td>
-                        <td class="text-end"><b>IVA:</b></td>
-                        <td class="text-end"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr>
-                        <td colspan="4" class="text-end"></td>
+                        <td colspan="3" class="text-end"></td>
                         <td class="text-end"><b>Descuento:</b></td>
                         <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
+                    <tr *ngFor="let impuesto of venta?.impuestos">
+                        <td colspan="3" class="text-end"></td>
+                        <td class="text-end">{{ impuesto?.impuesto?.nombre }} </td>
+                        <td class="text-end">{{ impuesto.monto | currency:'USD':'symbol':'1.2'}} </td>
+                    </tr>
                     <tr>
-                        <td colspan="4" class="text-end"></td>
+                        <td colspan="3" class="text-end"></td>
                         <td class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>

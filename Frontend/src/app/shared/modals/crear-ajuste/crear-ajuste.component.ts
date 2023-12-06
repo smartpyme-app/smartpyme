@@ -35,7 +35,7 @@ export class CrearAjusteComponent implements OnInit {
 	openModalAjuste(template: TemplateRef<any>) {
 	   this.ajuste = {};
 	   this.ajuste.stock_actual = this.inventario.stock;
-	   this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
+	   this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
 	}
 
     public calAjuste(){

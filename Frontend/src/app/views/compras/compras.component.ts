@@ -13,12 +13,15 @@ declare var $:any;
 export class ComprasComponent implements OnInit {
 
     public compras:any = [];
+    public compra:any = {};
+    public formaPagos:any = [];
+    public documentos:any = [];
     public buscador:any = '';
     public loading:boolean = false;
+    public saving:boolean = false;
 
     public proveedores:any = [];
-    public filtro:any = {};
-    public filtrado:boolean = false;
+    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -34,38 +37,61 @@ export class ComprasComponent implements OnInit {
     }
 
     public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_canal = '';
+        this.filtros.id_documento = '';
+        this.filtros.forma_pago = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
+        this.filtrarCompras();
+    }
+
+    public filtrarCompras(){
         this.loading = true;
-        this.filtro.estado = '';
-        this.filtro.id_proveedor = '';
-        this.filtro.inicio = this.apiService.date();
-        this.filtro.fin = this.apiService.date();
-
-        this.apiService.getAll('compras').subscribe(compras => { 
+        this.apiService.getAll('compras', this.filtros).subscribe(compras => { 
             this.compras = compras;
-            this.loading = false;this.filtrado = false;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 2) {
-            this.loading = true;
-            this.apiService.read('compras/buscar/', this.buscador).subscribe(compras => { 
-                this.compras = compras;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
         }
+
+        this.filtrarCompras();
     }
 
-    public setEstado(compra:any){
-        this.apiService.store('compra', compra).subscribe(compra => { 
-            this.alertService.success('Actualizado');
-        }, error => {this.alertService.error(error); });
+    public setEstado(compra:any, estado:any){
+        if(estado == 'Pagada'){
+            if(confirm('¿Confirma el pago de la compra?')){
+                this.compra = compra;
+                this.compra.estado = estado;
+                this.onSubmit();
+            }
+        }
+        if(estado == 'Anulada'){
+            if(confirm('¿Confirma la anulación de la compra?')){
+                this.compra = compra;
+                this.compra.estado = estado;
+                this.onSubmit();
+            }
+        }
+
     }
     
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
-
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('compra/', id) .subscribe(data => {
@@ -79,6 +105,20 @@ export class ComprasComponent implements OnInit {
 
     }
 
+    public openModalEdit(template: TemplateRef<any>, compra:any) {
+        this.compra = compra;
+
+        this.apiService.getAll('documentos').subscribe(documentos => {
+            this.documentos = documentos;
+        }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+            this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
+
+        this.modalRef = this.modalService.show(template);
+    }
+
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
@@ -89,21 +129,59 @@ export class ComprasComponent implements OnInit {
 
     }
 
+    public onSubmit() {
+        this.saving = true;            
+        this.apiService.store('compra', this.compra).subscribe(compra => {
+            this.compra = {};
+            this.saving = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+            this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
+
+    }
+
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page).subscribe(compras => { 
+        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('compras/filtrar', this.filtro).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false; this.filtrado = true;
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public openDescargar(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    }
 
+    public descargarCompras(){
+        this.apiService.export('compras/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'compras.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar compras:', error); }
+        );
+    }
+
+    public descargarDetalles(){
+        this.apiService.export('compras-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'compras-detalles.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar compras:', error); }
+        );
     }
 
 }

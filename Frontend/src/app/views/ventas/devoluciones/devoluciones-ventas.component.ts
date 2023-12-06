@@ -11,14 +11,14 @@ import { ApiService } from '@services/api.service';
 export class DevolucionesVentasComponent implements OnInit {
 
     public ventas:any = [];
-    public buscador:any = '';
+    public id_venta:any = null;
     public loading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
+    public ventasList:any = [];
     public sucursales:any = [];
-    public filtro:any = {};
-    public filtrado:boolean = false;
+    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -35,33 +35,30 @@ export class DevolucionesVentasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.filtro.inicio = null;
-        this.filtro.fin = this.apiService.date();
-        this.filtro.id_sucursal = '';
-        this.filtro.estado = '';
-        this.filtro.id_cliente = '';
-        this.filtro.id_usuario = '';
-
-        this.apiService.getAll('devoluciones/ventas').subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.filtros.inicio = null;
+        this.filtros.fin = this.apiService.date();
+        this.filtros.id_sucursal = '';
+        this.filtros.estado = '';
+        this.filtros.id_cliente = '';
+        this.filtros.id_usuario = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+        this.filtrarVentas();
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('devoluciones/ventas/buscar/', this.buscador).subscribe(ventas => { 
-                this.ventas = ventas;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
-        }
+    public filtrarVentas(){
+        this.loading = true;
+        this.apiService.getAll('devoluciones/ventas', this.filtros).subscribe(ventas => { 
+            this.ventas = ventas;
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
     }
 
     public setEstado(venta:any, estado:string){
         venta.estado = estado;
         this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Actualizado');
+            this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
@@ -82,13 +79,15 @@ export class DevolucionesVentasComponent implements OnInit {
 
     }
 
-    public filtrar(filtro:any, txt:any){
-        this.loading = true;
-        this.apiService.read('devoluciones/ventas/filtrar/' + filtro + '/', txt).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
 
+        this.filtrarVentas();
     }
 
     public setPagination(event:any):void{
@@ -103,15 +102,6 @@ export class DevolucionesVentasComponent implements OnInit {
 
     openFilter(template: TemplateRef<any>) {     
 
-        if(!this.filtrado) {
-            this.filtro.inicio = this.apiService.date();
-            this.filtro.fin = this.apiService.date();
-            this.filtro.sucursal_id = '';
-            this.filtro.usuario_id = '';
-            this.filtro.estado = '';
-            this.filtro.metodo_pago = '';
-            this.filtro.tipo_documento = '';
-        }
         if(!this.usuarios.data){
             this.apiService.getAll('usuarios/filtrar/tipo/Mesero').subscribe(usuarios => { 
                 this.usuarios = usuarios.data;
@@ -125,14 +115,15 @@ export class DevolucionesVentasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
-    onFiltrar(){
+    openModal(template: TemplateRef<any>) {
+        this.id_venta = null;
         this.loading = true;
-        this.apiService.store('devoluciones/ventas/filtrar', this.filtro).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
+        this.apiService.getAll('ventas/sin-devolucion').subscribe(ventas => { 
+            this.ventasList = ventas;
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
+        this.modalRef = this.modalService.show(template);
     }
+
 
 }

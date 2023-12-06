@@ -34,6 +34,9 @@ class PresupuestosController extends Controller
         $presupuestos = Presupuesto::when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha_inicio', [$request->inicio, $request->fin]);
                         })
+                        ->when($request->buscador, function($query) use ($request){
+                            return $query->where('titulo', 'like', '%'. $request->buscador . '%');
+                        })
                         ->when($request->sucursal_id, function($query) use ($request){
                             return $query->where('sucursal_id', $request->sucursal_id);
                         })
@@ -52,15 +55,12 @@ class PresupuestosController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'fecha_compra'  => 'required|date',
-            'nombre'        => 'required|max:255',
-            'descripcion'   => 'sometimes|max:255',
-            'ubicacion'     => 'sometimes|max:255',
-            'valor_compra' => 'required|numeric',
-            'responsable_id'   => 'sometimes|numeric',
-            'usuario_id'   => 'required|numeric',
-            'sucursal_id'   => 'required|numeric',
-            'empresa_id'   => 'required|numeric',
+            'titulo'        => 'required|max:255',
+            'fecha_inicio'  => 'required|date',
+            'fecha_fin'     => 'required|date',
+            'ingresos'   => 'required|numeric',
+            'egresos'   => 'required|numeric',
+            'id_empresa'   => 'required|numeric',
         ]);
 
         if($request->id)

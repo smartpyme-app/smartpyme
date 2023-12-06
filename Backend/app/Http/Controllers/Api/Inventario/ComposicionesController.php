@@ -13,9 +13,9 @@ class ComposicionesController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'producto_id'   => 'required|numeric',
-            'compuesto_id'  => 'required|numeric',
-            'medida'        => 'required|max:255',
+            'id_producto'   => 'required|numeric',
+            'id_compuesto'  => 'required|numeric',
+            // 'medida'        => 'required|max:255',
             'cantidad'      => 'required|numeric',
         ]);
 
@@ -26,6 +26,9 @@ class ComposicionesController extends Controller
         
         $composicion->fill($request->all());
         $composicion->save();
+
+        $composicion = Composicion::find($composicion->id);
+
 
         return Response()->json($composicion, 200);
 

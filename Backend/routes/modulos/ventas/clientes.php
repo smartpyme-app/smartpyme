@@ -5,9 +5,7 @@ use App\Http\Controllers\Api\Ventas\Clientes\DocumentosController;
 use App\Http\Controllers\Api\Ventas\VentasController;
 
     Route::get('/clientes',                         [ClientesController::class, 'index']);
-    Route::get('/clientes/buscar/{txt}',            [ClientesController::class, 'search']);
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
-    Route::post('/clientes/filtrar',                [ClientesController::class, 'filter']);
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);
     Route::post('/cliente',                         [ClientesController::class, 'store']);
     Route::delete('/cliente/{id}',                  [ClientesController::class, 'delete']);

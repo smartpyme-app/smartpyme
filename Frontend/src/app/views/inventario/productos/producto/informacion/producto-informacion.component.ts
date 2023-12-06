@@ -23,7 +23,7 @@ export class ProductoInformacionComponent implements OnInit {
         private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
     ) {
-        this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
     ngOnInit() {
@@ -39,6 +39,14 @@ export class ProductoInformacionComponent implements OnInit {
         this.producto.id_categoria = categoria.id;
     }
 
+    public setCompuesto(){
+        if(this.producto.tipo == 'Producto'){
+            this.producto.tipo = 'Compuesto';
+        }else{
+            this.producto.tipo = 'Producto';
+        }
+    }
+
 
     public onSubmit() {
         this.guardar = true;
@@ -46,9 +54,23 @@ export class ProductoInformacionComponent implements OnInit {
             this.guardar = false;
             if(!this.producto.id) {
                 this.producto = producto;
-                this.router.navigate(['/' + this.apiService.slug(this.producto.tipo) +'/editar/'+ producto.id]);
             }
-            this.alertService.success(this.producto.tipo + " guardado");
+            if(this.producto.tipo == 'Producto'){
+                this.router.navigate(['/producto/editar/' + producto.id]);
+                this.alertService.success("Producto guardado", 'El producto fue guardado exitosamente.');
+            }
+            if(this.producto.tipo == 'Servicio'){
+                this.router.navigate(['/servicio/editar/' + producto.id]);
+                this.alertService.success("Servicio guardado", 'El servicio fue guardado exitosamente.');
+            }
+            if(this.producto.tipo == 'Compuesto'){
+                this.router.navigate(['/producto/editar/' + producto.id]);
+                this.alertService.success("Producto compuesto guardado", 'El producto compuesto fue guardado exitosamente.');
+            }
+            if(this.producto.tipo == 'Materia Prima'){
+                this.router.navigate(['/materia-prima/editar/' + producto.id]);
+                this.alertService.success("Materia prima guardada", 'La materia prima fue guardada exitosamente.');
+            }
         },error => {this.alertService.error(error); this.guardar = false; });
     }
 

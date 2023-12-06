@@ -1,6 +1,6 @@
 <label for="cantidad" class="w-100">* Nombre: 
-    <span class="text-primary float-right" *ngIf="searching"> Buscando... </span>
-    <span class="text-primary float-right" *ngIf="!searching && productos?.data?.length"> {{ productos?.data?.length }} registros</span>
+    <span class="text-primary float-end" *ngIf="searching"> Buscando... </span>
+    <span class="text-primary float-end" *ngIf="!searching && productos?.data?.length"> {{ productos?.data?.length }} registros</span>
 </label>
 <form autocomplete="off" class="buscador">
     <input id="producto" type="text" name="producto.nombre" class="form-control" placeholder="Nombre o código" [(ngModel)]="producto.nombre" focus="true" id="example">

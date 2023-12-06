@@ -33,7 +33,7 @@ export class ClienteDocumentosComponent implements OnInit {
     public updateNombre(documento:any) {
         this.loading = true;
         this.apiService.store('cliente/documento', documento).subscribe(documento => {
-            this.alertService.success('Guardado');
+            this.alertService.success('Documento guardado', 'El documento fue guardado exitosamente');
         }, error => {this.alertService.error(error); this.loading = false; this.documento = {};});
     }
 
@@ -54,7 +54,7 @@ export class ClienteDocumentosComponent implements OnInit {
             }
             this.documento = {};
             this.loading = false;
-            this.alertService.success('Guardado');
+            this.alertService.success('Documento guardado', 'El documento fue guardado exitosamente');
         }, error => {this.alertService.error(error); this.loading = false; this.documento = {};});
     }
 
@@ -65,7 +65,7 @@ export class ClienteDocumentosComponent implements OnInit {
                     if (this.documentos[i].id == data.id )
                         this.documentos.splice(i, 1);
                 }
-                this.alertService.success('Eliminado');
+                this.alertService.success('Documento eliminado', 'El documento fue eliminado exitosamente');
             }, error => {this.alertService.error(error); });
                    
         }

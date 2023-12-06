@@ -1,20 +1,22 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '../../pipes/pipes.module';
 import { SharedModule } from '../../shared/shared.module';
-import { ComprasComponent } from './compras.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { ComprasRoutingModule } from './compras.routing.module';
 
+import { ComprasComponent } from './compras.component';
 import { CompraComponent } from './compra/compra.component';
-import { CompraProductoComponent } from './compra/compra-producto/compra-producto.component';
-import { CompraDetallesComponent } from './compra/detalles/compra-detalles.component';
+import { FacturacionCompraComponent } from './facturacion/facturacion-compra.component';
+import { CompraProductoComponent } from './facturacion/compra-producto/compra-producto.component';
+import { CompraDetallesComponent } from './facturacion/detalles/compra-detalles.component';
 
 import { DevolucionesComprasComponent } from './devoluciones/devoluciones-compras.component';
 import { DevolucionCompraComponent } from './devoluciones/devolucion/devolucion-compra.component';
@@ -37,6 +39,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     CommonModule,
     FormsModule,
     RouterModule,
+    ReactiveFormsModule,
     PipesModule,
     SharedModule,
     NgSelectModule,
@@ -48,6 +51,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
   declarations: [
   	ComprasComponent,
     CompraComponent,
+    FacturacionCompraComponent,
     CompraProductoComponent,
     CompraDetallesComponent,
     DevolucionesComprasComponent,
@@ -63,6 +67,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
   exports: [
   	ComprasComponent,
     CompraComponent,
+    FacturacionCompraComponent,
     CompraProductoComponent,
     CompraDetallesComponent,
     DevolucionesComprasComponent,

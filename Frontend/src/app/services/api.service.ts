@@ -32,7 +32,11 @@ export class ApiService {
 
     login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
 
-    register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
+    register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
+
+    export(url:string, filtros: any): Observable<Blob> {
+        return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
+    }
 
     logout() { 
         let data:any = {};
@@ -41,9 +45,7 @@ export class ApiService {
             this.store('logout', data).subscribe(ivas => { 
             }, error => {this.alertService.error(error); });
         }
-        localStorage.removeItem('SP_token');
-        localStorage.removeItem('SP_auth_user');
-        localStorage.removeItem('SP_corte');
+        localStorage.clear();
     }
 
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
@@ -51,6 +53,7 @@ export class ApiService {
     autenticated(){ let token = JSON.parse(localStorage.getItem('SP_token')!); if(token) { return true; } else {return false; } }
     
     auth_user(){ return JSON.parse(localStorage.getItem('SP_auth_user')!); }
+    register_user(){ return JSON.parse(localStorage.getItem('SP_user_register')!); }
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
@@ -77,20 +80,20 @@ export class ApiService {
 
     toggleTheme(){
 
-        if (localStorage.getItem('worder_theme') == 'light') {
-            localStorage.setItem('worder_theme', 'dark');
+        if (localStorage.getItem('SP_theme') == 'light') {
+            localStorage.setItem('SP_theme', 'dark');
         }else{
-            localStorage.setItem('worder_theme', 'light');
+            localStorage.setItem('SP_theme', 'light');
         }
         this.loadTheme();
     }
 
     loadTheme(){
-        let theme:any = localStorage.getItem('worder_theme');
+        let theme:any = localStorage.getItem('SP_theme');
         if (!theme){
-            localStorage.setItem('worder_theme', 'light');
+            localStorage.setItem('SP_theme', 'light');
         }
-        if (localStorage.getItem('worder_theme') == 'dark') {
+        if (localStorage.getItem('SP_theme') == 'dark') {
             $('body').attr('data-theme-version', 'dark');
             $('.icon-theme').removeClass('far');
             $('.icon-theme').addClass('fas');

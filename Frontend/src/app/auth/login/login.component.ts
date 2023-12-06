@@ -21,8 +21,7 @@ export class LoginComponent implements OnInit {
     constructor( private apiService: ApiService, private router: Router, private alertService: AlertService) { }
 
     ngOnInit() {
-        this.saludo = this.apiService.saludar();
-        this.anio = new Date().getFullYear();
+        localStorage.clear();
     }
 
     submit() {
@@ -43,7 +42,6 @@ export class LoginComponent implements OnInit {
 
     public mostrarPassword(){
         this.showpassword = !this.showpassword;
-        console.log(this.showpassword);
     }  
 
 }

@@ -54,7 +54,7 @@ export class ProductoAjustesComponent implements OnInit {
     public setEstado(compra:any, estado:string){
         compra.estado = estado;
         this.apiService.store('compra', compra).subscribe(compra => { 
-            this.alertService.success('Actualizado');
+            this.alertService.success('Compra guardada', 'La compra fue guardada exitosamente');
         }, error => {this.alertService.error(error); });
     }
 

@@ -13,10 +13,10 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel>
-                <button tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
+                <!-- <button tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button> -->
                 <!-- <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off"> -->
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador">
                 <!-- </form> -->
                 <!-- <button tooltip="Filtrar (F6)" (click)="search()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button> -->
             </div>

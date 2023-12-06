@@ -38,7 +38,7 @@ export class CrearCategoriaComponent implements OnInit {
             this.update.emit(categoria);
             this.modalRef?.hide();
             this.loading = false;
-            this.alertService.success("Categoria guardada");
+            this.alertService.success('Categoria creada', 'La categoria ha sido agregada.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

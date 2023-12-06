@@ -56,7 +56,7 @@ export class MateriaPrimaComponent implements OnInit {
 	    		this.producto = producto;
 	    		this.router.navigate(['/materia-prima/'+ producto.id]);
 	    	}
-	        this.alertService.success("Producto guardado");
+	    	this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente');
 	    },error => {this.alertService.error(error); this.loading = false; });
 	}
 	

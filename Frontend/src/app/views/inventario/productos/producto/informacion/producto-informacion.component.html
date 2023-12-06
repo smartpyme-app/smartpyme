@@ -8,20 +8,15 @@
         <div class="form-group col-md-6 col-lg-3">
             <label for="codigo">Código</label>
             <div class="input-group">
-                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Código" required>
+                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Código">
                 <span class="input-group-text" *ngIf="producto.codigo">
                     <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
                 </span>
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3">
-            <label for="codigo">Código de barras</label>
-            <div class="input-group">
-                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Código" required>
-                <span class="input-group-text" *ngIf="producto.codigo">
-                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                </span>
-            </div>
+            <label for="barcode">Código de barras</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Código">
         </div>
         <div class="form-group col-md-6 col-lg-2">
             <label for="medida">Medida</label>
@@ -73,12 +68,18 @@
             </div>
         </div>
 
-
         <h6 class="my-3 font-weight-bold w-100">Descripción</h6>
 
         <div class="form-group col-lg-12">
             <label for="descripcion">Agrega alguna información adicional</label>
             <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Descripción" cols="30" rows="2"></textarea>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label ">
+            <div class="form-switch bg-light-info rounded">
+              <label>¿Es producto compuesto?</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCompuesto()" [checked]="producto.tipo == 'Compuesto'" name="compuesto">
+            </div>
         </div>
 
         <div class="form-group col-lg-12 mt-3">

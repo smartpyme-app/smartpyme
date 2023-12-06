@@ -66,7 +66,7 @@ export class SucursalesComponent implements OnInit {
                   this.sucursales.push(sucursal);
               }
               this.sucursal = {};
-              this.alertService.success("Datos guardados");
+              this.alertService.success('Sucursal guardada', 'La sucursal fue guardada exitosamente.');
               this.loading = false;
             this.modalRef.hide();
           },error => {this.alertService.error(error); this.loading = false; });

@@ -12,28 +12,28 @@ class Compra extends Model {
     protected $fillable = array(
         'fecha',
         'estado',
-        'tipo',
-        'metodo_pago',
+        // 'tipo',
+        'forma_pago',
         'tipo_documento',
-        'condicion',
+        // 'condicion',
         'fecha_pago',
         'num_referencia',
         'num_serie',
         'num_orden_compra',
         'detalle_banco',
-        'aplicada_inventario',
+        // 'aplicada_inventario',
         'notas',
-        'proveedor_id',
+        'id_proveedor',
         'no_sujeta',
         'exenta',
         'gravada',
-        'iva_percibido',
-        'iva_retenido',
+        'percepcion',
+        // 'iva_retenido',
         'descuento',
         'iva',
-        'subtotal',
+        'sub_total',
         'total',
-        'bodega_id',
+        // 'id_bodega',
         'id_usuario',
         'id_sucursal',
         'id_empresa',
@@ -55,7 +55,10 @@ class Compra extends Model {
 
     public function getNombreProveedorAttribute()
     {
-        return $this->proveedor()->pluck('nombre')->first();
+        if ($this->proveedor()->first()) {
+            return $this->proveedor()->pluck('nombre')->first();
+        }
+        return 'Consumidor Final';
     }
 
     public function getNombreUsuarioAttribute()
@@ -64,7 +67,11 @@ class Compra extends Model {
     }
 
     public function bodega(){
-        return $this->belongsTo('App\Models\Inventario\Bodega','bodega_id');
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
+    }
+
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
     public function proveedor(){
@@ -77,6 +84,10 @@ class Compra extends Model {
 
     public function detalles(){
         return $this->hasMany('App\Models\Compras\Detalle','id_compra');
+    }
+
+    public function devoluciones(){
+        return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
     }
 
 

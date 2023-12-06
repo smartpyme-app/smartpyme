@@ -23,12 +23,6 @@ export class ProductosComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.filtros.id_sucursal = '';
-        this.filtros.id_categoria = '';
-        this.filtros.search = '';
-        this.filtros.orden = 'nombre';
-        this.filtros.direccion = 'desc';
-        this.filtros.paginate = 10;
 
         this.loadAll();
 
@@ -43,24 +37,27 @@ export class ProductosComponent implements OnInit {
     }
 
     public loadAll() {
-        this.loading = true;
-        if (this.filtros.id_categoria == null) {
-            this.filtros.id_categoria = '';
-        }
-        if (this.filtros.id_sucursal == null) {
-            this.filtros.id_sucursal = '';
-        }
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 10;
 
+        this.filtrarProductos();
+    }
+
+    public filtrarProductos(){
+        this.loading = true;
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
     public setEstado(producto:any){
         this.apiService.store('producto', producto).subscribe(producto => { 
-            this.alertService.success('Actualizado');
+            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
@@ -85,7 +82,7 @@ export class ProductosComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.loadAll();
+        this.filtrarProductos();
     }
 
     public setPagination(event:any):void{
@@ -100,14 +97,25 @@ export class ProductosComponent implements OnInit {
         this.loading = true;
         this.apiService.store('producto', this.producto).subscribe(producto=> {
             this.producto = {};
-            this.alertService.success("Datos guardados");
+            this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
             this.loading = false;
             this.modalRef.hide();
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
     public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+        this.apiService.export('productos/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'productos.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar productos:', error); }
+        );
     }
 
 }

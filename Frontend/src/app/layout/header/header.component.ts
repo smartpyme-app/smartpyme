@@ -13,6 +13,7 @@ export class HeaderComponent implements OnInit {
     public usuario: any = {};
     public elem: any;
     public isfullscreen: boolean = false;
+    public isVisible: boolean = false;
 
     constructor(private apiService: ApiService, @Inject(DOCUMENT) private document: any) { }
 
@@ -33,6 +34,16 @@ export class HeaderComponent implements OnInit {
                 this.document.exitFullscreen();
         }
         this.isfullscreen = !this.isfullscreen;
+    }
+
+    public toggleSidebar(){
+        const myDiv = document.getElementById('sidebar')!;
+        if (this.isVisible) {
+          myDiv.style.marginLeft  = '-280px';
+        } else {
+          myDiv.style.marginLeft  = '0px';
+        }
+        this.isVisible = !this.isVisible;
     }
 
 

@@ -63,7 +63,7 @@ export class ProductoSucursalesComponent implements OnInit {
         this.apiService.store('producto/sucursal', this.sucursal).subscribe(sucursal => {
             this.sucursal = {};
             this.loading = false;
-            this.alertService.success("Registro guardado");
+            this.alertService.success('Sucursal guardada', 'El inventario fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

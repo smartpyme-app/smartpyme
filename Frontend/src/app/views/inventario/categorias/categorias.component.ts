@@ -53,12 +53,14 @@ export class CategoriasComponent implements OnInit {
     public onSubmit():void{
         this.loading = true;
         this.apiService.store('categoria', this.categoria).subscribe(categoria => {
-            if(!this.categoria.id){
+            if (!this.categoria.id) {
                 this.categorias.push(categoria);
+                this.alertService.success('Categoria creada', 'La categoria fue añadida exitosamente.');
+            }else{
+                this.alertService.success('Categoria guardada', 'La categoria fue guardada exitosamente.');
             }
             this.loadAll();
             this.loading = false;
-            this.alertService.success("Datos guardados");
             this.modalRef?.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
 

@@ -46,10 +46,13 @@ export class ProductoInventariosComponent implements OnInit {
 
     openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
-        if (!this.inventario.id){
+        if(!this.inventario.id) {
             this.inventario.stock = 0;
-            // this.inventario.bodega_id = 1;
+            this.inventario.id_sucursal = '';
             this.inventario.id_producto = this.producto.id;
+            this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
+        }else{
+            this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }
@@ -72,7 +75,7 @@ export class ProductoInventariosComponent implements OnInit {
                     if (this.producto.inventarios[i].id == data.id )
                         this.producto.inventarios.splice(i, 1);
                 }
-                this.alertService.success("Registro eliminado");
+                this.alertService.success('Inventario eliminado', 'El inventario fue eliminado exitosamente.');
             }, error => {this.alertService.error(error); });
                    
         }

@@ -8,28 +8,22 @@ class Detalle extends Model {
 
     protected $table = 'detalles_devolucion_venta';
     protected $fillable = array(
-        'producto_id',
         'cantidad',
         'precio',
         'costo',
         'descuento',
-        'subcosto',
-        'subtotal',
-        'no_sujeta',
-        'exenta',
-        'gravada',
-        'iva',
         'total',
-        'id_devolucion_venta'
+        'id_devolucion_venta',
+        'id_producto'
     );
     protected $appends = ['nombre_producto', 'medida', 'exenta', 'gravada', 'no_sujeta'];
 
     public function getNombreProductoAttribute(){
-        return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
+        return $this->producto()->pluck('nombre')->first();
     }
 
     public function getMedidaAttribute(){
-        return $this->producto()->withoutGlobalScopes()->pluck('medida')->first();
+        return $this->producto()->pluck('medida')->first();
     }
 
     public function getExentaAttribute(){
@@ -54,7 +48,7 @@ class Detalle extends Model {
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
     public function venta(){

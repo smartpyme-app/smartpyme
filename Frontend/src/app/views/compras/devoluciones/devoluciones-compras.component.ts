@@ -11,14 +11,14 @@ import { ApiService } from '@services/api.service';
 export class DevolucionesComprasComponent implements OnInit {
 
     public compras:any = [];
-    public buscador:any = '';
+    public id_compra:any = null;
     public loading:boolean = false;
 
     public proveedores:any = [];
     public usuarios:any = [];
+    public comprasList:any = [];
     public sucursales:any = [];
-    public filtro:any = {};
-    public filtrado:boolean = false;
+    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -35,33 +35,30 @@ export class DevolucionesComprasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.filtro.inicio = null;
-        this.filtro.fin = this.apiService.date();
-        this.filtro.id_sucursal = '';
-        this.filtro.estado = '';
-        this.filtro.id_proveedor = '';
-        this.filtro.id_usuario = '';
+        this.filtros.inicio = null;
+        this.filtros.fin = this.apiService.date();
+        this.filtros.id_sucursal = '';
+        this.filtros.estado = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+        this.filtrarCompras();
+    }
 
-        this.apiService.getAll('devoluciones/compras').subscribe(compras => { 
+    public filtrarCompras(){
+        this.loading = true;
+        this.apiService.getAll('devoluciones/compras', this.filtros).subscribe(compras => { 
             this.compras = compras;
-            this.loading = false;this.filtrado = false;
+            this.loading = false;
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('devoluciones/compras/buscar/', this.buscador).subscribe(compras => { 
-                this.compras = compras;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
-        }
-    }
-
-    public setEstado(venta:any, estado:string){
-        venta.estado = estado;
-        this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Actualizado');
+    public setEstado(compra:any, estado:string){
+        compra.estado = estado;
+        this.apiService.store('compra', compra).subscribe(compra => { 
+            this.alertService.success('Venta actualizada', 'La compra fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
@@ -71,7 +68,7 @@ export class DevolucionesComprasComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('devolucion/venta/', id) .subscribe(data => {
+            this.apiService.delete('devolucion/compra/', id) .subscribe(data => {
                 for (let i = 0; i < this.compras['data'].length; i++) { 
                     if (this.compras['data'][i].id == data.id )
                         this.compras['data'].splice(i, 1);
@@ -82,13 +79,15 @@ export class DevolucionesComprasComponent implements OnInit {
 
     }
 
-    public filtrar(filtro:any, txt:any){
-        this.loading = true;
-        this.apiService.read('devoluciones/compras/filtrar/' + filtro + '/', txt).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
 
+        this.filtrarCompras();
     }
 
     public setPagination(event:any):void{
@@ -103,15 +102,6 @@ export class DevolucionesComprasComponent implements OnInit {
 
     openFilter(template: TemplateRef<any>) {     
 
-        if(!this.filtrado) {
-            this.filtro.inicio = this.apiService.date();
-            this.filtro.fin = this.apiService.date();
-            this.filtro.sucursal_id = '';
-            this.filtro.usuario_id = '';
-            this.filtro.estado = '';
-            this.filtro.metodo_pago = '';
-            this.filtro.tipo_documento = '';
-        }
         if(!this.usuarios.data){
             this.apiService.getAll('usuarios/filtrar/tipo/Mesero').subscribe(usuarios => { 
                 this.usuarios = usuarios.data;
@@ -125,14 +115,15 @@ export class DevolucionesComprasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
-    onFiltrar(){
+    openModal(template: TemplateRef<any>) {
+        this.id_compra = null;
         this.loading = true;
-        this.apiService.store('devoluciones/compras/filtrar', this.filtro).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
+        this.apiService.getAll('compras/sin-devolucion').subscribe(compras => { 
+            this.comprasList = compras;
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
+        this.modalRef = this.modalService.show(template);
     }
+
 
 }

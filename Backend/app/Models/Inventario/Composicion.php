@@ -8,16 +8,19 @@ class Composicion extends Model {
 
     protected $table = 'producto_composiciones';
     protected $fillable = array(
-        'producto_id',
-        'compuesto_id',
-        'medida',
+        'id_producto',
+        'id_compuesto',
         'cantidad'
     );
 
-    protected $appends = ['nombre_producto', 'nombre_compuesto'];
+    protected $appends = ['nombre_producto', 'nombre_categoria', 'nombre_compuesto'];
 
     public function getNombreProductoAttribute(){
         return $this->producto()->pluck('nombre')->first();
+    }
+
+    public function getNombreCategoriaAttribute(){
+        return $this->compuesto()->first() ? $this->compuesto()->first()->categoria()->pluck('nombre')->first() : '';
     }
 
     public function getNombreCompuestoAttribute(){
@@ -25,11 +28,11 @@ class Composicion extends Model {
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
     public function compuesto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','compuesto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_compuesto');
     }
 
 

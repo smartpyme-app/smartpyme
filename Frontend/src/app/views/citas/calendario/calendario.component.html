@@ -1,0 +1,105 @@
+<div class="row">  
+    <div class="col-lg-12">    
+        <div class="card">
+            <div class="card-body">
+                <full-calendar  [options]="calendarOptions"></full-calendar>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ng-template #mevento>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Cita</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form name="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <app-notificaciones-container></app-notificaciones-container>
+            <div class="form-group col-md-6">
+              <label for="recipient-name">Descripción</label>
+              <input type="text" placeholder="Escribe aquí" class="form-control"  [(ngModel)]="evento.descripcion" name="descripcion">
+            </div>
+
+            <div class="form-group col-md-6 col-lg-6">
+                <label for="id_usuario">Usuario</label>
+                <ng-select name="id_usuario" [(ngModel)]="evento.id_usuario" class="form-select p-0">
+                    <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+
+            <div class="form-group col-md-6">
+              <label for="recipient-name">Fecha inicio</label>
+              <input type="datetime-local" class="form-control" name="inicio" [(ngModel)]="evento.inicio">
+            </div>
+
+            <div class="form-group col-md-6">
+              <label for="recipient-name">Duración</label>
+              <select name="duracion" [(ngModel)]="evento.duracion" class="form-select">
+                <option value="15 minutos">15 minutos</option>
+                <option value="30 minutos">30 minutos</option>
+                <option value="1 hora" selected>1 hora</option>
+                <option value="2 horas">2 horas</option>
+                <option value="3 horas">3 horas</option>
+                <option value="5 horas">5 horas</option>
+              </select>
+            </div>
+            
+            <div class="form-group col-md-6">
+                <label for="">Cliente</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="id_cliente" (click)="loadClientes()" placeholder="Consumidor Final" [(ngModel)]="evento.id_cliente" class="form-select p-0">
+                        <ng-option value=""> Consumidor final </ng-option>
+                        <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
+                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                            {{ cliente.nombre }} <span *ngIf="cliente.dui">- {{ cliente.dui }}</span>
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+                </div>
+            </div>
+
+            <div class="form-group col-md-6">
+                <label for="id_servicio">Servicio</label>
+                <ng-select name="id_servicio" [(ngModel)]="evento.id_servicio" class="form-select p-0">
+                    <ng-option [value]="producto.id" *ngFor="let producto of productos">
+                        {{ producto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+          
+            <div class="form-group col-md-12">
+              <label class="form-label font-weight-bold">Detalles del evento</label>
+                <textarea class="form-control" placeholder="Escribe aquí (Opcional)" name="detalles" [(ngModel)]="evento.detalles" rows="2"></textarea>
+            </div>
+
+            <div class="form-group col-md-6">
+                  <label class="form-label font-weight-bold">Se repite</label>
+                  <select name="frecuencia" [(ngModel)]="evento.frecuencia"  class="form-control form-select" id="frecuencia">
+                      <option value="">No</option>
+                      <option value="DAILY">Diario</option>
+                      <option value="WEEKLY">Semanal</option>
+                      <option value="MONTHLY">Mensual</option>
+                      <option value="YEARLY">Anual</option>
+                  </select>
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3 without-label ">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="confirmada">Confirmada</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="evento.confirmada" name="evento.confirmada">
+                </div>
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Agregar</span>
+                    <span *ngIf="saving">Agregando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

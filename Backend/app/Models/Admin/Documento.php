@@ -4,7 +4,7 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use JWTAuth;
+use Auth;
 
 class Documento extends Model {
 
@@ -22,23 +22,22 @@ class Documento extends Model {
         'nota',
         'activo',
         'caja_id',
-        'id_sucursal'
-
+        'id_sucursal',
+        'id_empresa'
     );
 
     protected $appends = ['nombre_sucursal'];
     protected $casts = ['activo' => 'string'];
 
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
-        
     }
 
     public function getNombreSucursalAttribute(){

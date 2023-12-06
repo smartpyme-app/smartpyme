@@ -1,4 +1,5 @@
 <h6 class="my-3 font-weight-bold">Imagenes</h6>
+<p>Las imagenes tienen que ser cuadradas y no pesar más de 2MB.</p>
 <div class="d-flex gap-2 flex-wrap">
     <figure *ngFor="let imagen of producto.imagenes; let i = index" class="position-relative img-fluid img-thumbnail" style="width: 200px; height: 200px; background-size: cover; background-position: center; background-image: url({{ apiService.baseUrl + '/img/' + imagen.img }});">
         <a class="position-absolute fixed-bottom btn btn-sm btn-danger text-white" (click)="delete(imagen)" tooltip="Eliminar">

@@ -16,11 +16,12 @@ Route::get('/prueba', function(){ return Response()->json(['message' => 'Success
 
 require base_path('routes/modulos/auth.php');
 		
-// Route::group(['middleware' => ['jwt.auth', 'ips']], function () {
+Route::group(['middleware' => ['jwt.auth']], function () {
 
 
 		require base_path('routes/modulos/dash.php');
 		require base_path('routes/modulos/facturacion.php');
+		require base_path('routes/modulos/recibos.php');
 	
 	// Ventas
 		require base_path('routes/modulos/ventas/ventas.php');
@@ -46,6 +47,9 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/inventario/traslados.php');
 		require base_path('routes/modulos/inventario/ajustes.php');
 		require base_path('routes/modulos/inventario/bodegas.php');
+
+	// Eventos
+		require base_path('routes/modulos/eventos/eventos.php');
 
 	// Creditos
 		require base_path('routes/modulos/creditos/creditos.php');
@@ -77,7 +81,7 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/admin/transacciones.php');
 
 		
-// });
+});
 
 
 Route::get('/prueba/factura', function () { 

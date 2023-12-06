@@ -55,8 +55,10 @@ export class DocumentosComponent implements OnInit {
         this.apiService.store('documento', this.documento).subscribe(documento => {
             if (!this.documento.id) {
                 this.documentos.push(documento);
+                this.alertService.success('Documento guardado', 'El documento fue guardado exitosamente.');
+            }else{
+                this.alertService.success('Documento creado', 'El documento fue añadido exitosamente.');
             }
-            this.alertService.success('Canal guardado');
             this.loading = false;
             this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});

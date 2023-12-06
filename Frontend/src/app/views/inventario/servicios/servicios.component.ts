@@ -13,7 +13,7 @@ export class ServiciosComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     
-    public filtro:any = {};
+    public filtros:any = {};
     public servicio:any = {};
     public sucursales:any = [];
     public filtrado:boolean = false;
@@ -25,9 +25,15 @@ export class ServiciosComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 10;
+
         this.loadAll();
-        this.filtro.id_categoria = '';
-        this.filtro.estado = '';
 
         this.apiService.getAll('categorias').subscribe(categorias => {
             this.categorias = categorias;
@@ -36,7 +42,7 @@ export class ServiciosComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('servicios').subscribe(servicios => { 
+        this.apiService.getAll('servicios', this.filtros).subscribe(servicios => { 
             this.servicios = servicios;
             this.loading = false; this.filtrado = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -70,7 +76,7 @@ export class ServiciosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.servicios.path + '?page='+ event.page).subscribe(servicios => { 
+        this.apiService.paginate(this.servicios.path + '?page='+ event.page, this.filtros).subscribe(servicios => { 
             this.servicios = servicios;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -79,7 +85,7 @@ export class ServiciosComponent implements OnInit {
 
     onFiltrar(){
         this.loading = true;
-        this.apiService.store('servicios/filtrar', this.filtro).subscribe(servicios => { 
+        this.apiService.store('servicios/filtrar', this.filtros).subscribe(servicios => { 
             this.servicios = servicios;
             this.loading = false; this.filtrado = true;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -99,7 +105,7 @@ export class ServiciosComponent implements OnInit {
         // Guardamos la caja
         this.apiService.store('servicio', this.servicio).subscribe(servicio=> {
             this.servicio= {};
-            this.alertService.success("Datos guardados");
+            this.alertService.success('Servicio guardado', 'El servicio fue guardado exitosamente.');
             this.loading = false;
             this.modalRef.hide();
         },error => {this.alertService.error(error); this.loading = false;

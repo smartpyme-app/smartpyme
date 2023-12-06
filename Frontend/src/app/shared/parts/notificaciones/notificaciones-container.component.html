@@ -1,0 +1,12 @@
+<div focus="true" *ngIf="alertMessage?.titulo" class="alert border-0 d-flex justify-content-between align-content-center" [ngClass]="alertMessage.tipo">
+    <div class="d-flex gap-2">
+        <div>   
+            <i class="fa fa-check-circle"></i>
+        </div>
+        <div>
+            <h6 class="m-0 alert-heading">{{ alertMessage.titulo }}</h6>
+            <div [innerHTML]="sanitizeHtml(alertMessage.mensaje)"></div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-link text-decoration-none text-dark" (click)="closeAlert()">Entendido</button>
+</div>

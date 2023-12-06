@@ -92,9 +92,13 @@ class Producto extends Model {
         return $this->hasMany('App\Models\Inventario\Precios\Precio','id_producto');
     }
 
-    public function promociones(){
-        return $this->hasMany('App\Models\Inventario\Promocion','id_producto');
+    public function promocion(){
+        return $this->belongsTo('App\Models\Inventario\Promociones\Promocion', 'id_promocion');
     }
+
+    // public function promociones(){
+    //     return $this->hasMany('App\Models\Inventario\Promocion','id_producto');
+    // }
 
     public function imagenes(){
         return $this->hasMany('App\Models\Inventario\Imagen','id_producto');

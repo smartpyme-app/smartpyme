@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 
 import { ComprasComponent } from '../compras/compras.component';
+import { FacturacionCompraComponent } from '../compras/facturacion/facturacion-compra.component';
 import { CompraComponent } from '../compras/compra/compra.component';
 import { DevolucionesComprasComponent } from '../compras/devoluciones/devoluciones-compras.component';
 import { DevolucionCompraComponent } from '../compras/devoluciones/devolucion/devolucion-compra.component';
@@ -28,13 +29,18 @@ const routes: Routes = [
     title: 'Compras',
     children: [
         { path: 'compras', component: ComprasComponent, title:'Compras' },
+        { path: 'compra/crear', component: FacturacionCompraComponent, title:'Compra' },
         { path: 'compra/:id', component: CompraComponent, title:'Compra' },
-        { path: 'devoluciones/compras', component: DevolucionesComprasComponent, title:'Devoluciones de compras' },
-        { path: 'devolucion-compra/:id', component: DevolucionCompraComponent, title:'Devolución de compra' },
-        { path: 'devolucion-compra-nueva', component: DevolucionCompraNuevaComponent, title:'Devolución de compra' },
+
+        { path: 'devoluciones/compras', component: DevolucionesComprasComponent, title: 'Devoluciones de compras'},
+        { path: 'devolucion/compra/:id', component: DevolucionCompraComponent, title: 'Devolución de compra'},
+        { path: 'devolucion-compra/nueva', component: DevolucionCompraNuevaComponent, title: 'Devolución de compra'},
+        
+
         { path: 'proveedores', component: ProveedoresComponent, title:'Proveedores' },
+        { path: 'proveedor/crear', component: ProveedorComponent, title:'Proveedor' },
+        { path: 'proveedor/editar/:id', component: ProveedorComponent, title:'Proveedor' },
         { path: 'proveedores/cuentas-pagar', component: CuentasPagarComponent, title:'Cuentas por pagar' },
-        { path: 'proveedor/:id', component: ProveedorComponent, title:'Proveedor' },
        
         { path: 'reporte/compras/historial', component: HistorialComprasComponent },
         { path: 'reporte/compras/detalle', component: DetalleComprasComponent },

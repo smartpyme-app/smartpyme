@@ -13,27 +13,27 @@ class Venta extends Model {
         'fecha',
         'correlativo',
         'estado',
-        'tipo',
+        // 'tipo',
         'id_canal',
         'id_documento',
         'forma_pago',
         'tipo_documento',
-        'condicion',
+        // 'condicion',
         'referencia',
-        'nombre',
+        // 'nombre',
         'fecha_pago',
-        'recibido',
-        'iva_percibido',
-        'iva_retenido',
+        'cambio',
+        // 'iva_percibido',
+        // 'iva_retenido',
         'iva',
-        'subcosto',
+        'total_costo',
         'descuento',
-        'subtotal',
-        'no_sujeta',
-        'exenta',
-        'gravada',
+        'sub_total',
+        // 'no_sujeta',
+        // 'exenta',
+        // 'gravada',
         'total',
-        'nota',
+        'observaciones',
         'id_caja',
         'id_bodega',
         'id_corte',
@@ -82,6 +82,21 @@ class Venta extends Model {
         return $this->canal()->pluck('nombre')->first();
     }
 
+    public function detalleText(){
+        $text = '';
+
+        foreach ($this->detalles as $detalle) {
+            $text .= $detalle->nombre_producto . ' X ' . $detalle->cantidad . '. <br>';
+            if ($detalle->producto()->first()->promocion()->first()){
+              foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det){
+                $text .= ' - ' . $det->nombre_producto . ' X ' . $det->cantidad . '. <br>';
+              }
+            }
+        }
+
+        return $text;
+    }
+
     // public function getSaldoAttribute(){
     //     return $this->total - $this->credito()->pagos()->sum('abono');
     // }
@@ -108,6 +123,10 @@ class Venta extends Model {
         return $this->belongsTo('App\Models\Admin\Canal','id_canal');
     }
 
+    public function impuestos(){
+        return $this->hasMany('App\Models\Ventas\Impuesto', 'id_venta');
+    }
+
     public function documento(){
         return $this->belongsTo('App\Models\Admin\Documento','id_documento');
     }
@@ -116,9 +135,16 @@ class Venta extends Model {
         return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
+    }
 
     public function detalles(){
         return $this->hasMany('App\Models\Ventas\Detalle','id_venta');
+    }
+
+    public function devoluciones(){
+        return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta');
     }
 
 

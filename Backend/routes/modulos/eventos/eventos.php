@@ -4,8 +4,7 @@
 
     Route::get('/eventos',                    [EventosController::class, 'index']);
     Route::get('/evento/{id}',                [EventosController::class, 'read']);
-    Route::get('/eventos/buscar/{text}',      [EventosController::class, 'search']);
-    Route::post('/eventos/filtrar',           [EventosController::class, 'filter']);
+    Route::get('/eventos/list',           [EventosController::class, 'list']);
     Route::post('/evento',                    [EventosController::class, 'store']);
     Route::delete('/evento/{id}',             [EventosController::class, 'delete']);
 

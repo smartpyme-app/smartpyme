@@ -7,14 +7,10 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
     
     Route::get('/dash',                        [DashController::class, 'index']);
     Route::get('/admin',                       [DashController::class, 'admin']);
-    Route::get('/galonajes',                   [DashController::class, 'galonaje']);
-    Route::get('/estadistica',                 [DashController::class, 'estadistica']);
-    Route::get('/telefonia-datos',             [DashController::class, 'telefoniaDatos']);
-
-    Route::get('/dash/cocinero',                [DashController::class, 'cocinero']);
-    Route::get('/dash/cocinero/departamento/{id}',  [DashController::class, 'cocineroDepartamento']);
-    Route::get('/dash/mesero',                  [DashController::class, 'mesero']);
     
+    Route::get('/corte',         [DashController::class, 'corte']);
+    Route::get('/corte/documento/{id_sucursal?}/{fecha?}', [DashController::class, 'cortePdf'])->name('corte');
+
     Route::get('/dash/vendedor',                [DashController::class, 'vendedor']);
     Route::get('/dash/vendedor/productos',                [ProductosController::class, 'vendedor']);
     Route::get('/dash/vendedor/productos/buscar/{txt}',   [ProductosController::class, 'vendedorBuscador']);

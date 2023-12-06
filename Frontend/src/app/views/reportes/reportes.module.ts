@@ -8,8 +8,8 @@ import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { FocusModule } from 'angular2-focus';
-import { PipesModule } from '../../pipes/pipes.module';
-import { SharedModule } from '../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 
 import { HistorialVentasComponent } from './ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from './ventas/detalle/detalle-ventas.component';
@@ -20,6 +20,9 @@ import { DetalleComprasComponent } from './compras/detalle/detalle-compras.compo
 import { CategoriasComprasComponent } from './compras/categorias/categorias-compras.component';
 
 import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.component';
+
+import { CorteComponent } from './corte/corte.component';
+import { ReportesComponent } from './reportes.component';
 
 @NgModule({
   imports: [
@@ -41,7 +44,9 @@ import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.co
     HistorialComprasComponent,
     DetalleComprasComponent,
     CategoriasComprasComponent,
-    EmpleadosVentasComponent
+    EmpleadosVentasComponent,
+    CorteComponent,
+    ReportesComponent
   ],
   exports: [
     HistorialVentasComponent,
@@ -50,7 +55,9 @@ import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.co
     HistorialComprasComponent,
     DetalleComprasComponent,
     CategoriasComprasComponent,
-    EmpleadosVentasComponent
+    EmpleadosVentasComponent,
+    CorteComponent,
+    ReportesComponent
   ]
 })
 export class ReportesModule { }

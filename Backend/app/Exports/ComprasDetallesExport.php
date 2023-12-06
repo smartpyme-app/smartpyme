@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\DetalleCompra;
+use App\Models\Compras\Detalle;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -14,19 +14,11 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
     /**
     * @return \Illuminate\Support\Collection
     */
-    public $fecha_de;
-    public $fecha_hasta;
-    public $estado;
-    public $proveedor;
-    public $sucursal;
+    public $request;
 
     public function filter(Request $request)
     {
-        $this->fecha_de = $request->fecha_de;
-        $this->fecha_hasta = $request->fecha_hasta;
-        $this->estado = $request->estado;
-        $this->proveedor = $request->id_proveedor;
-        $this->sucursal = $request->id_sucursal;
+        $this->request = $request;
     }
 
     public function headings():array{
@@ -38,6 +30,7 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Producto',
             'Categoria',
             'Documento',
+            'Referencia',
             'Estado',
             'Vencimiento',
             'Cantidad',
@@ -52,27 +45,40 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
-        $estado = $this->estado;
-        $proveedor = $this->proveedor;
-        $fecha_de = $this->fecha_de;
-        $fecha_hasta = $this->fecha_hasta;
-        $sucursal = $this->sucursal;
+        $request = $this->request;
         
-        $detalles = DetalleCompra::whereHas('compra', function($query) use ($sucursal, $estado, $proveedor, $fecha_hasta, $fecha_de) {
-                              $query->where('id_empresa', Auth::user()->id_empresa)
-                              ->when($sucursal, function($q) use ($sucursal){
-                                 return $q->where('id_sucursal', $sucursal);
-                              })
-                              ->when($estado, function($q) use ($estado){
-                                 return $q->where('estado', $estado);
-                              })
-                              ->when($proveedor, function($q) use ($proveedor){
-                                  return $q->where('id_proveedor', $proveedor);
-                              })
-                              ->when($fecha_de, function($q) use ($fecha_de, $fecha_hasta){
-                                return $q->whereBetween('fecha', [$fecha_de, $fecha_hasta]);
-                              });
-                        })->orderBy('created_at', 'desc')->get();
+        $detalles = Detalle::whereHas('compra', function($query) use ($request) {
+                            $query->when($request->buscador, function($query) use ($request){
+                                return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                        ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                        ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                        ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                            })
+                            ->when($request->inicio, function($query) use ($request){
+                                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            })
+                            ->when($request->id_sucursal, function($query) use ($request){
+                                return $query->where('id_sucursal', $request->id_sucursal);
+                            })
+                            ->when($request->id_usuario, function($query) use ($request){
+                                return $query->where('id_usuario', $request->id_usuario);
+                            })
+                            ->when($request->id_proveedor, function($query) use ($request){
+                                return $query->where('id_proveedor', $request->id_proveedor);
+                            })
+                            ->when($request->forma_pago, function($query) use ($request){
+                                return $query->where('forma_pago', $request->forma_pago);
+                            })
+                            ->when($request->estado, function($query) use ($request){
+                                return $query->where('estado', $request->estado);
+                            })
+                            ->when($request->metodo_pago, function($query) use ($request){
+                                return $query->where('metodo_pago', $request->metodo_pago);
+                            })
+                            ->where('estado', '!=', 'Pre-compra')
+                            ->orderBy($request->orden, $request->direccion)
+                            ->orderBy('id', 'desc');
+                        })->get();
 
         return $detalles;
         
@@ -86,16 +92,17 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $row->compra()->first()->proveedor()->pluck('nit')->first(),
               $row->producto()->pluck('nombre')->first(),
               $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
-              $row->compra()->pluck('documento')->first() . ': ' . $row->compra()->pluck('num_referencia')->first(),
+              $row->compra()->pluck('tipo_documento')->first(),
+              $row->compra()->pluck('referencia')->first(),
               $row->compra()->pluck('estado')->first(),
-              $row->compra()->pluck('vencimiento')->first(),
+              $row->compra()->pluck('fecha_pago')->first(),
               $row->cantidad,
               $row->costo,
-              $row->sub_total,
-              $row->sub_total * 0.13,
+              $row->total,
+              $row->total * 0.13,
               $row->descuento,
               $row->percepcion,
-              $row->sub_total + ($row->sub_total * 0.13) + $row->percepcion,
+              $row->total + ($row->total * 0.13) + $row->percepcion,
 
          ];
         return $fields;

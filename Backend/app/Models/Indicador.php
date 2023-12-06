@@ -11,6 +11,7 @@ use App\Models\Ventas\Abono;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Admin\FormaDePago;
 use Carbon\Carbon;
 
 class Indicador extends Model
@@ -288,44 +289,48 @@ class Indicador extends Model
         return $this->ventas_anuladas;
     }
 
-    public function getTotalSalidasSemana(){
+    public function getTotalesSalidas($tiempo = 'DAY', $fecha = null){
 
-        return Compra::selectRaw('DAY(fecha) as dia')
+        return Compra::selectRaw($tiempo . '(fecha) as time')
                                     ->selectRaw('sum(total) as total')
-                                    ->groupBy('dia')
-                                    ->where('fecha', '>=', Carbon::now()->subDays(8))
-                                    ->orderBy('dia')
-                                    ->get();
+                                    ->groupBy('time')
+                                    ->where('created_at', '>=', $fecha)
+                                    ->orderBy('time')
+                                    ->take(8)->get();
     }
 
-    public function getTotalVentasSemana(){
+    public function getTotalesVentas($tiempo = 'DAY', $fecha = null){
 
-        return Venta::selectRaw('DAY(fecha) as dia')
+        return Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('sum(total) as total')
-                                        ->groupBy('dia')
-                                        ->where('fecha', '>=', Carbon::now()->subDays(8))
-                                        ->orderBy('dia')
-                                        ->get();
+                                        ->groupBy('time')
+                                        ->where('created_at', '>=', $fecha)
+                                        ->orderBy('time')
+                                        ->take(8)->get();
     }
 
-    public function getTotalTransaccionesSemana(){
+    public function getTotalesTransacciones($tiempo = 'DAY', $fecha = null){
 
-        return Venta::selectRaw('DAY(fecha) as dia')
+        return Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('count(*) as total')
-                                        ->groupBy('dia')
-                                        ->where('fecha', '>=', Carbon::now()->subDays(8))
-                                        ->orderBy('dia')
-                                        ->get();
+                                        ->groupBy('time')
+                                        ->where('created_at', '>=', $fecha)
+                                        ->orderBy('time')
+                                        ->take(8)->get();
     }
 
-    public function getTotalBalancesSemana(){
+    public function getTotalesBalances($tiempo = 'DAY', $fecha = null){
 
-        return Venta::selectRaw('DAY(fecha) as dia')
+        return Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('count(*) as total')
-                                        ->groupBy('dia')
-                                        ->where('fecha', '>=', Carbon::now()->subDays(8))
-                                        ->orderBy('dia')
-                                        ->get();
+                                        ->groupBy('time')
+                                        ->where('created_at', '>=', $fecha)
+                                        ->orderBy('time')
+                                        ->take(8)->get();
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
 }

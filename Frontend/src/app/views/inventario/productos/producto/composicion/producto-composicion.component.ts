@@ -15,6 +15,7 @@ export class ProductoComposicionComponent implements OnInit {
 	public composicion: any = {};
     public productos:any = [];
 	public loading:boolean = false;
+    public saving:boolean = false;
     public buscador:string = '';
 
 	modalRef!: BsModalRef;
@@ -27,35 +28,26 @@ export class ProductoComposicionComponent implements OnInit {
 	ngOnInit() {}
 
     openModal(template: TemplateRef<any>, compuesto:any) {
-        this.composicion = compuesto;
+        this.apiService.getAll('productos/list').subscribe(productos => {
+            this.productos = productos;
+        }, error => {this.alertService.error(error);});
+        
+        if(compuesto.id){
+            this.composicion = compuesto;
+        }else{
+            this.composicion.id_producto = this.producto.id;
+            this.composicion.id_compuesto = '';
+        }
+        
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }
-
-    selectProducto(value:any){
-        this.composicion.producto_id       = this.producto.id;
-        this.composicion.nombre_compuesto  = value.nombre;
-        this.composicion.compuesto_id      = value.id;
-        this.composicion.medida            = value.medida;
-        this.composicion.cantidad = 1;
-        
-        let detalle = this.producto.composiciones.find((x:any) => x.compuesto_id == this.composicion.compuesto_id);
-        console.log(detalle);
-        if(detalle){
-            this.composicion = detalle;
-        }
-
-        this.productos.total = 0;
-        document.getElementById('cantidad')!.focus();
-    }
-
 
     onSubmit(){
        
         this.loading = true;
         this.apiService.store('producto/composicion', this.composicion).subscribe(composicion => {
             if(!this.composicion.id) {
-                this.composicion.id = composicion.id;
-                this.producto.composiciones.unshift(this.composicion);
+                this.producto.composiciones.unshift(composicion);
             }
             this.composicion = {};
             this.loading = false;

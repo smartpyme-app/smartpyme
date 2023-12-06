@@ -42,7 +42,7 @@ export class CanalesComponent implements OnInit {
             this.canal.id_empresa = this.apiService.auth_user().id_empresa;
             this.canal.enable = true;
         }
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
     public setEstado(canal:any){
@@ -55,8 +55,10 @@ export class CanalesComponent implements OnInit {
         this.apiService.store('canal', this.canal).subscribe(canal => {
             if (!this.canal.id) {
                 this.canales.push(canal);
+                this.alertService.success('Canal creado', 'El canal fue añadido exitosamente.');
+            }else{
+                this.alertService.success('Canal guardado', 'El canal fue guardado exitosamente.');
             }
-            this.alertService.success('Canal guardado');
             this.loading = false;
             this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});

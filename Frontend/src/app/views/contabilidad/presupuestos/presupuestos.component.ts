@@ -12,7 +12,7 @@ import { ApiService } from '@services/api.service';
 export class PresupuestosComponent implements OnInit {
 
     public presupuestos:any = [];
-    public venta:any = {};
+    public presupuesto:any = {};
     public buscador:any = '';
     public loading:boolean = false;
 
@@ -59,27 +59,13 @@ export class PresupuestosComponent implements OnInit {
         }
     }
 
-    public setEstado(venta:any){
-        this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Actualizado');
-        }, error => {this.alertService.error(error); });
-    }
-    
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('venta/', id) .subscribe(data => {
-                for (let i = 0; i < this.presupuestos['data'].length; i++) { 
-                    if (this.presupuestos['data'][i].id == data.id )
-                        this.presupuestos['data'].splice(i, 1);
-                }
+    public setAnulacion(presupuesto:any, estado:any){
+        presupuesto.enable = estado;
+        if(confirm('Confirma realización la acción?')){
+            this.apiService.store('presupuesto', presupuesto).subscribe(presupuesto => { 
+                this.alertService.success('Presupuesto actualizado', 'El presupuesto fue actualizado exitosamente.');
             }, error => {this.alertService.error(error); });
-                   
         }
-
     }
 
     public filtrar(filtro:any, txt:any){
@@ -99,40 +85,12 @@ export class PresupuestosComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public reemprimir(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
-
-    // Editar
-
-    openModalEdit(template: TemplateRef<any>, venta:any) {
-        this.venta = venta;
-        
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
-
-        this.modalRef = this.modalService.show(template);
-    }
-
-    public onSubmit() {
-        this.loading = true;            
-        this.apiService.store('venta', this.venta).subscribe(venta => {
-            this.venta = {};
-            this.modalRef.hide();
-            this.loading = false;
-            this.alertService.success("Guardado");
-        },error => {this.alertService.error(error); this.loading = false; });
-
-    }
-
-
-    onFiltrar(){
+    public onFiltrar(){
         this.loading = true;
         this.apiService.store('presupuestos/filtrar', this.filtro).subscribe(presupuestos => { 
             this.presupuestos = presupuestos;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
+            this.loading = false;
+            // this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

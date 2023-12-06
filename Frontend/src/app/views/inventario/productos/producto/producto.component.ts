@@ -14,14 +14,12 @@ export class ProductoComponent implements OnInit {
 
 	public producto: any = {};
 	public categorias:any[] = [];
-    public loading = false;
+  public loading = false;
 
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
-	) {
-		this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
-	}
+	) {	}
 
 	ngOnInit() {
 	    

@@ -12,16 +12,50 @@ use App\Models\Compras\Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
-use App\Models\Admin\Tanque;
 use Illuminate\Support\Facades\DB;
+
+use App\Exports\ComprasExport;
+use App\Exports\ComprasDetallesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ComprasController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $compras = Compra::orderBy('id','desc')->paginate(10);
+        $compras = Compra::when($request->buscador, function($query) use ($request){
+                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                        })
+                        ->when($request->inicio, function($query) use ($request){
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                        })
+                        ->when($request->id_sucursal, function($query) use ($request){
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->id_proveedor, function($query) use ($request){
+                            return $query->where('id_proveedor', $request->id_proveedor);
+                        })
+                        ->when($request->forma_pago, function($query) use ($request){
+                            return $query->where('forma_pago', $request->forma_pago);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('estado', $request->estado);
+                        })
+                        ->when($request->metodo_pago, function($query) use ($request){
+                            return $query->where('metodo_pago', $request->metodo_pago);
+                        })
+                        ->where('estado', '!=', 'Pre-compra')
+                        ->orderBy($request->orden, $request->direccion)
+                        ->orderBy('id', 'desc')
+                        ->paginate($request->paginate);
+
         return Response()->json($compras, 200);
            
     }
@@ -56,10 +90,10 @@ class ComprasController extends Controller
                             ->when($request->estado, function($query) use ($request){
                                 return $query->where('estado', $request->estado);
                             })
-                            ->when($request->proveedor_id, function($query) use ($request){
+                            ->when($request->id_proveedor, function($query) use ($request){
                                 return $query->whereHas('proveedor', function($query) use ($request)
                                 {
-                                    $query->where('proveedor_id', $request->proveedor_id);
+                                    $query->where('id_proveedor', $request->id_proveedor);
 
                                 });
                             })
@@ -84,10 +118,37 @@ class ComprasController extends Controller
             'id_usuario'        => 'required',
         ]);
 
-        if($request->id)
-            $compra = Compra::findOrFail($request->id);
-        else
-            $compra = new Compra;
+        $compra = Compra::where('id', $request->id)->with('detalles')->firstOrFail();
+
+            // Ajustar stocks
+            foreach ($compra->detalles as $detalle) {
+
+                $producto = Producto::where('id', $detalle->id_producto)
+                                        ->with('composiciones')->firstOrFail();
+                                        
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $compra->id_sucursal)->first();
+                
+                // Anular compra y regresar stock
+                if(($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+
+                    if ($inventario) {
+                        $inventario->stock -= $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad * -1);
+                    }
+
+                }
+                // Cancelar anulación de compra y descargar stock
+                if(($compra->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
+                    // Aplicar stock
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad);
+                    }
+
+                }
+            }
         
         $compra->fill($request->all());
         $compra->save();
@@ -113,19 +174,20 @@ class ComprasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
-            'tipo'              => 'required',
             'tipo_documento'    => 'required',
-            'condicion'        => 'required',
-            'metodo_pago'       => 'required',
-            'proveedor_id'      => 'required',
+            // 'tipo_documento'    => 'required',
+            // 'condicion'         => 'required',
+            'forma_pago'        => 'required',
+            'id_proveedor'      => 'required',
             'detalles'          => 'required',
-            'cuotas'            => 'required_if:forma_pago,"Crédito"',
-            'plazo'             => 'required_if:forma_pago,"Crédito"',
-            'referencia'        => 'required',
-            'usuario_id'        => 'required',
-            'empresa_id'        => 'required',
+            // 'cuotas'            => 'required_if:forma_pago,"Crédito"',
+            // 'plazo'             => 'required_if:forma_pago,"Crédito"',
+            // 'referencia'        => 'required',
+            'id_usuario'        => 'required',
+            'id_empresa'        => 'required',
         ],[
-            'proveedor_id.required' => 'Debe seleccionar un proveedor'
+            'id_proveedor.required' => 'El campo proveedor es obligatorio.',
+            'detalles.required' => 'Los detalles son obligatorios.'
         ]);
 
         DB::beginTransaction();
@@ -150,24 +212,19 @@ class ComprasController extends Controller
                     $detalle = Detalle::findOrFail($det['id']);
                 else
                     $detalle = new Detalle;
-
-                $det['compra_id'] = $compra->id;
+                $det['id_compra'] = $compra->id;
                 
                 $detalle->fill($det);
                 
-                if (!isset($det['id'])) {
+                if ($request->estado != 'Pre-compra') {
                     // Actualizar inventario
-                    $producto = Producto::findOrFail($det['producto_id']);
-                    $inventario = Inventario::where('producto_id', $producto->id)->where('bodega_id', $compra->bodega_id)->first();
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_sucursal', $compra->id_sucursal)->first();
 
                     if ($inventario) {
                         $inventario->stock += $det['cantidad'];
                         $inventario->save();
                         $inventario->kardex($compra, $det['cantidad']);
                     }
-                    $producto->costo_anterior   = $producto->costo;
-                    $producto->costo            = isset($det['costo']) ? $det['costo'] : $producto->costo ;
-                    $producto->save();
 
                 }
 
@@ -283,7 +340,7 @@ class ComprasController extends Controller
 
     public function comprasProveedor($id) {
 
-        $compras = Compra::where('proveedor_id', $id)->orderBy('estado', 'asc')->paginate(10);
+        $compras = Compra::where('id_proveedor', $id)->orderBy('estado', 'asc')->paginate(10);
 
         return Response()->json($compras, 200);
 
@@ -332,6 +389,32 @@ class ComprasController extends Controller
 
         return Response()->json($movimientos, 200);
 
+    }
+
+    public function export(Request $request){
+        $compras = new ComprasExport();
+        $compras->filter($request);
+
+        return Excel::download($compras, 'compras.xlsx');
+    }
+
+    public function exportDetalles(Request $request){
+        $compras = new ComprasDetallesExport();
+        $compras->filter($request);
+
+        return Excel::download($compras, 'compras-detalles.xlsx');
+    }
+
+    public function sinDevolucion(){
+
+        $compras = Compra::where('estado', '!=', 'Anulada')
+                        ->whereMonth('fecha', '>=' , date('m') - 1)
+                        ->whereYear('fecha', date('Y'))
+                        ->whereDoesntHave('devoluciones')
+                        ->orderBy('fecha', 'DESC')
+                        ->get();
+
+        return Response()->json($compras, 200);
     }
 
 

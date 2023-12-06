@@ -15,11 +15,6 @@ import { TrasladosComponent } from '../../views/inventario/traslados/traslados.c
 import { TrasladoComponent } from '../../views/inventario/traslados/traslado/traslado.component';
 import { AjustesComponent } from '../../views/inventario/ajustes/ajustes.component';
 import { AjusteComponent } from '../../views/inventario/ajustes/ajuste/ajuste.component';
-import { AnalisisProductosComponent } from '../../views/inventario/analisis/analisis-productos.component';
-
-
-import { BodegaComponent } from '../../views/inventario/bodegas/bodega/bodega.component';
-import { BodegasComponent } from '../../views/inventario/bodegas/bodegas.component';
 import { CategoriasComponent } from '../../views/inventario/categorias/categorias.component';
 
 import { ServiciosComponent } from '../../views/inventario/servicios/servicios.component';
@@ -39,6 +34,7 @@ const routes: Routes = [
         { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
         
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
+        { path: 'materia-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
         { path: 'materia-prima/crear', component: ProductoComponent, title: 'Materia prima' },
         { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
 
@@ -54,12 +50,6 @@ const routes: Routes = [
         { path: 'ajustes', component: AjustesComponent, title: 'Ajustes'  },
         { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste'  },
         
-        { path: 'bodegas', component: BodegasComponent },
-        { path: 'bodega/:id', component: BodegaComponent },
-
-        { path: 'analisis', component: AjustesComponent },
-        { path: 'analisis/productos', component: AnalisisProductosComponent },
-
         { path: 'servicios', component: ServiciosComponent, title: 'Servicios'},
         { path: 'servicio/crear', component: ProductoComponent, title: 'Servicio' },
         { path: 'servicio/editar/:id', component: ProductoComponent, title: 'Servicio' },

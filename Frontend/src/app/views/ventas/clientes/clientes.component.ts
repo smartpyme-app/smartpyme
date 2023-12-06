@@ -10,50 +10,69 @@ import { ApiService } from '@services/api.service';
 export class ClientesComponent implements OnInit {
 
     public clientes:any = [];
-    public buscador:any = '';
+    public cliente:any = {};
     public loading:boolean = false;
+    public saving:boolean = false;
 
-    public filtro:any = {};
+    public filtros:any = {};
     public producto:any = {};
-    public filtrado:boolean = false;
     public categorias:any = [];
     modalRef!: BsModalRef;
 
     constructor( private apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
 
     ngOnInit() {
+
         this.loadAll();
     }
 
     public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.buscador = '';
+        this.filtros.estado = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 10;
+        this.filtrarClientes();
+    }
+
+    public filtrarClientes(){
         this.loading = true;
-        this.filtro.estado = '';
-        this.apiService.getAll('clientes').subscribe(clientes => { 
+        this.apiService.getAll('clientes', this.filtros).subscribe(clientes => { 
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
-
-    public search(){
-        if(this.buscador && this.buscador.length > 2) {
-            this.loading = true;
-            this.apiService.read('clientes/buscar/', this.buscador).subscribe(clientes => { 
-                this.clientes = clientes;
-                this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }else{
-            this.loadAll();
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
         }
+
+        this.loadAll();
     }
 
-    public setEstado(cliente:any, activo:any):void{
-        this.loading = true;
-        cliente.activo = activo;
-        this.apiService.store('cliente', cliente).subscribe(data => {
-            this.loading = false;
-            cliente = data;
-            this.alertService.success('Guardado');
-        },error => {this.alertService.error(error); this.loading = false; });
+    public setTipo(cliente:any){
+        this.cliente = cliente;
+        this.onSubmit();
+    }
+
+    public setActivo(cliente:any, estado:any){
+        this.cliente = cliente;
+        this.cliente.enable = estado;
+        this.onSubmit();
+    }
+
+    public onSubmit(){
+        this.saving = true;
+        this.apiService.store('cliente', this.cliente).subscribe(cliente => {
+            this.cliente = {};
+            this.saving = false;
+            this.alertService.success('Cliente actualizado', 'El cliente fue actualizado exitosamente.');
+        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
     public delete(cliente:any){
@@ -74,16 +93,6 @@ export class ClientesComponent implements OnInit {
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('clientes/filtrar', this.filtro).subscribe(clientes => { 
-            this.clientes = clientes;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
 

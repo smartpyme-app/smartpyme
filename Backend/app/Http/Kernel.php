@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'jwt.refresh' => \Tymon\JWTAuth\Middleware\RefreshToken::class,
         'lang' => \App\Http\Middleware\LangMiddleware::class,
         'ips' => \App\Http\Middleware\IPs::class,
+        'limite.usuarios' => \App\Http\Middleware\LimiteUsuarios::class,
     ];
 }

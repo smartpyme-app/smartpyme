@@ -2,8 +2,8 @@ import { Component, OnInit, Input, TemplateRef } from '@angular/core';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -13,87 +13,88 @@ import { ApiService } from '../../../services/api.service';
 export class UsuariosComponent implements OnInit {
 
     public usuario:any = {};
-    public cajas:any = [];
-    public departamentos:any = [];
     public sucursales:any = [];
     public usuarios:any = [];
     public paginacion = [];
     public loading:boolean = false;
+    public saving:boolean = false;
     public filtrado:boolean = false;
-    public filtro:any = {};
-    public buscador:any = '';
+    public usuarios_activos:any = 0;
+    public filtros:any = {};
+    public showpassword:boolean = false;
+    public showpassword2:boolean = false;
 
     modalRef?: BsModalRef;
 
     constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
 
 	ngOnInit() {
+        this.filtros.id_sucursal = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'name';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 30;
+
         this.loadAll();
-    }
 
-    public loadAll(){
-        this.loading = true;
-        this.filtro.id_sucursal = '';
-        this.filtro.tipo = '';
-        this.filtro.estado = '';
-        
-        this.apiService.getAll('usuarios').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('usuarios/buscar/', this.buscador).subscribe(usuarios => { 
-                this.usuarios = usuarios;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
-        }
-    }
-
-    openModal(template: TemplateRef<any>, usuario:any) {
-        this.apiService.getAll('cajas').subscribe(cajas => { 
-            this.cajas = cajas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-        this.apiService.getAll('departamentos').subscribe(departamentos => { 
-            this.departamentos = departamentos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
         this.apiService.getAll('sucursales').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+
+    }
+
+    public loadAll(){
+        this.loading = true;        
+        this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => { 
+            this.usuarios = usuarios;
+            this.contarActivos();
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public contarActivos(){
+        this.usuarios_activos = this.usuarios.data.filter((item:any) => item.enable == '1').length;
+    }
+
+    openModal(template: TemplateRef<any>, usuario:any) {
         this.usuario = usuario;
         if (!this.usuario.id) {
-            this.usuario.tipo = 'Vendedor';
-            this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
-            this.usuario.activo = true;
-            this.usuario.empleado = true;
+            this.usuario.tipo = 'Administrador';
+            this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
+            this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
         }
-        this.modalRef = this.modalService.show(template);
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
     
+    public mostrarPassword(){
+        this.showpassword = !this.showpassword;
+    }  
+    
+    public mostrarPassword2(){
+        this.showpassword2 = !this.showpassword2;
+    }  
 
     public onSubmit() {
-        this.loading = true;
+        this.saving = true;
         // Guardamos al usuario
         this.apiService.store('usuario', this.usuario).subscribe(usuario => {
-            if (!this.usuario.id) {
-                this.usuarios.data.unshift(usuario);
-            }
-            this.usuario = usuario;
-            this.loading = false;
-            this.alertService.success("Usuario guardado");
+            this.loadAll();
+            this.saving = false;
+            this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
             this.modalRef?.hide();
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.saving = false; });
 
     }
 
     public setEstado(usuario:any){
         this.apiService.store('usuario', usuario).subscribe(usuario => { 
-            this.alertService.success('Actualizado');
+            if(usuario.enable == '1'){
+                this.alertService.success('Usuario activado', 'El usuario fue activado exitosamente.');
+            }else{
+                this.alertService.success('Usuario desactivado', 'El usuario fue desactivado exitosamente.');
+            }
+            this.contarActivos();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
@@ -112,9 +113,9 @@ export class UsuariosComponent implements OnInit {
 
     onFiltrar(){
         this.loading = true;
-        this.apiService.store('usuarios/filtrar', this.filtro).subscribe(usuarios => { 
+        this.apiService.store('usuarios/filtrar', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
-            this.loading = false; this.filtrado = true;
+            this.loading = false;;
             this.modalRef?.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
 

@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\Venta;
+use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -14,19 +14,11 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
     /**
     * @return \Illuminate\Support\Collection
     */
-    public $fecha_de;
-    public $fecha_hasta;
-    public $estado;
-    public $cliente;
-    public $sucursal;
+    public $request;
 
     public function filter(Request $request)
     {
-        $this->fecha_de = $request->fecha_de;
-        $this->fecha_hasta = $request->fecha_hasta;
-        $this->estado = $request->estado;
-        $this->cliente = $request->id_cliente;
-        $this->sucursal = $request->id_sucursal;
+        $this->request = $request;
     }
 
     public function headings():array{
@@ -55,29 +47,48 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
-        $estado = $this->estado;
-        $cliente = $this->cliente;
-        $fecha_de = $this->fecha_de;
-        $fecha_hasta = $this->fecha_hasta;
-        $sucursal = $this->sucursal;
+        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $ventas = Venta::where('id_empresa', Auth::user()->id_empresa)
-                      ->when($sucursal, function($q) use ($sucursal){
-                         return $q->where('id_sucursal', $sucursal);
-                      })
-                      ->where('estado', '!=', 'Pre-venta')
-                      ->when($estado, function($q) use ($estado){
-                         return $q->where('estado', $estado);
-                      })
-                      ->when($cliente, function($q) use ($cliente){
-                          return $q->where('id_cliente', $cliente);
-                      })
-                      ->when($estado, function($q) use ($estado){
-                        return $q->where('estado', $estado);
-                      })
-                      ->when($fecha_de, function($q) use ($fecha_de, $fecha_hasta){
-                        return $q->whereBetween('fecha', [$fecha_de, $fecha_hasta]);
-                      })->orderBy('fecha', 'desc')->get();
+        $ventas = Venta::when($request->buscador, function($query) use ($request){
+                                return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                            ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                            ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                            ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                                })
+                                ->when($request->id_sucursal, function($query) use ($request){
+                                    return $query->where('id_sucursal', $request->id_sucursal);
+                                })
+                                ->when($request->id_usuario, function($query) use ($request){
+                                    return $query->where('id_usuario', $request->id_usuario);
+                                })
+                                ->when($request->id_cliente, function($query) use ($request){
+                                    return $query->where('id_cliente', $request->id_cliente);
+                                })
+                                ->when($request->forma_pago, function($query) use ($request){
+                                    return $query->where('forma_pago', $request->forma_pago);
+                                })
+                                ->when($request->id_canal, function($query) use ($request){
+                                    return $query->where('id_canal', $request->id_canal);
+                                })
+                                ->when($request->id_documento, function($query) use ($request){
+                                    return $query->where('id_documento', $request->id_documento);
+                                })
+                                ->when($request->estado, function($query) use ($request){
+                                    return $query->where('estado', $request->estado);
+                                })
+                                ->when($request->metodo_pago, function($query) use ($request){
+                                    return $query->where('metodo_pago', $request->metodo_pago);
+                                })
+                                ->when($request->tipo_documento, function($query) use ($request){
+                                    return $query->where('tipo_documento', $request->tipo_documento);
+                                })
+                            ->orderBy($request->orden, $request->direccion)
+                            ->orderBy('id', 'desc')
+                            ->where('estado', '!=', 'Pre-venta')
+                            ->get();
 
         return $ventas;
         
@@ -90,20 +101,20 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
               $row->cliente()->pluck('dui')->first(),
               $row->cliente()->pluck('nit')->first(),
               $row->cliente()->pluck('direccion')->first(),
-              $row->documento,
+              $row->nombre_documento,
               $row->correlativo,
               $row->forma_pago,
               $row->estado,
-              $row->canal,
+              $row->nombre_canal,
               $row->total_costo,
               $row->sub_total,
               $row->descuento,
               $row->iva,
-              $row->total_venta - $row->total_costo - $row->iva,
-              $row->total_venta,
+              $row->total - $row->total_costo - $row->iva,
+              $row->total,
               $row->sucursal()->first()->empresa()->pluck('nombre')->first(),
               $row->observaciones,
-              $row->usuario,
+              $row->nombre_usuario,
 
          ];
         return $fields;

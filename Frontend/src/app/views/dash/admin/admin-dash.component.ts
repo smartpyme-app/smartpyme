@@ -61,6 +61,9 @@ export class AdminDashComponent implements OnInit {
         this.apiService.getAll('dash', this.filtro).subscribe(dash => { 
             this.dash = dash;
             this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

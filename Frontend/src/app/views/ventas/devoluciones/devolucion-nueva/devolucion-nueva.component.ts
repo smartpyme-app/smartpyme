@@ -17,7 +17,8 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     public detalle: any = {};
     public documentos:any = [];
     public supervisor:any = {};
-    public loading = false;
+    public loading:boolean = false;
+    public saving:boolean = false;
     public imprimir:boolean = true;
     
     modalRef!: BsModalRef;
@@ -32,8 +33,8 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
 	ngOnInit() {
 
-        const id = +this.route.snapshot.queryParamMap.get('venta_id')!;
-
+        const id = +this.route.snapshot.queryParamMap.get('id_venta')!;
+        console.log(id);
         if(id == 0){
             this.cargarDatosIniciales();
         }
@@ -45,19 +46,19 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.venta = venta;
                 this.venta.id = null;
                 this.venta.fecha = this.apiService.date();
-                this.venta.venta_id = id;
+                this.venta.id_venta = id;
                 this.venta.tipo = 'Interna';
 
                 this.venta.percepcion = this.venta.iva_percibido > 0 ? true : false; 
                 this.venta.retencion = this.venta.iva_retenido > 0 ? true : false;
 
-                let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
+                let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
-                    this.venta.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).caja_id;
-                    this.venta.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
+                    this.venta.id_caja = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
+                    this.venta.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
                 }
-                this.venta.usuario_id = this.apiService.auth_user().id;
-                this.venta.sucursal_id = this.apiService.auth_user().sucursal_id;
+                this.venta.id_usuario = this.apiService.auth_user().id;
+                this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
                 this.sumTotal();
                 this.loading = false;
             }, error => {this.alertService.error(error);this.loading = false;});
@@ -74,33 +75,44 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     cargarDatosIniciales(){
         this.cargarDocumentos();
         this.venta = {};
-        this.venta.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
+        this.venta.fecha = this.apiService.date();
         this.venta.tipo = 'Interna';
-        this.venta.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).caja_id;
-        this.venta.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
         this.venta.cliente = {};
         this.venta.detalles = [];
         this.venta.canal = 'Tienda';
         this.venta.descuento = 0;
         this.detalle = {};
-        this.sumTotal();
-        this.venta.usuario_id = this.apiService.auth_user().id;
-        this.venta.sucursal_id = this.apiService.auth_user().sucursal_id;
+
+        let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
+        if (corte) {
+            this.venta.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
+            this.venta.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id_caja;
+            this.venta.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
+        }
+
+        this.venta.id_usuario = this.apiService.auth_user().id;
+        this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
+        // this.sumTotal();
         this.imprimir = true;
     }
 
     public sumTotal() {
-        this.venta.subtotal = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'subtotal'))).toFixed(2);
-        this.venta.iva_percibido = this.venta.percepcion ? this.venta.subtotal * 0.01 : 0; 
-        this.venta.iva_retenido = this.venta.retencion ? this.venta.subtotal * 0.01 : 0; 
+        this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(2);
+        this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0; 
+        this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0; 
 
-        this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'iva'))).toFixed(2);
-        this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento') + parseFloat(this.venta.descuento))).toFixed(2);
-        this.venta.subcosto = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'subcosto'))).toFixed(2);
-        this.venta.no_sujeta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'))).toFixed(2);
-        this.venta.exenta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'))).toFixed(2);
-        this.venta.gravada = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'))).toFixed(2);
-        this.venta.total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total')) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(2);
+        this.venta.impuestos.forEach((impuesto:any) => {
+            if(this.venta.cobrar_impuestos){
+                impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
+            }else{
+                impuesto.monto = 0;
+            }
+        });
+
+        this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto'))).toFixed(2);
+        this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(2);
+        // this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(2);
+        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(2);
     }
 
 
@@ -117,15 +129,15 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
         public onDevolucion() {
 
-            this.loading = true;
+            this.saving = true;
             this.apiService.store('devolucion-venta', this.venta).subscribe(venta => {
-                this.loading = false;
+                this.saving = false;
                 if(venta.tipo_documento == 'Factura' || venta.tipo_documento == 'Credito Fiscal' || venta.tipo_documento == 'Ticket'){
                     this.imprimirDocDevolucion(venta);
                 }
                 this.router.navigate(['/devoluciones/ventas']);
-                this.alertService.success("Guardado");
-            },error => {this.alertService.error(error); this.loading = false; });
+                this.alertService.success('Devolucion de venta creada', 'La devolución de venta fue guardado exitosamente.');
+            },error => {this.alertService.error(error); this.saving = false; });
         }
 
 

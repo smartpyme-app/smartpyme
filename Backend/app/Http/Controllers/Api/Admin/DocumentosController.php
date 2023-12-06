@@ -13,6 +13,7 @@ class DocumentosController extends Controller
     public function index() {
        
         $documentos = Documento::orderBy('id_sucursal', 'asc')->get();
+        
         return Response()->json($documentos, 200);
 
     }

@@ -4,69 +4,98 @@
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
-        <h5 class="mb-3">Información</h5>
         <div class="col-md-12">
             <form name="form" (ngSubmit)="onSubmit()">
-                <div class="row">
-                   <div class="row justify-content-center">
-                       <div class="form-group col-6 col-sm-4 col-md-2">
-                           <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
-                               <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo }}" alt="logo">
-                               <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
-                           </figure>
-                       </div>
+               <div class="row justify-content-center">
+                   <div class="form-group col-6 col-sm-4 col-md-2">
+                       <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
+                           <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo }}" alt="logo">
+                           <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                       </figure>
                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="nombre">* Nombre:</label>
+               </div>
+                <h5 class="mb-3">Datos de mi empresa</h5>
+                <div class="row">
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="nombre">Nombre</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre" placeholder="Nombre" required>
                     </div>
-                    <div class="form-group col-md-3">
-                        <label for="propietario">Propietario:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.propietario" name="propietario" placeholder="Propietario">
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="nombre_propietario">Propietario</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario" name="nombre_propietario" placeholder="Escribe aquí">
                     </div>
-                    <div class="form-group col-md-3">
-                        <label for="nit">NIT:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="000-000000-000-0">
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="registro">NCR:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.registro" name="registro" placeholder="000000-0">
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="sector">Sector:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.sector" name="sector" placeholder="Sector">
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="giro">Giro:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Giro">
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="tamano">Tamaño:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.tamano" name="tamano" placeholder="Tamaño">
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="telefono">Teléfono:</label>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="telefono">Teléfono</label>
                         <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono" placeholder="xxxx-xxxx">
                     </div>
-                    <div class="form-group col-md-3">
-                        <label for="correo">Correo:</label>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="correo">Correo</label>
                         <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="info@miempresa.com">
                     </div>
-                    <div class="form-group col-sm-3">
-                        <label for="valor_inventario">Valor de inventario:</label>
-                        <select class="form-control form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
-                            <option value="Promedio">Promedio</option>
-                            <option value="Última compra">Última compra</option>
-                        </select>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="municipio">Municipio</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="municipio" placeholder="Escribe aquí">
                     </div>
-                    <div class="form-group col-lg-6">
-                        <label for="ips">Desde donde se pueden conectar los empleados</label>
-                        <tag-input theme='bootstrap' [secondaryPlaceholder]="'45.195.206.110'" [separatorKeyCodes]="[32]" [(ngModel)]="empresa.ips" name="ips"></tag-input>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="departamento">Departamento</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="departamento" placeholder="Escribe aquí">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="direccion">Dirección</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escribe aquí">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="nit">NIT</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="000-000000-000-0">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="ncr">NCR</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="000000-0">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="giro">Sector</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Sector">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="giro">Giro</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Giro">
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label for="tamano">Tamaño</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.tamano" name="tamano" placeholder="Tamaño">
                     </div>
                     <div class="form-group col-md-12">
-                        <button [disabled]="loading" class="btn btn-primary float-end">
-                            <span *ngIf="!loading">Guardar</span>
-                            <span *ngIf="loading">Guardando...</span>
+                        <label for="descripcion">Descripción</label>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escribe aquí">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <h5 class="my-3">Configuraciones</h5>
+                    <div class="form-group col-md-6 col-lg-3 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="modulo_citas">Modulo de citas</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-6 col-lg-3 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="vender_sin_stock">Vender sin stock</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-6 col-lg-3 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="editar_precio_venta">Editar precio venta</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 mt-5">
+                        <button [disabled]="saving" class="btn btn-primary float-end">
+                            <span *ngIf="!saving">Guardar</span>
+                            <span *ngIf="saving">Guardando...</span>
                         </button>
                     </div>
                 </div>

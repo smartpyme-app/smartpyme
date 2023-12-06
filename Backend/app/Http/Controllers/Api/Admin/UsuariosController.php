@@ -8,14 +8,30 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User as Usuario;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
+use Illuminate\Validation\Rules\Password;
+use JWTAuth;
 
 class UsuariosController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $usuarios = Usuario::orderBy('id','desc')->get();
+        $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+                                ->with('sucursal')
+                                ->when($request->estado !== null, function($q) use ($request){
+                                    $q->where('enable', !!$request->estado);
+                                })
+                                ->when($request->id_sucursal, function($q) use ($request){
+                                    $q->where('id_sucursal', $request->id_sucursal);
+                                })
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->where('name', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('email', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                // ->orderBy('enable', 'desc')
+                                ->orderBy($request->orden, $request->direccion)
+                                ->paginate($request->paginate);
 
         return Response()->json($usuarios, 200);
 
@@ -23,7 +39,9 @@ class UsuariosController extends Controller
 
     public function list() {
        
-        $usuarios = Usuario::where('empleado', true)->orderBy('id','desc')->get();
+        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
+                            ->where('enable', true)
+                            ->orderBy('name','asc')->get();
 
         return Response()->json($usuarios, 200);
 
@@ -38,7 +56,8 @@ class UsuariosController extends Controller
 
     public function filter(Request $request) {
 
-        $usuarios = Usuario::when($request->sucursal_id, function($query) use ($request){
+        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
+                        ->when($request->sucursal_id, function($query) use ($request){
                             return $query->where('sucursal_id', $request->sucursal_id);
                         })
                         ->when($request->tipo, function($query) use ($request){
@@ -52,7 +71,8 @@ class UsuariosController extends Controller
 
     public function search($txt) {
 
-        $usuarios = Usuario::where('name', 'like' ,'%' . $txt . '%')->paginate(15);
+        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
+                            ->where('name', 'like' ,'%' . $txt . '%')->paginate(15);
         return Response()->json($usuarios, 200);
 
     }
@@ -61,18 +81,22 @@ class UsuariosController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'      => 'required|max:255',
-            'email'  => 'required|unique:users,email,'.$request->id,
-            'tipo'      => 'required',
-            // 'caja_id'   => 'required_if:tipo,"Cajero"',
+            'name'          => 'required|max:255',
+            'email'         => 'required|unique:users,email,'.$request->id,
+            'tipo'          => 'required',
+            'id_empresa'    => 'required',
+            'id_sucursal'   => 'required',
+            'password'      => [
+                  'required_if:id,null',
+                  'confirmed',
+                  'min:8',
+                  'regex:/[a-z]/',
+                  'regex:/[A-Z]/',
+                  'regex:/[0-9]/',
+                  'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
+            ],
 
         ]);
-
-        if ($request->password) {
-            $request->validate([
-                'password' => 'required|string|min:3|confirmed'
-            ]);
-        }
 
         if($request->id)
             $usuario = Usuario::findOrFail($request->id);
@@ -85,7 +109,7 @@ class UsuariosController extends Controller
         }
        
         if (!$request->id) {
-            $request['password'] = \Hash::make('emple');
+            $request['password'] = \Hash::make('smart');
         }
         
         $usuario->fill($request->all());

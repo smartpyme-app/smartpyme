@@ -13,14 +13,16 @@ export class VentasComponent implements OnInit {
 
     public ventas:any = [];
     public venta:any = {};
-    public buscador:any = '';
     public loading:boolean = false;
+    public saving:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
+    public formaPagos:any = [];
     public documentos:any = [];
-    public filtro:any = {};
+    public canales:any = [];
+    public filtros:any = {};
     public filtrado:boolean = false;
 
     modalRef!: BsModalRef;
@@ -30,45 +32,70 @@ export class VentasComponent implements OnInit {
     ){}
 
     ngOnInit() {
+
         this.loadAll();
 
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
+        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+            this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+    }
+
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.filtrarVentas();
     }
 
     public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_cliente = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_canal = '';
+        this.filtros.id_documento = '';
+        this.filtros.forma_pago = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
+        this.filtrarVentas();
+    }
+
+    public filtrarVentas(){
         this.loading = true;
-        this.filtro.estado = '';
-        this.filtro.id_cliente = '';
-        this.filtro.inicio = this.apiService.date();
-        this.filtro.fin = this.apiService.date();
-
-        this.apiService.getAll('ventas').subscribe(ventas => { 
+        this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
             this.ventas = ventas;
-            this.loading = false;this.filtrado = false;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('ventas/buscar/', this.buscador).subscribe(ventas => { 
-                this.ventas = ventas;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
+    public setEstado(venta:any, estado:any){
+        if(estado == 'Pagada'){
+            if(confirm('¿Confirma el pago de la venta?')){
+                this.venta = venta;
+                this.venta.estado = estado;
+                this.onSubmit();
+            }
         }
-    }
+        if(estado == 'Anulada'){
+            if(confirm('¿Confirma la anulación de la venta?')){
+                this.venta = venta;
+                this.venta.estado = estado;
+                this.onSubmit();
+            }
+        }
 
-    public setEstado(venta:any){
-        this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Actualizado');
-        }, error => {this.alertService.error(error); });
     }
     
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
@@ -83,18 +110,9 @@ export class VentasComponent implements OnInit {
 
     }
 
-    public filtrar(filtro:any, txt:any){
-        this.loading = true;
-        this.apiService.read('ventas/filtrar/' + filtro + '/', txt).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
-
-    }
-
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page).subscribe(ventas => { 
+        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -106,36 +124,94 @@ export class VentasComponent implements OnInit {
 
     // Editar
 
-    openModalEdit(template: TemplateRef<any>, venta:any) {
+    public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
         
         this.apiService.getAll('documentos').subscribe(documentos => {
             this.documentos = documentos;
         }, error => {this.alertService.error(error);});
 
+        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+            this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
+
+        this.modalRef = this.modalService.show(template);
+    }
+    
+    public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+            this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
+        
+        this.apiService.getAll('documentos').subscribe(documentos => { 
+            this.documentos = documentos;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('canales').subscribe(canales => { 
+            this.canales = canales;
+        }, error => {this.alertService.error(error); });
+        
         this.modalRef = this.modalService.show(template);
     }
 
+    public openDescargar(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public descargarVentas(){
+        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ventas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar ventas:', error); }
+        );
+    }
+
+    public descargarDetalles(){
+        this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ventas-detalles.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar ventas:', error); }
+        );
+    }
+
+    public imprimir(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
+    public linkWompi(venta:any){
+        window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
     public onSubmit() {
-        this.loading = true;            
+        this.saving = true;            
         this.apiService.store('venta', this.venta).subscribe(venta => {
             this.venta = {};
-            this.modalRef.hide();
-            this.loading = false;
-            this.alertService.success("Guardado");
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.saving = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+            this.alertService.success('Venta guardado', 'La venta fue guardada exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
 
     }
 
-
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('ventas/filtrar', this.filtro).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
-    }
 
 }

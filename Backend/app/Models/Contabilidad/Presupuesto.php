@@ -30,7 +30,7 @@ class Presupuesto extends Model {
         'id_empresa',
     );
 
-    protected $casts = ['enable' => 'string'];
+    protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
     {

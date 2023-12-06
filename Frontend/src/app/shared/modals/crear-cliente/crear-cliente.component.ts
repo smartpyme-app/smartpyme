@@ -1,9 +1,9 @@
-import { Component, OnInit, TemplateRef, Output, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-crear-cliente',
@@ -12,6 +12,7 @@ import { ApiService } from '../../../services/api.service';
 export class CrearClienteComponent implements OnInit {
 
     public cliente: any = {};
+    @Input() id_cliente:any = null;
     @Output() update = new EventEmitter();
     public loading = false;
 
@@ -26,19 +27,31 @@ export class CrearClienteComponent implements OnInit {
     }
 
     openModal(template: TemplateRef<any>) {
-        this.cliente = {};
+        if(this.id_cliente){
+            this.apiService.read('cliente/', this.id_cliente).subscribe(cliente => {
+            this.cliente = cliente;
+            this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }else{
+            this.cliente = {};
+            this.cliente.tipo = 'Persona';
+            this.cliente.id_usuario = this.apiService.auth_user().id;
+            this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
+        }
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public setTipo(tipo:any){
+        this.cliente.tipo = tipo;
     }
 
     public onSubmit() {
         this.loading = true;
-        this.cliente.usuario_id = this.apiService.auth_user().id;
-        this.cliente.empresa_id = this.apiService.auth_user().empresa_id;
         this.apiService.store('cliente', this.cliente).subscribe(cliente => {
             this.update.emit(cliente);
             this.modalRef?.hide();
             this.loading = false;
-            this.alertService.success("Cliente guardado");
+            this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

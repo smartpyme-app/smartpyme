@@ -13,19 +13,20 @@ class Transaccion extends Model
        'estado',
        'metodo_pago',
        'tipo_documento',
+       'descripcion',
        'referencia',
        'total',
        'nota',
-       'empresa_id',
-       'usuario_id',
+       'id_empresa',
+       'id_usuario',
     ];
 
     public function usuario(){
-        return $this->belongsTo('App\User', 'usuario_id');
+        return $this->belongsTo('App\User', 'id_usuario');
     }
 
     public function empresa(){
-        return $this->belongsTo('App\Models\Admin\Empresa', 'empresa_id');
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
 }

@@ -4,14 +4,7 @@ import { AdminGuard } from '@guards/admin.guard';
 import { LayoutComponent } from '@layout/layout.component';
 
 import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupuestos.component';
-
-import { LibroIvaComponent } from '@views/contabilidad/libro-iva/libro-iva.component';
-import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
-import { CajasChicasComponent } from '@views/contabilidad/cajas-chicas/cajas-chicas.component';
-import { CajaChicaComponent } from '@views/contabilidad/cajas-chicas/caja-chica/caja-chica.component';
-import { ActivosComponent }     from '@views/contabilidad/activos/activos.component';
-import { ActivoComponent }     from '@views/contabilidad/activos/activo/activo.component';
-import { ActivosCategoriasComponent }     from '@views/contabilidad/activos/categorias/activos-categorias.component';
+import { PresupuestoComponent } from '@views/contabilidad/presupuestos/presupuesto/presupuesto.component';
 
 const routes: Routes = [
   {
@@ -19,18 +12,9 @@ const routes: Routes = [
     component: LayoutComponent,
     children: [
         { path: 'presupuestos', component: PresupuestosComponent },
-        { path: 'presupuesto/crear', component: PresupuestosComponent },
 
-        { path: 'libro-iva', component: LibroIvaComponent },
-        { path: 'libro-compras', component: LibroComprasComponent },
-      
-        { path: 'cajas-chicas', component: CajasChicasComponent, canActivate: [AdminGuard]},
-        { path: 'caja-chica/:id', component: CajaChicaComponent },
-
-        { path: 'activos', component: ActivosComponent, canActivate: [AdminGuard]},
-        { path: 'activo/:id', component: ActivoComponent, canActivate: [AdminGuard]},
-
-        { path: 'activos/categorias', component: ActivosCategoriasComponent, canActivate: [AdminGuard]},
+        { path: 'presupuesto/crear', component: PresupuestoComponent, title: 'Presupuesto'},
+        { path: 'presupuesto/editar/:id', component: PresupuestoComponent, title: 'Presupuesto'},
     ]
   }
 ];

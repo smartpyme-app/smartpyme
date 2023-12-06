@@ -37,7 +37,7 @@ export class CrearCargoEmpleadoComponent implements OnInit {
             this.update.emit(cargo);
             this.modalRef?.hide();
             this.loading = false;
-            this.alertService.success("Cargo guardada");
+            this.alertService.success('Cargo creado', 'El cargo ha sido agregado.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

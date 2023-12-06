@@ -1,17 +1,17 @@
 
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Kardex</h2>
-    <!-- <button routerLink="/producto/crear" tooltip="Crear producto (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir producto</button> -->
+<section class="bg-white p-4 rounded mb-3">
+    <h2>Kardex</h2>
+    <h4>{{ producto.nombre }}</h4>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
     <div class="col-12">
         <form name="form" (ngSubmit)="loadAll()" class="row">
             <div class="form-group col-md-6 col-lg-3">
-                <label for="">Inventario: </label>
-                <select class="form-control form-select" [(ngModel)]="filtro.bodega_id" name="bodega_id">
-                    <option [value]="bodega.id" *ngFor="let bodega of bodegas">
-                        {{ bodega.nombre }}
+                <label for="">Sucursal: </label>
+                <select class="form-control form-select" [(ngModel)]="filtro.id_sucursal" name="id_sucursal">
+                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                        {{ sucursal.nombre }}
                     </option>
                 </select>
             </div>
@@ -73,10 +73,10 @@
                 <tbody>
                     <tr>
                         <td colspan="11" class="text-center" *ngIf="producto?.movimientos?.length < 1 && !loading">
-                            <span class="badge badge-primary">No tiene movimientos registradas</span>
+                            <span class="badge bg-primary">No tiene movimientos registradas</span>
                         </td>
                         <td colspan="11" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
+                            <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 

@@ -14,50 +14,37 @@ class ProveedoresController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $proveedores = Proveedor::orderBy('id','desc')->paginate(10);
+        $proveedores = Proveedor::withSum('compras', 'total')
+                    ->when($request->buscador, function($query) use ($request){
+                        return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                    ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
+                    })
+                    ->when($request->estado !== null, function($q) use ($request){
+                        $q->where('enable', !!$request->estado);
+                    })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->paginate($request->paginate);
+
         return Response()->json($proveedores, 200);
 
     }
 
     public function list() {
 
-        $proveedores = Proveedor::orderBy('nombre','asc')->get();
+        $proveedores = Proveedor::orderBy('nombre','asc')
+                                ->where('enable', true)
+                                ->get();
         
         return Response()->json($proveedores, 200);
 
     }
 
-
-    public function search($txt) {
-
-        $proveedores = Proveedor::where('nombre', 'like' ,'%' . $txt . '%')
-                            ->orWhere('etiquetas', 'like' ,'%' . $txt . '%')
-                            ->orWhere('registro', 'like' ,'%' . $txt . '%')
-                            ->paginate(10);
-
-        return Response()->json($proveedores, 200);
-
-    }
-
-    public function filter(Request $request) {
-
-        $proveedores = Proveedor::when($request->nombre, function($query) use ($request){
-                                return $query->where('nombre', 'like',  '%'.$request->nombre .'%')
-                                            ->orwhere('nit', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('giro', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('telefono', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('ncr', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('dui', 'like',  '%'. $request->nombre .'%');
-                            })
-                            ->when($request->estado, function($query) use ($request){
-                                return $query->where('enable', $request->estado);
-                            })
-                            ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($proveedores, 200);
-    }
 
     public function read($id) {
 

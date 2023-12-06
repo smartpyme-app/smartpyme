@@ -22,7 +22,7 @@ class CategoriasController extends Controller
     {
         $request->validate([
             'nombre'  => 'required',
-            'empresa_id'   => 'required',
+            'id_empresa'   => 'required',
         ]);
 
         if($request->id)

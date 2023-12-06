@@ -18,6 +18,9 @@ import { VentaComponent } from '@views/ventas/venta/venta.component';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
+import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
+import { BancosComponent } from '@views/ventas/bancos/bancos.component';
+import { ImpuestosComponent } from '@views/ventas/impuestos/impuestos.component';
 import { DocumentosComponent } from '@views/ventas/documentos/documentos.component';
 
 import { DevolucionesVentasComponent } from '@views/ventas/devoluciones/devoluciones-ventas.component';
@@ -45,6 +48,9 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
     VentaComponent,
     CotizacionesComponent,
     CanalesComponent,
+    FormasDePagoComponent,
+    BancosComponent,
+    ImpuestosComponent,
     DocumentosComponent,
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
@@ -56,6 +62,9 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
     VentaComponent,
     CotizacionesComponent,
     CanalesComponent,
+    FormasDePagoComponent,
+    BancosComponent,
+    ImpuestosComponent,
     DocumentosComponent,
     DevolucionesVentasComponent,
     DevolucionVentaComponent,

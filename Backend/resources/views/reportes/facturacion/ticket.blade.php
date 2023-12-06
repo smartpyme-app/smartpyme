@@ -2,11 +2,17 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
+  <script language="javascript">setTimeout("self.close();",500)</script>
   <title>Ticket</title>
-  <style>
+  <style media="all">
     h1, h2, h3{
         margin: 3pt;
+    }
+    .header, .footer{
+        text-align: center;
+    }
+    .header img{
+        height: 100px;
     }
     html, body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -16,131 +22,143 @@
         padding: 0pt;
         font-size: 9pt;
     }
-    hr { border: none; height: 2px; /* Set the hr color */ color: #000; /* old IE */ background-color: #333; /* Modern Browsers */ }
 
-    p{ margin: 0px; };
-    table{width: 100%; margin: auto; text-align: left; border-collapse: collapse;}
+    p{ margin: 0px; }
     table td{height: 12pt;}
     .text-center { text-align: center; }
     .text-right { text-align: right; }
-    .no-print{position: absolute;}
+    .text-left { text-align: left; }
   </style>
   
   <style media="print"> .no-print{display: none; } </style>
 
 </head>
-{{-- <body> --}}
 <body onload="javascript:print();">
-    <p class="no-print">
-        <button onClick="window.print();" autofocus>Imprimir</button>
-        <button onClick="window.close();" autofocus>Cerrar</button>
-        <br><br>
-    </p>
-    <br>
-    
-    <div class="text-center">
-        <h3>{{ $empresa->nombre }}</h3>
-        <p>{{ $empresa->sector }}</p>
-        <p>{{ $empresa->propietario }}</p>
-        <p>{{ $empresa->direccion }}</p>
-        <p><b>Fecha:</b> {{ $venta->created_at->format('d-m-Y h:i:s a') }}</p>
-        <p><b>NIT:</b> {{ $empresa->nit }}</p> 
-        <p><b>NCR:</b> {{ $empresa->ncr }} </p>
-        <p><b>GIRO:</b> {{ $empresa->giro }}</p>
-        <p><b>CATEGORIA:</b> {{ $empresa->tamano }}<p>
-        <p><b>TELÉFONO:</b> {{ $empresa->telefono }}</p>
-        <p><b>CORTE N°:</b> {{ $venta->corte_id }}</p>
-        <p><b>VENTA N°:</b> {{ $venta->id }}</p>
-        <p><b>TICKET:</b> T{{ $venta->correlativo}}</p>
-        <p><b>CLIENTE:</b> {{ $venta->nombre_cliente}}</p>
-        <p><b>VENDEDOR:</b> {{ $venta->nombre_usuario }}</p>
-        <p><b>CONDICIÓN:</b> {{ $venta->condicion }}</p>
-    <hr>
-    </div>
 
-    <table style="margin: auto;">
+    <div class="header">
+        <p class="no-print">
+            <button onClick="window.print();" autofocus>Imprimir</button>
+            <button onClick="window.close();" autofocus>Cerrar</button>
+            <br><br>
+        </p>
+        <br>
+        @if ($empresa->logo)
+            <img src="{{asset($empresa->logo)}}" alt="Logo">
+        @endif
+        @if ($venta->sucursal()->first())
+            <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
+        @else
+            <h3>{{ $empresa->nombre }}</h3>
+        @endif
+        <p>{{ $empresa->sector }}</p>
+        <p>{{ $empresa->nombre_propietario }}</p>
+
+        @if ($venta->sucursal()->first())
+            <p>{{ $venta->sucursal()->first()->direccion }}</p>
+        @else
+            <p>{{ $empresa->direccion }}</p>
+        @endif
+        @if($empresa->ncr)
+            <p><b>NCR:</b> {{ $empresa->ncr }} </p>
+        @endif
+        @if($empresa->nit)
+            <p><b>NIT:</b> {{ $empresa->nit }}</p>
+        @endif
+        @if($empresa->giro)
+            <p><b>GIRO:</b> {{ $empresa->giro }}</p>
+        @endif
+
+        @if ($venta->sucursal()->first()->telefono)
+            <p><b>TELÉFONO:</b> {{ $venta->sucursal()->first()->telefono }}</p>
+        @elseif($empresa->telefono)
+            <p><b>TELÉFONO:</b> {{ $empresa->telefono }}</p>
+        @endif
+
+
+        <p>
+            <b>FECHA Y HORA:</b> <br>
+            {{ \Carbon\Carbon::parse($venta->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($venta->created_at)->format('h:i:s a') }}
+        </p>
+        <p><b>TICKET:</b># {{ $venta->correlativo }}</p>
+        <p><b>CAJERO:</b> {{ $venta->nombre_usuario }}</p>
+
+        @if ($venta->cliente())
+            <p><b>Cliente:</b></p>
+            <p>Nombre: {{ $venta->cliente }}</p> 
+            @if ($venta->cliente()->pluck('telefono')->first())
+                <p>Teléfono: {{ $venta->cliente()->pluck('telefono')->first() }}</p> 
+            @endif
+            @if ($venta->cliente()->pluck('direccion')->first())
+                <p>Dirección: {{ $venta->cliente()->pluck('direccion')->first() }}</p> 
+            @endif
+        @endif
+    </div>
+    
+    <hr style="margin: 5px;">
+
+    <table style="width: 100%; margin: auto;">
         <thead>
             <tr>
-                {{-- <th>Productos</th> --}}
-                <th>Cantidad</th>
-                <th class="text-center">Precio</th>
-                <th class="text-right">Total</th>
+                <th class="text-left">DETALLE</th>
+                <th width="50px" class="text-center">CANT</th>
+                <th width="50px" class="text-center">P.U.</th>
+                <th width="50px" class="text-right">TOTAL</th>
             </tr>
         </thead>
         <tbody>
-        @foreach($venta->detalles as $detalle)
+            @php($iva = 13 / 100);
+            @foreach($venta->detalles as $detalle)
             <tr>
-                <td colspan="3"> {{ $detalle->nombre_producto  }}</td>
+                <td>
+                    {{ $detalle->nombre_producto }}
+                    @if ($detalle->producto()->first()->promocion()->first())
+                      @foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det)
+                        <p style="font-size: 8px !important; margin: 0px;">{{ $det->nombre_producto }} x {{ $det->cantidad }}</p>
+                      @endforeach
+                    @endif
+                </td>
+                <td class="text-center">{{ $detalle->cantidad }}</td>
+                <td class="text-center">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="text-right">${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }}G</td>
             </tr>
-            <tr>
-                <td> {{ number_format($detalle->cantidad, 2) }}</td>
-                <td class="text-center">   ${{ number_format($detalle->precio + $detalle->iva, 2 ) }}</td>
-                <td class="text-right"> ${{ number_format($detalle->total, 2) }}G </th>
-            </tr>
-        @endforeach
+            @endforeach
         </tbody>
+        <tfoot>
+            <tr class="mt-4">
+                <td class="text-right" colspan="3">GRAVADO:</td>
+                <td class="text-right">${{number_format($venta->total,2) }}</td>
+            </tr>
+            <tr>
+                <td class="text-right" colspan="3">EXENTO:</td>
+                <td class="text-right">$0.00</td>
+            </tr>
+            <tr>
+                <td class="text-right" colspan="3">NO SUJETO:</td>
+                <td class="text-right">$0.00</td>
+            </tr>
+            @if ($venta->costo_envio)
+                <tr>
+                    <td class="text-right" colspan="3">ENVIO:</td>
+                    <td class="text-right">${{number_format($venta->costo_envio,2)}}</td>
+                </tr>
+            @endif
+            <tr>
+                <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
+                <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
+            </tr>
+        </tfoot>
     </table>
-    <hr>
-    <table style="margin: auto;">
-        <tbody>
-            <tr>
-                <td>Exenta:</td>
-                <td><b>${{ number_format($venta->exenta, 2) }}</b></td>
-            </tr>
-            <tr>
-                <td>No sujeta:</td>
-                <td><b>${{ number_format($venta->no_sujeta, 2) }}</b></td>
-            </tr>
-            <tr>
-                <td>Gravada:</td>
-                <td><b>${{ number_format($venta->gravada, 2) }}</b></td>
-            </tr>
-            <tr>
-                <td>Descuento:</td>
-                <td><b>${{ number_format($venta->descuento, 2) }}</b></td>
-            </tr>
-            <tr>
-                <td>Sub total:</td>
-                <td><b>${{ number_format($venta->subtotal, 2) }}</b></td>
-            </tr>
-            <tr>
-                <td>IVA:</td>
-                <td><b>${{ number_format($venta->iva, 2) }}</b></td>
-            </tr>
-            {{-- <tr>
-                <td>Propina:</td>
-                <td><b>${{ number_format($venta->propina, 2) }}</b></td>
-            </tr> --}}
-        </tbody>
-    </table>
-    <hr>
+    <br>
+    <hr style="margin: 5px;">
+    
+    <p class="text-center">
+        EFECTIVO: ${{ number_format($venta->monto_pago,2)}} | CAMBIO: ${{ number_format($venta->cambio,2)}}</td>
+    </p>
 
-    <h2 class="text-center">
-        <b>TOTAL: 
-        <span style="margin-left: 20px;">${{ number_format($venta->total, 2) }}</span></b>
-    </h2>
-    <hr>
-    <table style="margin: auto;">
-        <tbody>
-            <tr>
-                <td class="text-center">Efectivo:</td>
-                <td>${{ number_format($venta->recibido, 2) }}</td>
-            </tr>
-            <tr>
-                <td class="text-center">Importe:</td>
-                <td>${{ number_format($venta->total, 2) }}</td>
-            </tr>
-            <tr>
-                <td class="text-center">Su Cambio:</td>
-                <td><b>${{ number_format($venta->recibido - $venta->total, 2) }}</b></td>
-            </tr>
-        </tbody>
-    </table>
-    <hr>
 
     <p class="text-center"><small>G = GRAVADO &nbsp;&nbsp; E = EXENTO &nbsp;&nbsp; N = NO SUJETO</small></p>
 
-    @if($venta->total_venta > 200)
+    @if($venta->total > 200)
     <br>
     {{-- <p>LLENAR SI LA VENTA ES MAYOR/IGUAL A $200.00</p> --}}
     <table>
@@ -164,22 +182,22 @@
         </tbody>
     </table>
     @endif
+    <br>
 
-    <div class="footer text-center">
-        <br><br>
-        @if ($venta->documento()->pluck('rangos')->first())
-            <p>SERIE AUTORIZADA: <br> {{ $venta->documento()->pluck('rangos')->first() }}</p>
+    <div class="footer">
+        @if ($documento->rangos)
+            <p>SERIE AUTORIZADA: <br> {{ $documento->rangos }}</p>
         @endif
-        @if ($venta->documento()->pluck('resolucion')->first())
-            <p>RESOLUCIÓN: <br> {{ $venta->documento()->pluck('resolucion')->first() }}</p>
+        @if ($documento->resolucion)
+            <p>RESOLUCIÓN: <br> {{ $documento->resolucion }}</p>
         @endif
-        @if ($venta->documento()->pluck('fecha')->first())
+        @if ($documento->fecha)
             <p>DE FECHA: <br>
                 <?php
                  
                 $meses = array("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre");
                  
-                echo \Carbon\Carbon::parse($venta->documento()->pluck('fecha')->first())->format('d')." de ".$meses[\Carbon\Carbon::parse($venta->documento()->pluck('fecha')->first())->format('m') - 1]. " del " . \Carbon\Carbon::parse($venta->documento()->pluck('fecha')->first())->format('Y') ;
+                echo \Carbon\Carbon::parse($documento->fecha)->format('d')." de ".$meses[\Carbon\Carbon::parse($documento->fecha)->format('m') - 1]. " del " . \Carbon\Carbon::parse($documento->fecha)->format('Y') ;
                 //Salida: Miercoles 05 de Septiembre del 2016
                  
                 ?>
@@ -187,13 +205,13 @@
         @endif
     </div>
     <br><br>
-    @if ($venta->documento()->pluck('nota')->first())
-        <p class="text-center">{!! str_replace(chr(10),"<br>",$venta->documento()->pluck('nota')->first()) !!}</p>
+    @if ($documento->nota)
+        <p class="text-center">{!! str_replace(chr(10),"<br>",$documento->nota) !!}</p>
     @endif
 
     <br><br><br><br>
     <p style="color: #fff;">.</p>
 
-
 </body>
+
 </html>

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/buscar/{txt}',             [ProductosController::class, 'search']);
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
     Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
@@ -50,10 +51,10 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     
 // Promociones
-    Route::get('/productos/promociones',        [PromocionesController::class, 'index']);
-    Route::post('/producto/promocion',          [PromocionesController::class, 'store']);
-    Route::delete('/producto/promocion/{id}',   [PromocionesController::class, 'delete']);
-    Route::get('/producto/promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
+    Route::get('promociones',        [PromocionesController::class, 'index']);
+    Route::post('promocion',          [PromocionesController::class, 'store']);
+    Route::delete('promocion/{id}',   [PromocionesController::class, 'delete']);
+    Route::get('promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
 
 // Imagenes
     Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
@@ -63,7 +64,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::get('/producto/ajustes/{id}',          [ProductosController::class, 'ajustes']);
     Route::get('/producto/ventas/{id}',          [ProductosController::class, 'ventas']);
 
-    Route::post('/productos/import',          [ProductosController::class, 'import']);
-    Route::get('/productos/export',          [ProductosController::class, 'export']);
+    Route::post('/productos/importar',          [ProductosController::class, 'import']);
+    Route::get('/productos/exportar',          [ProductosController::class, 'export']);
 
 ?>

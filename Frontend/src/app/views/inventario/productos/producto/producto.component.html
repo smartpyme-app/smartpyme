@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <h3 (click)="loadAll()">{{ producto.id ? 'Editar ' : 'Crear ' }} {{ producto.tipo }}</h3>
+    <h3 (click)="loadAll()">{{ producto.id ? 'Editar ' : 'Crear ' }} {{ producto.tipo == 'Servicio' ? 'Servicio' : 'Producto' }}</h3>
     <button class="btn btn-light text-danger" routerLink="/{{ apiService.slug(producto.tipo) }}s">Cancelar <i class="fa fa-close"></i></button>
 </div>
 
@@ -8,6 +8,11 @@
         <div class="col-md-12">
             <app-producto-informacion [producto]='producto'></app-producto-informacion>
         </div>
+    </div>
+</div>
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo =='Compuesto'">
+    <div class="col-lg-12">
+        <app-producto-composicion [producto]='producto'></app-producto-composicion>
     </div>
 </div>
 <div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
@@ -29,18 +34,4 @@
     <div class="col-md-12">
         <app-producto-imagenes [producto]='producto'></app-producto-imagenes>
     </div>
-   <!--  <div class="col-lg-12" *ngIf="producto.id && producto.tipo =='Producto'">
-        <div class="card">
-            <div class="card-body">
-                <app-producto-composicion [producto]='producto'></app-producto-composicion>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-12" *ngIf="producto.id && producto.tipo !='Servicio'">
-        <div class="card">
-            <div class="card-body">
-                <app-producto-promociones [producto]='producto'></app-producto-promociones>
-            </div>
-        </div>
-    </div> -->
 </div>

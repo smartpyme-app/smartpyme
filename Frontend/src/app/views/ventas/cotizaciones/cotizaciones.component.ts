@@ -11,16 +11,15 @@ import { ApiService } from '@services/api.service';
 
 export class CotizacionesComponent implements OnInit {
 
-    public cotizaciones:any = [];
+    public ventas:any = [];
     public venta:any = {};
-    public buscador:any = '';
     public loading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
     public documentos:any = [];
-    public filtro:any = {};
+    public filtros:any = {};
     public filtrado:boolean = false;
 
     modalRef!: BsModalRef;
@@ -30,6 +29,7 @@ export class CotizacionesComponent implements OnInit {
     ){}
 
     ngOnInit() {
+
         this.loadAll();
 
         this.apiService.getAll('clientes/list').subscribe(clientes => { 
@@ -37,32 +37,43 @@ export class CotizacionesComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public loadAll() {
-        this.loading = true;
-        this.filtro.estado = '';
-        this.filtro.id_cliente = '';
-        this.filtro.inicio = this.apiService.date();
-        this.filtro.fin = this.apiService.date();
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
 
-        this.apiService.getAll('cotizaciones').subscribe(cotizaciones => { 
-            this.cotizaciones = cotizaciones;
-            this.loading = false;this.filtrado = false;
+        this.filtrarVentas();
+    }
+
+    public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_cliente = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+        
+        this.filtrarVentas();
+    }
+
+    public filtrarVentas(){
+        this.loading = true;
+        this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => { 
+            this.ventas = ventas;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); });
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('cotizaciones/buscar/', this.buscador).subscribe(cotizaciones => { 
-                this.cotizaciones = cotizaciones;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
-        }
-    }
-
-    public setEstado(venta:any){
-        this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Actualizado');
+    public setEstado(cotizacion:any){
+        this.apiService.store('cotizacion', cotizacion).subscribe(cotizacion => { 
+            this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
     
@@ -73,9 +84,9 @@ export class CotizacionesComponent implements OnInit {
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('venta/', id) .subscribe(data => {
-                for (let i = 0; i < this.cotizaciones['data'].length; i++) { 
-                    if (this.cotizaciones['data'][i].id == data.id )
-                        this.cotizaciones['data'].splice(i, 1);
+                for (let i = 0; i < this.ventas['data'].length; i++) { 
+                    if (this.ventas['data'][i].id == data.id )
+                        this.ventas['data'].splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
                    
@@ -85,8 +96,8 @@ export class CotizacionesComponent implements OnInit {
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
-        this.apiService.read('cotizaciones/filtrar/' + filtro + '/', txt).subscribe(cotizaciones => { 
-            this.cotizaciones = cotizaciones;
+        this.apiService.read('ventas/filtrar/' + filtro + '/', txt).subscribe(ventas => { 
+            this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); });
 
@@ -94,8 +105,8 @@ export class CotizacionesComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.cotizaciones.path + '?page='+ event.page).subscribe(cotizaciones => { 
-            this.cotizaciones = cotizaciones;
+        this.apiService.paginate(this.ventas.path + '?page='+ event.page).subscribe(ventas => { 
+            this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
@@ -118,24 +129,14 @@ export class CotizacionesComponent implements OnInit {
 
     public onSubmit() {
         this.loading = true;            
-        this.apiService.store('venta', this.venta).subscribe(venta => {
+        this.apiService.store('cotizacion', this.venta).subscribe(venta => {
             this.venta = {};
             this.modalRef.hide();
             this.loading = false;
-            this.alertService.success("Guardado");
+            this.alertService.success('Cotización guardado', 'La cotización fue guardado exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
 
     }
 
-
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('cotizaciones/filtrar', this.filtro).subscribe(cotizaciones => { 
-            this.cotizaciones = cotizaciones;
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
-    }
 
 }

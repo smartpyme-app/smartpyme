@@ -39,7 +39,7 @@ export class CuentasCobrarComponent implements OnInit {
     public setEstado(venta:any, estado:string){
         venta.estado = estado;
         this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Actualizado');
+            this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 

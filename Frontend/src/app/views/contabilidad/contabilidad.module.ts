@@ -11,18 +11,8 @@ import { NgChartsModule } from 'ng2-charts';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { ContabilidadRoutingModule } from './contabilidad.routing.module';
-
-import { LibroIvaComponent } from './libro-iva/libro-iva.component';
-import { LibroComprasComponent } from './libro-compras/libro-compras.component';
 import { PresupuestosComponent } from './presupuestos/presupuestos.component';
-
-import { CajasChicasComponent } from './cajas-chicas/cajas-chicas.component';
-import { CajaChicaComponent } from './cajas-chicas/caja-chica/caja-chica.component';
-import { CajaChicaDetallesComponent } from './cajas-chicas/caja-chica/detalles/caja-chica-detalles.component';
-
-import { ActivosComponent } from './activos/activos.component';
-import { ActivoComponent } from './activos/activo/activo.component';
-import { ActivosCategoriasComponent } from './activos/categorias/activos-categorias.component';
+import { PresupuestoComponent } from './presupuestos/presupuesto/presupuesto.component';
 
 @NgModule({
   imports: [
@@ -39,26 +29,12 @@ import { ActivosCategoriasComponent } from './activos/categorias/activos-categor
     TooltipModule.forRoot()
   ],
   declarations: [
-    LibroIvaComponent,
-  	LibroComprasComponent,
     PresupuestosComponent,
-    CajasChicasComponent,
-    CajaChicaComponent,
-    CajaChicaDetallesComponent,
-    ActivosComponent,
-    ActivoComponent,
-    ActivosCategoriasComponent
+    PresupuestoComponent
   ],
   exports: [
-    LibroIvaComponent,
-  	LibroComprasComponent,
     PresupuestosComponent,
-    CajasChicasComponent,
-    CajaChicaComponent,
-    CajaChicaDetallesComponent,
-    ActivosComponent,
-    ActivoComponent,
-    ActivosCategoriasComponent
+    PresupuestoComponent
   ]
 })
 export class ContabilidadModule { }

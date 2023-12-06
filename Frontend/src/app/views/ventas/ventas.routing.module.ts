@@ -8,6 +8,8 @@ import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
+import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
+import { ImpuestosComponent } from '@views/ventas/impuestos/impuestos.component';
 import { DocumentosComponent } from '@views/ventas/documentos/documentos.component';
 
 import { DevolucionesVentasComponent } from '@views/ventas/devoluciones/devoluciones-ventas.component';
@@ -31,14 +33,17 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Ventas',
     children: [
-        { path: 'facturacion', component: FacturacionComponent, title: 'Facturación'},
 
-        { path: 'cotizaciones', component: CotizacionesComponent },
+        { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
 
         { path: 'ventas', component: VentasComponent, title: 'Ventas'},
+        { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
+        { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
     // 
         { path: 'canales', component: CanalesComponent, title: 'Canales de venta'},
+        { path: 'formas-de-pago', component: FormasDePagoComponent, title: 'Formas de pago'},
+        { path: 'impuestos', component: ImpuestosComponent, title: 'Impuestos'},
         { path: 'documentos', component: DocumentosComponent, title: 'Documentos'},
 
         { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas'},

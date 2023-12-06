@@ -82,34 +82,38 @@ export class DatosComponent implements OnInit {
 
     ngOnInit() {
 
-        if (this.dash?.total_ventas_semana) {
+
+    }
+
+    ngOnChanges(){
+
+        if (this.dash?.totales_ventas) {
             new Chartist.Line('#chart-ventas', {
-                labels:[this.dash?.total_ventas_semana.map(function(a:any) {return a.dia})],
-                series: [this.dash?.total_ventas_semana.map(function(a:any) {return a.total})]
+                labels:[this.dash?.totales_ventas.map(function(a:any) {return a.time})],
+                series: [this.dash?.totales_ventas.map(function(a:any) {return a.total})]
             }, this.option);
         }
         
-        if (this.dash?.total_salidas_semana) {
+        if (this.dash?.totales_salidas) {
             new Chartist.Line('#chart-salidas', {
-                labels:[this.dash?.total_salidas_semana.map(function(a:any) {return a.dia})],
-                series: [this.dash?.total_salidas_semana.map(function(a:any) {return a.total})]
+                labels:[this.dash?.totales_salidas.map(function(a:any) {return a.time})],
+                series: [this.dash?.totales_salidas.map(function(a:any) {return a.total})]
             }, this.option);
         }
 
-        if (this.dash?.total_transacciones_semana) {
+        if (this.dash?.totales_transacciones) {
             new Chartist.Line('#chart-transacciones', {
-                labels:[this.dash?.total_transacciones_semana.map(function(a:any) {return a.dia})],
-                series: [this.dash?.total_transacciones_semana.map(function(a:any) {return a.total})]
+                labels:[this.dash?.totales_transacciones.map(function(a:any) {return a.time})],
+                series: [this.dash?.totales_transacciones.map(function(a:any) {return a.total})]
             }, this.option);
         }
-        if (this.dash?.total_balance_semana) {
+        if (this.dash?.totales_balance) {
             new Chartist.Line('#chart-balance', {
-                labels:[this.dash?.total_balance_semana.map(function(a:any) {return a.dia})],
-                series: [this.dash?.total_balance_semana.map(function(a:any) {return a.total})]
+                labels:[this.dash?.totales_balance.map(function(a:any) {return a.time})],
+                series: [this.dash?.totales_balance.map(function(a:any) {return a.total})]
             }, this.option);
         }
 
     }
-
 
 }

@@ -97,7 +97,7 @@ export class UsuarioComponent implements OnInit {
 	        this.usuario = usuario;
 	        this.loading = false;
 	        this.preview = false;
-	        this.alertService.success("Usuario guardado");
+	        this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
 	    },error => {this.alertService.error(error); this.loading = false; });
 
 	}

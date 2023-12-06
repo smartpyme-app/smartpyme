@@ -13,24 +13,19 @@ class Detalle extends Model {
         'precio',
         'costo',
         'descuento',
-        'subcosto',
-        'subtotal',
-        'no_sujeta',
-        'exenta',
-        'gravada',
-        'iva',
+        // 'total_costo',
         'total',
         'id_venta'
     );
 
-    protected $appends = ['nombre_producto', 'medida'];
+    protected $appends = ['nombre_producto', 'img'];
 
     public function getNombreProductoAttribute(){
         return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
     }
 
-    public function getMedidaAttribute(){
-        return $this->producto()->withoutGlobalScopes()->pluck('medida')->first();
+    public function getImgAttribute(){
+        return $this->producto()->withoutGlobalScopes()->first()->img;
     }
 
     public function producto(){

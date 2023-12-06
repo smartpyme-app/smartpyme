@@ -51,16 +51,16 @@ export class ProductoVentasComponent implements OnInit {
         }
     }
 
-    public setEstado(compra:any, estado:string){
-        compra.estado = estado;
-        this.apiService.store('compra', compra).subscribe(compra => { 
-            this.alertService.success('Actualizado');
+    public setEstado(venta:any, estado:string){
+        venta.estado = estado;
+        this.apiService.store('venta', venta).subscribe(venta => { 
+            this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente');
         }, error => {this.alertService.error(error); });
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('compra/', id) .subscribe(data => {
+            this.apiService.delete('venta/', id) .subscribe(data => {
                 for (let i = 0; i < this.ventas['data'].length; i++) { 
                     if (this.ventas['data'][i].id == data.id )
                         this.ventas['data'].splice(i, 1);

@@ -1,16 +1,7 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading" (click)="loadAll()">Devoluciones de venta <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item"><a routerLink="/devoluciones/ventas">Devoluciones</a></li>
-            <li class="breadcrumb-item"><a>Devolucion</a></li>
-        </ol>
-    </div>
-</div>
-
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading">Devolución de venta</h2>
+    <button class="btn btn-light text-danger" routerLink="/devoluciones/ventas">Cancelar <i class="fa fa-close"></i></button>
+</section>
 <div class="card">
     <div class="card-body">
         <h4 class="card-title text-center">
@@ -74,7 +65,7 @@
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Sub Total:</b></td>
-                        <td class="text-center"><b>{{ venta?.subtotal | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-center"><b>{{ venta?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-right"></td>

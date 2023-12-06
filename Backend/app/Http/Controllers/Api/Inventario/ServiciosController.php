@@ -14,11 +14,35 @@ class ServiciosController extends Controller
 {
     
 
-    public function index() {
-       
-        $servicios = Servicio::where('tipo', 'Servicio')
-                                // ->whereNull('codigo')
-                                ->orderBy('id','desc')->paginate(10);
+    public function index(Request $request) {
+
+        $servicios = Servicio::with('inventarios')
+                                ->when($request->id_categoria, function($query) use ($request){
+                                    return $query->where('id_categoria', $request->id_categoria);
+                                })
+                                ->when($request->id_sucursal, function($q) use ($request){
+                                    $q->whereHas('inventarios', function($q) use ($request){
+                                        return $q->where('id_sucursal', $request->id_sucursal);
+                                    });
+                                })
+                                ->when($request->id_proveedor, function($q) use ($request){
+                                    $q->whereHas('proveedores', function($q) use ($request){
+                                        return $q->where('id_proveedor', $request->id_proveedor);
+                                    });
+                                })
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('codigo', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('barcode', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('etiquetas', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('marca', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                ->where('tipo', 'Servicio')
+                                ->whereNotIn('id_categoria', [1,2])
+                                ->orderBy('enable', 'desc')
+                                ->orderBy($request->orden, $request->direccion)
+                                ->paginate($request->paginate);
 
         return Response()->json($servicios, 200);
 
@@ -26,19 +50,12 @@ class ServiciosController extends Controller
 
     public function list() {
        
-        $servicios = Servicio::where('tipo', 'Servicio')->orderby('nombre')->get();
+        $servicios = Servicio::where('tipo', 'Servicio')
+                                ->orderby('nombre')
+                                ->where('enable', true)
+                                ->get();
 
         return Response()->json($servicios, 200);
-
-    }
-
-
-    public function porCodigo($codigo) {
-       
-        // $producto = Servicio::where('tipo', 'Servicio')->where('codigo', $codigo )->first();
-        $producto = Servicio::where('tipo', 'Servicio')->where('codigo', $codigo )->get();
-
-        return Response()->json($producto, 200);
 
     }
 
@@ -47,39 +64,6 @@ class ServiciosController extends Controller
         $producto = Servicio::where('tipo', 'Servicio')->where('id', $id)->with('composiciones', 'promociones', 'imagenes', 'sucursales')->first();
         return Response()->json($producto, 200);
 
-    }
-
-    public function search($txt) {
-
-        $servicios = Servicio::where('tipo', 'Servicio')
-                                ->where('nombre', 'like' ,'%' . $txt . '%')
-                                ->orwhere('codigo', 'like' ,'%' . $txt . '%')
-                                ->paginate(10);
-        return Response()->json($servicios, 200);
-
-    }
-
-    public function searchAll($txt) {
-
-        $servicios = Servicio::where('nombre', 'like' ,'%' . $txt . '%')
-                                ->orwhere('codigo', 'like' ,'%' . $txt . '%')
-                                ->paginate(10);
-        return Response()->json($servicios, 200);
-
-    }
-
-    public function filter(Request $request) {
-
-            $servicios = Servicio::where('tipo', 'Servicio')->with('inventarios')
-                                ->when($request->id_categoria, function($query) use ($request){
-                                    return $query->where('id_categoria', $request->id_categoria);
-                                })
-                                ->when($request->estado, function($query) use ($request){
-                                    return $query->where('enable', $request->estado);
-                                })
-                                ->orderBy('id','desc')->paginate(100000);
-
-            return Response()->json($servicios, 200);
     }
 
     public function store(Request $request)

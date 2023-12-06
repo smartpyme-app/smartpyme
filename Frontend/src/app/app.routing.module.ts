@@ -6,19 +6,19 @@ import { AdminGuard } from './guards/admin.guard';
 
 import { NotFoundComponent }    from './shared/404/not-found.component';
 import { LoginComponent }    from './auth/login/login.component';
+import { RegisterComponent }    from './auth/register/register.component';
+import { PagoComponent }    from './auth/register/pago/pago.component';
 import { LockComponent }    from './auth/lock/lock.component';
 import { ForgetComponent }    from './auth/forget/forget.component';
-import { AsistenciaComponent }     from './views/empleados/asistencias/asistencia/asistencia.component';
-
 import { QuicklinkStrategy } from 'ngx-quicklink';
 
 const routes: Routes = [
 
     { path: 'login',    component: LoginComponent, title: 'Inicio de sesión' },
+    { path: 'registro',    component: RegisterComponent, title: 'Registro' },
+    { path: 'pago',    component: PagoComponent, title: 'Pago' },
     { path: 'restablecer-cuenta',    component: ForgetComponent, title: 'Restablecer contraseña' },
     { path: 'lock',     component: LockComponent },
-    { path: 'asistencia', component: AsistenciaComponent, title: 'Asistencia' },
-
 
     // Dash
     {
@@ -43,33 +43,20 @@ const routes: Routes = [
       loadChildren: () => import('./views/compras/compras.module').then(m => m.ComprasModule),
     },
 
-    // Transporte
-    {
-      path: '', canActivate: [AuthGuard],
-      loadChildren: () => import('./views/transporte/transporte.module').then(m => m.TransporteModule),
-    },
-
     // Contabilidad
     {
       path: '', canActivate: [AuthGuard],
       loadChildren: () => import('./views/contabilidad/contabilidad.module').then(m => m.ContabilidadModule),
     },
+    // Citas
+    {
+      path: '', canActivate: [AuthGuard],
+      loadChildren: () => import('./views/citas/citas.module').then(m => m.CitasModule),
+    },
     // Admin
     {
       path: '', canActivate: [AuthGuard],
       loadChildren: () => import('./views/admin/admin.module').then(m => m.AdminModule),
-    },
-
-    //Creditos 
-    {
-      path: '', canActivate: [AuthGuard],
-      loadChildren: () => import('./views/creditos/creditos.module').then(m => m.CreditosModule),
-    },
-
-    //Empleados 
-    {
-      path: '', canActivate: [AuthGuard],
-      loadChildren: () => import('./views/empleados/empleados.module').then(m => m.EmpleadosModule),
     },
 
     // Not Found
@@ -80,9 +67,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, {
-    preloadingStrategy: QuicklinkStrategy
-  })],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 

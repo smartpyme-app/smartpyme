@@ -11,28 +11,15 @@ class Devolucion extends Model {
     protected $table = 'devoluciones_venta';
     protected $fillable = array(
         'fecha',
-        'estado',
-        'tipo_documento',
-        'referencia',
-        'recibido',
-        'subcosto',
-        'descuento',
-        'subtotal',
-        'no_sujeta',
-        'exenta',
-        'gravada',
-        'iva_percibido',
-        'iva_retenido',
-        'iva',
         'total',
-        'nota',
+        'sub_total',
+        'iva',
+        'observaciones',
+        'id_cliente',
+        'id_empresa',
         'enable',
         'id_venta',
-        'id_caja',
-        'id_corte',
-        'id_cliente',
-        'id_usuario',
-        'id_sucursal'
+        'id_usuario'
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'exenta', 'gravada', 'no_sujeta'];
@@ -52,7 +39,13 @@ class Devolucion extends Model {
 
     public function getNombreClienteAttribute()
     {
-        return $this->cliente()->first() ? $this->cliente()->pluck('nombre')->first() : '';
+        if ($this->cliente()->first()) {
+            return $this->cliente()->pluck('nombre')->first();
+        }
+        if ($this->nombre) {
+            return $this->nombre;
+        }
+        return 'Consumidor Final';
     }
 
     public function getNombreAttribute($name)

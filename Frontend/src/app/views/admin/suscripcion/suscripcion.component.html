@@ -1,0 +1,79 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Suscripción</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <h4 class="mb-3">Plan: {{ suscripcion.plan }}</h4>
+
+        <div class="form-group col-md-6 col-lg-2">
+            <label class="fw-bold">Tipo suscripción</label>
+            <p>Mensual</p>
+        </div>
+        <div class="form-group col-md-6 col-lg-2">
+            <label class="fw-bold">Fecha suscripción</label>
+            <p>{{ suscripcion.created_at | date:'dd/MM/yyyy' }}</p>
+        </div>
+        <div class="form-group col-md-6 col-lg-2">
+            <label class="fw-bold">Próximo pago</label>
+            <p>{{ suscripcion.next_pay | date:'dd/MM/yyyy' }}</p>
+        </div>
+        <div class="form-group col-md-6 col-lg-2">
+            <label class="fw-bold">Estado</label> <br>
+            <p class="badge" [ngClass]="{'bg-success' : suscripcion.estado == 'Activo', 'bg-danger' : suscripcion.estado == 'Vencido' }">{{ suscripcion.estado }}</p>
+        </div>
+        <div class="form-group col-md-6 col-lg-2">
+            <label class="fw-bold">Costo</label>
+            <p>{{ suscripcion.total | currency:'USD':'symbol':'1.2' }}</p>
+        </div>
+    </div>
+
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Pagos</h2>
+
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="click">Fecha</th>
+                        <th>Concepto</th>
+                        <th>Estado</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="text-center" *ngIf="suscripcion?.pagos?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene pagos registradas</span>
+                        </td>
+                        <td colspan="4" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor=" let recibo of suscripcion?.pagos">
+                        
+                        <td>{{recibo.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{recibo.concepto | truncate:30 }}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : recibo?.estado == 'Pendiente', 'bg-success' : recibo?.estado == 'Pagado'}">{{ recibo.estado }}</span>
+                        </td>
+                        <td class="text-right">{{recibo.monto | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">
+                            <a class="btn btn-default click" (click)="imprimirDoc(recibo)"><i class="fa fa-print"></i></a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="suscripcion?.pagos?.last_page > 1">
+            <app-pagination [items]="suscripcion?.pagos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+

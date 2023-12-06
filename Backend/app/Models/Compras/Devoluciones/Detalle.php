@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Detalle extends Model {
 
-    protected $table = 'compra_devolucion_detalles';
+    protected $table = 'detalles_devolucion_compra';
     protected $fillable = array(
-        'producto_id',
+        'id_producto',
         'cantidad',
         'costo',
         'descuento',
@@ -18,7 +18,7 @@ class Detalle extends Model {
         'subtotal',
         'iva',
         'total',
-        'devolucion_id'
+        'id_devolucion_compra'
 
     );
 
@@ -54,11 +54,11 @@ class Detalle extends Model {
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
     public function devolucion(){
-        return $this->belongsTo('App\Models\Compras\Compra','devolucion_id');
+        return $this->belongsTo('App\Models\Compras\Compra','id_devolucion_compra');
     }
 
 

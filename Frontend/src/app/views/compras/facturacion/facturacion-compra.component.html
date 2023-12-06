@@ -1,0 +1,250 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>Nueva compra</h3>
+    <button class="btn btn-light text-danger" routerLink="/compras">Cancelar <i class="fa fa-close"></i></button>
+</div>
+
+<section class="card border-0 p-3 mb-3">
+    <div class="row">
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="fecha">Fecha</label><br>
+            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_usuario">Usuario</label>
+            <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
+                <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                    {{ usuario.name }}
+                </option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_sucursal">Sucursal</label>
+            <select name="id_sucursal" [(ngModel)]="compra.id_sucursal" class="form-select">
+                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                    {{ sucursal.nombre }}
+                </option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="tipo_documento">Documento</label>
+            <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
+                <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <h6 class="mt-3">Detalles de la compra</h6>
+        <div class="form-group col-md-6 col-lg-4">
+            <label for="">Proveedor</label>
+            <div class="input-group flex-nowrap">
+                <ng-select name="id_proveedor" (click)="loadProveedores()" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor" class="form-select p-0">
+                    <ng-option value=""> Seleccione aquí </ng-option>
+                    <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{ proveedor.nombre }} <span *ngIf="proveedor.dui">- {{ proveedor.dui }}</span>
+                    </ng-option>
+                </ng-select>
+                <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
+            </div>
+        </div>
+        <div class="form-group col-md-12 col-lg-8">
+            <label for="observaciones">Observaciones:</label><br>
+            <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.observaciones" name="observaciones">
+        </div>
+    </div>
+    <div class="row">
+        <h6 class="mt-3">Detalles de facturación</h6>
+        <!-- Estado: {{ compra.estado }} -->
+        <div class="form-group col-lg-4 without-label">
+            <div class="form-switch border rounded">
+              <label for="credito">compra al crédito</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="compra.credito" name="compra.credito">
+            </div>
+        </div>
+        <div class="form-group col-lg-4 without-label">
+            <div class="form-switch border rounded">
+              <label for="consigna">Consigna</label>
+              <input [disabled]="!compra.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="compra.consigna" name="compra.credito">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-4">
+            <label for="fecha_pago">Fecha de pago:</label><br>
+            <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
+        </div>
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="forma_pago">Forma de pago</label>
+            <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
+                <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+            </select>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="compra.forma_pago != 'Efectivo'">
+            <label for="detalle_banco">Bancos</label>
+            <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="num_referencia">Num Referencia</label>
+            <input type="number" class="form-control" [(ngModel)]="compra.num_referencia" name="num_referencia" placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="num_serie">Serie</label>
+            <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie" placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="cobrar_impuestos">Impuestos</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="percepcion">Percepción</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.percepcion" name="compra.percepcion">
+            </div>
+        </div>
+    </div>
+</section>
+<section class="card border-0 p-3 mb-3">
+    <h6 class="mt-3">Productos y servicios</h6>
+
+    <app-compra-detalles [compra]="compra" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-sm table-borderless table-condensed mb-0">
+                <tbody>
+                    <tr>
+                        <td class="text-right"><b>Sub Total</b> </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"><b>Descuentos</b> </td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"> <b>Impuestos</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"> <b>Persepción</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.iva_percibido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <!-- <tr>
+                        <td class="text-right">
+                            <div class="form-check form-switch w-100">
+                                <label class="form-check-label" for="compra.percepcion">
+                                    <input id="compra.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.percepcion" name="compra.percepcion" *ngIf="!loading">
+                                    IVA percibido:
+                                </label>
+                            </div>
+                        </td>
+                        <td  width="70px" class="text-right">
+                           {{ (compra.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-right">
+                            <div class="form-check form-switch w-100">
+                                <label class="form-check-label" for="compra.retencion">
+                                    <input id="compra.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
+                                    IVA retenido:
+                                </label>
+                            </div>
+                        </td>
+                        <td  width="70px" class="text-right">
+                           {{ (compra.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
+                        </td>
+                    </tr> -->
+                    <tr>
+                        <td class="text-right"> <b>Total</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <button type="submit" (click)="onFacturar()" [disabled]="saving" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
+                <span *ngIf="!saving">Procesar compra</span> 
+                <span *ngIf="saving">Procesando...</span> 
+                <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+            </button>
+            <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
+                Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+            </button> -->
+            <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">.</button>
+        </div>
+    </div>
+
+</section>
+
+<ng-template #mfacturar>
+  <div class="modal-header">
+    <div class="modal-title text-center w-100">
+        <p class="my-0">{{compra.tipo_documento}}</p>
+        <h3>{{compra.correlativo}}</h3>
+    </div>
+    <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
+        <div class="row text-center">
+            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency:'USD':'symbol':'1.2' }}</span></h4>
+            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="compra.recibido">{{ compra.recibido - compra.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info" *ngIf="!compra.recibido">$0.00</span></h4>
+            <div class="form-group text-center col-md-12 my-3">
+                <label for="recibido">Recibido:</label>
+                <input type="number" name="recibido" [(ngModel)]="compra.recibido" placeholder="{{ compra.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
+            </div>
+
+            <div class="form-group col-md-12 mb-3" *ngIf="!compra.nota">
+                <label for="nota">Nota:</label><br>
+                <input type="text" class="form-control" [(ngModel)]="compra.nota" name="nota" id="nota">
+            </div>
+
+            <label class="mt-4" style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
+
+        </div>
+        <div class="row text-center">
+            <div class="col-md-12 mt-4">
+                <button type="submit" class="btn btn-primary btn-block tcla-F12" id="submit" [disabled]="loading">
+                    <span *ngIf="!loading">Cobrar <small>(F12)</small></span>
+                    <span *ngIf="loading">Cobrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
+            </div>
+            <div class="col-md-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

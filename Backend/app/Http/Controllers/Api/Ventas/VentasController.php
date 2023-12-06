@@ -9,71 +9,54 @@ use JWTAuth;
 use Carbon\Carbon;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\DetalleCombo;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
-use App\Models\Admin\Mesa;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
-use App\Models\Empleados\Empleados\Comision;
-
-use App\Models\Creditos\Credito;
+use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade as PDF;
+
+use App\Exports\VentasExport;
+use App\Exports\VentasDetallesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class VentasController extends Controller
 {
-    
 
-    public function index() {
+    public function index(Request $request) {
        
-        $ventas = Venta::orderBy('id','desc')
-                            // ->where('estado', '!=', 'Pendiente')
-                            ->paginate(10);
-       
-        return Response()->json($ventas, 200);
-
-    }
-
-
-
-    public function read($id) {
-
-        $venta = Venta::where('id', $id)->with('detalles', 'cliente')->first();
-
-        return Response()->json($venta, 200);
-
-    }
-
-    public function search($txt) {
-
-        $ventas = Venta::whereHas('cliente', function($query) use ($txt) {
-                                    $query->where('nombre', 'like' ,'%' . $txt . '%');
-                                })
-                                ->orwhere('correlativo', 'like', '%'.$txt.'%')
-                                ->orwhere('estado', 'like', '%'.$txt.'%')
-                                ->orwhere('nota', 'like', '%'.$txt.'%')
-                                ->orwhere('metodo_pago', 'like', '%'.$txt.'%')
-                                ->orwhere('referencia', 'like', '%'.$txt.'%')
-                                ->paginate(10);
-
-        return Response()->json($ventas, 200);
-
-    }
-
-    public function filter(Request $request) {
-
-
-        $ventas = Venta::when($request->inicio, function($query) use ($request){
+        $ventas = Venta::when($request->buscador, function($query) use ($request){
+                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                        })
+                        ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
-                        ->when($request->sucursal_id, function($query) use ($request){
-                            return $query->where('sucursal_id', $request->sucursal_id);
+                        ->when($request->id_sucursal, function($query) use ($request){
+                            return $query->where('id_sucursal', $request->id_sucursal);
                         })
-                        ->when($request->usuario_id, function($query) use ($request){
-                            return $query->where('usuario_id', $request->usuario_id);
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->id_cliente, function($query) use ($request){
+                            return $query->where('id_cliente', $request->id_cliente);
+                        })
+                        ->when($request->forma_pago, function($query) use ($request){
+                            return $query->where('forma_pago', $request->forma_pago);
+                        })
+                        ->when($request->id_canal, function($query) use ($request){
+                            return $query->where('id_canal', $request->id_canal);
+                        })
+                        ->when($request->id_documento, function($query) use ($request){
+                            return $query->where('id_documento', $request->id_documento);
                         })
                         ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
@@ -84,9 +67,22 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->orderBy('id','desc')->paginate(100000);
+                        ->where('estado', '!=', 'Pre-venta')
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
 
         return Response()->json($ventas, 200);
+
+    }
+
+
+
+    public function read($id) {
+
+        $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'impuestos.impuesto')->first();
+
+        return Response()->json($venta, 200);
 
     }
 
@@ -95,13 +91,67 @@ class VentasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
-            'usuario_id'        => 'required',
+            'id_usuario'        => 'required',
         ]);
 
-        if($request->id)
-            $venta = Venta::findOrFail($request->id);
-        else
-            $venta = new Venta;
+
+        $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
+
+            // Ajustar stocks
+            foreach ($venta->detalles as $detalle) {
+
+                $producto = Producto::where('id', $detalle->id_producto)
+                                        ->with('composiciones')->firstOrFail();
+                                        
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->id_sucursal)->first();
+                
+                // Anular venta y regresar stock
+                if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($venta, $detalle->cantidad * -1);
+                    }
+
+                    // Inventario compuestos
+                    foreach ($producto->composiciones as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_compuesto)
+                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+
+                        if ($inventario) {
+                            $inventario->stock += $det['cantidad'] * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad) * -1);
+                        }
+                    }
+
+                }
+                // Cancelar anulación de venta y descargar stock
+                if(($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
+                    // Aplicar stock
+                    if ($inventario) {
+                        $inventario->stock -= $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($venta, $detalle->cantidad);
+                    }
+
+                    // Inventario compuestos
+                    foreach ($producto->composiciones as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_compuesto)
+                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+
+                        if ($inventario) {
+                            $inventario->stock -= $det['cantidad'] * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad));
+                        }
+                    }
+
+                }
+            }
         
         $venta->fill($request->all());
         $venta->save();
@@ -131,7 +181,7 @@ class VentasController extends Controller
 
         $usuario = JWTAuth::parseToken()->authenticate();
        
-        $caja   = Caja::where('id', $usuario->caja_id)->with('corte')->firstOrFail();
+        $caja   = Caja::where('id', $usuario->id_caja)->with('corte')->firstOrFail();
         $corte  = $caja->corte;
         $ventas = $corte->ventas()->orderBy('id', 'desc')
                             ->paginate(30);
@@ -146,29 +196,23 @@ class VentasController extends Controller
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
             'correlativo'       => 'required|numeric',
-            'tipo_documento'    => 'required|max:255',
-            'canal_id'          => 'required|max:255',
-            'metodo_pago'       => 'required|max:255',
-            'cliente_id'        => 'required_if:tipo_documento,"Credito Fiscal"|required_if:condicion,"Crédito"',
+            'id_documento'      => 'required|max:255',
+            'id_canal'          => 'required|max:255',
+            'id_cliente'        => 'required_if:estado,"Pendiente"',
             'detalles'          => 'required',
             'fecha_pago'        => 'required',
             'credito'           => 'required_if:condicion,"Crédito"',
             'iva'               => 'required|numeric',
-            'subcosto'          => 'required|numeric',
-            'interes_anual'     => 'required_if:metodo_pago,"Crédito"',
-            'tipo_cuota'        => 'required_if:metodo_pago,"Crédito"',
-            'numero_de_cuotas'  => 'required_if:metodo_pago,"Crédito"',
-            'forma_de_pago'     => 'required_if:metodo_pago,"Crédito"',
-            'subtotal'          => 'required|numeric',
+            'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
+            'total_costo'       => 'required|numeric',
+            'sub_total'         => 'required|numeric',
             'total'             => 'required|numeric',
             'nota'              => 'max:255',
-            // 'caja_id'           => 'required|numeric',
-            // 'corte_id'          => 'required|numeric',
-            'usuario_id'        => 'required|numeric',
-            'sucursal_id'       => 'required|numeric',
+            'id_usuario'        => 'required|numeric',
+            'id_sucursal'       => 'required|numeric',
         ], [
             'detalles.required' => 'Tiene que agregar productos a la venta',
-            'cliente_id.required_if' => 'El cliente es requerido para los creditos y la facturación.',
+            'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
         ]);
 
         DB::beginTransaction();
@@ -183,44 +227,6 @@ class VentasController extends Controller
             $venta->fill($request->all());
             $venta->save();
 
-        // Guardamos crédito
-        if ($request->condicion == 'Crédito') {
-            $credito = new Credito;
-            $credito->fecha         = $venta->fecha;
-            $credito->venta_id      = $venta->id;
-            $credito->total         = $venta->total;
-            $credito->interes_anual = $request['credito']['interes_anual'];
-            $credito->tipo_cuota    = $request['credito']['tipo_cuota'];
-            $credito->periodo_de_gracia = $request['credito']['periodo_de_gracia'];
-            $credito->numero_de_cuotas  = $request['credito']['numero_de_cuotas'];
-            $credito->forma_de_pago    = $request['credito']['forma_de_pago'];
-            $credito->prima         = $request['credito']['prima'];
-            $credito->nota         = $request['credito']['nota'];
-            $credito->usuario_id    = $venta->usuario_id;
-            $credito->cliente_id    = $venta->cliente_id;
-            $credito->empresa_id    = $venta->sucursal()->first()->empresa_id;
-            $credito->save();
-        }
-
-        // Si el vendedor tiene comisión
-        if ($venta->vendedor && $venta->vendedor->comision > 0) {
-            $total = $venta->vendedor->comision;
-            if ($venta->vendedor->tipo_comision == 'Porcentaje') {
-                $total = $venta->subtotal * ($venta->vendedor->comision / 100);
-            }
-
-            Comision::Create([
-                'fecha'     => date('Y-m-d'),
-                'concepto'  => 'Comisión por venta',
-                'estado'    => 'Pendiente',
-                'tipo'      => 'Por venta',
-                'total'     => $total,
-                'venta_id'  => $venta->id,
-                'empleado_id' => $venta->vendedor->id,
-                'usuario_id' => $venta->usuario_id
-            ]);
-        }
-
         // Guardamos los detalles
 
             foreach ($request->detalles as $det) {
@@ -228,66 +234,59 @@ class VentasController extends Controller
                     $detalle = Detalle::findOrFail($det['id']);
                 else
                     $detalle = new Detalle;
-                $det['venta_id'] = $venta->id;
+                $det['id_venta'] = $venta->id;
                 
 
                 $detalle->fill($det);
                 $detalle->save();
 
                 // Actualizar inventario
-                if ($request->estado != 'En Proceso') {
+                if ($request->estado != 'Pre-venta') {
+                    
+                    $producto = Producto::where('id', $det['id_producto'])
+                                        ->with('composiciones')->firstOrFail();
 
-                    // Actualizar inventario
-                    $producto = Producto::where('id', $det['producto_id'])->with('composiciones')->firstOrFail();
-
-                    // Inventario compuestos
-                    foreach ($producto->composiciones as $comp) {
-                        $productoCompuesto = $comp->compuesto()->first();
-                        $inventario = Inventario::where('producto_id', $comp->compuesto_id)->where('bodega_id', $venta->bodega_id)->first();
-                        if ($inventario) {
-                            $inventario->stock -= $det['cantidad'] * $comp->cantidad;
-                            $inventario->save();
-                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad));
-                        }
-                    }
-                    // Inventario individual
-                    $inventario = Inventario::where('producto_id', $producto->id)->where('bodega_id', $venta->bodega_id)->first();
+                    $inventario = Inventario::where('id_producto', $producto->id)
+                                        ->where('id_sucursal', $venta->id_sucursal)->first();
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
                         $inventario->save();
                         $inventario->kardex($venta, $det['cantidad']);
                     }
 
-                    // Si el producto tiene comisión
-                    if ($producto->comision > 0) {
-                        $total = $producto->comision * $detalle->cantidad;
-                        if ($producto->tipo_comision == 'Porcentaje') {
-                            $total = $detalle->subtotal * ($producto->comision / 100);
-                        }
+                    // Inventario compuestos
+                    foreach ($producto->composiciones as $comp) {
 
-                        Comision::Create([
-                            'fecha'     => date('Y-m-d'),
-                            'concepto'  => 'Comisión por venta de ' . $det['cantidad'] . ' ' . $producto->nombre,
-                            'estado'    => 'Pendiente',
-                            'tipo'      => 'Por venta',
-                            'total'     => $total,
-                            'venta_id'  => $venta->id,
-                            'empleado_id' => $venta->vendedor ? $venta->vendedor->id : $venta->usuario_id,
-                            'usuario_id' => $venta->usuario_id
-                        ]);
+                        $inventario = Inventario::where('id_producto', $comp->id_compuesto)
+                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+
+                        if ($inventario) {
+                            $inventario->stock -= $det['cantidad'] * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad));
+                        }
                     }
+
 
                 }
                 
             }
+
+        // Impuestos
+            if($request->impuestos){
+                foreach ($request->impuestos as $impuesto) {
+                    $venta_impuesto = new Impuesto();
+                    $venta_impuesto->id_impuesto = $impuesto['id'];
+                    $venta_impuesto->monto = $impuesto['monto'];
+                    $venta_impuesto->id_venta = $venta->id;
+                    $venta_impuesto->save();
+                }
+            }
             
 
         // Incrementar el correlarivo
-            $documento = Documento::where('caja_id', JWTAuth::parseToken()->authenticate()->caja_id)
-                                ->where('nombre', $request->tipo_documento)
-                                ->first();
-            $documento->actual = $venta->correlativo + 1;
-            $documento->save();
+            $documento = Documento::findOrfail($venta->id_documento);
+            $documento->increment('correlativo');
         
         DB::commit();
         return Response()->json($venta, 200);
@@ -307,7 +306,7 @@ class VentasController extends Controller
 
         $usuario = JWTAuth::parseToken()->authenticate();
        
-        $caja    = Caja::where('id', $usuario->caja_id)->with('corte')->firstOrFail();
+        $caja    = Caja::where('id', $usuario->id_caja)->with('corte')->firstOrFail();
         $corte   = $caja->corte;
         
         if ($corte) {
@@ -334,7 +333,7 @@ class VentasController extends Controller
         $usuario = JWTAuth::parseToken()->authenticate();
 
         $ventas  = Venta::where('estado', 'En Proceso')
-                                ->where('usuario_id', $usuario->id)
+                                ->where('id_usuario', $usuario->id)
                                 ->orderBy('id', 'desc')
                                 ->paginate(5000);
 
@@ -343,155 +342,136 @@ class VentasController extends Controller
 
     }
 
-    public function propinas(Request $request) {
 
-        $ventas = Venta::where('propina', '>', 0)->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                        })
-                        ->when($request->sucursal_id, function($query) use ($request){
-                            return $query->where('sucursal_id', $request->sucursal_id);
-                        })
-                        ->when($request->usuario_id, function($query) use ($request){
-                            return $query->where('usuario_id', $request->usuario_id);
-                        })
-                        ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($ventas, 200);
-
-    }
 
     public function generarDoc($id){
-        $venta = Venta::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+        $venta = Venta::where('id', $id)->with('detalles')->firstOrFail();
+        $documento = Documento::findOrfail($venta->id_documento);
+        $empresa = Empresa::findOrfail(JWTAuth::parseToken()->authenticate()->id_empresa);
 
-        $empresa = Empresa::find(1);
+        $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+        $formatter = new NumeroALetras();
+        $n = explode(".", number_format($venta->total,2));        
+        $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
+        $centavos = $formatter->toWords($n[1]);
 
-        $partes = explode('.', strval( number_format($venta->total, 2) ));
+        if ($documento->nombre == 'Factura') {
+            
+            if($empresa->id == 38){
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.velo', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 62){ //62
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.hotel-eco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 84){ //84
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 75){ //84
+                // return View('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 104){ //104
+                // return View('reportes.facturacion.formatos_empresas.Factura-coloretes', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura-Coloretes', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 11){ //11
+                // return View('reportes.facturacion.formatos_empresas.Factura-organika', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-organika', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 365.669, 566.929133858]);
+            }
+            elseif($empresa->id == 12){ //12
+                // return View('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 365.669, 566.929133858]);
+            }
+            elseif($empresa->id == 128){ //128
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.kiero-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 283.46, 765.35]);  
+            }
+            elseif($empresa->id == 135){ //135
+                // return View('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 609.45, 467.72]);
+            }
+            elseif($empresa->id == 136){ //12
+                return View('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 365.669, 609.4488]);
+            }
+            elseif($empresa->id == 149){ //12
+                return View('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 24){ //24
+                // return View('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Via-del-Mar', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                // $pdf->setPaper([0, 0, 306, 396]);
+                $pdf->setPaper('US Letter', 'portrait');
+            }else{
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 365.669, 566.929133858]);
+            }
 
-        $venta->total_letras = \NumeroALetras::convertir($partes[0], 'Dolares con ') . $partes[1].'/100';
+            return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
 
-        if ($venta->tipo_documento == 'Factura') {
-            $venta->width = 10.5;
-            $venta->height = 15.2;
-
-            $venta->pos_fecha_x = 7;
-            $venta->pos_fecha_y = 2.5;
-            $venta->pos_cliente_x = 2;
-            $venta->pos_cliente_y = 3.2;
-            $venta->pos_direccion_x = 2.3;
-            $venta->pos_direccion_y = 3.7;
-            $venta->pos_dui_x = 7;
-            $venta->pos_dui_y = 4.2;
-            $venta->pos_detalles_x = 0.6;
-            $venta->pos_detalles_y = 5.6;
-            $venta->pos_detalles_linea_alto = 0.6;
-
-            $venta->pos_detalles_cantidad = 1;
-            $venta->pos_detalles_producto = 4;
-            $venta->pos_detalles_precio = 1;
-            $venta->pos_detalles_sujetas = 1;
-            $venta->pos_detalles_exentas = 1;
-            $venta->pos_detalles_gravadas = 1.2;
-
-            $venta->pos_letras_y = 11;
-            $venta->pos_letras_x = 1;
-
-            $venta->pos_correlativo_y = 11.5;
-            $venta->pos_correlativo_x = 1;
-
-            $venta->pos_sumas_y = 11;
-            $venta->pos_sumas_x = 8.5;
-
-            return view('reportes.facturacion.factura', compact('venta', 'empresa'));
         }
-        elseif ($venta->tipo_documento == 'Crédito Fiscal') {
-            $venta->width = 16.5;
-            $venta->height = 20.5;
+        
+        if ($documento->nombre == 'Crédito fiscal') {
 
-            $venta->pos_fecha_x = 11;
-            $venta->pos_fecha_y = 3.6;
-            $venta->pos_cliente_x = 3;
-            $venta->pos_cliente_y = 4.2;
-            $venta->pos_direccion_x = 3.2;
-            $venta->pos_direccion_y = 4.8;
-            $venta->pos_dui_x = 10.5;
-            $venta->pos_dui_y = 5.7;
+            if($empresa->id == 24){
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.vetvia-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 38){
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.velo-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 62){ //62
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.hotel-eco-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait'); 
+            }
+            elseif($empresa->id == 128){ //128
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.kiero-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 283, 765]);  
+            }
+            elseif($empresa->id == 135){ //135
+                // return View('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 609.45, 467.72]);  
+            }
+            elseif($empresa->id == 136){ //136
+                // return View('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper([0, 0, 297.64, 382.68]); 
+            }
+            elseif($empresa->id == 158){//158
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Guaca-Mix-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif($empresa->id == 84){ //84
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }else{
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente'));
+                $pdf->setPaper([0, 0, 365.669, 566.929133858]);  
+            }     
 
-            $venta->pos_giro_x = 2.5;
-            $venta->pos_giro_y = 6.3;
+            return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
 
-            $venta->pos_ncr_x = 11.5;
-            $venta->pos_ncr_y = 6.8;
 
-            $venta->pos_detalles_x = 1.3;
-            $venta->pos_detalles_y = 8;
-            $venta->pos_detalles_linea_alto = 0.6;
-
-            $venta->pos_detalles_cantidad = 1.3;
-            $venta->pos_detalles_producto = 7.3;
-            $venta->pos_detalles_precio = 1.2;
-            $venta->pos_detalles_sujetas = 1.2;
-            $venta->pos_detalles_exentas = 1.2;
-            $venta->pos_detalles_gravadas = 1.7;
-
-            $venta->pos_letras_y = 15;
-            $venta->pos_letras_x = 1.8;
-
-            $venta->pos_correlativo_y = 15.5;
-            $venta->pos_correlativo_x = 2;
-
-            $venta->pos_sumas_y = 14.3;
-            $venta->pos_sumas_x = 13.6;
-
-            return view('reportes.facturacion.credito', compact('venta', 'empresa'));
-
-        }elseif ($venta->tipo_documento == 'Exportación') {
-            $venta->width = 13.5;
-            $venta->height = 20;
-
-            $venta->pos_fecha_x = 10;
-            $venta->pos_fecha_y = 3;
-            $venta->pos_cliente_x = 3;
-            $venta->pos_cliente_y = 3.9;
-            $venta->pos_direccion_x = 3.5;
-            $venta->pos_direccion_y = 4.5;
-            $venta->pos_dui_x = 9.5;
-            $venta->pos_dui_y = 6;
-
-            $venta->pos_giro_x = 2;
-            $venta->pos_giro_y = 6.5;
-
-            $venta->pos_ncr_x = 10;
-            $venta->pos_ncr_y = 5.5;
-
-            $venta->pos_detalles_x = 1;
-            $venta->pos_detalles_y = 7.3;
-            $venta->pos_detalles_linea_alto = 0.6;
-
-            $venta->pos_detalles_cantidad = 1.5;
-            $venta->pos_detalles_producto = 7;
-            $venta->pos_detalles_precio = 1.6;
-            $venta->pos_detalles_sujetas = 1;
-            $venta->pos_detalles_exentas = 1;
-            $venta->pos_detalles_gravadas = 2;
-
-            $venta->pos_letras_y = 18;
-            $venta->pos_letras_x = 1.5;
-
-            $venta->pos_correlativo_y = 18.6;
-            $venta->pos_correlativo_x = 2;
-
-            $venta->pos_total_y = 18;
-            $venta->pos_total_x = 10.7;
-
-            return view('reportes.facturacion.exportacion', compact('venta', 'empresa'));
         }
-        elseif ($venta->tipo_documento == 'Ticket') {
 
-            return view('reportes.facturacion.ticket', compact('venta', 'empresa'));
+        if ($documento->nombre == 'Ticket') {
+            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
         }
-        else{
-            return "Sin documento para generar";
-        }
+
+        return "Sin documento para generar";
 
     }
 
@@ -499,6 +479,18 @@ class VentasController extends Controller
 
         return view('reportes.anulacion');
 
+    }
+
+    public function sinDevolucion(){
+
+        $ventas = Venta::where('estado', '!=', 'Anulada')
+                        ->whereMonth('fecha', '>=' , date('m') - 1)
+                        ->whereYear('fecha', date('Y'))
+                        ->whereDoesntHave('devoluciones')
+                        ->orderBy('fecha', 'DESC')
+                        ->get();
+
+        return Response()->json($ventas, 200);
     }
 
     public function libroIva(Request $request) {
@@ -577,6 +569,20 @@ class VentasController extends Controller
 
         return Response()->json($movimientos, 200);
 
+    }
+
+    public function export(Request $request){
+        $ventas = new VentasExport();
+        $ventas->filter($request);
+
+        return Excel::download($ventas, 'ventas.xlsx');
+    }
+
+    public function exportDetalles(Request $request){
+        $ventas = new VentasDetallesExport();
+        $ventas->filter($request);
+
+        return Excel::download($ventas, 'ventas-detalles.xlsx');
     }
 
 

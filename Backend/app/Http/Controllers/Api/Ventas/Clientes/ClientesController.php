@@ -17,10 +17,22 @@ class ClientesController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $clientes = Cliente::orderBy('id','desc')
-                    ->paginate(10);
+        $clientes = Cliente::where('id','!=', 1)->withSum('ventas', 'total')
+                    ->when($request->buscador, function($query) use ($request){
+                        return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                    ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
+                    })
+                    ->when($request->estado !== null, function($q) use ($request){
+                        $q->where('enable', !!$request->estado);
+                    })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->paginate($request->paginate);
 
         return Response()->json($clientes, 200);
 
@@ -28,41 +40,12 @@ class ClientesController extends Controller
 
     public function list() {
 
-        $clientes = Cliente::orderBy('nombre','asc')->get();
+        $clientes = Cliente::orderBy('nombre','asc')
+                            ->where('enable', true)
+                            ->get();
         
         return Response()->json($clientes, 200);
 
-    }
-
-    public function search($txt) {
-
-        $clientes = Cliente::where('nombre', 'like' ,'%' . $txt . '%')
-                            ->orWhere('empresa', 'like' , $txt . '%')
-                            ->orWhere('dui', 'like' , $txt . '%')
-                            ->orWhere('registro', 'like' , $txt . '%')
-                            ->orWhere('etiquetas', 'like' ,'%' . $txt . '%')
-                            ->orWhereRaw('REPLACE(registro, "-", "") like "'.$txt.'"')
-                            ->orderBy('registro','asc')->paginate(10);
-        return Response()->json($clientes, 200);
-
-    }
-
-    public function filter(Request $request) {
-
-        $clientes = Cliente::when($request->nombre, function($query) use ($request){
-                                return $query->where('nombre', 'like',  '%'.$request->nombre .'%')
-                                            ->orwhere('nit', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('giro', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('telefono', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('ncr', 'like',  '%'. $request->nombre .'%')
-                                            ->orwhere('dui', 'like',  '%'. $request->nombre .'%');
-                            })
-                            ->when($request->estado, function($query) use ($request){
-                                return $query->where('enable', $request->estado);
-                            })
-                            ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($clientes, 200);
     }
 
     public function read($id) {
@@ -81,8 +64,8 @@ class ClientesController extends Controller
             'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
             'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
             'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
-            'id_usuario'     => 'required|integer|exists:users,id',
-            'id_empresa'     => 'required|integer|exists:empresas,id',
+            'id_usuario'     => 'required|numeric',
+            'id_empresa'     => 'required|numeric|exists:empresas,id',
         ]);
 
         if($request->id)

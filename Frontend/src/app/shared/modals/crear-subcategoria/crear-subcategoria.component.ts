@@ -38,7 +38,7 @@ export class CrearSubCategoriaComponent implements OnInit {
             this.update.emit(subcategoria);
             this.modalRef?.hide();
             this.loading = false;
-            this.alertService.success("Sub categoria guardada");
+            this.alertService.success('Subcategoria creada', 'Tu subcategoria fue añadida exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

@@ -46,7 +46,7 @@ export class SucursalComponent implements OnInit {
           // Guardamos la sucursal
           this.apiService.store('sucursal', this.sucursal).subscribe(sucursal => {
               // this.sucursal = sucursal;
-              this.alertService.success("Datos guardados");
+              this.alertService.success('Sucursal guardada', 'La sucursal fue guardada exitosamente.');
               this.loading = false;
           },error => {this.alertService.error(error); this.loading = false; });
       }

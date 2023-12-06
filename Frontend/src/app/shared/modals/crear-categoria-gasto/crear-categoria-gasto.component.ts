@@ -27,17 +27,17 @@ export class CrearCategoriaGastoComponent implements OnInit {
 
     openModal(template: TemplateRef<any>) {
         this.categoria = {};
-        this.modalRef = this.modalService.show(template, { class: 'modal-sm', backdrop: 'static' });
+        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public onSubmit() {
         this.loading = true;
-        this.categoria.empresa_id = this.apiService.auth_user().empresa_id;
+        this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
         this.apiService.store('gastos/categoria', this.categoria).subscribe(categoria => {
             this.update.emit(categoria);
             this.modalRef?.hide();
             this.loading = false;
-            this.alertService.success("Categoria guardada");
+            this.alertService.success('Categoria creada', 'La categoria ha sido agregada.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

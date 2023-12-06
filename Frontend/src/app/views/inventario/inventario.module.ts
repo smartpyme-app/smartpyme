@@ -42,12 +42,7 @@ import { TrasladoComponent } from './traslados/traslado/traslado.component';
 import { AjustesComponent } from './ajustes/ajustes.component';
 import { AjusteComponent } from './ajustes/ajuste/ajuste.component';
 
-import { AnalisisProductosComponent } from './analisis/analisis-productos.component';
-
 import { ServiciosComponent } from './servicios/servicios.component';
-
-import { BodegaComponent } from './bodegas/bodega/bodega.component';
-import { BodegasComponent } from './bodegas/bodegas.component';
 
 import { CategoriasComponent } from './categorias/categorias.component';
 import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias.component';
@@ -93,10 +88,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     TrasladoComponent,
     AjustesComponent,
     AjusteComponent,
-    AnalisisProductosComponent,
     ServiciosComponent,
-    BodegasComponent,
-    BodegaComponent,
     CategoriasComponent,
     SubCategoriasComponent
   ],
@@ -124,10 +116,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     TrasladoComponent,
     AjustesComponent,
     AjusteComponent,
-    AnalisisProductosComponent,
     ServiciosComponent,
-    BodegasComponent,
-    BodegaComponent,
     CategoriasComponent,
     SubCategoriasComponent
   ]

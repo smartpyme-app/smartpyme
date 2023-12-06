@@ -16,9 +16,48 @@ use JWTAuth;
 class CotizacionesController extends Controller
 {
     
-    public function index() {
+    public function index(Request $request) {
        
-        $ordenes = Orden::orderBy('id','desc')->paginate(10);
+        $ordenes = Orden::when($request->buscador, function($query) use ($request){
+                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                        })
+                        ->when($request->inicio, function($query) use ($request){
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                        })
+                        ->when($request->id_sucursal, function($query) use ($request){
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->id_cliente, function($query) use ($request){
+                            return $query->where('id_cliente', $request->id_cliente);
+                        })
+                        ->when($request->forma_pago, function($query) use ($request){
+                            return $query->where('forma_pago', $request->forma_pago);
+                        })
+                        ->when($request->id_canal, function($query) use ($request){
+                            return $query->where('id_canal', $request->id_canal);
+                        })
+                        ->when($request->id_documento, function($query) use ($request){
+                            return $query->where('id_documento', $request->id_documento);
+                        })
+                        ->when($request->estado, function($query) use ($request){
+                            return $query->where('estado', $request->estado);
+                        })
+                        ->when($request->metodo_pago, function($query) use ($request){
+                            return $query->where('metodo_pago', $request->metodo_pago);
+                        })
+                        ->when($request->tipo_documento, function($query) use ($request){
+                            return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                    ->where('estado', 'Pre-venta')
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
 
         return Response()->json($ordenes, 200);
 

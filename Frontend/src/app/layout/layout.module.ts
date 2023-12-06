@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
-// import { NotifierModule } from 'angular-notifier';
+import { SharedModule } from '@shared/shared.module';
 
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -29,6 +29,7 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     CommonModule,
     FormsModule,
     RouterModule,
+    SharedModule,
     TooltipModule.forRoot(),
     CollapseModule.forRoot(),
     FocusModule.forRoot(),

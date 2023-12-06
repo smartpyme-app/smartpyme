@@ -3,8 +3,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-proveedor',
@@ -13,8 +13,9 @@ import { ApiService } from '../../../../services/api.service';
 export class ProveedorComponent implements OnInit {
 
     public proveedor:any = {};
-
     public loading = false;
+    public saving = false;
+
     modalRef?: BsModalRef;
 
     constructor( 
@@ -23,44 +24,39 @@ export class ProveedorComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        const id = +this.route.snapshot.paramMap.get('id')!;
-
-        this.route.queryParams.subscribe(params => {
-            console.log(params['estado']);
-        });
-
-        if(isNaN(id)){
-            this.proveedor = {};
-            this.proveedor.empresa_id = this.apiService.auth_user().empresa_id;
-            this.proveedor.usuario_id = this.apiService.auth_user().id;
-        }
-        else{
-            this.loadAll(id);
-        }
-
+        this.loadAll();
     }
 
-    public loadAll(id:number){
-        this.loading = true;
-        this.apiService.read('proveedor/', id).subscribe(proveedor => {
-            this.proveedor = proveedor;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public loadAll(){
+        this.route.params.subscribe((params:any) => {
+            if (params.id) {
+                this.loading = true;
+                this.apiService.read('proveedor/', params.id).subscribe(proveedor => {
+                    this.proveedor = proveedor;
+                    this.loading = false;
+                }, error => {this.alertService.error(error); this.loading = false;});
+            }else{
+                this.proveedor = {};
+                this.proveedor.tipo_contribuyente = '';
+                this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
+                this.proveedor.id_usuario = this.apiService.auth_user().id;
+            }
+        });
     }
 
     public submit():void{
-        this.loading = true;
-        
-        console.log(this.proveedor.etiquetas);
+        this.saving = true;
 
         this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => { 
-            if(!this.proveedor.id) {
-               this.router.navigate(['/proveedor/'+   proveedor.id]);
+            if(this.proveedor.id) {
+                this.alertService.success('Proveedor guardado', 'El proveedor fue guardado exitosamente.');
+            }else {
+                this.alertService.success('Proveedor creado', 'El proveedor fue añadido exitosamente.');
             }
+            this.router.navigate(['/proveedores']);
             this.proveedor = proveedor;
-            this.loading = false;
-            this.alertService.success('Guardado');
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
 

@@ -38,7 +38,7 @@ export class ProductoImagenesComponent implements OnInit {
             }
             this.imagen = {};
             this.loading = false;
-            this.alertService.success('Guardado');
+            this.alertService.success('Imagen agregada', 'La imagen fue añadida exitosamente.');
         }, error => {this.alertService.error(error); this.loading = false; this.imagen = {};});
     }
 
@@ -59,7 +59,7 @@ export class ProductoImagenesComponent implements OnInit {
                     if (this.producto.imagenes[i].id == data.id )
                         this.producto.imagenes.splice(i, 1);
                 }
-                this.alertService.success('Eliminado');
+                this.alertService.success('Imagen eliminada', 'La imagen fue eliminada exitosamente');
             }, error => {this.alertService.error(error); });
                    
         }

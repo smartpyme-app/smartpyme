@@ -144,7 +144,7 @@ export class TrasladoComponent implements OnInit {
 							this.traslado.detalles.splice(i, 1);
 						}
 					}
-		        	this.alertService.success("Eliminado");
+		        	this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
 	        	}, error => {this.alertService.error(error); });
 			}else{
 				for (var i = 0; i < this.traslado.detalles.length; ++i) {
@@ -152,7 +152,7 @@ export class TrasladoComponent implements OnInit {
 						this.traslado.detalles.splice(i, 1);
 					}
 				}
-	        	this.alertService.success("Eliminado");
+	        	this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
 			}
 		}
 	}
