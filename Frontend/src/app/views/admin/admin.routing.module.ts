@@ -4,6 +4,7 @@ import { AuthGuard } from '@guards/auth.guard';
 import { LayoutComponent } from '@layout/layout.component';
 
 import { EmpresaComponent }     from '@views/admin/empresa/empresa.component';
+import { EliminarDatosComponent }     from '@views/admin/empresa/eliminar-datos/eliminar-datos.component';
 import { SuscripcionComponent }     from '@views/admin/suscripcion/suscripcion.component';
 
 import { SucursalesComponent }     from '@views/admin/sucursales/sucursales.component';
@@ -23,15 +24,16 @@ const routes: Routes = [
     path: '',
     component: LayoutComponent,
     children: [
-        { path: 'configuracion', component: EmpresaComponent },
-        { path: 'suscripcion', component: SuscripcionComponent },
-        { path: 'sucursales', component: SucursalesComponent },
-        { path: 'sucursal/:id', component: SucursalComponent },
-        { path: 'usuarios', component: UsuariosComponent },
-        { path: 'usuario/:id', component: UsuarioComponent },
-        { path: 'notificaciones', component: NotificacionesComponent },
+        { path: 'configuracion', component: EmpresaComponent, title: 'Configuracion' },
+        { path: 'eliminar-datos', component: EliminarDatosComponent, title: 'Eliminar datos' },
+        { path: 'suscripcion', component: SuscripcionComponent, title: 'Suscripcion' },
+        { path: 'sucursales', component: SucursalesComponent, title: 'Sucursales' },
+        { path: 'sucursal/:id', component: SucursalComponent, title: 'Sucursal' },
+        { path: 'usuarios', component: UsuariosComponent, title: 'Usuarios' },
+        { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario' },
+        { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
-        { path: 'reportes', component: ReportesComponent, title: 'reportes', canActivate: [AuthGuard]},
+        { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
         { path: 'cierre-de-caja', component: CorteComponent, title: 'Cierre de caja'},
     ]
   }

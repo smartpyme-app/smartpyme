@@ -1,9 +1,10 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-empresa',
@@ -36,6 +37,7 @@ export class EmpresaComponent implements OnInit {
   	        this.saving = false;
   	    },error => {this.alertService.error(error); this.saving = false; });
   	}
+     
 
     setFile(event:any) {
         this.empresa.file = event.target.files[0];

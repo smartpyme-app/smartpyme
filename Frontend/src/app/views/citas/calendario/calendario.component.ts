@@ -6,6 +6,8 @@ import { FullCalendarComponent } from '@fullcalendar/angular';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
+import multiMonthPlugin from '@fullcalendar/multimonth'
+import rrulePlugin from '@fullcalendar/rrule'
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -22,7 +24,7 @@ import * as moment from 'moment';
 export class CalendarioComponent implements OnInit {
 
     public eventos:any = [];
-    public productos:any = [];
+    public servicios:any = [];
     public clientes:any = [];
     public usuarios:any = [];
     public evento:any = {};
@@ -47,7 +49,8 @@ export class CalendarioComponent implements OnInit {
         forwardRef(() => Calendar);
 
         this.calendarOptions = {
-            plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin],
+            // plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin, multiMonthPlugin],
+            plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin, rrulePlugin],
             editable: true,
             navLinks: true,
             firstDay: 0,
@@ -67,9 +70,9 @@ export class CalendarioComponent implements OnInit {
               }
             ],
             headerToolbar: {
-              left: 'prev,next',
+              left: 'prev,next today',
               center: 'title',
-              right: 'today dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+              right: 'dayGridMonth,timeGridWeek,timeGridDay,multiMonthYear,listWeek'
             },
             customButtons: {
               myCustomButton: {
@@ -83,9 +86,12 @@ export class CalendarioComponent implements OnInit {
             events: []
         };
 
+        this.loadAll();
+    }
+
+    public loadAll(){
         this.filtros.orden = 'inicio';
         this.filtros.direccion = 'desc';
-
         this.loading = true;
         this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => { 
             this.loading = false;
@@ -93,20 +99,55 @@ export class CalendarioComponent implements OnInit {
                 this.calendarOptions.events = eventos;
             }
         }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
     handleDateClick(arg:any) {
+        this.loadData();
         this.evento = {};
-        this.evento.confirmado = false;
+        this.evento.frecuencia = '';
+        this.evento.tipo = 'Confirmado';
         this.evento.duracion = "1 hora";
-        this.evento.inicio =  moment(arg.dateStr).format('YYYY-MM-DD HH:mm:ss');
-        console.log(this.evento);
-        this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-md'});
+        this.evento.estado = "Activo";
+        this.evento.id_empresa = this.apiService.auth_user().id_empresa;
+        this.evento.id_usuario = this.apiService.auth_user().id;
+        this.setTime();
+        this.evento.inicio =  moment(arg.dateStr + ' ' + moment().format('HH:mm')).format('YYYY-MM-DD HH:mm:ss');
+        this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-lg'});
     }
 
-    handleEventClick(arg:any) {
+    setTipo(){
+        if(this.evento.tipo = 'Confirmado'){
+            this.evento.tipo = 'Sin confirmar';
+        }else{
+            this.evento.tipo = 'Confirmado';
+        }
+        console.log(this.evento);
+    }
 
+    setTime(){
+        let fecha = moment(this.evento.inicio);
+
+        if(this.evento.duracion == '15 minutos'){
+            this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '30 minutos'){
+            this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '1 hora'){
+            this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '2 horas'){
+            this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '3 horas'){
+            this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '5 horas'){
+            this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+    }
+
+    loadData(){
         this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
@@ -114,12 +155,15 @@ export class CalendarioComponent implements OnInit {
             this.clientes = clientes;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
+        this.apiService.getAll('servicios/list').subscribe(servicios => {
+            this.servicios = servicios;
         }, error => {this.alertService.error(error);});
+    }
 
+    handleEventClick(arg:any) {
+        this.loadData();
         this.evento = arg.event.extendedProps.data;
-
+        console.log(this.evento);
         this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-md'});
     }
 
@@ -130,17 +174,24 @@ export class CalendarioComponent implements OnInit {
         this.onSubmit();
     }
 
+    // Cliente
+    public setCliente(cliente:any){
+        if(!this.evento.id_cliente){
+            this.clientes.push(cliente);
+        }
+        this.evento.id_cliente = cliente.id;
+    }
+
     public onSubmit(){
         this.saving = true;
         this.apiService.store('evento', this.evento).subscribe(evento => {
             if (!this.evento.id) {
-                this.eventos.push(evento);
                 this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
             }else{
                 this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
             }
+            this.loadAll();
             this.saving = false;
-
             if(this.modalRef){
                 this.modalRef.hide();
             }

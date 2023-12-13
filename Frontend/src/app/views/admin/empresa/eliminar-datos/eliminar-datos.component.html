@@ -1,0 +1,131 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Eliminar datos de mi cuenta</h2>
+</section>
+
+<div class="card">
+    <div class="card-body">
+      <div class="alert alert-warning">
+        <p class="m-0">
+            Seleccione los módulos de los cuales desea eliminar todos sus registros. Tenga en cuenta que esta acción es irreversible y no podrá deshacerse.
+        </p>
+      </div>
+        <form  (ngSubmit)="onDeleteData()">
+            <div class="row">
+                <div class="col-12">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Módulo</th>
+                                <th>Descripción</th>
+                                <th width="90px" class="text-center">
+                                    Todos <br>
+                                    <div class="form-switch bg-light-info rounded">
+                                      <label for="modulo_citas"></label>
+                                      <input class="form-check-input float-end" type="checkbox" role="switch" (change)="marcarTodos($event.target.checked)">
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Inventario</td>
+                                <td>Se eliminaran todos los productos, servicios, materias primas, sus inventarios, ajustes, traslados y movimientos en el kardex.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_inventario" name="inventario">
+                                    </div>
+                                </td>
+                            <tr>
+                            <tr>
+                                <td>Categorías</td>
+                                <td>Se eliminaran todas las categorías registradas.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_categorias" name="categorias">
+                                    </div>
+                                </td>
+                            <tr>
+                                <td>Ventas</td>
+                                <td>Se eliminaran todas las ventas, cotizaciones y devoluciones de ventas.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_ventas" name="ventas">
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Clientes</td>
+                                <td>Se eliminaran todos los clientes registrados.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_clientes" name="clientes">
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Proveedores</td>
+                                <td>Se eliminaran todos los proveedores registrados.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_proveedores" name="proveedores">
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- <tr>
+                                <td>Promociones</td>
+                                <td>Se eliminaran todas las promociones registradas.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_promociones" name="promociones">
+                                    </div>
+                                </td>
+                            </tr> -->
+                            <tr>
+                                <td>Compras</td>
+                                <td>Se eliminaran todas las compras y devoluciones de compra.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_compras" name="compras">
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Gastos</td>
+                                <td>Se eliminaran todos los gastos.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_gastos" name="gastos">
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Presupuestos</td>
+                                <td>Se eliminaran todos los presupuestos.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_presupuestos" name="presupuestos">
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" [disabled]="saving" class="btn btn-danger float-end">
+                        <span *ngIf="!saving">Eliminar datos</span>
+                        <span *ngIf="saving">Eliminando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

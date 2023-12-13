@@ -28,7 +28,8 @@ export class ForgetComponent implements OnInit {
         this.apiService.store('password/email', this.user)
         .subscribe(
             data => {
-                this.router.navigate(['/login']);
+                this.alertService.success('Enviado', '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!');
+                // this.router.navigate(['/login']);
                 this.loading = false;
             },
             error => {

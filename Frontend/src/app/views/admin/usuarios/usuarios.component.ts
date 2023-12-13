@@ -12,9 +12,9 @@ import { ApiService } from '@services/api.service';
 
 export class UsuariosComponent implements OnInit {
 
-    public usuario:any = {};
     public sucursales:any = [];
     public usuarios:any = [];
+    public usuario:any = {};
     public paginacion = [];
     public loading:boolean = false;
     public saving:boolean = false;
@@ -38,9 +38,10 @@ export class UsuariosComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+
 
     }
 

@@ -74,6 +74,10 @@ img.icon-2{
         color: #fff !important;
     }
 
+    button.swal2-confirm.swal2-styled {
+        background-color: #00458F !important;
+    }
+
     .btn-close{
         position: absolute;
         top: 15px;
@@ -403,6 +407,25 @@ img.icon-2{
         background-color: #FDFBFF !important;
     }
 
+/* Full calendar */
+
+#full-calendar a{
+    text-decoration: none;
+}
+
+#full-calendar button.fc-button.fc-button-primary {
+    background-color: #D7E2FF !important;
+    border: var(--bs-btn-border-width) solid var(--bs-btn-border-color);
+    color: #212529;
+    outline: none;
+    box-shadow: none;
+}
+
+#full-calendar button.fc-button-primary.fc-button-active {
+    background-color: #0d6efd !important;
+    border: var(--bs-btn-border-width) solid var(--bs-btn-border-color);
+    color: #fff;
+}
 
 /* File */
 

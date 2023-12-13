@@ -11,13 +11,10 @@ import { CollapseModule } from 'ngx-bootstrap/collapse';
 
 import { HeaderComponent } from './header/header.component';
 import { AdminHeaderComponent } from './header/admin/admin-header.component';
-import { CocineroHeaderComponent } from './header/cocinero/cocinero-header.component';
-import { MeseroHeaderComponent } from './header/mesero/mesero-header.component';
-import { VendedorHeaderComponent } from './header/vendedor/vendedor-header.component';
-import { CajaHeaderComponent } from './header/caja/caja-header.component';
 
 import { FooterComponent } from './footer/footer.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
+import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
 import { LayoutComponent } from './layout.component';
 
 import { ThemeComponent } from './header/theme/theme.component';
@@ -39,11 +36,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     FooterComponent,
     HeaderComponent,
     AdminHeaderComponent,
-    CocineroHeaderComponent,
-    MeseroHeaderComponent,
-    VendedorHeaderComponent,
-    CajaHeaderComponent,
     SidebarComponent,
+    SidebarAdminComponent,
     LayoutComponent,
     PerfilComponent,
     ThemeComponent,
@@ -52,11 +46,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     FooterComponent,
     HeaderComponent,
     AdminHeaderComponent,
-    CocineroHeaderComponent,
-    MeseroHeaderComponent,
-    VendedorHeaderComponent,
-    CajaHeaderComponent,
     SidebarComponent,
+    SidebarAdminComponent,
     LayoutComponent,
     PerfilComponent,
     ThemeComponent,

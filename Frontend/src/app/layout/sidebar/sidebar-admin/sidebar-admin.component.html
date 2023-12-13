@@ -1,0 +1,61 @@
+<div id="sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
+    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
+        <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
+        <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
+        <button  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
+            <img src="/assets/icons/sidebar.png">
+        </button>
+    </div>
+    <div class="mb-3" style="min-height: 5vh;">
+        <form action="" autocomplete="off">
+            <ul class="list-unstyled ps-0">
+                <li class="mb-1 d-flex rounded" style="background-color: #F2F0F4; height: 40px;">
+                    <div (click)="toggleSidebarMenu()" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                        <img src="/assets/icons/search.png" class="icon me-2">
+                        <input type="text" name="search" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
+                    </div>
+                </li>
+            </ul>
+        </form>
+    </div>
+    <div style="min-height: 45vh;">
+        <ul class="list-unstyled ps-0">
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/admin/empresas']" tooltip="Empresas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/briefcase.png" class="icon me-2">Empresas
+                </a>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/user.png" class="icon me-2">Usuarios
+                </a>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/admin/dashboards']" tooltip="Dashboards" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div style="min-height: 37vh;">
+        <ul class="list-unstyled ps-0 border-top pt-2">
+   <!--          <li class="mb-1">
+                <button (click)="togglePreferencias()" tooltip="Preferencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
+                  <img src="/assets/icons/sliders.png" class="icon me-2">Preferencias
+                </button>
+                <div [collapse]="preferenciasIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-plus.png" class="icon me-2">Usuarios</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/admin/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/admin/configuracion']" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
+                  </ul>
+                </div>
+            </li> -->
+            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>

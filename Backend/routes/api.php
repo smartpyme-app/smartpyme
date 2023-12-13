@@ -50,11 +50,6 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Eventos
 		require base_path('routes/modulos/eventos/eventos.php');
-
-	// Creditos
-		require base_path('routes/modulos/creditos/creditos.php');
-		require base_path('routes/modulos/creditos/pagos.php');
-		require base_path('routes/modulos/creditos/fiadores.php');
 		
 	// Empleados
 		require base_path('routes/modulos/empleados/empleados.php');
@@ -79,6 +74,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/admin/usuarios.php');
 		require base_path('routes/modulos/admin/accesos.php');
 		require base_path('routes/modulos/admin/transacciones.php');
+
+	// Super Admin
+		require base_path('routes/modulos/super-admin/usuarios.php');
 
 		
 });

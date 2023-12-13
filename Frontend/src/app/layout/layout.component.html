@@ -1,5 +1,8 @@
 <div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
-  <app-sidebar></app-sidebar>
+  
+  <app-sidebar-admin *ngIf="usuario.id_empresa == 2"></app-sidebar-admin>
+  <app-sidebar *ngIf="usuario.id_empresa != 2"></app-sidebar>
+
   <div class="content p-2 p-lg-5 position-relative">
     <app-header></app-header>
     <app-notificaciones-container></app-notificaciones-container>

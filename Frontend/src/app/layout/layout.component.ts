@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-layout',
@@ -7,5 +8,15 @@ import { AlertService } from '@services/alert.service';
 })
 
 export class LayoutComponent  {
-    constructor(private alertService: AlertService) {}
+    public usuario: any = {};
+    public elem: any;
+    public isfullscreen: boolean = false;
+    public isVisible: boolean = false;
+
+    constructor(private apiService: ApiService) { }
+
+    ngOnInit() {
+        this.usuario = this.apiService.auth_user();
+        console.log(this.usuario);
+    }
 }

@@ -35,7 +35,7 @@
                 <option value="Consigna">Consigna</option>
                 <option value="Pagada">Pagada</option>
             </select>
-            <ng-select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default ">
+            <ng-select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Sucursal</ng-option>
                 <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}

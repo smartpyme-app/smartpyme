@@ -194,7 +194,7 @@ class AuthJWTController extends Controller
 
     protected function sendResetLinkResponse($response)
     {
-        return  Response()->json(['message' => '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!', 'code' => 400], 400);
+        return  Response()->json(['message' => '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!', 'code' => 200], 200);
     }
 
     protected function sendResetLinkFailedResponse($response)

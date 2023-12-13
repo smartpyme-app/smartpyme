@@ -4,6 +4,8 @@ namespace App\Models\Inventario\Promociones;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Promociones\Detalle;
+use Illuminate\Database\Eloquent\Builder;
+use Auth;
 
 class Promocion extends Model
 {
@@ -19,6 +21,17 @@ class Promocion extends Model
         'id_sucursal',
         'id_empresa',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+    }
 
 
     public function empresa(){

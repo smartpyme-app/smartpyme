@@ -29,11 +29,18 @@ class Empresa extends Model {
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',
+        'iva',
+        'moneda',
         'editar_precio_venta',
+        'plan',
+        'tipo_plan',
+        'fecha_cancelacion',
+        'referido',
+        'campania',
         'wompi_aplicativo',
         'wompi_id',
         'wompi_secret',
-        'ips'
+        'activo'
     ];
 
     public function limiteUsuarios(){
@@ -73,20 +80,16 @@ class Empresa extends Model {
         return $this->hasMany('App\Models\Inventario\Producto', 'id_empresa');
     }
 
-    public function materiales(){
-        return $this->hasMany('App\Models\MateriaPrima', 'id_empresa');
-    }
-
     public function promociones(){
-        return $this->hasMany('App\Models\Promocion', 'id_empresa');
+        return $this->hasMany('App\Models\Inventario\Promocion', 'id_empresa');
     }
 
     public function dashboards(){
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');
     }
 
-    public function egresos(){
-        return $this->hasMany('App\Models\Contabilidad\Gasto', 'id_empresa');
+    public function gastos(){
+        return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_empresa');
     }
 
     public function compras(){
@@ -124,6 +127,10 @@ class Empresa extends Model {
         return $this->hasMany('App\Models\Contabilidad\Presupuesto', 'id_empresa');
     }
     
+    public function categorias(){
+        return $this->hasMany('App\Models\Inventario\Categorias\Categoria', 'id_empresa');
+    }
+
     public function pagos(){
         return $this->hasMany('App\Models\Recibo', 'id_empresa');
     }
@@ -150,9 +157,6 @@ class Empresa extends Model {
         return $re->count();
     }
 
-    public function categorias(){
-        return $this->hasMany(Categoria::class, 'id_empresa');
-    }
 
 
 }

@@ -32,6 +32,9 @@ export class AlertService {
         else if(message.status == 404) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : 'El registro no ha sido encontrado'});
         }
+        else if(message.status == 403) {
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.error});
+        }
         else if(message.status == 401) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.message});
             this.router.navigate(['/login']);

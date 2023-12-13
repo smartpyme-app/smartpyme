@@ -110,6 +110,7 @@ export class TiendaVentaProductoComponent implements OnInit {
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.descuento_porcentaje      = 0;
         this.onSubmit();
     }
 
@@ -124,6 +125,7 @@ export class TiendaVentaProductoComponent implements OnInit {
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
+        this.detalle.descuento_porcentaje      = 0;
 
         console.log(this.detalle);
         let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;

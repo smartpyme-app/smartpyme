@@ -16,6 +16,16 @@ class SucursalesController extends Controller
         return Response()->json($sucursales, 200);
 
     }
+
+    public function list() {
+       
+        $sucursales = Sucursal::orderby('nombre')
+                                ->where('activo', true)
+                                ->get();
+
+        return Response()->json($sucursales, 200);
+
+    }
     
     public function read($id) {
 

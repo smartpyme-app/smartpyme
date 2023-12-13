@@ -27,14 +27,6 @@ export class RegisterComponent implements OnInit {
         if(!this.user){
             this.user = {};
             this.user.empresa = {};
-            
-            // this.user.name = 'Jesus Alvarado';
-            // this.user.email = 'alvarado.websis22@gmail.com';
-            // this.user.telefono = '7891-2933';
-            // this.user.password = 'Asd4#sasd351';
-            
-            // this.user.empresa.nombre = 'websis';
-            // this.user.empresa.industria = 'Comercio';
 
             this.user.empresa.industria = '';
             this.user.empresa.iva = 13; 
@@ -50,7 +42,17 @@ export class RegisterComponent implements OnInit {
                 this.user.empresa.tipo_plan = this.route.snapshot.queryParamMap.get('tipo_plan')!;
             }
 
+            if (this.route.snapshot.queryParamMap.get('referido')!) {
+                this.user.empresa.referido = this.route.snapshot.queryParamMap.get('referido')!;
+            }
+
+            if (this.route.snapshot.queryParamMap.get('campania')!) {
+                this.user.empresa.campania = this.route.snapshot.queryParamMap.get('campania')!;
+            }
+
             this.setPlan();
+
+            console.log(this.user);
         }
 
     }

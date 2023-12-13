@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-impuestos',
@@ -67,15 +68,27 @@ export class ImpuestosComponent implements OnInit {
 
 
     public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('impuesto/', id) .subscribe(data => {
-                for (let i = 0; i < this.impuestos.length; i++) { 
-                    if (this.impuestos[i].id == data.id )
-                        this.impuestos.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
-        }
+
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡No podrás revertir esto!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminarlo',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+                this.apiService.delete('impuesto/', id) .subscribe(data => {
+                    for (let i = 0; i < this.impuestos.length; i++) { 
+                        if (this.impuestos[i].id == data.id )
+                            this.impuestos.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+          }
+        });
+
 
     }
 

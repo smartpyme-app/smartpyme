@@ -18,6 +18,7 @@ import { SharedModule } from '../../shared/shared.module';
 import { AdminRoutingModule } from './admin.routing.module';
 
 import { EmpresaComponent } from './empresa/empresa.component';
+import { EliminarDatosComponent } from './empresa/eliminar-datos/eliminar-datos.component';
 import { SuscripcionComponent } from './suscripcion/suscripcion.component';
 
 import { SucursalesComponent } from './sucursales/sucursales.component';
@@ -47,6 +48,7 @@ import { DocsComponent } from './docs/docs.component';
   ],
   declarations: [
     EmpresaComponent,
+    EliminarDatosComponent,
     SuscripcionComponent,
     SucursalesComponent,
     SucursalComponent,
@@ -58,6 +60,7 @@ import { DocsComponent } from './docs/docs.component';
   ],
   exports: [
     EmpresaComponent,
+    EliminarDatosComponent,
     SuscripcionComponent,
     SucursalesComponent,
     SucursalComponent,

@@ -64,7 +64,7 @@ class Devolucion extends Model {
     }
 
     public function detalles(){
-        return $this->hasMany('App\Models\Compras\Devoluciones\Detalle','id_devolucion');
+        return $this->hasMany('App\Models\Compras\Devoluciones\Detalle','id_devolucion_compra');
     }
 
 

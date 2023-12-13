@@ -68,11 +68,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
+                        <tr *ngIf="dash?.total_compras == 0 && dash?.total_gastos == 0">
+                            <td colspan="2">
+                                <p class="text-muted">No hay datos que mostrar</p>
+                            </td>
+                        </tr>
+                        <tr *ngIf="dash?.total_compras > 0">
                             <td>Compras</td>
                             <td class="text-right">{{ dash?.total_compras | currency:'USD':'symbol':'1.2' }}</td>
                         </tr>
-                        <tr>
+                        <tr *ngIf="dash?.total_gastos > 0">
                             <td>Gastos</td>
                             <td class="text-right">{{ dash?.total_gastos | currency:'USD':'symbol':'1.2' }}</td>
                         </tr>

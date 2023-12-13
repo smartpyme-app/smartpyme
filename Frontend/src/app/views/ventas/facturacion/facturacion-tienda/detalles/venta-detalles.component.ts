@@ -5,6 +5,8 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-venta-detalles',
   templateUrl: './venta-detalles.component.html'
@@ -67,6 +69,56 @@ export class VentaDetallesComponent implements OnInit {
 
     // Agregar detalle
         productoSelect(producto:any):void{
+
+            if (producto.stock < producto.cantidad) {
+                if (this.apiService.auth_user().empresa.vender_sin_stock == 0) {
+
+
+                  if (this.apiService.auth_user().codigo_autorizacion) {
+                    
+                    Swal.fire({
+                          title: 'Ingrese la clave de autorización',
+                          input: 'password',
+                          inputAttributes: {
+                            autocapitalize: 'off',
+                            autocorrect: 'off'
+                          },
+                          showCancelButton: true,
+                          confirmButtonText: 'Enviar',
+                          cancelButtonText: 'Cancelar',
+                          showLoaderOnConfirm: true,
+                          preConfirm: (clave) => {
+                            // Aquí puedes realizar alguna validación de la clave ingresada
+                            // Devuelve una promesa que se resolverá o rechazará según la validación
+                            return new Promise((resolve:any, reject:any) => {
+                              if (clave == this.apiService.auth_user().codigo_autorizacion) {
+                                resolve();
+                              } else {
+                                reject('Clave incorrecta');
+                              }
+                            });
+                          },
+                          allowOutsideClick: () => !Swal.isLoading()
+                        }).then((result) => {
+                          if (result.isConfirmed) {
+                            this.addDetalle(producto);
+                          }
+                        }).catch((error) => {
+                          Swal.fire('Error', error, 'error');
+                        });
+
+                  }else{
+                      alert('No hay códigos configurados');
+                  }
+                }else{
+                    this.addDetalle(producto);
+                }
+            }else{
+                this.addDetalle(producto);
+            }
+        }
+
+        public addDetalle(producto:any){
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
             
@@ -85,23 +137,33 @@ export class VentaDetallesComponent implements OnInit {
                 this.venta.detalles.push(this.detalle);
 
             this.update.emit(this.venta);
-            console.log(this.venta);
             this.detalle = {};
             if (this.modalRef) { this.modalRef.hide() }
-
         }
 
     // Eliminar detalle
         public delete(detalle:any){
-            if (confirm('Confirma eliminar el detalle')) { 
 
-                for (var i = 0; i < this.venta.detalles.length; ++i) {
-                    if (this.venta.detalles[i].producto_id === detalle.producto_id ){
-                        this.venta.detalles.splice(i, 1);
-                        this.update.emit(this.venta);
+            Swal.fire({
+              title: '¿Estás seguro?',
+              text: '¡No podrás revertir esto!',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, eliminarlo',
+              cancelButtonText: 'Cancelar'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                    for (var i = 0; i < this.venta.detalles.length; ++i) {
+                        if (this.venta.detalles[i].producto_id === detalle.producto_id ){
+                            this.venta.detalles.splice(i, 1);
+                            this.update.emit(this.venta);
+                            // Swal.fire('Eliminado', 'El detalle ha sido eliminado.', 'success');
+                        }
                     }
-                }
-            }
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+              }
+            });
 
         }
 

@@ -92,7 +92,12 @@
                         </div>
                     </div>
 
-                    <div class="form-group col-md-12 mt-5">
+                    <p class="my-3">
+                        ¿Quieres eliminar los datos de tu cuenta?
+                        <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
+                    </p>
+
+                    <div class="form-group col-md-12 mt-3">
                         <button [disabled]="saving" class="btn btn-primary float-end">
                             <span *ngIf="!saving">Guardar</span>
                             <span *ngIf="saving">Guardando...</span>
@@ -104,4 +109,3 @@
     </div>
 
 </section>
-

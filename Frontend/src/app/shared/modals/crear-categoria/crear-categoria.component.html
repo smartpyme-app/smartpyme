@@ -17,10 +17,12 @@
                 <label for="categoria.nombre">Nombre</label>
                 <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="categoria.nombre" focus="true">
             </div>
-            <div class="form-group col-12">
-                <label for="categoria.enable">Activo</label>
-                <input type="checkbox" class="form-check" [(ngModel)]="categoria.enable" name="categoria.enable">
+            <div class="form-group col-md-12">
+            <div class="form-switch bg-light-info rounded">
+              <label for="enable">Activo</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="categoria.enable" name="enable">
             </div>
+        </div>
             <div class="form-group col-12">
                 <label for="categoria.descripcion">Descripción</label>
                 <textarea name="categoria.descripcion" class="form-control" cols="30" rows="3" [(ngModel)]="categoria.descripcion"></textarea>

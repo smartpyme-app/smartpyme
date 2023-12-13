@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Eventos\Evento;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use stdClass;
 
 class EventosController extends Controller
 {
@@ -81,7 +82,7 @@ class EventosController extends Controller
                     ->orderBy('id', 'desc')
                     ->get();
 
-        $data = collect();
+        $eventosList = collect();
         foreach ($eventos as $evento) {
             $color = '';
             $textColor = '';
@@ -102,23 +103,29 @@ class EventosController extends Controller
                 $color = '#D9213A';
             }
 
-            $data->push([
-                'id' => $evento->id,
-                'title' => $evento->descripcion . ' - ' . $evento->nombre_usuario,
-                'start' => $evento->inicio,
-                'end' => $evento->fin,
-                'color' => $color,
-                'textColor' => $textColor,
-                'freq' => $evento->frecuencia,
-                'dtstart' => $evento->inicio,
-                'url' => '',
-                'allDay' => false,
-                'editable' => true,
-                'data' => $evento
-            ]);
+            $data = new stdClass();
+
+            $data->id = $evento->id;
+            $data->title = $evento->descripcion . ' - ' . $evento->nombre_usuario;
+            $data->start = $evento->inicio;
+            $data->end = $evento->fin;
+            $data->color = $color;
+            $data->textColor = $textColor;
+            if($evento->frecuencia){
+                $data->rrule = [
+                    'freq' => $evento->frecuencia ? $evento->frecuencia : 'No',
+                    'dtstart' => $evento->inicio,
+                ];
+            }
+            $data->url = '';
+            // $data->allDay = false;
+            // $data->editable = true;
+            $data->data = $evento;
+
+            $eventosList->push($data);
         }
 
-        return Response()->json($data, 200);
+        return Response()->json($eventosList, 200);
     }
 
     public function store(Request $request){

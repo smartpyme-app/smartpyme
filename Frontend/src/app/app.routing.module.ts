@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
+import { SuperAdminGuard } from './guards/super-admin.guard';
 
 import { NotFoundComponent }    from './shared/404/not-found.component';
 import { LoginComponent }    from './auth/login/login.component';
@@ -55,8 +56,14 @@ const routes: Routes = [
     },
     // Admin
     {
-      path: '', canActivate: [AuthGuard],
+      path: '', canActivate: [AuthGuard, AdminGuard],
       loadChildren: () => import('./views/admin/admin.module').then(m => m.AdminModule),
+    },
+
+    // Super Admin
+    {
+      path: '', canActivate: [SuperAdminGuard],
+      loadChildren: () => import('./views/super-admin/super-admin.module').then(m => m.SuperAdminModule),
     },
 
     // Not Found

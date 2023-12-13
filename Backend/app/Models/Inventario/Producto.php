@@ -113,12 +113,17 @@ class Producto extends Model {
     }
 
     public function traslados(){
-        return $this->hasMany('App\Models\Inventario\TrasladoDetalle','id_producto');
+        return $this->hasMany('App\Models\Inventario\Traslado','id_producto');
     }
 
     public function ajustes(){
         return $this->hasMany('App\Models\Inventario\Ajuste','id_producto');
     }
+
+    public function kardex(){
+        return $this->hasMany('App\Models\Inventario\Kardex', 'id_producto');
+    }
+
 
 }
 

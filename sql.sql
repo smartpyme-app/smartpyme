@@ -9,12 +9,16 @@ ALTER TABLE users CHANGE celular telefono VARCHAR(255) DEFAULT NULL;
 ALTER TABLE users CHANGE last_login ultimo_login DATETIME NULL DEFAULT NULL;
 
 ALTER TABLE empresas CHANGE email correo VARCHAR(255) NULL DEFAULT NULL;
+ALTER TABLE empresas CHANGE activo activo TINYINT(1) NOT NULL DEFAULT true;
 ALTER TABLE empresas ADD municipio VARCHAR(255) NULL after giro;
 ALTER TABLE empresas ADD departamento VARCHAR(255) NULL after municipio;
 ALTER TABLE empresas CHANGE descripcion descripcion VARCHAR(255) NULL;
 ALTER TABLE empresas ADD tipo_plan VARCHAR(255) NULL AFTER plan, ADD total DECIMAL NOT NULL DEFAULT 0 AFTER tipo_plan;
 ALTER TABLE empresas ADD industria VARCHAR(255) NULL AFTER giro;
 ALTER TABLE empresas CHANGE logo logo varchar(255) NOT NULL DEFAULT 'empresas/default.jpg';
+ALTER TABLE empresas ADD fecha_cancelacion DATE NULL AFTER tipo_plan;
+ALTER TABLE empresas ADD referido VARCHAR(255) NULL AFTER fecha_cancelacion;
+ALTER TABLE empresas ADD campania VARCHAR(255) NULL AFTER referido;
 
 ALTER TABLE clientes CHANGE email correo VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE clientes CHANGE tipo tipo_contribuyente VARCHAR(255) NULL DEFAULT NULL;

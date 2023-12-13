@@ -9,6 +9,7 @@ import { provideEnvironmentNgxMask } from 'ngx-mask';
 
 import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
+import { SuperAdminGuard } from '@guards/super-admin.guard';
 
 import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
@@ -22,6 +23,9 @@ import { AuthModule } from './auth/auth.module';
 
 import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
+
+// Super Admin
+  import { SuperAdminModule } from '@views/super-admin/super-admin.module';
 
 // Ventas
   import { VentasModule } from '@views/ventas/ventas.module';
@@ -58,6 +62,7 @@ import { LayoutModule } from '@layout/layout.module';
     LayoutModule,
     AuthModule,
     DashModule,
+    SuperAdminModule,
     VentasModule,
     FacturacionModule,
     ClientesModule,
@@ -70,7 +75,7 @@ import { LayoutModule } from '@layout/layout.module';
     CitasModule,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                AuthGuard, AdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],
+                AuthGuard, AdminGuard, SuperAdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })
 

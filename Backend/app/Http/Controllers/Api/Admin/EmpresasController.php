@@ -13,9 +13,27 @@ class EmpresasController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $empresas = Empresa::orderBy('id','desc')->paginate(7);
+        $empresas = Empresa::when($request->activo !== null, function($q) use ($request){
+                                    $q->where('activo', !!$request->activo);
+                                })
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('correo', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                ->orderBy($request->orden, $request->direccion)
+                                ->paginate($request->paginate);
+
+        return Response()->json($empresas, 200);
+
+    }
+
+    public function list() {
+       
+        $empresas = Empresa::orderby('nombre')
+                                ->where('activo', true)
+                                ->get();
 
         return Response()->json($empresas, 200);
 
@@ -33,7 +51,7 @@ class EmpresasController extends Controller
     {
         $request->validate([
             'nombre'        => 'required|max:255',
-            // 'propina'       => 'required|numeric',
+            'iva'       => 'required|numeric',
         ]);
 
         if($request->id)
@@ -84,6 +102,77 @@ class EmpresasController extends Controller
 
         return Response()->json($empresa, 201);
 
+    }
+
+    public function eliminarDatos(Request $request){
+        $empresa = Empresa::findOrfail($request->id);
+
+        if ($request->m_inventario) {
+            $productos = $empresa->productos;
+            foreach ($productos as $producto) {
+                $producto->kardex()->delete();
+                $producto->precios()->delete();
+                $producto->traslados()->delete();
+                $producto->ajustes()->delete();
+                $producto->inventarios()->delete();
+                $producto->delete();
+            }
+        }
+
+        if ($request->m_promociones) {
+            $empresa->promociones()->delete();
+        }
+
+        if ($request->m_categorias) {
+            $empresa->categorias()->delete();
+        }
+
+        if ($request->m_clientes) {
+            $empresa->clientes()->delete();
+        }
+
+        if ($request->m_proveedores) {
+            $empresa->proveedores()->delete();
+        }
+
+        if ($request->m_ventas) {
+            $ventas = $empresa->ventas;
+            foreach ($ventas as $venta) {
+                $venta->detalles()->delete();
+                $venta->delete();
+            }
+            $deventas = $empresa->deventas;
+            foreach ($deventas as $deventa) {
+                $deventa->detalles()->delete();
+                $deventa->delete();
+            }
+        }
+        if ($request->m_compras) {
+            $compras = $empresa->compras;
+            foreach ($compras as $compra) {
+                $compra->detalles()->delete();
+                $compra->delete();
+            }
+            $decompras = $empresa->decompras;
+            foreach ($decompras as $decompra) {
+                $decompra->detalles()->delete();
+                $decompra->delete();
+            }
+        }
+        if ($request->m_gastos) {
+            $gastos = $empresa->gastos;
+            foreach ($gastos as $gasto) {
+                $gasto->delete();
+            }
+        }
+        if ($request->m_presupuestos) {
+            $presupuestos = $empresa->presupuestos;
+            foreach ($presupuestos as $presupuesto) {
+                $presupuesto->delete();
+            }
+        }
+
+        return Response()->json($empresa, 201);
     }
 
 }

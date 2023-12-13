@@ -30,7 +30,7 @@ class Evento extends Model
         'id_cliente',
         'id_empresa',
     ];
-    protected $appends = ['nombre_cliente'];
+    protected $appends = ['nombre_cliente', 'nombre_servicio'];
 
     protected static function boot()
     {
@@ -81,14 +81,16 @@ class Evento extends Model
         return $this->usuario()->pluck('name')->first();
     }
 
-    public function getNombreClienteAttribute(){
-        if($this->id_cliente){
-            return $this->cliente()->pluck('nombre')->first()  
-                    .' ' .$this->cliente()->pluck('apellido')->first();
+    public function getNombreServicioAttribute(){
+        return $this->servicio()->pluck('nombre')->first();
+    }
+
+    public function getNombreClienteAttribute()
+    {
+        if ($this->cliente()->first()) {
+            return $this->cliente()->pluck('nombre')->first();
         }
-        else{
-            return 'Sin datos';
-        }
+        return null;
     }
 
     public function cliente(){
@@ -100,7 +102,7 @@ class Evento extends Model
     }
 
     public function servicio(){
-       return $this->belongsTo('App\Models\Producto', 'id_servicio');
+       return $this->belongsTo('App\Models\Inventario\Producto', 'id_servicio');
     }
 
     public function usuario(){

@@ -3,6 +3,8 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import * as moment from 'moment';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-citas',
@@ -67,10 +69,50 @@ export class CitasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+    setTipo(){
+        if(this.evento.confirmado){
+            this.evento.tipo = 'Confirmado';
+        }else{
+            this.evento.tipo = 'Sin confirmar';
+        }
+    }
+
+    setTime(){
+        let fecha = moment(this.evento.inicio);
+
+        if(this.evento.duracion == '15 minutos'){
+            this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '30 minutos'){
+            this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '1 hora'){
+            this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '2 horas'){
+            this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '3 horas'){
+            this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '5 horas'){
+            this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        
+        }
+    }
+
     public loadClientes(){
         this.apiService.getAll('clientes/list').subscribe(clientes => {
             this.clientes = clientes;
         }, error => {this.alertService.error(error);});
+    }
+
+    // Cliente
+    public setCliente(cliente:any){
+        if(!this.evento.id_cliente){
+            this.clientes.push(cliente);
+        }
+        this.evento.id_cliente = cliente.id;
     }
 
     public openModal(template: TemplateRef<any>, evento:any) {
@@ -89,7 +131,11 @@ export class CitasComponent implements OnInit {
             this.evento.id_empresa = this.apiService.auth_user().id_empresa;
             this.evento.id_usuario = this.apiService.auth_user().id;
             this.evento.frecuencia = '';
-            this.evento.estado = 'Activo';
+            this.evento.tipo = 'Confirmado';
+            this.evento.duracion = "1 hora";
+            this.evento.id_empresa = this.apiService.auth_user().id_empresa;
+            this.setTime();
+            this.evento.inicio =  moment().format('YYYY-MM-DD HH:mm:ss');
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
@@ -113,17 +159,27 @@ export class CitasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    public delete(evento:any){
 
-    public delete(evento:any) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('evento/', evento.id) .subscribe(data => {
-                for (let i = 0; i < this.eventos.data.length; i++) { 
-                    if (this.eventos.data[i].id == data.id )
-                        this.eventos.data.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
-        }
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡No podrás revertir esto!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminarlo',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+                this.apiService.delete('evento/', evento.id) .subscribe(data => {
+                    for (let i = 0; i < this.eventos.data.length; i++) { 
+                        if (this.eventos.data[i].id == data.id )
+                            this.eventos.data.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+          }
+        });
 
     }
 
