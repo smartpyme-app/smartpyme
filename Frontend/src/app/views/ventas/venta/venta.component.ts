@@ -15,6 +15,7 @@ export class VentaComponent implements OnInit {
 
     public venta:any = {};
     public loading = false;
+    public saving = false;
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
@@ -36,6 +37,18 @@ export class VentaComponent implements OnInit {
         this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
+    }
+
+    public setEstado(abono:any){
+        this.saving = false;
+        this.apiService.store('abono/', abono).subscribe(abono => {
+            this.loadAll();
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public imprimirRecibo(abono:any){
+        window.open(this.apiService.baseUrl + '/api/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
 

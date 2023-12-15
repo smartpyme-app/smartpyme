@@ -6,3 +6,5 @@ use App\Http\Controllers\Api\Ventas\AbonosController;
     Route::get('/abono/{id}',       [AbonosController::class, 'read']);
     Route::post('/abono',           [AbonosController::class, 'store']);
     Route::delete('/abono/{id}',    [AbonosController::class, 'delete']);
+
+    Route::get('/abono/imprimir/{id}',    [AbonosController::class, 'print']);

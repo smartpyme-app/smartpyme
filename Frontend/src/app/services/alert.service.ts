@@ -8,6 +8,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 export class AlertService {
 
+    public modal:boolean = false;
     private alertSubject = new Subject<any>();
 
     getAlert(): Observable<any> { return this.alertSubject.asObservable(); }

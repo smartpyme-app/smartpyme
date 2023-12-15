@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Ajuste;
@@ -148,6 +149,18 @@ class ProductosController extends Controller
 
         $producto->fill($request->all());
         $producto->save();
+
+        // Configurar inventarios para las sucursales
+        if (!$request->id && $producto->tipo != 'Servicio') {
+            $sucursales = Sucursal::all();
+            foreach ($sucursales as $sucursal) {
+                $inventario = new Inventario;
+                $inventario->id_producto    = $producto->id;
+                $inventario->stock          = 0;
+                $inventario->id_sucursal    = $sucursal->id;
+                $inventario->save();
+            }
+        }
 
 
         return Response()->json($producto, 200);

@@ -22,6 +22,15 @@ export class EliminarDatosComponent implements OnInit {
   	) { }
 
   	ngOnInit() {
+        this.empresa.m_inventario   = false;
+        this.empresa.m_categorias   = false;
+        this.empresa.m_ventas       = false;
+        this.empresa.m_clientes     = false;
+        this.empresa.m_proveedores  = false;
+        this.empresa.m_compras      = false;
+        this.empresa.m_gastos      = false;
+        this.empresa.m_presupuestos = false;
+
   	    this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
@@ -37,6 +46,7 @@ export class EliminarDatosComponent implements OnInit {
         this.empresa.m_proveedores  = value;
         this.empresa.m_compras      = value;
         this.empresa.m_gastos      = value;
+        this.empresa.m_presupuestos      = value;
         // this.empresa.m_promociones  = value;
     }
 

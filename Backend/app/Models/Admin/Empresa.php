@@ -29,6 +29,7 @@ class Empresa extends Model {
         'valor_inventario',
         'vender_sin_stock',
         'user_limit',
+        'sucursal_limit',
         'iva',
         'moneda',
         'editar_precio_venta',
@@ -44,10 +45,14 @@ class Empresa extends Model {
     ];
 
     public function limiteUsuarios(){
-
         if($this->usuarios->where('enable', true)->count() < $this->user_limit)
             return false;
-        
+        return true;
+    }
+
+    public function limiteSucursales(){
+        if($this->sucursales->where('activo', true)->count() < $this->sucursal_limit)
+            return false;
         return true;
     }
 

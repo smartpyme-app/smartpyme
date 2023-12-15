@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, ViewChild, forwardRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ViewChild, forwardRef, Output, EventEmitter } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -23,6 +23,7 @@ import * as moment from 'moment';
 })
 export class CalendarioComponent implements OnInit {
 
+    @Output() update = new EventEmitter();
     public eventos:any = [];
     public servicios:any = [];
     public clientes:any = [];
@@ -105,13 +106,13 @@ export class CalendarioComponent implements OnInit {
         this.loadData();
         this.evento = {};
         this.evento.frecuencia = '';
-        this.evento.tipo = 'Confirmado';
+        this.evento.tipo = 'Sin confirmar';
         this.evento.duracion = "1 hora";
         this.evento.estado = "Activo";
         this.evento.id_empresa = this.apiService.auth_user().id_empresa;
         this.evento.id_usuario = this.apiService.auth_user().id;
-        this.setTime();
         this.evento.inicio =  moment(arg.dateStr + ' ' + moment().format('HH:mm')).format('YYYY-MM-DD HH:mm:ss');
+        this.setTime();
         this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-lg'});
     }
 
@@ -170,6 +171,7 @@ export class CalendarioComponent implements OnInit {
     handleEventChange(arg:any) {
         this.evento = arg.event.extendedProps.data;
         this.evento.inicio = moment(arg.event.start).format('YYYY-MM-DD HH:mm:ss');
+        this.setTime();
         console.log(this.evento);
         this.onSubmit();
     }
@@ -191,6 +193,7 @@ export class CalendarioComponent implements OnInit {
                 this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
             }
             this.loadAll();
+            this.update.emit();
             this.saving = false;
             if(this.modalRef){
                 this.modalRef.hide();

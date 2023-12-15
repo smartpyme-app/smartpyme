@@ -25,13 +25,6 @@ export class ServiciosComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.filtros.id_sucursal = '';
-        this.filtros.id_categoria = '';
-        this.filtros.estado = '';
-        this.filtros.buscador = '';
-        this.filtros.orden = 'nombre';
-        this.filtros.direccion = 'asc';
-        this.filtros.paginate = 10;
 
         this.loadAll();
 
@@ -41,25 +34,26 @@ export class ServiciosComponent implements OnInit {
     }
 
     public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 10;
+        this.loading = true;
+        this.filtrarServicios();
+
+    }
+
+    public filtrarServicios(){
         this.loading = true;
         this.apiService.getAll('servicios', this.filtros).subscribe(servicios => { 
             this.servicios = servicios;
-            this.loading = false; this.filtrado = false;
+            this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 2) {
-            this.loading = true;
-            this.apiService.read('servicios/buscar/', this.buscador).subscribe(servicios => { 
-                this.servicios = servicios;
-                this.loading = false; this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }else{
-            this.loadAll();
-        }
-    }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
@@ -80,16 +74,6 @@ export class ServiciosComponent implements OnInit {
             this.servicios = servicios;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-
-    onFiltrar(){
-        this.loading = true;
-        this.apiService.store('servicios/filtrar', this.filtros).subscribe(servicios => { 
-            this.servicios = servicios;
-            this.loading = false; this.filtrado = true;
-        }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
     openModalPrecio(template: TemplateRef<any>, servicio:any) {

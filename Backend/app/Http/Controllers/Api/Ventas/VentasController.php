@@ -80,7 +80,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'impuestos.impuesto')->first();
+        $venta = Venta::where('id', $id)->with('detalles','abonos', 'cliente', 'impuestos.impuesto')->first();
 
         return Response()->json($venta, 200);
 

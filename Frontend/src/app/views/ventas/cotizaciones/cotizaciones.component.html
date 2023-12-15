@@ -42,7 +42,7 @@
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Cliente</th>
-                        <th class="d-none d-md-table-cell">Documento</th>
+                        <th class="d-none d-md-table-cell">Observaciones</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
                         <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
                         <!-- <th>Estado</th> -->
@@ -64,7 +64,7 @@
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
-                        <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
+                        <td>{{venta.observaciones}}</td>
                         <td>{{venta.forma_pago}}</td>
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <!-- <td>

@@ -3,8 +3,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 
@@ -33,7 +33,7 @@ export class GastoComponent implements OnInit {
 	ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
 

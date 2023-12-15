@@ -2,8 +2,8 @@ import { Component, OnInit, Input, TemplateRef, ViewChild } from '@angular/core'
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-caja-dash',

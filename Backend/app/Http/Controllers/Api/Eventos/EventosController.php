@@ -22,7 +22,10 @@ class EventosController extends Controller
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            return $query->where('inicio', '>=', $request->inicio);
+                        })
+                        ->when($request->fin, function($query) use ($request){
+                            return $query->where('fin', '<=', $request->fin);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -58,7 +61,7 @@ class EventosController extends Controller
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            return $query->whereBetween('inicio', [$request->inicio, $request->fin]);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -126,6 +129,13 @@ class EventosController extends Controller
         }
 
         return Response()->json($eventosList, 200);
+    }
+
+    public function read($id) {
+
+        $evento = Evento::findOrFail($id);
+        return Response()->json($evento, 200);
+
     }
 
     public function store(Request $request){

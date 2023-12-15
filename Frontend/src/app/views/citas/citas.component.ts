@@ -1,7 +1,9 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+
+import { CalendarioComponent } from './calendario/calendario.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -12,11 +14,12 @@ import Swal from 'sweetalert2';
 })
 
 export class CitasComponent implements OnInit {
+    @ViewChild('calendario') calendario!: CalendarioComponent;
 
     public eventos:any = [];
     public evento:any = {};
     public usuarios:any = [];
-    public productos:any = [];
+    public servicios:any = [];
     public clientes:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
@@ -47,12 +50,13 @@ export class CitasComponent implements OnInit {
         this.filtros.id_sucursal = '';
         this.filtros.id_cliente = '';
         this.filtros.id_usuario = '';
-        this.filtros.id_canal = '';
+        this.filtros.inicio = moment().startOf('day').format('YYYY-MM-DD HH:mm:ss');
+        this.filtros.fin = moment().endOf('month').format('YYYY-MM-DD HH:mm:ss');
         this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'inicio';
-        this.filtros.direccion = 'desc';
+        this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
 
         this.filtrarEventos();
@@ -122,8 +126,8 @@ export class CitasComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
+        this.apiService.getAll('servicios/list').subscribe(servicios => {
+            this.servicios = servicios;
         }, error => {this.alertService.error(error);});
 
 
@@ -131,17 +135,19 @@ export class CitasComponent implements OnInit {
             this.evento.id_empresa = this.apiService.auth_user().id_empresa;
             this.evento.id_usuario = this.apiService.auth_user().id;
             this.evento.frecuencia = '';
-            this.evento.tipo = 'Confirmado';
+            this.evento.tipo = 'Sin confirmar';
             this.evento.duracion = "1 hora";
+            this.evento.estado = "Activo";
             this.evento.id_empresa = this.apiService.auth_user().id_empresa;
-            this.setTime();
             this.evento.inicio =  moment().format('YYYY-MM-DD HH:mm:ss');
+            this.setTime();
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
-    public setEstado(evento:any){
+    public setEstado(evento:any, estado:any){
         this.evento = evento;
+        this.evento.tipo = estado;
         this.onSubmit();
     }
 
@@ -154,6 +160,7 @@ export class CitasComponent implements OnInit {
             }else{
                 this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
             }
+            this.calendario.loadAll();
             this.saving = false;
             this.modalRef.hide();
         }, error => {this.alertService.error(error); this.saving = false;});

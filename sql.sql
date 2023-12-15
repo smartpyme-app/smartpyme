@@ -150,3 +150,7 @@ ALTER TABLE presupuestos CHANGE enable enable TINYINT(1) NOT NULL DEFAULT true;
 
 ALTER TABLE eventos CHANGE fecha_start inicio DATETIME NOT NULL;
 ALTER TABLE eventos CHANGE fecha_end fin DATETIME NULL DEFAULT NULL;
+
+ALTER TABLE recibos CHANGE monto total DOUBLE(10,2) NOT NULL;
+ALTER TABLE recibos ADD id_sucursal INT NULL AFTER id_empresa;
+ALTER TABLE recibos ADD id_usuario INT NULL AFTER id_sucursal;

@@ -2,8 +2,8 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-sucursales',
@@ -11,21 +11,26 @@ import { ApiService } from '../../../services/api.service';
 })
 export class SucursalesComponent implements OnInit {
 
-    public sucursales: any[] = [];
-    public sucursal: any = {};
+    public sucursales:any = [];
+    public sucursal:any = {};
     public loading = false;
-    public buscador:any = '';
-    public estado:any = '';
+    public sucursales_activas:any = 0;
+    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
   	constructor( 
-  	    private apiService: ApiService, private alertService: AlertService,
+  	    public apiService: ApiService, private alertService: AlertService,
   	    private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
   	) { }
 
   	ngOnInit() {
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
   	    
         this.loadAll();
 
@@ -33,42 +38,69 @@ export class SucursalesComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('sucursales').subscribe(sucursales => {
+        this.apiService.getAll('sucursales', this.filtros).subscribe(sucursales => {
             this.sucursales = sucursales;
             this.loading = false;
+            this.contarActivos();
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     openModal(template: TemplateRef<any>, sucursal:any) {
         this.sucursal = sucursal;
+        if(!this.sucursal.id){
+            this.sucursal.id_empresa = this.apiService.auth_user().id_empresa;
+            this.sucursal.activo = 1;
+        }
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
+    }
+
+    closeModal(){
+        this.modalRef.hide();
+        this.alertService.modal = false;
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('sucursal/', id) .subscribe(data => {
-                for (let i = 0; i < this.sucursales.length; i++) { 
-                    if (this.sucursales[i].id == data.id )
-                        this.sucursales.splice(i, 1);
+                for (let i = 0; i < this.sucursales.data.length; i++) { 
+                    if (this.sucursales.data[i].id == data.id )
+                        this.sucursales.data.splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
                
         }
     }
 
+    public contarActivos(){
+        this.sucursales_activas = this.sucursales.data.filter((item:any) => item.activo == '1').length;
+        console.log(this.sucursales_activas);
+    }
+
+    public setEstado(sucursal:any){
+        this.apiService.store('sucursal', sucursal).subscribe(sucursal => { 
+            if(sucursal.activo == '1'){
+                this.alertService.success('Sucursal activada', 'La sucursal fue activada exitosamente.');
+            }else{
+                this.alertService.success('Sucursal desactivada', 'La sucursal fue desactivada exitosamente.');
+            }
+            this.contarActivos();
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
     
     public onSubmit() {
           this.loading = true;
-          // Guardamos la sucursal
-          this.sucursal.empresa_id = this.apiService.auth_user().empresa_id;
           this.apiService.store('sucursal', this.sucursal).subscribe(sucursal => {
               if (!this.sucursal.id) {
-                  this.sucursales.push(sucursal);
+                    this.sucursales.data.push(sucursal);
+                    this.alertService.success('Sucursal guardada', 'La sucursal fue añadida exitosamente.');
               }
+              this.contarActivos();
               this.sucursal = {};
-              this.alertService.success('Sucursal guardada', 'La sucursal fue guardada exitosamente.');
               this.loading = false;
             this.modalRef.hide();
+            this.alertService.modal = false;
           },error => {this.alertService.error(error); this.loading = false; });
       }
 

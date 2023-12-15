@@ -38,7 +38,7 @@ export class MateriasPrimaComponent implements OnInit {
         this.loading = true;
         this.apiService.getAll('materias-primas').subscribe(productos => { 
             this.productos = productos;
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
+            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); this.loading = false;});
             this.loading = false; this.filtrado = false;

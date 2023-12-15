@@ -27,7 +27,7 @@
                         {{ detalle.nombre_producto }}
                     </td>
                     <td style="width: 150px;">
-                        <input type="number" tooltip="{{ detalle.stock > 0 ? detalle.stock : 'No hay' }} disponibles" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': detalle.cantidad > detalle.stock }" name="cantidad">
+                        <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
                     </td>
                     <td style="width: 150px;">
                         <input type="number" [disabled]="!apiService.auth_user().empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">

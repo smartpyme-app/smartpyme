@@ -5,7 +5,7 @@
 
   <div class="content p-2 p-lg-5 position-relative">
     <app-header></app-header>
-    <app-notificaciones-container></app-notificaciones-container>
+    <app-notificaciones-container *ngIf="!alertService.modal"></app-notificaciones-container>
     <router-outlet></router-outlet>
   </div>
 </div>

@@ -13,10 +13,9 @@ export class LayoutComponent  {
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
 
-    constructor(private apiService: ApiService) { }
+    constructor(private apiService: ApiService, public alertService: AlertService) { }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
-        console.log(this.usuario);
     }
 }

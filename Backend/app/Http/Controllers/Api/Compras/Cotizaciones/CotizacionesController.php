@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
+namespace App\Http\Controllers\Api\Compras\Cotizaciones;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Registros\Cliente;
-use App\Models\Ventas\Venta as Cotizacion;
+use App\Models\Compras\Compra as Cotizacion;
 use App\Models\Admin\Empresa;
-use App\Models\Ventas\Detalle;
+use App\Models\Compras\Detalle;
 use Carbon\Carbon;
 use JWTAuth;
 
@@ -17,7 +17,7 @@ class CotizacionesController extends Controller
     
     public function index(Request $request) {
        
-        $ordenes = Cotizacion::when($request->buscador, function($query) use ($request){
+        $cotizaciones = Cotizacion::when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -32,8 +32,8 @@ class CotizacionesController extends Controller
                         ->when($request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
                         })
-                        ->when($request->id_cliente, function($query) use ($request){
-                            return $query->where('id_cliente', $request->id_cliente);
+                        ->when($request->id_proveedor, function($query) use ($request){
+                            return $query->where('id_proveedor', $request->id_proveedor);
                         })
                         ->when($request->forma_pago, function($query) use ($request){
                             return $query->where('forma_pago', $request->forma_pago);
@@ -53,36 +53,36 @@ class CotizacionesController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                    ->where('estado', 'Pre-venta')
+                    ->where('estado', 'Pre-compra')
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
 
-        return Response()->json($ordenes, 200);
+        return Response()->json($cotizaciones, 200);
 
     }
 
     public function read($id) {
 
-        $orden = Cotizacion::where('id', $id)->with('cliente', 'detalles')->firstOrFail();
-        return Response()->json($orden, 200);
+        $cotizacion = Cotizacion::where('id', $id)->with('proveedor', 'detalles')->firstOrFail();
+        return Response()->json($cotizacion, 200);
 
     }
 
     public function search($txt) {
 
-        $ordenes = Cotizacion::with('cliente', function($q) use($txt){
+        $cotizaciones = Cotizacion::with('proveedor', function($q) use($txt){
                                     $q->where('nombre', 'like' ,'%' . $txt . '%');
                                 })
                                 ->orwhere('estado', 'like' ,'%' . $txt . '%')
                                 ->paginate(10);
-        return Response()->json($ordenes, 200);
+        return Response()->json($cotizaciones, 200);
 
     }
 
     public function filter(Request $request) {
 
-            $ordenes = Cotizacion::when($request->fin, function($query) use ($request){
+            $cotizaciones = Cotizacion::when($request->fin, function($query) use ($request){
                                     return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                                 })
                                 ->when($request->sucursal_id, function($query) use ($request){
@@ -99,7 +99,7 @@ class CotizacionesController extends Controller
                                 })
                                 ->orderBy('id','asc')->paginate(100000);
 
-            return Response()->json($ordenes, 200);
+            return Response()->json($cotizaciones, 200);
     }
 
     public function store(Request $request)
@@ -115,15 +115,15 @@ class CotizacionesController extends Controller
         
 
         if($request->id)
-            $orden = Cotizacion::findOrFail($request->id);
+            $cotizacion = Cotizacion::findOrFail($request->id);
         else
-            $orden = new Cotizacion;
+            $cotizacion = new Cotizacion;
 
-        $orden->fill($request->all());
-        $orden->total = $orden->detalles()->sum('total');
-        $orden->save();
+        $cotizacion->fill($request->all());
+        $cotizacion->total = $cotizacion->detalles()->sum('total');
+        $cotizacion->save();
         
-        return Response()->json($orden, 200);
+        return Response()->json($cotizacion, 200);
 
     }
 
@@ -133,33 +133,33 @@ class CotizacionesController extends Controller
             'fecha'         => 'required',
             'estado'        => 'required|max:255',
             'mesa'          => 'required|numeric',
-            'cliente'       => 'required',
+            'proveedor'       => 'required',
             'detalles'      => 'required',
             'total'         => 'required|numeric',
             'usuario_id'    => 'required|numeric',
             'sucursal_id'   => 'required|numeric',
         ]);
 
-        // Guardamos el cliente
-        if (isset($request->cliente['id']) || isset($request->cliente['nombre'])) {
-            if(isset($request->cliente['id']))
-                $cliente = Cliente::findOrFail($request->cliente['id']);
+        // Guardamos el proveedor
+        if (isset($request->proveedor['id']) || isset($request->proveedor['nombre'])) {
+            if(isset($request->proveedor['id']))
+                $proveedor = Cliente::findOrFail($request->proveedor['id']);
             else
-                $cliente = new Cliente;
+                $proveedor = new Cliente;
 
-            $cliente->fill($request->cliente);
-            $cliente->save();
-            $request['cliente_id'] = $cliente->id;
+            $proveedor->fill($request->proveedor);
+            $proveedor->save();
+            $request['proveedor_id'] = $proveedor->id;
         }
 
-        // Guardamos la orden
+        // Guardamos la cotizacion
             if($request->id)
-                $orden = Cotizacion::findOrFail($request->id);
+                $cotizacion = Cotizacion::findOrFail($request->id);
             else
-                $orden = new Cotizacion;
+                $cotizacion = new Cotizacion;
             
-            $orden->fill($request->all());
-            $orden->save();
+            $cotizacion->fill($request->all());
+            $cotizacion->save();
 
 
         // Guardamos los detalles
@@ -170,56 +170,56 @@ class CotizacionesController extends Controller
                 else
                     $detalle = new Detalle;
 
-                $det['orden_id'] = $orden->id;
+                $det['cotizacion_id'] = $cotizacion->id;
                 
                 $detalle->fill($det);
                 $detalle->save();
             }
 
         
-        return Response()->json($orden, 200);
+        return Response()->json($cotizacion, 200);
 
     }
 
 
     public function delete($id)
     {
-        $orden = Cotizacion::findOrFail($id);
-        foreach ($orden->detalles as $detalle) {
+        $cotizacion = Cotizacion::findOrFail($id);
+        foreach ($cotizacion->detalles as $detalle) {
             $detalle->delete();
         }
-        $orden->delete();
+        $cotizacion->delete();
 
-        return Response()->json($orden, 201);
+        return Response()->json($cotizacion, 201);
 
     }
 
     public function generarDoc($id){
-        $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+        $compra = Cotizacion::where('id', $id)->with('detalles', 'proveedor')->firstOrFail();
 
         $empresa = Empresa::find(1);
     
-        return view('reportes.preticket', compact('venta', 'empresa'));
+        return view('reportes.preticket', compact('compra', 'empresa'));
 
     }
 
     public function vendedor() {
        
-        $ordenes = Cotizacion::orderBy('id','desc')->where('usuario_id', \JWTAuth::parseToken()->authenticate()->id)->paginate(10);
+        $cotizaciones = Cotizacion::orderBy('id','desc')->where('usuario_id', \JWTAuth::parseToken()->authenticate()->id)->paginate(10);
 
-        return Response()->json($ordenes, 200);
+        return Response()->json($cotizaciones, 200);
 
     }
 
     public function vendedorBuscador($txt) {
        
-        $ordenes = Cotizacion::where('usuario_id', \JWTAuth::parseToken()->authenticate()->id)
-                                ->with('cliente', function($q) use($txt){
+        $cotizaciones = Cotizacion::where('usuario_id', \JWTAuth::parseToken()->authenticate()->id)
+                                ->with('proveedor', function($q) use($txt){
                                     $q->where('nombre', 'like' ,'%' . $txt . '%');
                                 })
                                 ->orwhere('estado', 'like' ,'%' . $txt . '%')
                                 ->paginate(10);
-        return Response()->json($ordenes, 200);
+        return Response()->json($cotizaciones, 200);
 
     }
 

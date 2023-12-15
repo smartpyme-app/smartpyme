@@ -1,71 +1,69 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Citas</h2>
-    <button (click)="openModal(mevento, {})" tooltip="Crear cita (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cita</button>
-</section>
+<div class="row">
+    <div class="col-xl-4 mb-5">
+        <div class="bg-white p-3">
+            <h3>Proximas Citas 
+                <button (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
+            </h3>
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <tbody>
+                        <tr>
+                            <td colspan="2" class="text-center" *ngIf="eventos?.total < 1 && !loading">
+                                <span class="badge bg-primary">No tiene citas registradas</span>
+                            </td>
+                            <td colspan="2" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
 
-<div class="bg-white p-3">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <app-calendario></app-calendario>
-        </div>
-        <div class="col-md-4">
-            <div class="row">
-                <h3>Citas</h3>
+                        <tr *ngFor=" let evento of eventos?.data">
+                            <td>
+                                <p class="m-0 d-flex justify-content-between">
+                                    <span tooltip="{{evento.descripcion}}">{{evento.descripcion | truncate:20 }}</span>
+                                    <small *ngIf="evento.nombre_cliente">({{evento.nombre_cliente | truncate:20 }})</small>
+                                </p>
+                                <p class="m-0 d-flex justify-content-between">
+                                    <small>{{evento.inicio | date:'dd/MM/yyyy'}}</small>
+                                    <small class="badge" style="font-size: 0.7rem;" [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{ evento.tipo }}</small>
+                                </p>
+                            </td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        <a (click)="openModal(mevento, evento)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-money-bill"></i> Generar venta
+                                        </a>
+                                        <a *ngIf="evento.tipo != 'Cancelar'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-ban"></i> Cancelar
+                                        </a>
+                                        <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-check"></i> Confirmar
+                                        </a>
+                                        <a (click)="delete(evento)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </ng-template>
+                            </td>
 
-                <div class="table-responsive">
-                    <table class="table table-borderless table-hover mb-0">
-                        <tbody>
-                            <tr>
-                                <td colspan="10" class="text-center" *ngIf="eventos?.total < 1 && !loading">
-                                    <span class="badge bg-primary">No tiene citas registradas</span>
-                                </td>
-                                <td colspan="10" class="text-center" *ngIf="loading">
-                                    <span class="badge bg-primary">Cargando...</span>
-                                </td>
-                            </tr>
-
-                            <tr *ngFor=" let evento of eventos?.data">
-                                <td>{{evento.descripcion}} <small *ngIf="evento.nombre_cliente">({{evento.nombre_cliente | truncate:30 }})</small> <br>
-                                    <small>{{evento.inicio | date:'dd/MM/yyyy'}}</small> <br>
-                                </td>
-                                <td>
-                                    <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{ evento.tipo }}</span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                        <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                                    </span>
-                                    <ng-template #accionesTemplate>
-                                        <div class="list-group border-0">
-                                            <a (click)="openModal(mevento, evento)" class="list-group-item list-group-item-action border-0 click">
-                                                <i class="fa fa-fw fa-edit"></i> Editar
-                                            </a>
-                                           <!--  <a *ngIf="evento.tipo != 'Anulada'" (click)="setEstado(evento, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
-                                                <i class="fa fa-fw fa-ban"></i> Anular evento
-                                            </a>
-                                            <a *ngIf="evento.tipo == 'Anulada'" (click)="setEstado(evento, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                                <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                            </a> -->
-                                            <a (click)="delete(evento)" class="list-group-item list-group-item-action border-0 click">
-                                                <i class="fa fa-fw fa-trash"></i> Eliminar
-                                            </a>
-                                        </div>
-                                    </ng-template>
-                                </td>
-
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-               <!--  <div class="col-12" *ngIf="eventos?.last_page > 1">
-                    <app-pagination [items]="eventos" (setPagination)="setPagination($event)"></app-pagination>
-                </div> -->
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+    <div class="col-xl-8 mb-5">
+        <div class="bg-white p-3">
+            <app-calendario #calendario (update)="loadAll()"></app-calendario>
+        </div>
+    </div>
 </div>
-
 
 
 <ng-template #mevento>
@@ -93,7 +91,7 @@
 
             <div class="form-group col-md-6">
               <label for="inicio">Fecha inicio</label>
-              <input type="datetime-local" class="form-control" name="inicio" [(ngModel)]="evento.inicio">
+              <input type="datetime-local" class="form-control" (change)="setTime()" name="inicio" [(ngModel)]="evento.inicio">
             </div>
 
             <div class="form-group col-md-6">
@@ -130,8 +128,8 @@
             <div class="form-group col-md-6">
                 <label for="id_servicio">Servicio</label>
                 <ng-select name="id_servicio" [(ngModel)]="evento.id_servicio" class="form-select p-0">
-                    <ng-option [value]="producto.id" *ngFor="let producto of productos">
-                        {{ producto.nombre }}
+                    <ng-option [value]="servicio.id" *ngFor="let servicio of servicios">
+                        {{ servicio.nombre }}
                     </ng-option>
                 </ng-select>
             </div>
@@ -144,7 +142,7 @@
             <div class="form-group col-md-6">
                   <label class="form-label font-weight-bold">Se repite</label>
                   <select name="frecuencia" [(ngModel)]="evento.frecuencia"  class="form-control form-select" id="frecuencia">
-                      <option value="" selected>No</option>
+                      <option value="">No</option>
                       <option value="DAILY">Diario</option>
                       <option value="WEEKLY">Semanal</option>
                       <option value="MONTHLY">Mensual</option>

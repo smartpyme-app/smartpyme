@@ -34,12 +34,12 @@ const routes: Routes = [
     title: 'Ventas',
     children: [
 
-        { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
-
         { path: 'ventas', component: VentasComponent, title: 'Ventas'},
         { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
-        { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
+        
+        { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
+        { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
     // 
         { path: 'canales', component: CanalesComponent, title: 'Canales de venta'},
         { path: 'formas-de-pago', component: FormasDePagoComponent, title: 'Formas de pago'},

@@ -21,9 +21,9 @@ import { CompraDetallesComponent } from './facturacion/detalles/compra-detalles.
 import { DevolucionesComprasComponent } from './devoluciones/devoluciones-compras.component';
 import { DevolucionCompraComponent } from './devoluciones/devolucion/devolucion-compra.component';
 
-import { DevolucionCompraNuevaComponent } from '../../views/compras/devoluciones/devolucion-nueva/devolucion-compra-nueva.component';
-import { DevolucionCompraDetallesComponent } from '../../views/compras/devoluciones/devolucion-nueva/detalles/devolucion-compra-detalles.component';
-import { RequisicionesComprasComponent } from './requisiciones/requisiciones-compras.component';
+import { DevolucionCompraNuevaComponent } from './devoluciones/devolucion-nueva/devolucion-compra-nueva.component';
+import { DevolucionCompraDetallesComponent } from './devoluciones/devolucion-nueva/detalles/devolucion-compra-detalles.component';
+import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compras.component';
 
 import { GastosComponent } from './gastos/gastos.component';
 import { GastoComponent } from './gastos/gasto/gasto.component';
@@ -58,7 +58,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     DevolucionCompraComponent,
     DevolucionCompraNuevaComponent,
     DevolucionCompraDetallesComponent,
-    RequisicionesComprasComponent,
+    CotizacionesComprasComponent,
     GastosComponent,
     GastoComponent,
     GastosDashComponent,
@@ -74,7 +74,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     DevolucionCompraComponent,
     DevolucionCompraNuevaComponent,
     DevolucionCompraDetallesComponent,
-    RequisicionesComprasComponent,
+    CotizacionesComprasComponent,
     GastosComponent,
     GastoComponent,
     GastosDashComponent,

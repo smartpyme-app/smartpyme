@@ -59,6 +59,7 @@ export class UsuariosComponent implements OnInit {
     }
 
     openModal(template: TemplateRef<any>, usuario:any) {
+        this.alertService.modal = true;
         this.usuario = usuario;
         if (!this.usuario.id) {
             this.usuario.tipo = 'Administrador';
@@ -84,6 +85,7 @@ export class UsuariosComponent implements OnInit {
             this.saving = false;
             this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
             this.modalRef?.hide();
+            this.alertService.modal = false;
         },error => {this.alertService.error(error); this.saving = false; });
 
     }

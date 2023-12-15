@@ -11,7 +11,8 @@ class Abono extends Model {
         'fecha',
         'concepto',
         'estado',
-        'metodo_pago',
+        'nombre_de',
+        'forma_pago',
         'detalle_banco',
         'mora',
         'comision',
@@ -23,6 +24,7 @@ class Abono extends Model {
         'id_cliente',
         'id_usuario',
         'id_sucursal',
+        'id_empresa',
     );
 
     public function venta(){

@@ -44,7 +44,7 @@ class Venta extends Model {
         'id_sucursal'
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_canal', 'nombre_documento'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
 
     protected static function booted()
     {
@@ -74,6 +74,11 @@ class Venta extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
+    public function getNombreSucursalAttribute()
+    {
+        return $this->sucursal()->pluck('nombre')->first();
+    }
+
     public function getNombreDocumentoAttribute(){
         return $this->documento()->pluck('nombre')->first();
     }
@@ -97,9 +102,9 @@ class Venta extends Model {
         return $text;
     }
 
-    // public function getSaldoAttribute(){
-    //     return $this->total - $this->credito()->pagos()->sum('abono');
-    // }
+    public function getSaldoAttribute(){
+        return $this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total');
+    }
 
     // Relaciones
 
@@ -141,6 +146,10 @@ class Venta extends Model {
 
     public function detalles(){
         return $this->hasMany('App\Models\Ventas\Detalle','id_venta');
+    }
+
+    public function abonos(){
+        return $this->hasMany('App\Models\Ventas\Abono','id_venta');
     }
 
     public function devoluciones(){

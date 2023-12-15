@@ -4,9 +4,9 @@
 
 <div class="card">
     <div class="card-body">
-      <div class="alert alert-warning">
+      <div class="alert alert-warning border-0">
         <p class="m-0">
-            Seleccione los módulos de los cuales desea eliminar todos sus registros. Tenga en cuenta que esta acción es irreversible y no podrá deshacerse.
+            Seleccione los módulos de los cuales desea eliminar todos sus registros. Tenga en cuenta que <b>esta acción es irreversible y no podrá deshacerse</b>.
         </p>
       </div>
         <form  (ngSubmit)="onDeleteData()">
@@ -120,7 +120,7 @@
                     </table>
                 </div>
                 <div class="col-12 mt-3">
-                    <button type="submit" [disabled]="saving" class="btn btn-danger float-end">
+                    <button type="submit" [disabled]="saving || (!empresa.m_inventario && !empresa.m_categorias && !empresa.m_ventas && !empresa.m_clientes && !empresa.m_proveedores && !empresa.m_compras && !empresa.m_gastos && !empresa.m_presupuestos)" class="btn btn-danger float-end">
                         <span *ngIf="!saving">Eliminar datos</span>
                         <span *ngIf="saving">Eliminando...</span>
                     </button>

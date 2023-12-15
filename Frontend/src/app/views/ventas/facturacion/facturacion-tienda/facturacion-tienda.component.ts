@@ -16,7 +16,7 @@ import * as moment from 'moment';
 export class FacturacionTiendaComponent implements OnInit {
 
     public venta: any= {};
-    public flete: any= {};
+    public evento: any= {};
     public detalle: any = {};
     public clientes:any = [];
     public usuarios:any = [];
@@ -52,7 +52,7 @@ export class FacturacionTiendaComponent implements OnInit {
 
         this.cargarDatosIniciales();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
 
@@ -145,9 +145,38 @@ export class FacturacionTiendaComponent implements OnInit {
             console.log(this.venta);
         }
 
-        console.log(this.venta);
-        // this.sumTotal();
-        // this.imprimir = true;
+        if (this.route.snapshot.queryParamMap.get('id_cita')!) {
+            this.loading = true;
+            this.loadClientes();
+            this.apiService.read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!).subscribe(evento => {
+                this.evento = evento;
+                this.venta.id_cliente = evento.id_cliente;
+                this.venta.id_evento = evento.id;
+                this.apiService.read('servicio/', evento.id_servicio).subscribe(servicio => {
+                    let detalle:any = {};
+                    detalle.id_producto    = servicio.id;
+                    detalle.nombre_producto = servicio.nombre;
+                    detalle.img            = servicio.img;
+                    detalle.precio         = parseFloat(servicio.precio);
+                    detalle.costo          = parseFloat(servicio.costo);
+                    // if(servicio.inventarios.length > 0){
+                    //     servicio.inventarios   = servicio.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+                    //     detalle.stock          = parseFloat(this.sumPipe.transform(servicio.inventarios, 'stock'));
+                    // }else{
+                        detalle.stock = null;
+                    // }
+                    detalle.cantidad       = 1;
+                    detalle.descuento      = 0;
+                    detalle.descuento_porcentaje      = 0;
+                    detalle.total_costo = detalle.costo;
+                    detalle.total      = detalle.precio;
+                    this.venta.detalles.push(detalle);
+                    this.sumTotal();
+                    this.loading = false;
+                    console.log(this.venta);
+                }, error => {this.alertService.error(error); this.loading = false;});
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
     }
 
     public sumTotal() {
@@ -243,6 +272,14 @@ export class FacturacionTiendaComponent implements OnInit {
                 }else{
                     this.router.navigate(['/ventas']);
                     this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
+                }
+
+                // Si viene desde citas
+                if(this.evento.id){
+                    this.evento.tipo = 'Pagado';
+                    this.apiService.store('evento', this.evento).subscribe(evento => {
+
+                    },error => {this.alertService.error(error); this.loading = false; });
                 }
 
 

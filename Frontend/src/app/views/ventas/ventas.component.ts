@@ -35,7 +35,7 @@ export class VentasComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }
@@ -211,6 +211,11 @@ export class VentasComponent implements OnInit {
             this.alertService.success('Venta guardado', 'La venta fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
 
+    }
+
+    public openAbono(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.modalRef = this.modalService.show(template);
     }
 
 

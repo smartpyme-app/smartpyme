@@ -18,7 +18,7 @@ export class CorteComponent implements OnInit {
         this.filtros.id_sucursal = null;
         this.filtros.fecha = this.apiService.date();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 

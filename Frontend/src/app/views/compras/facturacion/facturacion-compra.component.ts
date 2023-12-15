@@ -52,7 +52,7 @@ export class FacturacionCompraComponent implements OnInit {
 
         this.cargarDatosIniciales();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
 
@@ -130,6 +130,10 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
         }
 
+        if (this.route.snapshot.queryParamMap.get('estado')!) {
+            this.compra.estado = this.route.snapshot.queryParamMap.get('estado')!;
+        }
+
         console.log(this.compra);
         // this.sumTotal();
         // this.imprimir = true;
@@ -193,7 +197,7 @@ export class FacturacionCompraComponent implements OnInit {
         }
 
         public onFacturar(){
-            if (confirm('¿Confirma la compra?')) {
+            if (confirm('¿Confirma procesar la ' + (this.compra.estado == 'Pre-compra' ? ' orden de compra.' : 'compra.') )) {
                 if(!this.compra.recibido)
                     this.compra.recibido = this.compra.total;
                 this.onSubmit();
@@ -209,9 +213,13 @@ export class FacturacionCompraComponent implements OnInit {
                 if (this.modalRef) { this.modalRef.hide() }
                 this.saving = false;
                 // this.cargarDatosIniciales();
-                this.router.navigate(['/compras']);
-                // this.router.navigate(['/compra/crear']);
-                this.alertService.success('Compra guardada', 'La compra fue guardada exitosamente.');
+                if(this.compra.estado == 'Pre-compra'){
+                    this.router.navigate(['/ordenes-de-compras']);
+                    this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+                }else{
+                    this.router.navigate(['/compras']);
+                    this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                }
             },error => {this.alertService.error(error); this.saving = false; });
 
         }

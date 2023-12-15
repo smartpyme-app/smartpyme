@@ -2,10 +2,10 @@
     <h2 class="page-heading">Cuenta</h2>
 </section>
 
+<form name="form" (ngSubmit)="onSubmit()">
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-12">
-            <form name="form" (ngSubmit)="onSubmit()">
                <div class="row justify-content-center">
                    <div class="form-group col-6 col-sm-4 col-md-2">
                        <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
@@ -97,15 +97,17 @@
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
 
-                    <div class="form-group col-md-12 mt-3">
-                        <button [disabled]="saving" class="btn btn-primary float-end">
-                            <span *ngIf="!saving">Guardar</span>
-                            <span *ngIf="saving">Guardando...</span>
-                        </button>
-                    </div>
                 </div>
-            </form>
         </div>
     </div>
 
 </section>
+<div class="bg-white rounded p-3 mb-3">
+    <div class="form-group col-sm-12 pt-2 pb-4">
+        <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+            <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+            <span *ngIf="saving">Guardando...</span>
+        </button>
+    </div>
+</div>
+</form>

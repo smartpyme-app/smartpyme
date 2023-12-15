@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Usuarios</h2>
-    <button (click)="openModal(musuario, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
+    <button (click)="openModal(musuario, {})"  tooltip="Crear usuario (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
 </section>
 <div>
     <p class="alert alert-info text-muted" *ngIf="!loading && (usuarios_activos < apiService.auth_user().empresa.user_limit)">
@@ -36,7 +36,6 @@
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
             <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
-            <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="loadAll()"  [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
@@ -121,6 +120,7 @@
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">   
+            <app-notificaciones-container></app-notificaciones-container>
             <div class="form-group col-md-6">
                 <label for="nombre">Nombre:</label>
                 <input type="text" class="form-control" [(ngModel)]="usuario.name" name="nombre" placeholder="Escribe aquí" focus="true">

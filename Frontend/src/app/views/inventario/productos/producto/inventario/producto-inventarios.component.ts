@@ -32,7 +32,7 @@ export class ProductoInventariosComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('sucursales').subscribe(bodegas => {
+        this.apiService.getAll('sucursales/list').subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });

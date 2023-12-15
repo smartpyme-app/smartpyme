@@ -5,14 +5,28 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Inventario;
 use JWTAuth;
 
 class SucursalesController extends Controller
 {
     
 
-    public function index() {
-        $sucursales = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)->get();
+    public function index(Request $request) {
+       
+        $sucursales = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+                                ->when($request->estado !== null, function($q) use ($request){
+                                    $q->where('activo', !!$request->estado);
+                                })
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('telefono', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                // ->orderBy('enable', 'desc')
+                                ->orderBy($request->orden, $request->direccion)
+                                ->paginate($request->paginate);
+
         return Response()->json($sucursales, 200);
 
     }
@@ -48,6 +62,18 @@ class SucursalesController extends Controller
         
         $sucursal->fill($request->all());
         $sucursal->save();
+
+        // Configurar inventarios para los productos
+        if (!$request->id) {
+            $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
+            foreach ($productos as $producto) {
+                $inventario = new Inventario;
+                $inventario->id_sucursal    = $sucursal->id;
+                $inventario->stock          = 0;
+                $inventario->id_producto    = $producto->id;
+                $inventario->save();
+            }
+        }
 
         return Response()->json($sucursal, 200);
 

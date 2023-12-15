@@ -61,8 +61,11 @@ class ServiciosController extends Controller
 
     public function read($id) {
 
-        $producto = Servicio::where('tipo', 'Servicio')->where('id', $id)->with('composiciones', 'promociones', 'imagenes', 'sucursales')->first();
-        return Response()->json($producto, 200);
+        $servicio = Servicio::where('tipo', 'Servicio')
+                        ->where('id', $id)
+                        ->with('inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores')
+                        ->first();
+        return Response()->json($servicio, 200);
 
     }
 

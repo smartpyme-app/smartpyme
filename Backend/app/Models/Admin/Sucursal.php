@@ -17,7 +17,12 @@ class Sucursal extends Model {
         'municipio',
         'departamento',
         'direccion',
+        'activo',
         'id_empresa',
+    ];
+
+    protected $casts = [
+        'activo' => 'string'
     ];
 
     protected static function boot()

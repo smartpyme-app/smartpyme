@@ -32,7 +32,7 @@ export class ProductoSucursalesComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('sucursales').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
             this.validate();
             this.loading = false;

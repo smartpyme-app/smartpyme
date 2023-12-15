@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
+namespace App\Http\Controllers\Api\Compras\Cotizaciones;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\Ventas\Venta as Cotizacion;
-use App\Models\Ventas\Detalle;
+use App\Models\Compras\Compra as Cotizacion;
+use App\Models\Compras\Detalle;
 use Carbon\Carbon;
 
 class DetallesController extends Controller
@@ -48,7 +48,7 @@ class DetallesController extends Controller
                                         return $query->where('bodega_id', 1)->whereRaw('stock <= stock_min');
                                     });
                                 })
-                                ->when($request->stock_venta, function($query) use ($request){
+                                ->when($request->stock_compra, function($query) use ($request){
                                     return $query->whereHas('bodegas', function($query){
                                         return $query->where('bodega_id', 2)->whereRaw('stock <= stock_min');
                                     });
@@ -70,7 +70,7 @@ class DetallesController extends Controller
             'descuento'     => 'required|numeric',
             'total'         => 'required|numeric',
             'nota'          => 'sometimes|max:255',
-            'venta_id'    => 'required|required'
+            'compra_id'    => 'required|required'
         ]);
 
         if($request->id)
@@ -81,7 +81,7 @@ class DetallesController extends Controller
         $detalle->fill($request->all());
         $detalle->save();
 
-        $cotizacion = Cotizacion::where('id', $request->venta_id)->with('detalles')->first();
+        $cotizacion = Cotizacion::where('id', $request->compra_id)->with('detalles')->first();
         $cotizacion->total = $cotizacion->detalles()->sum('total');
         $cotizacion->save();
 
@@ -94,7 +94,7 @@ class DetallesController extends Controller
         $detalle = Detalle::findOrFail($id);
         $detalle->delete();
         
-        $cotizacion = Cotizacion::where('id', $detalle->venta_id)->first();
+        $cotizacion = Cotizacion::where('id', $detalle->compra_id)->first();
         $cotizacion->total = $cotizacion->detalles()->sum('total');
         $cotizacion->save();
 
