@@ -7,30 +7,46 @@
     <div class="card-body">
         <div class="row">
             <h6 class="col-12"> Información </h6>
-            <div class="form-group col-lg-4">
-                <label>Fecha</label>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Fecha</label>
                 <p>{{ compra.fecha | date:'yy/MM/yyyy'}} {{ compra.created_at | date:'hh:mm a'}}</p>
             </div>
-            <div class="form-group col-lg-4">
-                <label>Usuario</label>
-                <p>{{ compra.nombre_usuario }}</p>
-            </div>
-            <div class="form-group col-lg-4">
-                <label>Proveedor</label>
+            <div class="form-group col-lg-6">
+                <label class="fw-medium">Proveedor</label>
                 <p>{{ compra.nombre_proveedor }}</p>
             </div>
-            <div class="form-group col-lg-4">
-                <label>Estado</label>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Estado</label>
                 <p>{{ compra.estado }}</p>
             </div>
-            <div class="form-group col-lg-4">
-                <label>Forma de pago</label>
-                <p>{{ compra.forma_pago }}</p>
-            </div>
-            <div class="form-group col-lg-4">
-                <label>Fecha pago</label>
-                <p>{{ compra.fecha_pago | date:'dd/MM/yyyy' }}</p>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Fecha pago</label>
+                <p>{{ compra.fecha_pago | date:'yy/MM/yyyy' }}</p>
             </div> 
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Forma de pago</label>
+                <p>{{ compra.forma_pago }}</p>
+            </div> 
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Detalle banco</label>
+                <p>{{ compra.detalle_banco }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Documento</label>
+                <p>{{ compra.tipo_documento }} # {{ compra.num_referencia }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">N° serie</label>
+                <p>{{ compra.num_serie }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Usuario</label>
+                <p>{{ compra.nombre_usuario }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Sucursal</label>
+                <p>{{ compra.nombre_sucursal }}</p>
+            </div>
         </div>
     </div>
 
@@ -104,3 +120,66 @@
     </div>
 
 </div>
+
+<div class="card" *ngIf="compra.abonos?.length > 0 || compra.estado == 'Pendiente'">
+    <h5 class="card-title p-3">
+        Recibos de pago
+        <a *ngIf="compra.saldo > 0" (click)="openAbono(mabono, compra)" class="btn btn-default float-end">
+            <i class="fas fa-fw fa-hand-holding-usd"></i> Agregar abono
+        </a>
+    </h5>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                        <th>Forma de pago</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <!-- <th class="text-center">Mas</th> -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center" *ngIf="compra.abonos?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene abonos agregados</span>
+                        </td>
+                        <td colspan="5" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let abono of compra.abonos; let i=index">
+                        <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ abono.concepto }}</td>
+                        <td>{{ abono.forma_pago }}</td>
+                        <td>
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">
+                                <option value="Cancelado">Cancelado</option>
+                                <option value="Confirmado">Confirmado</option>
+                            </select>
+                        </td>
+                        <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                       <!--  <td class="text-center">
+                            <a (click)="imprimirRecibo(abono)" class="btn btn-light">
+                                <i class="fa fa-fw fa-print"></i>
+                            </a>
+                        </td> -->
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Recibo de pago </h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-compra [compra]="compra" (update)="loadAll()"></app-crear-abono-compra>
+    </div>
+</ng-template>

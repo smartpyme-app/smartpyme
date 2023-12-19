@@ -37,11 +37,16 @@ export class ProveedorComponent implements OnInit {
                 }, error => {this.alertService.error(error); this.loading = false;});
             }else{
                 this.proveedor = {};
+                this.proveedor.tipo = 'Persona';
                 this.proveedor.tipo_contribuyente = '';
                 this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
                 this.proveedor.id_usuario = this.apiService.auth_user().id;
             }
         });
+    }
+
+    public setTipo(tipo:any){
+        this.proveedor.tipo = tipo;
     }
 
     public submit():void{

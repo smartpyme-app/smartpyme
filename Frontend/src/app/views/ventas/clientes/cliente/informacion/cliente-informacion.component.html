@@ -1,5 +1,15 @@
 
 <form (ngSubmit)="submit()">
+    <div class="row mb-3">
+        <div class="col d-grid">
+            <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option1" (change)="setTipo('Persona')">
+            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Persona', 'btn-light' : cliente.tipo == 'Empresa' }" for="option1">Persona</label>
+        </div>
+        <div class="col d-grid">
+            <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option2" (change)="setTipo('Empresa')">
+            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Empresa', 'btn-light' : cliente.tipo == 'Persona' }" for="option2">Empresa</label>
+        </div>
+    </div>
     <div class="row">
         <h6 class="col-12 pb-2 mb-3">Información de contacto</h6>
         <div class="form-group col-lg-3">

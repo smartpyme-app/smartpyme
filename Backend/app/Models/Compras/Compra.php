@@ -39,7 +39,7 @@ class Compra extends Model {
         'id_empresa',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
 
     protected static function booted()
     {
@@ -53,10 +53,23 @@ class Compra extends Model {
         
     }
 
+    public function getSaldoAttribute(){
+        return $this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total');
+    }
+
+
+    public function getNombreSucursalAttribute()
+    {
+        if ($this->sucursal()->first()) {
+            return $this->sucursal()->pluck('nombre')->first();
+        }
+        return '';
+    }
+
     public function getNombreProveedorAttribute()
     {
         if ($this->proveedor()->first()) {
-            return $this->proveedor()->pluck('nombre')->first();
+            return $this->proveedor()->pluck('nombre')->first() . ' ' . $this->proveedor()->pluck('apellido')->first();
         }
         return 'Consumidor Final';
     }
@@ -76,6 +89,10 @@ class Compra extends Model {
 
     public function proveedor(){
         return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor','id_proveedor');
+    }
+
+    public function abonos(){
+        return $this->hasMany('App\Models\Compras\Abono','id_compra');
     }
 
     public function usuario(){

@@ -184,4 +184,9 @@ export class ComprasComponent implements OnInit {
         );
     }
 
+    public openAbono(template: TemplateRef<any>, compra:any){
+        this.compra = compra;
+        this.modalRef = this.modalService.show(template);
+    }
+
 }

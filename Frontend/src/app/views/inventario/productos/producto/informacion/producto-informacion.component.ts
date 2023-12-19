@@ -47,6 +47,16 @@ export class ProductoInformacionComponent implements OnInit {
         }
     }
 
+    public calPrecioBase(){
+        this.producto.impuesto = this.apiService.auth_user().empresa.iva / 100;
+        this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
+    }
+
+    public calPrecioFinal(){
+        this.producto.impuesto = this.apiService.auth_user().empresa.iva / 100;
+        this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
+    }
+
 
     public onSubmit() {
         this.guardar = true;

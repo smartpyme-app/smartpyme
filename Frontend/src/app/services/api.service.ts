@@ -113,7 +113,7 @@ export class ApiService {
                    reject(err);
              });
        });
-   }
+    }
 
     private handleError(error: HttpErrorResponse) {
       return throwError(error);

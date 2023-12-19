@@ -151,6 +151,31 @@ ALTER TABLE presupuestos CHANGE enable enable TINYINT(1) NOT NULL DEFAULT true;
 ALTER TABLE eventos CHANGE fecha_start inicio DATETIME NOT NULL;
 ALTER TABLE eventos CHANGE fecha_end fin DATETIME NULL DEFAULT NULL;
 
-ALTER TABLE recibos CHANGE monto total DOUBLE(10,2) NOT NULL;
-ALTER TABLE recibos ADD id_sucursal INT NULL AFTER id_empresa;
-ALTER TABLE recibos ADD id_usuario INT NULL AFTER id_sucursal;
+
+ALTER TABLE productos CHANGE precio precio DECIMAL(11,4) NOT NULL;
+ALTER TABLE producto_precios CHANGE precio precio DECIMAL(11,4) NOT NULL;
+
+ALTER TABLE ajustes CHANGE updated_at updated_at TIMESTAMP NULL DEFAULT NULL;
+
+RENAME TABLE recibos TO abonos_ventas;
+
+ALTER TABLE abonos_ventas CHANGE monto total DOUBLE(10,2) NOT NULL;
+ALTER TABLE abonos_ventas ADD id_sucursal INT NULL AFTER id_empresa;
+ALTER TABLE abonos_ventas ADD id_usuario INT NULL AFTER id_sucursal;
+
+CREATE TABLE abonos_compras (
+    id int NOT NULL AUTO_INCREMENT,
+    concepto VARCHAR(500) NOT NULL,
+    fecha date NOT NULL,
+    nombre_de VARCHAR(500) NOT NULL,
+    total double(10,2) NOT NULL,
+    forma_pago  varchar(150) NOT NULL,
+    estado  varchar(150) NOT NULL,
+    id_empresa int NOT NULL,
+    id_sucursal int NOT NULL,
+    id_usuario int NOT NULL,
+    id_compra int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);

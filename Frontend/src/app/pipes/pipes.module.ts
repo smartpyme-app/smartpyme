@@ -5,6 +5,7 @@ import { AvgPipe } from './avg.pipe';
 import { TruncatePipe } from './truncate.pipe';
 import { FilterPipe } from './filter.pipe';
 import { SortPipe } from './sort.pipe';
+import { CurrencyPipe } from './currency-format.pipe';
 
 @NgModule({
   imports: [
@@ -16,6 +17,7 @@ import { SortPipe } from './sort.pipe';
     TruncatePipe,
     FilterPipe,
     SortPipe,
+    CurrencyPipe,
   ],
   exports: [
   	SumPipe,
@@ -23,6 +25,7 @@ import { SortPipe } from './sort.pipe';
     TruncatePipe,
     FilterPipe,
     SortPipe,
+    CurrencyPipe,
   ]
 })
 export class PipesModule { }

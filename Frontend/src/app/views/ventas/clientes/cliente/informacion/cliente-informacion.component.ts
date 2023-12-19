@@ -37,11 +37,16 @@ export class ClienteInformacionComponent implements OnInit {
                 }, error => {this.alertService.error(error); this.loading = false;});
             }else{
                 this.cliente = {};
+                this.cliente.tipo = 'Persona';
                 this.cliente.tipo_contribuyente = '';
                 this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
                 this.cliente.id_usuario = this.apiService.auth_user().id;
             }
         });
+    }
+
+    public setTipo(tipo:any){
+        this.cliente.tipo = tipo;
     }
 
     public submit():void{

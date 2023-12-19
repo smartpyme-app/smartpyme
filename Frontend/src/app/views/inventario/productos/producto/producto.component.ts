@@ -28,7 +28,10 @@ export class ProductoComponent implements OnInit {
 		        this.loading = true;
 		        this.apiService.read('producto/', params.id).subscribe(producto => {
 		            this.producto = producto;
-	                this.loading = false;
+                this.producto.impuesto = this.apiService.auth_user().empresa.iva / 100;
+                this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
+
+	              this.loading = false;
 		        },error => {this.alertService.error(error);this.loading = false;});
 	      	} else {
 				this.producto = {};

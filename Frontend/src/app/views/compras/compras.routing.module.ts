@@ -9,6 +9,8 @@ import { DevolucionesComprasComponent } from '../compras/devoluciones/devolucion
 import { DevolucionCompraComponent } from '../compras/devoluciones/devolucion/devolucion-compra.component';
 import { DevolucionCompraNuevaComponent } from '../compras/devoluciones/devolucion-nueva/devolucion-compra-nueva.component';
 
+import { AbonosComprasComponent } from './abonos/abonos-compras.component';
+
 import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compras.component';
 
 import { ProveedoresComponent } from '../compras/proveedores/proveedores.component';
@@ -34,6 +36,8 @@ const routes: Routes = [
         { path: 'compras', component: ComprasComponent, title:'Compras' },
         { path: 'compra/crear', component: FacturacionCompraComponent, title:'Compra' },
         { path: 'compra/:id', component: CompraComponent, title:'Compra' },
+
+        { path: 'compras/abonos', component: AbonosComprasComponent, title:'Abonos de compra' },
 
         { path: 'ordenes-de-compras', component: CotizacionesComprasComponent, title: 'Ordenes de compra' },
         { path: 'orden-de-compra/crear', component: FacturacionCompraComponent, title: 'Orden de compra' },

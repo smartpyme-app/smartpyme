@@ -33,6 +33,12 @@ export class EmpresaComponent implements OnInit {
   	    this.saving = true;
   	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
   	        this.empresa = empresa;
+
+            let user:any = {}; 
+            user = JSON.parse(localStorage.getItem('SP_auth_user')!);
+            user.empresa = empresa;
+            localStorage.setItem('SP_auth_user', JSON.stringify(user));
+
             this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
   	        this.saving = false;
   	    },error => {this.alertService.error(error); this.saving = false; });

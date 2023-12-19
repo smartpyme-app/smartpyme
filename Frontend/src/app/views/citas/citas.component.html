@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-xl-4 mb-5">
         <div class="bg-white p-3">
-            <h3>Proximas Citas 
+            <h3>Próximas Citas 
                 <button (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
             </h3>
             <div class="table-responsive">
@@ -9,7 +9,7 @@
                     <tbody>
                         <tr>
                             <td colspan="2" class="text-center" *ngIf="eventos?.total < 1 && !loading">
-                                <span class="badge bg-primary">No tiene citas registradas</span>
+                                <span class="badge bg-primary">No tiene citas próximas</span>
                             </td>
                             <td colspan="2" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>

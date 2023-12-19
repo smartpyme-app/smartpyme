@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\Ventas;
+namespace App\Http\Controllers\Api\Compras;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Ventas\Abono;
-use App\Models\Ventas\Venta;
+use App\Models\Compras\Abono;
+use App\Models\Compras\Compra;
 use Barryvdh\DomPDF\Facade as PDF;
 use JWTAuth;
 
@@ -16,7 +16,7 @@ class AbonosController extends Controller
     public function index(Request $request) {
        
         $abonos = Abono::when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('id_venta', 'like', '%'.$request->buscador.'%')
+                        return $query->orwhere('id_compra', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');
                         })
@@ -29,8 +29,8 @@ class AbonosController extends Controller
                         ->when($request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
                         })
-                        ->when($request->id_cliente, function($query) use ($request){
-                            return $query->where('id_cliente', $request->id_cliente);
+                        ->when($request->id_proveedor, function($query) use ($request){
+                            return $query->where('id_proveedor', $request->id_proveedor);
                         })
                         ->when($request->forma_pago, function($query) use ($request){
                             return $query->where('forma_pago', $request->forma_pago);
@@ -60,7 +60,7 @@ class AbonosController extends Controller
     public function store(Request $request)
     {
 
-        $venta = Venta::find($request->id_venta);
+        $compra = Compra::find($request->id_compra);
 
         $request->validate([
             'fecha'       => 'required|date',
@@ -69,7 +69,7 @@ class AbonosController extends Controller
             'estado'      => 'required|max:255',
             'forma_pago' => 'required|max:255',
             'total'       => 'required|numeric',
-            'id_venta'    => 'required|numeric',
+            'id_compra'    => 'required|numeric',
             'id_usuario'    => 'required|numeric',
             'id_sucursal'    => 'required|numeric',
         ]);
@@ -83,14 +83,14 @@ class AbonosController extends Controller
         $abono->fill($request->all());
         $abono->save();
 
-        if ($venta && $venta->saldo <= 0) {
-            $venta->estado = 'Pagada';
-            $venta->save();
+        if ($compra && $compra->saldo <= 0) {
+            $compra->estado = 'Pagada';
+            $compra->save();
         }
 
-        if ($venta && $venta->saldo > 0) {
-            $venta->estado = 'Pendiente';
-            $venta->save();
+        if ($compra && $compra->saldo > 0) {
+            $compra->estado = 'Pendiente';
+            $compra->save();
         }
 
         return Response()->json($abono, 200);
@@ -108,13 +108,13 @@ class AbonosController extends Controller
     public function print($id){
 
         $recibo = Abono::where('id', $id)->first();
-        $venta = Venta::where('id', $recibo->id_venta)->first();
+        $compra = Compra::where('id', $recibo->id_compra)->first();
 
         if(JWTAuth::parseToken()->authenticate()->id_empresa == 38){
-            $pdf = PDF::loadView('reportes.recibos.velo-recibo', compact('venta', 'recibo'));
+            $pdf = PDF::loadView('reportes.recibos.velo-recibo', compact('compra', 'recibo'));
             $pdf->setPaper('US Letter', 'portrait');
         }else{
-            $pdf = PDF::loadView('reportes.recibos.recibo', compact('venta', 'recibo'));
+            $pdf = PDF::loadView('reportes.recibos.recibo', compact('compra', 'recibo'));
             $pdf->setPaper('US Letter', 'portrait');  
         }     
 

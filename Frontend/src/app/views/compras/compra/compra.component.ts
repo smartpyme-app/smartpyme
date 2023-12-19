@@ -16,6 +16,8 @@ export class CompraComponent implements OnInit {
     public compra:any = {};
     public loading = false;
 
+    modalRef!: BsModalRef;
+
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
     ) {
@@ -29,6 +31,9 @@ export class CompraComponent implements OnInit {
     }
 
     public loadAll(){
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
         this.compra.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
         this.apiService.read('compra/', this.compra.id).subscribe(compra => {
@@ -36,6 +41,11 @@ export class CompraComponent implements OnInit {
         this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
+    }
+
+    public openAbono(template: TemplateRef<any>, compra:any){
+        this.compra = compra;
+        this.modalRef = this.modalService.show(template);
     }
 
 

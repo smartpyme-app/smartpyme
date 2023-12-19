@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models\Ventas;
+namespace App\Models\Compras;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Abono extends Model {
 
-    protected $table = 'abonos_ventas';
+    protected $table = 'abonos_compras';
     protected $fillable = array(
         'fecha',
         'concepto',
@@ -20,26 +20,26 @@ class Abono extends Model {
         'nota',
         'id_caja',
         'id_corte',
-        'id_venta',
+        'id_compra',
         'id_usuario',
         'id_sucursal',
         'id_empresa',
     );
 
-    protected $appends = ['nombre_cliente'];
+    protected $appends = ['nombre_proveedor'];
 
-    public function getNombreClienteAttribute()
+    public function getNombreProveedorAttribute()
     {
-        $venta = $this->venta()->first();
-        if ($venta) {
-            return $venta->nombre_cliente;
+        $compra = $this->compra()->first();
+        if ($compra) {
+            return $compra->nombre_proveedor;
         }else{
             return null;
         }
     }
 
-    public function venta(){
-        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
+    public function compra(){
+        return $this->belongsTo('App\Models\Compras\Compra','id_compra');
     }
 
     public function usuario(){

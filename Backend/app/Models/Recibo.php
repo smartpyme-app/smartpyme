@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Recibo extends Model
 {
     use HasFactory;
-    protected $table = 'recibos';
+    protected $table = 'abonos_ventas';
     protected $fillable = [
         'fecha',
         'concepto',

@@ -26,7 +26,8 @@ import { CrearCargoEmpleadoComponent } from './modals/crear-cargo-empleado/crear
 import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedor.component';
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
-import { CrearAbonoComponent } from './modals/crear-abono/crear-abono.component';
+import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
+import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
@@ -68,7 +69,8 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent,
-    CrearAbonoComponent
+    CrearAbonoVentaComponent,
+    CrearAbonoCompraComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -92,7 +94,8 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearProveedorComponent,
     CrearClienteComponent,
     CrearAjusteComponent,
-    CrearAbonoComponent
+    CrearAbonoVentaComponent,
+    CrearAbonoCompraComponent
   ],
   providers: [AlertService],
 })

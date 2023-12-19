@@ -72,6 +72,10 @@ class VentasController extends Controller
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
 
+        foreach ($ventas as $venta) {
+            $venta->saldo = $venta->saldo;
+        }
+
         return Response()->json($ventas, 200);
 
     }
@@ -81,7 +85,7 @@ class VentasController extends Controller
     public function read($id) {
 
         $venta = Venta::where('id', $id)->with('detalles','abonos', 'cliente', 'impuestos.impuesto')->first();
-
+        $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
 
     }

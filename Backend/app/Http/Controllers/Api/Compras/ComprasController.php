@@ -56,13 +56,18 @@ class ComprasController extends Controller
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
 
+        foreach ($compras as $compra) {
+            $compra->saldo = $compra->saldo;
+        }
+
         return Response()->json($compras, 200);
            
     }
 
     public function read($id) {
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor')->first();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos')->first();
+        $compra->saldo = $compra->saldo;
         return Response()->json($compra, 200);
  
     }

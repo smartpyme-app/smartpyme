@@ -17,6 +17,8 @@ export class VentaComponent implements OnInit {
     public loading = false;
     public saving = false;
 
+    modalRef!: BsModalRef;
+
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
     ) {
@@ -30,6 +32,10 @@ export class VentaComponent implements OnInit {
     }
 
     public loadAll(){
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
+        
         this.venta.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
         this.apiService.read('venta/', this.venta.id).subscribe(venta => {
@@ -41,15 +47,19 @@ export class VentaComponent implements OnInit {
 
     public setEstado(abono:any){
         this.saving = false;
-        this.apiService.store('abono/', abono).subscribe(abono => {
+        this.apiService.store('venta/abono/', abono).subscribe(abono => {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
     public imprimirRecibo(abono:any){
-        window.open(this.apiService.baseUrl + '/api/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/venta/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
+    public openAbono(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.modalRef = this.modalService.show(template);
+    }
 
 }

@@ -60,16 +60,7 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
 
         if (this.sidebarCollapsed) {
-            this.productosIsCollapsed = true;
-            localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
-            this.ventasIsCollapsed = true;
-            localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
-            this.comprasIsCollapsed = true;
-            localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
-            this.preferenciasIsCollapsed = true;
-            localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
-            this.finanzasIsCollapsed = true;
-            localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
+            this.closeAll();
         };
 
     }
@@ -106,30 +97,45 @@ export class SidebarComponent implements OnInit {
     }
 
     toggleProductos() {
+        if(this.productosIsCollapsed){
+            this.closeAll();
+        }
         this.productosIsCollapsed = !this.productosIsCollapsed;
         localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
     toggleVentas() {
+        if(this.ventasIsCollapsed){
+            this.closeAll();
+        }
         this.ventasIsCollapsed = !this.ventasIsCollapsed;
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
     toggleCompras() {
+        if(this.comprasIsCollapsed){
+            this.closeAll();
+        }
         this.comprasIsCollapsed = !this.comprasIsCollapsed;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
     togglePreferencias() {
+        if(this.preferenciasIsCollapsed){
+            this.closeAll();
+        }
         this.preferenciasIsCollapsed = !this.preferenciasIsCollapsed;
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
     toggleFinanzas() {
+        if(this.finanzasIsCollapsed){
+            this.closeAll();
+        }
         this.finanzasIsCollapsed = !this.finanzasIsCollapsed;
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
         this.toggleSidebarMenu();
@@ -141,6 +147,19 @@ export class SidebarComponent implements OnInit {
             this.sidebarCollapsed = false;
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         };
+    }
+
+    closeAll(){
+        this.productosIsCollapsed = true;
+        localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
+        this.ventasIsCollapsed = true;
+        localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
+        this.comprasIsCollapsed = true;
+        localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.preferenciasIsCollapsed = true;
+        localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
+        this.finanzasIsCollapsed = true;
+        localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
     }
 
 }

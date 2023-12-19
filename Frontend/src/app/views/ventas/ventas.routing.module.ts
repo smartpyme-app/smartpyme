@@ -7,6 +7,8 @@ import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.c
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
 
+import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
+
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
 import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
 import { ImpuestosComponent } from '@views/ventas/impuestos/impuestos.component';
@@ -37,6 +39,8 @@ const routes: Routes = [
         { path: 'ventas', component: VentasComponent, title: 'Ventas'},
         { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
+
+        { path: 'ventas/abonos', component: AbonosVentasComponent, title: 'Abonos de ventas'},
         
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
         { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },

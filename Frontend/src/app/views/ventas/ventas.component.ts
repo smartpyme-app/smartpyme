@@ -17,6 +17,7 @@ export class VentasComponent implements OnInit {
     public saving:boolean = false;
 
     public clientes:any = [];
+    public usuario:any = {};
     public usuarios:any = [];
     public sucursales:any = [];
     public formaPagos:any = [];
@@ -32,7 +33,7 @@ export class VentasComponent implements OnInit {
     ){}
 
     ngOnInit() {
-
+        this.usuario = this.apiService.auth_user();
         this.loadAll();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
