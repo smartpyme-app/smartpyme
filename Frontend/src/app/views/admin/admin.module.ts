@@ -13,8 +13,8 @@ import { TabsModule } from 'ngx-bootstrap/tabs';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 
-import { PipesModule } from '../../pipes/pipes.module';
-import { SharedModule } from '../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 import { AdminRoutingModule } from './admin.routing.module';
 
 import { EmpresaComponent } from './empresa/empresa.component';

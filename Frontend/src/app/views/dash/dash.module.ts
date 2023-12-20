@@ -9,10 +9,11 @@ import { TabsModule } from 'ngx-bootstrap/tabs';
 import { FocusModule } from 'angular2-focus';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { NgChartsModule } from 'ng2-charts';
-import { PipesModule } from '../../pipes/pipes.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SharedModule } from '../../shared/shared.module';
-
+import { NgSelectModule } from '@ng-select/ng-select';
 import { DashRoutingModule } from './dash.routing.module';
 
 // import { FullCalendarModule } from '@fullcalendar/angular';
@@ -44,7 +45,8 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
     PipesModule,
     SharedModule,
     DashRoutingModule,
-    // FullCalendarModule,
+    NgSelectModule,
+    PopoverModule.forRoot(),
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
     BsDropdownModule.forRoot(),

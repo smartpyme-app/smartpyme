@@ -8,6 +8,8 @@ import { CajaVentasComponent }     from '../../views/dash/caja/ventas/caja-venta
 import { CajaDevolucionesComponent }     from '../../views/dash/caja/devoluciones/caja-devoluciones.component';
 import { VendedorProductosComponent }     from '../../views/dash/vendedor/productos/vendedor-productos.component';
 
+import { CorteComponent }    from '@views/reportes/corte/corte.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -15,8 +17,10 @@ const routes: Routes = [
     title: 'Dashboard',
     children: [
         { path: '', component: DashComponent },
-        { path: 'dash/caja/ventas', component: CajaVentasComponent },
-        { path: 'dash/caja/devoluciones/ventas', component: CajaDevolucionesComponent },
+        { path: 'vendedor/ventas', component: CajaVentasComponent },
+        { path: 'vendedor/productos', component: VendedorProductosComponent },
+        { path: 'vendedor/devoluciones/ventas', component: CajaDevolucionesComponent },
+        { path: 'cierre-de-caja', component: CorteComponent, title: 'Cierre de caja'},
     ]
   }
 ];

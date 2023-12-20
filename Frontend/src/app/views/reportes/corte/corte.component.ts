@@ -8,6 +8,7 @@ import { AlertService } from '@services/alert.service';
 })
 export class CorteComponent implements OnInit {
 
+    public usuario:any = {};
     public indicadores:any = {};
     public sucursales:any = [];
     public filtros:any = {};
@@ -15,11 +16,18 @@ export class CorteComponent implements OnInit {
     constructor(public apiService: ApiService, public alertService: AlertService) {}
 
     ngOnInit(){
-        this.filtros.id_sucursal = null;
+        this.usuario = this.apiService.auth_user();
+
+        if(this.usuario.tipo == 'Administrador'){
+            this.filtros.id_sucursal = null;
+        }else{
+            this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+        }
         this.filtros.fecha = this.apiService.date();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
+            this.sucursales = sucursales.filter((item:any) => item.id == this.filtros.id_sucursal);
         }, error => {this.alertService.error(error); });
 
         this.filtrar();

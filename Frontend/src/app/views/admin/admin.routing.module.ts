@@ -17,7 +17,6 @@ import { NotificacionesComponent }     from '@views/admin/notificaciones/notific
 import { DocsComponent }     from '@views/admin/docs/docs.component';
 
 import { ReportesComponent }    from '@views/reportes/reportes.component';
-import { CorteComponent }    from '@views/reportes/corte/corte.component';
 
 const routes: Routes = [
   {
@@ -34,7 +33,6 @@ const routes: Routes = [
         { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
         { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
-        { path: 'cierre-de-caja', component: CorteComponent, title: 'Cierre de caja'},
     ]
   }
 ];

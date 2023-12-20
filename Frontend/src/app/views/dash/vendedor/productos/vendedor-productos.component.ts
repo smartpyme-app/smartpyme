@@ -1,7 +1,7 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-vendedor-productos',
@@ -10,14 +10,12 @@ import { ApiService } from '../../../../services/api.service';
 export class VendedorProductosComponent implements OnInit {
 
     public productos:any = [];
-    public buscador:any = '';
     public loading:boolean = false;
-    
-    public filtro:any = {};
+    public filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
-    public filtrado:boolean = false;
     public categorias:any = [];
+
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
@@ -25,107 +23,99 @@ export class VendedorProductosComponent implements OnInit {
     ){}
 
     ngOnInit() {
+
         this.loadAll();
+
+        this.apiService.getAll('categorias').subscribe(categorias => {
+            this.categorias = categorias;
+        }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
+        
     }
 
     public loadAll() {
-        this.loading = true;
-        this.apiService.getAll('dash/vendedor/productos').subscribe(productos => { 
-            this.productos = productos;
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-                this.checkSucursales();
-            }, error => {this.alertService.error(error); this.loading = false;});
-            this.loading = false; this.filtrado = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 10;
 
+        this.filtrarProductos();
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 2) {
-            this.loading = true;
-            this.apiService.read('dash/vendedor/productos/buscar/', this.buscador).subscribe(productos => { 
-                this.productos = productos;
-                this.loading = false; this.filtrado = true;
-                this.checkSucursales();
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }else{
-            this.loadAll();
-        }
-    }
-
-    // sucursales
-
-        public checkSucursales(){
-
-            for(let i = 0; i < this.productos.data.length; i++){            
-                var producto = this.productos.data[i];
-                producto.lista_sucursales = JSON.parse(JSON.stringify(this.sucursales));
-
-                for(let j = 0; j < producto.sucursales.length; j++){
-                    var producto_sucursal = producto.sucursales[j];
-                    
-                    for(let k = 0; k < producto.lista_sucursales.length; k++){
-                        var lista_sucursal = producto.lista_sucursales[k];
-
-                        if (lista_sucursal.id == producto_sucursal.sucursal_id) {
-                            lista_sucursal.agregado = true;
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
-
-
-
-    public setPagination(event:any):void{
+    public filtrarProductos(){
         this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
-            this.checkSucursales();
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    // Filtros
-    openModal(template: TemplateRef<any>, producto:any) {
-        this.producto = producto;
-        this.modalRef = this.modalService.show(template);
+    public setEstado(producto:any){
+        this.apiService.store('producto', producto).subscribe(producto => { 
+            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
+        }, error => {this.alertService.error(error); });
     }
 
-    openFilter(template: TemplateRef<any>) {
-        if(!this.filtrado) {
-            this.filtro.sucursal_id = '';
-            this.filtro.categoria_id = '';
+    public delete(id:number) {
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('producto/', id) .subscribe(data => {
+                for (let i = 0; i < this.productos['data'].length; i++) { 
+                    if (this.productos['data'][i].id == data.id )
+                        this.productos['data'].splice(i, 1);
+                }
+            }, error => {this.alertService.error(error); });
+                   
         }
 
-
-        if(!this.categorias.lenght){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
-                this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
-        this.modalRef = this.modalService.show(template);
     }
 
-    onFiltrar(){
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.filtrarProductos();
+    }
+
+    public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.store('productos/filtrar', this.filtro).subscribe(productos => { 
+        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
             this.productos = productos;
-            this.checkSucursales();
-            this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
+            this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
 
+    public onSubmit() {
+        this.loading = true;
+        this.apiService.store('producto', this.producto).subscribe(producto=> {
+            this.producto = {};
+            this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
+            this.loading = false;
+            this.modalRef.hide();
+        },error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    public descargar(){
+        this.apiService.export('productos/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'productos.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, (error) => {console.error('Error al exportar productos:', error); }
+        );
     }
 
 }

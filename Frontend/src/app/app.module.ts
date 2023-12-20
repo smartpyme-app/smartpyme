@@ -9,6 +9,7 @@ import { provideEnvironmentNgxMask } from 'ngx-mask';
 
 import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
+import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
 
 import { NotifierModule } from 'angular-notifier';
@@ -75,7 +76,7 @@ import { LayoutModule } from '@layout/layout.module';
     CitasModule,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                AuthGuard, AdminGuard, SuperAdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],
+                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })
 

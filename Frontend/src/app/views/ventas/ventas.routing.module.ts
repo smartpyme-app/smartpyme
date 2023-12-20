@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
-
+import { AdminGuard } from '../../guards/admin.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
 
 import { VentasComponent } from '@views/ventas/ventas.component';
@@ -36,19 +36,19 @@ const routes: Routes = [
     title: 'Ventas',
     children: [
 
-        { path: 'ventas', component: VentasComponent, title: 'Ventas'},
+        { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
         { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
-        { path: 'ventas/abonos', component: AbonosVentasComponent, title: 'Abonos de ventas'},
+        { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas'},
         
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
         { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
     // 
-        { path: 'canales', component: CanalesComponent, title: 'Canales de venta'},
-        { path: 'formas-de-pago', component: FormasDePagoComponent, title: 'Formas de pago'},
-        { path: 'impuestos', component: ImpuestosComponent, title: 'Impuestos'},
-        { path: 'documentos', component: DocumentosComponent, title: 'Documentos'},
+        { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta'},
+        { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago'},
+        { path: 'impuestos', canActivate: [AdminGuard], component: ImpuestosComponent, title: 'Impuestos'},
+        { path: 'documentos', canActivate: [AdminGuard], component: DocumentosComponent, title: 'Documentos'},
 
         { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas'},
         { path: 'devolucion/venta/:id', component: DevolucionVentaComponent, title: 'Devolución de venta'},
@@ -62,9 +62,9 @@ const routes: Routes = [
         { path: 'clientes/crm', component: ClientesDashComponent },
 
     // Reportes 
-        { path: 'reporte/ventas/historial', component: HistorialVentasComponent },
-        { path: 'reporte/ventas/detalle', component: DetalleVentasComponent },
-        { path: 'reporte/ventas/categorias', component: CategoriasVentasComponent },
+        { path: 'reporte/ventas/historial', canActivate: [AdminGuard], component: HistorialVentasComponent },
+        { path: 'reporte/ventas/detalle', canActivate: [AdminGuard], component: DetalleVentasComponent },
+        { path: 'reporte/ventas/categorias', canActivate: [AdminGuard], component: CategoriasVentasComponent },
 
     ]
   }

@@ -27,12 +27,13 @@ export class CajaDashComponent implements OnInit {
 
 
     constructor( 
-        public apiService: ApiService, private router: Router, private alertService: AlertService, private modalService: BsModalService
+        public apiService: ApiService, private router: Router,
+        private alertService: AlertService, private modalService: BsModalService
     ) { }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
-        this.loadAll();
+        // this.loadAll();
     }
 
     public loadAll(){

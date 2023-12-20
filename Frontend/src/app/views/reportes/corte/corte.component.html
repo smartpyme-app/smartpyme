@@ -13,7 +13,7 @@
                 <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
                 <input type="date" name="fecha"  (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
                 <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                    <option value="">Sucursal</option>
+                    <option value="" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{sucursal.nombre}}
                     </option>
@@ -27,31 +27,31 @@
             <tr>
                 <td width="20%">
                     <h3 class="text-center text-success">
-                        {{ indicadores.totalVentasPagadas | currency:'USD':'symbol':'1.2' }}
+                        {{ (indicadores.totalVentasPagadas ? indicadores.totalVentasPagadas : 0) | currency:'USD':'symbol':'1.2' }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
                 </td>
                 <td width="20%">
                     <h3 class="text-center text-info">
-                        {{ indicadores.totalRecibos | currency:'USD':'symbol':'1.2' }}
+                        {{ (indicadores.totalRecibos ? indicadores.totalRecibos : 0) | currency:'USD':'symbol':'1.2' }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> ABONOS</p>
                 </td>
                 <td width="20%">
                     <h3 class="text-center text-secondary">
-                        {{ indicadores.totalVentasPendientes | currency:'USD':'symbol':'1.2' }}
+                        {{ (indicadores.totalVentasPendientes ? indicadores.totalVentasPendientes : 0) | currency:'USD':'symbol':'1.2' }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> CREDITOS</p>
                 </td>
                 <td width="20%">
                     <h3 class="text-center text-danger">
-                        {{ indicadores.totalDevolucionesVenta | currency:'USD':'symbol':'1.2' }}
+                        {{ (indicadores.totalDevolucionesVenta ? indicadores.totalDevolucionesVenta : 0) | currency:'USD':'symbol':'1.2' }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
                 </td>
-                <td width="20%">
+                <td width="20%" *ngIf="usuario.tipo == 'Administrador'">
                     <h3 class="text-center text-secondary">
-                        {{ indicadores.totalGastosPagados | currency:'USD':'symbol':'1.2' }}
+                        {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency:'USD':'symbol':'1.2' }}
                     </h3>
                     <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
                 </td>
@@ -86,7 +86,7 @@
             </tr>
             <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">${{ indicadores.totalRecibos }}</td></tr>
             <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">${{ indicadores.totalDevolucionesVenta }}</td></tr>
-            <tr><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">${{ indicadores.totalGastosPagados }}</td></tr>
+            <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">${{ indicadores.totalGastosPagados }}</td></tr>
             <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">${{ indicadores.totalVentasPendientes }}</td></tr>
             </tbody>
         </table>

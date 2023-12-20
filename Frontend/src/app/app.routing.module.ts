@@ -34,19 +34,19 @@ const routes: Routes = [
 
     // Inventario
     {
-      path: '', canActivate: [AuthGuard, AdminGuard],
+      path: '', canActivate: [AuthGuard],
       loadChildren: () => import('./views/inventario/inventario.module').then(m => m.InventarioModule),
     },
 
     // Compras
     {
-      path: '', canActivate: [AuthGuard],
+      path: '', canActivate: [AuthGuard, AdminGuard],
       loadChildren: () => import('./views/compras/compras.module').then(m => m.ComprasModule),
     },
 
     // Contabilidad
     {
-      path: '', canActivate: [AuthGuard],
+      path: '', canActivate: [AuthGuard, AdminGuard],
       loadChildren: () => import('./views/contabilidad/contabilidad.module').then(m => m.ContabilidadModule),
     },
     // Citas
@@ -62,7 +62,7 @@ const routes: Routes = [
 
     // Super Admin
     {
-      path: '', canActivate: [SuperAdminGuard],
+      path: '', canActivate: [AuthGuard, SuperAdminGuard],
       loadChildren: () => import('./views/super-admin/super-admin.module').then(m => m.SuperAdminModule),
     },
 

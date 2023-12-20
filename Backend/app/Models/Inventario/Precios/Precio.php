@@ -3,7 +3,8 @@
 namespace App\Models\Inventario\Precios;
 
 use Illuminate\Database\Eloquent\Model;
-use JWTAuth;
+use Illuminate\Database\Eloquent\Builder;
+use Auth;
 
 class Precio extends Model
 {
@@ -13,12 +14,12 @@ class Precio extends Model
         'id_producto',
     ];
 
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
-
+        if (Auth::check()) {
+            $usuario = Auth::user();
             if ($usuario->tipo == 'Ventas') {
                 static::addGlobalScope('permiso', function (Builder $builder) use ($usuario) {
                     $builder->whereHas('usuarios', function($q) use ($usuario){
@@ -27,7 +28,6 @@ class Precio extends Model
                 });
             }
         }
-        
     }
 
     public function usuarios(){

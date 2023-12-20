@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-dash',
@@ -13,12 +13,20 @@ export class DashComponent implements OnInit {
     public saludo:any;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService
+        private apiService: ApiService, private alertService: AlertService,
+        private router: Router
     ) { }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();        
-        this.saludo = this.apiService.saludar();        
+        this.saludo = this.apiService.saludar();
+
+        if(this.usuario.tipo == 'Ventas'){
+            this.router.navigate(['/venta/crear']);    
+        }
+        if(this.usuario.tipo == 'Citas'){
+            this.router.navigate(['/citas']);    
+        }
     }
 
 }

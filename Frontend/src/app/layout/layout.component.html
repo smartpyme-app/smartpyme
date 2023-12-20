@@ -1,7 +1,9 @@
 <div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
   
   <app-sidebar-admin *ngIf="usuario.id_empresa == 2"></app-sidebar-admin>
-  <app-sidebar *ngIf="usuario.id_empresa != 2"></app-sidebar>
+  <app-sidebar *ngIf="usuario.id_empresa != 2 && usuario.tipo == 'Administrador'"></app-sidebar>
+  <app-sidebar-ventas *ngIf="usuario.id_empresa != 2 && usuario.tipo == 'Ventas'"></app-sidebar-ventas>
+  <app-sidebar-servicios *ngIf="usuario.id_empresa != 2 && usuario.tipo == 'Citas'"></app-sidebar-servicios>
 
   <div class="content p-2 p-lg-5 position-relative">
     <app-header></app-header>

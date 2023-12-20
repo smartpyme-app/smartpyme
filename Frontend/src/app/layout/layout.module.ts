@@ -15,6 +15,8 @@ import { AdminHeaderComponent } from './header/admin/admin-header.component';
 import { FooterComponent } from './footer/footer.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
+import { SidebarVentasComponent } from './sidebar/sidebar-ventas/sidebar-ventas.component';
+import { SidebarServiciosComponent } from './sidebar/sidebar-servicios/sidebar-servicios.component';
 import { LayoutComponent } from './layout.component';
 
 import { ThemeComponent } from './header/theme/theme.component';
@@ -38,6 +40,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     AdminHeaderComponent,
     SidebarComponent,
     SidebarAdminComponent,
+    SidebarVentasComponent,
+    SidebarServiciosComponent,
     LayoutComponent,
     PerfilComponent,
     ThemeComponent,
@@ -48,6 +52,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     AdminHeaderComponent,
     SidebarComponent,
     SidebarAdminComponent,
+    SidebarVentasComponent,
+    SidebarServiciosComponent,
     LayoutComponent,
     PerfilComponent,
     ThemeComponent,
