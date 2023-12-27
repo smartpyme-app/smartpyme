@@ -34,11 +34,11 @@ class DashController extends Controller
             $fecha = Carbon::now()->subDays(8);
         }
         if (strtoupper($request->time) == 'MONTH') {
-            $fecha = Carbon::now()->subWeeks(8);
+            $fecha = Carbon::now()->subWeeks(4);
             $tiempo = 'WEEK';
         }
         if (strtoupper($request->time) == 'YEAR') {
-            $fecha = Carbon::now()->subMonths(8);
+            $fecha = Carbon::now()->subMonths(12);
             $tiempo = 'MONTH';
         }
 

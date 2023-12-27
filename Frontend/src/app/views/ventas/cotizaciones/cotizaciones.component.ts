@@ -17,6 +17,8 @@ export class CotizacionesComponent implements OnInit {
 
     public clientes:any = [];
     public usuarios:any = [];
+    public canales:any = [];
+    public formaPagos:any = [];
     public sucursales:any = [];
     public documentos:any = [];
     public filtros:any = {};
@@ -51,6 +53,9 @@ export class CotizacionesComponent implements OnInit {
     public loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_cliente = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_canal = '';
+        this.filtros.forma_pago = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
@@ -136,6 +141,26 @@ export class CotizacionesComponent implements OnInit {
             this.alertService.success('Cotización guardado', 'La cotización fue guardado exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
 
+    }
+
+    public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+            this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
+        
+        this.apiService.getAll('documentos').subscribe(documentos => { 
+            this.documentos = documentos;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('canales').subscribe(canales => { 
+            this.canales = canales;
+        }, error => {this.alertService.error(error); });
+        
+        this.modalRef = this.modalService.show(template);
     }
 
 

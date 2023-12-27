@@ -51,6 +51,7 @@ export class CotizacionesComprasComponent implements OnInit {
     public loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
@@ -130,7 +131,14 @@ export class CotizacionesComprasComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+
         this.modalRef = this.modalService.show(template);
     }
 

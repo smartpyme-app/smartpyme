@@ -1,110 +1,117 @@
 
-<section class="bg-white p-4 rounded mb-3">
-    <h2>Kardex</h2>
-    <h4>{{ producto.nombre }}</h4>
+<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
+    <div>
+        <h2>Kardex</h2>
+        <h4>{{ producto.nombre }}</h4>
+    </div>
+    <div>
+        <button tooltip="Descargar ventas" (click)="descargarKardex()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+    </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
-    <div class="col-12">
-        <form name="form" (ngSubmit)="loadAll()" class="row">
-            <div class="form-group col-md-6 col-lg-3">
-                <label for="">Sucursal: </label>
-                <select class="form-control form-select" [(ngModel)]="filtro.id_sucursal" name="id_sucursal">
-                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
-                        {{ sucursal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 col-lg-3">
-                <label for="">Tipo: </label>
-                <select name="detalle" [(ngModel)]="filtro.detalle" class="form-control form-select">
-                    <option value="">Todos los tipos</option>
-                    <option value="Venta">Ventas</option>
-                    <option value="Compra">Compras</option>
-                    <option value="Ajuste">Ajuste</option>
-                    <option value="Traslado">Traslados</option>
-                    <option value="Devolución Venta">Devoluciones de venta</option>
-                    <option value="Devolución Compra">Devoluciones de compra</option>
-                </select>
-            </div>
-            <div class="form-group col-md-5 col-lg-3">
-                <label for="">Del: </label>
-                <input type='date' class="form-control" name="filtro.inicio" [(ngModel)]="filtro.inicio"/>
-            </div>
-            <div class="form-group col-md-5 col-lg-3">
-                <label for="">Al: </label>
-                <div class="input-group">
-                    <input type='date' class="form-control" name="filtro.fin" [(ngModel)]="filtro.fin"/>
-                    <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar datos (F6)">
-                        <i *ngIf="!loading" class="fa fa-search"></i>
-                        <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
-                    </button>
+    <div class="row">
+        <div class="col-12">
+            <form name="form" (ngSubmit)="loadAll()" class="row">
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="">Sucursal: </label>
+                    <select class="form-control form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+                        <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                            {{ sucursal.nombre }}
+                        </option>
+                    </select>
                 </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="">Tipo: </label>
+                    <select name="detalle" [(ngModel)]="filtros.detalle" class="form-control form-select">
+                        <option value="">Todos los tipos</option>
+                        <option value="Venta">Ventas</option>
+                        <option value="Compra">Compras</option>
+                        <option value="Ajuste">Ajuste</option>
+                        <option value="Traslado">Traslados</option>
+                        <option value="Devolución Venta">Devoluciones de venta</option>
+                        <option value="Devolución Compra">Devoluciones de compra</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-5 col-lg-3">
+                    <label for="">Del: </label>
+                    <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+                </div>
+                <div class="form-group col-md-5 col-lg-3">
+                    <label for="">Al: </label>
+                    <div class="input-group">
+                        <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+                        <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar datos (F6)">
+                            <i *ngIf="!loading" class="fa fa-search"></i>
+                            <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-12">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <!-- <th colspan="4"></th> -->
+                            <th rowspan="2">Fecha</th>
+                            <th rowspan="2">Usuario</th>
+                            <th rowspan="2">Detalle</th>
+                            <th rowspan="2">Ref</th>
+                            <th colspan="3" class="text-center">Entradas</th>
+                            <th colspan="3" class="text-center">Salidas</th>
+                            <th colspan="2" class="text-center">Saldo</th>
+                        </tr>
+                        <tr>
+                            <th width="100" class="text-center">Cantidad</th>
+                            <th width="100" class="text-center">Costo U.</th>
+                            <th width="100" class="text-center">Total</th>
+                            
+                            <th width="100" class="text-center">Cantidad</th>
+                            <th width="100" class="text-center">Precio U.</th>
+                            <th width="100" class="text-center">Total</th>
+                            
+                            <th width="100" class="text-center">Cantidad</th>
+                            <th width="100" class="text-center">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="11" class="text-center" *ngIf="producto?.movimientos?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene movimientos registrados</span>
+                            </td>
+                            <td colspan="11" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+
+                        <tr *ngFor=" let movimiento of producto?.movimientos">
+                            
+                            <td>{{movimiento.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td>{{movimiento.nombre_usuario}}</td>
+                            <td>{{movimiento.detalle}}</td>
+                            <td>
+                                {{movimiento.referencia}}
+                                <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{apiService.slug(movimiento.detalle)}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
+                            </td>
+
+                            <td class="text-center">{{movimiento.entrada_cantidad | number:'1.0' }}</td>
+                            <td class="text-center">{{movimiento.costo_unitario  | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">{{movimiento.entrada_valor  | currency:'USD':'symbol':'1.2'}}</td>
+
+                            <td class="text-center">{{movimiento.salida_cantidad | number:'1.0' }}</td>
+                            <td class="text-center">{{movimiento.precio_unitario  | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">{{movimiento.salida_valor  | currency:'USD':'symbol':'1.2'}}</td>
+
+                            <td class="text-center">{{movimiento.total_cantidad | number:'1.0' }}</td>
+                            <td class="text-center">{{movimiento.total_valor  | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+
+                    </tbody>
+                    
+                </table>
             </div>
-        </form>
-    </div>
-    <div class="col-12">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <!-- <th colspan="4"></th> -->
-                        <th rowspan="2">Fecha</th>
-                        <th rowspan="2">Usuario</th>
-                        <th rowspan="2">Detalle</th>
-                        <th rowspan="2">Ref</th>
-                        <th colspan="3" class="text-center">Entradas</th>
-                        <th colspan="3" class="text-center">Salidas</th>
-                        <th colspan="2" class="text-center">Saldo</th>
-                    </tr>
-                    <tr>
-                        <th width="100" class="text-center">Cantidad</th>
-                        <th width="100" class="text-center">Costo U.</th>
-                        <th width="100" class="text-center">Total</th>
-                        
-                        <th width="100" class="text-center">Cantidad</th>
-                        <th width="100" class="text-center">Precio U.</th>
-                        <th width="100" class="text-center">Total</th>
-                        
-                        <th width="100" class="text-center">Cantidad</th>
-                        <th width="100" class="text-center">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="11" class="text-center" *ngIf="producto?.movimientos?.length < 1 && !loading">
-                            <span class="badge bg-primary">No tiene movimientos registradas</span>
-                        </td>
-                        <td colspan="11" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-
-                    <tr class="animated fadeIn" *ngFor=" let movimiento of producto?.movimientos">
-                        
-                        <td>{{movimiento.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{movimiento.nombre_usuario}}</td>
-                        <td>{{movimiento.detalle}}</td>
-                        <td>
-                            {{movimiento.referencia}}
-                            <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{apiService.slug(movimiento.detalle)}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
-                        </td>
-
-                        <td class="text-center">{{movimiento.entrada_cantidad | number:'1.0' }}</td>
-                        <td class="text-center">{{movimiento.costo_unitario  | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">{{movimiento.entrada_valor  | currency:'USD':'symbol':'1.2'}}</td>
-
-                        <td class="text-center">{{movimiento.salida_cantidad | number:'1.0' }}</td>
-                        <td class="text-center">{{movimiento.precio_unitario  | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">{{movimiento.salida_valor  | currency:'USD':'symbol':'1.2'}}</td>
-
-                        <td class="text-center">{{movimiento.total_cantidad | number:'1.0' }}</td>
-                        <td class="text-center">{{movimiento.total_valor  | currency:'USD':'symbol':'1.2'}}</td>
-                    </tr>
-
-                </tbody>
-                
-            </table>
         </div>
     </div>
 </div>

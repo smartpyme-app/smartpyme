@@ -56,7 +56,7 @@
                 <thead>
                     <tr>
                         <!-- <th>N°</th> -->
-                        <th>Producto</th>
+                        <th>Detalle</th>
                         <th width="100">Cantidad</th>
                         <th width="100">Precio</th>
                         <th width="100">Descuento</th>
@@ -74,9 +74,14 @@
                     </tr>
                     <tr *ngFor="let detalle of venta.detalles; let i=index">
                         <!-- <td> {{ i + 1 }} </td> -->
-                        <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
-                            {{ detalle.nombre_producto }}
+                        <td class="d-flex">
+                            <div>
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            </div>
+                            <div class="ms-3">
+                                {{ detalle.nombre_producto }} <br>
+                                <small class="text-muted text-tiny">{{ detalle.producto.tipo }}</small>
+                            </div>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
                         <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>

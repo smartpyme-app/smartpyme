@@ -31,6 +31,9 @@ img.icon-2{
     .text-right{
       text-align: right !important;
     }
+    .text-tiny{
+        font-size: 0.7rem;
+    }
     .without-label{
         padding-top: 29px !important;
     }

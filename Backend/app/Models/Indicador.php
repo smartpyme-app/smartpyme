@@ -290,43 +290,60 @@ class Indicador extends Model
     }
 
     public function getTotalesSalidas($tiempo = 'DAY', $fecha = null){
-
-        return Compra::selectRaw($tiempo . '(fecha) as time')
+        $salidas = Compra::selectRaw($tiempo . '(fecha) as time')
                                     ->selectRaw('sum(total) as total')
                                     ->groupBy('time')
                                     ->where('created_at', '>=', $fecha)
                                     ->orderBy('time')
-                                    ->take(8)->get();
+                                    ->get();
+        if (count($salidas) == 0) {
+            $salidas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+            $salidas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
+        return $salidas;
     }
 
     public function getTotalesVentas($tiempo = 'DAY', $fecha = null){
-
-        return Venta::selectRaw($tiempo . '(fecha) as time')
+        $ventas = Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('sum(total) as total')
                                         ->groupBy('time')
                                         ->where('created_at', '>=', $fecha)
                                         ->orderBy('time')
-                                        ->take(8)->get();
+                                        ->get();
+        if (count($ventas) == 0) {
+            $ventas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+            $ventas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
+        return $ventas;
     }
 
     public function getTotalesTransacciones($tiempo = 'DAY', $fecha = null){
-
-        return Venta::selectRaw($tiempo . '(fecha) as time')
+        $transacciones = Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('count(*) as total')
                                         ->groupBy('time')
                                         ->where('created_at', '>=', $fecha)
                                         ->orderBy('time')
-                                        ->take(8)->get();
+                                        ->get();
+        if (count($transacciones) == 0) {
+            $transacciones->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+            $transacciones->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
+        return $transacciones;
     }
 
     public function getTotalesBalances($tiempo = 'DAY', $fecha = null){
-
-        return Venta::selectRaw($tiempo . '(fecha) as time')
+        $balance = Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('count(*) as total')
                                         ->groupBy('time')
                                         ->where('created_at', '>=', $fecha)
                                         ->orderBy('time')
-                                        ->take(8)->get();
+                                        ->get();
+
+        if (count($balance) == 0) {
+            $balance->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+            $balance->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
+        return $balance;
     }
 
     public function empresa(){

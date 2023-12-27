@@ -6,12 +6,21 @@
                 <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
             </div>
             <ul class="list-group opciones">
-              <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
-                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
-                <p class="mb-0">
+              <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
+                <!-- <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1">  -->
+                <span id="producto_nombre" class="col-6">
+                    <small>Nombre:</small> <br>
                     {{ producto.nombre }} <br>
-                    <small class="text-muted">{{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }} disponibles</small>
-                </p>
+                    <small>{{ producto.nombre_categoria }}</small>
+                </span>
+                <span class="col-2 text-center" id="stock">
+                    <small>Stock:</small> <br>
+                    {{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }}
+                </span>
+                <span class="col-2 text-right">
+                    <small>Precio:</small> <br>
+                    <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
+                </span>
               </a>
             </ul>
         </form>

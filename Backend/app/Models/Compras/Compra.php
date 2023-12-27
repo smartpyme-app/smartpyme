@@ -54,7 +54,7 @@ class Compra extends Model {
     }
 
     public function getSaldoAttribute(){
-        return $this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
     }
 
 

@@ -99,8 +99,27 @@
                   <input name="confirmada"  class="form-check-input float-end" (click)="setTipo()" type="checkbox" role="switch" [checked]="evento.tipo == 'Confirmado'">
                 </div>
             </div> -->
+
             <div class="d-grid mt-4">
-                <button [disabled]="saving" class="btn btn-primary btn-block">
+                <div class="d-flex gap-2 justify-content-end" *ngIf="evento.id">
+                    <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }" class="btn btn-default">
+                        Generar venta
+                    </a>
+                    <a *ngIf="evento.tipo != 'Cancelar'" (click)="setEstado(evento, 'Cancelado')" class="btn btn-default">
+                        Cancelar
+                    </a>
+                    <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="btn btn-default">
+                        Confirmar
+                    </a>
+                    <a (click)="delete(evento)" class="btn btn-default">
+                        Eliminar
+                    </a>
+                    <button *ngIf="evento.id" [disabled]="saving" class="btn btn-primary">
+                        <span *ngIf="!saving">Guardar</span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
+                </div>
+                <button *ngIf="!evento.id" [disabled]="saving" class="btn btn-primary btn-block">
                     <span *ngIf="!saving">Agregar</span>
                     <span *ngIf="saving">Agregando...</span>
                 </button>

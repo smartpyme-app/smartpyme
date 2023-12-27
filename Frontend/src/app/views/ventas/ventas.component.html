@@ -28,14 +28,14 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default">
+            <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Anulada">Anulada</option>
                 <option value="Consigna">Consigna</option>
                 <option value="Pagada">Pagada</option>
             </select>
-            <ng-select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default">
+            <ng-select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default w-auto">
                 <ng-option value="">Sucursal</ng-option>
                 <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}

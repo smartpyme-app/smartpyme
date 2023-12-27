@@ -16,11 +16,13 @@ export class ComprasComponent implements OnInit {
     public compra:any = {};
     public formaPagos:any = [];
     public documentos:any = [];
+    public proveedores:any = [];
+    public usuarios:any = [];
+    public sucursales:any = [];
     public buscador:any = '';
     public loading:boolean = false;
     public saving:boolean = false;
 
-    public proveedores:any = [];
     public filtros:any = {};
 
     modalRef!: BsModalRef;
@@ -39,6 +41,7 @@ export class ComprasComponent implements OnInit {
     public loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
         this.filtros.id_usuario = '';
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
@@ -186,6 +189,18 @@ export class ComprasComponent implements OnInit {
 
     public openAbono(template: TemplateRef<any>, compra:any){
         this.compra = compra;
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+
         this.modalRef = this.modalService.show(template);
     }
 
