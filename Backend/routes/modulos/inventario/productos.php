@@ -22,7 +22,8 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 
     Route::get('/productos/buscar-codigo/{codigo}', [ProductosController::class, 'porCodigo']);
 
-    Route::post('/producto/kardex',  	        [KardexController::class, 'index']);
+    Route::get('/productos/kardex',  	        [KardexController::class, 'index']);
+    Route::get('/productos/kardex/exportar',    [KardexController::class, 'export']);
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);

@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\KardexExport;
 
 class KardexController extends Controller
 {
@@ -15,14 +17,22 @@ class KardexController extends Controller
 
     public function index(Request $request) {
 
-        $producto = Producto::with('inventarios')->findOrFail($request->id_producto);
+        $producto = Producto::where('id', $request->id_producto)->with('inventarios')->firstOrFail();
 
         $kardex = Kardex::where('id_producto', $producto->id)
-                        ->when($request->id_sucursal, function($q) use ($request){
-                                $q->where('id_inventario', $request->id_sucursal);
+                        ->when($request->id_inventario, function($q) use ($request){
+                            $q->where('id_inventario', $request->id_inventario);
                         })
-                        ->whereBetween('fecha', [$request->inicio, $request->fin])
-                        ->orderBy('id','desc')
+                        ->when($request->inicio, function($q) use ($request){
+                            $q->where('fecha', '>=', $request->inicio);
+                        })
+                        ->when($request->fin, function($q) use ($request){
+                            $q->where('fecha', '<=', $request->fin);
+                        })
+                        ->when($request->detalle, function($q) use ($request){
+                            return $q->where('detalle', 'like' ,'%' . $request->detalle . '%');
+                        })
+                        ->orderBy($request->orden, $request->direccion)
                         ->get();
         
 
@@ -38,24 +48,6 @@ class KardexController extends Controller
         $kardex = Kardex::findOrFail($id);
         return Response()->json($kardex, 200);
 
-    }
-
-    public function filter(Request $request) {
-
-        $kardexs = Kardex::when($request->fecha_fin, function($query) use ($request){
-                                return $query->whereBetween('fecha', [$request->fecha_ini, $request->fecha_fin]);
-                            })
-                            ->when($request->id_sucursal, function($query) use ($request){
-                                return $query->whereHas('inventario', function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                });
-                            })
-                            ->when($request->id_producto, function($query) use ($request){
-                                return $query->where('id_producto', $request->id_producto);
-                            })
-                            ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($kardexs, 200);
     }
 
 
@@ -119,6 +111,13 @@ class KardexController extends Controller
 
         return Response()->json($kardexs, 200);
 
+    }
+
+    public function export(Request $request){
+        $kardex = new KardexExport();
+        $kardex->filter($request);
+
+        return Excel::download($kardex, 'kardex.xlsx');
     }
 
 
