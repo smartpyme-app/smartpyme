@@ -42,6 +42,9 @@
                                         <a *ngIf="evento.tipo != 'Cancelar'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Cancelar
                                         </a>
+                                        <a (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-calendar"></i> Agregar a google calendar
+                                        </a>
                                         <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-check"></i> Confirmar
                                         </a>

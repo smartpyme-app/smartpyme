@@ -5,6 +5,7 @@ import { Observable, throwError } from 'rxjs';
 import { AlertService } from '../services/alert.service';
 import { environment } from './../../environments/environment';
 
+import * as moment from 'moment';
 declare let $:any;
 
 @Injectable()
@@ -103,6 +104,13 @@ export class ApiService {
             $('.icon-theme').addClass('far');
         }
     }
+
+    generateGoogleCalendarLink(event: any): string {
+        const startDate = moment(event.startDate).utc().format('YYYYMMDDTHHmmss[Z]');
+        const endDate = moment(event.endDate).utc().format('YYYYMMDDTHHmmss[Z]');
+        const calendarLink = `https://www.google.com/calendar/event?action=TEMPLATE&dates=${startDate}/${endDate}&text=${encodeURIComponent(event.title)}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
+        return calendarLink;
+      }
 
     getPosition(): Promise<any> {
        return new Promise((resolve, reject) => {

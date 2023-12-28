@@ -151,6 +151,21 @@ export class CitasComponent implements OnInit {
         this.onSubmit();
     }
 
+    agregarEventoAlCalendario(evento:any) {
+        const event = {
+          title: evento.descripcion ? evento.descripcion : '',
+          description: evento.detalles ? evento.detalles : '',
+          location: '',
+          startDate: evento.inicio,
+          endDate: evento.fin,
+        };
+
+        const enlaceCalendario = this.apiService.generateGoogleCalendarLink(event);
+
+        // Abre una nueva ventana o pestaña con el enlace al evento de Google Calendar
+        window.open(enlaceCalendario, '_blank');
+      }
+
     public onSubmit(){
         this.saving = true;
         this.apiService.store('evento', this.evento).subscribe(evento => {
