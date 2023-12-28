@@ -33,6 +33,9 @@ class ComprasController extends Controller
                         ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
+                        ->when($request->recurrente !== null, function($q) use ($request){
+                            $q->where('recurrente', !!$request->recurrente);
+                        })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })

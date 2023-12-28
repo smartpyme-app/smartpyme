@@ -28,6 +28,7 @@ export class FacturacionCompraComponent implements OnInit {
     public supervisor:any = {};
     public loading = false;
     public saving = false;
+    public duplicarcompra = false;
     public imprimir:boolean = false;
     
     modalRef!: BsModalRef;
@@ -139,6 +140,21 @@ export class FacturacionCompraComponent implements OnInit {
                 }, error => {this.alertService.error(error); this.loading = false;});
             }
         });
+
+        // Duplicar compra
+
+        if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
+            this.duplicarcompra = true;
+            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+                this.compra = compra;
+                this.compra.fecha = this.apiService.date();
+                this.compra.fecha_pago = this.apiService.date();
+                this.compra.id = null;
+                this.compra.detalles.forEach((detalle:any) => {
+                    detalle.id = null;
+                });
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
     }
 
     public sumTotal() {
@@ -209,19 +225,14 @@ export class FacturacionCompraComponent implements OnInit {
     // Guardar compra
         public onSubmit() {
 
-            this.saving = true;            
+            this.saving = true;
+            if(this.duplicarcompra){
+                this.compra.recurrente = false;
+            }         
             this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
-
-                if (this.modalRef) { this.modalRef.hide() }
                 this.saving = false;
-                // this.cargarDatosIniciales();
-                if(this.compra.estado == 'Pre-compra'){
-                    this.router.navigate(['/ordenes-de-compras']);
-                    this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
-                }else{
-                    this.router.navigate(['/compras']);
-                    this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
-                }
+                this.router.navigate(['/compras']);
+                this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
             },error => {this.alertService.error(error); this.saving = false; });
 
         }

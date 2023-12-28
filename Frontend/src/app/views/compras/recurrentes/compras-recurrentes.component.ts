@@ -1,16 +1,16 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 declare var $:any;
 
 @Component({
-  selector: 'app-compras',
-  templateUrl: './compras.component.html'
+  selector: 'app-compras-recurrentes',
+  templateUrl: './compras-recurrentes.component.html'
 })
 
-export class ComprasComponent implements OnInit {
+export class ComprasRecurrentesComponent implements OnInit {
 
     public compras:any = [];
     public compra:any = {};
@@ -45,6 +45,7 @@ export class ComprasComponent implements OnInit {
         this.filtros.id_usuario = '';
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
+        this.filtros.recurrente = true;
         this.filtros.forma_pago = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
@@ -94,6 +95,18 @@ export class ComprasComponent implements OnInit {
         }
 
     }
+
+    public setRecurrencia(compra:any){
+        this.compra = compra;
+        this.compra.recurrente = false;
+        
+        this.apiService.store('compra', this.compra).subscribe(compra => {
+            this.compra = {};
+            this.loadAll();
+            this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
+
+    }
     
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
@@ -141,17 +154,6 @@ export class ComprasComponent implements OnInit {
                 this.modalRef.hide();
             }
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    public setRecurrencia(compra:any){
-        this.compra = compra;
-        this.compra.recurrente = true;
-        
-        this.apiService.store('compra', this.compra).subscribe(compra => {
-            this.compra = {};
-            this.alertService.success('Compra guardada', 'La compra se marco como recurrente exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
 
     }

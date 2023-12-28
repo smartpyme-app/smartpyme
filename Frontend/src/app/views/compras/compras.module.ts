@@ -18,6 +18,7 @@ import { FacturacionCompraComponent } from './facturacion/facturacion-compra.com
 import { CompraProductoComponent } from './facturacion/compra-producto/compra-producto.component';
 import { CompraDetallesComponent } from './facturacion/detalles/compra-detalles.component';
 
+import { ComprasRecurrentesComponent } from './recurrentes/compras-recurrentes.component';
 import { AbonosComprasComponent } from './abonos/abonos-compras.component';
 
 import { DevolucionesComprasComponent } from './devoluciones/devoluciones-compras.component';
@@ -53,6 +54,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
   declarations: [
   	ComprasComponent,
     CompraComponent,
+    ComprasRecurrentesComponent,
     AbonosComprasComponent,
     FacturacionCompraComponent,
     CompraProductoComponent,
@@ -70,6 +72,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
   exports: [
   	ComprasComponent,
     CompraComponent,
+    ComprasRecurrentesComponent,
     AbonosComprasComponent,
     FacturacionCompraComponent,
     CompraProductoComponent,
