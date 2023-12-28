@@ -57,7 +57,7 @@
             <label for="tipo_impuesto">Ganancia</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" disabled value="{{ producto.precio - producto.costo }}">
+                <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo) | number:'1.0-2'}}">
             </div>
         </div>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">

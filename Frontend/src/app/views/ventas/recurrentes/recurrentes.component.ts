@@ -5,11 +5,11 @@ import { ApiService } from '@services/api.service';
 
 
 @Component({
-  selector: 'app-ventas',
-  templateUrl: './ventas.component.html'
+  selector: 'app-recurrentes',
+  templateUrl: './recurrentes.component.html'
 })
 
-export class VentasComponent implements OnInit {
+export class RecurrentesComponent implements OnInit {
 
     public ventas:any = [];
     public venta:any = {};
@@ -59,6 +59,7 @@ export class VentasComponent implements OnInit {
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
         this.filtros.forma_pago = '';
+        this.filtros.recurrente = true;
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
@@ -94,6 +95,18 @@ export class VentasComponent implements OnInit {
                 this.onSubmit();
             }
         }
+
+    }
+
+    public setRecurrencia(venta:any){
+        this.venta = venta;
+        this.venta.recurrente = false;
+        
+        this.apiService.store('venta', this.venta).subscribe(venta => {
+            this.venta = {};
+            this.loadAll();
+            this.alertService.success('Venta guardada', 'La venta se marco como no recurrente exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
 
     }
     
@@ -210,17 +223,6 @@ export class VentasComponent implements OnInit {
                 this.modalRef.hide();
             }
             this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    public setRecurrencia(venta:any){
-        this.venta = venta;
-        this.venta.recurrente = true;
-        
-        this.apiService.store('venta', this.venta).subscribe(venta => {
-            this.venta = {};
-            this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
 
     }

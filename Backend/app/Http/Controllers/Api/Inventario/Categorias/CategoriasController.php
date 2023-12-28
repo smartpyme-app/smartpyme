@@ -16,7 +16,19 @@ class CategoriasController extends Controller
     
     public function index() {
        
-        $categorias = Categoria::orderBy('nombre', 'asc')->get();
+        $categorias = Categoria::orderBy('enable', 'desc')
+                                ->orderBy('nombre', 'asc')
+                                ->get();
+
+        return Response()->json($categorias, 200);
+
+    }
+
+    public function list() {
+       
+        $categorias = Categoria::where('enable', true)
+                                ->orderBy('nombre', 'asc')
+                                ->get();
 
         return Response()->json($categorias, 200);
 
@@ -35,7 +47,9 @@ class CategoriasController extends Controller
         $categorias = Categoria::when($request->estado, function($query) use ($request){
                                 return $query->where('enable', $request->estado);
                             })
-                            ->orderBy('nombre', 'asc')->get();
+                            ->orderBy('nombre', 'asc')
+                            ->orderBy('enable', 'desc')
+                            ->get();
 
         return Response()->json($categorias, 200);
     }

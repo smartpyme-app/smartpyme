@@ -3,10 +3,10 @@
     <button (click)="openModal(musuario, {})"  tooltip="Crear usuario (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
 </section>
 <div>
-    <p class="alert alert-info text-muted" *ngIf="!loading && (usuarios_activos < apiService.auth_user().empresa.user_limit)">
+    <p class="alert alert-info text-muted border-0" *ngIf="!loading && (usuarios_activos < apiService.auth_user().empresa.user_limit)">
         Con tu plan actual, <b>tienes espacio para {{ apiService.auth_user().empresa.user_limit - usuarios_activos }} usuarios más</b>.
     </p>
-    <p class="alert alert-danger text-muted" *ngIf="!loading && (usuarios_activos >= apiService.auth_user().empresa.user_limit)">
+    <p class="alert alert-danger text-muted border-0" *ngIf="!loading && (usuarios_activos >= apiService.auth_user().empresa.user_limit)">
         Haz alcanzado el límite de usuarios permitidos en tu plan.
     </p>
 </div>
@@ -43,12 +43,12 @@
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
             </select>
-            <ng-select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default w-auto">
-                <ng-option value="">Sucursal</ng-option>
-                <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+            <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
-                </ng-option>
-            </ng-select>
+                </option>
+            </select>
         </div>
     </div>
     <div class="row">

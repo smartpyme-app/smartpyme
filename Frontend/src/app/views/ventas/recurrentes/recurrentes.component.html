@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Registros</h2>
+    <h2 class="page-heading">Ventas recurrentes</h2>
     <button routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
 </section>
 
@@ -24,10 +24,10 @@
 
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/ventas">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos">Abonos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes">Recurrentes</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/ventas">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos">Abonos</button>
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes" (click)="loadAll()" >Recurrentes</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
             <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
@@ -90,20 +90,14 @@
                                     <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
+                                    <a (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Marcar como no recurrente
                                     </a>
-                                    <a *ngIf="venta.estado != 'Anulada'" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Anular venta
-                                    </a>
-                                    <a *ngIf="venta.estado == 'Anulada'" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    <a routerLink="/venta/crear" [queryParams]="{ recurrente:1, id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-clone"></i> Duplicar venta
                                     </a>
                                     <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </a>
-                                    <a *ngIf="venta.recurrente == 0" (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
                                     <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir

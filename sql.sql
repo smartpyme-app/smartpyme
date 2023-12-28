@@ -63,11 +63,17 @@ ALTER TABLE compras CHANGE id_user id_usuario INT(11) NOT NULL;
 ALTER TABLE compras CHANGE percepcion percepcion DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE compras CHANGE id_proveedor id_proveedor INT(11) NULL;
 ALTER TABLE compras CHANGE descuento descuento DOUBLE(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE compras ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 
 ALTER TABLE ventas CHANGE total_venta total DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas CHANGE vencimiento fecha_pago date NULL;
 ALTER TABLE ventas CHANGE id_user id_usuario INT(11) NOT NULL;
 ALTER TABLE ventas CHANGE id_cliente id_cliente INT(50) NULL;
+ALTER TABLE ventas CHANGE total_costo total_costo DECIMAL(6,2) NOT NULL DEFAULT 0;
+ALTER TABLE ventas ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
+
+ALTER TABLE detalles_venta CHANGE cantidad cantidad DECIMAL(10,2) NOT NULL;
+ALTER TABLE detalles_venta ADD total_costo Boolean DEFAULT 0 AFTER total;
 
 
 ALTER TABLE devoluciones_venta CHANGE enable enable TINYINT(1) NOT NULL DEFAULT 1;
@@ -138,7 +144,6 @@ ALTER TABLE ajustes CHANGE stock_real stock_real DECIMAL(10,2) NULL DEFAULT NULL
 ALTER TABLE ajustes CHANGE ajuste ajuste DECIMAL(10,2) NULL DEFAULT NULL;
 
 
-ALTER TABLE detalles_venta CHANGE cantidad cantidad DECIMAL(10,2) NOT NULL;
 ALTER TABLE detalles_compra CHANGE cantidad cantidad DECIMAL(10,2) NOT NULL;
 ALTER TABLE detalles_compra CHANGE sub_total total DECIMAL(10,2) NOT NULL;
 

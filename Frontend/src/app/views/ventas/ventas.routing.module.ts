@@ -7,6 +7,7 @@ import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.c
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
 
+import { RecurrentesComponent } from '@views/ventas/recurrentes/recurrentes.component';
 import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
@@ -40,6 +41,7 @@ const routes: Routes = [
         { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
+        { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas'},
         { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas'},
         
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },

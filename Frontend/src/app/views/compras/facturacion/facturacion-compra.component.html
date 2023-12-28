@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <h3 *ngIf="compra.estado == 'Pre-compra'">Nueva orden de compra</h3>
-    <h3 *ngIf="compra.estado != 'Pre-compra'">Nueva compra</h3>
+    <h3 *ngIf="compra.estado == 'Pre-compra'">Orden de compra</h3>
+    <h3 *ngIf="compra.estado != 'Pre-compra'">Compra</h3>
     <button class="btn btn-light text-danger" routerLink="/compras">Cancelar <i class="fa fa-close"></i></button>
 </div>
 
@@ -38,14 +38,20 @@
         <div class="form-group col-md-6 col-lg-4">
             <label for="">Proveedor</label>
             <div class="input-group flex-nowrap">
-                <ng-select name="id_proveedor" (click)="loadProveedores()" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor" class="form-select p-0">
+                <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor" class="form-select p-0">
                     <ng-option value=""> Seleccione aquí </ng-option>
                     <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
                     <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.nombre }} <span *ngIf="proveedor.dui">- {{ proveedor.dui }}</span>
+                        {{ proveedor.nombre }} {{ proveedor.apellido }} <span *ngIf="proveedor.dui">- {{ proveedor.dui }}</span>
                     </ng-option>
                 </ng-select>
                 <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label ">
+            <div class="form-switch bg-light-info rounded">
+              <label for="recurrente">Compra recurrente</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="compra.recurrente" name="compra.recurrente">
             </div>
         </div>
         <div class="form-group col-md-12 col-lg-8">

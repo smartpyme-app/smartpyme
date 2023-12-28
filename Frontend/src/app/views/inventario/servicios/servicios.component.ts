@@ -28,7 +28,7 @@ export class ServiciosComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
     }

@@ -5,6 +5,8 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-compra-detalles',
   templateUrl: './compra-detalles.component.html'
@@ -40,6 +42,9 @@ export class CompraDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
+        if(!detalle.cantidad){
+            detalle.cantidad = 0;
+        }
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
         this.update.emit(this.compra);
     }
@@ -87,15 +92,24 @@ export class CompraDetallesComponent implements OnInit {
 
     // Eliminar detalle
         public delete(detalle:any){
-            if (confirm('Confirma eliminar el detalle')) { 
 
-                for (var i = 0; i < this.compra.detalles.length; ++i) {
-                    if (this.compra.detalles[i].producto_id === detalle.producto_id ){
-                        this.compra.detalles.splice(i, 1);
-                        this.update.emit(this.compra);
+            Swal.fire({
+              title: '¿Estás seguro?',
+              text: '¡No podrás revertir esto!',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, eliminarlo',
+              cancelButtonText: 'Cancelar'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                    const indexAEliminar = this.compra.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                    if (indexAEliminar !== -1) {
+                      this.compra.detalles.splice(indexAEliminar, 1);
                     }
-                }
-            }
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+              }
+            });
 
         }
 

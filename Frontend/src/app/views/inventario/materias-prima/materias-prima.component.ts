@@ -27,7 +27,7 @@ export class MateriasPrimaComponent implements OnInit {
     ngOnInit() {
         this.loadAll();
         if(!this.categorias.lenght){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
+            this.apiService.getAll('categorias/list').subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
         }

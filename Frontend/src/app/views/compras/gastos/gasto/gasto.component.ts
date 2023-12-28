@@ -73,6 +73,7 @@ export class GastoComponent implements OnInit {
             this.gasto.forma_pago = 'Efectivo';
             this.gasto.estado = 'Confirmado';
             this.gasto.tipo_documento = 'Factura';
+            this.gasto.detalle_banco = '';
             // this.gasto.fecha_pago = this.apiService.date();
             this.gasto.fecha = this.apiService.date();
             this.gasto.id_empresa = this.apiService.auth_user().id_empresa;

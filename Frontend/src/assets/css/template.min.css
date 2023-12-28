@@ -102,6 +102,14 @@ img.icon-2{
         color: #914C00 !important;
     }
 
+    .text-warning{
+        color: #a54b01 !important;
+    }
+
+    .text-danger{
+        color: #d70206 !important;
+    }
+
     .ng-select .ng-select-container {
         color: inherit; 
         background-color: transparent !important; 

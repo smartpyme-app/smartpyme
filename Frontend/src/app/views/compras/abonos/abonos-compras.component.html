@@ -24,7 +24,9 @@
 
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/compras">Todas</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/compras">Devoluciones</button>
+            <button class="btn tcla-F5 " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/compras/abonos" (click)="loadAll()" >Abonos</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="filtrarCompras()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">

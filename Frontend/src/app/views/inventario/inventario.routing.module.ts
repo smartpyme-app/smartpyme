@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
-import { CitasGuard } from '../../guards/citas.guard';
-import { AdminGuard } from '../../guards/admin.guard';
+import { CitasGuard } from '@guards/citas.guard';
+import { AdminGuard } from '@guards/admin.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { ProductoComponent } from '@views/inventario/productos/producto/producto.component';

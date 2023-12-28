@@ -37,7 +37,7 @@ export class TrasladosComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }

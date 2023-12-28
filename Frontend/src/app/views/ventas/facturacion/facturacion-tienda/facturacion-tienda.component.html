@@ -42,11 +42,11 @@
         <div class="form-group col-md-6 col-lg-4">
             <label for="">Cliente</label>
             <div class="input-group flex-nowrap">
-                <ng-select name="id_cliente" (click)="loadClientes()" placeholder="Consumidor Final" [(ngModel)]="venta.id_cliente" class="form-select p-0">
+                <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="venta.id_cliente" class="form-select p-0">
                     <ng-option value=""> Consumidor final </ng-option>
                     <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
                     <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.nombre }} <span *ngIf="cliente.dui">- {{ cliente.dui }}</span>
+                        {{ cliente.nombre }} {{ cliente.apellido }} <span *ngIf="cliente.dui">- {{ cliente.dui }}</span>
                     </ng-option>
                 </ng-select>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>

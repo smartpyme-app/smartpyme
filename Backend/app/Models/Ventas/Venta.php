@@ -34,6 +34,7 @@ class Venta extends Model {
         // 'gravada',
         'total',
         'observaciones',
+        'recurrente',
         'id_caja',
         'id_bodega',
         'id_corte',
@@ -45,7 +46,8 @@ class Venta extends Model {
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
-
+    protected $casts = ['recurrente' => 'string'];
+    
     protected static function booted()
     {
         $usuario = JWTAuth::parseToken()->authenticate();

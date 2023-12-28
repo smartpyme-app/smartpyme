@@ -28,6 +28,7 @@ export class FacturacionTiendaComponent implements OnInit {
     public canales:any = [];
     public supervisor:any = {};
     public loading = false;
+    public duplicarventa = false;
     public imprimir:boolean = false;
     
     modalRef!: BsModalRef;
@@ -80,10 +81,6 @@ export class FacturacionTiendaComponent implements OnInit {
 
         }, error => {this.alertService.error(error);});
 
-    }
-
-    public loadClientes(){
-        this.loading = true;
         this.apiService.getAll('clientes/list').subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
@@ -145,9 +142,24 @@ export class FacturacionTiendaComponent implements OnInit {
             console.log(this.venta);
         }
 
+        // Duplicar venta
+
+        if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_venta')!) {
+            this.duplicarventa = true;
+            this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
+                this.venta = venta;
+                this.venta.fecha = this.apiService.date();
+                this.venta.fecha_pago = this.apiService.date();
+                this.venta.id = null;
+                this.venta.detalles.forEach((detalle:any) => {
+                    detalle.id = null;
+                });
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+
+        // Cita a venta
         if (this.route.snapshot.queryParamMap.get('id_cita')!) {
             this.loading = true;
-            this.loadClientes();
             this.apiService.read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!).subscribe(evento => {
                 this.evento = evento;
                 this.venta.id_cliente = evento.id_cliente;
@@ -249,6 +261,10 @@ export class FacturacionTiendaComponent implements OnInit {
             if (confirm('¿Confirma procesar la ' + (this.venta.estado == 'Pre-venta' ? ' cotización.' : 'venta.') )) {
                 if(!this.venta.recibido)
                     this.venta.recibido = this.venta.total;
+
+                if(this.venta.forma_pago == 'Wompi'){
+                    this.venta.estado = 'Pendiente';
+                }
                 this.onSubmit();
             }
         }
@@ -256,7 +272,14 @@ export class FacturacionTiendaComponent implements OnInit {
     // Guardar venta
         public onSubmit() {
 
-            this.loading = true;            
+            this.loading = true;
+
+            // Si se esta duplicando una venta, esta ya no se marca como recurrente para
+            // que no aparezca en las ventas recurrentes
+            if(this.duplicarventa){
+                this.venta.recurrente = false;
+            }
+
             this.apiService.store('facturacion', this.venta).subscribe(venta => {
 
                 if(this.imprimir) {

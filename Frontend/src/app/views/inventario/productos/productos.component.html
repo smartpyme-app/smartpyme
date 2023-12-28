@@ -28,25 +28,25 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-6 d-flex gap-2 mb-3">
+        <div class="col-md-8 d-flex gap-2 mb-3">
             <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/productos">Todos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ajustes">Ajustes</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
         </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+        <div class="col-md-4 d-flex gap-2 justify-content-end mb-3">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
                     {{categoria.nombre}}
                 </ng-option>
             </ng-select>
-            <ng-select name="id_sucursal" (change)="filtrarProductos()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default">
-                <ng-option value="">Sucursal</ng-option>
-                <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+            <select name="id_sucursal" (change)="filtrarProductos()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
-                </ng-option>
-            </ng-select>
+                </option>
+            </select>
         </div>
     </div>
     <div class="row">

@@ -46,7 +46,10 @@ export class UsuariosComponent implements OnInit {
     }
 
     public loadAll(){
-        this.loading = true;        
+        this.loading = true;
+        if(!this.filtros.id_sucursal){
+            this.filtros.id_sucursal = '';
+        }      
         this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.contarActivos();

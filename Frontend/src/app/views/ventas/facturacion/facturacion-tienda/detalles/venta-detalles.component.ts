@@ -42,12 +42,16 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
+        if(!detalle.cantidad){
+            detalle.cantidad = 0;
+        }
         if(detalle.descuento_porcentaje){
             detalle.descuento = detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100));
         }else{
             detalle.descuento = 0;
         }
 
+        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
         this.update.emit(this.venta);
     }
@@ -153,12 +157,9 @@ export class VentaDetallesComponent implements OnInit {
               cancelButtonText: 'Cancelar'
             }).then((result) => {
               if (result.isConfirmed) {
-                    for (var i = 0; i < this.venta.detalles.length; ++i) {
-                        if (this.venta.detalles[i].producto_id === detalle.producto_id ){
-                            this.venta.detalles.splice(i, 1);
-                            this.update.emit(this.venta);
-                            // Swal.fire('Eliminado', 'El detalle ha sido eliminado.', 'success');
-                        }
+                    const indexAEliminar = this.venta.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                    if (indexAEliminar !== -1) {
+                      this.venta.detalles.splice(indexAEliminar, 1);
                     }
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');

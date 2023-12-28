@@ -40,6 +40,9 @@ class VentasController extends Controller
                         ->when($request->inicio, function($query) use ($request){
                             return $query->where('fecha', '>=', $request->inicio);
                         })
+                        ->when($request->recurrente !== null, function($q) use ($request){
+                            $q->where('recurrente', !!$request->recurrente);
+                        })
                         ->when($request->fin, function($query) use ($request){
                             return $query->where('fecha', '<=', $request->fin);
                         })

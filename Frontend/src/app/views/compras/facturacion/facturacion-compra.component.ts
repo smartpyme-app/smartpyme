@@ -80,10 +80,6 @@ export class FacturacionCompraComponent implements OnInit {
 
         }, error => {this.alertService.error(error);});
 
-    }
-
-    public loadProveedores(){
-        this.loading = true;
         this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
@@ -134,9 +130,15 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.estado = this.route.snapshot.queryParamMap.get('estado')!;
         }
 
-        console.log(this.compra);
-        // this.sumTotal();
-        // this.imprimir = true;
+        this.route.params.subscribe((params:any) => {
+            if (params.id) {
+                this.loading = true;
+                this.apiService.read('compra/', params.id).subscribe(compra => {
+                    this.compra = compra;
+                    this.loading = false;
+                }, error => {this.alertService.error(error); this.loading = false;});
+            }
+        });
     }
 
     public sumTotal() {

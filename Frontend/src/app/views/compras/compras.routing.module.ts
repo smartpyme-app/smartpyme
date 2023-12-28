@@ -35,6 +35,7 @@ const routes: Routes = [
 
         { path: 'compras', component: ComprasComponent, title:'Compras' },
         { path: 'compra/crear', component: FacturacionCompraComponent, title:'Compra' },
+        { path: 'compra/editar/:id', component: FacturacionCompraComponent, title:'Compra' },
         { path: 'compra/:id', component: CompraComponent, title:'Compra' },
 
         { path: 'compras/abonos', component: AbonosComprasComponent, title:'Abonos de compra' },

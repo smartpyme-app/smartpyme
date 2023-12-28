@@ -20,6 +20,11 @@
     </div>
     <div style="min-height: 40vh;">
         <ul class="list-unstyled ps-0">
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+                    <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de negocios
+                </a>
+            </li>
             <li class="mb-1">
                 <button (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
                   <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
@@ -58,7 +63,7 @@
                 <div [collapse]="comprasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes-de-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Ordenes de compra</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes-de-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Órdenes de compra</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
                   </ul>
                 </div>
@@ -81,11 +86,6 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de negocios
-                </a>
-            </li>
         </ul>
     </div>
     <div style="min-height: 37vh;">
@@ -96,8 +96,8 @@
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
             <li class="mb-1">
-                <button (click)="togglePreferencias()" tooltip="Preferencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
-                  <img src="/assets/icons/sliders.png" class="icon me-2">Preferencias
+                <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
+                  <img src="/assets/icons/sliders.png" class="icon me-2">Configuraciones
                 </button>
                 <div [collapse]="preferenciasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
@@ -109,8 +109,8 @@
                 </div>
             </li>
             <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión
+                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-warning">
+                    <img src="/assets/icons/log-out-stroke.png" class="icon me-2">Cerrar sesión
                 </a>
             </li>
         </ul>

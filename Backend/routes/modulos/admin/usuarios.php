@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\UsuariosMetaController;
 
     Route::get('/usuarios',                 [UsuariosController::class, 'index']);
     Route::get('/usuarios/list',            [UsuariosController::class, 'list']);
+    Route::post('/usuarios/filtrar',         [UsuariosController::class, 'filter']);
     Route::post('/usuario',                 [UsuariosController::class, 'store'])->middleware('limite.usuarios');
     Route::get('/usuario/{id}',             [UsuariosController::class, 'read']);
     Route::delete('/usuario/{id}',          [UsuariosController::class, 'delete']);

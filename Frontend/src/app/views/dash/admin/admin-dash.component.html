@@ -2,11 +2,11 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-6 col-lg-9">
-                <h3 class="mb-1" (click)="onFiltrar()">Bienvenida de vuelta, {{ usuario.name.split(' ')[0] }}. </h3>
+                <h3 class="mb-1" (click)="onFiltrar()">Hola, {{ usuario.name.split(' ')[0] }}, ¿Cómo va el negocio?</h3>
                 <p class="text-muted">¡Aquí podrás gestionar tu empresa de mejor manera!</p>
             </div>
             <div class="col-md-6 col-lg-3">
-                <select [(ngModel)]="filtro.id_sucursal" (change)="onFiltrar()"  class="form-select bg-default" name="filtro.id_sucursal">
+                <select [(ngModel)]="filtro.id_sucursal" (change)="onFiltrar()"  class="float-end form-select bg-default w-auto" name="filtro.id_sucursal">
                     <option value="">Sucursal</option>
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}

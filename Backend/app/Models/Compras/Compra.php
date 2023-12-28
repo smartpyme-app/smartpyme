@@ -30,6 +30,7 @@ class Compra extends Model {
         'percepcion',
         // 'iva_retenido',
         'descuento',
+        'recurrente',
         'iva',
         'sub_total',
         'total',
