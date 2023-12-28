@@ -54,7 +54,7 @@
             <table class="table table-borderless table-hover align-middle">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" class="form-check"></th>
+                        <!-- <th><input type="checkbox" class="form-check"></th> -->
                         <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Producto</th>
                         <th (click)="setOrden('enable')" [ngClass]="{'sorted-asc': filtros.orden == 'enable' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'enable' && filtros.direccion == 'desc'}" class="click d-none d-lg-table-cell">Estado</th>
                         <th (click)="setOrden('categoria')" [ngClass]="{'sorted-asc': filtros.orden == 'categoria' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'categoria' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Categoría</th>
@@ -74,9 +74,9 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
-                        <td>
+                       <!--  <td>
                             <input type="checkbox" class="form-check">
-                        </td>
+                        </td> -->
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                             {{ producto.nombre }}

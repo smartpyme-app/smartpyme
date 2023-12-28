@@ -8,12 +8,12 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { FocusModule } from 'angular2-focus';
-import { PipesModule } from '../../../pipes/pipes.module';
-import { SharedModule } from '../../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 
-import { FacturacionComponent } from './facturacion.component';
-import { FacturacionTiendaComponent } from './facturacion-tienda/facturacion-tienda.component';
+import { FacturacionComponent } from './facturacion-tienda/facturacion.component';
+import { FacturacionConsignaComponent } from './facturacion-consigna/facturacion-consigna.component';
 import { TiendaVentaProductoComponent } from './facturacion-tienda/productos/tienda-venta-producto.component';
 import { VentaDetallesComponent } from './facturacion-tienda/detalles/venta-detalles.component';
 
@@ -33,13 +33,13 @@ import { VentaDetallesComponent } from './facturacion-tienda/detalles/venta-deta
   ],
   declarations: [
     FacturacionComponent,
-    FacturacionTiendaComponent,
+    FacturacionConsignaComponent,
     TiendaVentaProductoComponent,
     VentaDetallesComponent,
   ],
   exports: [
     FacturacionComponent,
-    FacturacionTiendaComponent,
+    FacturacionConsignaComponent,
     TiendaVentaProductoComponent,
     VentaDetallesComponent,
   ]

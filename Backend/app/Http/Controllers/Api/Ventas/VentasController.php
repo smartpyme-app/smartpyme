@@ -312,6 +312,100 @@ class VentasController extends Controller
 
     }
 
+    public function facturacionConsigna(Request $request){
+        $request->validate([
+            'id'                => 'required',
+            'fecha'             => 'required',
+            'estado'            => 'required|max:255',
+            'correlativo'       => 'required|numeric',
+            'id_documento'      => 'required|max:255',
+            'id_canal'          => 'required|max:255',
+            'id_cliente'        => 'required_if:estado,"Pendiente"',
+            'detalles'          => 'required',
+            'fecha_pago'        => 'required',
+            'iva'               => 'required|numeric',
+            'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
+            'total_costo'       => 'required|numeric',
+            'sub_total'         => 'required|numeric',
+            'total'             => 'required|numeric',
+            'nota'              => 'max:255',
+            'id_usuario'        => 'required|numeric',
+            'id_sucursal'       => 'required|numeric',
+        ], [
+            'detalles.required' => 'Tiene que agregar productos a la venta',
+            'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
+        ]);
+
+        DB::beginTransaction();
+      
+        try {
+            $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
+            if ($venta->total != $request->total) {
+                // Crear consigna
+                $consigna = new Venta();
+                $consigna->fill($request->all());
+                $consigna->estado = 'Consigna';
+                $consigna->sub_total = $venta->sub_total - $request->sub_total;
+                $consigna->total_costo  = $venta->total_costo  - $request->total_costo ;
+                $consigna->total = $venta->total - $request->total;
+                $consigna->iva = $venta->iva - $request->iva;
+                $consigna->save();
+
+                foreach($request->detalles as $detalle){
+                    
+                    $detalle_venta = $venta->detalles()->where('id', $detalle['id'])->first();
+                    if ($detalle_venta) {
+                        if ($detalle_venta->cantidad > $detalle['cantidad']) {
+                            $detalle_consigna = new Detalle();
+                            $detalle_consigna->id_producto = $detalle['id_producto'];
+                            $detalle_consigna->precio = $detalle['precio'];
+                            $detalle_consigna->cantidad = $detalle_venta->cantidad - $detalle['cantidad'];
+                            $detalle_consigna->total = $detalle_consigna->precio * $detalle_consigna->cantidad;
+                            $detalle_consigna->id_venta = $consigna->id;
+                            $detalle_consigna->save();
+                        }
+                    }
+                  
+                }
+                
+                //Guardar nuevos detalles
+                $venta->detalles()->delete();
+
+                foreach ($request->detalles as $detalle) {
+                    if ($detalle['cantidad'] > 0) {
+                        $det = new Detalle();
+                        $det->id_producto = $detalle['id_producto'];
+                        $det->cantidad = $detalle['cantidad'];
+                        $det->precio = $detalle['precio'];
+                        $det->total = $detalle['cantidad'] * $detalle['precio'];
+                        $det->descuento = 0;
+                        $det->id_venta = $venta->id;
+                        $det->save();
+                    }
+                }
+                
+                $venta->total = $request->total;
+                $venta->iva = $request->iva;
+                $venta->sub_total = $request->sub_total;
+            }
+
+
+            $venta->fecha = $request->fecha;
+            $venta->estado = 'Pagada';
+            $venta->save();
+
+            DB::commit();
+            return Response()->json($venta, 200);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                return Response()->json(['error' => $e->getMessage()], 400);
+            } catch (\Throwable $e) {
+                DB::rollback();
+                return Response()->json(['error' => $e->getMessage()], 400);
+            }
+    }
+
     public function pendientes() {
 
         $usuario = JWTAuth::parseToken()->authenticate();

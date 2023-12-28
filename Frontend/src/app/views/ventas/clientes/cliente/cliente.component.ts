@@ -35,8 +35,8 @@ export class ClienteComponent implements OnInit {
                 }, error => {this.alertService.error(error); this.loading = false;});
             }else{
                 this.cliente = {};
-                this.cliente.empresa_id = this.apiService.auth_user().empresa_id;
-                this.cliente.usuario_id = this.apiService.auth_user().id;
+                this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
+                this.cliente.id_usuario = this.apiService.auth_user().id;
             }
         });
     }

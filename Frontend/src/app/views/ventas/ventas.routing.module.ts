@@ -18,7 +18,8 @@ import { DocumentosComponent } from '@views/ventas/documentos/documentos.compone
 import { DevolucionesVentasComponent } from '@views/ventas/devoluciones/devoluciones-ventas.component';
 import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
 import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
-import { FacturacionComponent } from './facturacion/facturacion.component';
+import { FacturacionComponent } from '@views/ventas/facturacion/facturacion-tienda/facturacion.component';
+import { FacturacionConsignaComponent } from '@views/ventas/facturacion/facturacion-consigna/facturacion-consigna.component';
 
 import { ClientesComponent } from '@views/ventas/clientes/clientes.component';
 import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
@@ -39,6 +40,7 @@ const routes: Routes = [
 
         { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
         { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
+        { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
         { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas'},

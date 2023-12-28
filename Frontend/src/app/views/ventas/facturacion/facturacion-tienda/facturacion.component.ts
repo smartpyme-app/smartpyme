@@ -8,12 +8,12 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-facturacion-tienda',
-  templateUrl: './facturacion-tienda.component.html',
+  selector: 'app-facturacion',
+  templateUrl: './facturacion.component.html',
   providers: [ SumPipe ]
 })
 
-export class FacturacionTiendaComponent implements OnInit {
+export class FacturacionComponent implements OnInit {
 
     public venta: any= {};
     public evento: any= {};

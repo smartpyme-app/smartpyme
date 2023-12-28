@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\WompiController;
     Route::delete('/venta/{id}',        [VentasController::class, 'delete']);
 
     Route::post('/venta/facturacion',  [VentasController::class, 'facturacion']);
+    Route::post('/venta/facturacion/consigna',  [VentasController::class, 'facturacionConsigna']);
     Route::get('/venta/facturacion/impresion/{id}',  [VentasController::class, 'generarDoc']);
 
     Route::get('/ventas/pendientes',       [VentasController::class, 'pendientes']);

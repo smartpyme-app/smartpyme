@@ -37,12 +37,12 @@
                 <option value="Consigna">Consigna</option>
                 <option value="Pagada">Pagada</option>
             </select>
-            <ng-select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default w-auto">
-                <ng-option value="">Sucursal</ng-option>
-                <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+            <select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
-                </ng-option>
-            </ng-select>
+                </option>
+            </select>
         </div>
     </div>
     <div class="row">
@@ -92,6 +92,9 @@
                                     </a>
                                     <a *ngIf="venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
+                                    </a>
+                                    <a *ngIf="venta.estado == 'Consigna'" routerLink="/venta/consigna/revisar/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                     </a>
                                     <a *ngIf="venta.estado != 'Anulada'" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
