@@ -39,8 +39,26 @@ export class FacturacionConsignaComponent implements OnInit {
 
 	ngOnInit() {
 
-        this.cargarDatosIniciales();
+        this.route.params.subscribe((params:any) => {
+            if (params.id) {
+                this.loading = true;
+                this.apiService.read('venta/', params.id).subscribe(venta => {
+                    this.venta = venta;
+                    this.loading = false;
+                    this.cargarDocumentos();
+                    this.cargarDatos();
+                }, error => {this.alertService.error(error); this.loading = false;});
+            }else{
+                this.venta = {};
+                this.venta.id_empresa = this.apiService.auth_user().id_empresa;
+                this.venta.id_usuario = this.apiService.auth_user().id;
+            }
+        });
 
+
+    }
+
+    public cargarDatos(){
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
@@ -68,9 +86,8 @@ export class FacturacionConsignaComponent implements OnInit {
             this.sumTotal();
 
         }, error => {this.alertService.error(error);});
-
     }
-
+    
     public cargarDocumentos(){
         this.apiService.getAll('documentos').subscribe(documentos => {
             this.documentos = documentos;
@@ -88,23 +105,6 @@ export class FacturacionConsignaComponent implements OnInit {
         }, error => {this.alertService.error(error);});
     }
 
-    public cargarDatosIniciales(){
-        
-        this.route.params.subscribe((params:any) => {
-            if (params.id) {
-                this.loading = true;
-                this.apiService.read('venta/', params.id).subscribe(venta => {
-                    this.venta = venta;
-                    this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }else{
-                this.venta = {};
-                this.venta.id_empresa = this.apiService.auth_user().id_empresa;
-                this.venta.id_usuario = this.apiService.auth_user().id;
-            }
-        });
-        this.cargarDocumentos();
-    }
 
     public updateTotal(detalle:any){
         if(!detalle.cantidad){
