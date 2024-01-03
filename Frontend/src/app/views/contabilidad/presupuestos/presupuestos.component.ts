@@ -18,10 +18,9 @@ export class PresupuestosComponent implements OnInit {
 
     public clientes:any = [];
     public usuarios:any = [];
+    public usuario:any = {};
     public sucursales:any = [];
-    public documentos:any = [];
-    public filtro:any = {};
-    public filtrado:boolean = false;
+    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -30,33 +29,45 @@ export class PresupuestosComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        this.usuario = this.apiService.auth_user();
         this.loadAll();
 
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+    }
+
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.filtrarPresupuestos();
     }
 
     public loadAll() {
-        this.loading = true;
-        this.filtro.estado = '';
-        // this.filtro.inicio = this.apiService.date();
-        // this.filtro.fin = this.apiService.date();
+        this.filtros.id_sucursal = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha_inicio';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
 
-        this.apiService.getAll('presupuestos').subscribe(presupuestos => { 
-            this.presupuestos = presupuestos;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.filtrarPresupuestos();
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('presupuestos/buscar/', this.buscador).subscribe(presupuestos => { 
-                this.presupuestos = presupuestos;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
-        }
+    public filtrarPresupuestos(){
+        this.loading = true;
+        this.apiService.getAll('presupuestos', this.filtros).subscribe(presupuestos => { 
+            this.presupuestos = presupuestos;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); });
     }
 
     public setAnulacion(presupuesto:any, estado:any){
@@ -68,31 +79,16 @@ export class PresupuestosComponent implements OnInit {
         }
     }
 
-    public filtrar(filtro:any, txt:any){
-        this.loading = true;
-        this.apiService.read('presupuestos/filtrar/' + filtro + '/', txt).subscribe(presupuestos => { 
-            this.presupuestos = presupuestos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
-
-    }
-
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.presupuestos.path + '?page='+ event.page).subscribe(presupuestos => { 
+        this.apiService.paginate(this.presupuestos.path + '?page='+ event.page, this.filtros).subscribe(presupuestos => { 
             this.presupuestos = presupuestos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public onFiltrar(){
-        this.loading = true;
-        this.apiService.store('presupuestos/filtrar', this.filtro).subscribe(presupuestos => { 
-            this.presupuestos = presupuestos;
-            this.loading = false;
-            // this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
-
+    public openFilter(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
     }
 
 }

@@ -28,6 +28,7 @@ export class AjustesComponent implements OnInit {
 
     ngOnInit() {
         this.filtros.id_sucursal = '';
+        this.filtros.id_producto = '';
         this.filtros.estado = '';
         this.filtros.search = '';
         this.filtros.orden = 'created_at';
@@ -39,6 +40,7 @@ export class AjustesComponent implements OnInit {
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+
     }
 
     public loadAll() {
@@ -110,6 +112,9 @@ export class AjustesComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('productos/list').subscribe(productos => { 
+            this.productos = productos;
+        }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 

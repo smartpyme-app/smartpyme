@@ -37,11 +37,6 @@ class ProductosController extends Controller
                                         return $q->where('id_sucursal', $request->id_sucursal);
                                     });
                                 })
-                                ->when($request->id_proveedor, function($q) use ($request){
-                                    $q->whereHas('proveedores', function($q) use ($request){
-                                        return $q->where('id_proveedor', $request->id_proveedor);
-                                    });
-                                })
                                 ->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                                  ->orwhere('codigo', 'like' ,"%" . $request->buscador . "%")
@@ -49,6 +44,14 @@ class ProductosController extends Controller
                                                  ->orwhere('etiquetas', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('marca', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                ->when($request->id_proveedor, function($q) use ($request){
+                                    $q->whereHas('proveedores', function($q) use ($request){
+                                        return $q->where("id_proveedor", $request->id_proveedor);
+                                    });
+                                })
+                                ->when($request->estado !== null, function($q) use ($request){
+                                    $q->where('enable', !!$request->estado);
                                 })
                                 ->whereIn('tipo', ['Producto', 'Compuesto'])
                                 // ->whereNotIn('id_categoria', [1,2])

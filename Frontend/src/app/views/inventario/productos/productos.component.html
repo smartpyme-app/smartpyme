@@ -23,7 +23,7 @@
                         <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="filtrarProductos()" class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
@@ -154,3 +154,53 @@
         </div>
     </div>
 </section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="filtrarProductos()">
+        <div class="row">
+
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="1">Activos</option>
+                    <option value="0">Inactivos</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_categoria">Categoria:</label>
+                <select [(ngModel)]="filtros.id_categoria" class="form-control form-select" name="filtros.id_categoria">
+                    <option value="">Todos</option>
+                    <option *ngFor="let categoria of categorias" [value]="categoria.id">
+                        {{ categoria.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_proveedor">Proveedor:</label>
+                <ng-select name="id_proveedor" [(ngModel)]="filtros.id_proveedor" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{proveedor.nombre}}
+                    </ng-option>
+                </ng-select>
+            </div>
+            
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

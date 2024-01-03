@@ -15,6 +15,7 @@ export class ProductosComponent implements OnInit {
     public producto:any = {};
     public sucursales:any = [];
     public categorias:any = [];
+    public proveedores:any = [];
 
     modalRef!: BsModalRef;
 
@@ -39,6 +40,8 @@ export class ProductosComponent implements OnInit {
     public loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_categoria = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'asc';
@@ -116,6 +119,14 @@ export class ProductosComponent implements OnInit {
             window.URL.revokeObjectURL(url);
           }, (error) => {console.error('Error al exportar productos:', error); }
         );
+    }
+
+    public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+            this.proveedores = proveedores;
+        }, error => {this.alertService.error(error); });
+
+        this.modalRef = this.modalService.show(template);
     }
 
 }

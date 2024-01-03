@@ -22,7 +22,7 @@
                         <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.search">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
@@ -173,6 +173,15 @@
             <div class="form-group col-md-6">
                 <label for="">Al:</label>
                 <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="">Producto</label>
+                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
+                    <ng-option value="" selected>Todos</ng-option>
+                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
+                        {{producto.nombre}}
+                    </ng-option>
+                </ng-select>
             </div>
             <div class="form-group col-md-12">
                 <label for="">Estado:</label>

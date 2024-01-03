@@ -47,6 +47,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <!-- <th>Usuario</th> -->
                         <th>Proveedor</th>
                         <th>Concepto</th>
                         <th>Método de pago</th>
@@ -69,7 +70,8 @@
                     <tr class="animated fadeIn" *ngFor=" let gasto of gastos?.data">
                         
                         <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{gasto.nombre_proveedor }}</td>
+                        <!-- <td>{{gasto.nombre_usuario }}</td> -->
+                        <td>{{gasto.nombre_proveedor | truncate:30 }}<a *ngIf="gasto.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{gasto.proveedor_id}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{gasto.concepto}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
@@ -128,16 +130,16 @@
     <form autocomplete="off" (ngSubmit)="filtrarGastos()">
         <div class="row">
 
-            <div class="form-group col-sm-6">
+            <div class="form-group col-md-6">
                 <label for="">Del:</label>
                 <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
             </div>
-            <div class="form-group col-sm-6">
+            <div class="form-group col-md-6">
                 <label for="">Al:</label>
                 <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
 
-            <div class="form-group col-md-12">
+            <div class="form-group col-lg-6">
                 <label for="filtros.proveedor">Proveedor:</label>
                 <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
                     <ng-option value="">Todos</ng-option>
@@ -146,7 +148,7 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-lg-6">
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
@@ -155,7 +157,16 @@
                     </option>
                 </select>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-lg-6">
+                <label for="filtros.estado">Estado:</label>
+                <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Cancelado">Cancelado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Confirmado">Confirmado</option>
+                </select>
+            </div>
+            <div class="form-group col-lg-6">
                 <label for="filtros.id_usuario">Empleado:</label>
                 <select [(ngModel)]="filtros.id_usuario" class="form-select" name="filtros.id_usuario">
                     <option value="">Todos</option>

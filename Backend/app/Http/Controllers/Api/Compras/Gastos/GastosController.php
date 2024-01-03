@@ -21,7 +21,10 @@ class GastosController extends Controller
                         })
                     ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
-                        })
+                    })
+                    ->when($request->id_usuario, function($query) use ($request){
+                        return $query->where('id_usuario', $request->id_usuario);
+                    })
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('concepto', 'like' ,'%' . $request->buscador . '%');
                     })

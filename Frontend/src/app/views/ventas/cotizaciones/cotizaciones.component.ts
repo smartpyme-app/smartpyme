@@ -99,14 +99,6 @@ export class CotizacionesComponent implements OnInit {
 
     }
 
-    public filtrar(filtro:any, txt:any){
-        this.loading = true;
-        this.apiService.read('ventas/filtrar/' + filtro + '/', txt).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
-
-    }
 
     public setPagination(event:any):void{
         this.loading = true;
@@ -144,22 +136,10 @@ export class CotizacionesComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
-        
-        this.apiService.getAll('documentos').subscribe(documentos => { 
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error); });
-
-        this.apiService.getAll('canales').subscribe(canales => { 
-            this.canales = canales;
-        }, error => {this.alertService.error(error); });
-        
         this.modalRef = this.modalService.show(template);
     }
 

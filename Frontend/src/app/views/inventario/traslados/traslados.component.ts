@@ -29,6 +29,8 @@ export class TrasladosComponent implements OnInit {
 
     ngOnInit() {
         this.filtros.id_sucursal_de = '';
+        this.filtros.id_sucursal_para = '';
+        this.filtros.id_producto = '';
         this.filtros.estado = '';
         this.filtros.search = '';
         this.filtros.orden = 'created_at';
@@ -111,6 +113,9 @@ export class TrasladosComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('productos/list').subscribe(productos => { 
+            this.productos = productos;
+        }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 

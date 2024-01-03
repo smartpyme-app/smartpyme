@@ -12,9 +12,26 @@ class PresupuestosController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $presupuestos = Presupuesto::orderBy('id', 'desc')->paginate(10);
+        $presupuestos = Presupuesto::when($request->buscador, function($query) use ($request){
+                        return $query->where('titulo', 'like', '%'. $request->buscador . '%');
+                    })
+                    ->when($request->inicio, function($query) use ($request){
+                        return $query->where('fecha_inicio', '>=', $request->inicio);
+                    })
+                    ->when($request->fin, function($query) use ($request){
+                        return $query->where('fecha_fin', '<=', $request->fin);
+                    })
+                    ->when($request->id_usuario, function($query) use ($request){
+                        return $query->where('id_usuario', $request->id_usuario);
+                    })
+                    ->when($request->estado !== null, function($q) use ($request){
+                        $q->where('enable', !!$request->estado);
+                    })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
 
         return Response()->json($presupuestos, 200);
 
@@ -28,29 +45,6 @@ class PresupuestosController extends Controller
 
     }
 
-    public function filter(Request $request) {
-
-
-        $presupuestos = Presupuesto::when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha_inicio', [$request->inicio, $request->fin]);
-                        })
-                        ->when($request->buscador, function($query) use ($request){
-                            return $query->where('titulo', 'like', '%'. $request->buscador . '%');
-                        })
-                        ->when($request->sucursal_id, function($query) use ($request){
-                            return $query->where('sucursal_id', $request->sucursal_id);
-                        })
-                        ->when($request->usuario_id, function($query) use ($request){
-                            return $query->where('usuario_id', $request->usuario_id);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('enable', $request->estado);
-                        })
-                        ->orderBy('id','desc')->paginate(100000);
-
-        return Response()->json($presupuestos, 200);
-
-    }
 
     public function store(Request $request)
     {

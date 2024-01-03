@@ -22,7 +22,7 @@
                         <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.search">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F6)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
@@ -180,18 +180,36 @@
                 <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
             <div class="form-group col-md-12">
+                <label for="">Producto</label>
+                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
+                    <ng-option value="" selected>Todos</ng-option>
+                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
+                        {{producto.nombre}}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12">
                 <label for="">Estado:</label>
                 <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
-                    <option value="">Estado</option>
+                    <option value="">Todos</option>
                     <option value="Confirmado">Confirmado</option>
                     <option value="Cancelado">Cancelado</option>
                 </select>
             </div>
-            <div class="form-group col-md-12">
-                <label for="">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
+            <div class="form-group col-lg-6">
+                <label for="">Sucursal de:</label>
+                <select [(ngModel)]="filtros.id_sucursal_de" class="form-select" name="filtros.id_sucursal_de">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-lg-6">
+                <label for="">Sucursal para:</label>
+                <select [(ngModel)]="filtros.id_sucursal_para" class="form-select" name="filtros.id_sucursal_para">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>

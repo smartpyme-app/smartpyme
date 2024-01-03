@@ -41,10 +41,10 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th (click)="setOrden('id_usuario')" [ngClass]="{'sorted-asc': filtros.orden == 'id_usuario' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_usuario' && filtros.direccion == 'desc'}" class="click">Usuario</th>
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Observaciones</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
-                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
                         <!-- <th>Estado</th> -->
                         <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
@@ -63,10 +63,10 @@
                     <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{venta.nombre_usuario | truncate:30 }}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{venta.observaciones}}</td>
                         <td>{{venta.forma_pago}}</td>
-                        <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <!-- <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(venta)" [(ngModel)]="venta.estado" [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-info' : venta?.estado == 'Consigna', 'bg-light-success' : venta?.estado == 'Pagada'}">
                                 <option value="Pendiente">Pendiente</option>
@@ -137,11 +137,11 @@
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
-                <label for="filtros.forma_pago">Forma de pago:</label>
-                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
+                <label for="filtros.id_usuario">Usuario:</label>
+                <select [(ngModel)]="filtros.id_usuario" class="form-control form-select" name="filtros.id_usuario">
                     <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [ngValue]="formaPago.nombre">
-                        {{ formaPago.nombre }}
+                    <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
                     </option>
                 </select>
             </div>
@@ -149,7 +149,7 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>

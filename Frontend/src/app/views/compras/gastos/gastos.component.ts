@@ -66,7 +66,7 @@ export class GastosComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.loadAll();
+        this.filtrarGastos();
     }
 
 
