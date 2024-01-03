@@ -20,6 +20,7 @@ class Documento extends Model {
         'resolucion',
         'fecha',
         'nota',
+        'predeterminado',
         'activo',
         'caja_id',
         'id_sucursal',
@@ -27,7 +28,7 @@ class Documento extends Model {
     );
 
     protected $appends = ['nombre_sucursal'];
-    protected $casts = ['activo' => 'string'];
+    protected $casts = ['predeterminado' => 'string', 'activo' => 'string'];
 
     protected static function boot()
     {

@@ -19,7 +19,7 @@ export class ClientesComponent implements OnInit {
     public categorias:any = [];
     modalRef!: BsModalRef;
 
-    constructor( private apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
 
     ngOnInit() {
 

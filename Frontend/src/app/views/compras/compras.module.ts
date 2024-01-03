@@ -30,6 +30,7 @@ import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compra
 
 import { GastosComponent } from './gastos/gastos.component';
 import { GastoComponent } from './gastos/gasto/gasto.component';
+import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 
@@ -66,6 +67,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     CotizacionesComprasComponent,
     GastosComponent,
     GastoComponent,
+    GastoDetallesComponent,
     GastosDashComponent,
     GastosCategoriasComponent,
   ],
@@ -84,6 +86,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     CotizacionesComprasComponent,
     GastosComponent,
     GastoComponent,
+    GastoDetallesComponent,
     GastosDashComponent,
     GastosCategoriasComponent,
   ]

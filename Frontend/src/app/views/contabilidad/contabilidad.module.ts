@@ -13,6 +13,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { ContabilidadRoutingModule } from './contabilidad.routing.module';
 import { PresupuestosComponent } from './presupuestos/presupuestos.component';
 import { PresupuestoComponent } from './presupuestos/presupuesto/presupuesto.component';
+import { PresupuestoDetallesComponent } from './presupuestos/presupuesto-detalles/presupuesto-detalles.component';
 
 @NgModule({
   imports: [
@@ -30,11 +31,13 @@ import { PresupuestoComponent } from './presupuestos/presupuesto/presupuesto.com
   ],
   declarations: [
     PresupuestosComponent,
-    PresupuestoComponent
+    PresupuestoComponent,
+    PresupuestoDetallesComponent
   ],
   exports: [
     PresupuestosComponent,
-    PresupuestoComponent
+    PresupuestoComponent,
+    PresupuestoDetallesComponent
   ]
 })
 export class ContabilidadModule { }

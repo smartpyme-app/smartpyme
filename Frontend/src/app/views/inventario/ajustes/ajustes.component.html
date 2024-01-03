@@ -1,7 +1,7 @@
 
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button (click)="openModal(majuste)" tooltip="Crear ajuste (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir ajuste</button>
+    <button *ngIf="apiService.canCreate()" (click)="openModal(majuste)" tooltip="Crear ajuste (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir ajuste</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

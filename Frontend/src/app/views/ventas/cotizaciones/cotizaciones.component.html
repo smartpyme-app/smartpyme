@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Cotizaciones</h2>
-    <button routerLink="/cotizacion/crear" [queryParams]="{ estado:'Pre-venta' }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
+    <button *ngIf="apiService.canCreate()" routerLink="/cotizacion/crear" [queryParams]="{ estado:'Pre-venta' }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -83,7 +83,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a routerLink="/venta/editar/{{venta.id}}" class="btn">
+                                    <a *ngIf="apiService.canEdit()" routerLink="/venta/editar/{{venta.id}}" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a routerLink="/venta/{{venta.id}}" class="btn">

@@ -45,6 +45,21 @@ class DocumentosController extends Controller
         else
             $documento = new Documento;
 
+
+        // Solo colocar un documento predeterminado por sucursal
+        if($request->id){
+            
+            $documentos = Documento::where('id_sucursal', $documento->id_sucursal)
+                                    ->where('predeterminado', true)
+                                    ->where('id', '!=' ,$documento->id)
+                                    ->get();
+
+            foreach ($documentos as $doc) {
+                $doc->predeterminado = false;
+                $doc->save();
+            }
+        }
+
         
         $documento->fill($request->all());
         $documento->save();

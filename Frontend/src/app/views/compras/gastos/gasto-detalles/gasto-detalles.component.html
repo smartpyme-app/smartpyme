@@ -1,0 +1,86 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Gasto</h2>
+</section>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body"> 
+                <div class="row">
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Fecha:</label>
+                        <p>{{ gasto.fecha }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Usuario</label>
+                        <p>{{ gasto.nombre_usuario }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Documento:</label>
+                        <p>{{ gasto.tipo_documento }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Referencia:</label>
+                        <p>{{ gasto.referencia }}</p>
+                    </div>
+                </div>
+                <h6>Detalle de gasto</h6>
+                <div class="row">
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Sucursal</label>
+                        <p>{{ gasto.nombre_sucursal }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Proveedor:</label>
+                        <p>{{ gasto.nombre_proveedor }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Categoria:</label>
+                        <p>{{ gasto.nombre_categoria }}</p>
+                    </div>
+                    <div class="form-group col-md-12 col-lg-3">
+                        <label class="fw-medium">Concepto:</label>
+                        <p>{{ gasto.concepto }}</p>
+                    </div>
+                </div>
+                <h6>Detalle de facturación</h6>
+                <div class="row">
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Forma de pago:</label>
+                        <p>{{ gasto.forma_pago }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Bancos</label>
+                        <p>{{ gasto.detalle_banco }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3 without-label">
+                        <label class="fw-medium">Estado</label>
+                        <p>{{ gasto.estado }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Fecha de pago:</label><br>
+                        <p>{{ gasto.fecha_pago }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label class="fw-medium">Total:</label>
+                        <p>{{ gasto.total | currency}}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                          <label class="fw-medium">Recurrente</label>
+                          <p>{{ gasto.recurrente ? 'Si' : 'No' }}</p>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                          <label class="fw-medium">IVA</label>
+                          <p>{{ gasto.iva ? 'Si' : 'No' }}</p>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label class="fw-medium">Nota:</label>
+                        <p>{{ gasto.nota }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+

@@ -6,10 +6,10 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-presupuesto',
-  templateUrl: './presupuesto.component.html'
+  selector: 'app-presupuesto-detalles',
+  templateUrl: './presupuesto-detalles.component.html'
 })
-export class PresupuestoComponent implements OnInit {
+export class PresupuestoDetallesComponent implements OnInit {
 
 	public presupuesto: any = {};
 
@@ -46,18 +46,5 @@ export class PresupuestoComponent implements OnInit {
 	        }
 	    });
 	}
-
-	public onSubmit() {
-        this.saving = true;
-        this.apiService.store('presupuesto', this.presupuesto).subscribe(presupuesto => {
-            if (!this.presupuesto.id) {
-                this.alertService.success('Presupuesto creado', 'El presupuesto fue añadido exitosamente.');
-            }else{
-                this.alertService.success('Presupuesto guardado', 'El presupuesto fue guardado exitosamente.');
-            }
-            this.router.navigateByUrl('/presupuestos');
-            this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false; });
-    }
 
 }

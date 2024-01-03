@@ -1,0 +1,81 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">Presupuesto</h3>
+    <button class="btn btn-light text-danger" routerLink="/presupuestos">Cancelar <i class="fa fa-close"></i></button>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <h6 class="col-12 pb-2 mb-3">Información general</h6>
+            <div class="form-group col-lg-6">
+                <label class="fw-medium" for="nombre">Titulo</label>
+                <p>{{ presupuesto.titulo }}</p>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label class="fw-medium" for="fecha_inicio">Desde</label>
+                <p>{{ presupuesto.fecha_inicio | date:'dd/MM/yyyy'}}</p>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label class="fw-medium" for="fecha_fin">Hasta</label>
+                <p>{{ presupuesto.fecha_fin | date:'dd/MM/yyyy'}}</p>
+            </div>
+
+            <div class="form-group col-md-6 col-lg-4">
+                <label class="fw-medium" for="ingresos">Ingresos mensuales estimados</label>
+                <p>{{ presupuesto.ingresos | currency }}</p>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label class="fw-medium" for="egresos">Egresos mensuales estimados</label>
+                <p>{{ presupuesto.egresos | currency }}</p>
+            </div>
+            
+        <div class="row">
+            <h6 class="col-12 pb-2 my-3">Detalle por categorías:</h6>
+            
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Alquiler:</label>
+                <p>{{ presupuesto.alquiler | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Gastos varios:</label>
+                <p>{{ presupuesto.varios | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Mantenimiento:</label>
+                <p>{{ presupuesto.mantenimiento | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Marketing:</label>
+                <p>{{ presupuesto.marketing | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Materia prima:</label>
+                <p>{{ presupuesto.materia_prima | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Comisiones:</label>
+                <p>{{ presupuesto.comisiones | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Combustible:</label>
+                <p>{{ presupuesto.combustible | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Planilla:</label>
+                <p>{{ presupuesto.planilla | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Servicios:</label>
+                <p>{{ presupuesto.servicios | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Prestamos:</label>
+                <p>{{ presupuesto.prestamos | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Publicidad:</label>
+                <p>{{ presupuesto.publicidad | currency }}</p>
+            </div>
+        </div>
+    </div>
+</div>

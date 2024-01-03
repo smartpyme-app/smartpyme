@@ -2,7 +2,7 @@
     <div class="col-xl-4 mb-5">
         <div class="bg-white p-3">
             <h3>Próximas Citas 
-                <button (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
+                <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
             </h3>
             <div class="table-responsive">
                 <table class="table table-borderless table-hover mb-0">
@@ -43,7 +43,7 @@
                                             <i class="fa fa-fw fa-ban"></i> Cancelar
                                         </a>
                                         <a (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-calendar"></i> Agregar a google calendar
+                                            <i class="fa fa-fw fa-calendar"></i> Agregar a Google Calendar
                                         </a>
                                         <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-check"></i> Confirmar

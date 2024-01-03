@@ -14,6 +14,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 
 import { ClientesComponent } from './clientes.component';
 import { ClienteComponent } from './cliente/cliente.component';
+import { ClienteDetallesComponent } from './cliente-detalles/cliente-detalles.component';
 import { ClienteDatosComponent } from './cliente/datos/cliente-datos.component';
 import { ClientesDashComponent } from './dash/clientes-dash.component';
 import { ClienteInformacionComponent } from './cliente/informacion/cliente-informacion.component';
@@ -38,6 +39,7 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
   declarations: [
     ClientesComponent,
   	ClienteComponent,
+    ClienteDetallesComponent,
     ClienteDatosComponent,
     ClientesDashComponent,
     ClienteInformacionComponent,
@@ -48,6 +50,7 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
   exports: [
     ClientesComponent,
   	ClienteComponent,
+    ClienteDetallesComponent,
     ClienteDatosComponent,
     ClientesDashComponent,
     ClienteInformacionComponent,

@@ -1,5 +1,3 @@
-<app-admin-dash *ngIf="usuario.tipo == 'Administrador'"></app-admin-dash>
+<app-admin-dash *ngIf="apiService.isAdmin()"></app-admin-dash>
 <app-caja-dash *ngIf="usuario.tipo == 'Ventas'"></app-caja-dash>
-<app-mesero-dash *ngIf="usuario.tipo == 'Mesero'"></app-mesero-dash>
 <app-vendedor-dash *ngIf="usuario.tipo == 'Vendedor'"></app-vendedor-dash>
-<app-cocinero-dash *ngIf="usuario.tipo == 'Cocinero'"></app-cocinero-dash>

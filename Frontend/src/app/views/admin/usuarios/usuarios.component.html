@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Usuarios</h2>
-    <button (click)="openModal(musuario, {})"  tooltip="Crear usuario (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
+    <button *ngIf="apiService.canCreate()" (click)="openModal(musuario, {})"  tooltip="Crear usuario (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
 </section>
 <div>
     <p class="alert alert-info text-muted border-0" *ngIf="!loading && (usuarios_activos < apiService.auth_user().empresa.user_limit)">
@@ -28,7 +28,7 @@
                         <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
+                <!-- <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
             </div>
         </div>
     </div>
@@ -60,7 +60,7 @@
                     <th>Sucursal</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
-                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                    <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
             <tbody>
@@ -84,7 +84,7 @@
                         </select>
                     </td>
                     <td>{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
-                    <td class="text-center">
+                    <td *ngIf="apiService.canEdit()"  class="text-center">
                         <div class="btn-group" role="group">
 <!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
                                 <i class="fa fa-trash"></i>

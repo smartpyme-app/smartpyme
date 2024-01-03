@@ -13,7 +13,7 @@ export class AdminGuard implements CanActivate {
     state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
   		let user = this.apiService.auth_user()
 
-		if(user.tipo == 'Administrador')
+		if(user.tipo == 'Administrador' || user.tipo == 'Contador' || user.tipo == 'Supervisor')
 	        return true;
 	    
 	    this.router.navigate(['/']);

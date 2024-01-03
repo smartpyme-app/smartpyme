@@ -90,12 +90,12 @@
     </div>
     <div style="min-height: 37vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
+            <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
             <!-- <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img src="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li> -->
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
-            <li class="mb-1">
+            <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1">
                 <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Configuraciones
                 </button>

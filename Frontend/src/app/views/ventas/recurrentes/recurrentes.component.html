@@ -53,8 +53,8 @@
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Documento</th>
-                        <th class="d-none d-md-table-cell">Método de pago</th>
-                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
+                        <!-- <th class="d-none d-md-table-cell">Método de pago</th> -->
+                        <!-- <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th> -->
                         <th>Estado</th>
                         <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
@@ -75,41 +75,19 @@
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
-                        <td>{{venta.forma_pago}}</td>
-                        <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
+                        <!-- <td>{{venta.forma_pago}}</td> -->
+                        <!-- <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td> -->
                         <td>
                             <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
                         </td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Marcar como no recurrente
-                                    </a>
-                                    <a routerLink="/venta/crear" [queryParams]="{ recurrente:1, id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-clone"></i> Duplicar venta
-                                    </a>
-                                    <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </a>
-                                    <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-print"></i> Imprimir
-                                    </a>
-                                    <a *ngIf="venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente'" (click)="linkWompi(venta)" class="list-group-item list-group-item-action border-0 click">
-                                        <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
-                                    </a>
-                                    <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-right-left"></i> Hacer devolucion
-                                    </a>
-                                </div>
-                            </ng-template>
+                            <a routerLink="/venta/crear" [queryParams]="{ recurrente:1, id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
+                                <i class="fa fa-fw fa-clone"></i> Generar venta
+                            </a>
+                            <a (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
+                                <i class="fa fa-fw fa-ban"></i> Marcar como no recurrente
+                            </a>
                         </td>
 
                     </tr>

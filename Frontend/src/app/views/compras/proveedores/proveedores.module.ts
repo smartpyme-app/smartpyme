@@ -6,10 +6,11 @@ import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TagInputModule } from 'ngx-chips';
-import { PipesModule } from '../../../pipes/pipes.module';
-import { SharedModule } from '../../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 
 import { ProveedoresComponent } from './proveedores.component';
+import { ProveedorDetallesComponent } from './proveedor-detalles/proveedor-detalles.component';
 import { ProveedorComponent } from './proveedor/proveedor.component';
 import { ProveedorComprasComponent } from './proveedor/compras/proveedor-compras.component';
 
@@ -30,12 +31,14 @@ import { CuentasPagarComponent } from './cuentas-pagar/cuentas-pagar.component';
   declarations: [
   	ProveedoresComponent,
     ProveedorComponent,
+    ProveedorDetallesComponent,
     ProveedorComprasComponent,
     CuentasPagarComponent
   ],
   exports: [
   	ProveedoresComponent,
     ProveedorComponent,
+    ProveedorDetallesComponent,
     ProveedorComprasComponent,
     CuentasPagarComponent
   ]

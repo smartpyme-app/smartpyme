@@ -105,6 +105,34 @@ export class ApiService {
         }
     }
 
+    isAdmin(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor')
+            return true;
+        return false;
+    }
+
+    canCreate(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+            return true;
+        return false;
+    }
+
+    canEdit(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+            return true;
+        return false;
+    }
+
+    canDelete(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+            return true;
+        return false;
+    }
+
     generateGoogleCalendarLink(event: any): string {
         const startDate = moment(event.startDate).utc().format('YYYYMMDDTHHmmss[Z]');
         const endDate = moment(event.endDate).utc().format('YYYYMMDDTHHmmss[Z]');

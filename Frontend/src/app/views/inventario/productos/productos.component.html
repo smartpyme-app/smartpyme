@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+    <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
@@ -125,7 +125,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column">
-                                    <button type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
+                                    <button *ngIf="apiService.canEdit()" type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img  src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
                                     <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">

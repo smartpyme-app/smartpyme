@@ -5,6 +5,7 @@ import { LayoutComponent } from '@layout/layout.component';
 
 import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupuestos.component';
 import { PresupuestoComponent } from '@views/contabilidad/presupuestos/presupuesto/presupuesto.component';
+import { PresupuestoDetallesComponent } from '@views/contabilidad/presupuestos/presupuesto-detalles/presupuesto-detalles.component';
 
 const routes: Routes = [
   {
@@ -15,6 +16,7 @@ const routes: Routes = [
 
         { path: 'presupuesto/crear', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/editar/:id', component: PresupuestoComponent, title: 'Presupuesto'},
+        { path: 'presupuesto/detalles/:id', component: PresupuestoDetallesComponent, title: 'Presupuesto'},
     ]
   }
 ];

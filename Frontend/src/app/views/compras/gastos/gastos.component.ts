@@ -51,6 +51,7 @@ export class GastosComponent implements OnInit {
     }
 
     public filtrarGastos(){
+        this.loading = true;
         this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;
@@ -111,6 +112,18 @@ export class GastosComponent implements OnInit {
             window.URL.revokeObjectURL(url);
           }, (error) => {console.error('Error al exportar gastos:', error); }
         );
+    }
+
+    public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+
+        this.modalRef = this.modalService.show(template);
     }
 
 

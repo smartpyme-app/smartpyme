@@ -152,6 +152,9 @@ ALTER TABLE ajustes CHANGE created_at created_at DATETIME NULL DEFAULT NULL;
 
 ALTER TABLE presupuestos CHANGE gastos egresos DECIMAL(10,2) NOT NULL;
 ALTER TABLE presupuestos CHANGE enable enable TINYINT(1) NOT NULL DEFAULT true;
+ALTER TABLE presupuestos ADD combustible DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER servicios;
+ALTER TABLE presupuestos ADD prestamos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER combustible;
+ALTER TABLE presupuestos ADD materia_prima DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER prestamos;
 
 ALTER TABLE eventos CHANGE fecha_start inicio DATETIME NOT NULL;
 ALTER TABLE eventos CHANGE fecha_end fin DATETIME NULL DEFAULT NULL;

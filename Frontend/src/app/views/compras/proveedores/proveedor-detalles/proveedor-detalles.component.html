@@ -1,0 +1,81 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Proveedor</h2>
+</section>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body"> 
+                <div class="row">
+                    <h6 class="col-12 pb-2 mb-3">Información de contacto</h6>
+                    <div class="form-group col-lg-3">
+                        <label class="fw-medium">Nombre:</label>
+                        <p>{{ proveedor.nombre }}</p>
+                    </div>
+                    <div class="form-group col-lg-3">
+                        <label class="fw-medium">Apellido:</label>
+                        <p>{{ proveedor.apellido }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">Correo:</label>
+                        <p>{{ proveedor.correo }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">DUI:</label>
+                        <p>{{ proveedor.dui }}</p>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label class="fw-medium">Tipo de contribuyente:</label>
+                        <p>{{ proveedor.tipo_contribuyente }}</p>
+                    </div>
+                    <!-- <div class="form-group col-lg-6">
+                        <label class="fw-medium">Etiquetas:</label>
+                        <p><tag-input theme='bootstrap' seconda</p>ryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="proveedor.etiquetas" name="etiquetas"></tag-input>
+                    </div> -->
+                    <div class="form-group col-lg-9">
+                        <label class="fw-medium">Observaciones:</label>
+                        <p>{{ proveedor.nota }}</p>
+                    </div>
+
+                    <h6 class="col-12 pb-2 my-3">Información de la empresa (Opcional)</h6>
+                    
+                    <div class="form-group col-6 col-lg-6">
+                        <label class="fw-medium">Empresa:</label>
+                        <p>{{ proveedor.nombre_empresa }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">NRC:</label>
+                        <p>{{ proveedor.ncr }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">NIT:</label>
+                        <p>{{ proveedor.nit }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-6">
+                        <label class="fw-medium">Giro:</label>
+                        <p>{{ proveedor.giro }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">Teléfono:</label>
+                        <p>{{ proveedor.telefono }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">Municipio:</label>
+                        <p>{{ proveedor.municipio }}</p>
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label class="fw-medium">Departamento:</label>
+                        <p>{{ proveedor.departamento }}</p>
+                    </div>
+                    <div class="form-group col-12 col-md-9">
+                        <label class="fw-medium">Dirección:</label>
+                        <p>{{ proveedor.direccion }}</p>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+

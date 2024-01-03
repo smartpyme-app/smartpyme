@@ -24,6 +24,7 @@ import { FacturacionConsignaComponent } from '@views/ventas/facturacion/facturac
 import { ClientesComponent } from '@views/ventas/clientes/clientes.component';
 import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
 import { ClienteComponent } from '@views/ventas/clientes/cliente/cliente.component';
+import { ClienteDetallesComponent } from '@views/ventas/clientes/cliente-detalles/cliente-detalles.component';
 import { ClientesDashComponent } from '@views/ventas/clientes/dash/clientes-dash.component';
 
 import { HistorialVentasComponent } from '@views/reportes/ventas/historial/historial-ventas.component';
@@ -60,6 +61,7 @@ const routes: Routes = [
     
     // Clientes
         { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
+        { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },

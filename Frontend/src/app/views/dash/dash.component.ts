@@ -13,7 +13,7 @@ export class DashComponent implements OnInit {
     public saludo:any;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        public apiService: ApiService, private alertService: AlertService,
         private router: Router
     ) { }
 

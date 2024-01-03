@@ -17,7 +17,7 @@ export class SidebarComponent implements OnInit {
     public usuario: any = {};
     public isVisible: boolean = false;
 
-    constructor(private apiService: ApiService) {}
+    constructor(public apiService: ApiService) {}
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {

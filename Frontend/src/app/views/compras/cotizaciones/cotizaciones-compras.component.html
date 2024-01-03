@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Ordenes de compra</h2>
-    <button routerLink="/orden-de-compra/crear" [queryParams]="{ estado:'Pre-compra' }" tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de compra</button>
+    <button *ngIf="apiService.canEdit()" routerLink="/orden-de-compra/crear" [queryParams]="{ estado:'Pre-compra' }" tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -73,10 +73,10 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a routerLink="/compra/editar/{{compra.id}}" class="btn">
+                                    <a *ngIf="apiService.canEdit()" routerLink="/compra/editar/{{compra.id}}" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a routerLink="/compra/{{compra.id}}" class="btn">
+                                    <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
                                     <!-- <a routerLink="/devolucion-compra/nueva" class="btn text-danger">

@@ -16,6 +16,7 @@ import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compra
 
 import { ProveedoresComponent } from '../compras/proveedores/proveedores.component';
 import { ProveedorComponent } from '../compras/proveedores/proveedor/proveedor.component';
+import { ProveedorDetallesComponent } from '../compras/proveedores/proveedor-detalles/proveedor-detalles.component';
 import { CuentasPagarComponent } from '../compras/proveedores/cuentas-pagar/cuentas-pagar.component';
 
 import { HistorialComprasComponent } from '../reportes/compras/historial/historial-compras.component';
@@ -24,6 +25,7 @@ import { CategoriasComprasComponent } from '../reportes/compras/categorias/categ
 
 import { GastosComponent } from './gastos/gastos.component';
 import { GastoComponent } from './gastos/gasto/gasto.component';
+import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 
@@ -44,6 +46,7 @@ const routes: Routes = [
 
         { path: 'ordenes-de-compras', component: CotizacionesComprasComponent, title: 'Ordenes de compra' },
         { path: 'orden-de-compra/crear', component: FacturacionCompraComponent, title: 'Orden de compra' },
+        { path: 'orden-de-compra/:id', component: CompraComponent, title: 'Orden de compra' },
 
         { path: 'devoluciones/compras', component: DevolucionesComprasComponent, title: 'Devoluciones de compras'},
         { path: 'devolucion/compra/:id', component: DevolucionCompraComponent, title: 'Devolución de compra'},
@@ -52,6 +55,7 @@ const routes: Routes = [
 
         { path: 'proveedores', component: ProveedoresComponent, title:'Proveedores' },
         { path: 'proveedor/crear', component: ProveedorComponent, title:'Proveedor' },
+        { path: 'proveedor/detalles/:id', component: ProveedorDetallesComponent, title:'Proveedor' },
         { path: 'proveedor/editar/:id', component: ProveedorComponent, title:'Proveedor' },
         { path: 'proveedores/cuentas-pagar', component: CuentasPagarComponent, title:'Cuentas por pagar' },
        
@@ -60,6 +64,7 @@ const routes: Routes = [
         { path: 'reporte/compras/categorias', component: CategoriasComprasComponent },
 
         { path: 'gastos', component: GastosComponent, title:'Gastos' },
+        { path: 'gasto/detalles/:id', component: GastoDetallesComponent, title:'Gasto' },
         { path: 'gasto/:id', component: GastoComponent, title:'Gasto' },
         { path: 'gastos/dash', component: GastosDashComponent },
         { path: 'gastos/categorias', component: GastosCategoriasComponent },
