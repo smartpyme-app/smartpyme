@@ -14,6 +14,7 @@ export class CrearAbonoVentaComponent implements OnInit {
 	@Input() venta: any = {};
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
+    public bancos: any = [];
     public abono: any = {};
  	public loading = false;
 
@@ -31,13 +32,18 @@ export class CrearAbonoVentaComponent implements OnInit {
         this.abono.nombre_de = this.venta.nombre_cliente;
         this.abono.estado = 'Confirmado';
         this.abono.forma_pago = 'Efectivo';
+        this.abono.detalle_banco = '';
         this.abono.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.abono.id_empresa = this.apiService.auth_user().id_empresa;
         this.abono.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('bancos/list').subscribe(bancos => {
+            this.bancos = bancos;
+        }, error => {this.alertService.error(error);});
 	}
 
     public setTotal(total:any){

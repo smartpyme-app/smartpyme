@@ -8,7 +8,7 @@
         <div class="row">
             <div class="form-group col-md-4 col-lg-3">
                 <label for="">Fecha:</label>
-                <input type='date' class="form-control" name="gasto.fecha" [(ngModel)]="gasto.fecha"/>
+                <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha"/>
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="id_usuario">Usuario</label>
@@ -20,7 +20,7 @@
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="tipo_documento">Documento:</label>
-                <select class="form-select" name="gasto.tipo_documento" [(ngModel)]="gasto.tipo_documento">
+                <select class="form-select" name="tipo_documento" [(ngModel)]="gasto.tipo_documento">
                     <option value="Factura">Factura</option>
                     <option value="Crédito fiscal">Crédito fiscal</option>
                     <option value="Ticket">Ticket</option>
@@ -28,7 +28,7 @@
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="referencia">Referencia:</label>
-                <input type="text" class="form-control" name="gasto.referencia" [(ngModel)]="gasto.referencia" placeholder="Escriba aquí" />
+                <input type="text" class="form-control" name="referencia" [(ngModel)]="gasto.referencia" placeholder="Escriba aquí" />
             </div>
         </div>
      </div>
@@ -47,6 +47,7 @@
                 <label for="id_proveedor" class="w-100">Proveedor:</label>
                 <div class="input-group flex-nowrap">
                     <ng-select name="id_proveedor" [(ngModel)]="gasto.id_proveedor" class="form-select p-0">
+                        <ng-option value="">Seleccione aquí</ng-option>
                         <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
                             {{ proveedor.nombre }}
                         </ng-option>
@@ -58,17 +59,17 @@
                 <label for="id_categoria" class="w-100">Categoria:</label>
                 <div class="input-group flex-nowrap">
                     <ng-select name="id_categoria" [(ngModel)]="gasto.id_categoria" class="form-select p-0">
+                        <ng-option value="">Seleccione aquí</ng-option>
                         <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
                             {{categoria.nombre}}
                         </ng-option>
                     </ng-select>
-                    <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto>
+                    <!-- <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto> -->
                 </div>
             </div>
             <div class="form-group col-md-12 col-lg-3">
                 <label for="">Concepto:</label>
-                <input type="text" class="form-control" name="gasto.concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
-                <!-- <textarea name="gasto.concepto" class="form-control" cols="30" placeholder="Opcional" rows="3" [(ngModel)]="gasto.concepto"></textarea> -->
+                <input type="text" class="form-control" name="concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
             </div>
         </div>
     </div>
@@ -91,7 +92,7 @@
             <div class="form-group col-md-4 col-lg-3 without-label">
                 <div class="form-switch border rounded">
                   <label for="credito">Pendiente</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="gasto.credito" name="gasto.credito">
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="gasto.credito" name="credito">
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3">
@@ -100,23 +101,23 @@
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="">Total:</label>
-                <input type='number' class="form-control" name="gasto.total" [(ngModel)]="gasto.total"/>
+                <input type='number' class="form-control" name="total" [(ngModel)]="gasto.total"/>
             </div>
             <div class="form-group col-md-4 col-lg-3 without-label ">
                 <div class="form-switch bg-light-info rounded">
                   <label for="recurrente">Recurrente</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="gasto.recurrente" name="gasto.recurrente">
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="gasto.recurrente" name="recurrente">
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3 without-label ">
                 <div class="form-switch bg-light-info rounded">
                   <label for="impuesto">IVA</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setIva()" [(ngModel)]="gasto.impuesto" name="gasto.impuesto">
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setIva()" [(ngModel)]="gasto.impuesto" name="impuesto">
                 </div>
             </div>
             <div class="form-group col-md-6 col-lg-3">
                 <label for="">Nota:</label>
-                <input type="text" class="form-control" name="gasto.nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
+                <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
             </div>
         </div>
     </div>

@@ -163,7 +163,7 @@ class AuthJWTController extends Controller
             $usuario->url_n1co = "https://pay.n1co.shop/pl/3Nja8UMAl";
         }
 
-        $usuario->url_n1co = "https://pay.h4b.dev/pl/2MOFe3"; // 15 días de prueba
+        $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7"; // 15 días de prueba
 
             return response()->json($usuario, 200);       
 

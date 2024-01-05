@@ -18,6 +18,14 @@ class CanalesController extends Controller
         return Response()->json($canales, 200);
 
     }
+    
+    public function list() {
+       
+        $canales = Canal::where('enable', true)->orderBy('nombre', 'asc')->get();
+
+        return Response()->json($canales, 200);
+
+    }
 
 
     public function read($id) {

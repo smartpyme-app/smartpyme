@@ -44,15 +44,15 @@ export class ProductoComposicionComponent implements OnInit {
 
     onSubmit(){
        
-        this.loading = true;
+        this.saving = true;
         this.apiService.store('producto/composicion', this.composicion).subscribe(composicion => {
             if(!this.composicion.id) {
                 this.producto.composiciones.unshift(composicion);
             }
             this.composicion = {};
-            this.loading = false;
+            this.saving = false;
             this.modalRef.hide();
-        },error => {this.alertService.error(error); this.loading = false;});
+        },error => {this.alertService.error(error); this.saving = false;});
 
     }
 

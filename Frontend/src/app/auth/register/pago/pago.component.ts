@@ -45,8 +45,8 @@ export class PagoComponent implements OnInit {
     
     public checkout(){
         let URL = this.apiService.baseUrl + '/payment/' + this.user.empresa.id;
-        window.open(URL, '_parent');
-        window.open(this.user.url_n1co + '/?callbackurl=' + URL, 'hola', '_parent');
+        // window.open(URL, '_parent');
+        window.open(this.user.url_n1co + '/?callbackurl=' + URL,'_self');
     }
 
 }

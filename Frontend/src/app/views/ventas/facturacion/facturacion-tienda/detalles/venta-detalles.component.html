@@ -8,7 +8,7 @@
                     <th>Producto</th>
                     <th style="width: 150px;">Cantidad</th>
                     <th style="width: 150px;">Precio</th>
-                    <th style="width: 150px;">% Descuento</th>
+                    <th style="width: 150px;">Descuento</th>
                     <th style="width: 100px;" class="text-right">Total</th>
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
@@ -23,17 +23,33 @@
                 </tr>
                 <tr *ngFor="let detalle of venta?.detalles; let i = index">
                     <td>
-                        <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
-                        {{ detalle.nombre_producto }}
+                        <div class="d-flex gap-3">
+                            <div>
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            </div>
+                            <div>
+                                {{ detalle.nombre_producto }} <br>
+                                <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                                <ul style="font-size: 14px;">
+                                    <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.nombre_compuesto }}</li>
+                                </ul>
+                            </div>
+                        </div>
                     </td>
                     <td style="width: 150px;">
                         <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
                     </td>
                     <td style="width: 150px;">
-                        <input type="number" [disabled]="!apiService.auth_user().empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" [disabled]="!apiService.auth_user().empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
+                        </div>
                     </td>
                     <td style="width: 150px;">
-                        <input type="number" [(ngModel)]="detalle.descuento_porcentaje" (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+                        <div class="input-group">
+                            <span class="input-group-text">%</span>
+                            <input type="number" [(ngModel)]="detalle.descuento_porcentaje" (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+                        </div>
                     </td>
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
                     <td style="width: 50px;" class="text-center">

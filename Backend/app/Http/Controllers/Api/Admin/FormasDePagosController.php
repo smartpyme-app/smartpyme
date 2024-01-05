@@ -34,6 +34,14 @@ class FormasDePagosController extends Controller
 
     }
 
+    public function list() {
+       
+        $formasDePago = FormaDePago::get();        
+        
+        return Response()->json($formasDePago, 200);
+
+    }
+
     public function storeOrDelete(Request $request)
     {
 

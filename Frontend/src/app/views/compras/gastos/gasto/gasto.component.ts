@@ -41,11 +41,11 @@ export class GastoComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos').subscribe(bancos => {
+        this.apiService.getAll('bancos/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaspago => {
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaspago => {
             this.formaspago = formaspago;
         }, error => {this.alertService.error(error);});
 
@@ -74,6 +74,8 @@ export class GastoComponent implements OnInit {
             this.gasto.estado = 'Confirmado';
             this.gasto.tipo_documento = 'Factura';
             this.gasto.detalle_banco = '';
+            this.gasto.id_categoria = '';
+            this.gasto.id_proveedor = '';
             // this.gasto.fecha_pago = this.apiService.date();
             this.gasto.fecha = this.apiService.date();
             this.gasto.id_empresa = this.apiService.auth_user().id_empresa;

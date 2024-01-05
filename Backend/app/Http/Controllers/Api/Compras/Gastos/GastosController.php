@@ -78,7 +78,7 @@ class GastosController extends Controller
     {
         $request->validate([
             'fecha'         => 'required|date',
-            'concepto'   => 'nullable|max:255',
+            'concepto'      => 'sometimes|max:255',
             'id_categoria'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',

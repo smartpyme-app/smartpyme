@@ -33,7 +33,7 @@
                     <td class="text-center">{{ bodega.stock }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
-                            <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Editar" >
+                            <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Configurar inventario">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
                             <app-crear-ajuste [producto]="producto" [inventario]="bodega" (setAjuste)="setAjuste($event)"></app-crear-ajuste>

@@ -158,6 +158,7 @@ ALTER TABLE presupuestos ADD materia_prima DECIMAL(10,2) NOT NULL DEFAULT 0 AFTE
 
 ALTER TABLE eventos CHANGE fecha_start inicio DATETIME NOT NULL;
 ALTER TABLE eventos CHANGE fecha_end fin DATETIME NULL DEFAULT NULL;
+ALTER TABLE eventos ADD id_sucursal int NULL AFTER id_venta;
 
 
 ALTER TABLE productos CHANGE precio precio DECIMAL(11,4) NOT NULL;
@@ -170,6 +171,7 @@ RENAME TABLE recibos TO abonos_ventas;
 ALTER TABLE abonos_ventas CHANGE monto total DOUBLE(10,2) NOT NULL;
 ALTER TABLE abonos_ventas ADD id_sucursal INT NULL AFTER id_empresa;
 ALTER TABLE abonos_ventas ADD id_usuario INT NULL AFTER id_sucursal;
+ALTER TABLE abonos_ventas ADD detalle_banco varchar(255) NULL AFTER id_usuario;
 
 CREATE TABLE abonos_compras (
     id int NOT NULL AUTO_INCREMENT,
@@ -179,6 +181,7 @@ CREATE TABLE abonos_compras (
     total double(10,2) NOT NULL,
     forma_pago  varchar(150) NOT NULL,
     estado  varchar(150) NOT NULL,
+    detalle_banco  varchar(150) NULL,
     id_empresa int NOT NULL,
     id_sucursal int NOT NULL,
     id_usuario int NOT NULL,

@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-end mb-3">
-    <div class="col-lg-6 d-flex gap-2">
+    <div class="col-lg-7 d-flex gap-2">
         <form class="d-flex input-group buscador" name="form" autocomplete="off">
             <div class="input-group">
                 <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
@@ -8,17 +8,17 @@
             <ul class="list-group opciones">
               <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
                 <!-- <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1">  -->
-                <span id="producto_nombre" class="col-6">
-                    <small>Nombre:</small> <br>
+                <span id="producto_nombre" class="col-7">
+                    <!-- <small>Nombre:</small> <br> -->
                     {{ producto.nombre }} <br>
-                    <small>{{ producto.nombre_categoria }}</small>
+                    <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
                 </span>
-                <span class="col-2 text-center" id="stock">
-                    <small>Stock:</small> <br>
-                    {{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }}
+                <span class="col-3 text-center" id="stock">
+                    <!-- <small>Stock:</small> <br> -->
+                    {{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }} en stock
                 </span>
                 <span class="col-2 text-right">
-                    <small>Precio:</small> <br>
+                    <!-- <small>Precio:</small> <br> -->
                     <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
                 </span>
               </a>

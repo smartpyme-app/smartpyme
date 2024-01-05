@@ -28,6 +28,7 @@ class Evento extends Model
         'id_venta',
         'id_usuario',
         'id_cliente',
+        'id_sucursal',
         'id_empresa',
     ];
     protected $appends = ['nombre_cliente', 'nombre_servicio'];
@@ -80,7 +81,7 @@ class Evento extends Model
     public function getNombreUsuarioAttribute(){
         return $this->usuario()->pluck('name')->first();
     }
-
+    
     public function getNombreServicioAttribute(){
         return $this->servicio()->pluck('nombre')->first();
     }
@@ -95,6 +96,10 @@ class Evento extends Model
 
     public function cliente(){
        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente', 'id_cliente');
+    }
+
+    public function surcursal(){
+       return $this->belongsTo('App\Models\Admin\Surcursal', 'id_sucursal');
     }
 
     public function empresa(){

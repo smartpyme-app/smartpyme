@@ -3,7 +3,6 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
-
 @Component({
   selector: 'app-ventas',
   templateUrl: './ventas.component.html'

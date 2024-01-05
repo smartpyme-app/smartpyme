@@ -23,6 +23,11 @@
                         <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
                     </td>
                 </tr>
+                <tr>
+                    <td colspan="5" class="text-center" *ngIf="!loading && producto?.composiciones.length == 0">
+                        <span class="text-muted">No tiene productos agregados</span>
+                    </td>
+                </tr>  
 
                 <tr *ngFor=" let composicion of producto?.composiciones">
                     <td>{{ composicion.nombre_compuesto }}</td>
@@ -30,7 +35,7 @@
                     <td class="text-center">{{ composicion.cantidad | number:'1.1' }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
-                            <a (click)="deleteComposicion(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
+                            <a (click)="delete(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
                             <a (click)="openModal(mComposicion, composicion)" class="btn btn-light"><i class="fa fa-pencil-alt"></i></a>
                         </div>
                     </td>
@@ -46,6 +51,7 @@
         <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
         <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-md-12">

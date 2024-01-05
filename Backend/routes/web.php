@@ -72,5 +72,18 @@ Route::get('/clear-bd', function(){
 	
 })->name('clearBD');
 
+Route::get('/setEventosSucursal', function(){
+	
+	$eventos = App\Models\Eventos\Evento::all();
+
+	foreach ($eventos as $evento) {
+		$evento->id_sucursal = $evento->usuario()->pluck('id_sucursal')->first();
+		$evento->save();
+	}
+
+	return "Listo XD";
+	
+})->name('clearBD');
+
 
 Auth::routes();

@@ -30,6 +30,14 @@ class BancosController extends Controller
 
     }
 
+    public function list() {
+       
+        $bancos = Banco::get();        
+        
+        return Response()->json($bancos, 200);
+
+    }
+
     public function storeOrDelete(Request $request)
     {
 

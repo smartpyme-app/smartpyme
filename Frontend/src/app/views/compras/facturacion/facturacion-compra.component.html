@@ -64,7 +64,7 @@
         <!-- Estado: {{ compra.estado }} -->
         <div class="form-group col-lg-4 without-label" *ngIf="compra.estado != 'Pre-compra'">
             <div class="form-switch border rounded">
-              <label for="credito">compra al crédito</label>
+              <label for="credito">Compra al crédito</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="compra.credito" name="compra.credito">
             </div>
         </div>

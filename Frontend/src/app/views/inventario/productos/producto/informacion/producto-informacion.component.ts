@@ -71,19 +71,19 @@ export class ProductoInformacionComponent implements OnInit {
                 this.producto = producto;
             }
             if(this.producto.tipo == 'Producto'){
-                this.router.navigate(['/productos']);
+                this.router.navigate(['/producto/editar/' + producto.id]);
                 this.alertService.success("Producto guardado", 'El producto fue guardado exitosamente.');
             }
             if(this.producto.tipo == 'Servicio'){
-                this.router.navigate(['/servicios']);
+                this.router.navigate(['/servicio/editar/' + producto.id]);
                 this.alertService.success("Servicio guardado", 'El servicio fue guardado exitosamente.');
             }
             if(this.producto.tipo == 'Compuesto'){
-                this.router.navigate(['/productos']);
+                this.router.navigate(['/producto/editar/' + producto.id]);
                 this.alertService.success("Producto compuesto guardado", 'El producto compuesto fue guardado exitosamente.');
             }
             if(this.producto.tipo == 'Materia Prima'){
-                this.router.navigate(['/materias-primas']);
+                this.router.navigate(['/materias-prima/editar/' + producto.id]);
                 this.alertService.success("Materia prima guardada", 'La materia prima fue guardada exitosamente.');
             }
         },error => {this.alertService.error(error); this.guardar = false; });

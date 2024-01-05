@@ -25,9 +25,6 @@ export class CalendarioComponent implements OnInit {
 
     @Output() update = new EventEmitter();
     public eventos:any = [];
-    public servicios:any = [];
-    public clientes:any = [];
-    public usuarios:any = [];
     public evento:any = {};
     public filtros:any = {};
     public loading:boolean = false;
@@ -91,6 +88,7 @@ export class CalendarioComponent implements OnInit {
     }
 
     public loadAll(){
+        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.filtros.orden = 'inicio';
         this.filtros.direccion = 'desc';
         this.loading = true;
@@ -99,11 +97,15 @@ export class CalendarioComponent implements OnInit {
             if(this.calendarOptions){
                 this.calendarOptions.events = eventos;
             }
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+            console.log('siu');
+            this.update.emit();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     handleDateClick(arg:any) {
-        this.loadData();
         this.evento = {};
         this.evento.frecuencia = '';
         this.evento.tipo = 'Sin confirmar';
@@ -111,18 +113,16 @@ export class CalendarioComponent implements OnInit {
         this.evento.estado = "Activo";
         this.evento.id_empresa = this.apiService.auth_user().id_empresa;
         this.evento.id_usuario = this.apiService.auth_user().id;
+        this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.evento.inicio =  moment(arg.dateStr + ' ' + moment().format('HH:mm')).format('YYYY-MM-DD HH:mm:ss');
         this.setTime();
         this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-lg'});
     }
 
-    setTipo(){
-        if(this.evento.tipo = 'Confirmado'){
-            this.evento.tipo = 'Sin confirmar';
-        }else{
-            this.evento.tipo = 'Confirmado';
-        }
-        console.log(this.evento);
+
+    handleEventClick(arg:any) {
+        this.evento = arg.event.extendedProps.data;
+        this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-lg'});
     }
 
     setTime(){
@@ -148,40 +148,12 @@ export class CalendarioComponent implements OnInit {
         }
     }
 
-    loadData(){
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
-            this.clientes = clientes;
-        }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('servicios/list').subscribe(servicios => {
-            this.servicios = servicios;
-        }, error => {this.alertService.error(error);});
-    }
-
-    handleEventClick(arg:any) {
-        this.loadData();
-        this.evento = arg.event.extendedProps.data;
-        console.log(this.evento);
-        this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-md'});
-    }
-
     handleEventChange(arg:any) {
         this.evento = arg.event.extendedProps.data;
         this.evento.inicio = moment(arg.event.start).format('YYYY-MM-DD HH:mm:ss');
         this.setTime();
         console.log(this.evento);
         this.onSubmit();
-    }
-
-    // Cliente
-    public setCliente(cliente:any){
-        if(!this.evento.id_cliente){
-            this.clientes.push(cliente);
-        }
-        this.evento.id_cliente = cliente.id;
     }
 
     public onSubmit(){
@@ -193,11 +165,8 @@ export class CalendarioComponent implements OnInit {
                 this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
             }
             this.loadAll();
-            this.update.emit();
             this.saving = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            this.modalRef.hide();
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

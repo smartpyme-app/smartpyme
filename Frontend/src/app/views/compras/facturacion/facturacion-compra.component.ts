@@ -24,7 +24,6 @@ export class FacturacionCompraComponent implements OnInit {
     public sucursales:any = [];
     public impuestos:any = [];
     public bancos:any = [];
-    public canales:any = [];
     public supervisor:any = {};
     public loading = false;
     public saving = false;
@@ -61,16 +60,11 @@ export class FacturacionCompraComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos').subscribe(bancos => {
+        this.apiService.getAll('bancos/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('canales').subscribe(canales => {
-            this.canales = canales;
-            this.compra.id_canal = this.canales[0].id;
-        }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => {
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error);});
 

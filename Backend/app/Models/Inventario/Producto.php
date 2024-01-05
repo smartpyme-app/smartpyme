@@ -56,6 +56,11 @@ class Producto extends Model {
     {
         return is_string($value) ? json_decode($value) : $value;
     }
+
+    public function setEtiquetasAttribute($valor)
+    {
+        $this->attributes['etiquetas'] = json_encode($valor);
+    }
     
 
     public function getImgAttribute() 

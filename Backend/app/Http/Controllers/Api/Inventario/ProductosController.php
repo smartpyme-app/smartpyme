@@ -76,7 +76,7 @@ class ProductosController extends Controller
 
     public function search($txt) {
 
-        $productos = Producto::with('inventarios')
+        $productos = Producto::with('inventarios', 'composiciones')
                                 ->with('precios')
                                 ->where('barcode', $txt)
                                 ->where('id_categoria', '!=', 1)

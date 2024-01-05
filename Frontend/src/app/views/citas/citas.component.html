@@ -39,7 +39,7 @@
                                         <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-money-bill"></i> Generar venta
                                         </a>
-                                        <a *ngIf="evento.tipo != 'Cancelar'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                        <a *ngIf="evento.tipo != 'Cancelado'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Cancelar
                                         </a>
                                         <a (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
@@ -75,110 +75,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <form name="form" (ngSubmit)="onSubmit()">
-        <div class="row">
-            <app-notificaciones-container></app-notificaciones-container>
-            <div class="form-group col-md-12">
-              <label for="descripcion">Descripción</label>
-              <input type="text" placeholder="Escribe aquí" class="form-control"  [(ngModel)]="evento.descripcion" name="descripcion">
-            </div>
-
-            <div class="form-group col-md-6 col-lg-6">
-                <label for="id_usuario">Usuario</label>
-                <ng-select name="id_usuario" [(ngModel)]="evento.id_usuario" class="form-select p-0">
-                    <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
-
-            <div class="form-group col-md-6">
-              <label for="inicio">Fecha inicio</label>
-              <input type="datetime-local" class="form-control" (change)="setTime()" name="inicio" [(ngModel)]="evento.inicio">
-            </div>
-
-            <div class="form-group col-md-6">
-              <label for="duracion">Duración</label>
-              <select name="duracion" (change)="setTime()" [(ngModel)]="evento.duracion" class="form-select" required>
-                <option value="15 minutos">15 minutos</option>
-                <option value="30 minutos">30 minutos</option>
-                <option value="1 hora" selected>1 hora</option>
-                <option value="2 horas">2 horas</option>
-                <option value="3 horas">3 horas</option>
-                <option value="5 horas">5 horas</option>
-              </select>
-            </div>
-
-            <div class="form-group col-md-6">
-              <label for="fin">Finaliza</label>
-              <input type="datetime-local" class="form-control" name="fin" [(ngModel)]="evento.fin">
-            </div>
-            
-            <div class="form-group col-md-6">
-                <label for="">Cliente</label>
-                <div class="input-group flex-nowrap">
-                    <ng-select name="id_cliente" (click)="loadClientes()" placeholder="Consumidor Final" [(ngModel)]="evento.id_cliente" class="form-select p-0">
-                        <ng-option value=""> Consumidor final </ng-option>
-                        <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
-                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                            {{ cliente.nombre }} <span *ngIf="cliente.dui">- {{ cliente.dui }}</span>
-                        </ng-option>
-                    </ng-select>
-                    <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
-                </div>
-            </div>
-
-            <div class="form-group col-md-6">
-                <label for="id_servicio">Servicio</label>
-                <ng-select name="id_servicio" [(ngModel)]="evento.id_servicio" class="form-select p-0">
-                    <ng-option [value]="servicio.id" *ngFor="let servicio of servicios">
-                        {{ servicio.nombre }}
-                    </ng-option>
-                </ng-select>
-            </div>
-          
-            <div class="form-group col-md-12">
-              <label class="form-label font-weight-bold">Detalles del evento</label>
-                <textarea class="form-control" placeholder="Escribe aquí (Opcional)" name="detalles" [(ngModel)]="evento.detalles" rows="2"></textarea>
-            </div>
-
-            <div class="form-group col-md-6">
-                  <label class="form-label font-weight-bold">Se repite</label>
-                  <select name="frecuencia" [(ngModel)]="evento.frecuencia"  class="form-control form-select" id="frecuencia">
-                      <option value="">No</option>
-                      <option value="DAILY">Diario</option>
-                      <option value="WEEKLY">Semanal</option>
-                      <option value="MONTHLY">Mensual</option>
-                      <option value="YEARLY">Anual</option>
-                  </select>
-            </div>
-
-            <!-- <div class="form-group col-md-6 without-label ">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="confirmada">Confirmada</label>
-                  <input name="confirmada" class="form-check-input float-end" (click)="setTipo()" type="checkbox" role="switch" [(ngModel)]="evento.confirmado" [checked]="evento.tipo == 'Confirmado'">
-                </div>
-            </div> -->
-
-            <div class="form-group col-md-6">
-                  <label class="form-label font-weight-bold">Estado</label>
-                  <select name="tipo" [(ngModel)]="evento.tipo"  class="form-control form-select">
-                      <option value="Sin confirmar">Sin confirmar</option>
-                      <option value="Confirmado">Confirmado</option>
-                      <option value="Cancelado">Cancelado</option>
-                      <option value="Pagado">Pagado</option>
-                      <option value="Pendiente">Pendiente</option>
-                  </select>
-            </div>
-
-            <div class="d-grid mt-4">
-                <button [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Agregar</span>
-                    <span *ngIf="saving">Agregando...</span>
-                </button>
-            </div>
-        </div>
-    </form>
+    <app-crear-evento [evento]="evento" (update)="loadAll(); updateCalendar();"></app-crear-evento>
   </div>
 </ng-template>
 

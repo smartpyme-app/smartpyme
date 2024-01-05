@@ -156,7 +156,7 @@
                     <tr *ngFor="let abono of compra.abonos; let i=index">
                         <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>{{ abono.concepto }}</td>
-                        <td>{{ abono.forma_pago }}</td>
+                        <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
                         <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">
                                 <option value="Cancelado">Cancelado</option>

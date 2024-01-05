@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
@@ -28,6 +29,7 @@ import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.comp
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
+import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
@@ -44,6 +46,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     RouterModule,
     PipesModule,
     TagInputModule,
+    NgSelectModule,
     TooltipModule.forRoot(),
     FocusModule.forRoot()
   ],
@@ -70,7 +73,8 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearClienteComponent,
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
-    CrearAbonoCompraComponent
+    CrearAbonoCompraComponent,
+    CrearEventoComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -95,7 +99,8 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearClienteComponent,
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
-    CrearAbonoCompraComponent
+    CrearAbonoCompraComponent,
+    CrearEventoComponent
   ],
   providers: [AlertService],
 })
