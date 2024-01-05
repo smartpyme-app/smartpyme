@@ -300,6 +300,10 @@ class Indicador extends Model
             $salidas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
             $salidas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
         }
+
+        if (count($salidas) == 1) {
+            $salidas->prepend(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
         return $salidas;
     }
 
@@ -313,6 +317,10 @@ class Indicador extends Model
         if (count($ventas) == 0) {
             $ventas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
             $ventas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
+
+        if (count($ventas) == 1) {
+            $ventas->prepend(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
         }
         return $ventas;
     }
@@ -328,6 +336,10 @@ class Indicador extends Model
             $transacciones->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
             $transacciones->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
         }
+
+        if (count($transacciones) == 1) {
+            $transacciones->prepend(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
         return $transacciones;
     }
 
@@ -342,6 +354,10 @@ class Indicador extends Model
         if (count($balance) == 0) {
             $balance->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
             $balance->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
+        }
+
+        if (count($balance) == 1) {
+            $balance->prepend(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
         }
         return $balance;
     }
