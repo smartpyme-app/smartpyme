@@ -18,6 +18,14 @@ class DocumentosController extends Controller
 
     }
 
+    public function list() {
+       
+        $documentos = Documento::where('activo', true)->get(); 
+        
+        return Response()->json($documentos, 200);
+
+    }
+
 
     public function read($id) {
 

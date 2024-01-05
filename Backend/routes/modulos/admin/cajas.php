@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Admin\DocumentosController;
 
 // Documentos
     Route::get('/documentos',             [DocumentosController::class, 'index']);
+    Route::get('/documentos/list',         [DocumentosController::class, 'list']);
     Route::get('/documento/{id}',         [DocumentosController::class, 'read']);
     Route::post('/documento',             [DocumentosController::class, 'store']);
     Route::delete('/documento/{id}',       [DocumentosController::class, 'delete']);

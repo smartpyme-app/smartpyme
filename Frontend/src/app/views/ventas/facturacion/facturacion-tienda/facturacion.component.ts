@@ -88,7 +88,7 @@ export class FacturacionComponent implements OnInit {
     }
 
     public cargarDocumentos(){
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
             
