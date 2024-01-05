@@ -153,9 +153,14 @@ img.icon-2{
 
     .ng2-tag-input{
         border: 1px solid #e3eaef;
-        padding: 0px !important;
+        padding: 0.5px 2px !important;
         border-radius: 5px;
         height: 38px;
+    }
+
+    tag {
+        background: #0d6efd !important;
+        margin: 0px;
     }
 
     .bootstrap.ng2-tag-input.ng2-tag-input--focused{

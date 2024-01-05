@@ -12,6 +12,7 @@ ALTER TABLE empresas CHANGE email correo VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE empresas CHANGE activo activo TINYINT(1) NOT NULL DEFAULT true;
 ALTER TABLE empresas ADD municipio VARCHAR(255) NULL after giro;
 ALTER TABLE empresas ADD departamento VARCHAR(255) NULL after municipio;
+ALTER TABLE empresas ADD pais VARCHAR(255) NULL after departamento;
 ALTER TABLE empresas CHANGE descripcion descripcion VARCHAR(255) NULL;
 ALTER TABLE empresas ADD tipo_plan VARCHAR(255) NULL AFTER plan, ADD total DECIMAL NOT NULL DEFAULT 0 AFTER tipo_plan;
 ALTER TABLE empresas ADD industria VARCHAR(255) NULL AFTER giro;

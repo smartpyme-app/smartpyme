@@ -18,55 +18,55 @@
                 <div class="row">
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="nombre">Nombre</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre" placeholder="Nombre" required>
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre" placeholder="Escriba aquí" required>
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="nombre_propietario">Propietario</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario" name="nombre_propietario" placeholder="Escribe aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario" name="nombre_propietario" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="telefono">Teléfono</label>
-                        <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono" placeholder="xxxx-xxxx">
+                        <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="correo">Correo</label>
-                        <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="info@miempresa.com">
+                        <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="municipio">Municipio</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="municipio" placeholder="Escribe aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="municipio" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="departamento">Departamento</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="departamento" placeholder="Escribe aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="departamento" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="direccion">Dirección</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escribe aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="nit">NIT</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="000-000000-000-0">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="ncr">NCR</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="000000-0">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí-0">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="giro">Sector</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Sector">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="giro">Giro</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Giro">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="tamano">Tamaño</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.tamano" name="tamano" placeholder="Tamaño">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.tamano" name="tamano" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-12">
                         <label for="descripcion">Descripción</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escribe aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escriba aquí">
                     </div>
                 </div>
                 <div class="row mt-3">
@@ -98,11 +98,34 @@
                             <option value="">Seleccione aquí</option>
                             <option value="USD">USD</option>
                             <option value="GTQ">GTQ</option>
-                            <option value="EUR">EUR</option>
+                            <option value="CRC">CRC</option>
+                            <option value="HNL">HNL</option>
+                            <option value="NIO">NIO</option>
                         </select>
                     </div>
 
-                    <p class="my-3">
+                    <div class="form-group col-md-6 col-lg-3">
+                        <label for="pais">Pais:</label>
+                        <select class="form-select" [(ngModel)]="empresa.pais" name="pais">
+                            <option value="">Seleccione aquí</option>
+                            <option value="El Salvador">El Salvador</option>
+                            <option value="Guatemala">Guatemala</option>
+                            <option value="Honduras">Honduras</option>
+                            <option value="Panama">Panama</option>
+                            <option value="Nicaragua">Nicaragua</option>
+                            <option value="Belice">Belice</option>
+                            <option value="Costa Rica">Costa Rica</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-2">
+                        <label for="iva">IVA</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva" placeholder="Escriba aquí">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+
+                    <p class="my-3 pt-5">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>

@@ -156,7 +156,7 @@
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
         </div>
         <div class="form-group col-md-6 col-lg-3">
-            <label for="forma_pago">Forma de pago</label>
+            <label for="forma_pago">Método de pago</label>
             <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
                 <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
             </select>

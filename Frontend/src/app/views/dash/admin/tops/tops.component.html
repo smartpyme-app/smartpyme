@@ -21,6 +21,10 @@
                             <td>{{ canal.nombre }}</td>
                             <td class="text-right">{{ canal.total | currency:'USD':'symbol':'1.2' }}</td>
                         </tr>
+                        <tr *ngIf="dash?.total_ventas_canal?.length > 0">
+                            <td>Total</td>
+                            <td class="text-right">{{ dash?.total_ventas_canal | sum:'total' | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -48,6 +52,10 @@
                         <tr *ngFor="let forma_pago of dash?.total_ventas_forma_pago">
                             <td>{{ forma_pago.nombre }}</td>
                             <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                        <tr *ngIf="dash?.total_ventas_forma_pago?.length > 0">
+                            <td>Total</td>
+                            <td class="text-right">{{ dash?.total_ventas_forma_pago | sum:'total' | currency:'USD':'symbol':'1.2' }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -80,6 +88,10 @@
                         <tr *ngIf="dash?.total_gastos > 0">
                             <td>Gastos</td>
                             <td class="text-right">{{ dash?.total_gastos | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                        <tr *ngIf="dash?.total_compras > 0 && dash?.total_gastos > 0">
+                            <td>Total</td>
+                            <td class="text-right">{{ dash?.total_salidas | currency:'USD':'symbol':'1.2' }}</td>
                         </tr>
                     </tbody>
                 </table>

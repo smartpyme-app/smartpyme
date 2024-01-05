@@ -20,7 +20,7 @@ export class AdminDashComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
