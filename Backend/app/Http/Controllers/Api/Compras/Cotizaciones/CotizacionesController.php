@@ -9,6 +9,7 @@ use App\Models\Registros\Cliente;
 use App\Models\Compras\Compra as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Detalle;
+use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 
@@ -197,9 +198,9 @@ class CotizacionesController extends Controller
     public function generarDoc($id){
         $compra = Cotizacion::where('id', $id)->with('detalles', 'proveedor')->firstOrFail();
 
-        $empresa = Empresa::find(1);
-    
-        return view('reportes.preticket', compact('compra', 'empresa'));
+        $pdf = PDF::loadView('reportes.facturacion.orden-de-compra', compact('compra'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('orden-de-compra-' . $compra->id . '.pdf');
 
     }
 

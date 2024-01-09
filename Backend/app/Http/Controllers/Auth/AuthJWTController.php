@@ -19,7 +19,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use JWTAuth;
 use Mail;
-
+use Illuminate\Support\Facades\Hash;
+use App\Mail\Notificacion;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 
@@ -218,12 +219,13 @@ class AuthJWTController extends Controller
         $transaccion->id_empresa = $empresa->id;
         $transaccion->save();
 
-
-        Mail::send('mails.bienvenida', ['empresa' => $empresa ], function ($m) use ($empresa) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-            ->to($empresa->correo)
-            ->subject('¡Bienvenido a SmartPyme!');
-        });
+        if ($this->empresa->pagos()->count() == 0) {
+            Mail::send('mails.bienvenida', ['empresa' => $empresa ], function ($m) use ($empresa) {
+                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                ->to($empresa->correo)
+                ->subject('¡Bienvenido a SmartPyme!');
+            });
+        }
 
         $empresa->activo = true;
         $empresa->save();
@@ -244,6 +246,36 @@ class AuthJWTController extends Controller
         $pdf->setPaper([0, 0, 365.669, 566.929133858]);
     
         return $pdf->download($transaccion->descripcion . '-' .$transaccion->id .'.pdf');
+    }
+
+    public function cancelarSuscripcion(Request $request){
+        $request->validate([
+            'password'      => 'required',
+            'id'            => 'required',
+            'id_empresa'    => 'required',
+        ]);
+
+
+        $usuario = User::findOrfail($request->id);
+        
+        if (!Hash::check($request->password, $usuario->password)) {
+            return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+        }
+
+        $usuario->enable = false;
+        $usuario->save();
+
+        $empresa = Empresa::findOrfail($request->id_empresa);
+        $empresa->activo = false;
+        $empresa->fecha_cancelacion = date('Y-m-d');
+        $empresa->save();
+
+        Mail::to(env('MAIL_FROM_ADDRESS'))->send(new Notificacion([
+                    'titulo' => 'Cancelación de Suscripción',
+                    'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+                ]));
+
+        return response()->json($usuario, 200);
     }
 
 

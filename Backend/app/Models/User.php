@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
 use Carbon\Carbon;
 use Auth;
+use Mail;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -45,6 +46,15 @@ class User extends Authenticatable implements JWTSubject
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function bienvenida(){
+        $usuario = User::where('id', $this->id)->with('empresa')->first();
+        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario ], function ($m) use ($usuario) {
+            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+            ->to($this->email)
+            ->subject('¡Bienvenido a SmartPyme!');
+        });
     }
 
     public function getNombreSucursalAttribute(){

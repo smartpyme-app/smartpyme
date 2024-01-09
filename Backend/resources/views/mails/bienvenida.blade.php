@@ -13,7 +13,7 @@
                 
                 <p>Querido {{ $empresa->nombre }},</p>
 
-                <p>¡Bienvenido a SmartPyme]! Estamos encantados de tenerte como parte de nuestra comunidad.</p>
+                <p>¡Bienvenido a SmartPyme! Estamos encantados de tenerte como parte de nuestra comunidad.</p>
 
                 <p>Aquí hay algunas cosas que puedes hacer para comenzar:</p>
 

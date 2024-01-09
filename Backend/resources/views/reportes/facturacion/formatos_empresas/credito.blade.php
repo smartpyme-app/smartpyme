@@ -3,7 +3,7 @@
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>{{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
+    <title>{{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
         
         p {
@@ -90,13 +90,13 @@
     <div class="container_fluid">
         <div class="d-flex d-block" id="head-customer">
             <div class="float-left no-margin" id="cliente">
-                <p class="">{{$venta[0]->cliente}}</p>
+                <p class="">{{$venta->cliente}}</p>
                 <p class="">{{$cliente->direccion}}</p>
                 <p class="">{{$cliente->departamento}}</p>
                 <p class="">{{$cliente->nit}}</p>
             </div>
             <div class="float-right no-margin" id="fecha">
-                <p class="">{{Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y')}}</p>
+                <p class="">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
                 <p class="">{{$cliente->ncr}}</p>
             </div>
         </div>        
@@ -115,10 +115,10 @@
                     <tbody>
                         @php($total = 0);
 
-                        @foreach($venta[0]->detalles as $detalle)
+                        @foreach($venta->detalles as $detalle)
                         <tr>
                             <td class="text-center">{{ $detalle->cantidad }}</td>
-                            <td class="text-center">{{ $detalle->producto }}</td>
+                            <td class="text-center">{{ $detalle->nombre_producto }}</td>
                             <td class="text-center">${{ $detalle->precio }}</td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
@@ -133,11 +133,11 @@
                     {{-- <p>{{$total_text}}</p> --}}
                 </div>
                 <div class="float-right no-margin" id="total">
-                    <p class="">${{number_format($venta[0]->sub_total,2)}}</p>
-                    <p class="">${{number_format($venta[0]->iva,2)}}</p>
-                    <p class="">${{number_format($venta[0]->sub_total,2)}}</p>
+                    <p class="">${{number_format($venta->sub_total,2)}}</p>
+                    <p class="">${{number_format($venta->iva,2)}}</p>
+                    <p class="">${{number_format($venta->sub_total,2)}}</p>
                     <br>
-                    <p class="">${{number_format($venta[0]->total_venta,2)}}</p>
+                    <p class="">${{number_format($venta->total,2)}}</p>
                     
                 </div>
             </div> 

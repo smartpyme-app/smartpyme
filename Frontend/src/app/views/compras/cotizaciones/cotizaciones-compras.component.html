@@ -79,6 +79,9 @@
                                     <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
+                                    <a (click)="imprimir(compra)" class="btn">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
                                     <!-- <a routerLink="/devolucion-compra/nueva" class="btn text-danger">
                                         <i class="fa fa-fw fa-trash"></i> Eliminar
                                     </a> -->

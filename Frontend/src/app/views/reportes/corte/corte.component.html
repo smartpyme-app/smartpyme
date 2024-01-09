@@ -1,226 +1,251 @@
-<!-- <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Cierre de caja</h2>
-</section> -->
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div class="col-md-6 mb-3">
+       <h2 class="page-heading">Cierre de caja</h2>
+    </div>
 
-<div class="bg-white p-4">
-    <div class="row">
-        <div class="col-md-6 mb-3">
-           <h2 class="page-heading">Cierre de caja</h2>
+    <div class="col-md-6 mb-3">
+        <div class="d-flex gap-2">
+            <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+            <input type="date" name="fecha"  (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
+            <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
+                <option value="null" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    {{sucursal.nombre}}
+                </option>
+            </select>
         </div>
+    </div>
+</section>
 
-        <div class="col-md-6 mb-3">
-            <div class="d-flex gap-2">
-                <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
-                <input type="date" name="fecha"  (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
-                <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                    <option value="" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{sucursal.nombre}}
-                    </option>
-                </select>
+<section class="d-flex justify-content-between gap-2">
+    <div class="card p-3">
+        <h3 class="text-center text-success">
+            {{ (indicadores.totalVentasPagadas ? indicadores.totalVentasPagadas : 0) | currency:'USD':'symbol':'1.2' }}
+        </h3>
+        <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
+    </div>
+    <div class="card p-3">
+        <h3 class="text-center text-info">
+            {{ (indicadores.totalRecibos ? indicadores.totalRecibos : 0) | currency:'USD':'symbol':'1.2' }}
+        </h3>
+        <p class="mb-0 text-center">TOTAL <br> ABONOS</p>
+    </div>
+    <div class="card p-3">
+        <h3 class="text-center text-secondary">
+            {{ (indicadores.totalVentasPendientes ? indicadores.totalVentasPendientes : 0) | currency:'USD':'symbol':'1.2' }}
+        </h3>
+        <p class="mb-0 text-center">TOTAL <br> CREDITOS</p>
+    </div>
+    <div class="card p-3">
+        <h3 class="text-center text-danger">
+            {{ (indicadores.totalDevolucionesVenta ? indicadores.totalDevolucionesVenta : 0) | currency:'USD':'symbol':'1.2' }}
+        </h3>
+        <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
+    </div>
+    <div class="card p-3" *ngIf="usuario.tipo == 'Administrador'">
+        <h3 class="text-center text-secondary">
+            {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency:'USD':'symbol':'1.2' }}
+        </h3>
+        <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
+    </div>
+</section>
+
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="bg-white p-4 mb-3">
+            <div class="row">
+                <h5 class="font-weight-bold text-uppercase my-3">
+                    <img src="/assets/icons/trending-up.png" class="icon me-2"> Resumen de ventas
+                </h5>
+                <table class="table table-borderless mb-3">
+                    <thead>
+                        <tr class="bg-primary text-white">
+                            <th>Forma de pago</th>
+                            <th class="text-right" width="30%">N° de transacciones</th>
+                            <th class="text-right" width="17%">Total</th>
+                        </tr>
+                    </thead>
+                  <tbody>
+                    <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
+                        <td>
+                            {{ forma_pago.nombre }}
+                        </td>
+                        <td class="text-right">{{ forma_pago.cantidad }}</td>
+                        <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <!-- <span *ngIf="forma_pago.nombre == 'Tarjeta de crédito/débito'">
+                            <tr  *ngFor="let banco of indicadores.total_ventas_banco">
+                                <td><li class="ml-4">{{ banco.nombre }}</li> </td>
+                                <td class="text-right">{{ banco.cantidad }} </td>
+                                <td class="text-right"> ${{ banco.total }}</td>
+                            </tr>
+                        </span> -->
+                    </tr>
+                    <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">${{ indicadores.totalRecibos }}</td></tr>
+                    <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">${{ indicadores.totalDevolucionesVenta }}</td></tr>
+                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">${{ indicadores.totalGastosPagados }}</td></tr>
+                    <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">${{ indicadores.totalVentasPendientes }}</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+    <div class="col-lg-6">
+        <div class="bg-white p-4 mb-3">
+            <div class="row">
+                <h5 class="font-weight-bold text-uppercase my-3">
+                    <img src="/assets/icons/trending-up.png" class="icon me-2"> Resumen de caja
+                </h5>
 
-    <div class="row justify-content-center">
-        <table class="table table-bordered mb-3">
-            <tr>
-                <td width="20%">
-                    <h3 class="text-center text-success">
-                        {{ (indicadores.totalVentasPagadas ? indicadores.totalVentasPagadas : 0) | currency:'USD':'symbol':'1.2' }}
-                    </h3>
-                    <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
-                </td>
-                <td width="20%">
-                    <h3 class="text-center text-info">
-                        {{ (indicadores.totalRecibos ? indicadores.totalRecibos : 0) | currency:'USD':'symbol':'1.2' }}
-                    </h3>
-                    <p class="mb-0 text-center">TOTAL <br> ABONOS</p>
-                </td>
-                <td width="20%">
-                    <h3 class="text-center text-secondary">
-                        {{ (indicadores.totalVentasPendientes ? indicadores.totalVentasPendientes : 0) | currency:'USD':'symbol':'1.2' }}
-                    </h3>
-                    <p class="mb-0 text-center">TOTAL <br> CREDITOS</p>
-                </td>
-                <td width="20%">
-                    <h3 class="text-center text-danger">
-                        {{ (indicadores.totalDevolucionesVenta ? indicadores.totalDevolucionesVenta : 0) | currency:'USD':'symbol':'1.2' }}
-                    </h3>
-                    <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
-                </td>
-                <td width="20%" *ngIf="usuario.tipo == 'Administrador'">
-                    <h3 class="text-center text-secondary">
-                        {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency:'USD':'symbol':'1.2' }}
-                    </h3>
-                    <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
-                </td>
-            </tr>
-        </table>
+                <table class="table table-borderless mb-3">
+                    <thead>
+                        <tr class="bg-primary text-white">
+                            <th>Método de pago</th>
+                            <th class="text-right" width="30%">N° de transacciones</th>
+                            <th class="text-right" width="17%">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="indicadores?.total_ventas_forma_pago?.length < 1">
+                            <td colspan="3">
+                                <p class="text-muted">No hay datos que mostrar</p>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
+                            <td>{{ forma_pago.nombre }}</td>
+                            <td class="text-right">{{ forma_pago.cantidad }}</td>
+                            <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="bg-white p-4 mb-3">
+            <div class="row">
+                <h5 class="font-weight-bold text-uppercase my-3">
+                    <img src="/assets/icons/tv.png" class="icon me-2"> Resumen ventas por canal
+                </h5>
 
-        <h5 class="font-weight-bold text-uppercase my-3">
-            <i class="fa-solid fa-square-pen"></i> Resumen de ventas
-        </h5>
-        <table class="table table-bordered mb-3">
-            <thead>
-                <tr class="bg-primary text-white">
-                    <th>Forma de pago</th>
-                    <th class="text-right" width="20%">N° de transacciones</th>
-                    <th class="text-right" width="17%">Total</th>
-                </tr>
-            </thead>
-          <tbody>
-            <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
-                <td>
-                    {{ forma_pago.nombre }}
-                </td>
-                <td class="text-right">{{ forma_pago.cantidad }}</td>
-                <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
-                <!-- <span *ngIf="forma_pago.nombre == 'Tarjeta de crédito/débito'">
-                    <tr  *ngFor="let banco of indicadores.total_ventas_banco">
-                        <td><li class="ml-4">{{ banco.nombre }}</li> </td>
-                        <td class="text-right">{{ banco.cantidad }} </td>
-                        <td class="text-right"> ${{ banco.total }}</td>
-                    </tr>
-                </span> -->
-            </tr>
-            <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">${{ indicadores.totalRecibos }}</td></tr>
-            <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">${{ indicadores.totalDevolucionesVenta }}</td></tr>
-            <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">${{ indicadores.totalGastosPagados }}</td></tr>
-            <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">${{ indicadores.totalVentasPendientes }}</td></tr>
-            </tbody>
-        </table>
+                <table class="table table-borderless mb-3">
+                    <thead>
+                        <tr class="bg-primary text-white">
+                            <th>Canal</th>
+                            <th class="text-right" width="20%">Cantidad</th>
+                            <th class="text-right" width="17%">Total</th>
+                        </tr>
+                    </thead>
+                  <tbody>
+                        <tr *ngIf="indicadores?.total_ventas_canal?.length < 1">
+                            <td colspan="3">
+                                <p class="text-muted">No hay datos que mostrar</p>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let canal of indicadores?.total_ventas_canal">
+                            <td>{{ canal.nombre }}</td>
+                            <td class="text-right">{{ canal.cantidad }}</td>
+                            <td class="text-right">{{ canal.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="bg-white p-4 mb-3">
+            <div class="row">
+                <h5 class="font-weight-bold text-uppercase my-3">
+                    <img src="/assets/icons/2-layers.png" class="icon me-2"> Documentos emitidos
+                </h5>
 
-        <h5 class="font-weight-bold text-uppercase my-3">
-            <i class="fa-solid fa-square-pen"></i> Resumen de caja
-        </h5>
+                <table class="table table-borderless mb-3">
+                    <thead>
+                        <tr class="bg-primary text-white">
+                            <th>Documento</th>
+                            <th class="text-right" width="20%">Correlativos</th>
+                            <th class="text-right" width="17%">Total</th>
+                        </tr>
+                    </thead>
+                  <tbody>
+                        <tr *ngIf="indicadores?.total_documentos_emitidos?.length < 1">
+                            <td colspan="3">
+                                <p class="text-muted">No hay datos que mostrar</p>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let documento of indicadores?.total_documentos_emitidos">
+                            <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
+                            <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
+                            <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
 
-        <table class="table table-bordered mb-3">
-            <thead>
-                <tr class="bg-primary text-white">
-                    <th>Método de pago</th>
-                    <th class="text-right" width="20%">N° de transacciones</th>
-                    <th class="text-right" width="17%">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngIf="indicadores?.total_ventas_forma_pago?.length < 1">
-                    <td colspan="3">
-                        <p class="text-muted">No hay datos que mostrar</p>
-                    </td>
-                </tr>
-                <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
-                    <td>{{ forma_pago.nombre }}</td>
-                    <td class="text-right">{{ forma_pago.cantidad }}</td>
-                    <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
-                </tr>
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="bg-white p-4 mb-3">
+            <div class="row">
+                <h5 class="font-weight-bold text-uppercase my-3">
+                    <img src="/assets/icons/3-layers.png" class="icon me-2"> Documentos con devolución
+                </h5>
 
-        <h5 class="font-weight-bold text-uppercase my-3">
-            <i class="fa-solid fa-square-pen"></i> Resumen ventas por canal
-        </h5>
+                <table class="table table-borderless mb-3">
+                    <thead>
+                        <tr class="bg-primary text-white">
+                            <th>Documento</th>
+                            <th class="text-right" width="17%">Correlativo</th>
+                            <th class="text-right" width="17%">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="indicadores?.total_documentos_con_devolucion?.length < 1">
+                            <td colspan="3">
+                                <p class="text-muted">No hay datos que mostrar</p>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let documento of indicadores?.total_documentos_con_devolucion">
+                            <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
+                            <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
+                            <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="bg-white p-4 mb-3">
+            <div class="row">
+                <h5 class="font-weight-bold text-uppercase my-3">
+                    <img src="/assets/icons/hash.png" class="icon me-2"> Documentos anulados
+                </h5>
 
-        <table class="table table-bordered mb-3">
-            <thead>
-                <tr class="bg-primary text-white">
-                    <th>Canal</th>
-                    <th class="text-right" width="20%">Cantidad</th>
-                    <th class="text-right" width="17%">Total</th>
-                </tr>
-            </thead>
-          <tbody>
-                <tr *ngIf="indicadores?.total_ventas_canal?.length < 1">
-                    <td colspan="3">
-                        <p class="text-muted">No hay datos que mostrar</p>
-                    </td>
-                </tr>
-                <tr *ngFor="let canal of indicadores?.total_ventas_canal">
-                    <td>{{ canal.nombre }}</td>
-                    <td class="text-right">{{ canal.cantidad }}</td>
-                    <td class="text-right">{{ canal.total | currency:'USD':'symbol':'1.2' }}</td>
-                </tr>
-            </tbody>
-        </table>
+                <table class="table table-borderless mb-3">
+                    <thead>
+                        <tr class="bg-primary text-white">
+                            <th>Documento</th>
+                            <th class="text-right" width="17%">Correlativo</th>
+                            <th class="text-right" width="17%">Total</th>
+                        </tr>
+                    </thead>
+                  <tbody>
+                        <tr *ngIf="indicadores?.total_documentos_anulados?.length < 1">
+                            <td colspan="3">
+                                <p class="text-muted">No hay datos que mostrar</p>
+                            </td>
+                        </tr>
+                        <tr *ngFor="let documento of indicadores?.total_documentos_anulados">
+                            <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
+                            <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
+                            <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-        <h5 class="font-weight-bold text-uppercase my-3">
-            <i class="fa-solid fa-square-pen"></i> Documentos emitidos
-        </h5>
-
-        <table class="table table-bordered mb-3">
-            <thead>
-                <tr class="bg-primary text-white">
-                    <th>Documento</th>
-                    <th class="text-right" width="20%">Correlativos</th>
-                    <th class="text-right" width="17%">Total</th>
-                </tr>
-            </thead>
-          <tbody>
-                <tr *ngIf="indicadores?.total_documentos_emitidos?.length < 1">
-                    <td colspan="3">
-                        <p class="text-muted">No hay datos que mostrar</p>
-                    </td>
-                </tr>
-                <tr *ngFor="let documento of indicadores?.total_documentos_emitidos">
-                    <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                    <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
-                    <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
-                </tr>
-
-            </tbody>
-        </table>
-
-        <h5 class="font-weight-bold text-uppercase my-3">
-            <i class="fa-solid fa-square-pen"></i> Documentos con devolución
-        </h5>
-
-        <table class="table table-bordered mb-3">
-            <thead>
-                <tr class="bg-primary text-white">
-                    <th>Documento</th>
-                    <th class="text-right" width="17%">Correlativo</th>
-                    <th class="text-right" width="17%">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngIf="indicadores?.total_documentos_con_devolucion?.length < 1">
-                    <td colspan="3">
-                        <p class="text-muted">No hay datos que mostrar</p>
-                    </td>
-                </tr>
-                <tr *ngFor="let documento of indicadores?.total_documentos_con_devolucion">
-                    <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                    <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
-                    <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h5 class="font-weight-bold text-uppercase my-3">
-            <i class="fa-solid fa-square-pen"></i> Documentos anulados
-        </h5>
-
-        <table class="table table-bordered mb-3">
-            <thead>
-                <tr class="bg-primary text-white">
-                    <th>Documento</th>
-                    <th class="text-right" width="17%">Correlativo</th>
-                    <th class="text-right" width="17%">Total</th>
-                </tr>
-            </thead>
-          <tbody>
-                <tr *ngIf="indicadores?.total_documentos_anulados?.length < 1">
-                    <td colspan="3">
-                        <p class="text-muted">No hay datos que mostrar</p>
-                    </td>
-                </tr>
-                <tr *ngFor="let documento of indicadores?.total_documentos_anulados">
-                    <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                    <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
-                    <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
-                </tr>
-            </tbody>
-        </table>
+            </div>
+        </div>
 
     </div>
 </div>

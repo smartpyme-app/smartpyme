@@ -47,8 +47,8 @@ export class CitasComponent implements OnInit {
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.filtros.id_cliente = '';
         this.filtros.id_usuario = '';
-        this.filtros.inicio = moment().startOf('day').format('YYYY-MM-DD HH:mm:ss');
-        this.filtros.fin = moment().endOf('month').format('YYYY-MM-DD HH:mm:ss');
+        this.filtros.inicio = moment().startOf('day').format('YYYY-MM-DD HH:mm');
+        this.filtros.fin = moment().endOf('month').format('YYYY-MM-DD HH:mm');
         this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
@@ -80,8 +80,10 @@ export class CitasComponent implements OnInit {
             this.evento.tipo = 'Sin confirmar';
             this.evento.duracion = "1 hora";
             this.evento.estado = "Activo";
+            this.evento.id_cliente = '';
+            this.evento.id_servicio = '';
             this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.evento.inicio =  moment().format('YYYY-MM-DD HH:mm:ss');
+            this.evento.inicio =  moment().format('YYYY-MM-DD HH:mm');
             this.setTime();
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
@@ -91,22 +93,22 @@ export class CitasComponent implements OnInit {
         let fecha = moment(this.evento.inicio);
 
         if(this.evento.duracion == '15 minutos'){
-            this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '30 minutos'){
-            this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '1 hora'){
-            this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '2 horas'){
-            this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '3 horas'){
-            this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '5 horas'){
-            this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm');
         }
     }
 
@@ -123,6 +125,10 @@ export class CitasComponent implements OnInit {
           location: '',
           startDate: evento.inicio,
           endDate: evento.fin,
+          attendees: [
+              { email: evento.correo },
+              // Agrega otros asistentes si es necesario
+            ],
         };
 
         const enlaceCalendario = this.apiService.generateGoogleCalendarLink(event);

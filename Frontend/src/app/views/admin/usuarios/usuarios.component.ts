@@ -26,7 +26,8 @@ export class UsuariosComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( public apiService:ApiService, private alertService:AlertService,
+        private modalService: BsModalService ){}
 
 	ngOnInit() {
         this.filtros.id_sucursal = '';

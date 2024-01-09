@@ -12,7 +12,7 @@ import { ApiService } from '../../../services/api.service';
 
 export class NotificacionesComponent implements OnInit {
 
-    public usuario:any = {};
+    public notificacion:any = {};
     public cajas:any = [];
     public departamentos:any = [];
     public sucursales:any = [];
@@ -53,53 +53,33 @@ export class NotificacionesComponent implements OnInit {
         }
     }
 
-    openModal(template: TemplateRef<any>, usuario:any) {
-        this.apiService.getAll('cajas').subscribe(cajas => { 
-            this.cajas = cajas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-        this.apiService.getAll('departamentos').subscribe(departamentos => { 
-            this.departamentos = departamentos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-        this.apiService.getAll('sucursales').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
-        this.usuario = usuario;
-        if (!this.usuario.id) {
-            this.usuario.tipo = 'Vendedor';
-            this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
-            this.usuario.activo = true;
-            this.usuario.empleado = true;
-        }
+    openModal(template: TemplateRef<any>, notificacion:any) {
+        this.notificacion = notificacion;
+        this.notificacion.leido = true;
+        this.setEstado(this.notificacion);
+
         this.modalRef = this.modalService.show(template);
     }
     
 
     public onSubmit() {
         this.loading = true;
-        // Guardamos al usuario
-        this.apiService.store('usuario', this.usuario).subscribe(usuario => {
-            if (!this.usuario.id) {
-                this.notificaciones.data.unshift(usuario);
-            }
-            this.usuario = usuario;
+        this.apiService.store('notificacion', this.notificacion).subscribe(notificacion => {
+            this.notificacion = notificacion;
             this.loading = false;
-            // this.alertService.success("Usuario guardado");
-            this.modalRef?.hide();
         },error => {this.alertService.error(error); this.loading = false; });
 
     }
 
-    public setEstado(usuario:any){
-        this.apiService.store('usuario', usuario).subscribe(usuario => { 
+    public setEstado(notificacion:any){
+        this.apiService.store('notificacion', notificacion).subscribe(notificacion => { 
             // this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('usuario/', id) .subscribe(data => {
+            this.apiService.delete('notificacion/', id) .subscribe(data => {
                 for (let i = 0; i < this.notificaciones.data.length; i++) { 
                     if (this.notificaciones.data[i].id == data.id )
                         this.notificaciones.data.splice(i, 1);

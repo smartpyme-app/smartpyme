@@ -5,7 +5,7 @@
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
-    <title>Guaca Mix {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
+    <title>Guaca Mix {{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
     <style>
 
         *{ font-size: 16px; margin: 0; padding: 0;}
@@ -77,22 +77,22 @@
 
     <section id="factura">
         <div id="header">
-            <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-            <p id="cliente">{{ $cliente->nombre }} {{ $cliente->apellido }}</p>
+            <p id="fecha">{{ \Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y') }}</p>
+            <p id="cliente">{{ $venta[0]->cliente }}</p>
             <p id="direccion">{{ $cliente->direccion }}</p>
             <p id="departamento">{{ $cliente->departamento }}</p>
             <p id="nit">{{ $cliente->nit ? $cliente->nit : $cliente->dui  }}</p>
             <p id="nrc">{{ $cliente->ncr }}</p>
             <p id="giro">{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
-            <p id="condicion"> @if ($venta->estado == "Pendiente") Credito @else Contado @endif
+            <p id="condicion"> @if ($venta[0]->estado == "Pendiente") Credito @else Contado @endif
             </p>
         </div>
                     
         <table>
-            @foreach($venta->detalles as $detalle)
+            @foreach($venta[0]->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 2) }}</td>
-                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
+                <td class="producto">   {{ $detalle->producto  }}</td>
                 <td class="precio">     $ {{ number_format($detalle->precio , 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
@@ -103,15 +103,15 @@
 
         <div id="totales">
             <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
+            {{-- <p id="correlativo">{{ $venta[0]->correlativo }}</p> --}}
 
-            <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>
-            <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>
-            <p id="subtotal"> $ {{ number_format($venta->total, 2) }}</p>
-            {{-- <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p> --}}
-            {{-- <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p> --}}
-            {{-- <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p> --}}
-            <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
+            <p id="suma"> $ {{ number_format($venta[0]->sub_total, 2) }}</p>
+            <p id="iva"> $ {{ number_format($venta[0]->iva, 2) }}</p>
+            <p id="subtotal"> $ {{ number_format($venta[0]->total_venta, 2) }}</p>
+            {{-- <p id="iva_retenido"> $ {{ number_format($venta[0]->iva_retenido, 2) }}</p> --}}
+            {{-- <p id="no_sujeta"> $ {{ number_format($venta[0]->no_sujeta, 2) }}</p> --}}
+            {{-- <p id="exenta"> $ {{ number_format($venta[0]->exenta, 2) }}</p> --}}
+            <p id="total"> <b>$ {{ number_format($venta[0]->total_venta, 2) }}</b></p>
         </div>
     </section>
 

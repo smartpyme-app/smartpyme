@@ -13,6 +13,9 @@ use App\Models\Admin\Corte;
 
 use App\Models\Indicador;
 use App\Models\User;
+use App\Models\Ventas\Clientes\Cliente;
+use App\Models\Compras\Proveedores\Proveedor;
+use App\Models\Inventario\Producto;
 
 use JWTAuth;
 
@@ -142,6 +145,43 @@ class DashController extends Controller
         
         $reportes = \PDF::loadView('reportes.barcode', compact('codigo'))->setPaper('letter');
         return $reportes->stream();
+
+    }
+
+
+    public function buscador($txt) {
+        
+        $data = collect();
+
+        $productos = Producto::where('nombre', 'like', '%' . $txt . '%')->get();
+        $clientes = Cliente::where('nombre', 'like', '%' . $txt . '%')->get();
+        $proveedores = Proveedor::where('nombre', 'like', '%' . $txt . '%')->get();
+
+        foreach ($productos as $producto) {
+            $data->push([
+                'nombre' => $producto->nombre,
+                'tipo' => 'Producto',
+                'url' => '/producto/editar/' . $producto->id,
+            ]);
+        }
+
+        foreach ($clientes as $cliente) {
+            $data->push([
+                'nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'tipo' => 'Cliente',
+                'url' => '/cliente/editar/' . $cliente->id,
+            ]);
+        }
+
+        foreach ($proveedores as $proveedor) {
+            $data->push([
+                'nombre' => $proveedor->nombre . ' ' . $proveedor->apellido,
+                'tipo' => 'Proveedor',
+                'url' => '/proveedor/editar/' . $proveedor->id,
+            ]);
+        }
+
+        return Response()->json($data, 200);
 
     }
 

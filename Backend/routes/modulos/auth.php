@@ -11,4 +11,6 @@ Route::post('password/email', [AuthJWTController::class, 'sendResetLinkEmail']);
 
 Route::post('/register', [AuthJWTController::class, 'register']);
 
+Route::post('/cancelar-suscripcion', [AuthJWTController::class, 'cancelarSuscripcion']);
+
 ?>

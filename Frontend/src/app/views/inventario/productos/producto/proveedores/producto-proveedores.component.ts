@@ -39,8 +39,18 @@ export class ProductoProveedoresComponent implements OnInit {
 
     openModal(template: TemplateRef<any>, proveedor:any) {
         this.proveedor = proveedor;
+        this.proveedor.id_proveedor = '';
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }
+
+    // proveedor
+    public setProveedor(proveedor:any){
+        if(!this.proveedor.id_proveedor){
+            this.proveedores.push(proveedor);
+        }
+        this.proveedor.id_proveedor = proveedor.id;
+    }
+
 
     public onSubmit() {
         this.loading = true;

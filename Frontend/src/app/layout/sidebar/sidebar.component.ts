@@ -1,5 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
+
+import { FormControl } from '@angular/forms';
+import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -16,8 +20,13 @@ export class SidebarComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
+    public loading: boolean = false;
+    public filtros: any = {};
+    public items: any = [];
 
-    constructor(public apiService: ApiService) {}
+    searchControl = new FormControl();
+
+    constructor(public apiService: ApiService, public alertService: AlertService) {}
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {
@@ -52,6 +61,19 @@ export class SidebarComponent implements OnInit {
         }
         
         this.usuario = this.apiService.auth_user();
+
+        this.searchControl.valueChanges
+          .pipe(
+            debounceTime(500),
+            filter((query: string) => query.trim().length > 0),
+            switchMap((query: any) => this.apiService.read('buscador/', query))
+          )
+          .subscribe((results: any[]) => {
+            console.log(results);
+            this.items = Array.isArray(results) ? results : [];
+            this.loading = false;
+          });
+
     }
 
 
@@ -67,21 +89,7 @@ export class SidebarComponent implements OnInit {
 
 
     toggleSidebarMin() {
-        // this.sidebarCollapsed = !this.sidebarCollapsed;
-        // localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
 
-        // if (this.sidebarCollapsed) {
-        //     this.productosIsCollapsed = true;
-        //     localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
-        //     this.ventasIsCollapsed = true;
-        //     localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
-        //     this.comprasIsCollapsed = true;
-        //     localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
-        //     this.preferenciasIsCollapsed = true;
-        //     localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
-        //     this.finanzasIsCollapsed = true;
-        //     localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
-        // };
 
         const myDiv = document.getElementById('sidebar')!;
         const toggleBtn = document.getElementById('toggleBtn')!;
@@ -160,6 +168,14 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
+    }
+
+    public onSubmit(){
+        this.loading = true;
+        this.apiService.getAll('buscador', this.filtros).subscribe(items => { 
+            this.items = items;
+            this.loading = false;
+        }, error => {this.alertService.error(error);this.loading = false; });
     }
 
 }

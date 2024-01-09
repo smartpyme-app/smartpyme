@@ -30,6 +30,6 @@ class Notificacion extends Mailable
      */
     public function build()
     {
-        return $this->subject("Tienda")->view('mails.notificacion');
+        return $this->subject("SmartPyme")->view('mails.notificacion');
     }
 }

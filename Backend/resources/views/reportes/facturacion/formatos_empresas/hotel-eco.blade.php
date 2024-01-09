@@ -3,7 +3,7 @@
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>{{$venta->documento}} - {{$venta->correlativo}}</title>
+    <title>{{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
         
         p {
@@ -146,17 +146,17 @@
                         </tr>
                     </thead>
                     <tbody class="">
-                        @php($iva = $empresa->iva / 100);
+                        @php($iva = $venta->empresa()->pluck('iva')->first() / 100);
 
                         @foreach($venta->detalles as $detalle)
                         <tr>
                             <td class="text-right mr-3">{{ $detalle->cantidad }}</td>
                             
                             <td class="pl-5">&nbsp;&nbsp;{{ $detalle->descripcion }}</td>
-                            <td class="text-center ml-2">&nbsp;&nbsp;&nbsp;&nbsp;{{ $detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0) }}</td>
+                            <td class="text-center ml-2">&nbsp;&nbsp;&nbsp;&nbsp;{{\Currency::currency($venta->empresa()->pluck('moneda')->first())->format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0))}}</td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
-                            <td class="text-center">{{ $detalle->total + (($venta->iva != 0) ? ($detalle->total * $iva) : 0) }}</td>
+                            <td class="text-center">{{\Currency::currency($venta->empresa()->pluck('moneda')->first())->format($detalle->total + (($venta->iva != 0) ? ($detalle->total * $iva) : 0))}}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -166,13 +166,13 @@
                     <p>{{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
                 </div>
                 <div class="float-right" id="total">
-                    <p class="pb-0 ">{{ $venta->total }}</p>
+                    <p class="pb-0 ">{{\Currency::currency($venta->empresa()->pluck('moneda')->first())->format(($venta->total))}}</p>
                     
                     <br><br><br>
                     @if($venta->impuesto)
                     <p class="" id="t-imp">${{$venta->impuesto}}</p>
                     @endif
-                    <p class="" id="t-total">{{ $venta->total }}</p>
+                    <p class="" id="t-total">{{\Currency::currency($venta->empresa()->pluck('moneda')->first())->format(($venta->total))}}</p>
                 </div>
             </div> 
         </div>

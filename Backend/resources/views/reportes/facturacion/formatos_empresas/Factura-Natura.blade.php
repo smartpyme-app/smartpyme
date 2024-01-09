@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Natura {{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
+    <title>Natura {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 14px; margin: 0; padding: 0;}
@@ -51,22 +51,22 @@
                         @endif
                     </td>
                     <td style="border: 0px; text-align: right;">
-                        <p style="padding: 15px; border: 1px solid #900; display: inline-block;">FACTURA {{ $venta[0]->correlativo }}</p>
+                        <p style="padding: 15px; border: 1px solid #900; display: inline-block;">FACTURA {{ $venta->correlativo }}</p>
                     </td>
                 </tr>
                 <tr>
                     <td style="border: 0px;width: 70%;">
-                        <p><b>CLIENTE:</b> {{ $venta[0]->cliente }}</p>
+                        <p><b>CLIENTE:</b> {{ $venta->nombre_cliente }}</p>
                     </td>
                     <td style="border: 0px; width: 30%;">
-                        <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y') }}</p>
-                        <p><b>VENDEDOR:</b> {{ $venta[0]->usuario }}</p>
+                        <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+                        <p><b>VENDEDOR:</b> {{ $venta->nombre_usuario }}</p>
                     </td>
                 </tr>
             </table>
         </div>
         <br>  
-        @php($iva = $venta[0]->empresa()->iva / 100)
+        @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
         
         <table>
             <thead>
@@ -78,12 +78,12 @@
                 </tr>
             </thead>
         <tbody>
-            @foreach($venta[0]->detalles as $detalle)
+            @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ $detalle->cantidad }}</td>
-                <td class="producto">   {{ $detalle->producto  }}</td>
-                <td class="precio">     ${{ number_format($detalle->precio + (($venta[0]->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
-                <td class="gravadas">  ${{ number_format($detalle->total + (($venta[0]->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
+                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
             @endforeach
         </tbody>
@@ -95,7 +95,7 @@
                     Son: {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.
                 </td>
                 <td class="text-right"  width="100px" style="padding: 15px;">   
-                    <b>$ {{ number_format($venta[0]->total_venta, 2) }}</b>
+                    <b>$ {{ number_format($venta->total, 2) }}</b>
                 </td>
             </tr>
             <tr>

@@ -27,7 +27,9 @@ export class CorteComponent implements OnInit {
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
-            this.sucursales = sucursales.filter((item:any) => item.id == this.filtros.id_sucursal);
+            if(this.filtros.id_sucursal){
+                this.sucursales = sucursales.filter((item:any) => item.id == this.filtros.id_sucursal);
+            }
         }, error => {this.alertService.error(error); });
 
         this.filtrar();

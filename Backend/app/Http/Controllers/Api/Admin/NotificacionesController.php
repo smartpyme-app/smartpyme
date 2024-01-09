@@ -30,13 +30,13 @@ class NotificacionesController extends Controller
     {
 
         $request->validate([
-            'titulo'        => 'required|max:255',
             'descripcion'   => 'required|max:500',
+            'titulo'        => 'sometimes|max:255',
             'tipo'          => 'required|max:255',
-            'categoria'     => 'required|max:255',
+            'categoria'     => 'sometimes|max:255',
             'prioridad'    => 'required|max:255',
-            'empresa_id'    => 'required|numeric',
-            'sucursal_id'    => 'required|numeric'
+            'id_empresa'    => 'required|numeric',
+            // 'id_sucursal'    => 'required|numeric'
         ]);
 
         if($request->id)

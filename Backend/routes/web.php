@@ -85,5 +85,24 @@ Route::get('/setEventosSucursal', function(){
 	
 })->name('clearBD');
 
+Route::get('/setPais', function(){
+	
+	$empresas = App\Models\Admin\Empresa::all();
+	// $empresas = $empresas->groupBy('moneda');
+
+	foreach ($empresas as $empresa) {
+		if ($empresa->moneda == 'GTQ') {
+			$empresa->pais = 'Guatemala';
+		}
+		if ($empresa->moneda == 'USD') {
+			$empresa->pais = 'El Salvador';
+		}
+		$empresa->save();
+	}
+
+	return "Listo XD";
+	
+})->name('clearBD');
+
 
 Auth::routes();

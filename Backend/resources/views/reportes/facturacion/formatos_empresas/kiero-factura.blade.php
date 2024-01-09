@@ -49,9 +49,10 @@
             @if ($cliente->ncr)
             <p><b>NCR:</b> {{ $cliente->ncr }}</p>
             @endif
-            @if ($cliente->direccion)
-            <p><b>Dirección:</b> {{ $cliente->departamento }} &nbsp; {{ $cliente->direccion }} 
+            @if ($cliente->nit)
+            <p><b>NIT:</b> {{ $cliente->nit }}</p>
             @endif
+            <p><b>Dirección:</b> {{ $cliente->municipio }} &nbsp;{{ $cliente->departamento }} &nbsp; {{ $cliente->direccion }} 
             @if ($cliente->giro)
             <p><b>Giro:</b> {{ $cliente->giro }}</p>
             @endif

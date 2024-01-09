@@ -121,6 +121,9 @@ ALTER TABLE egresos CHANGE monto total DECIMAL(10,2) NOT NULL;
 
 RENAME TABLE recordatorios TO notificaciones;
 
+ALTER TABLE notificaciones CHANGE intro titulo VARCHAR(5000) NULL DEFAULT NULL;
+ALTER TABLE notificaciones CHANGE texto descripcion VARCHAR(5000) NULL DEFAULT NULL;
+
 ALTER TABLE egresos CHANGE factura referencia VARCHAR(255) NULL;
 
 

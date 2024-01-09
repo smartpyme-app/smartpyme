@@ -40,9 +40,8 @@
             <div class="form-group col-md-6">
                 <label for="">Cliente</label>
                 <div class="input-group flex-nowrap">
-                    <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="evento.id_cliente" class="form-select p-0">
-                        <ng-option value=""> Consumidor final </ng-option>
-                        <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
+                    <ng-select name="id_cliente" [(ngModel)]="evento.id_cliente" class="form-select p-0">
+                        <ng-option value=""> Seleccione aquí </ng-option>
                         <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
                             {{ cliente.nombre }} <span *ngIf="cliente.dui">- {{ cliente.dui }}</span>
                         </ng-option>
@@ -54,6 +53,7 @@
             <div class="form-group col-md-6">
                 <label for="id_servicio">Servicio</label>
                 <ng-select name="id_servicio" [(ngModel)]="evento.id_servicio" class="form-select p-0">
+                    <ng-option value=""> Seleccione aquí </ng-option>
                     <ng-option [value]="servicio.id" *ngFor="let servicio of servicios">
                         {{ servicio.nombre }}
                     </ng-option>

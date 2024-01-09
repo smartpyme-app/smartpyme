@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
+import { ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '@shared/shared.module';
 
 import { FocusModule } from 'angular2-focus';
@@ -29,6 +29,7 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     FormsModule,
     RouterModule,
     SharedModule,
+    ReactiveFormsModule,
     TooltipModule.forRoot(),
     CollapseModule.forRoot(),
     FocusModule.forRoot(),

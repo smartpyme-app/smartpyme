@@ -3,7 +3,7 @@
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>{{$venta->documento}} - {{$venta->correlativo}}</title>
+    <title>{{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
         
         p {
@@ -115,12 +115,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php($iva = $empresa->iva / 100);
+                        @php($iva = $venta->empresa()->pluck('iva')->first() / 100);
 
                         @foreach($venta->detalles as $detalle)
                         <tr>
                             <td class="text-center">{{ $detalle->cantidad }}</td>
-                            <td class="text-center">{{ $detalle->descripcion }}</td>
+                            <td class="text-center">{{ $detalle->nombre_producto }}</td>
                             <td class="text-center">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
@@ -134,11 +134,11 @@
                     
                 </div>
                 <div class="float-right no-margin" id="total">
-                    <p class="">${{number_format($venta->total,2)}}</p>
+                    <p class="">${{number_format($venta->total_venta,2)}}</p>
                     {{-- <p class="">${{number_format($venta->iva,2)}}</p> --}}
                     {{-- <p class="">${{number_format($venta->sub_total,2)}}</p> --}}
                     <br><br>
-                    <p class="mt-1">${{number_format($venta->total,2)}}</p>
+                    <p class="mt-1">${{number_format($venta->total_venta,2)}}</p>
                 </div>
             </div> 
         </div>

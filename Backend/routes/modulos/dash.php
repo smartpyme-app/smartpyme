@@ -22,3 +22,5 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
 
     Route::get('/barcode/{codigo}',             [DashController::class, 'barcode']);
 
+    Route::get('/buscador/{txt}',             [DashController::class, 'buscador']);
+

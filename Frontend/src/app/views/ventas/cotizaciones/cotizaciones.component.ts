@@ -143,5 +143,9 @@ export class CotizacionesComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    public imprimir(venta:any){
+        window.open(this.apiService.baseUrl + '/api/cotizacion/impresion/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
 
 }

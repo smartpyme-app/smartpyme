@@ -142,5 +142,9 @@ export class CotizacionesComprasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    public imprimir(compra:any){
+        window.open(this.apiService.baseUrl + '/api/orden-de-compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
+    }
+
 
 }

@@ -111,6 +111,8 @@ export class CalendarioComponent implements OnInit {
         this.evento.tipo = 'Sin confirmar';
         this.evento.duracion = "1 hora";
         this.evento.estado = "Activo";
+        this.evento.id_cliente = '';
+        this.evento.id_servicio = '';
         this.evento.id_empresa = this.apiService.auth_user().id_empresa;
         this.evento.id_usuario = this.apiService.auth_user().id;
         this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
@@ -129,28 +131,28 @@ export class CalendarioComponent implements OnInit {
         let fecha = moment(this.evento.inicio);
 
         if(this.evento.duracion == '15 minutos'){
-            this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '30 minutos'){
-            this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '1 hora'){
-            this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '2 horas'){
-            this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '3 horas'){
-            this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm');
         }
         if(this.evento.duracion == '5 horas'){
-            this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm:ss');
+            this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm');
         }
     }
 
     handleEventChange(arg:any) {
         this.evento = arg.event.extendedProps.data;
-        this.evento.inicio = moment(arg.event.start).format('YYYY-MM-DD HH:mm:ss');
+        this.evento.inicio = moment(arg.event.start).format('YYYY-MM-DD HH:mm');
         this.setTime();
         console.log(this.evento);
         this.onSubmit();

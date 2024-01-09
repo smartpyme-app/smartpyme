@@ -108,9 +108,9 @@ class UsuariosController extends Controller
             $request['password'] = \Hash::make($request->password);
         }
        
-        if (!$request->id) {
-            $request['password'] = \Hash::make('smart');
-        }
+        // if (!$request->id) {
+        //     $request['password'] = \Hash::make('smart');
+        // }
         
         $usuario->fill($request->all());
 
@@ -125,8 +125,14 @@ class UsuariosController extends Controller
             $resize->save(public_path('img/'.$path), 50);
             $usuario->avatar = "/" . $path;
         }
+
         
         $usuario->save();
+        
+        if(!$request->id){
+            $usuario->bienvenida();
+        }
+
 
         return Response()->json($usuario, 200);
 

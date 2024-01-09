@@ -108,7 +108,7 @@ class ProductosController extends Controller
     public function read($id) {
 
         $producto = Producto::where('id', $id)
-                                ->with('inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores')
+                                ->with('inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores.proveedor')
                                 ->firstOrFail();
 
         return Response()->json($producto, 200);

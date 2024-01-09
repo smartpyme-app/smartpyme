@@ -22,6 +22,8 @@ class Notificacion extends Model
         'sucursal_id',
     ];
 
+    protected $casts = ['leido' => 'string'];
+
     protected static function booted()
     {
         $usuario = JWTAuth::parseToken()->authenticate();

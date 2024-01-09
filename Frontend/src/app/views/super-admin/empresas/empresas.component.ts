@@ -53,7 +53,7 @@ export class EmpresasComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.loadAll();
+        this.filtrarEmpresas();
     }
 
 

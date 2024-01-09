@@ -45,7 +45,8 @@
             <label for="nota">Observaciones</label>
             <input type="text" class="form-control" placeholder="Escribe aquí" name="nota" [(ngModel)]="cliente.nota">
         </div>
-
+    </div>
+    <div class="row" *ngIf="cliente.tipo == 'Empresa'">
         <h6 class="col-12 pb-2 my-3">Información de la empresa (Opcional)</h6>
         
         <div class="form-group col-6 col-lg-6">
@@ -80,8 +81,8 @@
             <label for="direccion">Dirección:</label>
             <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
         </div>
-        
-                    
+    </div>
+    <div class="row">          
         <div class="form-group col-md-12 mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                 <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>

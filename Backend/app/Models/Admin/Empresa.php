@@ -4,6 +4,7 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Empresa extends Model {
 
@@ -44,6 +45,8 @@ class Empresa extends Model {
         'activo'
     ];
 
+    protected $appends = ['estado_plan'];
+
     public function limiteUsuarios(){
         if($this->usuarios->where('enable', true)->count() < $this->user_limit)
             return false;
@@ -54,6 +57,21 @@ class Empresa extends Model {
         if($this->sucursales->where('activo', true)->count() < $this->sucursal_limit)
             return false;
         return true;
+    }
+
+    public function getEstadoPlanAttribute(){
+        $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
+
+        $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
+
+        if ($dias_creaccion <= 15) {
+            return ['estado' => 'Prueba', 'dias_faltantes' => (15 - $dias_creaccion)];
+        }
+        if ($dias_creaccion > 15) {
+            return ['estado' => 'Pendiente de pago'];
+        }
+
+        return $this->pagos->count();
     }
 
 
@@ -137,7 +155,7 @@ class Empresa extends Model {
     }
 
     public function pagos(){
-        return $this->hasMany('App\Models\Recibo', 'id_empresa');
+        return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
     public function getRecibosPendientesAttribute(){

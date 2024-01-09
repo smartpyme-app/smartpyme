@@ -9,6 +9,7 @@ use App\Models\Registros\Cliente;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
+use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 
@@ -197,9 +198,9 @@ class CotizacionesController extends Controller
     public function generarDoc($id){
         $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
 
-        $empresa = Empresa::find(1);
-    
-        return view('reportes.preticket', compact('venta', 'empresa'));
+        $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
 
     }
 

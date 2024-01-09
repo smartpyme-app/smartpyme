@@ -1,8 +1,7 @@
 <html>
 
 <head>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <title>{{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
         
@@ -143,10 +142,10 @@
                             <td class="text-right mr-3">{{ $detalle->cantidad }}</td>
                             <td class="pl-5">{{ $detalle->nombre_producto }}</td>
                             <td class="text-center">{{ $detalle->codigo }}</td>
-                            <td class="text-center ml-2">{{\Currency::currency("USD")->format(($detalle->precio))}}</td>
+                            <td class="text-center ml-2">{{ $detalle->precio }}</td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
-                            <td class="text-center">{{\Currency::currency("USD")->format(($detalle->total))}}</td>
+                            <td class="text-center">{{ $detalle->total }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -157,19 +156,19 @@
                 </div>
                 <div class="float-right no-margin" id="total">
                     @if($venta->iva > 0)
-                    <p class="">{{\Currency::currency("USD")->format(($venta->sub_total))}}</p>
+                    <p class="">{{$venta->sub_total}}</p>
                     @else
-                    <p class="">{{\Currency::currency("USD")->format(($venta->sub_total)/1.13)}}</p>
+                    <p class="">{{$venta->sub_total / 1.13 }}</p>
                     @endif
 
                     @if($venta->iva > 0)
-                    <p class="">{{\Currency::currency("USD")->format(($venta->iva))}}</p>
+                    <p class="">{{$venta->iva}}</p>
                     @else
-                    <p class="">{{\Currency::currency("USD")->format(($venta->sub_total / 1.13) * 0.13)}}</p>
+                    <p class="">{{ ($venta->sub_total / 1.13) * 0.13}}</p>
                     @endif
 
                     <br><br>
-                    <p class="mt-1">{{\Currency::currency("USD")->format(($venta->total))}}</p>
+                    <p class="mt-1">{{$venta->total_venta}}</p>
                 </div>
             </div> 
         </div>

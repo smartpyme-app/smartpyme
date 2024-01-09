@@ -94,13 +94,11 @@
                     </select>
                 </div>
             </div>
-            <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                    <button [disabled]="loading" class="btn btn-primary float-end">
-                        <span *ngIf="!loading">Guardar</span>
-                        <span *ngIf="loading">Guardando...</span>
-                    </button>
-                </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Guardar</span>
+                    <span *ngIf="saving">Guardando...</span>
+                </button>
             </div>
         </form>
     </div>

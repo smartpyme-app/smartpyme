@@ -5,14 +5,22 @@
         <button  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
             <img src="/assets/icons/sidebar.png">
         </button>
+        <!-- <p>{{ usuario.name }}</p> -->
     </div>
     <div class="mb-3" style="min-height: 5vh;">
         <form action="" autocomplete="off">
             <ul class="list-unstyled ps-0">
                 <li class="mb-1 d-flex rounded" style="background-color: #F2F0F4; height: 40px;">
-                    <div (click)="toggleSidebarMenu()" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <div (click)="toggleSidebarMenu()" class="position-relative btn d-inline-flex align-items-center text-decoration-none py-1">
                         <img src="/assets/icons/search.png" class="icon me-2">
-                        <input type="text" name="search" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
+                        <form class="d-flex buscador" name="form" autocomplete="off">
+                            <input type="search" name="search" [formControl]="searchControl" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
+                            <ul style="margin-left: -40px;" class="list-group opciones">
+                              <a routerLink="{{item.url}}" (click)="items = []" class="list-group-item d-flex justify-content-between" *ngFor=" let item of items">
+                                {{ item.nombre }} <small class="badge bg-primary">{{ item.tipo }}</small>
+                              </a>
+                            </ul>
+                        </form>
                     </div>
                 </li>
             </ul>

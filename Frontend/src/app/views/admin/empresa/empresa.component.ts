@@ -22,13 +22,17 @@ export class EmpresaComponent implements OnInit {
   	) { }
 
   	ngOnInit() {
+        this.loadAll();
+  	}
+
+    public loadAll() {
   	    this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
-  	}
-     
+    }
+
   	public onSubmit() {
   	    this.saving = true;
   	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {

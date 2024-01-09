@@ -11,6 +11,10 @@
             <thead>
                 <tr>
                     <th>Proveedor</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th class="d-none d-md-table-cell">DUI</th>
+                    <th class="d-none d-md-table-cell">NCR</th>
                     <th class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>
@@ -26,7 +30,11 @@
                     </td>
                 </tr>        
                 <tr *ngFor=" let proveedor of producto.proveedores">
-                    <td>{{ proveedor.nombre_proveedor }}</td>
+                    <td>{{ proveedor?.proveedor.nombre }}</td>
+                    <td>{{ proveedor?.proveedor.correo }}</td>
+                    <td>{{ proveedor?.proveedor.telefono }}</td>
+                    <td>{{ proveedor?.proveedor.dui }}</td>
+                    <td>{{ proveedor?.proveedor.ncr }}</td>
                     <td class="text-center">
                         <a (click)="delete(proveedor)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
                     </td>
@@ -45,13 +53,14 @@
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
-            <div class="form-group col-md-12">
-                <label for="id_proveedor">Proveedor:</label>
+            <div class="input-group flex-nowrap">
                 <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
+                    <ng-option value="">Seleccione aquí</ng-option>
                     <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.nombre }} <span *ngIf="proveedor.ncr">- {{ proveedor.ncr }}</span>
+                        {{ proveedor.nombre }} <span *ngIf="proveedor.nombre_empresa">- {{ proveedor.nombre_empresa }}</span> <span *ngIf="proveedor.ncr">- {{ proveedor.ncr }}</span>
                     </ng-option>
                 </ng-select>
+                <app-crear-proveedor [id_proveedor]="proveedor.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
             </div>
         </div>
         <div class="d-grid mt-3">
