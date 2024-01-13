@@ -49,11 +49,7 @@ class DashController extends Controller
         // return $indicadores;
         // Salidas
 
-            $indicadores->total_salidas = $indicadores->getTotalComprasPagadas() 
-                                + $indicadores->getTotalGastosPagados()
-                                + $indicadores->getTotalComprasPendientes()
-                                + $indicadores->getTotalGastosPendientes()
-                                - $indicadores->getTotalDevolucionesCompra();
+            $indicadores->total_salidas = $indicadores->getTotalGastos();
         
             $indicadores->total_compras = $indicadores->getTotalComprasPagadas() + $indicadores->getTotalComprasPendientes();
             $indicadores->total_gastos = $indicadores->getTotalGastosPagados() + $indicadores->getTotalGastosPendientes();
@@ -63,9 +59,8 @@ class DashController extends Controller
             $indicadores->totales_salidas = $indicadores->getTotalesSalidas($tiempo, $fecha);
 
         // Ingresos
-            $indicadores->total_ventas = $indicadores->getTotalVentasPagadas()
-                                        // + $indicadores->getTotalVentasPendientes()
-                                        - $indicadores->getTotalDevolucionesVenta();
+
+            $indicadores->total_ventas = $indicadores->getTotalVentas();
             
             $indicadores->totales_ventas = $indicadores->getTotalesVentas($tiempo, $fecha);
             
@@ -76,17 +71,17 @@ class DashController extends Controller
 
         // Transacciones
 
-            $indicadores->total_transacciones = $indicadores->getCantidadVentasPagadas() + $indicadores->getCantidadVentasPendientes() - $indicadores->getCantidadDevolucionesVenta();
+            $indicadores->total_transacciones = $indicadores->getCantidadTransacciones();
             $indicadores->totales_transacciones = $indicadores->getTotalesTransacciones($tiempo, $fecha);
 
-            $indicadores->total_transacciones = $indicadores->getCantidadVentasPendientes();
+            $indicadores->cantidad_cxc = $indicadores->getCantidadVentasPendientes();
 
         // Balance
 
             // ($indicadores->getTotalVentasPagadas() - $indicadores->getTotalDevolucionesVenta()) - 
             // ($indicadores->getTotalComprasPagadas() + $indicadores->getTotalGastosPagados() - $indicadores->getTotalDevolucionesCompra())
 
-            $indicadores->total_balance = $indicadores->total_ventas - $indicadores->total_salidas;
+            $indicadores->total_balance = $indicadores->getTotalResultados();
             
             $indicadores->totales_balance   = $indicadores->getTotalesBalances($tiempo, $fecha);
 

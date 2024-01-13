@@ -207,6 +207,14 @@ class AuthJWTController extends Controller
     public function pagoCompletado($id_empresa){
         $empresa = Empresa::where('id', $id_empresa)->firstOrFail();
 
+        if ($empresa->pagos()->count() == 0) {
+            Mail::send('mails.bienvenida', ['empresa' => $empresa ], function ($m) use ($empresa) {
+                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                ->to($empresa->correo)
+                ->subject('¡Bienvenido a SmartPyme!');
+            });
+        }
+
         $transaccion = new Transaccion();
         $transaccion->fecha = date('Y-m-d');
         $transaccion->correlativo = 3;
@@ -218,14 +226,6 @@ class AuthJWTController extends Controller
         $transaccion->total = $empresa->total;
         $transaccion->id_empresa = $empresa->id;
         $transaccion->save();
-
-        if ($this->empresa->pagos()->count() == 0) {
-            Mail::send('mails.bienvenida', ['empresa' => $empresa ], function ($m) use ($empresa) {
-                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                ->to($empresa->correo)
-                ->subject('¡Bienvenido a SmartPyme!');
-            });
-        }
 
         $empresa->activo = true;
         $empresa->save();

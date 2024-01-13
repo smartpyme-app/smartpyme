@@ -206,6 +206,30 @@ class Indicador extends Model
         return $this->gastos->where('estado', 'Pendiente')->sum('total');
     }
 
+    public function getCantidadTransacciones(){
+        return $this->getCantidadVentasPagadas()
+                + $this->getCantidadVentasPendientes()
+                + $this->getCantidadDevolucionesVenta();
+    }
+
+    public function getTotalVentas(){
+        return $this->getTotalVentasPagadas()
+                + $this->getTotalVentasPendientes()
+                - $this->getTotalDevolucionesVenta();
+    }
+
+    public function getTotalGastos(){
+        return $this->getTotalComprasPagadas() 
+                + $this->getTotalGastosPagados()
+                + $this->getTotalComprasPendientes()
+                + $this->getTotalGastosPendientes()
+                - $this->getTotalDevolucionesCompra();
+    }
+
+    public function getTotalResultados(){
+
+        return $this->getTotalVentas() - $this->getTotalGastos();
+    }
 
     public function getVentasByCanal(){
 
