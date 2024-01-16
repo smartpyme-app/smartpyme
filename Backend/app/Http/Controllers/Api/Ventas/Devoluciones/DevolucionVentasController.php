@@ -10,6 +10,7 @@ use Carbon\Carbon;
 
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Devoluciones\Detalle;
+use App\Models\Ventas\Venta;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Admin\Documento;
@@ -132,13 +133,17 @@ class DevolucionVentasController extends Controller
          
         try {
         
-        // Guardamos la venta
+        // Guardamos la devolucion
             if($request->id)
-                $venta = Devolucion::findOrFail($request->id);
+                $devolucion = Devolucion::findOrFail($request->id);
             else
-                $venta = new Devolucion;
+                $devolucion = new Devolucion;
             
-            $venta->fill($request->all());
+            $devolucion->fill($request->all());
+            $devolucion->save();
+
+            $venta = Venta::findOrFail($request['id_venta']);
+            $venta->estado = 'Anulada';
             $venta->save();
 
 
@@ -146,7 +151,7 @@ class DevolucionVentasController extends Controller
 
             foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
-                $det['id_devolucion_venta'] = $venta->id;
+                $det['id_devolucion_venta'] = $devolucion->id;
                 $detalle->fill($det);
                 $detalle->save();
 
@@ -156,14 +161,14 @@ class DevolucionVentasController extends Controller
                 if ($inventario) {
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
-                    $inventario->kardex($venta, $det['cantidad']);
+                    $inventario->kardex($devolucion, $det['cantidad']);
                 }
                 
             }
             
         
         DB::commit();
-        return Response()->json($venta, 200);
+        return Response()->json($devolucion, 200);
 
         } catch (\Exception $e) {
             DB::rollback();

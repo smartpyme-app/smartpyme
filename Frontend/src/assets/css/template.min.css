@@ -94,6 +94,10 @@ img.icon-2{
         background-color: #FDFBFF;
     }
 
+    .btn-primary{
+        background: #005CBB !important;
+    }
+
     .text-primary{
         color: #005CBB !important;
     }
@@ -159,7 +163,7 @@ img.icon-2{
     }
 
     tag {
-        background: #0d6efd !important;
+        background: #005CBB !important;
         margin: 0px;
     }
 

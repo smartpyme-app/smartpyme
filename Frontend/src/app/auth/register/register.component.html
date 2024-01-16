@@ -52,8 +52,14 @@
                             <div class="form-group col-6 mb-4">
                                 <label>Teléfono</label>
                                 <div class="input-group">
-                                    <select class="form-select">
-                                        <option value="+503">+503</option>
+                                    <select class="form-select" name="pais" (change)="setModeda()" [(ngModel)]="user.empresa.pais">
+                                        <option value="Belice">+501 Belice</option>
+                                        <option value="Guatemala">+502 Guatemala</option>
+                                        <option value="El Salvador">+503 El Salvador</option>
+                                        <option value="Honduras">+504 Honduras</option>
+                                        <option value="Nicaragua">+505 Nicaragua</option>
+                                        <option value="Costa Rica">+506 Costa Rica</option>
+                                        <option value="Panamá">+507 Panamá</option>
                                     </select>
                                     <input type="tel" class="form-control" name="telefono" [(ngModel)]="user.telefono" #telefono="ngModel" placeholder="Escribe aquí" required [dropSpecialCharacters]="false" mask='0000-0000'/>
                                 </div>

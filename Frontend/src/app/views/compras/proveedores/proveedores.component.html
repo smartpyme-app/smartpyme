@@ -59,7 +59,7 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let proveedor of proveedores?.data">
-                        <td>{{ proveedor.nombre | truncate:30 }}</td>
+                        <td>{{ proveedor.tipo == 'Persona' ? proveedor.nombre_completo : proveedor.nombre_empresa | truncate:30 }}</td>
                         <td>{{ proveedor.correo }}</td>
                         <td>{{ proveedor.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.dui}}</td>

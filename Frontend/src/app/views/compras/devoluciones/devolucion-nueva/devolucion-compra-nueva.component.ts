@@ -48,6 +48,7 @@ export class DevolucionCompraNuevaComponent implements OnInit {
                 this.compra.fecha = this.apiService.date();
                 this.compra.id_compra = id;
                 this.compra.tipo = 'Interna';
+                this.compra.observaciones = '';
 
                 this.compra.percepcion = this.compra.iva_percibido > 0 ? true : false; 
                 this.compra.retencion = this.compra.iva_retenido > 0 ? true : false;

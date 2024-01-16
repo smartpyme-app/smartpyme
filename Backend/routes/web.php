@@ -29,8 +29,8 @@ Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
 Route::get('/clear-bd', function(){
 	
-	$id_empresa = 75;
-	$id_sucursal = 94; //Biovet
+	$id_empresa = 13;
+	$id_sucursal = 8; //Biovet
 	
 	// $productos = DB::table('productos')->where('id_empresa', '!=', $id_empresa)->get();
 

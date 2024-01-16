@@ -20,12 +20,12 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="8" class="text-center" *ngIf="loading">
-                        <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                    <td colspan="6" class="text-center" *ngIf="loading">
+                        <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="3" class="text-center" *ngIf="!loading && producto?.proveedores.length == 0">
+                    <td colspan="6" class="text-center" *ngIf="!loading && producto?.proveedores.length == 0">
                         <span class="text-muted">No tiene proveedores agregados</span>
                     </td>
                 </tr>        
@@ -47,26 +47,30 @@
 
 <ng-template #mbodega>
   <div class="modal-header">
-    <h3 class="modal-title text-center">{{ producto.nombre }}</h3>
+    <h3 class="modal-title text-center">Agregar proveedor</h3>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
-            <div class="input-group flex-nowrap">
-                <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.nombre }} <span *ngIf="proveedor.nombre_empresa">- {{ proveedor.nombre_empresa }}</span> <span *ngIf="proveedor.ncr">- {{ proveedor.ncr }}</span>
-                    </ng-option>
-                </ng-select>
-                <app-crear-proveedor [id_proveedor]="proveedor.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
+            <p class="col-12"><span class="fw-medium">Producto:</span> {{ producto.nombre }}</p>
+            <div class="mb-3 col-12"> 
+                <label for="" class="fw-medium">Proveedor:</label>
+                <div class="input-group">
+                    <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                            {{ proveedor.nombre }} <span *ngIf="proveedor.nombre_empresa">- {{ proveedor.nombre_empresa }}</span> <span *ngIf="proveedor.ncr">- {{ proveedor.ncr }}</span>
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-proveedor [id_proveedor]="proveedor.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
+                </div>
             </div>
         </div>
         <div class="d-grid mt-3">
-            <button type="submit" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Guardar</span>
-                <span *ngIf="loading">Guardando...</span>
+            <button type="submit" class="btn btn-primary">
+                <span *ngIf="!loading">Agregar</span>
+                <span *ngIf="loading">Agregando...</span>
             </button>
         </div>
     </form>

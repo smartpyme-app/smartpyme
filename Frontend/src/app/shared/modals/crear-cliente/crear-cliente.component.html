@@ -12,8 +12,8 @@
         <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body p-3">
-        <form name="form" (ngSubmit)="onSubmit()">
             <app-notificaciones-container></app-notificaciones-container>
+            <form (ngSubmit)="submit()">
             <div class="row mb-3">
                 <div class="col d-grid">
                     <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option1" (change)="setTipo('Persona')">
@@ -25,80 +25,90 @@
                 </div>
             </div>
             <div class="row">
-                <h6 class="my-3">Información del contacto</h6>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="nombre">Nombre</label>
-                    <input type="text" name="nombre" class="form-control" placeholder="Escribe aquí" [(ngModel)]="cliente.nombre" focus="true">
+                <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
+                    <div class="row">
+                        <h6 class="col-12 pb-2 mb-4">Información de contacto</h6>
+                        <div class="form-group col-lg-3">
+                            <label for="nombre">Nombre</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label for="apellido">Apellido</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="correo">Correo</label>
+                            <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="dui">DUI</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui">
+                        </div>
+                        <div class="form-group col-md-6 col-lg-3">
+                            <label for="tipo_contribuyente">Tipo de contribuyente:</label>
+                            <select class="form-select" [(ngModel)]="cliente.tipo_contribuyente" name="tipo_contribuyente">
+                                <option value="">Seleccione aquí</option>
+                                <option value="Pequeño">Pequeño</option>
+                                <option value="Mediano">Mediano</option>
+                                <option value="Grande">Grande</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-lg-6">
+                            <label for="etiquetas">Etiquetas:</label>
+                            <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
+                        </div>
+                        <div class="form-group col-lg-9">
+                            <label for="nota">Observaciones</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nota" [(ngModel)]="cliente.nota">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="apellido">Apellido</label>
-                    <input type="text" name="apellido" class="form-control" placeholder="Escribe aquí" [(ngModel)]="cliente.apellido">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="dui">DUI</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.dui" name="dui" [dropSpecialCharacters]="false" mask='00000000-0' placeholder="xxxxxxx-x">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="correo">Correo</label>
-                    <input type="mail" class="form-control" [(ngModel)]="cliente.correo" name="correo" placeholder="Escribe aquí">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="telefono">Teléfono</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.telefono" name="telefono" [dropSpecialCharacters]="false" mask='0000-0000' placeholder="0000-0000">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="municipio">Municipio</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.municipio" name="municipio" placeholder="Escribe aquí">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="departamento">Departamento</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.departamento" name="departamento" placeholder="Escribe aquí">
-                </div>
-                <div class="form-group col-lg-8">
-                    <label for="direccion">Dirección</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.direccion" name="direccion" placeholder="Escribe aquí">
-                </div>
-                <div class="form-group col-lg-6">
-                    <label for="etiquetas">Etiquetas</label>
-                    <tag-input theme='bootstrap' secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
-                </div>
-                <div class="form-group col-lg-6">
-                    <label for="nota">Observaciones</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.nota" name="nota" placeholder="Escribe aquí">
+                <div class="col-12" *ngIf="cliente.tipo == 'Empresa'" [ngClass]="{ 'order-1' :  cliente.tipo == 'Empresa', 'order-2' :  cliente.tipo == 'Persona' }">
+                    <div class="row">
+                        <h6 class="col-12 pb-2 mb-4">Información de la empresa</h6>
+                        
+                        <div class="form-group col-6 col-lg-6">
+                            <label for="nombre_empresa">Empresa:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="ncr">NRC:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="cliente.ncr">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="nit">NIT:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit">
+                        </div>
+                        <div class="form-group col-6 col-lg-6">
+                            <label for="giro">Giro:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="cliente.giro">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="telefono">Teléfono:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="municipio">Municipio:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="departamento">Departamento:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                        </div>
+                        <div class="form-group col-12 col-md-9">
+                            <label for="direccion">Dirección:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="row" *ngIf="cliente.tipo == 'Empresa'">
-                <h6 class="my-3">Información de la empresa</h6>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="nombre_empresa">Empresa</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.nombre_empresa" name="nombre_empresa" placeholder="Escribe aquí"> 
+            <div class="row">          
+                <div class="form-group col-md-12 mt-3">
+                    <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                        <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
                 </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="ncr">NRC</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.ncr" name="ncr" placeholder="xxxx-x"> 
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="nit">NIT</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.nit" name="nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0' placeholder="xxxx-xxxxxx-xxx-x">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="giro">Giro</label>
-                    <input type="text" class="form-control" [(ngModel)]="cliente.giro" name="giro" placeholder="Giro">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="tipo_contribuyente">Tipo de contribuyente</label>
-                    <select class="form-select" [(ngModel)]="cliente.tipo_contribuyente" name="tipo_contribuyente">
-                        <option value="Pequeño">Pequeño</option>
-                        <option value="Mediano">Mediano</option>
-                        <option value="Grande">Grande</option>
-                    </select>
-                </div>
-            </div>
-            <div class="d-grid mt-4">
-                <button [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Guardar</span>
-                    <span *ngIf="saving">Guardando...</span>
-                </button>
             </div>
         </form>
     </div>

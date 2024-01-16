@@ -47,6 +47,37 @@ export class EmpresaComponent implements OnInit {
   	        this.saving = false;
   	    },error => {this.alertService.error(error); this.saving = false; });
   	}
+
+    setPais(){
+        if(this.empresa.pais == 'El Salvador'){
+            this.empresa.moneda = 'USD';
+            this.empresa.iva = 13;
+        }
+        if(this.empresa.pais == 'Belice'){
+            this.empresa.moneda = 'BZD';
+            this.empresa.iva = 12.5;
+        }
+        if(this.empresa.pais == 'Guatemala'){
+            this.empresa.moneda = 'GTQ';
+        }
+        if(this.empresa.pais == 'Honduras'){
+            this.empresa.moneda = 'HNL';
+            this.empresa.iva = 15;
+        }
+        if(this.empresa.pais == 'Nicaragua'){
+            this.empresa.moneda = 'NIO';
+            this.empresa.iva = 15;
+        }
+        if(this.empresa.pais == 'Costa Rica'){
+            this.empresa.moneda = 'CRC';
+            this.empresa.iva = 13;
+        }
+        if(this.empresa.pais == 'Panamá'){
+            this.empresa.moneda = 'PAB';
+            this.empresa.iva = 7;
+        }
+        console.log(this.empresa);
+    }
      
 
     setFile(event:any) {

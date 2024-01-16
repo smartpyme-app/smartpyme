@@ -108,6 +108,8 @@ class AuthJWTController extends Controller
 
         $empresa->activo = false;
         $empresa->nombre = $request['empresa']['nombre'];
+        $empresa->nombre_propietario = $request->name;
+        $empresa->telefono = $request->telefono;
         $empresa->iva   = $request['empresa']['iva'];
         $empresa->plan   = $request['empresa']['plan'];
         $empresa->correo   = $request->email;
@@ -115,6 +117,7 @@ class AuthJWTController extends Controller
         $empresa->sucursal_limit   = $request['empresa']['sucursal_limit'];
         $empresa->tipo_plan   = $request['empresa']['tipo_plan'];
         $empresa->industria   = $request['empresa']['industria'];
+        $empresa->pais   = $request['empresa']['pais'];
         $empresa->total   = $request['empresa']['total'];
         $empresa->moneda = $request['empresa']['moneda'];
         $empresa->save();

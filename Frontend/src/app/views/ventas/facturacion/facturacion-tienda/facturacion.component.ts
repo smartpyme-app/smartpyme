@@ -137,9 +137,16 @@ export class FacturacionComponent implements OnInit {
             this.venta.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
         }
 
+        // Para cotizaciones Pre-venta
         if (this.route.snapshot.queryParamMap.get('estado')!) {
             this.venta.estado = this.route.snapshot.queryParamMap.get('estado')!;
-            console.log(this.venta);
+        }
+
+        // Para editar cotizaciones Pre-venta
+        if (this.route.snapshot.paramMap.get('id')!) {
+            this.apiService.read('venta/', +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
+                this.venta = venta;
+            }, error => {this.alertService.error(error); this.loading = false;});
         }
 
         // Duplicar venta
@@ -156,6 +163,9 @@ export class FacturacionComponent implements OnInit {
                 });
             }, error => {this.alertService.error(error); this.loading = false;});
         }
+
+        // Editar cotizacion
+
 
         // Cita a venta
         if (this.route.snapshot.queryParamMap.get('id_cita')!) {

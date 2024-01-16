@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
+use App\Models\Transaccion;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade as PDF;
 use Intervention\Image\ImageManagerStatic as Image;
 use JWTAuth;
 
@@ -92,9 +94,9 @@ class EmpresasController extends Controller
     {
         $empresa = Empresa::with('pagos')->where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->firstOrFail();
         $empresa->next_pay  = $empresa->getNextPayAttribute();
-        $empresa->total  = 15;
+        $empresa->total  = $empresa->total;
 
-        if ($empresa->next_pay < date('Y-m-d')) {
+        if ($empresa->next_pay >= date('Y-m-d')) {
             $empresa->estado  = 'Activo';
         }else{
             $empresa->estado  = 'Vencido';
@@ -102,6 +104,16 @@ class EmpresasController extends Controller
 
         return Response()->json($empresa, 201);
 
+    }
+
+    public function printRecibo($id){
+
+        $recibo = Transaccion::where('id', $id)->firstOrFail();
+        // return $recibo;
+        $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+        $pdf->setPaper('US Letter', 'portrait');  
+
+        return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
     }
 
     public function eliminarDatos(Request $request){

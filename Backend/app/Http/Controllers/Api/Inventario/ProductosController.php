@@ -80,7 +80,7 @@ class ProductosController extends Controller
                                 ->with('precios')
                                 ->where('barcode', $txt)
                                 ->where('id_categoria', '!=', 1)
-                                ->orwhere('etiquetas', 'like' ,"%" . $request->buscador . "%")
+                                ->orwhere('etiquetas', 'like' ,"%" . $txt . "%")
                                 ->orwhere('nombre','LIKE', '%' .$txt. '%')
                                 ->orwhere('codigo','LIKE', '%' .$txt. '%')
                                 ->where('enable', true)

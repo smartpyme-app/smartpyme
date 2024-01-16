@@ -22,7 +22,7 @@ export class DashComponent implements OnInit {
         this.saludo = this.apiService.saludar();
 
         if(this.usuario.tipo == 'Ventas'){
-            this.router.navigate(['/venta/crear']);    
+            this.router.navigate(['/vendedor/ventas']);    
         }
         if(this.usuario.tipo == 'Citas'){
             this.router.navigate(['/citas']);    

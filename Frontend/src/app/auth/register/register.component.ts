@@ -12,6 +12,7 @@ import { ApiService } from '@services/api.service';
 export class RegisterComponent implements OnInit {
 
     public user: any = {};
+    public paises: any = [];
     public loading = false;
     public saludo:string = '';
     public anio:any = '';
@@ -24,15 +25,28 @@ export class RegisterComponent implements OnInit {
 
     ngOnInit() {
         this.user = this.apiService.register_user();
+
+        this.apiService.getToUrl('https://restcountries.com/v3.1/all?order=name').subscribe(
+        data => {
+            this.paises = data;
+            console.log(data);
+        },
+        error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
+
         if(!this.user){
             this.user = {};
             this.user.empresa = {};
 
             this.user.empresa.industria = '';
             this.user.empresa.iva = 13; 
-            this.user.empresa.moneda = 'USD';
             this.user.empresa.plan = 'Emprendedor';
             this.user.empresa.tipo_plan = 'Mensual';
+            this.user.empresa.pais = 'El Salvador';
+            this.user.empresa.moneda = 'USD';
+            this.user.empresa.total = 0;
 
             if (this.route.snapshot.queryParamMap.get('plan')!) {
                 this.user.empresa.plan = this.route.snapshot.queryParamMap.get('plan')!;
@@ -52,7 +66,6 @@ export class RegisterComponent implements OnInit {
 
             this.setPlan();
 
-            console.log(this.user);
         }
 
     }
@@ -91,6 +104,37 @@ export class RegisterComponent implements OnInit {
             }
         }
 
+    }
+
+    setModeda(){
+        if(this.user.empresa.pais == 'El Salvador'){
+            this.user.empresa.moneda = 'USD';
+            this.user.empresa.iva = 13;
+        }
+        if(this.user.empresa.pais == 'Belice'){
+            this.user.empresa.moneda = 'BZD';
+            this.user.empresa.iva = 12.5;
+        }
+        if(this.user.empresa.pais == 'Guatemala'){
+            this.user.empresa.moneda = 'GTQ';
+        }
+        if(this.user.empresa.pais == 'Honduras'){
+            this.user.empresa.moneda = 'HNL';
+            this.user.empresa.iva = 15;
+        }
+        if(this.user.empresa.pais == 'Nicaragua'){
+            this.user.empresa.moneda = 'NIO';
+            this.user.empresa.iva = 15;
+        }
+        if(this.user.empresa.pais == 'Costa Rica'){
+            this.user.empresa.moneda = 'CRC';
+            this.user.empresa.iva = 13;
+        }
+        if(this.user.empresa.pais == 'Panamá'){
+            this.user.empresa.moneda = 'PAB';
+            this.user.empresa.iva = 7;
+        }
+        console.log(this.user);
     }
 
     submit() {

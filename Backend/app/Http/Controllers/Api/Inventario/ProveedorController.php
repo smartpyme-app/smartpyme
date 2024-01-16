@@ -24,6 +24,8 @@ class ProveedorController extends Controller
         $proveedor->fill($request->all());
         $proveedor->save();
 
+        $proveedor = Proveedor::with('proveedor')->where('id', $proveedor->id)->firstOrFail();
+
         return Response()->json($proveedor, 200);
 
     }

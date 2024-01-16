@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Compras\Devoluciones\Devolucion;
+use App\Models\Compras\Compra;
 use App\Models\Registros\Proveedor;
 use App\Models\Compras\Devoluciones\Detalle;
 use App\Models\Inventario\Producto;
@@ -115,11 +116,15 @@ class DevolucionComprasController extends Controller
 
         // Compra
             if($request->id)
-                $compra = Devolucion::findOrFail($request->id);
+                $devolucion = Devolucion::findOrFail($request->id);
             else
-                $compra = new Devolucion;
+                $devolucion = new Devolucion;
 
-            $compra->fill($request->all());
+            $devolucion->fill($request->all());
+            $devolucion->save();
+
+            $compra = Compra::findOrFail($request['id_compra']);
+            $compra->estado = 'Anulada';
             $compra->save();
 
 
@@ -127,7 +132,7 @@ class DevolucionComprasController extends Controller
 
             foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
-                $det['id_devolucion_compra'] = $compra->id;
+                $det['id_devolucion_compra'] = $devolucion->id;
                 $detalle->fill($det);
                 $detalle->save();
                 
@@ -137,13 +142,13 @@ class DevolucionComprasController extends Controller
                 if ($inventario) {
                     $inventario->stock -= $det['cantidad'];
                     $inventario->save();
-                    $inventario->kardex($compra, $det['cantidad']);
+                    $inventario->kardex($devolucion, $det['cantidad']);
                 }
 
             }
 
         DB::commit();
-        return Response()->json($compra, 200);
+        return Response()->json($devolucion, 200);
 
         } catch (\Exception $e) {
             DB::rollback();

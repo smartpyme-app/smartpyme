@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\CanalesController;
     Route::post('/empresa/eliminar/datos',   [EmpresasController::class, 'eliminarDatos'])->middleware('admin');
 
     Route::get('/suscripcion',             [EmpresasController::class, 'suscripcion']);
+    Route::get('/suscripcion/recibo/pdf/{id}',             [EmpresasController::class, 'printRecibo']);
 
     Route::get('/sucursales',               [SucursalesController::class, 'index']);
     Route::get('/sucursales/list',               [SucursalesController::class, 'list']);

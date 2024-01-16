@@ -18,7 +18,7 @@
             <tbody>
                 <tr>
                     <td colspan="5" class="text-center" *ngIf="loading">
-                        <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                        <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
                 <tr>
@@ -28,13 +28,13 @@
                 </tr>       
                 <tr *ngFor=" let bodega of producto.inventarios">
                     <td>{{ bodega.nombre_sucursal }}</td>
-                    <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_minimo }}</td>
-                    <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_maximo }}</td>
+                    <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
+                    <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
                     <td class="text-center">{{ bodega.stock }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Configurar inventario">
-                                <i class="fa fa-pencil-alt"></i>
+                                <i class="fa fa-sliders-h"></i>
                             </a>
                             <app-crear-ajuste [producto]="producto" [inventario]="bodega" (setAjuste)="setAjuste($event)"></app-crear-ajuste>
                         </div>

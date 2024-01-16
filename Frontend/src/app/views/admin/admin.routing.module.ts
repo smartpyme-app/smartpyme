@@ -23,7 +23,7 @@ const routes: Routes = [
     path: '',
     component: LayoutComponent,
     children: [
-        { path: 'configuracion', component: EmpresaComponent, title: 'Configuracion' },
+        { path: 'mi-cuenta', component: EmpresaComponent, title: 'Mi cuenta' },
         { path: 'eliminar-datos', component: EliminarDatosComponent, title: 'Eliminar datos' },
         { path: 'suscripcion', component: SuscripcionComponent, title: 'Suscripcion' },
         { path: 'sucursales', component: SucursalesComponent, title: 'Sucursales' },

@@ -32,7 +32,7 @@ class Cliente extends Model {
        'id_usuario',
        'id_empresa',
     ];
-
+    protected $appends = ['nombre_completo'];
     protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
@@ -46,9 +46,19 @@ class Cliente extends Model {
         }
     }
 
+    public function getNombreCompletoAttribute() 
+    {
+        return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
+    }
+
     public function getEtiquetasAttribute($value) 
     {
         return is_string($value) ? json_decode($value) : $value;
+    }
+
+    public function setEtiquetasAttribute($valor)
+    {
+        $this->attributes['etiquetas'] = json_encode($valor);
     }
 
     public function cotizaciones() 

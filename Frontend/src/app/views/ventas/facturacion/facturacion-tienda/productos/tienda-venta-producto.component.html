@@ -5,7 +5,7 @@
                 <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
                 <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
             </div>
-            <ul class="list-group opciones">
+            <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
               <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
                 <!-- <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1">  -->
                 <span id="producto_nombre" class="col-7">
@@ -15,7 +15,7 @@
                 </span>
                 <span class="col-3 text-center" id="stock">
                     <!-- <small>Stock:</small> <br> -->
-                    {{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }} en stock
+                    <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }} en stock</span>
                 </span>
                 <span class="col-2 text-right">
                     <!-- <small>Precio:</small> <br> -->
@@ -25,8 +25,8 @@
             </ul>
         </form>
 
-        <button tooltip="Consultad de productos (F6)" (click)="openModal(inventario)" class="btn btn-default tcla-F6">
-            <i class="fa fa-search"></i>
+        <button tooltip="Consultar productos (F6)" (click)="openModal(inventario)" class="btn btn-default tcla-F6">
+            <i class="fa fa-list"></i>
             <!-- <img src="/assets/icons/search.png" class="icon"> -->
         </button>
     </div>
@@ -38,7 +38,7 @@
         <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body">
-    <form autocomplete="off" (submit)="onSubmit()">
+    <!-- <form autocomplete="off" (submit)="onSubmit()"> -->
         <section class="bg-white p-2 p-md-4 rounded mb-3">
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -49,7 +49,7 @@
 
                 <div class="col-md-6 mb-3">
                     <div class="d-flex gap-2">
-                        <form class="d-flex input-group" name="form" (ngSubmit)="loadAll()" autocomplete="off">
+                        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
                             <div class="input-group">
                                 <div class="input-group-text bg-white border-end-0">
                                     <i class="fa fa-search text-muted"></i>
@@ -57,13 +57,13 @@
                                 <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                             </div>
                         </form>
-                        <button tooltip="Filtrar (F6)" (click)="loadAll()" class="btn btn-default tcla-F6"><img src="/assets/icons/filter.png" class="icon"></button>
+                        <button tooltip="Filtrar (F6)" (click)="filtrarProductos()" class="btn btn-default tcla-F6"><img src="/assets/icons/filter.png" class="icon"></button>
                     </div>
                 </div>
             </div>
             <div class="mb-3 d-flex justify-content-between">
                 <button class="btn btn-primary" (click)="loadAll()">Todos</button>
-                <ng-select style="width: 300px;" name="id_categoria" (change)="loadAll()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
+                <ng-select style="width: 300px;" name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                     <ng-option value="">Categoria</ng-option>
                     <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
                         {{categoria.nombre}}
@@ -75,12 +75,12 @@
                     <table class="table table-borderless table-sm table-hover align-middle">
                         <thead>
                             <tr>
-                                <th></th>
                                 <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Producto</th>
                                 <th (click)="setOrden('categoria')" [ngClass]="{'sorted-asc': filtros.orden == 'categoria' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'categoria' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Categoría</th>
                                 <th (click)="setOrden('codigo')" [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Código</th>
                                 <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio</th>
-                                <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
+                                <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-right">Stock</th>
+                                <th class="text-right">Agregar</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -92,10 +92,10 @@
                                     <span class="badge bg-primary">Cargando...</span>
                                 </td>
                             </tr>
-                            <tr (click)="onCheckProducto(producto)" *ngFor="let producto of productosData?.data" class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}">
-                                <td>
+                            <tr *ngFor="let producto of productosData?.data" class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}">
+                                <!-- <td>
                                     <input type="radio" name="producto" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
-                                </td>
+                                </td> -->
                                 <td>
                                     <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                                     {{ producto.nombre }}
@@ -103,7 +103,7 @@
                                 <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                                 <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
-                                <td class="text-center">
+                                <td class="text-right">
                                     <div *ngIf="filtros.id_sucursal">
                                         {{ producto.inventarios | filter:'id_sucursal':filtros.id_sucursal | sum:'stock' }}
                                     </div>
@@ -132,23 +132,28 @@
                                         </ng-template>
                                     </div>
                                 </td>
+                                <td class="text-end">
+                                    <input type="checkbox" name="producto" id="producto{{producto.id}}" class="form-check d-inline" (click)="onCheckProducto(producto)">
+                                    <!-- <button (click)="onCheckProducto(producto)" class="btn btn-primary float-end">Agregar</button> -->
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
+
                 <div class="col-12" *ngIf="productosData?.last_page > 1">
-                    <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+                    <app-pagination [items]="productosData" (setPagination)="setPagination($event)"></app-pagination>
                 </div>
             </div>
         </section>
         <section>
             <div class="row">
                 <div class="col">
-                    <button class="btn btn-primary float-end">Seleccionar</button>
+                    <button class="btn btn-primary float-end" (click)="modalRef.hide()">Finalizar</button>
                 </div>
             </div>
         </section>
-    </form>
+    <!-- </form> -->
     </div>
 </ng-template>

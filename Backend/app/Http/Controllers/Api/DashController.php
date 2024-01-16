@@ -149,8 +149,12 @@ class DashController extends Controller
         $data = collect();
 
         $productos = Producto::where('nombre', 'like', '%' . $txt . '%')->get();
-        $clientes = Cliente::where('nombre', 'like', '%' . $txt . '%')->get();
-        $proveedores = Proveedor::where('nombre', 'like', '%' . $txt . '%')->get();
+        $clientes = Cliente::where('nombre', 'like', '%' . $txt . '%')
+                            ->orwhere('nombre_empresa', 'like',  '%'. $txt .'%')
+                            ->get();
+        $proveedores = Proveedor::where('nombre', 'like', '%' . $txt . '%')
+                            ->orwhere('nombre_empresa', 'like',  '%'. $txt .'%')
+                            ->get();
 
         foreach ($productos as $producto) {
             $data->push([
@@ -162,7 +166,7 @@ class DashController extends Controller
 
         foreach ($clientes as $cliente) {
             $data->push([
-                'nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'nombre' =>  $cliente->tipo == 'Persona' ? $cliente->nombre_completo : $cliente->nombre_empresa,
                 'tipo' => 'Cliente',
                 'url' => '/cliente/editar/' . $cliente->id,
             ]);
@@ -170,7 +174,7 @@ class DashController extends Controller
 
         foreach ($proveedores as $proveedor) {
             $data->push([
-                'nombre' => $proveedor->nombre . ' ' . $proveedor->apellido,
+                'nombre' => $proveedor->tipo == 'Persona' ? $proveedor->nombre_completo : $proveedor->nombre_empresa,
                 'tipo' => 'Proveedor',
                 'url' => '/proveedor/editar/' . $proveedor->id,
             ]);

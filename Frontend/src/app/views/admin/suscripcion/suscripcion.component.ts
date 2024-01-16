@@ -52,11 +52,11 @@ export class SuscripcionComponent implements OnInit {
     }
 
     public imprimirDoc(recibo:any){
-        window.open(this.apiService.baseUrl + '/api/recibo/pdf/' + recibo.id + '?token=' + this.apiService.auth_token());
+        window.open(this.apiService.baseUrl + '/api/suscripcion/recibo/pdf/' + recibo.id + '?token=' + this.apiService.auth_token());
     }
 
     openModal(template: TemplateRef<any>) {
-        // this.alertService.modal = true;
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
     }
 

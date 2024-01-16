@@ -48,6 +48,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.venta.fecha = this.apiService.date();
                 this.venta.id_venta = id;
                 this.venta.tipo = 'Interna';
+                this.venta.observaciones = '';
 
                 this.venta.percepcion = this.venta.iva_percibido > 0 ? true : false; 
                 this.venta.retencion = this.venta.iva_retenido > 0 ? true : false;

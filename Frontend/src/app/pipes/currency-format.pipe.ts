@@ -12,11 +12,11 @@ export class CurrencyPipe implements PipeTransform {
 
   transform(value: number): string {
     
-    this.currencyCode = this.apiService.auth_user().empresa.moneda;
+    this.currencyCode = this.apiService.auth_user() ? this.apiService.auth_user().empresa.moneda : 'USD';
 
     const formattedValue = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: this.currencyCode,
+        style: 'currency',
+        currency: this.currencyCode,
     }).format(value);
 
     return formattedValue;

@@ -17,7 +17,7 @@ class Compra extends Model {
         'tipo_documento',
         // 'condicion',
         'fecha_pago',
-        'num_referencia',
+        'referencia',
         'num_serie',
         'num_orden_compra',
         'detalle_banco',

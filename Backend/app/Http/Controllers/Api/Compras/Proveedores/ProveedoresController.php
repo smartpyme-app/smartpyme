@@ -19,6 +19,7 @@ class ProveedoresController extends Controller
         $proveedores = Proveedor::withSum('compras', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                    ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
@@ -60,7 +61,9 @@ class ProveedoresController extends Controller
     {
 
         $request->validate([
-            'nombre'    => 'required|max:255',
+            'nombre'    => 'required_if:tipo,"Persona"',
+            'nombre_empresa'    => 'required_if:tipo,"Empresa"',
+            'tipo'    => 'required|max:255',
             'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,
             'dui'       => 'nullable|unique:proveedores,dui,'. $request->id,
             'nit'       => 'nullable|unique:proveedores,nit,'. $request->id,

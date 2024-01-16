@@ -55,7 +55,7 @@
         <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-md-12">
-                <label for="">Producto</label>
+                <label>Producto:</label>
                 <ng-select name="id_compuesto" [(ngModel)]="composicion.id_compuesto" class="form-select p-0">
                     <ng-option value="">Seleccionar producto</ng-option>
                     <ng-option *ngFor="let producto of productos" [value]="producto.id">
@@ -64,7 +64,7 @@
                 </ng-select>
             </div>
             <div class="form-group col-md-12">
-                <label for="cantidad">Cantidad:</label>
+                <label>Cantidad:</label>
                 <input id="cantidad" type="number" class="form-control" [(ngModel)]="composicion.cantidad" name="cantidad" placeholder="Cantidad">
             </div>
         </div>

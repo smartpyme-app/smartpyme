@@ -111,12 +111,16 @@ export class ComprasComponent implements OnInit {
     public openModalEdit(template: TemplateRef<any>, compra:any) {
         this.compra = compra;
 
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
 
         this.modalRef = this.modalService.show(template);

@@ -22,13 +22,12 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="3" class="text-center" *ngIf="!loading && producto?.precios.length == 0">
-                        <span class="text-muted">No tiene precios configurados</span>
-                    </td>
+                    <td>{{ producto.precio | currency }}</td>
+                    <td>Todos</td>
                 </tr>
 
                 <tr class="animated fadeIn" *ngFor=" let precio of producto?.precios">
-                    <td>{{ precio.precio | currency:'USD':'symbol':'1.2' }}</td>
+                    <td>{{ precio.precio | currency }}</td>
                     <td>
                         <div class="d-flex gap-2 flex-wrap">
                             <span class="badge bg-default text-dark" *ngFor=" let usuario of precio.usuarios">
@@ -56,10 +55,15 @@
     </div>
     <div class="modal-body">
         <form autocomplete="off" (ngSubmit)="onSubmit()">
+            <p><span class="fw-medium">Producto:</span> {{ producto.nombre }}</p>
         <div class="row">
             <div class="form-group col-md-12">
-                <label for="precio">Se mostrara como opción al momento de vender:</label>
-                <input id="precio" type="number" class="form-control" [(ngModel)]="precio.precio" name="precio" focus="true">
+                <label for="" class="fw-medium">Precio sin IVA:</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input id="precio" type="number" class="form-control" [(ngModel)]="precio.precio" name="precio" focus="true">
+                </div>
+                <label for="precio">Se mostrara como opción al momento de vender</label>
             </div>
         </div>
         <div class="row">

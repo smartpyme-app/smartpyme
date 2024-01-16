@@ -33,6 +33,7 @@ class Proveedor extends Model {
         'id_empresa',
     );
 
+    protected $appends = ['nombre_completo'];
     protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
@@ -46,10 +47,19 @@ class Proveedor extends Model {
         }
     }
 
+    public function getNombreCompletoAttribute() 
+    {
+        return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
+    }
 
     public function getEtiquetasAttribute($value) 
     {
         return is_string($value) ? json_decode($value) : $value;
+    }
+
+    public function setEtiquetasAttribute($valor)
+    {
+        $this->attributes['etiquetas'] = json_encode($valor);
     }
 
     public function categoria(){

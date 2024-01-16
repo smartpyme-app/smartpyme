@@ -1,17 +1,18 @@
 <a class="btn btn-light" (click)="openModalAjuste(majuste)" tooltip="Ajustar stock de inventario">
-    <i class="fa fa-sliders-h"></i>
+    <i class="fa fa-pencil-alt"></i>
 </a>
 
 <ng-template #majuste>
   <div class="modal-header d-block text-center">
-    <h5 class="modal-title mb-0"> {{ inventario.nombre_sucursal }} </h5>
+    <h5 class="modal-title mb-0">Ajuste de stock </h5>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form (ngSubmit)="onSubmit()" autocomplete="off">
-        <div class="row text-center">
+        <div class="row">
             <app-notificaciones-container></app-notificaciones-container>
-            <p>{{ producto.nombre }}</p>
+            <p><b>Sucursal:</b> {{ inventario.nombre_sucursal }}</p>
+            <p><b>Producto:</b> {{ producto.nombre }}</p>
             <p><span class="badge bg-info">{{ ajuste.stock_actual | number:'1.0' }} unidades</span></p>
             <div class="form-group col-md-12">
                 <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
@@ -25,7 +26,7 @@
             </div>
 
             <div class="form-group col-md-12">
-                <label for="concepto">Concepto:</label>
+                <label for="concepto">Nota del ajuste:</label>
                 <input type="text" class="form-control" [(ngModel)]="ajuste.concepto" name="concepto">
             </div>
 

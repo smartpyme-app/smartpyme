@@ -59,7 +59,7 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let cliente of clientes?.data">
-                        <td>{{ (cliente.nombre + ' ' + (cliente.apellido ? cliente.apellido : ''))  | truncate:30 }}</td>
+                        <td>{{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa | truncate:30 }}</td>
                         <td>{{ cliente.correo }}</td>
                         <td>{{ cliente.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ cliente.dui}}</td>

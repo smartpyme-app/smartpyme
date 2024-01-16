@@ -35,9 +35,6 @@
         font-size: 14px;
         margin: 5px;
     }
-    #producto{
-        width: 240px;
-    }
     #cantidad{
         width: 50px;
         border-left: solid, 0.5px;
@@ -89,44 +86,44 @@
             <img src="{{ public_path('img/SmartPyme-logo-blue.png') }}" id="img"></center>
             <p class="text-center" id="empresa">San Salvador, El Salvador</p>
         </div><br><br>
-        <h4 class="" id="empresa">Detalles de la compra</h4><br>
+        <h4 class="" id="empresa">Detalles del Pago</h4><br>
         <div class="col-lg-12" id="cliente">
             <p><b>Ticket #: </b>{{$recibo->id }}</p>
             <p><b>Empresa: </b>{{$recibo->empresa()->pluck('nombre')->first() }}</p>
-            <p><b>A nombre de: </b>{{$recibo->nombre_de }}</p>
-            <p><b>Estado: </b><span style="background-color: #1775e5; color: #fff; padding: 7px;">{{$recibo->estado}}</span></p>
+            <p><b>A nombre de: </b>{{$recibo->empresa()->first()->usuarios()->pluck('name')->first() }}</p>
+            <p><b>Estado: </b><span style="background-color: #DCFCE7 ; color: #14532D ; padding: 7px;">{{$recibo->estado}}</span></p>
             <p><b>Fecha: </b>{{$recibo->created_at->format('d/m/Y h:m:s a')}}</p>
         </div><br>
         <div class="col-lg-12">
         <table cellspacing="0" cellpadding="0" id="table">
           <thead id="headtable">
-            <tr class="text-right">
+            <tr>
               <th>CANTIDAD</th>
-              <th id="producto">CONCEPTO</th>
-              <th class="text-right">PRECIO</th>
-              <th class="text-right">TOTAL</th>
+              <th>CONCEPTO</th>
+              <th class="text-right" width="90px">PRECIO</th>
+              <th class="text-right" width="90px">TOTAL</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td id="cantidad"><center>1</center></td>
-              <td id="producto">{{$recibo->concepto}}</td>
-              <td class="text-right">${{number_format(($recibo->monto / 1.13),2)}}</td>
-              <td class="text-right">${{number_format(($recibo->monto / 1.13),2)}}</td>
+              <td id="producto">{{$recibo->descripcion}}</td>
+              <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
+              <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
             </tr>
           </tbody>
             <tfoot>
             <tr>
                 <td class="text-right" colspan="3"><b>Sub total: </b></td>
-                <td class="text-right">${{number_format(($recibo->monto / 1.13),2)}}</td>
+                <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
             </tr>
             <tr>
-                <td class="text-right" colspan="3"><b>Impuesto: </b></td>
-                <td class="text-right">${{number_format((($recibo->monto / 1.13) * 0.13),2)}}</td>
+                <td class="text-right" colspan="3"><b>Impuesto (13%): </b></td>
+                <td class="text-right">${{number_format((($recibo->total / 1.13) * 0.13),2)}}</td>
             </tr>
             <tr>
                 <td class="text-right" colspan="3"><b>Total a pagar: </b></td>
-                <td class="text-right"><b>${{number_format($recibo->monto,2)}}</b></td>
+                <td class="text-right"><b>${{number_format($recibo->total,2)}}</b></td>
             </tr>
             </tfoot>
         </table>

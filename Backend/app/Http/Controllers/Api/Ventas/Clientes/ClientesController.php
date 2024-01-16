@@ -22,6 +22,7 @@ class ClientesController extends Controller
         $clientes = Cliente::where('id','!=', 1)->withSum('ventas', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                    ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')

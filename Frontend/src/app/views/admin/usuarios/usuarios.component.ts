@@ -26,7 +26,7 @@ export class UsuariosComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService,
+    constructor( public apiService:ApiService, public alertService:AlertService,
         private modalService: BsModalService ){}
 
 	ngOnInit() {

@@ -39,7 +39,7 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th (click)="setOrden('id')" [ngClass]="{'sorted-asc': filtros.orden == 'id' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id' && filtros.direccion == 'desc'}" class="click">ID</th>
                         <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
                         <th>Plan</th>
                         <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha Suscripción</th>

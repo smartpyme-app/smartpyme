@@ -12,7 +12,7 @@ class Empresa extends Model {
     protected $table = 'empresas';
     protected $fillable = [
         'nombre',
-        'propietario',
+        'nombre_propietario',
         'sector',
         'giro',
         'nit',
@@ -33,6 +33,8 @@ class Empresa extends Model {
         'sucursal_limit',
         'iva',
         'moneda',
+        'pais',
+        'total',
         'editar_precio_venta',
         'plan',
         'tipo_plan',

@@ -64,7 +64,7 @@ export class AdminUsuariosComponent implements OnInit {
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursalesList = sucursales;
-            this.sucursales = this.sucursalesList.filter((item:any) => item.id_empresa == this.usuario.id_empresa);
+            this.setSucursales();
         }, error => {this.alertService.error(error); });
 
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
@@ -72,7 +72,7 @@ export class AdminUsuariosComponent implements OnInit {
 
     setSucursales(){
         this.sucursales = this.sucursalesList.filter((item:any) => item.id_empresa == this.usuario.id_empresa);
-        this.usuario.id_sucursal == this.sucursales[0].id;
+        this.usuario.id_sucursal = this.sucursales[0].id;
         console.log(this.sucursales);
     }
 
