@@ -49,7 +49,7 @@ export class ProveedorComponent implements OnInit {
         this.proveedor.tipo = tipo;
     }
 
-    public submit():void{
+    public onSubmit():void{
         this.saving = true;
 
         this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => { 

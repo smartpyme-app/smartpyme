@@ -6,11 +6,12 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TagInputModule } from 'ngx-chips';
-import { PipesModule } from '../../../pipes/pipes.module';
-import { SharedModule } from '../../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { NgChartsModule } from 'ng2-charts';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 
 import { ClientesComponent } from './clientes.component';
 import { ClienteComponent } from './cliente/cliente.component';
@@ -32,6 +33,7 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
     PipesModule,
     TagInputModule,
     NgChartsModule,
+    NgxMaskDirective, NgxMaskPipe,
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot()

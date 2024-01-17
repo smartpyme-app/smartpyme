@@ -49,7 +49,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
-                        <th>Proveedor</th>
+                        <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Venta</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
                         <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
@@ -71,8 +71,11 @@
                     <tr *ngFor=" let abono of abonos?.data">
                         
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{abono.nombre_cliente }}</td>
-                        <td>{{abono.id_venta }}<a class="float-end d-none"  tooltip="Ver información de la venta" routerLink="/venta/{{abono.id_venta}}"><i class="fa fa-magnifying-glass"></i></a></td>
+                        <td>{{abono.venta?.nombre_cliente }}</td>
+                        <td>
+                            {{abono.venta?.nombre_documento }} # {{abono.venta?.correlativo }}
+                            <a class="float-end d-none"  tooltip="Ver información de la venta" routerLink="/venta/{{abono.id_venta}}"><i class="fa fa-magnifying-glass"></i></a>
+                        </td>
                         <td>{{abono.forma_pago}}</td>
                         <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">

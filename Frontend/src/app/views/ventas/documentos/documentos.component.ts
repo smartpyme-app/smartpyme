@@ -13,6 +13,7 @@ export class DocumentosComponent implements OnInit {
 
     public documentos:any = [];
     public documento:any = {};
+    public sucursales:any = [];
     public loading:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
@@ -24,6 +25,7 @@ export class DocumentosComponent implements OnInit {
     ){}
 
     ngOnInit() {
+
         this.loadAll();
     }
 
@@ -40,8 +42,13 @@ export class DocumentosComponent implements OnInit {
         this.documento = documento;
         if (!this.documento.id) {
             this.documento.id_empresa = this.apiService.auth_user().id_empresa;
-            this.documento.enable = true;
+            this.documento.activo = true;
+            this.documento.correlativo = 1;
         }
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error);});
+
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 

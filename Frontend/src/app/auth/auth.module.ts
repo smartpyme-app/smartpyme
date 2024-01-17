@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask'
+import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { PipesModule } from '@pipes/pipes.module';
 
 import { LoginComponent } from './../auth/login/login.component';

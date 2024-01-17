@@ -31,12 +31,14 @@ ALTER TABLE clientes CHANGE enable enable TINYINT(1) NOT NULL DEFAULT 1;
 ALTER TABLE clientes ADD tipo varchar(250) DEFAULT 'Persona' after tipo_contribuyente;
 ALTER TABLE clientes ADD id_usuario INT NOT NULL after nota;
 ALTER TABLE clientes ADD etiquetas varchar(500) NULL after id_usuario;
+ALTER TABLE clientes ADD fecha_cumpleanos date NULL after etiquetas;
 ALTER TABLE clientes CHANGE nombre nombre VARCHAR(255) NULL;
+ALTER TABLE clientes CHANGE apellido apellido VARCHAR(255) NULL;
 
 ALTER TABLE proveedores CHANGE tipo tipo_contribuyente VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE proveedores CHANGE comentarios nota VARCHAR(1500) NULL DEFAULT NULL;
 ALTER TABLE proveedores CHANGE enable enable TINYINT(1) NOT NULL DEFAULT 1;
-ALTER TABLE proveedores ADD apellido VARCHAR(255) NULL after nombre;
+ALTER TABLE proveedores CHANGE apellido apellido VARCHAR(255) NULL;
 ALTER TABLE proveedores ADD nombre_empresa VARCHAR(255) NULL after apellido;
 ALTER TABLE proveedores ADD id_usuario INT NOT NULL after nota;
 ALTER TABLE proveedores ADD tipo varchar(250) DEFAULT 'Persona' after tipo_contribuyente;

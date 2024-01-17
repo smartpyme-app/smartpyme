@@ -5,7 +5,7 @@
                 <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
                 <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
             </div>
-            <ul class="list-group opciones">
+            <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
               <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
                 <p class="mb-0">

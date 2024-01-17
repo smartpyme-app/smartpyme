@@ -53,13 +53,18 @@
                 <div class="row justify-content-between">
                     <div class="col py-4">
                         <h6 class="text-dark mb-3"><img src="/assets/icons/pocket.png" class="icon me-2">Balance</h6>
-                        <h3 class="text-dark">{{ (dash?.total_balance ? dash?.total_balance : 0) | currency:'USD':'symbol':'1.2' }}</h3>
-                        <p class="mb-1">Utilidad: <span class="float-end">{{ (dash?.total_motoristas ? dash?.total_motoristas : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                        <h3 class="text-dark" [ngClass]="{'text-danger' : dash?.total_balance < 0}">
+                            {{ (dash?.total_balance ? dash?.total_balance : 0) | currency:'USD':'symbol':'1.2' }}
+                        </h3>
+                        <p class="mb-1 text-white">
+                            .
+                            <!-- Utilidad: <span class="float-end">{{ (dash?.total_motoristas ? dash?.total_motoristas : 0) | currency:'USD':'symbol':'1.2' }}</span> -->
+                        </p>
                     </div>
                 </div>
             </div>
             <div class="chart-wrapper">
-                <div id="chart-balance" class="home_chart_widget chart-success"></div>
+                <div id="chart-balance" class="home_chart_widget" [ngClass]="{'chart-danger' : dash?.total_balance < 0, 'chart-success' : dash?.total_balance >= 0}"></div>
             </div>
         </div>
     </div>

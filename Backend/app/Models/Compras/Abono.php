@@ -3,6 +3,8 @@
 namespace App\Models\Compras;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Abono extends Model {
 
@@ -26,15 +28,14 @@ class Abono extends Model {
         'id_empresa',
     );
 
-    protected $appends = ['nombre_proveedor'];
-
-    public function getNombreProveedorAttribute()
+    protected static function booted()
     {
-        $compra = $this->compra()->first();
-        if ($compra) {
-            return $compra->nombre_proveedor;
-        }else{
-            return null;
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
         }
     }
 

@@ -67,15 +67,15 @@ export class FacturacionConsignaComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos').subscribe(bancos => {
+        this.apiService.getAll('bancos/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => {
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('canales').subscribe(canales => {
+        this.apiService.getAll('canales/list').subscribe(canales => {
             this.canales = canales;
             this.venta.id_canal = this.canales[0].id;
         }, error => {this.alertService.error(error);});
@@ -89,7 +89,7 @@ export class FacturacionConsignaComponent implements OnInit {
     }
     
     public cargarDocumentos(){
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
             

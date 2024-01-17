@@ -92,20 +92,30 @@ export class FacturacionComponent implements OnInit {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
             
-            let documento = this.documentos.find((x:any) => x.predeterminado == 1);
-            if(documento){
-                this.venta.id_documento = documento.id;
-                this.venta.correlativo = documento.correlativo;
-            }else{
-                this.venta.id_documento = documentos[0].id;
-                this.venta.correlativo = documentos[0].correlativo;
+            if(!this.venta.id_documento && !this.venta.correlativo){
+                
+                let documento = this.documentos.find((x:any) => x.predeterminado == 1);
+                if(documento){
+                    this.venta.id_documento = documento.id;
+                    this.venta.correlativo = documento.correlativo;
+                }else{
+                    this.venta.id_documento = documentos[0].id;
+                    this.venta.correlativo = documentos[0].correlativo;
+                }
+
+                if(this.venta.estado == 'Pre-venta'){
+                    let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
+                    if(documento){
+                        this.venta.id_documento = documento.id;
+                        this.venta.correlativo = documento.correlativo;
+                    }
+                }
             }
 
         }, error => {this.alertService.error(error);});
     }
 
     public cargarDatosIniciales(){
-        this.cargarDocumentos();
         this.venta = {};
         this.venta.fecha = this.apiService.date();
         this.venta.fecha_pago = this.apiService.date();
@@ -199,6 +209,7 @@ export class FacturacionComponent implements OnInit {
                 }, error => {this.alertService.error(error); this.loading = false;});
             }, error => {this.alertService.error(error); this.loading = false;});
         }
+        this.cargarDocumentos();
     }
 
     public sumTotal() {

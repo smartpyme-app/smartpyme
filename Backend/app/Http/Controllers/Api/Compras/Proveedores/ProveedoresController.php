@@ -62,6 +62,7 @@ class ProveedoresController extends Controller
 
         $request->validate([
             'nombre'    => 'required_if:tipo,"Persona"',
+            'apellido'       => 'required|string|between:2,255',
             'nombre_empresa'    => 'required_if:tipo,"Empresa"',
             'tipo'    => 'required|max:255',
             'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,
@@ -69,6 +70,9 @@ class ProveedoresController extends Controller
             'nit'       => 'nullable|unique:proveedores,nit,'. $request->id,
             // 'id_usuario'     => 'required|integer|exists:users,id',
             'id_empresa'     => 'required|integer|exists:empresas,id',
+        ],[
+            'nombre.required_if' => 'El campo nombre es obligatorio.',
+            'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
         ]);
 
         if($request->id)

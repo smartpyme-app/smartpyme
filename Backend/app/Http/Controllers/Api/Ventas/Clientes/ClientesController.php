@@ -61,12 +61,17 @@ class ClientesController extends Controller
     {
 
         $request->validate([
-            'nombre'         => 'required|string|between:2,255',
+            'nombre'         => 'required_if:tipo,"Persona"',
+            'apellido'       => 'required_if:tipo,"Persona"',
+            'nombre_empresa'    => 'required_if:tipo,"Empresa"',
             'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
             'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
             'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
             'id_usuario'     => 'required|numeric',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
+        ],[
+            'nombre.required_if' => 'El campo nombre es obligatorio.',
+            'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
         ]);
 
         if($request->id)

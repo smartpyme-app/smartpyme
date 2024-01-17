@@ -39,7 +39,7 @@ class DocumentosController extends Controller
 
         $request->validate([
             'nombre'        => 'required|max:255',
-            'correlativo'   => 'sometimes|max:255',
+            'correlativo'   => 'required|max:255',
             'rangos'        => 'sometimes|max:255',
             'numero_autorizacion'         => 'sometimes|max:255',
             'resolucion'         => 'sometimes|max:255',

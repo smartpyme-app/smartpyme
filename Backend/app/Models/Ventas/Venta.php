@@ -62,12 +62,9 @@ class Venta extends Model {
 
 
     public function getNombreClienteAttribute()
-    {
-        if ($this->cliente()->first()) {
-            return $this->cliente()->pluck('nombre')->first() . ' ' . $this->cliente()->pluck('apellido')->first();
-        }
-        if ($this->nombre) {
-            return $this->nombre;
+    {   $cliente = $this->cliente()->first();
+        if ($cliente) {
+            return $cliente->tipo == 'Persona' ? $cliente->nombre . ' ' . $cliente->apellido : $cliente->nombre_empresa;
         }
         return 'Consumidor Final';
     }

@@ -49,7 +49,7 @@ export class ClienteInformacionComponent implements OnInit {
         this.cliente.tipo = tipo;
     }
 
-    public submit():void{
+    public onSubmit():void{
         this.saving = true;
 
         this.apiService.store('cliente', this.cliente).subscribe(cliente => { 

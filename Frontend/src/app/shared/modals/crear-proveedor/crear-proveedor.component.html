@@ -9,10 +9,11 @@
             <span *ngIf="!id_proveedor">Nuevo proveedor</span>
             <span *ngIf="id_proveedor">Editar proveedor</span>
         </h3>
-        <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide(); this.alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body p-3">
-        <form (ngSubmit)="submit()">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form (ngSubmit)="onSubmit()">
         <div class="row mb-3">
             <div class="col d-grid">
                 <input type="radio" class="btn-check" name="tipo" [(ngModel)]="proveedor.tipo" id="option1" (change)="setTipo('Persona')">

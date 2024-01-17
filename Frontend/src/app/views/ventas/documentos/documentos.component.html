@@ -73,7 +73,7 @@
                         </td>
                         <td *ngIf="apiService.canEdit()" class="text-center">
                             <a class="btn btn-light" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
-                                <i class="fa fa-edit"></i>
+                                <i class="fa fa-pencil-alt"></i>
                             </a>
                         </td>
 
@@ -98,10 +98,25 @@
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <app-notificaciones-container></app-notificaciones-container>
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="documento.nombre">Nombre</label>
-                <input type="text" class="form-control" [(ngModel)]="documento.nombre" name="documento.nombre">
+                <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre">
+                    <option value="Factura">Factura</option>
+                    <option value="Crédito fiscal">Crédito fiscal</option>
+                    <option value="Ticket">Ticket</option>
+                    <option value="Cotización">Cotización</option>
+                    <option value="Recibo">Recibo</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="id_sucursal">Sucursal</label>
+                <select name="id_sucursal" [(ngModel)]="documento.id_sucursal" class="form-select">
+                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
             </div>
             <div class="form-group col-md-6">
                 <label for="documento.correlativo">Correlativo</label>
@@ -123,9 +138,11 @@
                 <label for="documento.fecha">Fecha</label>
                 <input type="date" class="form-control" [(ngModel)]="documento.fecha" name="documento.fecha">
             </div>
-            <div class="form-group col-12">
-                <label for="documento.predeterminado">Activo</label>
-                <input type="checkbox" class="form-check" [(ngModel)]="documento.predeterminado" name="documento.predeterminado">
+            <div class="form-group col-md-6">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="activo">Activo</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="documento.activo" name="activo">
+                </div>
             </div>
             <div class="form-group col-12">
                 <label for="documento.nota">Nota</label>

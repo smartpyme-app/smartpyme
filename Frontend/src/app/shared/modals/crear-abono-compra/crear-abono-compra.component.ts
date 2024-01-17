@@ -17,6 +17,7 @@ export class CrearAbonoCompraComponent implements OnInit {
     public bancos: any = [];
     public abono: any = {};
  	public loading = false;
+    public saving = false;
 
 	modalRef!: BsModalRef;
 
@@ -52,7 +53,7 @@ export class CrearAbonoCompraComponent implements OnInit {
     }
 	
 	public onSubmit() {
-        this.loading = true;
+        this.saving = true;
 
         if(this.abono.total >= this.compra.total){
             this.abono.concepto = 'Pago total';
@@ -62,8 +63,9 @@ export class CrearAbonoCompraComponent implements OnInit {
 
         this.apiService.store('compra/abono', this.abono).subscribe(abono => {
             this.update.emit();
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.router.navigate(['/compras/abonos']);
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false; });
 
 	}
 

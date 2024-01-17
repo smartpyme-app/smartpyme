@@ -3,6 +3,8 @@
 namespace App\Models\Ventas;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Abono extends Model {
 
@@ -26,15 +28,14 @@ class Abono extends Model {
         'id_empresa',
     );
 
-    protected $appends = ['nombre_cliente'];
-
-    public function getNombreClienteAttribute()
+    protected static function booted()
     {
-        $venta = $this->venta()->first();
-        if ($venta) {
-            return $venta->nombre_cliente;
-        }else{
-            return null;
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
         }
     }
 

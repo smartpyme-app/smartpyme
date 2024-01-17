@@ -57,7 +57,7 @@
                         <!-- <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th> -->
                         <th>Estado</th>
                         <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                        <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,13 +81,15 @@
                             <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
                         </td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">
-                            <a routerLink="/venta/crear" [queryParams]="{ recurrente:1, id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
-                                <i class="fa fa-fw fa-clone"></i> Generar venta
-                            </a>
-                            <a (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
-                                <i class="fa fa-fw fa-ban"></i> Marcar como no recurrente
-                            </a>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a routerLink="/venta/crear" tooltip="Generar venta" [queryParams]="{ recurrente:1, id_venta: venta.id }" class="btn btn-default">
+                                    <i class="fa fa-fw fa-clone"></i>
+                                </a>
+                                <a (click)="setRecurrencia(venta)" tooltip="Marcar como no recurrente" class="btn btn-default">
+                                    <i class="fa fa-fw fa-ban"></i>
+                                </a>
+                            </div>
                         </td>
 
                     </tr>

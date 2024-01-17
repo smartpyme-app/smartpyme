@@ -59,7 +59,8 @@
                         <th (click)="setOrden('enable')" [ngClass]="{'sorted-asc': filtros.orden == 'enable' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'enable' && filtros.direccion == 'desc'}" class="click d-none d-lg-table-cell">Estado</th>
                         <th (click)="setOrden('categoria')" [ngClass]="{'sorted-asc': filtros.orden == 'categoria' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'categoria' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Categoría</th>
                         <th (click)="setOrden('codigo')" [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Código</th>
-                        <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio</th>
+                        <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio sin IVA</th>
+                        <th class="text-right">Precio con IVA</th>
                         <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
                         <th class="text-center">Más</th>
                     </tr>
@@ -90,6 +91,7 @@
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                         <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
                             <div *ngIf="filtros.id_sucursal">
                                 {{ producto.inventarios | filter:'id_sucursal':filtros.id_sucursal | sum:'stock' }}

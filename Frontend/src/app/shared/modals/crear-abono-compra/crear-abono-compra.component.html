@@ -53,14 +53,17 @@
 
         <div class="form-group col-md-12">
             <label>Total:</label>
-            <input type="number" class="form-control" id="total" [(ngModel)]="abono.total" name="total">
+            <div class="input-group">
+                <div class="input-group-text">$</div>
+                <input type="number" class="form-control" id="total" [(ngModel)]="abono.total" name="total">
+            </div>
         </div>
 
     </div>
     <div class="d-grid mt-3">
-        <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
-            <span *ngIf="!loading">Guardar</span>
-            <span *ngIf="loading">Guardando...</span>
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
+            <span *ngIf="!saving">Guardar</span>
+            <span *ngIf="saving">Guardando...</span>
         </button>
     </div>
 

@@ -111,7 +111,7 @@ img.icon-2{
     }
 
     .text-danger{
-        color: #d70206 !important;
+        color: #BA1A1A !important;
     }
 
     .ng-select .ng-select-container {
@@ -398,6 +398,11 @@ img.icon-2{
       .home_chart_widget.chart-success .ct-series-a .ct-line,
       .home_chart_widget.chart-success .ct-series-a .ct-point {
         stroke: #16A34A; }
+      .home_chart_widget.chart-danger .ct-series-a .ct-area {
+        fill: #FFB4AB; }
+      .home_chart_widget.chart-danger .ct-series-a .ct-line,
+      .home_chart_widget.chart-danger .ct-series-a .ct-point {
+        stroke: #BA1A1A; }
       .home_chart_widget.chart-three .ct-series-a .ct-area {
         fill: #39afd1; }
       .home_chart_widget.chart-three .ct-series-a .ct-line,

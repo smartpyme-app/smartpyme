@@ -96,7 +96,7 @@ export class AbonosComprasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.abonos.path + '?page='+ event.page).subscribe(abonos => { 
+        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => { 
             this.abonos = abonos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

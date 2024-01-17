@@ -54,7 +54,7 @@
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
-                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
+                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha vencimiento</th>
                         <th>Estado</th>
                         <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <th class="text-center">Más</th>
@@ -75,10 +75,15 @@
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
-                        <td>{{venta.forma_pago}}</td>
+                        <td>{{venta.estado != 'Pendiente' ? venta.forma_pago : 'Pendiente'}}</td>
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
+                                <span *ngIf="venta.estado != 'Pendiente'">{{ venta.estado }}</span>
+                                <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
+                                    {{ venta.estado }}
+                                </a>
+                            </span>
                         </td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -148,16 +153,20 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de ventas en un archivo de Excel.</p>
         <div class="row">
             <div class="d-grid mt-4">
+                <p>Descargar los detalles de ventas por producto.</p>
                 <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar los detalles de ventas</span>
+                    <span *ngIf="!saving">Descargar</span>
                     <span *ngIf="saving">Descargando...</span>
                 </button>
             </div>
-            <div class="d-grid mt-4">
+            <div class="d-grid my-4">
+                <p>Descargar los detalles de ventas totales.</p>
                 <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar las ventas</span>
+                    <span *ngIf="!saving">Descargar</span>
                     <span *ngIf="saving">Descargando...</span>
                 </button>
             </div>
@@ -171,6 +180,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form name="form" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-md-6">
@@ -225,6 +235,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form autocomplete="off" (ngSubmit)="filtrarVentas()">
         <div class="row">
 
@@ -247,7 +258,7 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.forma_pago">Forma de pago:</label>
+                <label for="filtros.forma_pago">Método de pago:</label>
                 <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
                     <option value="">Todos</option>
                     <option *ngFor="let formaPago of formaPagos" [ngValue]="formaPago.nombre">

@@ -127,9 +127,11 @@ class AuthJWTController extends Controller
             // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
            // Crear canales
-               Canal::create(['nombre' => 'Canal 1', 'enable' => true, 'id_empresa' => $empresa->id]);
+               Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
            // Formas de pago
                FormaDePago::create(['nombre' => 'Efectivo', 'id_empresa' => $empresa->id]);
+               FormaDePago::create(['nombre' => 'Transferencia', 'id_empresa' => $empresa->id]);
+               FormaDePago::create(['nombre' => 'Tarjeta de crédito/débito', 'id_empresa' => $empresa->id]);
            // Crear documentos
                Documento::create(['nombre' => 'Ticket', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                Documento::create(['nombre' => 'Factura', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);

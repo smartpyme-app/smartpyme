@@ -15,6 +15,7 @@ export class CrearProveedorComponent implements OnInit {
     @Input() id_proveedor:any = null;
     @Output() update = new EventEmitter();
     public loading = false;
+    public saving = false;
 
     modalRef?: BsModalRef;
 
@@ -38,6 +39,7 @@ export class CrearProveedorComponent implements OnInit {
             this.proveedor.id_usuario = this.apiService.auth_user().id;
             this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
         }
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
@@ -46,13 +48,14 @@ export class CrearProveedorComponent implements OnInit {
     }
 
     public onSubmit() {
-        this.loading = true;
+        this.saving = true;
         this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => {
             this.update.emit(proveedor);
             this.modalRef?.hide();
-            this.loading = false;
+            this.saving = false;
+            this.alertService.modal = false;
             this.alertService.success('Proveedor creado', 'Tu proveedor fue añadido exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.saving = false; });
     }
 
 

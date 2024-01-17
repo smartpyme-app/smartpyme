@@ -15,7 +15,7 @@ class AbonosController extends Controller
 
     public function index(Request $request) {
        
-        $abonos = Abono::when($request->buscador, function($query) use ($request){
+        $abonos = Abono::with('compra')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('id_compra', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');

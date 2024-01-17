@@ -212,6 +212,7 @@ class VentasController extends Controller
             'id_cliente'        => 'required_if:estado,"Pendiente"',
             'detalles'          => 'required',
             'fecha_pago'        => 'required',
+            'fecha_expiracion'  => 'required_if:estado,"Pre-venta"',
             'credito'           => 'required_if:condicion,"Crédito"',
             'iva'               => 'required|numeric',
             'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
@@ -224,6 +225,7 @@ class VentasController extends Controller
         ], [
             'detalles.required' => 'Tiene que agregar productos a la venta',
             'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
+            'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
         ]);
 
         DB::beginTransaction();

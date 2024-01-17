@@ -15,6 +15,7 @@ export class CrearClienteComponent implements OnInit {
     @Input() id_cliente:any = null;
     @Output() update = new EventEmitter();
     public loading = false;
+    public saving = false;
 
     modalRef?: BsModalRef;
 
@@ -38,6 +39,7 @@ export class CrearClienteComponent implements OnInit {
             this.cliente.id_usuario = this.apiService.auth_user().id;
             this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         }
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
@@ -46,13 +48,14 @@ export class CrearClienteComponent implements OnInit {
     }
 
     public onSubmit() {
-        this.loading = true;
+        this.saving = true;
         this.apiService.store('cliente', this.cliente).subscribe(cliente => {
             this.update.emit(cliente);
             this.modalRef?.hide();
-            this.loading = false;
+            this.saving = false;
+            this.alertService.modal = false;
             this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.saving = false; });
     }
 
 

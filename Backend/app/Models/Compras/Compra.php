@@ -68,9 +68,9 @@ class Compra extends Model {
     }
 
     public function getNombreProveedorAttribute()
-    {
-        if ($this->proveedor()->first()) {
-            return $this->proveedor()->pluck('nombre')->first() . ' ' . $this->proveedor()->pluck('apellido')->first();
+    {   $proveedor = $this->proveedor()->first();
+        if ($proveedor) {
+            return $proveedor->tipo == 'Persona' ? $proveedor->nombre . ' ' . $proveedor->apellido : $proveedor->nombre_empresa;
         }
         return 'Consumidor Final';
     }

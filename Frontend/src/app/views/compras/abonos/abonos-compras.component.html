@@ -71,8 +71,11 @@
                     <tr *ngFor=" let abono of abonos?.data">
                         
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{abono.nombre_proveedor }}</td>
-                        <td>{{abono.id_compra }}<a class="float-end d-none"  tooltip="Ver información de la compra" routerLink="/compra/{{abono.id_compra}}"><i class="fa fa-magnifying-glass"></i></a></td>
+                        <td>{{abono.compra?.nombre_proveedor }}</td>
+                        <td>
+                            {{abono.compra?.tipo_documento }} # {{abono.compra?.referencia }}
+                            <a class="float-end d-none"  tooltip="Ver información de la compra" routerLink="/compra/{{abono.id_compra}}"><i class="fa fa-magnifying-glass"></i></a>
+                        </td>
                         <td>{{abono.forma_pago}}</td>
                         <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">

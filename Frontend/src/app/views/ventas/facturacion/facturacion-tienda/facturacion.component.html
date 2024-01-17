@@ -46,24 +46,14 @@
                     <ng-option value=""> Consumidor final </ng-option>
                     <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
                     <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.nombre }} {{ cliente.apellido }} <span *ngIf="cliente.dui">- {{ cliente.dui }}</span>
+                        {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
                     </ng-option>
                 </ng-select>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.estado != 'Pre-venta'">
-            <div class="form-switch bg-light-info rounded">
-              <label for="recurrente">Venta recurrente</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
-            </div>
-        </div>
-        <div class="form-group col-md-12 col-lg-5" *ngIf="venta.estado != 'Pre-venta'">
+        <div class="form-group col-md-12 col-lg-8" *ngIf="venta.estado != 'Pre-venta'">
             <label for="observaciones">Observaciones:</label><br>
-            <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
-        </div>
-        <div class="form-group col-md-12 col-lg-8" *ngIf="venta.estado == 'Pre-venta'">
-            <label for="observaciones">Términos de venta:</label><br>
             <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
         </div>
     </div>
@@ -143,25 +133,35 @@
     <div class="row">
         <h6 class="mt-3">Detalles de facturación</h6>
         <!-- Estado: {{ venta.estado }} -->
-        <div class="form-group col-lg-4 without-label" *ngIf="venta.estado != 'Pre-venta'">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.estado != 'Pre-venta'">
             <div class="form-switch border rounded">
               <label for="credito">Venta al crédito</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
             </div>
         </div>
-        <div class="form-group col-lg-4 without-label" *ngIf="venta.estado != 'Pre-venta'">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.estado != 'Pre-venta'">
             <div class="form-switch border rounded">
               <label for="consigna">Consigna</label>
               <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-4" *ngIf="venta.estado == 'Pre-venta'">
+        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.estado == 'Pre-venta'">
+            <label for="observaciones">Términos de venta:</label><br>
+            <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.estado == 'Pre-venta'">
             <label for="fecha_expiracion">Fecha de expiración:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
         </div>
-        <div class="form-group col-md-4 col-lg-4" *ngIf="venta.estado != 'Pre-venta'">
+        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
             <label for="fecha_pago">Fecha de pago:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.estado != 'Pre-venta'">
+            <div class="form-switch bg-light-info rounded">
+              <label for="recurrente">Venta recurrente</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
             <label for="forma_pago">Método de pago</label>
@@ -176,7 +176,7 @@
                 <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
             </select>
         </div>
-        <div class="form-group col-md-6 col-lg-3">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
             <label for="id_canal">Canal</label>
             <select name="id_canal" [(ngModel)]="venta.id_canal" class="form-select">
                 <option value="">Seleccione aquí</option>
@@ -185,7 +185,7 @@
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Impuestos</label>
+              <label for="cobrar_impuestos">Con IVA</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>

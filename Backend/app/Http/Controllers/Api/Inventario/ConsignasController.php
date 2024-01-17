@@ -33,7 +33,9 @@ class ConsignasController extends Controller
                     'cliente'       => $detalle->venta->nombre_cliente,
                     'cantidad'      => $detalle->cantidad,
                     'id'            => $detalle->venta->id,
-                    'fecha_pago'   => $detalle->venta->fecha_pago,
+                    'nombre_documento'            => $detalle->venta->nombre_documento,
+                    'correlativo'            => $detalle->venta->correlativo,
+                    'fecha_pago'    => $detalle->venta->fecha_pago,
                     'uuid'          => Crypt::encrypt($detalle->venta->id)
                 ]);
             }

@@ -171,6 +171,7 @@ export class VentasComponent implements OnInit {
     }
 
     public descargarVentas(){
+        this.saving = true;
         this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -181,11 +182,13 @@ export class VentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+            this.saving = false;
           }, (error) => {console.error('Error al exportar ventas:', error); }
         );
     }
 
     public descargarDetalles(){
+        this.saving = true;
         this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -196,6 +199,7 @@ export class VentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+            this.saving = false;
           }, (error) => {console.error('Error al exportar ventas:', error); }
         );
     }

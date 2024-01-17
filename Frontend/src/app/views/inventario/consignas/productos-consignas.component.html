@@ -97,11 +97,12 @@
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
-                    <td>Fecha</td>
-                    <td>Cliente</td>
-                    <td>Vencimiento</td>
-                    <td>Venta</td>
-                    <td class="text-right">Stock</td>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Vencimiento</th>
+                    <th>Venta</th>
+                    <th class="text-right">Stock</th>
+                    <th class="text-right">Más</th>
                 </tr>
             </thead>
             <tbody>
@@ -109,8 +110,21 @@
                     <td>{{ venta.fecha | date:'dd/MM/yyy'}}</td>
                     <td>{{ venta.cliente}}</td>
                     <td>{{ venta.fecha_pago | date:'dd/MM/yyy' }}</td>
-                    <td>{{ venta.id }}<a class="float-end d-none"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}"><i class="fa fa-edit"></i></a></td>
-                    <td class="text-right">{{ venta.cantidad }}</td>
+                    <td>
+                        {{ venta.nombre_documento }} # {{ venta.correlativo }}
+                    </td>
+                    <td class="text-end">{{ venta.cantidad }}</td>
+                    <td class="text-end">
+                        <a class="btn btn-default"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
+                            <img  src="/assets/icons/search.png" class="icon">
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td colspan="4" class="text-end"><b>Total</b></td>
+                    <td class="text-end"><b>{{ producto.ventas | sum:'cantidad' }}</b></td>
                 </tr>
             </tbody>
         </table>

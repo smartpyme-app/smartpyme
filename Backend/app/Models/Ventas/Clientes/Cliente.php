@@ -24,6 +24,7 @@ class Cliente extends Model {
        'direccion',
        'municipio',
        'departamento',
+       'fecha_cumpleanos',
        'telefono',
        'correo',
        'nota',
