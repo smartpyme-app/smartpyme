@@ -85,7 +85,7 @@ class FormasDePagosController extends Controller
             return Response()->json(['error' => 'No se pudo realizar la conexión con Wompi, verifique los datos.', 'code' => 500], 500);
         }
 
-        return Response()->json(['error' => 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para sus ventas.', 'code' => 400], 400);
+        return Response()->json(['message' => 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para sus ventas.', 'code' => 200], 200);
 
     }
 

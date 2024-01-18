@@ -128,6 +128,7 @@ CREATE TABLE gastos_categorias (
 ALTER TABLE egresos ADD id_categoria INT(11) NULL after tipo;
 ALTER TABLE egresos ADD id_usuario INT(11) NOT NULL after id_empresa;
 ALTER TABLE egresos CHANGE vencimiento fecha_pago date NULL;
+ALTER TABLE egresos ADD sub_total DECIMAL(10,2) after iva;
 ALTER TABLE egresos CHANGE monto total DECIMAL(10,2) NOT NULL;
 ALTER TABLE egresos CHANGE factura referencia VARCHAR(255) NULL;
 

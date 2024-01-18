@@ -82,8 +82,16 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public cargarDocumentos(){
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
+            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
+            if(this.compra.estado == 'Pre-compra'){
+                let documento = this.documentos.find((x:any) => x.nombre == 'Orden de compra');
+                if(documento){
+                    this.compra.tipo_documento = documento.nombre;
+                    this.compra.referencia = documento.correlativo;
+                }
+            }
         }, error => {this.alertService.error(error);});
     }
 
@@ -182,8 +190,10 @@ export class FacturacionCompraComponent implements OnInit {
     public setCredito(){
         if(this.compra.credito){
             this.compra.estado = 'Pendiente';
+            this.compra.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         }else{
             this.compra.estado = 'Pagada';
+            this.compra.fecha_pago = moment().format('YYYY-MM-DD');
         }
     }
 
@@ -225,8 +235,15 @@ export class FacturacionCompraComponent implements OnInit {
             }         
             this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
                 this.saving = false;
-                this.router.navigate(['/compras']);
-                this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                
+                if(this.compra.estado == 'Pre-compra'){
+                    this.router.navigate(['/ordenes-de-compras']);
+                    this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+                }else{
+                    this.router.navigate(['/compras']);
+                    this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                }
+
             },error => {this.alertService.error(error); this.saving = false; });
 
         }

@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">Presupuesto</h3>
-    <button class="btn btn-light text-danger" routerLink="/presupuestos">Cancelar <i class="fa fa-close"></i></button>
+    <button class="btn btn-light text-danger" routerLink="/presupuestos"><i class="fa fa-arrow-left"></i> Regresar</button>
 </div>
 
 <div class="card">
@@ -8,7 +8,7 @@
         <div class="row">
             <h6 class="col-12 pb-2 mb-3">Información general</h6>
             <div class="form-group col-lg-6">
-                <label class="fw-medium" for="nombre">Titulo</label>
+                <label class="fw-medium" for="nombre">Título</label>
                 <p>{{ presupuesto.titulo }}</p>
             </div>
             <div class="form-group col-md-6 col-lg-3">
@@ -49,16 +49,12 @@
                 <p>{{ presupuesto.marketing | currency }}</p>
             </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
-                <label class="fw-medium">Materia prima:</label>
+                <label class="fw-medium">Insumos:</label>
                 <p>{{ presupuesto.materia_prima | currency }}</p>
             </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Comisiones:</label>
                 <p>{{ presupuesto.comisiones | currency }}</p>
-            </div>
-            <div class="form-group col-6 col-md-4 col-lg-3">
-                <label class="fw-medium">Combustible:</label>
-                <p>{{ presupuesto.combustible | currency }}</p>
             </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Planilla:</label>
@@ -68,10 +64,14 @@
                 <label class="fw-medium">Servicios:</label>
                 <p>{{ presupuesto.servicios | currency }}</p>
             </div>
+            <!-- <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Combustible:</label>
+                <p>{{ presupuesto.combustible | currency }}</p>
+            </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Prestamos:</label>
                 <p>{{ presupuesto.prestamos | currency }}</p>
-            </div>
+            </div> -->
             <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Publicidad:</label>
                 <p>{{ presupuesto.publicidad | currency }}</p>

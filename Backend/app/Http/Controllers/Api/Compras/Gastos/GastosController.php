@@ -79,7 +79,7 @@ class GastosController extends Controller
         $request->validate([
             'fecha'         => 'required|date',
             'concepto'      => 'sometimes|max:255',
-            'id_categoria'     => 'required|max:255',
+            'tipo'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
             // 'fecha_pago'         => 'required|date',
@@ -89,7 +89,7 @@ class GastosController extends Controller
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
         ],[
-            'id_categoria.required' => 'El campo categoria es obligatorio.',
+            'tipo.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'id_usuario.required' => 'El campo usuario es obligatorio.',
             'id_empresa.required' => 'El campo empresa es obligatorio.'

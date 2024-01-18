@@ -6,7 +6,7 @@
 
 <section class="card border-0 p-3 mb-3">
     <div class="row">
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4 col-lg-2">
             <label for="fecha">Fecha</label><br>
             <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
         </div>
@@ -26,11 +26,19 @@
                 </option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4 col-lg-2">
             <label for="tipo_documento">Documento</label>
             <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
                 <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
             </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.estado != 'Pre-compra'">
+            <label for="referencia">Num. Referencia</label>
+            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.estado == 'Pre-compra'">
+            <label for="referencia">Correlativo</label>
+            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
         </div>
     </div>
     <div class="row">
@@ -83,32 +91,6 @@
                         <td style="width: 150px;" class="text-right"> {{ compra.iva_percibido | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <!-- <tr>
-                        <td class="text-right">
-                            <div class="form-check form-switch w-100">
-                                <label class="form-check-label" for="compra.percepcion">
-                                    <input id="compra.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.percepcion" name="compra.percepcion" *ngIf="!loading">
-                                    IVA percibido:
-                                </label>
-                            </div>
-                        </td>
-                        <td  width="70px" class="text-right">
-                           {{ (compra.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-right">
-                            <div class="form-check form-switch w-100">
-                                <label class="form-check-label" for="compra.retencion">
-                                    <input id="compra.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
-                                    IVA retenido:
-                                </label>
-                            </div>
-                        </td>
-                        <td  width="70px" class="text-right">
-                           {{ (compra.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
-                        </td>
-                    </tr> -->
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -135,7 +117,7 @@
               <input [disabled]="!compra.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="compra.consigna" name="compra.credito">
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!duplicarcompra">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!duplicarcompra && compra.estado != 'Pre-compra'">
             <div class="form-switch bg-light-info rounded">
               <label for="recurrente">Compra recurrente</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="compra.recurrente" name="compra.recurrente">
@@ -145,7 +127,7 @@
             <label for="fecha_pago">Fecha de pago:</label><br>
             <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
         </div>
-        <div class="form-group col-md-6 col-lg-3">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="compra.estado != 'Pre-compra'">
             <label for="forma_pago">Forma de pago</label>
             <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
                 <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
@@ -158,11 +140,7 @@
                 <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
-            <label for="referencia">Num. Referencia</label>
-            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
-        </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4 col-lg-3" *ngIf="compra.estado != 'Pre-compra'">
             <label for="num_serie">Num. Serie</label>
             <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie" placeholder="Escribe aquí">
         </div>

@@ -74,6 +74,7 @@ export class GastoComponent implements OnInit {
             this.gasto.estado = 'Confirmado';
             this.gasto.tipo_documento = 'Factura';
             this.gasto.detalle_banco = '';
+            this.gasto.tipo = '';
             this.gasto.id_categoria = '';
             this.gasto.id_proveedor = '';
             // this.gasto.fecha_pago = this.apiService.date();
@@ -115,9 +116,11 @@ export class GastoComponent implements OnInit {
 
     public setIva(){
         if(this.gasto.impuesto){
-            this.gasto.iva = this.gasto.total * 0.13;
+            this.gasto.iva = (this.gasto.total * (this.apiService.auth_user().empresa.iva / 100)).toFixed(2);
+            this.gasto.sub_total = (this.gasto.total - (this.gasto.total * this.apiService.auth_user().empresa.iva / 100)).toFixed(2);
         }else{
             this.gasto.iva = 0;
+            this.gasto.sub_total = this.gasto.total;
         }
     }
 

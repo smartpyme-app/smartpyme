@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">Presupuesto</h3>
-    <button class="btn btn-light text-danger" routerLink="/presupuestos">Cancelar <i class="fa fa-close"></i></button>
+    <button class="btn btn-light text-danger" routerLink="/presupuestos"><i class="fa fa-arrow-left"></i> Regresar</button>
 </div>
 
 <div class="card">
@@ -9,7 +9,7 @@
             <div class="row">
                 <h6 class="col-12 pb-2 mb-3">Información general</h6>
                 <div class="form-group col-lg-6">
-                    <label for="nombre">Titulo</label>
+                    <label for="nombre">Título</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="titulo" [(ngModel)]="presupuesto.titulo">
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
@@ -57,16 +57,12 @@
                         <input type="number" class="form-control" placeholder="Escribe aquí" name="marketing" [(ngModel)]="presupuesto.marketing">
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
-                        <label>Materia_prima:</label>
+                        <label>Materia prima:</label>
                         <input type="number" class="form-control" placeholder="Escribe aquí" name="materia_prima" [(ngModel)]="presupuesto.materia_prima">
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Comisiones:</label>
                         <input type="number" class="form-control" placeholder="Escribe aquí" name="comisiones" [(ngModel)]="presupuesto.comisiones">
-                    </div>
-                    <div class="form-group col-6 col-md-4 col-lg-3">
-                        <label>Combustible:</label>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" name="combustible" [(ngModel)]="presupuesto.combustible">
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Planilla:</label>
@@ -75,6 +71,10 @@
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Servicios:</label>
                         <input type="number" class="form-control" placeholder="Escribe aquí" name="servicios" [(ngModel)]="presupuesto.servicios">
+                    </div>
+                    <div class="form-group col-6 col-md-4 col-lg-3">
+                        <label>Combustible:</label>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="combustible" [(ngModel)]="presupuesto.combustible">
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Prestamos:</label>

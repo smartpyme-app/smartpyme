@@ -58,6 +58,7 @@ export class FormasDePagoComponent implements OnInit {
         this.saving = true;
         this.apiService.store('wompi', this.empresa).subscribe(forma_pago => {
             this.saving = false;
+            this.alertService.success('Conexión exitosa', 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para tus ventas.');
             // this.modalRef.hide();
         }, error => {this.alertService.error(error); this.saving = false;});
     }

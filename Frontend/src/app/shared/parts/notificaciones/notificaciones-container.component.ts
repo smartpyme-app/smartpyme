@@ -21,11 +21,11 @@ export class NotificacionesContainerComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.alertSubscription = this.alertService.getAlert().subscribe(message => {
             this.alertMessage = message;
-            // if (this.alertMessage) {
-            //     setTimeout(() => {
-            //         this.closeAlert();
-            //     }, 5000);
-            // }
+            if (this.alertMessage && (this.alertMessage.tipo == 'alert-success')) {
+                setTimeout(() => {
+                    this.closeAlert();
+                }, 3000);
+            }
         });
     }
 

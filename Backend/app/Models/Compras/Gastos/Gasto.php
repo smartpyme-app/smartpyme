@@ -13,6 +13,7 @@ class Gasto extends Model {
         'referencia',
         'concepto',
         'id_categoria',
+        'tipo',
         'estado',
         'forma_pago',
         'detalle_banco',
@@ -22,7 +23,7 @@ class Gasto extends Model {
         'fecha_recurrente',
         'id_proveedor',
         'proveedor',
-        'subtotal',
+        'sub_total',
         'iva',
         'total',
         'id_usuario',
@@ -52,8 +53,12 @@ class Gasto extends Model {
         return $this->categoria()->pluck('nombre')->first();
     }
     
-    public function getNombreProveedorAttribute(){
-        return $this->proveedor()->pluck('nombre')->first();
+    public function getNombreProveedorAttribute()
+    {   $proveedor = $this->proveedor()->first();
+        if ($proveedor) {
+            return $proveedor->tipo == 'Persona' ? $proveedor->nombre . ' ' . $proveedor->apellido : $proveedor->nombre_empresa;
+        }
+        return 'Consumidor Final';
     }
     
     public function getNombreSucursalAttribute(){

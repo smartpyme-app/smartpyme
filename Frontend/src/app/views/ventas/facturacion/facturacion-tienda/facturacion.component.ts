@@ -246,8 +246,10 @@ export class FacturacionComponent implements OnInit {
     public setCredito(){
         if(this.venta.credito){
             this.venta.estado = 'Pendiente';
+            this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         }else{
             this.venta.estado = 'Pagada';
+            this.venta.fecha_pago = moment().format('YYYY-MM-DD');
         }
     }
 

@@ -136,6 +136,8 @@ class AuthJWTController extends Controller
                Documento::create(['nombre' => 'Ticket', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                Documento::create(['nombre' => 'Factura', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                Documento::create(['nombre' => 'Crédito fiscal', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => 'Cotización', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => 'Orden de compra', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
         }
 
         if ($request->id) {

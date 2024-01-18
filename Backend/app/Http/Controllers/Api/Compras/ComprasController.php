@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Compras;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\Admin\Documento;
 use App\Models\Compras\Compra;
 use App\Models\Compras\DevolucionCompra;
 use App\Models\Compras\Proveedores\Proveedor;
@@ -189,7 +190,8 @@ class ComprasController extends Controller
             'id_proveedor'      => 'required',
             'detalles'          => 'required',
             // 'cuotas'            => 'required_if:forma_pago,"Crédito"',
-            // 'plazo'             => 'required_if:forma_pago,"Crédito"',
+            'referencia'        => 'required_if:estado,"Pre-compra"',
+            'tipo_documento'    => 'required_if:estado,"Pre-compra"',
             // 'referencia'        => 'required',
             'id_usuario'        => 'required',
             'id_empresa'        => 'required',
@@ -238,6 +240,12 @@ class ComprasController extends Controller
 
                 $detalle->save();
             }
+
+        // Incrementar el correlarivo de orden de compra
+        if ($request->estado == 'Pre-compra') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
+            $documento->increment('correlativo');
+        }
 
         DB::commit();
         return Response()->json($compra, 200);

@@ -43,8 +43,7 @@
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Usuario</th>
                         <th>Proveedor</th>
-                        <th class="d-none d-md-table-cell">Método de pago</th>
-                        <!-- <th>Estado</th> -->
+                        <th>Estado</th>
                         <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
@@ -64,8 +63,9 @@
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_usuario }}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
-                        <td>{{compra.forma_pago}}</td>
-
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
+                        </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
