@@ -29,6 +29,7 @@ import { DevolucionCompraDetallesComponent } from './devoluciones/devolucion-nue
 import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compras.component';
 
 import { GastosComponent } from './gastos/gastos.component';
+import { GastosRecurrentesComponent } from './gastos/recurrentes/gastos-recurrentes.component';
 import { GastoComponent } from './gastos/gasto/gasto.component';
 import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
@@ -66,6 +67,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     DevolucionCompraDetallesComponent,
     CotizacionesComprasComponent,
     GastosComponent,
+    GastosRecurrentesComponent,
     GastoComponent,
     GastoDetallesComponent,
     GastosDashComponent,
@@ -85,6 +87,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     DevolucionCompraDetallesComponent,
     CotizacionesComprasComponent,
     GastosComponent,
+    GastosRecurrentesComponent,
     GastoComponent,
     GastoDetallesComponent,
     GastosDashComponent,

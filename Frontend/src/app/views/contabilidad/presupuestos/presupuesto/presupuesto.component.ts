@@ -60,4 +60,23 @@ export class PresupuestoComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false; });
     }
 
+    sumEgresos(){
+        this.presupuesto.egresos = ((this.presupuesto.alquiler ? parseFloat(this.presupuesto.alquiler) : 0)
+                                    + (this.presupuesto.varios ? parseFloat(this.presupuesto.varios) : 0)
+                                    + (this.presupuesto.mantenimiento ? parseFloat(this.presupuesto.mantenimiento) : 0)
+                                    + (this.presupuesto.marketing ? parseFloat(this.presupuesto.marketing) : 0)
+                                    + (this.presupuesto.materia_prima ? parseFloat(this.presupuesto.materia_prima) : 0)
+                                    + (this.presupuesto.comisiones ? parseFloat(this.presupuesto.comisiones) : 0)
+                                    + (this.presupuesto.planilla ? parseFloat(this.presupuesto.planilla) : 0)
+                                    + (this.presupuesto.servicios ? parseFloat(this.presupuesto.servicios) : 0)
+                                    + (this.presupuesto.combustible ? parseFloat(this.presupuesto.combustible) : 0)
+                                    + (this.presupuesto.prestamos ? parseFloat(this.presupuesto.prestamos) : 0)
+                                    + (this.presupuesto.costo_de_venta ? parseFloat(this.presupuesto.costo_de_venta) : 0)
+                                    + (this.presupuesto.insumos ? parseFloat(this.presupuesto.insumos) : 0)
+                                    + (this.presupuesto.impuestos ? parseFloat(this.presupuesto.impuestos) : 0)
+                                    + (this.presupuesto.gastos_administrativos ? parseFloat(this.presupuesto.gastos_administrativos) : 0)
+                                    + (this.presupuesto.publicidad ? parseFloat(this.presupuesto.publicidad) : 0)).toFixed(2);
+        console.log(this.presupuesto);
+    }
+
 }

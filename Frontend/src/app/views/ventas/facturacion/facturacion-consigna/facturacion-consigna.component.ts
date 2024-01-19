@@ -44,6 +44,7 @@ export class FacturacionConsignaComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('venta/', params.id).subscribe(venta => {
                     this.venta = venta;
+                    this.venta.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
                     this.loading = false;
                     this.cargarDocumentos();
                     this.cargarDatos();

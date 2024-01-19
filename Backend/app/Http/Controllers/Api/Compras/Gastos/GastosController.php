@@ -22,6 +22,9 @@ class GastosController extends Controller
                     ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
                     })
+                    ->when($request->recurrente !== null, function($q) use ($request){
+                        $q->where('recurrente', !!$request->recurrente);
+                    })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
                     })

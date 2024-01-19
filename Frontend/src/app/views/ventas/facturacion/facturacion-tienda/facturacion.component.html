@@ -91,32 +91,6 @@
                         </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <!-- <tr>
-                        <td class="text-right">
-                            <div class="form-check form-switch w-100">
-                                <label class="form-check-label" for="venta.percepcion">
-                                    <input id="venta.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.percepcion" name="venta.percepcion" *ngIf="!loading">
-                                    IVA percibido:
-                                </label>
-                            </div>
-                        </td>
-                        <td  width="70px" class="text-right">
-                           {{ (venta.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-right">
-                            <div class="form-check form-switch w-100">
-                                <label class="form-check-label" for="venta.retencion">
-                                    <input id="venta.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="venta.retencion" *ngIf="!loading">
-                                    IVA retenido:
-                                </label>
-                            </div>
-                        </td>
-                        <td  width="70px" class="text-right">
-                           {{ (venta.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
-                        </td>
-                    </tr> -->
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -124,6 +98,8 @@
                     </tr>
                 </tbody>
             </table>
+
+
         </div>
     </div>
 
@@ -149,14 +125,20 @@
             <label for="fecha_expiracion">Fecha de expiración:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
         </div>
-        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
+        <div class="form-group col-md-4 col-lg-2" *ngIf="venta.estado != 'Pre-venta'">
             <label for="fecha_pago">Fecha de pago:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.estado != 'Pre-venta'">
+        <div class="form-group col-md-6 col-lg-2 without-label" *ngIf="venta.estado != 'Pre-venta'">
             <div class="form-switch bg-light-info rounded">
-              <label for="recurrente">Venta recurrente</label>
+              <label for="recurrente">Recurrente</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-2 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="cobrar_impuestos">Con IVA</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
@@ -179,15 +161,23 @@
                 <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
             </select>
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label">
-            <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
-            </div>
-        </div>
         <div class="form-group col-md-12 col-lg-12" *ngIf="venta.estado == 'Pre-venta'">
             <label for="observaciones">Términos de venta:</label><br>
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
+            <label for="monto_pago">Monto pago:</label><br>
+            <div class="input-group">
+                <div class="input-group-text">$</div>
+                <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - venta.total).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="venta.estado != 'Pre-venta'">
+            <label for="cambio">Cambio:</label><br>
+            <div class="input-group">
+                <div class="input-group-text">$</div>
+                <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
+            </div>
         </div>
     </div>
     <div class="row mt-5">

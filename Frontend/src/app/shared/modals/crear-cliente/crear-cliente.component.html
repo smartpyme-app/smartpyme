@@ -48,7 +48,15 @@
                             <label for="fecha_cumpleanos">Fecha de cumpleaños</label>
                             <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_cumpleanos" [(ngModel)]="cliente.fecha_cumpleanos">
                         </div>
-                        <div class="form-group col-lg-9">
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="telefono">Teléfono:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                        </div>
+                        <div class="form-group col-12 col-md-6">
+                            <label for="direccion">Dirección:</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
+                        </div>
+                        <div class="form-group col-lg-12">
                             <label for="etiquetas">Etiquetas:</label>
                             <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
                         </div>
@@ -68,7 +76,7 @@
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="nit">NIT:</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit">
                         </div>
                         <div class="form-group col-6 col-lg-2">
                             <label for="ncr">NRC:</label>
@@ -89,7 +97,7 @@
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="telefono">Teléfono:</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="cliente.empresa_telefono">
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="municipio">Municipio:</label>
@@ -101,7 +109,7 @@
                         </div>
                         <div class="form-group col-12 col-md-9">
                             <label for="direccion">Dirección:</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_direccion" [(ngModel)]="cliente.empresa_direccion">
                         </div>
                     </div>
                 </div>

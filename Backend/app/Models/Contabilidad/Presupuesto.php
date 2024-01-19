@@ -15,6 +15,7 @@ class Presupuesto extends Model {
         'fecha_fin',
         'ingresos',
         'egresos',
+        'compras',
         'alquiler',
         'varios',
         'mantenimiento',
@@ -26,6 +27,10 @@ class Presupuesto extends Model {
         'servicios',
         'prestamos',
         'publicidad',
+        'costo_de_venta',
+        'insumos',
+        'impuestos',
+        'gastos_administrativos',
         'enable',
         'id_empresa',
     );

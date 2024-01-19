@@ -23,6 +23,7 @@ class Venta extends Model {
         // 'nombre',
         'fecha_pago',
         'fecha_expiracion',
+        'monto_pago',
         'cambio',
         // 'iva_percibido',
         // 'iva_retenido',

@@ -1,19 +1,19 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Gastos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
+    <h2 class="page-heading">Gastos recurrentes</h2>
+    <button routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
-    <div class="row">
-        <div class="col-md-6 mb-3">
+    <div class="row mb-3">
+        <div class="col">
             <span class="text-muted" *ngIf="gastos?.total">
                 Mostrando {{ gastos?.to }} de {{ gastos?.total + ' registros' }}
             </span>
         </div>
 
-        <div class="col-md-6 mb-3">
+        <div class="col">
             <div class="d-flex gap-2">
-                <button tooltip="Descargar gastos" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <button tooltip="Descargar gastos" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarGastos()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -22,17 +22,18 @@
         </div>
     </div>
 
-    <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)"  (click)="loadAll()">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/recurrentes">Recurrentes</button>
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/gastos">Todas</button>
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"  routerLink="/gastos/recurrentes">Recurrentes</button>
         </div>
-        <div class="col d-flex gap-2 justify-content-end">
+        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
             <select name="estado" (change)="filtrarGastos()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
-                <option value="Cancelado">Cancelado</option>
                 <option value="Pendiente">Pendiente</option>
-                <option value="Confirmado">Confirmado</option>
+                <option value="Anulada">Anulada</option>
+                <option value="Consigna">Consigna</option>
+                <option value="Pagada">Pagada</option>
             </select>
             <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
                 <ng-option value="">Proveedor</ng-option>
@@ -60,10 +61,10 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="gastos?.total < 1 && !loading">
+                        <td colspan="7" class="text-center" *ngIf="gastos?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene gastos registradas</span>
                         </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
+                        <td colspan="7" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -84,31 +85,14 @@
                         </td>
                         <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </a>
-                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(gasto, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fas fa-fw fa-credit-card"></i> Pagar
-                                    </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a *ngIf="gasto.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
-                                    </a>
-                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEdit()" (click)="setEstado(gasto, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Cancelar
-                                    </a>
-                                    <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEdit()" (click)="setEstado(gasto, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
-                                </div>
-                            </ng-template>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a routerLink="/gasto/crear" tooltip="Generar gasto" [queryParams]="{ recurrente:1, id_gasto: gasto.id }" class="btn btn-default">
+                                    <i class="fa fa-fw fa-clone"></i>
+                                </a>
+                                <a (click)="setRecurrencia(gasto)" tooltip="Marcar como no recurrente" class="btn btn-default">
+                                    <i class="fa fa-fw fa-ban"></i>
+                                </a>
+                            </div>
                         </td>
 
                     </tr>
@@ -122,6 +106,38 @@
     </div>
 </section>
 
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de gastos</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+        <div class="row">
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Descargar los detalles de gastos</span>
+                    <span *ngIf="saving">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" (click)="descargarGastos()" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Descargar las gastos</span>
+                    <span *ngIf="saving">Descargando...</span>
+                </button>
+            </div>
+        </div>
+  </div>
+</ng-template>
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Recibo de pago </h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="filtrarGastos()"></app-crear-abono-gasto>
+    </div>
+</ng-template>
 
 <ng-template #mfilter>
   <div class="modal-header">
@@ -134,16 +150,16 @@
     <form autocomplete="off" (ngSubmit)="filtrarGastos()">
         <div class="row">
 
-            <div class="form-group col-md-6">
+            <div class="form-group col-sm-6">
                 <label for="">Del:</label>
                 <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-sm-6">
                 <label for="">Al:</label>
                 <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
 
-            <div class="form-group col-lg-6">
+            <div class="form-group col-md-12">
                 <label for="filtros.proveedor">Proveedor:</label>
                 <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
                     <ng-option value="">Todos</ng-option>
@@ -152,7 +168,7 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-lg-6">
+            <div class="form-group col-md-6">
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
@@ -161,16 +177,7 @@
                     </option>
                 </select>
             </div>
-            <div class="form-group col-lg-6">
-                <label for="filtros.estado">Estado:</label>
-                <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="Cancelado">Cancelado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Confirmado">Confirmado</option>
-                </select>
-            </div>
-            <div class="form-group col-lg-6">
+            <div class="form-group col-md-6">
                 <label for="filtros.id_usuario">Empleado:</label>
                 <select [(ngModel)]="filtros.id_usuario" class="form-select" name="filtros.id_usuario">
                     <option value="">Todos</option>
@@ -185,6 +192,45 @@
                 <span *ngIf="!loading">Filtrar</span>
                 <span *ngIf="loading">Filtrando...</span>
             </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mgasto>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Editar gasto</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form name="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="fecha">Fecha:</label>
+                <input type="date" [(ngModel)]="gasto.fecha" name="fecha" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="forma_pago">Método de pago:</label>
+                <select name="forma_pago" [(ngModel)]="gasto.forma_pago" class="form-select">
+                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="tipo_documento">Documento</label>
+                <select name="tipo_documento" [(ngModel)]="gasto.tipo_documento" class="form-select">
+                    <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="correlativo">Correlativo:</label><br>
+                <input type="number" class="form-control" [(ngModel)]="gasto.correlativo" name="correlativo">
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Guardar</span>
+                    <span *ngIf="saving">Guardando...</span>
+                </button>
+            </div>
         </div>
     </form>
   </div>

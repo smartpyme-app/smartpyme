@@ -32,6 +32,8 @@ ALTER TABLE clientes ADD tipo varchar(250) DEFAULT 'Persona' after tipo_contribu
 ALTER TABLE clientes ADD id_usuario INT NOT NULL after nota;
 ALTER TABLE clientes ADD etiquetas varchar(500) NULL after id_usuario;
 ALTER TABLE clientes ADD fecha_cumpleanos date NULL after etiquetas;
+ALTER TABLE clientes ADD empresa_telefono varchar(250) NULL after fecha_cumpleanos;
+ALTER TABLE clientes ADD empresa_direccion varchar(250) NULL after empresa_telefono;
 ALTER TABLE clientes CHANGE nombre nombre VARCHAR(255) NULL;
 ALTER TABLE clientes CHANGE apellido apellido VARCHAR(255) NULL;
 
@@ -128,7 +130,8 @@ CREATE TABLE gastos_categorias (
 ALTER TABLE egresos ADD id_categoria INT(11) NULL after tipo;
 ALTER TABLE egresos ADD id_usuario INT(11) NOT NULL after id_empresa;
 ALTER TABLE egresos CHANGE vencimiento fecha_pago date NULL;
-ALTER TABLE egresos ADD sub_total DECIMAL(10,2) after iva;
+ALTER TABLE egresos ADD sub_total DECIMAL(10,2) NOT NULL DEFAULT 0 after iva;
+ALTER TABLE egresos ADD tipo_documento VARCHAR(255) after referencia;
 ALTER TABLE egresos CHANGE monto total DECIMAL(10,2) NOT NULL;
 ALTER TABLE egresos CHANGE factura referencia VARCHAR(255) NULL;
 
@@ -173,6 +176,11 @@ ALTER TABLE presupuestos CHANGE enable enable TINYINT(1) NOT NULL DEFAULT true;
 ALTER TABLE presupuestos ADD combustible DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER servicios;
 ALTER TABLE presupuestos ADD prestamos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER combustible;
 ALTER TABLE presupuestos ADD materia_prima DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER prestamos;
+ALTER TABLE presupuestos ADD compras DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER ingresos;
+ALTER TABLE presupuestos ADD costo_de_venta DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER materia_prima;
+ALTER TABLE presupuestos ADD insumos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER costo_de_venta;
+ALTER TABLE presupuestos ADD impuestos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER insumos;
+ALTER TABLE presupuestos ADD gastos_administrativos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER impuestos;
 
 ALTER TABLE eventos CHANGE fecha_start inicio DATETIME NOT NULL;
 ALTER TABLE eventos CHANGE fecha_end fin DATETIME NULL DEFAULT NULL;

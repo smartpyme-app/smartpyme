@@ -86,11 +86,14 @@ export class FacturacionCompraComponent implements OnInit {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
             if(this.compra.estado == 'Pre-compra'){
+                this.documentos = this.documentos.filter((x:any) => x.nombre == 'Orden de compra');
                 let documento = this.documentos.find((x:any) => x.nombre == 'Orden de compra');
                 if(documento){
                     this.compra.tipo_documento = documento.nombre;
                     this.compra.referencia = documento.correlativo;
                 }
+            }else{
+                this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
             }
         }, error => {this.alertService.error(error);});
     }

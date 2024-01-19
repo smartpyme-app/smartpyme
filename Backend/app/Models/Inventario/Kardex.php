@@ -24,7 +24,7 @@ class Kardex extends Model {
         'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega', 'ajuste'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega', 'modelo', 'modelo_detalle'];
 
     public function getNombreUsuarioAttribute()
     {
@@ -41,9 +41,56 @@ class Kardex extends Model {
         return  $this->inventario()->first() ? $this->inventario()->first()->nombre : '';
     }
 
-    public function getAjusteAttribute()
-    {
-        return $this->stock_final - $this->stock_inicial;
+    public function getModeloDetalleattribute(){
+        $detalle = [];
+        $info = '';
+        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
+            $detalle = \App\Models\Ventas\Venta::find($this->referencia);
+            $info = $detalle->nombre_documento . ' #' . $detalle->correlativo;
+        }
+        if ($this->detalle == 'Devolución Venta' || $this->detalle == 'Devolución Venta Anulada') {
+            $detalle = \App\Models\Ventas\Devoluciones\Devolucion::find($this->referencia);
+            $info = 'Devolución # ' . $detalle->id;
+        }
+        if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
+            $detalle = \App\Models\Compras\Compra::find($this->referencia);
+            $info = $detalle->tipo_documento . ' #' . $detalle->referencia;
+        }
+        if ($this->detalle == 'Devolución Compra' || $this->detalle == 'Devolución Compra Anulada') {
+            $detalle = \App\Models\Compras\Devoluciones\Devolucion::find($this->referencia);
+            $info = 'Devolución # ' . $detalle->id;
+        }
+        if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
+            $detalle = \App\Models\Inventario\Traslado::find($this->referencia);
+            $info = 'Traslado #' . $this->referencia;
+        }
+        if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
+            $detalle = \App\Models\Inventario\Ajuste::find($this->referencia);
+            $info = 'Ajuste #' . $this->referencia;
+        }
+
+        return $info;
+    }
+
+    public function getModeloattribute(){
+        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
+            return 'venta';
+        }
+        if ($this->detalle == 'Devolución Venta' || $this->detalle == 'Devolución Venta Anulada') {
+            return 'devolucion/venta';
+        }
+        if ($this->detalle == 'Devolución Compra' || $this->detalle == 'Devolución Compra Anulada') {
+            return 'devolucion/compra';
+        }
+        if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
+            return 'compra';
+        }
+        if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
+            return 'traslado';
+        }
+        if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
+            return 'ajuste';
+        }
     }
 
     public function inventario(){

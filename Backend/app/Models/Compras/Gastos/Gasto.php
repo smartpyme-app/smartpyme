@@ -11,6 +11,7 @@ class Gasto extends Model {
     protected $fillable = array(
         'fecha',
         'referencia',
+        'tipo_documento',
         'concepto',
         'id_categoria',
         'tipo',

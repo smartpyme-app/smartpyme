@@ -21,6 +21,7 @@ export class GastoComponent implements OnInit {
     public sucursales:any = [];
     public bancos:any = [];
     public formaspago:any = [];
+    public duplicargasto = false;
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
@@ -84,6 +85,17 @@ export class GastoComponent implements OnInit {
             this.gasto.id_usuario = this.apiService.auth_user().id;
         }
 
+        // Duplicar gasto
+
+        if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_gasto')!) {
+            this.duplicargasto = true;
+            this.apiService.read('gasto/', +this.route.snapshot.queryParamMap.get('id_gasto')!).subscribe(gasto => {
+                this.gasto = gasto;
+                this.gasto.fecha = this.apiService.date();
+                this.gasto.id = null;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+
     }
 
     public setCategoria(categoria:any){
@@ -127,6 +139,11 @@ export class GastoComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
+
+        if(this.duplicargasto){
+            this.gasto.recurrente = false;
+        } 
+
         this.apiService.store('gasto', this.gasto).subscribe(gasto => {
             if (!this.gasto.id) {
                 this.alertService.success('Gasto guardado', 'El gasto fue guardado exitosamente.');

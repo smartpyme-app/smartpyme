@@ -21,6 +21,8 @@ class Cliente extends Model {
        'dui',
        'nit',
        'nombre_empresa',
+       'empresa_telefono',
+       'empresa_direccion',
        'direccion',
        'municipio',
        'departamento',

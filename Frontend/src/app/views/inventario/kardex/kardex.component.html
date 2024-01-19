@@ -92,8 +92,8 @@
                             <td>{{movimiento.nombre_usuario}}</td>
                             <td>{{movimiento.detalle}}</td>
                             <td>
-                                {{movimiento.referencia}}
-                                <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{apiService.slug(movimiento.detalle)}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
+                                {{movimiento.modelo_detalle}}
+                                <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{movimiento.modelo}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
                             </td>
 
                             <td class="text-center">{{movimiento.entrada_cantidad | number:'1.0' }}</td>

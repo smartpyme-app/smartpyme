@@ -12,8 +12,9 @@ import { ApiService } from '../../../services/api.service';
 export class GastosComponent implements OnInit {
 
     public gastos:any = [];
-    public buscador:any = '';
+    public gasto:any = {};
     public loading:boolean = false;
+    public saving:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
@@ -74,6 +75,17 @@ export class GastosComponent implements OnInit {
         this.apiService.store('gasto', gasto).subscribe(gasto => { 
             this.alertService.success('Gasto guardado', 'El gasto fue guardado exitosamente.');
         }, error => {this.alertService.error(error); });
+    }
+
+    public setRecurrencia(gasto:any){
+        this.gasto = gasto;
+        this.gasto.recurrente = true;
+        
+        this.apiService.store('gasto', this.gasto).subscribe(gasto => {
+            this.gasto = {};
+            this.alertService.success('Gasto guardado', 'El gasto se marco como recurrente exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
+
     }
 
 

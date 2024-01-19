@@ -104,11 +104,14 @@ export class FacturacionComponent implements OnInit {
                 }
 
                 if(this.venta.estado == 'Pre-venta'){
+                    this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
                     let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
                     if(documento){
                         this.venta.id_documento = documento.id;
                         this.venta.correlativo = documento.correlativo;
                     }
+                }else{
+                    this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
                 }
             }
 
@@ -301,6 +304,11 @@ export class FacturacionComponent implements OnInit {
             // que no aparezca en las ventas recurrentes
             if(this.duplicarventa){
                 this.venta.recurrente = false;
+            }
+
+            if(!this.venta.monto_pago){
+                this.venta.monto_pago = this.venta.total;
+                this.venta.cambio = 0;
             }
 
             this.apiService.store('facturacion', this.venta).subscribe(venta => {

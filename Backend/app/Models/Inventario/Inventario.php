@@ -33,7 +33,7 @@ class Inventario extends Model {
         if ($clase == 'App\Models\Ventas\Venta') { //Salida
             if ($cantidad > 0) {
                 $salidaCantidad =  $cantidad;
-                $clase = 'Venta';
+                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : 'Venta';
             }else{
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Venta Anulada';
@@ -46,7 +46,7 @@ class Inventario extends Model {
         else if ($clase == 'App\Models\Compras\Compra') {
             if ($cantidad > 0) {
                 $entradaCantidad =  $cantidad;
-                $clase = 'Compra';
+                $clase = $modelo->estado == 'Consigna' ? 'Compra a consigna' : 'Compra';
             }else{
                 $salidaCantidad =  abs($cantidad);
                 $clase = 'Compra Anulada';
