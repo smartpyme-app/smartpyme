@@ -145,10 +145,6 @@
               <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
             </div>
         </div>
-        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.estado == 'Pre-venta'">
-            <label for="observaciones">Términos de venta:</label><br>
-            <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
-        </div>
         <div class="form-group col-md-4 col-lg-3" *ngIf="venta.estado == 'Pre-venta'">
             <label for="fecha_expiracion">Fecha de expiración:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
@@ -188,6 +184,10 @@
               <label for="cobrar_impuestos">Con IVA</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
+        </div>
+        <div class="form-group col-md-12 col-lg-12" *ngIf="venta.estado == 'Pre-venta'">
+            <label for="observaciones">Términos de venta:</label><br>
+            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
         </div>
     </div>
     <div class="row mt-5">

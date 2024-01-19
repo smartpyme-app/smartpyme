@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\Admin\Acceso;
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Impuesto;
 use App\Models\Admin\Sucursal;
 use App\Models\Admin\Canal;
 use App\Models\Admin\FormaDePago;
@@ -128,6 +129,9 @@ class AuthJWTController extends Controller
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
            // Crear canales
                Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
+
+            // Crear impuesto
+               Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
            // Formas de pago
                FormaDePago::create(['nombre' => 'Efectivo', 'id_empresa' => $empresa->id]);
                FormaDePago::create(['nombre' => 'Transferencia', 'id_empresa' => $empresa->id]);

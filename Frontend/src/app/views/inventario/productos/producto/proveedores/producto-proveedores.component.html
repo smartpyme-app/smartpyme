@@ -30,7 +30,7 @@
                     </td>
                 </tr>        
                 <tr *ngFor=" let proveedor of producto.proveedores">
-                    <td>{{ proveedor?.proveedor.nombre }}</td>
+                    <td>{{ proveedor?.proveedor.tipo == 'Persona' ? proveedor?.proveedor.nombre_completo : proveedor?.proveedor.nombre_empresa | truncate:30 }}</td>
                     <td>{{ proveedor?.proveedor.correo }}</td>
                     <td>{{ proveedor?.proveedor.telefono }}</td>
                     <td>{{ proveedor?.proveedor.dui }}</td>
@@ -60,7 +60,7 @@
                     <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
                         <ng-option value="">Seleccione aquí</ng-option>
                         <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                            {{ proveedor.nombre }} <span *ngIf="proveedor.nombre_empresa">- {{ proveedor.nombre_empresa }}</span> <span *ngIf="proveedor.ncr">- {{ proveedor.ncr }}</span>
+                            {{ proveedor.tipo == 'Persona' ? proveedor.nombre_completo : proveedor.nombre_empresa }}
                         </ng-option>
                     </ng-select>
                     <app-crear-proveedor [id_proveedor]="proveedor.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>

@@ -53,11 +53,11 @@ export class AlertService {
         }
         else if(message.status == 500) {
             // this.notifier.notify( 'error', message.message );
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.message});
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
         }
         else {
             // this.notifier.notify( 'warning', message);
-            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': message.statusText, 'mensaje' : message});
+            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : message});
         }
         
     }

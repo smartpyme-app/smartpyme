@@ -27,7 +27,7 @@ class ComposicionesController extends Controller
         $composicion->fill($request->all());
         $composicion->save();
 
-        $composicion = Composicion::find($composicion->id);
+        $composicion = Composicion::with('compuesto')->where('id', $composicion->id)->firstOrFail();
 
 
         return Response()->json($composicion, 200);

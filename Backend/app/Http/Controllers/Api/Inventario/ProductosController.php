@@ -76,16 +76,15 @@ class ProductosController extends Controller
 
     public function search($txt) {
 
-        $productos = Producto::with('inventarios', 'composiciones')
-                                ->with('precios')
-                                ->where('barcode', $txt)
-                                ->where('id_categoria', '!=', 1)
-                                ->orwhere('etiquetas', 'like' ,"%" . $txt . "%")
-                                ->orwhere('nombre','LIKE', '%' .$txt. '%')
-                                ->orwhere('codigo','LIKE', '%' .$txt. '%')
-                                ->where('enable', true)
-                                ->take(10)
-                                ->get();
+        $productos = Producto::where('enable', true)->with('inventarios', 'composiciones')->with('precios')
+                    ->where(function ($q) use ($txt) {
+                        $q->where('nombre', 'like', "%$txt%")
+                            ->orWhere('barcode', 'like', "%$txt%")
+                            ->orWhere('codigo', 'like', "%$txt%")
+                            ->orWhere('etiquetas', 'like', "%$txt%");
+                    })
+                    ->take(15)
+                    ->get();
 
         return Response()->json($productos, 200);
 
@@ -109,7 +108,7 @@ class ProductosController extends Controller
     public function read($id) {
 
         $producto = Producto::where('id', $id)
-                                ->with('inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores.proveedor')
+                                ->with('inventarios', 'composiciones.compuesto', 'precios.usuarios', 'imagenes', 'proveedores.proveedor')
                                 ->firstOrFail();
 
         return Response()->json($producto, 200);

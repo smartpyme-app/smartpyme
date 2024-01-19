@@ -81,7 +81,7 @@ ALTER TABLE ventas CHANGE total_venta total DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas CHANGE vencimiento fecha_pago date NULL;
 ALTER TABLE ventas CHANGE id_user id_usuario INT(11) NOT NULL;
 ALTER TABLE ventas CHANGE id_cliente id_cliente INT(50) NULL;
-ALTER TABLE ventas CHANGE total_costo total_costo DECIMAL(6,2) NOT NULL DEFAULT 0;
+ALTER TABLE ventas CHANGE total_costo total_costo DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE ventas ADD fecha_expiracion date NULL AFTER recurrente;
 

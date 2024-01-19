@@ -37,6 +37,7 @@ class Empresa extends Model {
         'total',
         'editar_precio_venta',
         'plan',
+        'cobra_iva',
         'tipo_plan',
         'fecha_cancelacion',
         'referido',

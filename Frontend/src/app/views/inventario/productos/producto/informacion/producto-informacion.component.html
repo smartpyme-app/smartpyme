@@ -16,7 +16,7 @@
         </div>
         <div class="form-group col-md-6 col-lg-3">
             <label for="barcode">Código de barras</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí">
+            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
         </div>
         <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
@@ -63,13 +63,13 @@
             <label for="tipo_impuesto">Ganancia</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo) | number:'1.0-2'}}">
+                <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo).toFixed(2)}}">
             </div>
         </div>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="impuesto">Margen</label>
             <div class="input-group">
-                <input type="number" class="form-control" disabled value="{{ ((producto.precio - producto.costo) / producto.precio * 100) | number:'1.0-2' }}">
+                <input type="number" class="form-control" disabled value="{{ ((producto.precio - producto.costo) / producto.precio * 100).toFixed(2) }}">
                 <span class="input-group-text">%</span>
             </div>
         </div>

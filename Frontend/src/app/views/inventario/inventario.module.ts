@@ -6,12 +6,13 @@ import { ModalModule } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { FocusModule } from 'angular2-focus';
-import { PipesModule } from '../../pipes/pipes.module';
-import { SharedModule } from '../../shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { SharedModule } from '@shared/shared.module';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { NgChartsModule } from 'ng2-charts';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 
 import { InventarioRoutingModule } from './inventario.routing.module';
 
@@ -57,6 +58,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     TagInputModule,
     NgChartsModule,
     NgSelectModule,
+    NgxMaskDirective, NgxMaskPipe,
     InventarioRoutingModule,
     TabsModule.forRoot(),
     TooltipModule.forRoot(),

@@ -78,7 +78,7 @@ export class RegisterComponent implements OnInit {
             if(this.user.empresa.tipo_plan == 'Mensual'){
                 this.user.empresa.total = 16.95;
             }else{
-                this.user.empresa.total = 169.5;
+                this.user.empresa.total = 203.4;
             }
         }
 
@@ -89,7 +89,7 @@ export class RegisterComponent implements OnInit {
             if(this.user.empresa.tipo_plan == 'Mensual'){
                 this.user.empresa.total = 28.25;
             }else{
-                this.user.empresa.total = 282.5;
+                this.user.empresa.total = 339;
             }
         }
 
@@ -100,7 +100,7 @@ export class RegisterComponent implements OnInit {
             if(this.user.empresa.tipo_plan == 'Mensual'){
                 this.user.empresa.total = 56.5;
             }else{
-                this.user.empresa.total = 565;
+                this.user.empresa.total = 678;
             }
         }
 
@@ -117,6 +117,7 @@ export class RegisterComponent implements OnInit {
         }
         if(this.user.empresa.pais == 'Guatemala'){
             this.user.empresa.moneda = 'GTQ';
+            this.user.empresa.iva = 12;
         }
         if(this.user.empresa.pais == 'Honduras'){
             this.user.empresa.moneda = 'HNL';

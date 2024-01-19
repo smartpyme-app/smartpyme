@@ -223,7 +223,7 @@ class VentasController extends Controller
             'id_usuario'        => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
         ], [
-            'detalles.required' => 'Tiene que agregar productos a la venta',
+            'detalles.required' => 'Tiene que agregar productos',
             'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
             'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
         ]);

@@ -61,8 +61,8 @@ class ProveedoresController extends Controller
     {
 
         $request->validate([
-            'nombre'    => 'required_if:tipo,"Persona"',
-            'apellido'       => 'required|string|between:2,255',
+            'nombre'    => 'required_if:tipo,"Persona"|max:255',
+            'apellido'       => 'required_if:tipo,"Persona"|max:255',
             'nombre_empresa'    => 'required_if:tipo,"Empresa"',
             'tipo'    => 'required|max:255',
             'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,

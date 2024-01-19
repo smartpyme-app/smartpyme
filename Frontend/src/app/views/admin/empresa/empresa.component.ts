@@ -59,6 +59,7 @@ export class EmpresaComponent implements OnInit {
         }
         if(this.empresa.pais == 'Guatemala'){
             this.empresa.moneda = 'GTQ';
+            this.empresa.iva = 12;
         }
         if(this.empresa.pais == 'Honduras'){
             this.empresa.moneda = 'HNL';
@@ -77,6 +78,14 @@ export class EmpresaComponent implements OnInit {
             this.empresa.iva = 7;
         }
         console.log(this.empresa);
+    }
+
+    setCobrarIVA(){
+        if(this.empresa.cobra_iva == 'NO' || this.empresa.cobra_iva == '' || this.empresa.cobra_iva == null){
+            this.empresa.cobra_iva = 'Si';
+        }else{
+            this.empresa.cobra_iva = 'No';
+        }
     }
      
 

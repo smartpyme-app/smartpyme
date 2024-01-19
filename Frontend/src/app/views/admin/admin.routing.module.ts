@@ -25,7 +25,7 @@ const routes: Routes = [
     children: [
         { path: 'mi-cuenta', component: EmpresaComponent, title: 'Mi cuenta' },
         { path: 'eliminar-datos', component: EliminarDatosComponent, title: 'Eliminar datos' },
-        { path: 'suscripcion', component: SuscripcionComponent, title: 'Suscripcion' },
+        { path: 'suscripcion', component: SuscripcionComponent, title: 'Suscripción' },
         { path: 'sucursales', component: SucursalesComponent, title: 'Sucursales' },
         // { path: 'sucursal/:id', component: SucursalComponent, title: 'Sucursal' },
         { path: 'usuarios', component: UsuariosComponent, title: 'Usuarios' },

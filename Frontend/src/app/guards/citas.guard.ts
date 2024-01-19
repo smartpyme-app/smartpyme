@@ -13,7 +13,7 @@ export class CitasGuard implements CanActivate {
     state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
         let usuario = this.apiService.auth_user()
 
-        if(usuario.id_empresa != 2 && usuario.tipo == 'Citas' || usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor')
+        if(usuario.id_empresa != 2 && usuario.tipo == 'Citas' || usuario.tipo == 'Ventas' || usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor')
             return true;
         
         this.router.navigate(['/']);
