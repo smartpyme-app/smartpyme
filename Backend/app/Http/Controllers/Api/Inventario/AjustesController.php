@@ -25,6 +25,11 @@ class AjustesController extends Controller
                                     $q->where('id_sucursal', $request->id_sucursal);
                                 });
                             })
+                            ->when($request->id_usuario, function($query) use ($request){
+                                return $query->whereHas('usuario', function($q) use ($request){
+                                    $q->where('id_usuario', $request->id_usuario);
+                                });
+                            })
                             ->when($request->search, function($query) use ($request){
                                 return $query->whereHas('producto', function($q) use ($request){
                                     $q->where('nombre', 'like',  '%'. $request->search . '%');

@@ -108,6 +108,10 @@ export class TiendaVentaProductoComponent implements OnInit {
         this.detalle.nombre_producto = producto.nombre;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.precios        = producto.precios;
+        this.detalle.precios.unshift({
+                'precio' : this.detalle.precio
+            });
         this.detalle.costo          = parseFloat(producto.costo);
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
         if(producto.inventarios.length > 0){
@@ -128,6 +132,10 @@ export class TiendaVentaProductoComponent implements OnInit {
         this.detalle.nombre_producto = producto.nombre;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.precios        = producto.precios;
+        this.detalle.precios.unshift({
+                'precio' : this.detalle.precio
+            });
         this.detalle.costo          = parseFloat(producto.costo);
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
         if(producto.inventarios.length > 0){

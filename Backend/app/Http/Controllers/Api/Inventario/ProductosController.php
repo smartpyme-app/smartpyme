@@ -354,6 +354,8 @@ class ProductosController extends Controller
         
         $request->validate([
             'file'          => 'required',
+        ],[
+            'file.required' => 'El documento es obligatorio.'
         ]);
 
         $import = new Productos();

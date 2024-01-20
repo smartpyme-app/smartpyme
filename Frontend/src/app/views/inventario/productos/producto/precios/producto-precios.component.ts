@@ -19,7 +19,7 @@ export class ProductoPreciosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(public apiService: ApiService, private alertService: AlertService,  
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
     ){ }
@@ -29,9 +29,13 @@ export class ProductoPreciosComponent implements OnInit {
     openModal(template: TemplateRef<any>, precio:any) {
         this.precio = precio;
 
-        this.apiService.store('usuarios/filtrar', { tipo : 'Ventas'}).subscribe(usuarios => { 
-            this.usuarios = usuarios.data;
-            // this.marcarTodos();
+        // this.apiService.store('usuarios/filtrar', { tipo : 'Ventas'}).subscribe(usuarios => { 
+        //     this.usuarios = usuarios.data;
+        //     this.loading = false;
+        // }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
             this.loading = false;
         }, error => {this.alertService.error(error); });
 
@@ -42,6 +46,22 @@ export class ProductoPreciosComponent implements OnInit {
         this.usuarios.forEach((item:any) =>{
             item.autorizado = !item.autorizado;
         });
+    }
+
+    public calPrecioBase(){
+        let iva = this.apiService.auth_user().empresa.iva;
+        if(iva > 0){
+            this.precio.impuesto = iva / 100;
+            this.precio.precio = (this.precio.precio_final / (1 + (this.precio.impuesto * 1))).toFixed(4);
+        }
+    }
+
+    public calPrecioFinal(){
+        let iva = this.apiService.auth_user().empresa.iva;
+        if(iva > 0){
+            this.precio.impuesto = iva / 100;
+            this.precio.precio_final = ((this.precio.precio * 1) + (this.precio.precio * this.precio.impuesto)).toFixed(2);
+        }
     }
 
     onSubmit(){

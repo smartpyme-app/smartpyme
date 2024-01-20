@@ -36,7 +36,7 @@ export class CalendarioComponent implements OnInit {
     public meventoTemplate!: TemplateRef<any>;
     modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(private apiService: ApiService, public alertService: AlertService,  
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
     ){ }
@@ -124,6 +124,7 @@ export class CalendarioComponent implements OnInit {
 
     handleEventClick(arg:any) {
         this.evento = arg.event.extendedProps.data;
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-lg'});
     }
 
@@ -169,6 +170,7 @@ export class CalendarioComponent implements OnInit {
             this.loadAll();
             this.saving = false;
             this.modalRef.hide();
+            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

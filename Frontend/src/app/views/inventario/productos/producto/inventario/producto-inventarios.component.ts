@@ -39,7 +39,7 @@ export class ProductoInventariosComponent implements OnInit {
     }
 
     public setAjuste(event:any){
-        console.log(event);
+        console.log(this.producto.inventarios);
         this.inventario.stock = event.stock_real;
     }
 

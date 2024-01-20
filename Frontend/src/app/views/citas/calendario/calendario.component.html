@@ -4,8 +4,11 @@
 
 <ng-template #mevento>
   <div class="modal-header">
-    <h4 class="modal-title text-center">Cita</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <h4 class="modal-title text-center">
+      <span *ngIf="evento.id">Editar Cita</span>
+      <span *ngIf="!evento.id">Crear Cita</span>
+    </h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
         <app-crear-evento [evento]="evento" (update)="loadAll()"></app-crear-evento>

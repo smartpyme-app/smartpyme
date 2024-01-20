@@ -74,8 +74,13 @@
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
-                        <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
-                        <td>{{venta.estado != 'Pendiente' ? venta.forma_pago : 'Pendiente'}}</td>
+                        <td>
+                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
+                                {{venta.nombre_documento}} #{{venta.correlativo}}
+                            </a>
+                        </td>
+                        <td>{{venta.forma_pago}}</td>
+                        <!-- <td>{{venta.estado != 'Pendiente' ? venta.forma_pago : 'Pendiente'}}</td> -->
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
                             <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
@@ -261,7 +266,7 @@
                 <label for="filtros.forma_pago">Método de pago:</label>
                 <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
                     <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [ngValue]="formaPago.nombre">
+                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
                         {{ formaPago.nombre }}
                     </option>
                 </select>
@@ -270,7 +275,7 @@
                 <label for="filtros.id_documento">Documento:</label>
                 <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
                     <option value="">Todos</option>
-                    <option *ngFor="let documento of documentos" [ngValue]="documento.id">
+                    <option *ngFor="let documento of documentos" [value]="documento.id">
                         {{ documento.nombre }}
                     </option>
                 </select>
@@ -279,7 +284,7 @@
                 <label for="filtros.id_canal">Canal:</label>
                 <select [(ngModel)]="filtros.id_canal" class="form-control form-select" name="filtros.id_canal">
                     <option value="">Todos</option>
-                    <option *ngFor="let canal of canales" [ngValue]="canal.id">
+                    <option *ngFor="let canal of canales" [value]="canal.id">
                         {{ canal.nombre }}
                     </option>
                 </select>
@@ -288,7 +293,7 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>

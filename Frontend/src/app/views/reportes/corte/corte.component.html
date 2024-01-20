@@ -8,7 +8,7 @@
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
             <input type="date" name="fecha"  (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
             <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                <option value="null" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
+                <option value="" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
                 </option>
@@ -56,7 +56,7 @@
         <div class="bg-white p-4 mb-3">
             <div class="row">
                 <h5 class="font-weight-bold text-uppercase my-3">
-                    <img src="/assets/icons/trending-up.png" class="icon me-2"> Resumen de ventas
+                    <img src="/assets/icons/trending-up.png" class="icon me-2"> Resumen
                 </h5>
                 <table class="table table-borderless mb-3">
                     <thead>

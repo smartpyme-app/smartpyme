@@ -1,8 +1,8 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { ApiService } from '../../../services/api.service';
-import { AlertService } from '../../../services/alert.service';
+import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
 
 @Component({
   selector: 'app-importar-excel',
@@ -18,7 +18,7 @@ export class ImportarExcelComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        private apiService: ApiService, public alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
@@ -27,6 +27,7 @@ export class ImportarExcelComponent implements OnInit {
     }
 
     openModal(template: TemplateRef<any>) {
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }
 
@@ -49,7 +50,8 @@ export class ImportarExcelComponent implements OnInit {
             this.loading = false;
             this.alertService.success('Importación exitosa', data + ' ' + this.nombre + ' agregados');
             this.modalRef.hide();
-            this.loadAll.emit()
+            this.loadAll.emit();
+            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

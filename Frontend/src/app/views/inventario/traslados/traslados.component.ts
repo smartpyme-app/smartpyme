@@ -108,7 +108,7 @@ export class TrasladosComponent implements OnInit {
         this.apiService.getAll('productos/list').subscribe(productos => {
             this.productos = productos;
         }, error => {this.alertService.error(error);});
-
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }
 

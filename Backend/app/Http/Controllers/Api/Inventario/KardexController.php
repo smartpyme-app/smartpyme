@@ -33,6 +33,7 @@ class KardexController extends Controller
                             return $q->where('detalle', 'like' ,'%' . $request->detalle . '%');
                         })
                         ->orderBy($request->orden, $request->direccion)
+                        ->orderBy('id', 'desc')
                         ->get();
         
 

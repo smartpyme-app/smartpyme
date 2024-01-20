@@ -95,9 +95,10 @@
 <ng-template #mtraslado>
   <div class="modal-header d-block">
     <h5 class="modal-title mb-0">Nuevo traslado </h5>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form (ngSubmit)="onSubmit()" autocomplete="off">
         <div class="row">
             <div class="form-group col-md-12">
@@ -136,12 +137,12 @@
             
             <div class="form-group col-md-6" *ngIf="traslado.id_sucursal_de">
                 <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ sucursalDe.stock - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+                <p>{{ (sucursalDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
             </div>
             
             <div class="form-group col-md-6" *ngIf="traslado.id_sucursal">
                 <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ sucursalPara.stock + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+                <p>{{ (sucursalPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
             </div>
 
             <div class="form-group col-md-12">

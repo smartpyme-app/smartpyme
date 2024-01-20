@@ -101,9 +101,10 @@
         <h2>Canal de venta</h2>
         <p>Si marca cobrar propina, todas las ventas realizadas por este canal se les cargará el 10%.</p>
     </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-lg-4">

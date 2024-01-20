@@ -86,6 +86,7 @@ export class CitasComponent implements OnInit {
             this.evento.inicio =  moment().format('YYYY-MM-DD HH:mm');
             this.setTime();
         }
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
@@ -176,6 +177,7 @@ export class CitasComponent implements OnInit {
             if(this.modalRef){
                 this.modalRef.hide();
             }
+            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

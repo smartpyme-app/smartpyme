@@ -19,7 +19,7 @@ export class CorteComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
 
         if(this.usuario.tipo == 'Administrador'){
-            this.filtros.id_sucursal = null;
+            this.filtros.id_sucursal = '';
         }else{
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         }

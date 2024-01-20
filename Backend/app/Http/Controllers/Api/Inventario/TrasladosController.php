@@ -65,6 +65,10 @@ class TrasladosController extends Controller
         $traslado = new Traslado();
         $traslado->fill($request->all());
 
+        DB::beginTransaction();
+         
+        try {
+
         // Disminuir origen
         $origen = Inventario::where('id_producto', $request->id_producto)->where('id_sucursal', $request->id_sucursal_de)->first();
         $destino = Inventario::where('id_producto', $request->id_producto)->where('id_sucursal', $request->id_sucursal)->first();
@@ -77,7 +81,10 @@ class TrasladosController extends Controller
             return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
         }
         
+        
         if ($origen && $destino) {
+            $traslado->save();
+            
             $origen->stock -= $traslado->cantidad;
             $origen->save();
             $origen->kardex($traslado, $traslado->cantidad * -1);
@@ -90,9 +97,16 @@ class TrasladosController extends Controller
             return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
         }
       
-      $traslado->save();
+        DB::commit();
+        return Response()->json($traslado, 200);
 
-      return Response()->json($traslado, 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
 
     }
     

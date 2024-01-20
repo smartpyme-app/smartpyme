@@ -30,7 +30,7 @@
                     <td>{{ bodega.nombre_sucursal }}</td>
                     <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
                     <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
-                    <td class="text-center">{{ bodega.stock }}</td>
+                    <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Configurar inventario">
@@ -64,11 +64,11 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="stock_minimo">Stock minimo:</label>
-                <input type="text" [(ngModel)]="inventario.stock_minimo" class="form-control" name="stock_minimo">
+                <input type="number" [(ngModel)]="inventario.stock_minimo" class="form-control" name="stock_minimo">
             </div>
             <div class="form-group col-md-6">
                 <label for="stock_maximo">Stock maximo:</label>
-                <input type="text" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo">
+                <input type="number" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo">
             </div>
         </div>
         

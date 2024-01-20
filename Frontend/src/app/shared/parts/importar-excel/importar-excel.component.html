@@ -5,13 +5,14 @@
 <ng-template #importar>
   <div class="modal-header text-center">
     <h3 class="modal-title">Importar {{ nombre }}</h3>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
         <form #form="ngForm" class="text-center" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
         <div class="row mb-4">
             <div class="col-md-12 text-center">
-              <div class="alert alert-info">
+              <div class="alert bg-info">
                 <p>Seleccionar un archivo de Excel con el listado de sus {{ nombre }}. <br>
                 Puede descargar la plantilla acá: <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Aquí</a>
                 </p>

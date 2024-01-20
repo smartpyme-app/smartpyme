@@ -51,6 +51,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th>Usuario</th>
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Descripción</th>
                         <th>Estado</th>
@@ -69,6 +70,7 @@
                     </tr>
                     <tr *ngFor=" let ajuste of ajustes?.data">
                         <td>{{ ajuste.created_at  | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ ajuste.nombre_usuario }}</td>
                         <td>{{ ajuste.nombre_producto }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{ajuste.id_producto}}"><i class="fa fa-edit"></i></a></td>
                         <td class="d-none d-lg-table-cell"><span tooltip="{{ ajuste.concepto}}">{{ ajuste.concepto | truncate:20 }}</span></td>
                         <td>
@@ -174,7 +176,7 @@
                 <label for="">Al:</label>
                 <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-6">
                 <label for="">Producto</label>
                 <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
                     <ng-option value="" selected>Todos</ng-option>
@@ -183,7 +185,7 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-6">
                 <label for="">Estado:</label>
                 <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
                     <option value="">Estado</option>
@@ -191,12 +193,21 @@
                     <option value="Cancelado">Cancelado</option>
                 </select>
             </div>
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-6">
                 <label for="">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
                         {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="">Usuario:</label>
+                <select [(ngModel)]="filtros.id_usuario" class="form-select" name="filtros.id_usuario">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                        {{ usuario.name }}
                     </option>
                 </select>
             </div>
