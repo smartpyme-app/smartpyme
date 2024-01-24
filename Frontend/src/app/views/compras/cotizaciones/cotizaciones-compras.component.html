@@ -64,7 +64,11 @@
                         <td>{{compra.nombre_usuario }}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-success' : compra?.estado == 'Aceptada'}">{{ compra.estado }}</span>
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(compra)" [(ngModel)]="compra.estado" [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada'}">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Aceptada">Aceptada</option>
+                                <option value="Anulada">Anulada</option>
+                            </select>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">

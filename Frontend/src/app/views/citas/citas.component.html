@@ -39,7 +39,7 @@
                                         <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-money-bill"></i> Generar venta
                                         </a>
-                                        <a *ngIf="evento.tipo != 'Cancelado'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                        <a *ngIf="evento.tipo != 'Cancelado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Cancelar
                                         </a>
                                         <a (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
@@ -48,7 +48,10 @@
                                         <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-check"></i> Confirmar
                                         </a>
-                                        <a (click)="delete(evento)" class="list-group-item list-group-item-action border-0 click">
+                                        <a *ngIf="evento.tipo != 'Sin confirmar' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Sin confirmar')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-xmark"></i> Sin confirmar
+                                        </a>
+                                        <a *ngIf="evento.tipo != 'Pagado'" (click)="delete(evento)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-trash"></i> Eliminar
                                         </a>
                                     </div>

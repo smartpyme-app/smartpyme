@@ -155,10 +155,15 @@ class EventosController extends Controller
         else
             $evento = new Evento;
 
-        $evento->fill($request->all());
-        $evento->save();
+        if($request->id && ($request['tipo'] == 'Confirmado' && $evento->tipo == 'Sin confirmar')){
+            $evento->estadoVerificarFrecuencia('Confirmado');
+        }else{
+            $evento->fill($request->all());
+            $evento->save();
+        }
         
         $evento->notificar();
+
 
         return Response()->json($evento, 200);
     }

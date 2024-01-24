@@ -40,7 +40,7 @@ ALTER TABLE clientes CHANGE apellido apellido VARCHAR(255) NULL;
 ALTER TABLE proveedores CHANGE tipo tipo_contribuyente VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE proveedores CHANGE comentarios nota VARCHAR(1500) NULL DEFAULT NULL;
 ALTER TABLE proveedores CHANGE enable enable TINYINT(1) NOT NULL DEFAULT 1;
-ALTER TABLE proveedores CHANGE apellido apellido VARCHAR(255) NULL;
+ALTER TABLE proveedores ADD apellido VARCHAR(255) NULL after nombre;
 ALTER TABLE proveedores ADD nombre_empresa VARCHAR(255) NULL after apellido;
 ALTER TABLE proveedores ADD id_usuario INT NOT NULL after nota;
 ALTER TABLE proveedores ADD tipo varchar(250) DEFAULT 'Persona' after tipo_contribuyente;
@@ -66,8 +66,6 @@ ALTER TABLE kardexs CHANGE valor_unitario costo_unitario DECIMAL(10,2) NULL;
 ALTER TABLE kardexs ADD precio_unitario DECIMAL(10,2) NULL;
 
 
-
-
 ALTER TABLE compras CHANGE total_compra total DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE compras CHANGE num_referencia referencia VARCHAR(255) NULL;
 ALTER TABLE compras CHANGE documento tipo_documento VARCHAR(255) NULL;
@@ -78,6 +76,7 @@ ALTER TABLE compras CHANGE id_proveedor id_proveedor INT(11) NULL;
 ALTER TABLE compras CHANGE descuento descuento DOUBLE(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE compras ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE compras ADD fecha_expiracion date NULL AFTER recurrente;
+ALTER TABLE compras ADD num_orden_compra int NULL AFTER fecha_expiracion;
 ALTER TABLE compras ADD cotizacion Boolean DEFAULT 0 AFTER recurrente;
 UPDATE compras SET cotizacion = 1 WHERE estado ='Pre-compra';
 UPDATE compras SET estado = 'Pendiente' WHERE estado ='Pre-compra';
@@ -89,6 +88,7 @@ ALTER TABLE ventas CHANGE id_cliente id_cliente INT(50) NULL;
 ALTER TABLE ventas CHANGE total_costo total_costo DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE ventas ADD fecha_expiracion date NULL AFTER recurrente;
+ALTER TABLE ventas ADD num_cotizacion int NULL AFTER fecha_expiracion;
 ALTER TABLE ventas ADD cotizacion Boolean DEFAULT 0 AFTER recurrente;
 UPDATE ventas SET cotizacion = 1 WHERE estado ='Pre-venta';
 UPDATE ventas SET estado = 'Pendiente' WHERE estado ='Pre-venta';
@@ -137,9 +137,9 @@ ALTER TABLE egresos ADD id_categoria INT(11) NULL after tipo;
 ALTER TABLE egresos ADD id_usuario INT(11) NOT NULL after id_empresa;
 ALTER TABLE egresos CHANGE vencimiento fecha_pago date NULL;
 ALTER TABLE egresos ADD sub_total DECIMAL(10,2) NOT NULL DEFAULT 0 after iva;
+ALTER TABLE egresos CHANGE factura referencia VARCHAR(255) NULL;
 ALTER TABLE egresos ADD tipo_documento VARCHAR(255) after referencia;
 ALTER TABLE egresos CHANGE monto total DECIMAL(10,2) NOT NULL;
-ALTER TABLE egresos CHANGE factura referencia VARCHAR(255) NULL;
 
 
 RENAME TABLE recordatorios TO notificaciones;

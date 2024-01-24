@@ -83,7 +83,7 @@ export class CitasComponent implements OnInit {
             this.evento.id_cliente = '';
             this.evento.id_servicio = '';
             this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.evento.inicio =  moment().format('YYYY-MM-DD HH:mm');
+            this.evento.inicio =  moment().format('YYYY-MM-DD HH') + ':00';
             this.setTime();
         }
         this.alertService.modal = true;

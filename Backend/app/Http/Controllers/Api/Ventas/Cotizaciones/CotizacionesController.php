@@ -110,8 +110,8 @@ class CotizacionesController extends Controller
             'fecha'         => 'required',
             'estado'        => 'required|max:255',
             'total'         => 'required|max:255',
-            'usuario_id'    => 'required|numeric',
-            'sucursal_id'   => 'required|numeric',
+            'id_usuario'    => 'required|numeric',
+            'id_sucursal'   => 'required|numeric',
         ]);
         
 
@@ -121,7 +121,6 @@ class CotizacionesController extends Controller
             $orden = new Cotizacion;
 
         $orden->fill($request->all());
-        $orden->total = $orden->detalles()->sum('total');
         $orden->save();
         
         return Response()->json($orden, 200);

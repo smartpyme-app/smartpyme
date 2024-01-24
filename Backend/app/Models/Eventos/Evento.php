@@ -78,6 +78,28 @@ class Evento extends Model
         }
     }
 
+    public function estadoVerificarFrecuencia($estado){
+        if ($this->frecuencia) {
+            $nuevoEvento = $this->replicate();
+            if ($this->frecuencia == 'DAILY') {
+                $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addDay();
+            }
+            if ($this->frecuencia == 'WEEKLY') {
+                $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addWeek();
+            }
+            if ($this->frecuencia == 'MONTHLY') {
+                $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addMonth();
+            }
+            if ($this->frecuencia == 'YEARLY') {
+                $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addYear();
+            }
+            $nuevoEvento->save();
+        }
+        $this->tipo = $estado;
+        $this->frecuencia = '';
+        $this->save();
+    }
+
     public function getNombreUsuarioAttribute(){
         return $this->usuario()->pluck('name')->first();
     }

@@ -203,6 +203,7 @@ export class FacturacionComponent implements OnInit {
                 this.venta.estado = 'Pagada';
                 this.venta.observaciones = '';
                 this.venta.cotizacion = 0;
+                this.venta.num_cotizacion = this.venta.id;
                 this.venta.id = null;
                 this.venta.detalles.forEach((detalle:any) => {
                     detalle.id = null;
@@ -360,13 +361,6 @@ export class FacturacionComponent implements OnInit {
                     this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
                 }
 
-                // Si viene desde citas
-                if(this.evento.id){
-                    this.evento.tipo = 'Pagado';
-                    this.apiService.store('evento', this.evento).subscribe(evento => {
-
-                    },error => {this.alertService.error(error); this.saving = false; });
-                }
 
                 // Si es cotización
                 if(this.facturarCotizacion){

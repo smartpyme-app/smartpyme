@@ -65,7 +65,7 @@
         <table>
             <tbody>
                 <tr>
-                    <td><h4>Cliente</h4></td>
+                    <td><h4>Proveedor</h4></td>
                 </tr>
                 <tr>
                     <td>

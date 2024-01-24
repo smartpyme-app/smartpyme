@@ -14,10 +14,11 @@ use App\Models\Ventas\Detalle;
 use App\Models\Ventas\DetalleCombo;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
-use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Admin\Documento;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -285,6 +286,17 @@ class VentasController extends Controller
                 
             }
 
+        // Evento
+            if($request->id_evento){
+                $evento = Evento::findOrfail($request->id_evento);
+                if ($venta->estado == 'Pagada') {
+                    $evento->estado = 'Pagado';
+                    $evento->estadoVerificarFrecuencia('Pagado');
+                }else{
+                    $evento->estado = 'Pendiente';
+                    $evento->save();
+                }
+            }
         // Impuestos
             if($request->impuestos){
                 foreach ($request->impuestos as $impuesto) {

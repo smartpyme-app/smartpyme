@@ -18,6 +18,7 @@ class Venta extends Model {
         'id_documento',
         'forma_pago',
         'tipo_documento',
+        'num_cotizacion',
         // 'condicion',
         'referencia',
         // 'nombre',

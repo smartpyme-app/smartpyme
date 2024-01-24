@@ -183,6 +183,7 @@ export class FacturacionCompraComponent implements OnInit {
                 this.compra.referencia = null;
                 this.compra.estado = 'Pagada';
                 this.compra.cotizacion = 0;
+                this.compra.num_orden_compra = this.compra.id;
                 this.compra.id = null;
                 this.compra.detalles.forEach((detalle:any) => {
                     detalle.id = null;

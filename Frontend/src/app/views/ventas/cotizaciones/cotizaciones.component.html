@@ -65,7 +65,11 @@
                         <td>{{venta.nombre_usuario | truncate:30 }}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Perdida', 'bg-success' : venta?.estado == 'Facturada'}">{{ venta.estado }}</span>
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)" [(ngModel)]="venta.estado" [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-success' : venta?.estado == 'Facturada'}">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Facturada">Facturada</option>
+                                <option value="Anulada">Anulada</option>
+                            </select>
                         </td>
                         <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
