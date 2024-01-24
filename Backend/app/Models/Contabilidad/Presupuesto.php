@@ -15,7 +15,7 @@ class Presupuesto extends Model {
         'fecha_fin',
         'ingresos',
         'egresos',
-        'compras',
+        'utilidad',
         'alquiler',
         'varios',
         'mantenimiento',

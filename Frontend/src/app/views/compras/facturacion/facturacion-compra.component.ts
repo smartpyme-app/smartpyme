@@ -28,6 +28,7 @@ export class FacturacionCompraComponent implements OnInit {
     public loading = false;
     public saving = false;
     public duplicarcompra = false;
+    public facturarCotizacion = false;
     public imprimir:boolean = false;
     
     modalRef!: BsModalRef;
@@ -85,7 +86,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
-            if(this.compra.estado == 'Pre-compra'){
+            if(this.compra.cotizacion == 1){
                 this.documentos = this.documentos.filter((x:any) => x.nombre == 'Orden de compra');
                 let documento = this.documentos.find((x:any) => x.nombre == 'Orden de compra');
                 if(documento){
@@ -99,7 +100,6 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public cargarDatosIniciales(){
-        this.cargarDocumentos();
         this.compra = {};
         this.compra.fecha = this.apiService.date();
         this.compra.fecha_pago = this.apiService.date();
@@ -113,13 +113,15 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.detalles = [];
         this.compra.descuento = 0;
         this.compra.sub_total = 0;
-        this.compra.iva_percibido = 0;
+        this.compra.percepcion = 0;
+        this.compra.cotizacion = 0;
         this.compra.iva_retenido = 0;
         this.compra.iva = 0;
         this.compra.total_costo = 0;
         this.compra.total = 0;
         this.detalle = {};
         this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
+        this.compra.cobrar_percepcion = false;
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
         this.compra.id_usuario = this.apiService.auth_user().id;
         this.compra.id_vendedor = this.apiService.auth_user().id_empleado;
@@ -132,8 +134,9 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
         }
 
-        if (this.route.snapshot.queryParamMap.get('estado')!) {
-            this.compra.estado = this.route.snapshot.queryParamMap.get('estado')!;
+        if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+            this.compra.cotizacion = 1;
+            this.compra.estado = 'Pendiente';
         }
 
         this.route.params.subscribe((params:any) => {
@@ -154,17 +157,43 @@ export class FacturacionCompraComponent implements OnInit {
                 this.compra = compra;
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
+                this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
+                this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                this.compra.id = null;
+                this.compra.tipo_documento = null;
+                this.compra.referencia = null;
+                this.compra.detalles.forEach((detalle:any) => {
+                    detalle.id = null;
+                });
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+
+         // Facturar cotizacion
+        if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
+            this.facturarCotizacion = true;
+            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+                this.compra = compra;
+                this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
+                this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+                this.compra.fecha = this.apiService.date();
+                this.compra.fecha_pago = this.apiService.date();
+                this.compra.tipo_documento = null;
+                this.compra.referencia = null;
+                this.compra.estado = 'Pagada';
+                this.compra.cotizacion = 0;
                 this.compra.id = null;
                 this.compra.detalles.forEach((detalle:any) => {
                     detalle.id = null;
                 });
             }, error => {this.alertService.error(error); this.loading = false;});
         }
+
+        this.cargarDocumentos();
     }
 
     public sumTotal() {
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.compra.iva_percibido = this.compra.percepcion ? this.compra.sub_total * 0.01 : 0; 
+        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
         this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0; 
 
         if(this.compra.cobrar_impuestos){
@@ -175,7 +204,7 @@ export class FacturacionCompraComponent implements OnInit {
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
-        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.iva_percibido) - parseFloat(this.compra.iva_retenido)).toFixed(2);
+        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido)).toFixed(2);
     }
 
     // proveedor
@@ -222,7 +251,7 @@ export class FacturacionCompraComponent implements OnInit {
         }
 
         public onFacturar(){
-            if (confirm('¿Confirma procesar la ' + (this.compra.estado == 'Pre-compra' ? ' orden de compra.' : 'compra.') )) {
+            if (confirm('¿Confirma procesar la ' + (this.compra.cotizacion == 1 ? ' orden de compra.' : 'compra.') )) {
                 if(!this.compra.recibido)
                     this.compra.recibido = this.compra.total;
                 this.onSubmit();
@@ -239,12 +268,23 @@ export class FacturacionCompraComponent implements OnInit {
             this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
                 this.saving = false;
                 
-                if(this.compra.estado == 'Pre-compra'){
+                if(this.compra.cotizacion == 1){
                     this.router.navigate(['/ordenes-de-compras']);
                     this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
                 }else{
                     this.router.navigate(['/compras']);
                     this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                }
+
+                // Si es cotización
+                if(this.facturarCotizacion){
+                    this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+                        compra.estado = 'Aceptada';
+                        this.apiService.store('compra', compra).subscribe(compra => {
+
+                        },error => {this.alertService.error(error); this.saving = false; });
+                    },error => {this.alertService.error(error); this.saving = false; });
+
                 }
 
             },error => {this.alertService.error(error); this.saving = false; });

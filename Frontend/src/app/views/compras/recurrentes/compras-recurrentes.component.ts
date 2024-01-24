@@ -166,11 +166,7 @@ export class ComprasRecurrentesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
-    }
-
-    public descargarCompras(){
+    public descargar(){
         this.apiService.export('compras/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -183,26 +179,6 @@ export class ComprasRecurrentesComponent implements OnInit {
             window.URL.revokeObjectURL(url);
           }, (error) => {console.error('Error al exportar compras:', error); }
         );
-    }
-
-    public descargarDetalles(){
-        this.apiService.export('compras-detalles/exportar', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'compras-detalles.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar compras:', error); }
-        );
-    }
-
-    public openAbono(template: TemplateRef<any>, compra:any){
-        this.compra = compra;
-        this.modalRef = this.modalService.show(template);
     }
 
     public openFilter(template: TemplateRef<any>) {

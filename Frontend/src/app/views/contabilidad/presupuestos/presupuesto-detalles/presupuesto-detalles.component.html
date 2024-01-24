@@ -21,16 +21,16 @@
             </div>
 
             <div class="form-group col-md-6 col-lg-3">
-                <label class="fw-medium" for="ingresos">Ingresos mensuales estimados</label>
+                <label class="fw-medium" for="ingresos">Ingresos totales estimados</label>
                 <p>{{ presupuesto.ingresos | currency }}</p>
             </div>
             <div class="form-group col-md-6 col-lg-3">
-                <label class="fw-medium" for="compras">Compras mensuales estimadas</label>
-                <p>{{ presupuesto.compras | currency }}</p>
+                <label class="fw-medium" for="egresos">Egresos totales estimados</label>
+                <p>{{ presupuesto.egresos | currency }}</p>
             </div>
             <div class="form-group col-md-6 col-lg-3">
-                <label class="fw-medium" for="egresos">Egresos mensuales estimados</label>
-                <p>{{ presupuesto.egresos | currency }}</p>
+                <label class="fw-medium" for="utilidad">Utilidad esperada</label>
+                <p>{{ presupuesto.utilidad | currency }}</p>
             </div>
             
         <div class="row">
@@ -53,7 +53,7 @@
                 <p>{{ presupuesto.marketing | currency }}</p>
             </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
-                <label class="fw-medium">Insumos:</label>
+                <label class="fw-medium">Materia prima:</label>
                 <p>{{ presupuesto.materia_prima | currency }}</p>
             </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
@@ -68,17 +68,33 @@
                 <label class="fw-medium">Servicios:</label>
                 <p>{{ presupuesto.servicios | currency }}</p>
             </div>
-            <!-- <div class="form-group col-6 col-md-4 col-lg-3">
+            <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Combustible:</label>
                 <p>{{ presupuesto.combustible | currency }}</p>
             </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Prestamos:</label>
                 <p>{{ presupuesto.prestamos | currency }}</p>
-            </div> -->
+            </div>
             <div class="form-group col-6 col-md-4 col-lg-3">
                 <label class="fw-medium">Publicidad:</label>
                 <p>{{ presupuesto.publicidad | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Costo de venta:</label>
+                <p>{{ presupuesto.costo_de_venta | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Insumos:</label>
+                <p>{{ presupuesto.insumos | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Impuestos:</label>
+                <p>{{ presupuesto.impuestos | currency }}</p>
+            </div>
+            <div class="form-group col-6 col-md-4 col-lg-3">
+                <label class="fw-medium">Gastos administrativos:</label>
+                <p>{{ presupuesto.gastos_administrativos | currency }}</p>
             </div>
         </div>
     </div>

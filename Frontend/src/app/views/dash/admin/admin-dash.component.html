@@ -17,14 +17,14 @@
     </div>
 </div>
 
-<div class="mb-4 d-flex justify-content-around">
-    <div class="col">
+<div class="mb-4 row">
+    <div class="col-10">
         <a class="btn me-2 tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtro.time == 'day', 'btn-default': filtro.time != 'day' }" (click)="setTime('day')">Hoy</a>
         <a class="btn mx-2 tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="setTime('week')">Semana</a>
         <a class="btn mx-2 tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtro.time == 'month', 'btn-default': filtro.time != 'month' }" (click)="setTime('month')">Mes</a>
         <a *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn mx-2 tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a>
     </div>
-    <div class="col d-none d-md-flex justify-content-end">
+    <div class="col-2 d-none d-md-flex justify-content-end">
         <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
     </div>    
 </div>

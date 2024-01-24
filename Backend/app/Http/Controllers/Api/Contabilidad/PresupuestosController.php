@@ -54,6 +54,7 @@ class PresupuestosController extends Controller
             'fecha_fin'     => 'required|date',
             'ingresos'   => 'required|numeric',
             'egresos'   => 'required|numeric',
+            'utilidad'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
         ]);
 

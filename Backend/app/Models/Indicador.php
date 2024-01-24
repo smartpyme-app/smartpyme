@@ -44,7 +44,7 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
-                        ->where('estado', '!=', 'Pre-venta')
+                        ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
@@ -95,6 +95,7 @@ class Indicador extends Model
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
                         ->where('estado', 'Pagada')
+                        ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 

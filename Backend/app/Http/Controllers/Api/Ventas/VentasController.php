@@ -74,7 +74,7 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->where('estado', '!=', 'Pre-venta')
+                        ->where('cotizacion', 0)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
@@ -212,7 +212,7 @@ class VentasController extends Controller
             'id_cliente'        => 'required_if:estado,"Pendiente"',
             'detalles'          => 'required',
             'fecha_pago'        => 'required',
-            'fecha_expiracion'  => 'required_if:estado,"Pre-venta"',
+            'fecha_expiracion'  => 'required_if:cotizacion,1',
             'credito'           => 'required_if:condicion,"Crédito"',
             'iva'               => 'required|numeric',
             'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
@@ -254,7 +254,7 @@ class VentasController extends Controller
                 $detalle->save();
 
                 // Actualizar inventario
-                if ($request->estado != 'Pre-venta') {
+                if ($request->cotizacion == 0) {
                     
                     $producto = Producto::where('id', $det['id_producto'])
                                         ->with('composiciones')->firstOrFail();

@@ -42,6 +42,7 @@ export class DocumentosComponent implements OnInit {
         this.documento = documento;
         if (!this.documento.id) {
             this.documento.id_empresa = this.apiService.auth_user().id_empresa;
+            this.documento.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.documento.activo = true;
             this.documento.correlativo = 1;
         }

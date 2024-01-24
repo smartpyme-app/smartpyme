@@ -31,6 +31,7 @@ class Compra extends Model {
         // 'iva_retenido',
         'descuento',
         'recurrente',
+        'cotizacion',
         'iva',
         'sub_total',
         'total',

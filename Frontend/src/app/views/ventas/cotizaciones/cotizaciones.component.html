@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Cotizaciones</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/cotizacion/crear" [queryParams]="{ estado:'Pre-venta' }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
+    <button *ngIf="apiService.canCreate()" routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,7 +13,7 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <button tooltip="Descargar ventas" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button>
+                <!-- <button tooltip="Descargar cotizaciones" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button> -->
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -63,9 +63,9 @@
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_usuario | truncate:30 }}</td>
-                        <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Perdida', 'bg-success' : venta?.estado == 'Facturada'}">{{ venta.estado }}</span>
                         </td>
                         <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
@@ -75,11 +75,14 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" class="btn">
+                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a routerLink="/venta/{{venta.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                                    </a>
+                                    <a *ngIf="venta.estado == 'Pendiente'" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
+                                        <i class="fa fa-fw fa-money-bill"></i> Facturar
                                     </a>
                                     <a (click)="imprimir(venta)" class="btn">
                                         <i class="fa fa-fw fa-print"></i> Imprimir

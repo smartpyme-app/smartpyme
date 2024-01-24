@@ -79,4 +79,8 @@ export class PresupuestoComponent implements OnInit {
         console.log(this.presupuesto);
     }
 
+    calUtilidad(){
+        this.presupuesto.utilidad = (this.presupuesto.ingresos - this.presupuesto.egresos).toFixed(2);
+    }
+
 }

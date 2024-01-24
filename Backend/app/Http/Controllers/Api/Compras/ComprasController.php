@@ -55,7 +55,7 @@ class ComprasController extends Controller
                         ->when($request->metodo_pago, function($query) use ($request){
                             return $query->where('metodo_pago', $request->metodo_pago);
                         })
-                        ->where('estado', '!=', 'Pre-compra')
+                        ->where('cotizacion', 0)
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
@@ -226,7 +226,7 @@ class ComprasController extends Controller
                 
                 $detalle->fill($det);
                 
-                if ($request->estado != 'Pre-compra') {
+                if ($request->cotizacion == 0) {
                     // Actualizar inventario
                     $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_sucursal', $compra->id_sucursal)->first();
 

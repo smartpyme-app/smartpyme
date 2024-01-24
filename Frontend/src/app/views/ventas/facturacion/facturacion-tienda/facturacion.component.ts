@@ -28,7 +28,9 @@ export class FacturacionComponent implements OnInit {
     public canales:any = [];
     public supervisor:any = {};
     public loading = false;
+    public saving = false;
     public duplicarventa = false;
+    public facturarCotizacion = false;
     public imprimir:boolean = false;
     
     modalRef!: BsModalRef;
@@ -52,7 +54,9 @@ export class FacturacionComponent implements OnInit {
 	ngOnInit() {
 
         this.cargarDatosIniciales();
+    }
 
+    public loadData(){
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
@@ -76,8 +80,10 @@ export class FacturacionComponent implements OnInit {
 
         this.apiService.getAll('impuestos').subscribe(impuestos => {
             this.impuestos = impuestos;
-            this.venta.impuestos = this.impuestos;
-            this.sumTotal();
+            if(!this.venta.impuestos || this.venta.iva == 0){
+                this.venta.impuestos = this.impuestos;
+                this.sumTotal();
+            }
 
         }, error => {this.alertService.error(error);});
 
@@ -103,7 +109,7 @@ export class FacturacionComponent implements OnInit {
                     this.venta.correlativo = documentos[0].correlativo;
                 }
 
-                if(this.venta.estado == 'Pre-venta'){
+                if(this.venta.cotizacion == 1){
                     this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
                     let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
                     if(documento){
@@ -133,6 +139,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.sub_total = 0;
         this.venta.iva_percibido = 0;
         this.venta.iva_retenido = 0;
+        this.venta.cotizacion = 0;
         this.venta.iva = 0;
         this.venta.total_costo = 0;
         this.venta.total = 0;
@@ -151,8 +158,9 @@ export class FacturacionComponent implements OnInit {
         }
 
         // Para cotizaciones Pre-venta
-        if (this.route.snapshot.queryParamMap.get('estado')!) {
-            this.venta.estado = this.route.snapshot.queryParamMap.get('estado')!;
+        if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+            this.venta.cotizacion = 1;
+            this.venta.estado = 'Pendiente';
         }
 
         // Para editar cotizaciones Pre-venta
@@ -162,14 +170,18 @@ export class FacturacionComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
+        // Facturar venta recurrente
         // Duplicar venta
 
         if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_venta')!) {
             this.duplicarventa = true;
             this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
                 this.venta = venta;
+                this.venta.cobrar_impuestos = (this.venta.iva > 0) ?true : false;
                 this.venta.fecha = this.apiService.date();
                 this.venta.fecha_pago = this.apiService.date();
+                this.venta.id_documento = null;
+                this.venta.correlativo = null;
                 this.venta.id = null;
                 this.venta.detalles.forEach((detalle:any) => {
                     detalle.id = null;
@@ -177,7 +189,24 @@ export class FacturacionComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
-        // Editar cotizacion
+        // Facturar cotizacion
+        if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_venta')!) {
+            this.facturarCotizacion = true;
+            this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
+                this.venta = venta;
+                this.venta.cobrar_impuestos = (this.venta.iva > 0) ?true : false;
+                this.venta.fecha = this.apiService.date();
+                this.venta.fecha_pago = this.apiService.date();
+                this.venta.id_documento = null;
+                this.venta.correlativo = null;
+                this.venta.estado = 'Pagada';
+                this.venta.cotizacion = 0;
+                this.venta.id = null;
+                this.venta.detalles.forEach((detalle:any) => {
+                    detalle.id = null;
+                });
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
 
 
         // Cita a venta
@@ -213,6 +242,7 @@ export class FacturacionComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }
         this.cargarDocumentos();
+        this.loadData();
     }
 
     public sumTotal() {
@@ -284,7 +314,7 @@ export class FacturacionComponent implements OnInit {
         }
 
         public onFacturar(){
-            if (confirm('¿Confirma procesar la ' + (this.venta.estado == 'Pre-venta' ? ' cotización.' : 'venta.') )) {
+            if (confirm('¿Confirma procesar la ' + (this.venta.cotizacion == 1 ? ' cotización.' : 'venta.') )) {
                 if(!this.venta.recibido)
                     this.venta.recibido = this.venta.total;
 
@@ -298,7 +328,7 @@ export class FacturacionComponent implements OnInit {
     // Guardar venta
         public onSubmit() {
 
-            this.loading = true;
+            this.saving = true;
 
             // Si se esta duplicando una venta, esta ya no se marca como recurrente para
             // que no aparezca en las ventas recurrentes
@@ -317,10 +347,10 @@ export class FacturacionComponent implements OnInit {
                     window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
                 }
                 if (this.modalRef) { this.modalRef.hide() }
-                this.loading = false;
+                this.saving = false;
                 // this.cargarDatosIniciales();
                 // this.router.navigate(['/venta/crear']);
-                if(this.venta.estado == 'Pre-venta'){
+                if(this.venta.cotizacion == 1){
                     this.router.navigate(['/cotizaciones']);
                     this.alertService.success('Cotización creada', 'La cotizacion fue añadida exitosamente.');
                 }else{
@@ -333,11 +363,22 @@ export class FacturacionComponent implements OnInit {
                     this.evento.tipo = 'Pagado';
                     this.apiService.store('evento', this.evento).subscribe(evento => {
 
-                    },error => {this.alertService.error(error); this.loading = false; });
+                    },error => {this.alertService.error(error); this.saving = false; });
+                }
+
+                // Si es cotización
+                if(this.facturarCotizacion){
+                    this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
+                        venta.estado = 'Facturada';
+                        this.apiService.store('venta', venta).subscribe(venta => {
+
+                        },error => {this.alertService.error(error); this.saving = false; });
+                    },error => {this.alertService.error(error); this.saving = false; });
+
                 }
 
 
-            },error => {this.alertService.error(error); this.loading = false; });
+            },error => {this.alertService.error(error); this.saving = false; });
 
         }
 

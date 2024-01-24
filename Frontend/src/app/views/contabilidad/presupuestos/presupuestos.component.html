@@ -44,8 +44,8 @@
                         <th>Inicio</th>
                         <th>Fin</th>
                         <th class="text-right">Ingresos</th>
-                        <th class="text-right">Compras</th>
                         <th class="text-right">Egresos</th>
+                        <th class="text-right">Utilidad</th>
                         <th class="text-right">Estado</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
@@ -66,8 +66,8 @@
                         <td>{{presupuesto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
                         <td>{{presupuesto.fecha_fin | date:'dd/MM/yyyy'}}</td>
                         <td class="text-right">{{presupuesto.ingresos | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-right">{{presupuesto.compras | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-right">{{presupuesto.egresos | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-right">{{presupuesto.utilidad | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-right">
                             <span class="badge bg-success" *ngIf="presupuesto.enable == 1">Activo</span>
                             <span class="badge bg-danger" *ngIf="presupuesto.enable == 0">Anulado</span>

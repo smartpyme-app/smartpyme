@@ -78,6 +78,8 @@ ALTER TABLE compras CHANGE id_proveedor id_proveedor INT(11) NULL;
 ALTER TABLE compras CHANGE descuento descuento DOUBLE(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE compras ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE compras ADD fecha_expiracion date NULL AFTER recurrente;
+ALTER TABLE compras ADD cotizacion Boolean DEFAULT 0 AFTER recurrente;
+UPDATE compras SET cotizacion = 1 WHERE estado ='Pre-compra';
 
 ALTER TABLE ventas CHANGE total_venta total DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas CHANGE vencimiento fecha_pago date NULL;
@@ -86,6 +88,8 @@ ALTER TABLE ventas CHANGE id_cliente id_cliente INT(50) NULL;
 ALTER TABLE ventas CHANGE total_costo total_costo DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE ventas ADD fecha_expiracion date NULL AFTER recurrente;
+ALTER TABLE ventas ADD cotizacion Boolean DEFAULT 0 AFTER recurrente;
+UPDATE ventas SET cotizacion = 1 WHERE estado ='Pre-venta';
 
 ALTER TABLE detalles_venta CHANGE cantidad cantidad DECIMAL(10,2) NOT NULL;
 ALTER TABLE detalles_venta ADD total_costo Boolean DEFAULT 0 AFTER total;
@@ -176,7 +180,7 @@ ALTER TABLE presupuestos CHANGE enable enable TINYINT(1) NOT NULL DEFAULT true;
 ALTER TABLE presupuestos ADD combustible DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER servicios;
 ALTER TABLE presupuestos ADD prestamos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER combustible;
 ALTER TABLE presupuestos ADD materia_prima DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER prestamos;
-ALTER TABLE presupuestos ADD compras DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER ingresos;
+ALTER TABLE presupuestos ADD utilidad DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER ingresos;
 ALTER TABLE presupuestos ADD costo_de_venta DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER materia_prima;
 ALTER TABLE presupuestos ADD insumos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER costo_de_venta;
 ALTER TABLE presupuestos ADD impuestos DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER insumos;

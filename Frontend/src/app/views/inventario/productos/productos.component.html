@@ -34,7 +34,7 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
         </div>
-        <div class="col-md-4 d-flex gap-2 justify-content-end mb-3">
+        <div class="col-md-4 d-md-none d-flex gap-2 justify-content-end mb-3">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">

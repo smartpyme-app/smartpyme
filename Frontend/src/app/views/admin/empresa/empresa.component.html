@@ -113,28 +113,28 @@
                 </div>
                 <div class="row mt-3">
                     <h5 class="my-3">Preferencias del sistema</h5>
-                    <div class="form-group col-md-6 col-lg-3 without-label">
+                    <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="modulo_citas">Módulo de citas</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-lg-3 without-label">
+                    <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="vender_sin_stock">Vender sin stock</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-lg-3 without-label">
+                    <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="editar_precio_venta">Editar precio venta</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-lg-3 without-label">
+                    <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="cobrar_iva">Cobrar IVA</label>
                           <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">

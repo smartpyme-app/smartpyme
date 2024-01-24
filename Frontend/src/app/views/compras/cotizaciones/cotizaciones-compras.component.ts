@@ -97,7 +97,7 @@ export class CotizacionesComprasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page).subscribe(compras => { 
+        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

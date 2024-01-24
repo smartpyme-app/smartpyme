@@ -20,19 +20,28 @@
                     <label for="fecha_fin">Hasta</label>
                     <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_fin" [(ngModel)]="presupuesto.fecha_fin">
                 </div>
-                <div class="form-group col-md-6 col-lg-3">
-                    <label for="ingresos">Ingresos mensuales estimados</label>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" name="ingresos" [(ngModel)]="presupuesto.ingresos">
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="ingresos">Ingresos totales estimados</label>
+                    <div class="input-group">
+                        <div class="input-group-text">$</div>
+                        <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="ingresos" [(ngModel)]="presupuesto.ingresos">
+                    </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-3">
-                    <label for="compras">Compras mensuales estimados</label>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" name="compras" [(ngModel)]="presupuesto.compras">
-                </div>
-                <div class="form-group col-md-6 col-lg-3">
-                    <label for="egresos">Egresos mensuales estimados</label>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" name="egresos" [(ngModel)]="presupuesto.egresos">
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="egresos">Egresos totales estimados</label>
+                    <div class="input-group">
+                        <div class="input-group-text">$</div>
+                        <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="egresos" [(ngModel)]="presupuesto.egresos">
+                    </div>
                 </div>                
-                <div class="form-group col-lg-3 without-label">
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="utilidad">Utilidad esperada</label>
+                    <div class="input-group">
+                        <div class="input-group-text">$</div>
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="utilidad" [(ngModel)]="presupuesto.utilidad">
+                    </div>
+                </div>
+                <div class="form-group col-lg-4 without-label">
                     <div class="form-switch border rounded">
                       <label for="credito">Detallar presupuesto</label>
                       <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="presupuesto.detalle" name="presupuesto.detalle">
@@ -44,63 +53,108 @@
                     
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Alquiler:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="alquiler" [(ngModel)]="presupuesto.alquiler">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="alquiler" [(ngModel)]="presupuesto.alquiler">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Gastos varios:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="varios" [(ngModel)]="presupuesto.varios">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="varios" [(ngModel)]="presupuesto.varios">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Mantenimiento:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="mantenimiento" [(ngModel)]="presupuesto.mantenimiento">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="mantenimiento" [(ngModel)]="presupuesto.mantenimiento">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Marketing:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="marketing" [(ngModel)]="presupuesto.marketing">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="marketing" [(ngModel)]="presupuesto.marketing">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Materia prima:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="materia_prima" [(ngModel)]="presupuesto.materia_prima">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="materia_prima" [(ngModel)]="presupuesto.materia_prima">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Comisiones:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="comisiones" [(ngModel)]="presupuesto.comisiones">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="comisiones" [(ngModel)]="presupuesto.comisiones">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Planilla:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="planilla" [(ngModel)]="presupuesto.planilla">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="planilla" [(ngModel)]="presupuesto.planilla">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Servicios:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="servicios" [(ngModel)]="presupuesto.servicios">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="servicios" [(ngModel)]="presupuesto.servicios">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Combustible:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="combustible" [(ngModel)]="presupuesto.combustible">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="combustible" [(ngModel)]="presupuesto.combustible">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Prestamos:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="prestamos" [(ngModel)]="presupuesto.prestamos">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="prestamos" [(ngModel)]="presupuesto.prestamos">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Publicidad:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="publicidad" [(ngModel)]="presupuesto.publicidad">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="publicidad" [(ngModel)]="presupuesto.publicidad">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Costo de venta:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="costo_de_venta" [(ngModel)]="presupuesto.costo_de_venta">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="costo_de_venta" [(ngModel)]="presupuesto.costo_de_venta">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Insumos:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="insumos" [(ngModel)]="presupuesto.insumos">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="insumos" [(ngModel)]="presupuesto.insumos">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Impuestos:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="impuestos" [(ngModel)]="presupuesto.impuestos">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="impuestos" [(ngModel)]="presupuesto.impuestos">
+                        </div>
                     </div>
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Gastos Administrativos:</label>
-                        <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="gastos_administrativos" [(ngModel)]="presupuesto.gastos_administrativos">
+                        <div class="input-group">
+                            <div class="input-group-text">$</div>
+                            <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="gastos_administrativos" [(ngModel)]="presupuesto.gastos_administrativos">
+                        </div>
                     </div>
                 </div>
                 

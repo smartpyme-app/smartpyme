@@ -128,8 +128,8 @@ export class GastoComponent implements OnInit {
 
     public setIva(){
         if(this.gasto.impuesto){
-            this.gasto.iva = (this.gasto.total * (this.apiService.auth_user().empresa.iva / 100)).toFixed(2);
-            this.gasto.sub_total = (this.gasto.total - (this.gasto.total * this.apiService.auth_user().empresa.iva / 100)).toFixed(2);
+            this.gasto.sub_total = (this.gasto.total / (1 + (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
+            this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
         }else{
             this.gasto.iva = 0;
             this.gasto.sub_total = this.gasto.total;

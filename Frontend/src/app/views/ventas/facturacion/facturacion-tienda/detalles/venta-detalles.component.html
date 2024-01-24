@@ -40,11 +40,11 @@
                         <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">
                     </td>
                     <td style="width: 150px;">
-                        <div class="input-group" *ngIf="detalle.precios.length < 2">
+                        <div class="input-group" *ngIf="detalle?.precios?.length < 2">
                             <span class="input-group-text">$</span>
                             <input type="number" [disabled]="!apiService.auth_user().empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
                         </div>
-                        <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle.precios.length > 1">
+                        <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios">
                                 {{ precio.precio | currency}}
                             </option>

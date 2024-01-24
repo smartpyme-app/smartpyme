@@ -54,7 +54,7 @@ class CotizacionesController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                    ->where('estado', 'Pre-compra')
+                    ->where('cotizacion', 1)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);

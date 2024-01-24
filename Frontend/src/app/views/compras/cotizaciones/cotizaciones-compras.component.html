@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Órdenes de compra</h2>
-    <button *ngIf="apiService.canEdit()" routerLink="/orden-de-compra/crear" [queryParams]="{ estado:'Pre-compra' }" tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de compra</button>
+    <button *ngIf="apiService.canEdit()" routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -62,9 +62,9 @@
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_usuario }}</td>
-                        <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-success' : compra?.estado == 'Aceptada'}">{{ compra.estado }}</span>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -73,11 +73,14 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="apiService.canEdit()" routerLink="/compra/editar/{{compra.id}}" class="btn">
+                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()" routerLink="/compra/editar/{{compra.id}}" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                                    </a>
+                                    <a *ngIf="compra.estado == 'Pendiente'" routerLink="/compra/crear" [queryParams]="{ facturar_cotizacion: 1, id_compra: compra.id }" class="btn">
+                                        <i class="fa fa-fw fa-money-bill"></i> Facturar
                                     </a>
                                     <a (click)="imprimir(compra)" class="btn">
                                         <i class="fa fa-fw fa-print"></i> Imprimir

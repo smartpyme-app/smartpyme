@@ -37,6 +37,7 @@ class Venta extends Model {
         'total',
         'observaciones',
         'recurrente',
+        'cotizacion',
         'id_caja',
         'id_bodega',
         'id_corte',
