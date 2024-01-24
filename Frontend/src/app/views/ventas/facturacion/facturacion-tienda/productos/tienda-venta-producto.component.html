@@ -150,7 +150,7 @@
         <section>
             <div class="row">
                 <div class="col">
-                    <button class="btn btn-primary float-end" (click)="modalRef.hide()">Finalizar</button>
+                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">Agregar <span *ngIf="detalles.length > 0">{{ detalles.length }} producto</span><span *ngIf="detalles.length > 1">s</span></button>
                 </div>
             </div>
         </section>

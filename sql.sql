@@ -80,6 +80,7 @@ ALTER TABLE compras ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE compras ADD fecha_expiracion date NULL AFTER recurrente;
 ALTER TABLE compras ADD cotizacion Boolean DEFAULT 0 AFTER recurrente;
 UPDATE compras SET cotizacion = 1 WHERE estado ='Pre-compra';
+UPDATE compras SET estado = 'Pendiente' WHERE estado ='Pre-compra';
 
 ALTER TABLE ventas CHANGE total_venta total DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE ventas CHANGE vencimiento fecha_pago date NULL;
@@ -90,6 +91,7 @@ ALTER TABLE ventas ADD recurrente Boolean DEFAULT 0 AFTER observaciones;
 ALTER TABLE ventas ADD fecha_expiracion date NULL AFTER recurrente;
 ALTER TABLE ventas ADD cotizacion Boolean DEFAULT 0 AFTER recurrente;
 UPDATE ventas SET cotizacion = 1 WHERE estado ='Pre-venta';
+UPDATE ventas SET estado = 'Pendiente' WHERE estado ='Pre-venta';
 
 ALTER TABLE detalles_venta CHANGE cantidad cantidad DECIMAL(10,2) NOT NULL;
 ALTER TABLE detalles_venta ADD total_costo Boolean DEFAULT 0 AFTER total;

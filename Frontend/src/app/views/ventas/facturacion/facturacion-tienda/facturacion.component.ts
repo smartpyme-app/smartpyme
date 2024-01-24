@@ -167,6 +167,7 @@ export class FacturacionComponent implements OnInit {
         if (this.route.snapshot.paramMap.get('id')!) {
             this.apiService.read('venta/', +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
                 this.venta = venta;
+                this.venta.cobrar_impuestos = (this.venta.iva > 0) ?true : false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
@@ -200,6 +201,7 @@ export class FacturacionComponent implements OnInit {
                 this.venta.id_documento = null;
                 this.venta.correlativo = null;
                 this.venta.estado = 'Pagada';
+                this.venta.observaciones = '';
                 this.venta.cotizacion = 0;
                 this.venta.id = null;
                 this.venta.detalles.forEach((detalle:any) => {

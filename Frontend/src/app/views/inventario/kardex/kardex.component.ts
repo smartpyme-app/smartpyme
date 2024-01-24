@@ -21,7 +21,7 @@ export class KardexComponent implements OnInit {
 	ngOnInit() {
         this.filtros.inicio = this.apiService.date();
         this.filtros.fin = this.apiService.date();
-        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+        this.filtros.id_inventario = this.apiService.auth_user().id_sucursal;
         this.filtros.detalle = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';

@@ -15,7 +15,7 @@
             <form name="form" (ngSubmit)="loadAll()" class="row">
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="">Sucursal: </label>
-                    <select class="form-control form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+                    <select class="form-control form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario">
                         <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
                             {{ sucursal.nombre }}
                         </option>

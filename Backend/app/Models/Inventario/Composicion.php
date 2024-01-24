@@ -13,7 +13,11 @@ class Composicion extends Model {
         'cantidad'
     );
 
-    protected $appends = ['nombre_producto'];
+    protected $appends = ['nombre_producto', 'nombre_compuesto'];
+
+    public function getNombreCompuestoAttribute(){
+        return $this->compuesto()->pluck('nombre')->first();
+    }
 
     public function getNombreProductoAttribute(){
         return $this->producto()->pluck('nombre')->first();

@@ -24,6 +24,7 @@ export class TiendaVentaProductoComponent implements OnInit {
     public categorias:any = [];
     public sucursales:any = [];
     public detalle:any = {};
+    public detalles:any = [];
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
@@ -127,38 +128,56 @@ export class TiendaVentaProductoComponent implements OnInit {
     }
 
     onCheckProducto(producto:any){
-        this.detalle = Object.assign({}, producto);
-        this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
-        this.detalle.img            = producto.img;
-        this.detalle.precio         = parseFloat(producto.precio);
-        this.detalle.precios        = producto.precios;
-        this.detalle.precios.unshift({
-                'precio' : this.detalle.precio
-            });
-        this.detalle.costo          = parseFloat(producto.costo);
-        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
-        if(producto.inventarios.length > 0){
-            this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        let radio = document.getElementById('producto' + producto.id) as HTMLInputElement;
+        if(radio.checked){
+            // radio.checked = true
+            this.detalle = Object.assign({}, producto);
+            this.detalle.id_producto    = producto.id;
+            this.detalle.nombre_producto = producto.nombre;
+            this.detalle.img            = producto.img;
+            this.detalle.precio         = parseFloat(producto.precio);
+            this.detalle.precios        = producto.precios;
+            this.detalle.precios.unshift({
+                    'precio' : this.detalle.precio
+                });
+            this.detalle.costo          = parseFloat(producto.costo);
+            producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+            if(producto.inventarios.length > 0){
+                this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+            }else{
+                this.detalle.stock = null;
+            }
+            this.detalle.cantidad       = 1;
+            this.detalle.descuento      = 0;
+            this.detalle.descuento_porcentaje      = 0;
+            this.detalles.unshift(this.detalle);
         }else{
-            this.detalle.stock = null;
+            // radio.checked = false;
+            const indexAEliminar = this.detalles.findIndex((item:any) => item.id_producto === producto.id);
+            if (indexAEliminar !== -1) {
+              this.detalles.splice(indexAEliminar, 1);
+            }
+            console.log(indexAEliminar);
         }
-        this.detalle.cantidad       = 1;
-        this.detalle.descuento      = 0;
-        this.detalle.descuento_porcentaje      = 0;
 
-        console.log(this.detalle);
-        let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;
-        if(radio){
-            radio.checked = true
-        }
-        this.productoSelect.emit(this.detalle);
+        console.log(this.detalles);
     }
 
     onSubmit(){
         this.productos = [];
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
+    }
+
+    agregarDetalles(){
+        for (let i = 0; i < this.detalles.length; i++) { 
+            this.productoSelect.emit(this.detalles[i]);
+        }
+
+        this.searchControl.setValue('');
         if(this.modalRef){
             this.modalRef.hide();
         }

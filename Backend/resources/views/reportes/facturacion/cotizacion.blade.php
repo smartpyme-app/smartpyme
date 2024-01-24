@@ -2,13 +2,19 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Cotización</title>
+    <title>Cotización #{{ $venta->correlativo }} - {{ $venta->nombre_cliente }}</title>
     <style>
 
-        *{ margin: 0cm; padding: 0cm;}
+        *{ 
+            margin: 0cm;
+            font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
+        }
         body {
             font-family: serif;
             margin: 50px;
+        }
+        h1,h2,h3,h4,h5,h6{
+            color: #005CBB !important;
         }
 
         table{
@@ -16,13 +22,16 @@
             border-collapse: collapse;
         }
         .table th, .table td{
-            border: 1px solid #555;
+            border: 0px;
             border-collapse: collapse;
-            padding: 5px;
+            padding: 10px 5px;
             text-align: left;
         }
         .text-right{
             text-align: right !important;
+        }
+        .border-bottom{
+            border-bottom: 1px solid #005CBB !important;
         }
 
 
@@ -37,52 +46,68 @@
                 <tr>
                     <td>
                         <h1>{{ $venta->empresa()->pluck('nombre')->first() }}</h1>
-                        <h4>{{ $venta->empresa()->pluck('direccion')->first() }}</h4>
-                        <h4>{{ $venta->empresa()->pluck('telefono')->first() }}</h4>
+                        <p>
+                            {{ $venta->empresa()->pluck('municipio')->first() }}
+                            {{ $venta->empresa()->pluck('departamento')->first() }}
+                        </p>
+                        <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
+                        <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
                     </td>
-                    <td>
-                        <p class="text-right">#{{ $venta->id }}</p>
-                        <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+                    <td class="text-right">
+                        @if ($venta->empresa()->pluck('logo')->first())
+                            <img width="150" height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                        @endif
                     </td>
                 </tr>
             </tbody>
         </table>
-        
-        <br><br>
 
         <table>
             <tbody>
                 <tr>
-                    <td><h2>Cliente</h2></td>
+                    <td><h4>Cliente</h4></td>
                 </tr>
                 <tr>
                     <td>
                         <p>{{ $venta->nombre_cliente }}</p>
-                        <h4>{{ $venta->cliente()->pluck('direccion')->first() }}</h4>
-                        <h4>{{ $venta->cliente()->pluck('telefono')->first() }}</h4>
+                        <p>
+                            {{ $venta->cliente()->pluck('municipio')->first() }}
+                            {{ $venta->cliente()->pluck('departamento')->first() }}
+                            {{ $venta->cliente()->pluck('direccion')->first() }} <br>
+                        </p>
+                    </td>
+                    <td>
+                        <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                        <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                    </td>
+                    <td>
+                        <p class="text-right">Cotización #{{ $venta->correlativo }}</p>
+                        <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+                        <p class="text-right">Válido hasta: {{ \Carbon\Carbon::parse($venta->fecha_expiracion)->format('d/m/Y') }}</p>
                     </td>
                 </tr>
             </tbody>
         </table> 
 
-        <br><br>
+        <br>
 
         <table class="table">
             <thead>
                 <tr>
-                    <th>Descripción</th>
-                    <th class="text-right">Cantidad</th>
-                    <th class="text-right">Precio</th>
-                    <th class="text-right">Total</th>
+                    <th class="border-bottom">Descripción</th>
+                    <th class="border-bottom text-right">Cantidad</th>
+                    <th class="border-bottom text-right">Precio</th>
+                    <th class="border-bottom text-right">Total</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($venta->detalles as $detalle)
                 <tr>
-                    <td>   {{ $detalle->nombre_producto  }}</td>
-                    <td class="text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="text-right">   ${{number_format($detalle->costo , 2) }}</td>
-                    <td class="text-right">   ${{ number_format($detalle->total, 2) }}</th>
+                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
+                    <td class="border-bottom text-right">   ${{number_format($detalle->precio , 2) }}</td>
+                    <td class="border-bottom text-right">   ${{ number_format($detalle->total, 2) }}</th>
                 </tr>
                 @if ($detalle->descuento > 0)
                     <tr>
@@ -117,6 +142,11 @@
                 </tr>
             </tfoot>
         </table>
+
+        <br>
+        <h4>Términos y condiciones:</h4>
+        <p>{{ $venta->observaciones }}</p>
+        <br>
 
     </section>
 

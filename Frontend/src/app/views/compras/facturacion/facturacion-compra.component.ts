@@ -144,6 +144,8 @@ export class FacturacionCompraComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('compra/', params.id).subscribe(compra => {
                     this.compra = compra;
+                    this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
+                    this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
                     this.loading = false;
                 }, error => {this.alertService.error(error); this.loading = false;});
             }

@@ -34,6 +34,7 @@ class Compra extends Model {
         'cotizacion',
         'iva',
         'sub_total',
+        'observaciones',
         'total',
         // 'id_bodega',
         'id_usuario',

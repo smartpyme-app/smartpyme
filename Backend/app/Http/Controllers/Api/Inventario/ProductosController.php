@@ -28,7 +28,7 @@ class ProductosController extends Controller
 
     public function index(Request $request) {
 
-        $productos = Producto::with('inventarios')
+        $productos = Producto::with('inventarios', 'precios')
                                 ->when($request->id_categoria, function($query) use ($request){
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
