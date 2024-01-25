@@ -28,45 +28,16 @@ Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
 Route::get('/clear-bd', function(){
-	
-	$id_empresa = 13;
-	$id_sucursal = 8; //Biovet
-	
-	// $productos = DB::table('productos')->where('id_empresa', '!=', $id_empresa)->get();
 
-	// foreach ($productos as $producto) {
-		App\Models\Inventario\Inventario::leftJoin('productos', 'inventario.id_producto', '=', 'productos.id')
-		    ->whereNull('productos.id')
-		    ->select('inventario.*')
-		    ->delete();
-		App\Models\Inventario\Kardex::leftJoin('productos', 'kardexs.id_producto', '=', 'productos.id')
-		    ->whereNull('productos.id')
-		    ->select('kardexs.*')
-		    ->delete();
-	// }
-	DB::table('productos')->where('id_empresa', '!=', $id_empresa)->delete();
-	DB::table('inventario')->where('id_sucursal', '!=', $id_sucursal)->delete();
-	DB::table('sucursales')->where('id_empresa', '!=', $id_empresa)->delete();
-	DB::table('categorias')->where('id_empresa', '!=', $id_empresa)->delete();
-	// $ventas = DB::table('ventas')->where('id_empresa', '!=', $id_empresa)->get();
-	// foreach ($ventas as $venta) {
-		App\Models\Ventas\Detalle::leftJoin('ventas', 'detalles_venta.id_venta', '=', 'ventas.id')
-		    ->whereNull('ventas.id')
-		    ->select('detalles_venta.*')
-		    ->delete();
-	// }
-	DB::table('ventas')->where('id_empresa', '!=', $id_empresa)->delete();
-	DB::table('egresos')->where('id_empresa', '!=', $id_empresa)->delete();
-	// $compras = DB::table('compras')->where('id_empresa', '!=', $id_empresa)->get();
-	// foreach ($compras as $compra) {
-		App\Models\Compras\Detalle::leftJoin('compras', 'detalles_compra.id_compra', '=', 'compras.id')
-		    ->whereNull('compras.id')
-		    ->select('detalles_compra.*')
-		    ->delete();
-	// }
-	DB::table('compras')->where('id_empresa', '!=', $id_empresa)->delete();
-	DB::table('clientes')->where('id_empresa', '!=', $id_empresa)->delete();
-	DB::table('proveedores')->where('id_empresa', '!=', $id_empresa)->delete();
+
+	DB::table('kardexs')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('ventas')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('detalles_venta')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('egresos')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('compras')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('detalles_compra')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('clientes')->whereYear('created_at', '<', 2024)->delete();
+	DB::table('proveedores')->whereYear('created_at', '<', 2024)->delete();
 
 	return "Listo XD";
 	
