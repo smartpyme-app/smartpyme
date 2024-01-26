@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\DetallesController;
     Route::post('/cotizacion/facturacion',        [CotizacionesController::class, 'facturacion']);
     Route::get('/cotizacion/impresion/{id}',        [CotizacionesController::class, 'generarDoc']);
 
+    Route::get('/cotizaciones/exportar',    [CotizacionesController::class, 'export']);
+
     Route::get('/cotizacion/detalles',           [DetallesController::class, 'index']);
     Route::get('/cotizacion/detalle/{id}',       [DetallesController::class, 'read']);
     Route::post('/cotizacion/detalle',           [DetallesController::class, 'store']);

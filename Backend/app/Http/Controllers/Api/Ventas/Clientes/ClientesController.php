@@ -11,6 +11,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Creditos\Credito;
 
 use App\Imports\Clientes;
+use App\Exports\ClientesExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ClientesController extends Controller

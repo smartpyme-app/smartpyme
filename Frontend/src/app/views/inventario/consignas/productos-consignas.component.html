@@ -14,7 +14,9 @@
         <div class="col">
             <div class="d-flex gap-2">
                 <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
-                <!-- <button tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button> -->
+                <button [disabled]="downloading" tooltip="Descargar consignas" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
                 <!-- <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off"> -->
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador">
                 <!-- </form> -->
@@ -30,7 +32,7 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/consignas">Consignas</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
-            <ng-select name="categoria" [(ngModel)]="filtro.categoria" class="form-select p-0 border-0 bg-default  w-auto">
+            <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default  w-auto">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.nombre">
                     {{categoria.nombre}}
@@ -60,7 +62,7 @@
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
-                    <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtro.categoria">
+                    <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
                             {{ producto.nombre }}

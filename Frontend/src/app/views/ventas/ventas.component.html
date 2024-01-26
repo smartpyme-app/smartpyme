@@ -164,15 +164,15 @@
             <div class="d-grid mt-4">
                 <p>Descargar los detalles de ventas por producto.</p>
                 <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar</span>
-                    <span *ngIf="saving">Descargando...</span>
+                    <span *ngIf="!downloadingDetalles">Descargar</span>
+                    <span *ngIf="downloadingDetalles">Descargando...</span>
                 </button>
             </div>
             <div class="d-grid my-4">
                 <p>Descargar los detalles de ventas totales.</p>
                 <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar</span>
-                    <span *ngIf="saving">Descargando...</span>
+                    <span *ngIf="!downloadingVentas">Descargar</span>
+                    <span *ngIf="downloadingVentas">Descargando...</span>
                 </button>
             </div>
         </div>

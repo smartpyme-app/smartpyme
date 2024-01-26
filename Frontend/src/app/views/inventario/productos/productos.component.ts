@@ -11,6 +11,7 @@ export class ProductosComponent implements OnInit {
 
     public productos:any = [];
     public loading:boolean = false;
+    public downloading:boolean = false;
     public filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
@@ -107,6 +108,7 @@ export class ProductosComponent implements OnInit {
     }
 
     public descargar(){
+        this.downloading = true;
         this.apiService.export('productos/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -117,7 +119,8 @@ export class ProductosComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar productos:', error); }
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
     }
 

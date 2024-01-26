@@ -8,3 +8,4 @@ use App\Http\Controllers\Api\Ventas\AbonosController;
     Route::delete('/venta/abono/{id}',    [AbonosController::class, 'delete']);
 
     Route::get('/venta/abono/imprimir/{id}',    [AbonosController::class, 'print']);
+    Route::get('/ventas/abonos/exportar',    [AbonosController::class, 'export']);

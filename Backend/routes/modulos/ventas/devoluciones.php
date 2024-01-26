@@ -11,7 +11,8 @@ use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionDetallesController;
     Route::post('/devolucion/venta',                   [DevolucionVentasController::class, 'store']);
     Route::get('/devolucion/venta/{id}',               [DevolucionVentasController::class, 'read']);
     Route::delete('/devolucion/venta/{id}',            [DevolucionVentasController::class, 'delete']);
-    
+    Route::get('/devoluciones/ventas/exportar',    [DevolucionVentasController::class, 'export']);
+
     Route::get('/devolucion/venta/detalle/{id}',       [DevolucionDetallesController::class, 'index']);
     Route::post('/devolucion/venta/detalle',           [DevolucionDetallesController::class, 'store']);
     Route::delete('/devolucion/venta/detalle/{id}',    [DevolucionDetallesController::class, 'delete']);

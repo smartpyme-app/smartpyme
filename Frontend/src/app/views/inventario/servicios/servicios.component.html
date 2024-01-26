@@ -14,7 +14,9 @@
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
-                <!-- <button tooltip="Descargar servicios" (click)="descargar()" class="btn btn-default tcla-F3"><i class="fa fa-arrow-up-from-bracket fa-rotate-180"></i></button> -->
+                <button [disabled]="downloading" tooltip="Descargar servicios" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarServicios()" autocomplete="off">
                     <input type="search" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>

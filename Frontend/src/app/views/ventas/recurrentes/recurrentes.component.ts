@@ -15,6 +15,7 @@ export class RecurrentesComponent implements OnInit {
     public venta:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
 
     public clientes:any = [];
     public usuario:any = {};
@@ -174,6 +175,23 @@ export class RecurrentesComponent implements OnInit {
 
     public openDescargar(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ventas-recurrentes.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => {this.alertService.error(error); this.downloading = false;}
+        );
     }
 
     public descargarVentas(){

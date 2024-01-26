@@ -14,7 +14,9 @@
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
-                <button tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">

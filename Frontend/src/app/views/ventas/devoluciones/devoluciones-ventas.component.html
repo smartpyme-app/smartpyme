@@ -13,7 +13,9 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <!-- <button tooltip="Descargar devoluciones de ventas" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button> -->
+                <button [disabled]="downloading" tooltip="Descargar devoluciones de venta" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.referencia">
                 </form>

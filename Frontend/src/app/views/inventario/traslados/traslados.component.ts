@@ -13,6 +13,7 @@ export class TrasladosComponent implements OnInit {
     public traslado:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
 
     public filtros:any = {};
     public productos:any = [];
@@ -28,14 +29,6 @@ export class TrasladosComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.filtros.id_sucursal_de = '';
-        this.filtros.id_sucursal_para = '';
-        this.filtros.id_producto = '';
-        this.filtros.estado = '';
-        this.filtros.search = '';
-        this.filtros.orden = 'created_at';
-        this.filtros.direccion = 'desc';
-        this.filtros.paginate = 10;
 
         this.loadAll();
 
@@ -45,7 +38,21 @@ export class TrasladosComponent implements OnInit {
     }
 
     public loadAll() {
+        this.filtros.id_sucursal_de = '';
+        this.filtros.id_sucursal_para = '';
+        this.filtros.id_producto = '';
+        this.filtros.estado = '';
+        this.filtros.search = '';
+        this.filtros.orden = 'created_at';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
         this.loading = true;
+        this.filtrarTraslados();
+        
+    }
+
+    public filtrarTraslados(){
         this.apiService.getAll('traslados', this.filtros).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
@@ -140,6 +147,23 @@ export class TrasladosComponent implements OnInit {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('traslados/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'traslados.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 }

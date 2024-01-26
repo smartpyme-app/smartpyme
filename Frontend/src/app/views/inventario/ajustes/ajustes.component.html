@@ -14,7 +14,10 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <form class="d-flex input-group" name="form" (ngSubmit)="loadAll()" autocomplete="off">
+                <button [disabled]="downloading" tooltip="Descargar ajustes" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarAjustes()" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">
                             <i class="fa fa-search text-muted"></i>
@@ -34,12 +37,12 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
         </div>
         <div class="col-md-6 d-flex justify-content-end gap-2">
-            <select name="estado" (change)="loadAll()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+            <select name="estado" (change)="filtrarAjustes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Confirmado">Confirmado</option>
                 <option value="Cancelado">Cancelado</option>
             </select>
-            <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+            <select name="id_sucursal" (change)="filtrarAjustes()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
                 <option value="">Sucursal</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
             </select>
@@ -55,7 +58,7 @@
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Descripción</th>
                         <th>Estado</th>
-                        <th>Bodega</th>
+                        <th>Sucursal</th>
                         <th (click)="setOrden('ajuste')" [ngClass]="{'sorted-asc': filtros.orden == 'ajuste' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'ajuste' && filtros.direccion == 'desc'}" class="click text-center">Ajuste</th>
                     </tr>
                 </thead>
@@ -166,7 +169,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="loadAll()">
+    <form autocomplete="off" (ngSubmit)="filtrarAjustes()">
         <div class="row mb-3">
             <div class="form-group col-md-6">
                 <label for="">Del:</label>

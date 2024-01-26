@@ -63,4 +63,8 @@ class Traslado extends Model
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal_de');
     }
 
+    public function usuario(){
+        return $this->belongsTo('App\Models\User', 'id_usuario');
+    }
+
 }

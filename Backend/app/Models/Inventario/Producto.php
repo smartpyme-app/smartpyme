@@ -97,6 +97,10 @@ class Producto extends Model {
         return $this->hasMany('App\Models\Inventario\Precios\Precio','id_producto');
     }
 
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
     public function promocion(){
         return $this->belongsTo('App\Models\Inventario\Promociones\Promocion', 'id_promocion');
     }

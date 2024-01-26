@@ -53,7 +53,7 @@ export class AlertService {
         }
         else if(message.status == 500) {
             // this.notifier.notify( 'error', message.message );
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.statusText});
         }
         else {
             // this.notifier.notify( 'warning', message);

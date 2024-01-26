@@ -12,8 +12,9 @@ export class ProductosConsignasComponent implements OnInit {
     public productos:any = [];
     public buscador:any = '';
     public loading:boolean = false;
+    public downloading:boolean = false;
     
-    public filtro:any = {};
+    public filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
     public categorias:any = [];
@@ -37,7 +38,7 @@ export class ProductosConsignasComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtro.categoria = '';
+        this.filtros.categoria = '';
         this.loading = true;
         this.apiService.getAll('productos/consignas').subscribe(productos => { 
             this.productos = productos;
@@ -81,7 +82,7 @@ export class ProductosConsignasComponent implements OnInit {
 
     public onFiltrar(){
         this.loading = true;
-        this.apiService.store('productos/filtrar', this.filtro).subscribe(productos => { 
+        this.apiService.store('productos/filtrar', this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
             this.modalRef.hide();
@@ -104,8 +105,22 @@ export class ProductosConsignasComponent implements OnInit {
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
+
     public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+        this.downloading = true;
+        this.apiService.export('productos/consignas/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'consignas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 }

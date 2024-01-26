@@ -4,14 +4,12 @@ namespace App\Imports;
 
 use App\Models\Ventas\Clientes\Cliente;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Auth;
 
 class Clientes implements ToModel, WithHeadingRow, WithValidation
 {
@@ -23,22 +21,24 @@ class Clientes implements ToModel, WithHeadingRow, WithValidation
 
         $cliente = new Cliente();
         $cliente->nombre = $row['nombre'];
-        $cliente->registro  = $row['registro'];
+        $cliente->apellido = $row['apellido'];
+        $cliente->ncr  = $row['ncr'];
         $cliente->giro  = $row['giro'];
-        // $cliente->dui   = $row['dui'];
+        $cliente->tipo   = $row['tipo'] ? $row['tipo'] : 'Persona';
+        $cliente->tipo_contribuyente   = $row['tipo_contribuyente'];
+        $cliente->dui   = $row['dui'];
         $cliente->nit   = $row['nit'];
-        // $cliente->fecha_nacimiento  = $row['fecha_nacimiento'];
+        $cliente->nombre_empresa   = $row['nombre_empresa'];
+        $cliente->empresa_telefono   = $row['telefono_empresa'];
+        $cliente->empresa_direccion   = $row['direccion_empresa'];
         $cliente->direccion = $row['direccion'];
         $cliente->municipio = $row['municipio'];
         $cliente->departamento  = $row['departamento'];
         $cliente->telefono  = $row['telefono'];
         $cliente->correo    = $row['correo'];
-        // $cliente->sexo  = $row['sexo'];
-        // $cliente->profesion = $row['profesion'];
-        // $cliente->estado_civil  = $row['estado_civil'];
 
-        $cliente->usuario_id = 1;
-        $cliente->empresa_id = 1;
+        $cliente->id_usuario = Auth::user()->id;
+        $cliente->id_empresa = Auth::user()->id_empresa;
         $cliente->save();
 
     }

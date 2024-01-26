@@ -16,9 +16,9 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
-
+use App\Exports\DevolucionesVentasExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Creditos\Credito;
-
 use Illuminate\Support\Facades\DB;
 
 
@@ -206,6 +206,13 @@ class DevolucionVentasController extends Controller
             return "Venta sin tipo";
         }
 
+    }
+
+    public function export(Request $request){
+        $ventas = new DevolucionesVentasExport();
+        $ventas->filter($request);
+
+        return Excel::download($ventas, 'ventas.xlsx');
     }
 
 

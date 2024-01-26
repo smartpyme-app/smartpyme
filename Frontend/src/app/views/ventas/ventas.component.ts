@@ -14,6 +14,8 @@ export class VentasComponent implements OnInit {
     public venta:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloadingDetalles:boolean = false;
+    public downloadingVentas:boolean = false;
 
     public clientes:any = [];
     public usuario:any = {};
@@ -171,7 +173,7 @@ export class VentasComponent implements OnInit {
     }
 
     public descargarVentas(){
-        this.saving = true;
+        this.downloadingVentas = true; this.saving = true;
         this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -182,13 +184,13 @@ export class VentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            this.saving = false;
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+            this.downloadingVentas = false; this.saving = false;
+          }, (error) => {this.alertService.error(error); this.downloadingVentas = false; this.saving = false;}
         );
     }
 
     public descargarDetalles(){
-        this.saving = true;
+        this.downloadingDetalles = true; this.saving = true;
         this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -199,8 +201,8 @@ export class VentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            this.saving = false;
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+            this.downloadingDetalles = false; this.saving = false;
+          }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
         );
     }
 

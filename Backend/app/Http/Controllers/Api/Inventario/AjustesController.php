@@ -11,6 +11,9 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use App\Models\Admin\Tanque;
 
+use App\Exports\AjustesExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 class AjustesController extends Controller
 {
     
@@ -110,6 +113,13 @@ class AjustesController extends Controller
 
         return Response()->json($ajuste, 201);
 
+    }
+
+    public function export(Request $request){
+        $ajustes = new AjustesExport();
+        $ajustes->filter($request);
+
+        return Excel::download($ajustes, 'ajustes.xlsx');
     }
 
 

@@ -12,6 +12,7 @@ export class ServiciosComponent implements OnInit {
     public servicios:any = [];
     public buscador:any = '';
     public loading:boolean = false;
+    public downloading:boolean = false;
     
     public filtros:any = {};
     public servicio:any = {};
@@ -94,6 +95,23 @@ export class ServiciosComponent implements OnInit {
             this.modalRef.hide();
         },error => {this.alertService.error(error); this.loading = false;
         });
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('servicios/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'servicios.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 }

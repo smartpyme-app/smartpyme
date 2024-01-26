@@ -11,6 +11,9 @@ use App\Models\Inventario\Inventario;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Exports\TrasladosExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class TrasladosController extends Controller
 {   
@@ -133,6 +136,13 @@ class TrasladosController extends Controller
 
         return Response()->json($traslado, 201);
 
+    }
+
+    public function export(Request $request){
+        $tralados = new TrasladosExport();
+        $tralados->filter($request);
+
+        return Excel::download($tralados, 'tralados.xlsx');
     }
 
 }

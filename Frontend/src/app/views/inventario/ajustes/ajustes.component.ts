@@ -13,6 +13,7 @@ export class AjustesComponent implements OnInit {
     public ajuste:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
 
     public filtros:any = {};
     public productos:any = [];
@@ -28,15 +29,6 @@ export class AjustesComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.filtros.id_sucursal = '';
-        this.filtros.id_producto = '';
-        this.filtros.id_usuario = '';
-        this.filtros.estado = '';
-        this.filtros.search = '';
-        this.filtros.orden = 'created_at';
-        this.filtros.direccion = 'desc';
-        this.filtros.paginate = 10;
-
         this.loadAll();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
@@ -46,7 +38,20 @@ export class AjustesComponent implements OnInit {
     }
 
     public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_producto = '';
+        this.filtros.id_usuario = '';
+        this.filtros.estado = '';
+        this.filtros.search = '';
+        this.filtros.orden = 'created_at';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
         this.loading = true;
+        this.filtrarAjustes();
+    }
+
+    public filtrarAjustes(){
         this.apiService.getAll('ajustes', this.filtros).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;
@@ -143,6 +148,23 @@ export class AjustesComponent implements OnInit {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('ajustes/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ajustes.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 }

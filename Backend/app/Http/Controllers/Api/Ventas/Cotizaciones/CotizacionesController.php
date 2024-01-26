@@ -12,6 +12,9 @@ use App\Models\Ventas\Detalle;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
+use App\Exports\CotizacionesExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class CotizacionesController extends Controller
 {
@@ -221,6 +224,13 @@ class CotizacionesController extends Controller
                                 ->paginate(10);
         return Response()->json($ordenes, 200);
 
+    }
+
+    public function export(Request $request){
+        $cotizaciones = new CotizacionesExport();
+        $cotizaciones->filter($request);
+
+        return Excel::download($cotizaciones, 'cotizaciones.xlsx');
     }
 
 }

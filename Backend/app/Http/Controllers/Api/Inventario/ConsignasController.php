@@ -8,6 +8,9 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Compras\Detalle as DetalleCompra;
 use Illuminate\Support\Facades\Crypt;
 
+use App\Exports\ConsignasExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 class ConsignasController extends Controller
 {
     
@@ -143,6 +146,13 @@ class ConsignasController extends Controller
 
         return Response()->json($ajustes, 200);
 
+    }
+
+    public function export(Request $request){
+        $consignas = new ConsignasExport();
+        $consignas->filter($request);
+
+        return Excel::download($consignas, 'consignas.xlsx');
     }
 
 

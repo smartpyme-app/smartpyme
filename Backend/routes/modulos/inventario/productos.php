@@ -50,6 +50,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::get('/productos/consignas',         [ConsignasController::class, 'index']);
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
+    Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
     
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

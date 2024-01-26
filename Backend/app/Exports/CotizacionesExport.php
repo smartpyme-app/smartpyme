@@ -2,14 +2,14 @@
 
 namespace App\Exports;
 
-use App\Models\Ventas\Venta;
+use App\Models\Ventas\Venta as Cotizacion;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 
-class VentasExport implements FromCollection, WithHeadings, WithMapping
+class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -28,17 +28,10 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'DUI',
             'NIT',
             'Dirección',
-            'Documento', 
-            'Correlativo', 
-            'Forma de pago',
-            'Banco',
+            'Documento',
+            'Correlativo',
             'Estado',
-            'Canal',
-            'Costo',
-            'Sub Total',
-            'Descuento',
-            'IVA',
-            'Utilidad',
+            'Fecha de expiracion',
             'Total',
             'Empresa',
             'Observaciones', 
@@ -50,20 +43,14 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $ventas = Venta::when($request->buscador, function($query) use ($request){
+        $ventas = Cotizacion::when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
-                            return $query->where('fecha', '>=', $request->inicio);
-                        })
-                        ->when($request->recurrente !== null, function($q) use ($request){
-                            $q->where('recurrente', !!$request->recurrente);
-                        })
-                        ->when($request->fin, function($query) use ($request){
-                            return $query->where('fecha', '<=', $request->fin);
+                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -92,7 +79,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->where('cotizacion', 0)
+                    ->where('cotizacion', 1)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                             ->get();
@@ -110,15 +97,8 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
               $row->cliente()->pluck('direccion')->first(),
               $row->nombre_documento,
               $row->correlativo,
-              $row->forma_pago,
-              $row->detalle_banco,
               $row->estado,
-              $row->nombre_canal,
-              round($row->total_costo, 2),
-              round($row->sub_total, 2),
-              round($row->descuento, 2),
-              round($row->iva, 2),
-              round($row->total - $row->total_costo - $row->iva, 2),
+              $row->fecha_expiracion,
               round($row->total, 2),
               $row->sucursal()->first()->empresa()->pluck('nombre')->first(),
               $row->observaciones,

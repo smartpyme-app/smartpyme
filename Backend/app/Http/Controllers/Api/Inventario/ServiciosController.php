@@ -9,6 +9,8 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto as Servicio;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
+use App\Exports\ServiciosExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ServiciosController extends Controller
 {
@@ -198,6 +200,13 @@ class ServiciosController extends Controller
         
         return Response()->json($ventas, 200);
 
+    }
+
+    public function export(Request $request){
+        $servicios = new ServiciosExport();
+        $servicios->filter($request);
+
+        return Excel::download($servicios, 'servicios.xlsx');
     }
 
 }

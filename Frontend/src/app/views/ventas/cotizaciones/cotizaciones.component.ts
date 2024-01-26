@@ -14,6 +14,7 @@ export class CotizacionesComponent implements OnInit {
     public ventas:any = [];
     public venta:any = {};
     public loading:boolean = false;
+    public downloading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
@@ -81,10 +82,7 @@ export class CotizacionesComponent implements OnInit {
             this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
-    
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
+
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
@@ -145,6 +143,23 @@ export class CotizacionesComponent implements OnInit {
 
     public imprimir(venta:any){
         window.open(this.apiService.baseUrl + '/api/cotizacion/impresion/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('cotizaciones/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cotizaciones.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 
