@@ -48,14 +48,16 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
         $request = $this->request;
         
         $detalles = Detalle::whereHas('compra', function($query) use ($request) {
-                            $query->when($request->buscador, function($query) use ($request){
-                                return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                            $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                         ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                         ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                         ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                             })
                             ->when($request->inicio, function($query) use ($request){
                                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            })
+                            ->when($request->recurrente !== null, function($q) use ($request){
+                                $q->where('recurrente', !!$request->recurrente);
                             })
                             ->when($request->id_sucursal, function($query) use ($request){
                                 return $query->where('id_sucursal', $request->id_sucursal);
@@ -75,7 +77,7 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
                             ->when($request->metodo_pago, function($query) use ($request){
                                 return $query->where('metodo_pago', $request->metodo_pago);
                             })
-                            ->where('estado', '!=', 'Pre-compra')
+                            ->where('cotizacion', 0)
                             ->orderBy($request->orden, $request->direccion)
                             ->orderBy('id', 'desc');
                         })->get();

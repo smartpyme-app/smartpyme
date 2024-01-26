@@ -33,9 +33,9 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
             'Proveedor',
             'NIT',
             'Registro',
-            'Monto sin IVA',
+            'Subtotal',
             'IVA',
-            'Monto total',
+            'Total',
             'Nota',
         ];
     }
@@ -72,9 +72,9 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
               $row->proveedor()->pluck('nombre')->first(),
               $row->proveedor()->pluck('nit')->first(),
               $row->proveedor()->pluck('ncr')->first(),
-              round($row->total - $row->iva ,2),
-              $row->iva,
-              $row->total,
+              number_format($row->sub_total,2),
+              number_format($row->iva,2),
+              number_format($row->total,2),
               $row->nota,
          ];
         return $fields;

@@ -134,15 +134,17 @@
   <div class="modal-body">
         <div class="row">
             <div class="d-grid mt-4">
+                <p>Descargar los detalles de compras por producto.</p>
                 <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar los detalles de compras</span>
-                    <span *ngIf="saving">Descargando...</span>
+                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
+                    <span *ngIf="downloadingDetalles">Descargando...</span>
                 </button>
             </div>
-            <div class="d-grid mt-4">
+            <div class="d-grid my-4">
+                <p>Descargar los detalles de compras totales.</p>
                 <button [disabled]="saving" (click)="descargarCompras()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar las compras</span>
-                    <span *ngIf="saving">Descargando...</span>
+                    <span *ngIf="!downloadingCompras">Descargar Compras</span>
+                    <span *ngIf="downloadingCompras">Descargando...</span>
                 </button>
             </div>
         </div>

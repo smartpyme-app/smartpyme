@@ -49,9 +49,11 @@ export class ImportarExcelComponent implements OnInit {
         this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(data => {
             this.loading = false;
             this.alertService.success('Importación exitosa', data + ' ' + this.nombre + ' agregados');
-            this.modalRef.hide();
-            this.loadAll.emit();
-            this.alertService.modal = false;
+            setTimeout(()=>{
+                this.modalRef.hide();
+                this.loadAll.emit();
+                this.alertService.modal = false;
+            }, 2000);
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

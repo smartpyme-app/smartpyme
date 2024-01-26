@@ -14,6 +14,7 @@ export class CotizacionesComprasComponent implements OnInit {
     public compras:any = [];
     public compra:any = {};
     public loading:boolean = false;
+    public downloading:boolean = false;
 
     public proveedores:any = [];
     public usuarios:any = [];
@@ -78,10 +79,6 @@ export class CotizacionesComprasComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
     
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
-
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('orden-de-compra/', id) .subscribe(data => {
@@ -144,6 +141,23 @@ export class CotizacionesComprasComponent implements OnInit {
 
     public imprimir(compra:any){
         window.open(this.apiService.baseUrl + '/api/orden-de-compra/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('ordenes-de-compras/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ordenes-de-compras.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 

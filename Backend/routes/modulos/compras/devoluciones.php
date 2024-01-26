@@ -11,7 +11,8 @@ use App\Http\Controllers\Api\Compras\Devoluciones\DevolucionDetallesController;
     Route::delete('/devolucion/compra/{id}',        [DevolucionComprasController::class, 'delete']);
     
     Route::post('/devolucion-compra',               [DevolucionComprasController::class, 'facturacion']);
-
+    Route::get('/devoluciones/compras/exportar',    [DevolucionComprasController::class, 'export']);
+    
     Route::get('/devolucion/compra/detalle/{id}',          [DevolucionDetallesController::class, 'index']);
     Route::post('/devolucion/compra/detalle',              [DevolucionDetallesController::class, 'store']);
     Route::delete('/devolucion/compra/detalle/{id}',       [DevolucionDetallesController::class, 'delete']);

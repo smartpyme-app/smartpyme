@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\Compras\Cotizaciones\DetallesController;
     Route::post('/orden-de-compra/facturacion',        [CotizacionesController::class, 'facturacion']);
     Route::get('/orden-de-compra/impresion/{id}',        [CotizacionesController::class, 'generarDoc']);
 
+    Route::get('/ordenes-de-compras/exportar',    [CotizacionesController::class, 'export']);
+    
     Route::get('/orden-de-compra/detalles',           [DetallesController::class, 'index']);
     Route::get('/orden-de-compra/detalle/{id}',       [DetallesController::class, 'read']);
     Route::post('/orden-de-compra/detalle',           [DetallesController::class, 'store']);

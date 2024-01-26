@@ -12,8 +12,9 @@ use App\Models\Compras\Devoluciones\Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
-use App\Models\Admin\Tanque;
 use Illuminate\Support\Facades\DB;
+use App\Exports\DevolucionesComprasExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DevolucionComprasController extends Controller
 {
@@ -21,7 +22,7 @@ class DevolucionComprasController extends Controller
 
     public function index(Request $request) {
        
-        $ventas = Devolucion::when($request->buscador, function($query) use ($request){
+        $compras = Devolucion::when($request->buscador, function($query) use ($request){
                             return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
@@ -44,7 +45,7 @@ class DevolucionComprasController extends Controller
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
 
-        return Response()->json($ventas, 200);
+        return Response()->json($compras, 200);
 
     }
 
@@ -160,6 +161,13 @@ class DevolucionComprasController extends Controller
         
         return Response()->json($compra, 200);
 
+    }
+
+    public function export(Request $request){
+        $compras = new DevolucionesComprasExport();
+        $compras->filter($request);
+
+        return Excel::download($compras, 'compras.xlsx');
     }
 
 

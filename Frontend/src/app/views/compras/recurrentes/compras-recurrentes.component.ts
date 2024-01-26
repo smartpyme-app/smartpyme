@@ -22,6 +22,7 @@ export class ComprasRecurrentesComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
 
     public filtros:any = {};
 
@@ -167,17 +168,19 @@ export class ComprasRecurrentesComponent implements OnInit {
     }
 
     public descargar(){
+        this.downloading = true;
         this.apiService.export('compras/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'compras.xlsx';
+            a.download = 'compras-recurrentes.xlsx';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar compras:', error); }
+            this.downloading = false;
+          }, (error) => {this.alertService.error(error); this.downloading = false;}
         );
     }
 

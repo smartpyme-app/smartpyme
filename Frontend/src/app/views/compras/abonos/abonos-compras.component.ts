@@ -14,6 +14,7 @@ export class AbonosComprasComponent implements OnInit {
     public abonos:any = [];
     public abono:any = {};
     public loading:boolean = false;
+    public downloading:boolean = false;
 
     public proveedores:any = [];
     public usuarios:any = [];
@@ -76,10 +77,7 @@ export class AbonosComprasComponent implements OnInit {
             this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
-    
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
+
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
@@ -132,6 +130,23 @@ export class AbonosComprasComponent implements OnInit {
     public openFilter(template: TemplateRef<any>) {
         
         this.modalRef = this.modalService.show(template);
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('compras/abonos/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'abonos-proveedores.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 

@@ -48,7 +48,7 @@ class ProveedoresExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
 
-        return Cliente::where('id','!=', 1)->withSum('ventas', 'total')
+        return Proveedor::withSum('compras', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                     ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')

@@ -22,6 +22,8 @@ export class ComprasComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloadingDetalles:boolean = false;
+    public downloadingCompras:boolean = false;
 
     public filtros:any = {};
 
@@ -173,6 +175,7 @@ export class ComprasComponent implements OnInit {
     }
 
     public descargarCompras(){
+        this.downloadingCompras = true; this.saving = true;
         this.apiService.export('compras/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -183,11 +186,13 @@ export class ComprasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar compras:', error); }
+            this.downloadingCompras = false; this.saving = false;
+          }, (error) => {this.alertService.error(error); this.downloadingCompras = false; this.saving = false;}
         );
     }
 
     public descargarDetalles(){
+        this.downloadingDetalles = true; this.saving = true;
         this.apiService.export('compras-detalles/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -198,7 +203,8 @@ export class ComprasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar compras:', error); }
+            this.downloadingDetalles = false; this.saving = false;
+          }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
         );
     }
 

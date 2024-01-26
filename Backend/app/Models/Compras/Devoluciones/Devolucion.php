@@ -59,6 +59,10 @@ class Devolucion extends Model {
         return $this->belongsTo('App\Models\User','id_usuario');
     }
 
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
+    }
+
     public function compra(){
         return $this->belongsTo('App\Models\Compras\Compra','id_compra');
     }

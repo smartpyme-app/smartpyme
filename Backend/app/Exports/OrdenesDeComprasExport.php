@@ -2,19 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\Compras\Compra;
+use App\Models\Compras\Compra as Cotizacion;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 
-class ComprasExport implements FromCollection, WithHeadings, WithMapping
+class OrdenesDeComprasExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
     */
-    private $request;
+    public $request;
 
     public function filter(Request $request)
     {
@@ -24,27 +24,25 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
     public function headings():array{
         return[
             'Fecha',
-            'Proveedor',
+            'Cliente',
             'DUI',
             'NIT',
+            'Dirección',
             'Documento',
-            'Referencia',
-            'Estado', 
-            'Vencimiento', 
-            'Costo',
-            'IVA', 
-            'Percepción', 
-            'Descuento', 
+            'Correlativo',
+            'Estado',
             'Total',
+            'Empresa',
+            'Observaciones', 
+            'Usuario'
         ];
-
     }
 
     public function collection()
     {
-        $request = $this->request;
+        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $compras = Compra::when($request->buscador, function($query) use ($request){
+        $compras = Cotizacion::when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -52,9 +50,6 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                         })
                         ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                        })
-                        ->when($request->recurrente !== null, function($q) use ($request){
-                            $q->where('recurrente', !!$request->recurrente);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -68,36 +63,45 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                         ->when($request->forma_pago, function($query) use ($request){
                             return $query->where('forma_pago', $request->forma_pago);
                         })
+                        ->when($request->id_canal, function($query) use ($request){
+                            return $query->where('id_canal', $request->id_canal);
+                        })
+                        ->when($request->id_documento, function($query) use ($request){
+                            return $query->where('id_documento', $request->id_documento);
+                        })
                         ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
                         })
                         ->when($request->metodo_pago, function($query) use ($request){
                             return $query->where('metodo_pago', $request->metodo_pago);
                         })
-                        ->where('cotizacion', 0)
-                        ->orderBy($request->orden, $request->direccion)
-                        ->orderBy('id', 'desc')
-                        ->get();
+                        ->when($request->tipo_documento, function($query) use ($request){
+                            return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                    ->where('cotizacion', 1)
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                            ->get();
 
-        return $compras; 
+        return $compras;
         
     }
 
     public function map($row): array{
            $fields = [
               $row->fecha,
-              $row->proveedor()->pluck('nombre')->first(),
+              $row->nombre_proveedor,
               $row->proveedor()->pluck('dui')->first(),
               $row->proveedor()->pluck('nit')->first(),
+              $row->proveedor()->pluck('direccion')->first(),
               $row->tipo_documento,
               $row->referencia,
               $row->estado,
-              $row->fecha_pago,
-              $row->sub_total,
-              $row->iva,
-              $row->percepcion,
-              $row->descuento,
-              $row->total,
+              round($row->total, 2),
+              $row->sucursal()->first()->empresa()->pluck('nombre')->first(),
+              $row->observaciones,
+              $row->nombre_usuario,
+
          ];
         return $fields;
     }

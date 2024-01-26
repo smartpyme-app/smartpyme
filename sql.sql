@@ -141,6 +141,8 @@ ALTER TABLE egresos CHANGE factura referencia VARCHAR(255) NULL;
 ALTER TABLE egresos ADD tipo_documento VARCHAR(255) after referencia;
 ALTER TABLE egresos CHANGE monto total DECIMAL(10,2) NOT NULL;
 
+UPDATE egresos SET sub_total = (total - iva) where iva > 0;
+
 
 RENAME TABLE recordatorios TO notificaciones;
 

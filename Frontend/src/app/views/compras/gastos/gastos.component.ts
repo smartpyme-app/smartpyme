@@ -15,6 +15,7 @@ export class GastosComponent implements OnInit {
     public gasto:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
@@ -112,6 +113,7 @@ export class GastosComponent implements OnInit {
 
 
     public descargar(){
+        this.downloading = true;
         this.apiService.export('gastos/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -122,7 +124,8 @@ export class GastosComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar gastos:', error); }
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
     }
 

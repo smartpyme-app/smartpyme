@@ -9,6 +9,9 @@ use App\Models\Compras\Compra;
 use Barryvdh\DomPDF\Facade as PDF;
 use JWTAuth;
 
+use App\Exports\AbonosComprasExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 class AbonosController extends Controller
 {
     
@@ -120,6 +123,13 @@ class AbonosController extends Controller
         }     
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
+    }
+
+    public function export(Request $request){
+        $abonos = new AbonosComprasExport();
+        $abonos->filter($request);
+
+        return Excel::download($abonos, 'abonos.xlsx');
     }
 
 

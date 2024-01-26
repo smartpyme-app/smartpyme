@@ -8,7 +8,7 @@ use App\Models\Ventas\Abono;
 use App\Models\Ventas\Venta;
 use Barryvdh\DomPDF\Facade as PDF;
 use JWTAuth;
-use App\Exports\AbonosExport;
+use App\Exports\AbonosVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AbonosController extends Controller
@@ -125,7 +125,7 @@ class AbonosController extends Controller
     }
 
     public function export(Request $request){
-        $abonos = new AbonosExport();
+        $abonos = new AbonosVentasExport();
         $abonos->filter($request);
 
         return Excel::download($abonos, 'abonos.xlsx');

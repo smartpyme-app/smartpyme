@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Compras\ComprasController;
     Route::get('/cuentas-pagar',                  [ComprasController::class, 'cxp']);
     Route::get('/cuentas-pagar/buscar/{text}',    [ComprasController::class, 'cxpBuscar']);
 
-    Route::post('/proveedores/import',          [ProveedoresController::class, 'import']);
+    Route::post('/proveedores/importar',          [ProveedoresController::class, 'import']);
+    Route::get('/proveedores/exportar',          [ProveedoresController::class, 'export']);
 
 ?>

@@ -13,6 +13,7 @@ export class DevolucionesComprasComponent implements OnInit {
     public compras:any = [];
     public id_compra:any = null;
     public loading:boolean = false;
+    public downloading:boolean = false;
 
     public proveedores:any = [];
     public usuarios:any = [];
@@ -60,10 +61,6 @@ export class DevolucionesComprasComponent implements OnInit {
         this.apiService.store('compra', compra).subscribe(compra => { 
             this.alertService.success('Venta actualizada', 'La compra fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
-    }
-
-    public descargar(){
-        window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
     public delete(id:number) {
@@ -123,6 +120,23 @@ export class DevolucionesComprasComponent implements OnInit {
             this.loading = false;
         }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('devoluciones/compras/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'devoluciones-compras.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 
