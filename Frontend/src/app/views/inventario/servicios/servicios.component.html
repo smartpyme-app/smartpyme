@@ -71,7 +71,7 @@
                             {{ servicio.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="servicio.enable" [ngClass]="{'bg-light-danger' : servicio?.enable == 0, 'bg-light-success' : servicio?.enable == 1}">
+                            <select name="enable" (change)="setEstado(servicio)" class="form-select w-auto border-0" [(ngModel)]="servicio.enable" [ngClass]="{'bg-light-danger' : servicio?.enable == 0, 'bg-light-success' : servicio?.enable == 1}">
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>

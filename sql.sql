@@ -49,8 +49,8 @@ ALTER TABLE proveedores CHANGE nombre nombre VARCHAR(255) NULL;
 
 ALTER TABLE productos CHANGE enable enable Boolean NOT NULL DEFAULT true;
 ALTER TABLE productos CHANGE precio precio DECIMAL(11,4) NOT NULL;
-ALTER TABLE productos ADD tipo varchar(255) DEFAULT 'Producto' after etiquetas;
 ALTER TABLE producto_precios CHANGE precio precio DECIMAL(11,4) NOT NULL;
+ALTER TABLE productos ADD tipo varchar(255) DEFAULT 'Producto' after etiquetas;
 
 ALTER TABLE productos_imagenes CHANGE ruta_imagen img VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE productos_imagenes CHANGE producto_id id_producto INT(11) NULL DEFAULT NULL;

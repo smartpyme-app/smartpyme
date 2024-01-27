@@ -85,6 +85,12 @@ export class ServiciosComponent implements OnInit {
 
     }
 
+    public setEstado(producto:any){
+        this.apiService.store('producto', producto).subscribe(producto => { 
+            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
+        }, error => {this.alertService.error(error); });
+    }
+
     public onSubmit() {
         this.loading = true;
         // Guardamos la caja
