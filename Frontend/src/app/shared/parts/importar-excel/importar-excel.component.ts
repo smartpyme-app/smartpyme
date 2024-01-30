@@ -23,7 +23,6 @@ export class ImportarExcelComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-           
     }
 
     openModal(template: TemplateRef<any>) {
@@ -48,7 +47,7 @@ export class ImportarExcelComponent implements OnInit {
         this.loading = true;
         this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(data => {
             this.loading = false;
-            this.alertService.success('Importación exitosa', data + ' ' + this.nombre + ' agregados');
+            this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
             setTimeout(()=>{
                 this.modalRef.hide();
                 this.loadAll.emit();

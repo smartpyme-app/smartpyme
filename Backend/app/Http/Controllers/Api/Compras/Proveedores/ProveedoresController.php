@@ -7,7 +7,10 @@ use Illuminate\Http\Request;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Compras\Compra;
 
-use App\Imports\Proveedores;
+use App\Imports\ProveedoresPersonas;
+use App\Imports\ProveedoresEmpresas;
+use App\Exports\ProveedoresPersonasExport;
+use App\Exports\ProveedoresEmpresasExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ProveedoresController extends Controller
@@ -149,25 +152,46 @@ class ProveedoresController extends Controller
 
     }
 
-    public function import(Request $request){
+    public function importPersonas(Request $request){
         
         $request->validate([
             'file'          => 'required',
         ]);
 
-        $import = new Proveedores();
+        $import = new ProveedoresPersonas();
         Excel::import($import, $request->file);
         
         return Response()->json($import->getRowCount(), 200);
 
     }
 
-    public function export(Request $request){
+    public function importEmpresas(Request $request){
+        
+        $request->validate([
+            'file'          => 'required',
+        ]);
 
-      $proveedores = new ProveedoresExport();
+        $import = new ProveedoresEmpresas();
+        Excel::import($import, $request->file);
+        
+        return Response()->json($import->getRowCount(), 200);
+
+    }
+
+    public function exportPersonas(Request $request){
+
+      $proveedores = new ProveedoresPersonasExport();
       $proveedores->filter($request);
 
-      return Excel::download($proveedores, 'proveedores.xlsx');
+      return Excel::download($proveedores, 'proveedores-personas.xlsx');
+    }
+
+    public function exportEmpresas(Request $request){
+
+      $proveedores = new ProveedoresEmpresasExport();
+      $proveedores->filter($request);
+
+      return Excel::download($proveedores, 'proveedores-empresas.xlsx');
     }
 
 

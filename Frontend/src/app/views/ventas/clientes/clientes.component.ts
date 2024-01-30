@@ -36,6 +36,11 @@ export class ClientesComponent implements OnInit {
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
         this.filtrarClientes();
+
+        // Ocultar modal de importación
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
     }
 
     public filtrarClientes(){
@@ -96,20 +101,45 @@ export class ClientesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public descargar(){
+    openModal(template: TemplateRef<any>) {
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public descargarPersonas(){
         this.downloading = true;
-        this.apiService.export('clientes/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('clientes-personas/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'clientes.xlsx';
+            a.download = 'clientes-personas.xlsx';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.alertService.modal = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.alertService.modal = false;}
+        );
+    }
+
+    public descargarEmpresas(){
+        this.downloading = true;
+        this.alertService.modal = false;
+        this.apiService.export('clientes-empresas/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'clientes-empresas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+            this.alertService.modal = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.alertService.modal = false;}
         );
     }
 

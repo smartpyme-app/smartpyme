@@ -1,10 +1,10 @@
-<button (click)="openModal(importar)" class="btn btn-default tcla-F4" tooltip="Importar {{ nombre }} desde Excel">
+<button (click)="openModal(importar)" class="btn btn-default tcla-F4" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">
     <img src="/assets/icons/upload.png" class="icon">
 </button>
 
 <ng-template #importar>
   <div class="modal-header text-center">
-    <h3 class="modal-title">Importar {{ nombre }}</h3>
+    <h3 class="modal-title">Importar {{ this.nombre.replace('-', ' ') }}</h3>
     <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
@@ -13,8 +13,9 @@
         <div class="row mb-4">
             <div class="col-md-12 text-center">
               <div class="alert bg-info">
-                <p>Seleccionar un archivo de Excel con el listado de sus {{ nombre }}. <br>
-                Puede descargar la plantilla acá: <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Aquí</a>
+                <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
+                Puede descargar la plantilla de Excel acá: 
+                  <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
                 </p>
               </div>
             </div>

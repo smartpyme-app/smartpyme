@@ -11,7 +11,7 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Auth;
 
-class Clientes implements ToModel, WithHeadingRow, WithValidation
+class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation
 {
     private $numRows = 0;
 
@@ -20,17 +20,13 @@ class Clientes implements ToModel, WithHeadingRow, WithValidation
         ++$this->numRows;
 
         $cliente = new Cliente();
-        $cliente->nombre = $row['nombre'];
-        $cliente->apellido = $row['apellido'];
+        $cliente->nombre_empresa   = $row['nombre_empresa'];
         $cliente->ncr  = $row['ncr'];
         $cliente->giro  = $row['giro'];
-        $cliente->tipo   = $row['tipo'] ? $row['tipo'] : 'Persona';
+        $cliente->tipo   = 'Empresa';
         $cliente->tipo_contribuyente   = $row['tipo_contribuyente'];
         $cliente->dui   = $row['dui'];
         $cliente->nit   = $row['nit'];
-        $cliente->nombre_empresa   = $row['nombre_empresa'];
-        $cliente->empresa_telefono   = $row['telefono_empresa'];
-        $cliente->empresa_direccion   = $row['direccion_empresa'];
         $cliente->direccion = $row['direccion'];
         $cliente->municipio = $row['municipio'];
         $cliente->departamento  = $row['departamento'];
@@ -46,7 +42,9 @@ class Clientes implements ToModel, WithHeadingRow, WithValidation
     public function rules(): array
     {
         return [
-            'nombre'        => 'required|string'
+            'nombre_empresa' => 'required',
+            'ncr'        => 'required',
+            'giro'        => 'required'
         ];
     }
 

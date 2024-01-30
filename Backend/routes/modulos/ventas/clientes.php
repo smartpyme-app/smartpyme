@@ -29,7 +29,9 @@ use App\Http\Controllers\Api\Ventas\VentasController;
     Route::post('/cliente/documento',                [DocumentosController::class, 'store']);
     Route::delete('/cliente/documento/{id}',         [DocumentosController::class, 'delete']);
 
-    Route::post('/clientes/importar',          [ClientesController::class, 'import']);
-    Route::get('/clientes/exportar',    [ClientesController::class, 'export']);
+    Route::post('/clientes-personas/importar',          [ClientesController::class, 'importPersonas']);
+    Route::post('/clientes-empresas/importar',          [ClientesController::class, 'importEmpresas']);
+    Route::get('/clientes-personas/exportar',    [ClientesController::class, 'exportPersonas']);
+    Route::get('/clientes-empresas/exportar',    [ClientesController::class, 'exportEmpresas']);
 
 ?>

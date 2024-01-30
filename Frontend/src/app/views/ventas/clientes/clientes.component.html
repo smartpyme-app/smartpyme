@@ -13,8 +13,10 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes'"></app-importar-excel>
-                <button [disabled]="downloading" tooltip="Descargar clientes" (click)="descargar()" class="btn btn-default tcla-F6">
+                <button (click)="openModal(mimportar)" class="btn btn-default tcla-F4" tooltip="Importar clientes desde archivo de Excel">
+                    <img src="/assets/icons/upload.png" class="icon">
+                </button>
+                <button (click)="openModal(mexportar)" tooltip="Descargar clientes a Excel" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarClientes()" autocomplete="off">
@@ -181,5 +183,54 @@
             </div>
         </div>
     </form>
+  </div>
+</ng-template>
+
+
+<ng-template #mimportar>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">¿Qué tipo de clientes desea importar?</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+        <div class="row text-center">
+
+            <div class="form-group col-sm-6">
+                <label for="">Importar clientes de tipo persona:</label>
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"></app-importar-excel>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Importar clientes de tipo empresa:</label>
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-empresas'"></app-importar-excel>
+            </div>
+        </div>
+  </div>
+</ng-template>
+
+<ng-template #mexportar>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">¿Qué tipo de clientes desea exportar?</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+        <div class="row text-center">
+            <app-notificaciones-container></app-notificaciones-container>
+            <div class="form-group col-sm-6">
+                <label for="">Exportar clientes de tipo persona:</label>
+                <button [disabled]="downloading" tooltip="Descargar clientes persona" (click)="descargarPersonas()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Exportar clientes de tipo empresa:</label>
+                <button [disabled]="downloading" tooltip="Descargar clientes empresa" (click)="descargarEmpresas()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+            </div>
+        </div>
   </div>
 </ng-template>

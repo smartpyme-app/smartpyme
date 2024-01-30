@@ -10,8 +10,10 @@ use App\Models\Ventas\Clientes\Anticipo;
 use App\Models\Ventas\Venta;
 use App\Models\Creditos\Credito;
 
-use App\Imports\Clientes;
-use App\Exports\ClientesExport;
+use App\Imports\ClientesPersonas;
+use App\Imports\ClientesEmpresas;
+use App\Exports\ClientesPersonasExport;
+use App\Exports\ClientesEmpresasExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ClientesController extends Controller
@@ -213,25 +215,46 @@ class ClientesController extends Controller
         return Response()->json($datos, 200);
     }
 
-    public function import(Request $request){
+    public function importPersonas(Request $request){
         
         $request->validate([
             'file'          => 'required',
         ]);
 
-        $import = new Clientes();
+        $import = new ClientesPersonas();
         Excel::import($import, $request->file);
         
         return Response()->json($import->getRowCount(), 200);
 
     }
 
-    public function export(Request $request){
+    public function importEmpresas(Request $request){
+        
+        $request->validate([
+            'file'          => 'required',
+        ]);
 
-      $clientes = new ClientesExport();
+        $import = new ClientesEmpresas();
+        Excel::import($import, $request->file);
+        
+        return Response()->json($import->getRowCount(), 200);
+
+    }
+
+    public function exportPersonas(Request $request){
+
+      $clientes = new ClientesPersonasExport();
       $clientes->filter($request);
 
-      return Excel::download($clientes, 'clientes.xlsx');
+      return Excel::download($clientes, 'clientes-personas.xlsx');
+    }
+
+    public function exportEmpresas(Request $request){
+
+      $clientes = new ClientesEmpresasExport();
+      $clientes->filter($request);
+
+      return Excel::download($clientes, 'clientes-empresas.xlsx');
     }
 
 

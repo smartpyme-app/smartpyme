@@ -8,7 +8,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 use App\Models\Compras\Proveedores\Proveedor;
 
-class ProveedoresExport implements FromCollection, WithHeadings, WithMapping
+class ProveedoresPersonasExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -24,19 +24,11 @@ class ProveedoresExport implements FromCollection, WithHeadings, WithMapping
         return[
             'Nombre',
             'Apellido',
-            'Ncr',
-            'Giro',
-            'Tipo',
-            'Tipo_contribuyente',
-            'Dui',
-            'Nit',
-            'Nombre empresa',
-            'Empresa telefono',
-            'Empresa direccion',
+            'DUI',
+            'NIT',
             'Direccion',
             'Municipio',
             'Departamento',
-            'Fecha cumpleanos',
             'Telefono',
             'Correo',
             'Nota',
@@ -48,7 +40,7 @@ class ProveedoresExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
 
-        return Proveedor::withSum('compras', 'total')
+        return Proveedor::where('id','!=', 1)->withSum('compras', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                     ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
@@ -61,6 +53,7 @@ class ProveedoresExport implements FromCollection, WithHeadings, WithMapping
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);
                     })
+                    ->where('tipo', 'Persona')
                     ->orderBy($request->orden, $request->direccion)
                     ->get();
         
@@ -70,19 +63,11 @@ class ProveedoresExport implements FromCollection, WithHeadings, WithMapping
            $fields = [
                 $row->nombre,
                 $row->apellido,
-                $row->ncr,
-                $row->giro,
-                $row->tipo,
-                $row->tipo_contribuyente,
                 $row->dui,
                 $row->nit,
-                $row->nombre_empresa,
-                $row->empresa_telefono,
-                $row->empresa_direccion,
                 $row->direccion,
                 $row->municipio,
                 $row->departamento,
-                $row->fecha_cumpleanos,
                 $row->telefono,
                 $row->correo,
                 $row->nota,
