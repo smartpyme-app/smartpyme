@@ -43,13 +43,15 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             $id_categoria = $categoria->id;
         }
 
-        if ($row['proveedor']) {
-            $id_proveedor = Proveedor::where('nombre', $row['proveedor'])
+        if ($row['proveedor_nombre'] && $row['proveedor_apellido']) {
+            $id_proveedor = Proveedor::where('nombre', $row['proveedor_nombre'])
+                                    ->where('apellido', $row['proveedor_apellido'])
                                     ->where('id_empresa', $usuario->id_empresa)
                                     ->pluck('id')->first();
             if(!$id_proveedor){
                 $proveedor = new Proveedor();
-                $proveedor->nombre = $row['proveedor'];
+                $proveedor->nombre = $row['proveedor_nombre'];
+                $proveedor->apellido = $row['proveedor_apellido'];
                 $proveedor->enable = true;
                 $proveedor->id_empresa = $usuario->id_empresa;
                 $proveedor->id_usuario = $usuario->id;
@@ -81,23 +83,31 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
         $sucursales = Sucursal::all();
 
-        for($i = 0; $i < $sucursales->count(); $i++){
-            if (isset($row['stock']) && $i == 0) {
-                $inventario = new Inventario();
-                $inventario->id_producto = $producto->id;
-                $inventario->id_sucursal = $sucursales[$i]->id;
-                $inventario->stock = isset($row['stock']) ? $row['stock'] : 0;
-                $inventario->save(); 
-            }
-            else{
-                $inventario = new Inventario();
-                $inventario->id_producto = $producto->id;
-                $inventario->id_sucursal = $sucursales[$i]->id;
-                $inventario->stock = 0;
-                $inventario->save(); 
-            }
+        if (isset($sucursales[0]) && isset($row['stock'])) {
+            $inventario = new Inventario();
+            $inventario->id_producto = $producto->id;
+            $inventario->id_sucursal = $sucursales[0]->id;
+            $inventario->stock = isset($row['stock']) ? $row['stock'] : 0;
+            $inventario->save(); 
         }
 
+        if (isset($sucursales[1]) && isset($row['stock_2'])) {
+            $inventario = new Inventario();
+            $inventario->id_producto = $producto->id;
+            $inventario->id_sucursal = $sucursales[1]->id;
+            $inventario->stock = isset($row['stock_2']) ? $row['stock_2'] : 0;
+            $inventario->save(); 
+        }
+
+        if ($sucursales->count() > 2) {
+           for ($i=2; $i < $sucursales->count(); $i++) { 
+               $inventario = new Inventario();
+               $inventario->id_producto = $producto->id;
+               $inventario->id_sucursal = $sucursales[$i]->id;
+               $inventario->stock = 0;
+               $inventario->save();
+           }
+        }
 
         return $producto;
 
@@ -111,7 +121,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             'costo' => 'required|numeric',
             'stock' => 'required|numeric',
             'categoria' => 'required|string',
-            // 'codigo' => 'sometimes|string',
+            'proveedor_apellido' => 'required_with:proveedor_nombre',
             // 'codigo_de_barra' => 'sometimes|string',
         ];
     }

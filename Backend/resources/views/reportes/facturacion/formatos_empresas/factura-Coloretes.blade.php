@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Coloretes {{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
+    <title>Coloretes {{$venta->documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 10px; margin: 0; padding: 0;}
@@ -45,14 +45,14 @@
     
     <section class="factura" style="margin-bottom: 8cm;">
         <div id="header">
-            <p><b>Fecha:</b> {{ \Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y') }}</p>
-            <p><b>Cliente:</b> {{ $venta[0]->cliente }}</p>
+            <p><b>Fecha:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+            <p><b>Cliente:</b> {{ $venta->cliente }}</p>
             <p><b>DUI/NIT:</b> {{ $cliente->nit }}</p>
             <p><b>Dirección:</b> {{ $cliente->departamento }} &nbsp; {{ $cliente->direccion }} 
-            <p><b>Cond. Operación:</b> {{ $venta[0]->forma_pago }} @if ($venta[0]->detalle_banco) Banco: {{$venta[0]->detalle_banco}} @endif </p>
+            <p><b>Cond. Operación:</b> {{ $venta->forma_pago }} @if ($venta->detalle_banco) Banco: {{$venta->detalle_banco}} @endif </p>
         </div>
                     
-        @php($iva = $venta[0]->empresa()->iva / 100)
+        @php($iva = $venta->empresa()->iva / 100)
         
         <table>
             <thead>
@@ -67,15 +67,15 @@
                 </tr>
             </thead>
         <tbody>
-            @foreach($venta[0]->detalles->take(10) as $detalle)
+            @foreach($venta->detalles->take(10) as $detalle)
             <tr>
                 <td class="cantidad">   {{ $detalle->cantidad }}</td>
                 <td class="codigo">   {{ $detalle->producto()->pluck('codigo')->first() }}</td>
                 <td class="producto">   {{ $detalle->producto  }}</td>
-                <td class="precio">     ${{ number_format($detalle->precio + (($venta[0]->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
-                <td class="gravadas">  ${{ number_format($detalle->total + (($venta[0]->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
+                <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
             @endforeach
         </tbody>
@@ -95,12 +95,12 @@
                     Venta Total
                 </td>
                 <td rowspan="4" class="text-right"  width="60px" style="padding-right: 5px;">
-                    $ {{ number_format($venta[0]->total_venta, 2) }} <br>
+                    $ {{ number_format($venta->total, 2) }} <br>
                     <br>
                     <br>
                     <br>
                     <br>
-                    <b>$ {{ number_format($venta[0]->total_venta, 2) }}</b>
+                    <b>$ {{ number_format($venta->total, 2) }}</b>
                 </td>
             </tr>
             <tr>
@@ -120,14 +120,14 @@
 
     <section class="factura">
         <div id="header">
-            <p><b>Fecha:</b> {{ \Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y') }}</p>
-            <p><b>Cliente:</b> {{ $venta[0]->cliente }}</p>
+            <p><b>Fecha:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+            <p><b>Cliente:</b> {{ $venta->cliente }}</p>
             <p><b>DUI/NIT:</b> {{ $cliente->nit }}</p>
             <p><b>Dirección:</b> {{ $cliente->departamento }} &nbsp; {{ $cliente->direccion }} 
-            <p><b>Cond. Operación:</b> {{ $venta[0]->forma_pago }} @if ($venta[0]->detalle_banco) Banco: {{$venta[0]->detalle_banco}} @endif </p>
+            <p><b>Cond. Operación:</b> {{ $venta->forma_pago }} @if ($venta->detalle_banco) Banco: {{$venta->detalle_banco}} @endif </p>
         </div>
                     
-        @php($iva = $venta[0]->empresa()->iva / 100)
+        @php($iva = $venta->empresa()->iva / 100)
         
         <table>
             <thead>
@@ -142,15 +142,15 @@
                 </tr>
             </thead>
         <tbody>
-            @foreach($venta[0]->detalles->take(10) as $detalle)
+            @foreach($venta->detalles->take(10) as $detalle)
             <tr>
                 <td class="cantidad">   {{ $detalle->cantidad }}</td>
                 <td class="codigo">   {{ $detalle->producto()->pluck('codigo')->first() }}</td>
                 <td class="producto">   {{ $detalle->producto  }}</td>
-                <td class="precio">     ${{ number_format($detalle->precio + (($venta[0]->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
-                <td class="gravadas">  ${{ number_format($detalle->total + (($venta[0]->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
+                <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
             @endforeach
         </tbody>
@@ -170,12 +170,12 @@
                     Venta Total
                 </td>
                 <td rowspan="4" class="text-right"  width="60px" style="padding-right: 5px;">
-                    $ {{ number_format($venta[0]->total_venta, 2) }} <br>
+                    $ {{ number_format($venta->total, 2) }} <br>
                     <br>
                     <br>
                     <br>
                     <br>
-                    <b>$ {{ number_format($venta[0]->total_venta, 2) }}</b>
+                    <b>$ {{ number_format($venta->total, 2) }}</b>
                 </td>
             </tr>
             <tr>

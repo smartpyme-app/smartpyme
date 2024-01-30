@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <script language="javascript">setTimeout("self.close();",500)</script>
+  {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
   <title>Ticket</title>
   <style media="all">
     h1, h2, h3{
@@ -80,13 +80,13 @@
             {{ \Carbon\Carbon::parse($venta->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($venta->created_at)->format('h:i:s a') }}
         </p>
         <p><b>TICKET:</b># {{ $venta->correlativo }}</p>
-        <p><b>CAJERO:</b> {{ $venta->usuario }}</p>
+        <p><b>CAJERO:</b> {{ $venta->nombre_usuario }}</p>
 
         @if ($venta->cliente())
             <p><b>Cliente:</b></p>
-            <p>Nombre: {{ $venta->cliente }}</p> 
-            @if ($venta->cliente()->pluck('celular')->first())
-                <p>Teléfono: {{ $venta->cliente()->pluck('celular')->first() }}</p> 
+            <p>Nombre: {{ $venta->nombre_cliente }}</p> 
+            @if ($venta->cliente()->pluck('telefono')->first())
+                <p>Teléfono: {{ $venta->cliente()->pluck('telefono')->first() }}</p> 
             @endif
             @if ($venta->cliente()->pluck('direccion')->first())
                 <p>Dirección: {{ $venta->cliente()->pluck('direccion')->first() }}</p> 
@@ -126,7 +126,7 @@
         <tfoot>
             <tr class="mt-4">
                 <td class="text-right" colspan="3">GRAVADO:</td>
-                <td class="text-right">${{number_format($venta->total_venta,2) }}</td>
+                <td class="text-right">${{number_format($venta->total,2) }}</td>
             </tr>
             <tr>
                 <td class="text-right" colspan="3">EXENTO:</td>
@@ -144,7 +144,7 @@
             @endif
             <tr>
                 <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
-                <td class="text-right"><b>${{number_format($venta->total_venta + $venta->costo_envio,2)}}</b></td>
+                <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
             </tr>
         </tfoot>
     </table>
@@ -158,7 +158,7 @@
 
     <p class="text-center"><small>G = GRAVADO &nbsp;&nbsp; E = EXENTO &nbsp;&nbsp; N = NO SUJETO</small></p>
 
-    @if($venta->total_venta > 200)
+    @if($venta->total > 200)
     <br>
     {{-- <p>LLENAR SI LA VENTA ES MAYOR/IGUAL A $200.00</p> --}}
     <table>

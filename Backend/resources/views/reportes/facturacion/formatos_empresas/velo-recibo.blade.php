@@ -136,7 +136,7 @@
                             <td class="text-center ml-2"></td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
-                            <td class="text-center">{{\Currency::currency(Auth::user()->moneda)->format(($recibo->monto))}}</td>
+                            <td class="text-center">{{\Currency::currency(Auth::user()->moneda)->format(($recibo->total))}}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -148,13 +148,13 @@
                         <p id="p-estado">CREDITO</p>
                     @endif
                     <br>
-                    <p id="p-saldo">{{\Currency::currency(Auth::user()->moneda)->format(($venta->total_venta - $venta->recibos->sum('monto')))}}</p>
+                    <p id="p-saldo">{{\Currency::currency(Auth::user()->moneda)->format(($venta->total - $venta->recibos->sum('total')))}}</p>
                 </div>
                 <div class="float-right no-margin" id="total">
                     
-                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($recibo->monto))}}</p>
+                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($recibo->total))}}</p>
                     <br>
-                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($recibo->monto))}}</p>
+                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($recibo->total))}}</p>
                 </div>
             </div> 
         </div>

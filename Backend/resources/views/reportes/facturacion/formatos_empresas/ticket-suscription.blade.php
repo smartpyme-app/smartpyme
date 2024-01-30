@@ -102,16 +102,16 @@
             <tr class="text-right">
               <td id="cantidad"><center>1</center></td>
               <td id="producto">{{$transaccion->descripcion}}</td>
-              <td>${{number_format(($transaccion->monto / 1.13),2)}}</td>
-              <td>${{number_format(($transaccion->monto / 1.13),2)}}</td>
+              <td>${{number_format(($transaccion->total / 1.13),2)}}</td>
+              <td>${{number_format(($transaccion->total / 1.13),2)}}</td>
             </tr>
           </tbody>
         </table>
         </div><br>
         <div class="col-lg-12 mt-3" id="totales">
-            <p><strong>Sub total: </strong>${{number_format(($transaccion->monto / 1.13),2)}}</p>
-            <p><strong>Impuesto: </strong>${{number_format((($transaccion->monto / 1.13) * 0.13),2)}}</p>
-            <p><strong>Total a pagar: </strong>${{number_format($transaccion->monto,2)}}</p>
+            <p><strong>Sub total: </strong>${{number_format(($transaccion->total / 1.13),2)}}</p>
+            <p><strong>Impuesto: </strong>${{number_format((($transaccion->total / 1.13) * 0.13),2)}}</p>
+            <p><strong>Total a pagar: </strong>${{number_format($transaccion->total,2)}}</p>
         </div>
         <div class="col-lg-12 mt-3" id="totales">
             <p>Si desea solicitar crédito fiscal por favor contactar al tel. +503 7723-5932 Email: gabrielaq@analyticsas.com</p>

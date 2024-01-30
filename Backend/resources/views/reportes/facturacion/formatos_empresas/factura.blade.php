@@ -134,11 +134,11 @@
                     
                 </div>
                 <div class="float-right no-margin" id="total">
-                    <p class="">${{number_format($venta->total_venta,2)}}</p>
+                    <p class="">${{number_format($venta->total,2)}}</p>
                     {{-- <p class="">${{number_format($venta->iva,2)}}</p> --}}
                     {{-- <p class="">${{number_format($venta->sub_total,2)}}</p> --}}
                     <br><br>
-                    <p class="mt-1">${{number_format($venta->total_venta,2)}}</p>
+                    <p class="mt-1">${{number_format($venta->total,2)}}</p>
                 </div>
             </div> 
         </div>

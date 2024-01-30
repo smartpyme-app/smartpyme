@@ -3,7 +3,7 @@
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>Factura Via del Mar {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
+    <title>Factura Via del Mar {{$venta->documento}} - {{$venta->correlativo}}</title>
     <style>
         
         * {
@@ -99,7 +99,7 @@
 <body style="position: relative; margin-left: 5cm;">
     <div class="container_fluid" id="body">
         <div id="header">
-            <p id="cliente">{{$venta->nombre_cliente}}</p>
+            <p id="cliente">{{$venta->cliente}}</p>
             <p id="direccion">{{$cliente->direccion}}</p>
             <p id="condicion">{{$venta->estado == 'Pendiente' ? 'Crédito' : 'Contado'}}</p>
             <p id="fecha">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
@@ -122,7 +122,7 @@
                 @foreach($venta->detalles as $detalle)
                 <tr>
                     <td>{{ $detalle->cantidad }}</td>
-                    <td>{{ $detalle->nombre_producto }}</td>
+                    <td>{{ $detalle->producto }}</td>
                     <td class="text-right">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                     <td></td>
                     <td></td>

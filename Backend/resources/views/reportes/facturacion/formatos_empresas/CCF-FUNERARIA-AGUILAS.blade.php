@@ -2,7 +2,7 @@
 <html>
 <head>
     {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
-    <title>Credicash {{$venta->documento}} - {{$venta->correlativo}}</title>
+    <title>Funeraria Aguilas {{$venta->documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 14px; margin: 0; padding: 0;}
@@ -23,18 +23,18 @@
             margin: 0px;
         }
 
-        #fecha          {top: 5cm; left: 10cm; }
-        #cliente        {top: 5.5cm; left: 2.2cm; width: 9cm;}
-        #direccion      {top: 6cm; left: 2.2cm; width: 9cm;}
-        #municipio      {top: 6.5cm; left: 2.2cm; width: 5cm;}
-        #departamento   {top: 7cm; left: 3cm; width: 5cm;}
-        #nit            {top: 7cm; left: 9cm; }
-        #nrc            {top: 6.5cm; left: 10cm; }
-        #giro            {top: 7.5cm; left: 9cm; }
-        #condicion      {top: 8cm; left: 10cm; }
+        #fecha          {top: 4cm; left: 10cm; }
+        #cliente        {top: 4.5cm; left: 2.2cm; width: 9cm;}
+        #direccion      {top: 5cm; left: 2.2cm; width: 9cm;}
+        #municipio      {top: 5.5cm; left: 2.2cm; width: 5cm;}
+        #departamento   {top: 6cm; left: 3cm; width: 5cm;}
+        #nit            {top: 6cm; left: 9.5cm; }
+        #nrc            {top: 5.5cm; left: 10.5cm; }
+        #giro            {top: 6.5cm; left: 9.5cm; }
+        #condicion      {top: 7cm; left: 10cm; }
 
 
-        table   {position: absolute; top: 9.5cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 8.5cm; left: 1cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.6cm; text-align: left;}
 
         .cantidad{ width: 1cm; text-align: center;}
@@ -45,15 +45,15 @@
         .gravadas{ width: 1.6cm; text-align: right;}
         
 
-        #letras     {top: 16cm; left: 2cm; width: 5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 15.5cm; left: 2cm; width: 5cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
 
-        #suma       {top: 15.7cm; left: 10.5cm; width: 2cm; text-align: right;}
-        #iva        {top: 16.2cm; left: 10.5cm; width: 2cm; text-align: right;}
-        #sub_total  {top: 17cm; left: 10.5cm; width: 2cm; text-align: right;}
-        #no_sujeta  {top: 18cm; left: 10.5cm; width: 2cm; text-align: right;}
-        #exenta     {top: 18.7cm; left: 10.5cm; width: 2cm; text-align: right;}
-        #total      {top: 19.2cm; left: 10.5cm; width: 2cm; text-align: right;}
+        #suma       {top: 15.5cm; left: 11cm; width: 2cm; text-align: right;}
+        #iva        {top: 16cm; left: 11cm; width: 2cm; text-align: right;}
+        #sub_total  {top: 17cm; left: 11cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 18cm; left: 11cm; width: 2cm; text-align: right;}
+        #exenta     {top: 18cm; left: 11cm; width: 2cm; text-align: right;}
+        #total      {top: 19cm; left: 11cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 
@@ -77,16 +77,16 @@
             <p id="giro">{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
             <p id="condicion">
                 @if ($venta->estado == 'Pagada')
-                    X
+                    Contado
                 @else
-                    <span style="margin-left: 1.6cm;">X</span>
+                    <span style="margin-left: 1.6cm;">{{$venta->estado}}</span>
                 @endif
             </p>
             <p id="nit">{{ $cliente->nit }}</p>
         </div>
                     
         <table>
-            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+           @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
             @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>

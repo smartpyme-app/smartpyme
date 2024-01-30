@@ -2,7 +2,7 @@
 <html>
 <head>
     {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
-    <title>Credicash {{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
+    <title>Credicash {{$venta->documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 14px; margin: 0; padding: 0;}
@@ -62,11 +62,11 @@
 
     <section id="factura">
         <div id="header">
-            <p id="fecha">{{ \Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y') }}</p>
-            <p id="cliente">{{ $venta[0]->cliente }}</p>
+            <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+            <p id="cliente">{{ $venta->cliente }}</p>
             <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
             {{-- <p id="condicion">
-                @if ($venta[0]->estado == 'Pagada')
+                @if ($venta->estado == 'Pagada')
                     X
                 @else
                     <span style="margin-left: 1.6cm;">X</span>
@@ -76,26 +76,26 @@
         </div>
                     
         <table>
-            @php($iva = $venta[0]->empresa()->iva / 100);
-            @foreach($venta[0]->detalles as $detalle)
+            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+            @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto">   {{ $detalle->producto  }}</td>
-                <td class="precio">     ${{ number_format($detalle->precio + (($venta[0]->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
-                <td class="gravadas">  ${{ number_format($detalle->total + (($venta[0]->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
+                <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
             @endforeach
         </table>
 
         <div id="totales">
             <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta[0]->correlativo }}</p> --}}
+            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
-            <p id="suma"> $ {{ number_format($venta[0]->total_venta, 2) }}</p>
-            {{-- <p id="iva"> $ {{ number_format($venta[0]->iva, 2) }}</p> --}}
-            <p id="total"> <b>$ {{ number_format($venta[0]->total_venta, 2) }}</b></p>
+            <p id="suma"> $ {{ number_format($venta->total, 2) }}</p>
+            {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
+            <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
         </div>
     </section>
 

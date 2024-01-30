@@ -218,3 +218,8 @@ CREATE TABLE abonos_compras (
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
+
+
+DB_DATABASE=u290141229_sp_v3
+DB_USERNAME=u290141229_smartpyme_v3
+DB_PASSWORD=K&YV2s2b

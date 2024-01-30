@@ -73,7 +73,7 @@
                   <td>{{\Carbon\Carbon::parse($recibo->fecha)->format('d/m/Y')}}</td>
                   <td>{{$recibo->concepto}}</td>
                   <td>{{$recibo->documento}} {{$venta->correlativo}}</td>
-                  <td class="text-right">${{number_format($recibo->monto,2)}}</td>
+                  <td class="text-right">${{number_format($recibo->total,2)}}</td>
                 </tr>
             </tbody>
         </table>
@@ -88,7 +88,7 @@
                     <b>Abonos: </b>
                 </td>
                 <td>
-                    ${{number_format($recibo->monto,2)}}
+                    ${{number_format($recibo->total,2)}}
                 </td>
             </tr>
             <tr>

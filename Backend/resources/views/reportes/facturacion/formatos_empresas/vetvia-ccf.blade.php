@@ -168,7 +168,7 @@
                     @endif
 
                     <br><br>
-                    <p class="mt-1">{{$venta->total_venta}}</p>
+                    <p class="mt-1">{{$venta->total}}</p>
                 </div>
             </div> 
         </div>

@@ -3,7 +3,7 @@
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>{{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
+    <title>{{$venta->documento}} - {{$venta->correlativo}}</title>
     <style>
         
         p {
@@ -127,7 +127,7 @@
                 
             </div>
             <div class="float-right no-margin" id="fecha">
-                <p class="">{{Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y')}}</p>
+                <p class="">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
                 <p id="p-dirr">{{$cliente->ncr}}</p>
                 <p id="">{{$cliente->nit}}</p>
                 <p id="">{{$cliente->giro}}</p>
@@ -149,7 +149,7 @@
                     <tbody class="">
                         @php($total = 0);
 
-                        @foreach($venta[0]->detalles as $detalle)
+                        @foreach($venta->detalles as $detalle)
                         <tr>
                             <td class="text-right mr-3">{{ $detalle->cantidad }}</td>
                             
@@ -167,13 +167,13 @@
                     <p>{{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
                 </div>
                 <div class="float-right pr-3" id="total">
-                    <p class="pb-0 ">{{\Currency::currency(Auth::user()->moneda)->format(($venta[0]->sub_total))}}</p>
-                    <p id="t-iva" class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta[0]->iva))}}</p>
+                    <p class="pb-0 ">{{\Currency::currency(Auth::user()->moneda)->format(($venta->sub_total))}}</p>
+                    <p id="t-iva" class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta->iva))}}</p>
                     <br><br><br>
-                    @if($venta[0]->impuesto)
-                    <p class="" id="t-imp">${{$venta[0]->impuesto}}</p>
+                    @if($venta->impuesto)
+                    <p class="" id="t-imp">${{$venta->impuesto}}</p>
                     @endif
-                    <p class="" id="t-total">{{\Currency::currency(Auth::user()->moneda)->format(($venta[0]->total_venta))}}</p>
+                    <p class="" id="t-total">{{\Currency::currency(Auth::user()->moneda)->format(($venta->total))}}</p>
                 </div>
             </div> 
         </div>

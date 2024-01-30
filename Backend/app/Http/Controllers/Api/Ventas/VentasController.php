@@ -613,10 +613,10 @@ class VentasController extends Controller
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
             $formatter = new NumeroALetras();
-            $n = explode(".", number_format($venta->total_venta,2));
+            $n = explode(".", number_format($venta->total,2));
 
             
-            $dolares = $formatter->toWords(floatval(str_replace(',', '',$n)));
+            $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
             //return response()->json($n);
@@ -672,6 +672,10 @@ class VentasController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 13){//177  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('Legal', 'portrait');
+            }
             elseif(Auth::user()->id_empresa == 177){//177  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Credicash', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -694,7 +698,7 @@ class VentasController extends Controller
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
             $formatter = new NumeroALetras();
-            $n = explode(".", number_format($venta->total_venta,2));
+            $n = explode(".", number_format($venta->total,2));
 
             
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n)));
@@ -733,6 +737,10 @@ class VentasController extends Controller
             elseif(Auth::user()->id_empresa == 177){//177  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Credicash', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 13){//177  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('Legal', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 13){ //84
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));

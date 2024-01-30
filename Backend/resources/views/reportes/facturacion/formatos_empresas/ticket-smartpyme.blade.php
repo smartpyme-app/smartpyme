@@ -111,22 +111,22 @@
             <tr>
               <td id="cantidad"><center>1</center></td>
               <td id="producto">{{$recibo->concepto}}</td>
-              <td class="text-right">${{number_format(($recibo->monto / 1.13),2)}}</td>
-              <td class="text-right">${{number_format(($recibo->monto / 1.13),2)}}</td>
+              <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
+              <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
             </tr>
           </tbody>
             <tfoot>
             <tr>
                 <td class="text-right" colspan="3"><b>Sub total: </b></td>
-                <td class="text-right">${{number_format(($recibo->monto / 1.13),2)}}</td>
+                <td class="text-right">${{number_format(($recibo->total / 1.13),2)}}</td>
             </tr>
             <tr>
                 <td class="text-right" colspan="3"><b>Impuesto: </b></td>
-                <td class="text-right">${{number_format((($recibo->monto / 1.13) * 0.13),2)}}</td>
+                <td class="text-right">${{number_format((($recibo->total / 1.13) * 0.13),2)}}</td>
             </tr>
             <tr>
                 <td class="text-right" colspan="3"><b>Total a pagar: </b></td>
-                <td class="text-right"><b>${{number_format($recibo->monto,2)}}</b></td>
+                <td class="text-right"><b>${{number_format($recibo->total,2)}}</b></td>
             </tr>
             </tfoot>
         </table>

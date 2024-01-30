@@ -3,7 +3,7 @@
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>{{$venta[0]->documento}} - {{$venta[0]->correlativo}}</title>
+    <title>{{$venta->documento}} - {{$venta->correlativo}}</title>
     <style>
         
         p {
@@ -108,14 +108,14 @@
             <div class="float-left no-margin" id="cliente">
                 <p id="p-cliente">{{$cliente->nombre}} {{$cliente->apellido}}</p>
                 <p id="p-dirr">{{$cliente->direccion}}</p><br>
-                @if($venta[0]->estado == 'Pagada')
+                @if($venta->estado == 'Pagada')
                     <p id="p-estado">CONTADO</p>
-                @elseif($venta[0]->estado == 'Pendiente')
+                @elseif($venta->estado == 'Pendiente')
                     <p id="p-estado">CREDITO</p>
                 @endif
             </div>
             <div class="float-right no-margin" id="fecha">
-                <p class="">{{Carbon\Carbon::parse($venta[0]->fecha)->format('d/m/Y')}}</p>
+                <p class="">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
                 <p class="">{{$cliente->ncr}}</p>
                 <p id="p-nit">{{$cliente->nit}}</p>
                 <p class="">{{$cliente->giro}}</p>
@@ -138,7 +138,7 @@
                     <tbody class="">
                         @php($total = 0);
 
-                        @foreach($venta[0]->detalles as $detalle)
+                        @foreach($venta->detalles as $detalle)
                         <tr>
                             <td class="text-right mr-3">{{ $detalle->cantidad }}</td>
                             <td class="text-center">{{ $detalle->codigo }}</td>
@@ -156,10 +156,10 @@
                     <p>{{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
                 </div>
                 <div class="float-right no-margin" id="total">
-                    <p class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta[0]->sub_total))}}</p>
-                    <p class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta[0]->iva))}}</p>
+                    <p class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta->sub_total))}}</p>
+                    <p class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta->iva))}}</p>
                     <br><br><br>
-                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($venta[0]->total_venta))}}</p>
+                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($venta->total))}}</p>
                 </div>
             </div> 
         </div>

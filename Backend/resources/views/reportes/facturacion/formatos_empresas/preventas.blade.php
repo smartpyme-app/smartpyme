@@ -101,7 +101,7 @@
         <div class="col-lg-12 mt-3" id="totales">
             <p><strong>Sub total: </strong>${{number_format($venta->sub_total,2)}}</p>
             <p><strong>Impuestos: </strong>${{number_format($venta->iva,2)}}</p>
-            <p><strong>Total: </strong>${{number_format($venta->total_venta,2)}}</p>
+            <p><strong>Total: </strong>${{number_format($venta->total,2)}}</p>
 
         </div>
     </div>
