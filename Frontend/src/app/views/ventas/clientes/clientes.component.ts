@@ -29,7 +29,8 @@ export class ClientesComponent implements OnInit {
 
     public loadAll() {
         this.filtros.id_sucursal = '';
-        this.filtros.id_categoria = '';
+        this.filtros.tipo_contribuyente = '';
+        this.filtros.tipo = '';
         this.filtros.buscador = '';
         this.filtros.estado = '';
         this.filtros.orden = 'nombre';

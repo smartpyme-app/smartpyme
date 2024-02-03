@@ -42,11 +42,15 @@
                     <label for="direccion">Dirección:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
                 </div>
-                <div class="form-group col-lg-6">
+                <div class="form-group col-6 col-lg-3">
+                    <label for="red_social">Red social:</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="red_social" [(ngModel)]="cliente.red_social">
+                </div>
+                <div class="form-group col-lg-9">
                     <label for="etiquetas">Etiquetas:</label>
                     <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
                 </div>
-                <div class="form-group col-lg-6">
+                <div class="form-group col-lg-12">
                     <label for="nota">Observaciones</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nota" [(ngModel)]="cliente.nota">
                 </div>

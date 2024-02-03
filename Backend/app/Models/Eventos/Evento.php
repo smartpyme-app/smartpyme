@@ -23,6 +23,7 @@ class Evento extends Model
         'inicio',
         'fin',
         'frecuencia',
+        'frecuencia_fin',
         'duracion',
         'id_servicio',
         'id_venta',
@@ -31,7 +32,7 @@ class Evento extends Model
         'id_sucursal',
         'id_empresa',
     ];
-    protected $appends = ['nombre_cliente', 'nombre_servicio'];
+    protected $appends = ['nombre_usuario', 'nombre_cliente', 'nombre_servicio'];
 
     protected static function boot()
     {
@@ -83,17 +84,23 @@ class Evento extends Model
             $nuevoEvento = $this->replicate();
             if ($this->frecuencia == 'DAILY') {
                 $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addDay();
+                $nuevoEvento->fin = \Carbon\Carbon::parse($this->fin)->addDay();
             }
             if ($this->frecuencia == 'WEEKLY') {
                 $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addWeek();
+                $nuevoEvento->fin = \Carbon\Carbon::parse($this->fin)->addWeek();
             }
             if ($this->frecuencia == 'MONTHLY') {
                 $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addMonth();
+                $nuevoEvento->fin = \Carbon\Carbon::parse($this->fin)->addMonth();
             }
             if ($this->frecuencia == 'YEARLY') {
                 $nuevoEvento->inicio = \Carbon\Carbon::parse($this->inicio)->addYear();
+                $nuevoEvento->fin = \Carbon\Carbon::parse($this->fin)->addYear();
             }
-            $nuevoEvento->save();
+            if ($this->frecuencia_fin > $nuevoEvento->fin) {
+                $nuevoEvento->save();
+            }
         }
         $this->tipo = $estado;
         $this->frecuencia = '';

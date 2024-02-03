@@ -43,7 +43,7 @@ export class CanalesComponent implements OnInit {
             this.canal.enable = true;
         }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(canal:any){

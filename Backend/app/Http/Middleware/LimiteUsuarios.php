@@ -15,7 +15,7 @@ class LimiteUsuarios
             $empresa = Empresa::where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->first();
 
             if($empresa->limiteUsuarios()){
-                return  Response()->json(['message' => 'Haz alcanzado el máximo de usuarios', 'code' => 500], 500);
+                return  Response()->json(['error' => ['Haz alcanzado el máximo de usuarios'], 'code' => 403], 403);
             }
         }
 

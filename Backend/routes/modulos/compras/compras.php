@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Compras\SalidasController;
     Route::delete('/compra/{id}',           [ComprasController::class, 'delete']);
     
     Route::post('/compra/facturacion',      [ComprasController::class, 'facturacion']);
+    Route::post('/compra/facturacion/consigna',  [ComprasController::class, 'facturacionConsigna']);
 
     Route::post('/libro-compras',           [ComprasController::class, 'libroCompras']);
     Route::get('/compras/sin-devolucion',       [ComprasController::class, 'sinDevolucion']);

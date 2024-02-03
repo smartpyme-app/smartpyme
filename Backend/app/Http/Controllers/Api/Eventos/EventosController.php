@@ -15,7 +15,7 @@ class EventosController extends Controller
 
     public function index(Request $request) {
        
-        $eventos = Evento::when($request->buscador, function($query) use ($request){
+        $eventos = Evento::with('cliente')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -118,6 +118,7 @@ class EventosController extends Controller
                 $data->rrule = [
                     'freq' => $evento->frecuencia ? $evento->frecuencia : 'No',
                     'dtstart' => $evento->inicio,
+                    'until' => $evento->frecuencia_fin,
                 ];
             }
             $data->url = '';
@@ -144,10 +145,12 @@ class EventosController extends Controller
             'descripcion' => 'required|string',
             'id_cliente'  => 'required|numeric',
             'id_servicio' => 'required|numeric',
+            'frecuencia_fin' => 'required_with:frecuencia',
             'inicio' => 'required|date',
         ],[
             'id_cliente.required' => 'El campo cliente es obligatorio.',
-            'id_servicio.required' => 'El campo servicio es obligatorio.'
+            'id_servicio.required' => 'El campo servicio es obligatorio.',
+            'frecuencia_fin.required_with' => 'El campo terminar de repetir es obligatorio.'
         ]);
         
         if($request->id)
@@ -155,8 +158,14 @@ class EventosController extends Controller
         else
             $evento = new Evento;
 
-        if($request->id && ($request['tipo'] == 'Confirmado' && $evento->tipo == 'Sin confirmar')){
+        if($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Confirmado')){
             $evento->estadoVerificarFrecuencia('Confirmado');
+        }
+        elseif($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Sin confirmar')){
+            $evento->estadoVerificarFrecuencia('Sin confirmar');
+        }
+        elseif($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Cancelado')){
+            $evento->estadoVerificarFrecuencia('Cancelado');
         }else{
             $evento->fill($request->all());
             $evento->save();

@@ -54,6 +54,10 @@ class Ajuste extends Model {
         return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
+    }
+
     public function producto(){
         return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }

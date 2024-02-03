@@ -165,17 +165,17 @@ class AuthJWTController extends Controller
 
         $usuario->empresa = $usuario->empresa()->first();
 
-        if ($request->plan == 'Emprendedor'){
+        if ($empresa->plan == 'Emprendedor'){
             $usuario->url_n1co = "https://pay.n1co.shop/pl/WEwwXTOpy";
         }
-        if ($request->plan == 'Estándar'){
+        if ($empresa->plan == 'Estándar'){
             $usuario->url_n1co = "https://pay.n1co.shop/pl/yX99lF1Dl";
         }
-        if ($request->plan == 'Avanzado'){
+        if ($empresa->plan == 'Avanzado'){
             $usuario->url_n1co = "https://pay.n1co.shop/pl/3Nja8UMAl";
         }
 
-        $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7"; // 15 días de prueba
+        // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
 
             return response()->json($usuario, 200);       
 
@@ -241,6 +241,20 @@ class AuthJWTController extends Controller
         $empresa->activo = true;
         $empresa->save();
 
+        $data = [
+            'titulo' => 'Se ha creado una nueva cuenta.',
+            'descripcion' => $empresa->usuarios()->pluck('name')->first() . ' ha registrado su empresa "' . $empresa->nombre . '".',
+        ];
+
+        // Notificar
+        Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
+            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+            ->to(env('MAIL_TO_ADDRESS'))
+            ->cc('gabrielaq@smartpyme.sv')
+            ->cc('contact@smartpyme.sv')
+            ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+        });
+
         return redirect()->route('payment.finish', Crypt::encrypt($empresa->id));
     }
 
@@ -281,10 +295,21 @@ class AuthJWTController extends Controller
         $empresa->fecha_cancelacion = date('Y-m-d');
         $empresa->save();
 
-        Mail::to(env('MAIL_FROM_ADDRESS'))->send(new Notificacion([
-                    'titulo' => 'Cancelación de Suscripción',
-                    'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
-                ]));
+
+        $data = [
+            'titulo' => 'Cancelación de Suscripción.',
+            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+        ];
+
+        // Notificar
+        Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
+            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+            ->to(env('MAIL_TO_ADDRESS'))
+            ->cc('gabrielaq@smartpyme.sv')
+            ->cc('contact@smartpyme.sv')
+            ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+        });
+
 
         return response()->json($usuario, 200);
     }

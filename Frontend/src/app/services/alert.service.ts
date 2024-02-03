@@ -28,16 +28,16 @@ export class AlertService {
         console.log(message);
 
         if(message.status == 0) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
         }
         else if(message.status == 404) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : 'El registro no ha sido encontrado'});
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'El registro no ha sido encontrado'});
         }
         else if(message.status == 403) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.error});
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.error});
         }
         else if(message.status == 401) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': message.statusText, 'mensaje' : message.error.message});
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
             this.router.navigate(['/login']);
         }
         else if(message.status == 400) {

@@ -22,7 +22,7 @@
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarClientes()" autocomplete="off">
                     <input type="search" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador" focus="true">
                 </form>
-                <!-- <button tooltip="Filtrar (F3)" (click)="filtrarClientes()" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
+                <button tooltip="Filtrar (F3)" (click)="openModal(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
@@ -114,73 +114,49 @@
     <div class="modal-title text-center">
         <h2 class="text-center no-margin">Filtros</h2>
     </div>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef!.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="filtrarClientes()">
-        <div class="row text-center">
-
+        <div class="row">
+            <app-notificaciones-container></app-notificaciones-container>
             <div class="form-group col-sm-6">
-                <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
-            </div>
-
-            <div class="form-group col-sm-6">
-                <label for="filtros.usuario">Empleado:</label>
-                <select [(ngModel)]="filtros.usuario_id" class="form-control" name="filtros.usuario_id">
+                <label for="filtros.tipo">Tipo:</label>
+                <select [(ngModel)]="filtros.tipo" class="form-select" name="filtros.tipo">
                     <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
-                        {{ usuario.name }}
-                    </option>
+                    <option value="Persona">Persona</option>
+                    <option value="Empresa">Empresa</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.estado">Estado:</label>
-                <select [(ngModel)]="filtros.estado" class="form-control" name="filtros.estado">
+                <select [(ngModel)]="filtros.estado" class="form-select" name="filtros.estado">
                     <option value="">Todos</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Lista">Lista</option>
-                    <option value="Cobrada">Cobrada</option>
-                    <option value="Anulada">Anulada</option>
+                    <option value="1">Activo</option>
+                    <option value="0">Inactivo</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.metodo_pago">Forma de Pago:</label>
-                <select [(ngModel)]="filtros.metodo_pago" class="form-control" name="filtros.metodo_pago">
+                <label for="filtros.tipo_contribuyente">Tipo de contribuyente:</label>
+                <select [(ngModel)]="filtros.tipo_contribuyente" class="form-select" name="filtros.tipo_contribuyente">
                     <option value="">Todos</option>
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Credito">Crédito Fiscal</option>
-                    <option value="Tarjeta">Tarjeta</option>
-                    <option value="Vale">Vale</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="Versatec">Versatec</option>
+                    <option value="Pequeño">Pequeño</option>
+                    <option value="Mediano">Mediano</option>
+                    <option value="Grande">Grande</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.tipo_documento">Tipo de Transacción:</label>
-                <select [(ngModel)]="filtros.tipo_documento" class="form-control" name="filtros.tipo_documento">
-                    <option value="">Todos</option>
-                    <option value="Credito Fiscal">Crédito Fiscal</option>
-                    <option value="Factura">Factura</option>
-                    <option value="Ticket">Ticket</option>
-                </select>
+                <label for="filtros.fecha_cumpleanos">Fecha de cumpleaños:</label>
+                <input type='date' class="form-control" name="filtros.fecha_cumpleanos" [(ngModel)]="filtros.fecha_cumpleanos"/>
             </div>
         </div>
         
         <br><br>
-        <div class="row text-center">
-            <div class="col-xs-12">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
-                </button>
-            </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
         </div>
     </form>
   </div>

@@ -99,8 +99,8 @@ export class AbonosVentasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public reemprimir(abono:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+    public imprimir(abono:any){
+        window.open(this.apiService.baseUrl + '/api/venta/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token());
     }
 
     // Editar

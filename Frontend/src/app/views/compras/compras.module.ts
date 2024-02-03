@@ -15,6 +15,7 @@ import { ComprasRoutingModule } from './compras.routing.module';
 import { ComprasComponent } from './compras.component';
 import { CompraComponent } from './compra/compra.component';
 import { FacturacionCompraComponent } from './facturacion/facturacion-compra.component';
+import { FacturacionCompraConsignaComponent } from './facturacion/facturacion-consigna/facturacion-compra-consigna.component';
 import { CompraProductoComponent } from './facturacion/compra-producto/compra-producto.component';
 import { CompraDetallesComponent } from './facturacion/detalles/compra-detalles.component';
 
@@ -59,6 +60,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     ComprasRecurrentesComponent,
     AbonosComprasComponent,
     FacturacionCompraComponent,
+    FacturacionCompraConsignaComponent,
     CompraProductoComponent,
     CompraDetallesComponent,
     DevolucionesComprasComponent,
@@ -79,6 +81,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     ComprasRecurrentesComponent,
     AbonosComprasComponent,
     FacturacionCompraComponent,
+    FacturacionCompraConsignaComponent,
     CompraProductoComponent,
     CompraDetallesComponent,
     DevolucionesComprasComponent,

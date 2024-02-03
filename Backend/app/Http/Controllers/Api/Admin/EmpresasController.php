@@ -117,22 +117,34 @@ class EmpresasController extends Controller
     }
 
     public function eliminarDatos(Request $request){
-        $empresa = Empresa::findOrfail($request->id);
-
+        $empresa = Empresa::with('productos', 'categorias', 'clientes', 'proveedores', 'ventas', 'compras', 'presupuestos', 'gastos', 'deventas', 'decompras')->where('id', $request->id)->firstOrFail();
+        
         if ($request->m_inventario) {
-            $productos = $empresa->productos;
-            foreach ($productos as $producto) {
-                $producto->kardex()->delete();
-                $producto->precios()->delete();
-                $producto->traslados()->delete();
-                $producto->ajustes()->delete();
-                $producto->inventarios()->delete();
-                $producto->delete();
-            }
-        }
-
-        if ($request->m_promociones) {
-            $empresa->promociones()->delete();
+            return $producto->ajustes()->count();
+            $empresa->productos->each(function ($producto) {
+                $producto->ajustes()->chunk(200, function ($ajustes) {
+                    $ajustes->each->delete();
+                });
+                $producto->kardex()->chunk(200, function ($kardex) {
+                    $kardex->each->delete();
+                });
+                $producto->precios()->chunk(200, function ($precios) {
+                    $precios->each->delete();
+                });
+                $producto->traslados()->chunk(200, function ($traslados) {
+                    $traslados->each->delete();
+                });
+                $producto->ajustes()->chunk(200, function ($ajustes) {
+                    $ajustes->each->delete();
+                });
+                $producto->inventarios()->chunk(200, function ($inventarios) {
+                    $inventarios->each->delete();
+                });
+            });
+            
+            $empresa->productos()->chunk(200, function ($productos) {
+                $productos->each->delete();
+            });
         }
 
         if ($request->m_categorias) {
@@ -140,51 +152,75 @@ class EmpresasController extends Controller
         }
 
         if ($request->m_clientes) {
-            $empresa->clientes()->delete();
+            $empresa->clientes()->chunk(200, function ($clientes) {
+                $clientes->delete();
+            });
         }
 
         if ($request->m_proveedores) {
-            $empresa->proveedores()->delete();
+            $empresa->proveedores()->chunk(200, function ($proveedores) {
+                $proveedores->delete();
+            });
         }
 
         if ($request->m_ventas) {
-            $ventas = $empresa->ventas;
-            foreach ($ventas as $venta) {
-                $venta->detalles()->delete();
-                $venta->delete();
-            }
-            $deventas = $empresa->deventas;
-            foreach ($deventas as $deventa) {
-                $deventa->detalles()->delete();
-                $deventa->delete();
-            }
+            $empresa->ventas->each(function ($venta) {
+                $venta->detalles()->chunk(200, function ($detalles) {
+                    $detalles->delete();
+                });
+            });
+            $empresa->ventas()->chunk(200, function ($ventas) {
+                $ventas->delete();
+            });
+
+            $empresa->deventas->each(function ($deventa) {
+                $deventa->detalles()->chunk(200, function ($detalles) {
+                    $detalles->delete();
+                });
+            });
+            $empresa->deventas()->chunk(200, function ($deventas) {
+                $deventas->delete();
+            });
         }
         if ($request->m_compras) {
-            $compras = $empresa->compras;
-            foreach ($compras as $compra) {
-                $compra->detalles()->delete();
-                $compra->delete();
-            }
-            $decompras = $empresa->decompras;
-            foreach ($decompras as $decompra) {
-                $decompra->detalles()->delete();
-                $decompra->delete();
-            }
+            $empresa->compras->each(function ($compra) {
+                $compra->detalles()->chunk(200, function ($detalles) {
+                    $detalles->delete();
+                });
+            });
+            $empresa->compras()->chunk(200, function ($compras) {
+                $compras->delete();
+            });
+
+            $empresa->decompras->each(function ($decompra) {
+                $decompra->detalles()->chunk(200, function ($detalles) {
+                    $detalles->delete();
+                });
+            });
+            $empresa->decompras()->chunk(200, function ($decompras) {
+                $decompras->delete();
+            });
         }
         if ($request->m_gastos) {
-            $gastos = $empresa->gastos;
-            foreach ($gastos as $gasto) {
-                $gasto->delete();
-            }
+            $empresa->gastos->each(function ($gasto) {
+                $gasto->detalles()->chunk(200, function ($detalles) {
+                    $detalles->delete();
+                });
+
+            });
+            $empresa->gastos()->chunk(200, function ($gastos) {
+                $gastos->delete();
+            });
         }
         if ($request->m_presupuestos) {
-            $presupuestos = $empresa->presupuestos;
-            foreach ($presupuestos as $presupuesto) {
-                $presupuesto->delete();
-            }
+            $empresa->presupuestos->each(function ($presupuesto) {
+                $presupuesto->detalles()->delete();
+            });
+            $empresa->presupuestos()->delete();
         }
 
-        return Response()->json($empresa, 201);
+
+        return Response()->json($empresa, 200);
     }
 
 }

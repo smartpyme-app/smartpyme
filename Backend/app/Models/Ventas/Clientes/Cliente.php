@@ -30,6 +30,7 @@ class Cliente extends Model {
        'telefono',
        'correo',
        'nota',
+       'red_social',
        'enable',
        'etiquetas',
        'id_usuario',

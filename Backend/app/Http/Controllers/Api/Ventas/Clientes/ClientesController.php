@@ -29,8 +29,18 @@ class ClientesController extends Controller
                                     ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('red_social', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
+                    })
+                    ->when($request->tipo, function($q) use ($request){
+                        $q->where('tipo', $request->tipo);
+                    })
+                    ->when($request->fecha_cumpleanos, function($q) use ($request){
+                        $q->where('fecha_cumpleanos', $request->fecha_cumpleanos);
+                    })
+                    ->when($request->tipo_contribuyente, function($q) use ($request){
+                        $q->where('tipo_contribuyente', $request->tipo_contribuyente);
                     })
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);

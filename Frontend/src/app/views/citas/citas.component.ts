@@ -120,9 +120,11 @@ export class CitasComponent implements OnInit {
     }
 
     agregarEventoAlCalendario(evento:any) {
+        let detalles = (evento.detalles ? evento.detalles : '')  + ' - ' + (evento.cliente.nombre_completo ? evento.cliente.nombre_completo : '') + ' ' + (evento.cliente.correo ? evento.cliente.correo : '');
+        console.log(detalles);
         const event = {
           title: evento.descripcion ? evento.descripcion : '',
-          description: evento.detalles ? evento.detalles : '',
+          description: detalles,
           location: '',
           startDate: evento.inicio,
           endDate: evento.fin,

@@ -106,9 +106,9 @@ class Empresa extends Model {
         return $this->hasMany('App\Models\Inventario\Producto', 'id_empresa');
     }
 
-    public function promociones(){
-        return $this->hasMany('App\Models\Inventario\Promocion', 'id_empresa');
-    }
+    // public function promociones(){
+    //     return $this->hasMany('App\Models\Inventario\Promocion', 'id_empresa');
+    // }
 
     public function dashboards(){
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');
@@ -142,11 +142,11 @@ class Empresa extends Model {
     }
 
     public function ajustes(){
-        return $this->hasMany('App\Models\Inventario\Ajustes\Ajuste', 'id_empresa');
+        return $this->hasMany('App\Models\Inventario\Ajuste', 'id_empresa');
     }
 
     public function traslados(){
-        return $this->hasMany('App\Models\Inventario\Traslados\Traslado', 'id_empresa');
+        return $this->hasMany('App\Models\Inventario\Traslado', 'id_empresa');
     }
 
     public function presupuestos(){

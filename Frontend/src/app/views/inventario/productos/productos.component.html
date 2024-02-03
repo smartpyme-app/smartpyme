@@ -36,7 +36,7 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
         </div>
-        <div class="col-md-4 d-md-none d-flex gap-2 justify-content-end mb-3">
+        <div class="col-md-4 d-md-none d-lg-flex gap-2 justify-content-end mb-3">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
@@ -197,6 +197,16 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_proveedor">Sucursal:</label>
+                <select name="id_sucursal" (change)="filtrarProductos()" [(ngModel)]="filtros.id_sucursal" class="form-select">
+                    <option value="">Todas</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{sucursal.nombre}}
+                    </option>
+                </select>
+            </div>
+
             
         </div>
         

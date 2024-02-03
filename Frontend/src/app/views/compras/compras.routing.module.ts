@@ -4,6 +4,7 @@ import { LayoutComponent } from '../../layout/layout.component';
 
 import { ComprasComponent } from '../compras/compras.component';
 import { FacturacionCompraComponent } from '../compras/facturacion/facturacion-compra.component';
+import { FacturacionCompraConsignaComponent } from '../compras/facturacion/facturacion-consigna/facturacion-compra-consigna.component';
 import { CompraComponent } from '../compras/compra/compra.component';
 import { DevolucionesComprasComponent } from '../compras/devoluciones/devoluciones-compras.component';
 import { DevolucionCompraComponent } from '../compras/devoluciones/devolucion/devolucion-compra.component';
@@ -40,6 +41,7 @@ const routes: Routes = [
         { path: 'compras', component: ComprasComponent, title:'Compras' },
         { path: 'compra/crear', component: FacturacionCompraComponent, title:'Compra' },
         { path: 'compra/editar/:id', component: FacturacionCompraComponent, title:'Compra' },
+        { path: 'compra/consigna/revisar/:id', component: FacturacionCompraConsignaComponent, title: 'Compra consigna'},
         { path: 'compra/:id', component: CompraComponent, title:'Compra' },
 
         { path: 'compras/recurrentes', component: ComprasRecurrentesComponent, title:'Compras recurrentes' },

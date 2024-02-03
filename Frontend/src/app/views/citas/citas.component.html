@@ -33,8 +33,11 @@
                                 </span>
                                 <ng-template #accionesTemplate>
                                     <div class="list-group border-0">
-                                        <a (click)="openModal(mevento, evento)" class="list-group-item list-group-item-action border-0 click">
+                                        <a *ngIf="evento.tipo != 'Pagado'" (click)="openModal(mevento, evento)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        <a (click)="openModal(meventoDetalle, evento)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
                                         </a>
                                         <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-money-bill"></i> Generar venta
@@ -42,7 +45,7 @@
                                         <a *ngIf="evento.tipo != 'Cancelado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Cancelar
                                         </a>
-                                        <a (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
+                                        <a *ngIf="evento.tipo != 'Pagado'" (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-calendar"></i> Agregar a Google Calendar
                                         </a>
                                         <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
@@ -82,6 +85,69 @@
   </div>
   <div class="modal-body">
     <app-crear-evento [evento]="evento" (update)="loadAll(); updateCalendar();"></app-crear-evento>
+  </div>
+</ng-template>
+
+<ng-template #meventoDetalle>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">
+        Evento
+    </h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+
+        <div class="form-group col-md-12">
+          <label class="fw-bold">Descripción:</label>
+          <p>{{ evento.descripcion }}</p>
+        </div>
+
+        <div class="form-group col-md-12">
+          <label class="fw-bold">Detalles del evento:</label>
+          <p>{{ evento.detalles }}</p>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="fw-bold">Fecha inicio:</label>
+          <p>{{ evento.inicio | date:'dd/MM/yyyy hh:mm a'}}</p>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="fw-bold">Finaliza:</label>
+          <p>{{ evento.fin | date:'dd/MM/yyyy hh:mm a'}}</p>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="fw-bold">Duración:</label>
+          <p>{{ evento.duracion }}</p>
+        </div>
+        
+        <div class="form-group col-md-4">
+            <label class="fw-bold">Usuario:</label>
+            <p>{{ evento.nombre_usuario }}</p>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="fw-bold">Cliente:</label>
+          <p>{{ evento.nombre_cliente }}</p>
+        </div>
+
+        <div class="form-group col-md-4">
+          <label class="fw-bold">Servicio:</label>
+          <p>{{ evento.nombre_servicio }}</p>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label class="fw-bold">Estado:</label>
+          <p>{{ evento.tipo }}</p>
+        </div>
+
+        <div class="form-group col-md-6" *ngIf="evento.frecuencia">
+          <label class="fw-bold">Se repite hasta:</label>
+          <p>{{ evento.frecuencia_fin | date:'dd/MM/yyyy'}}</p>
+        </div>
+    </div>
   </div>
 </ng-template>
 

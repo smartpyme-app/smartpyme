@@ -74,6 +74,27 @@ export class CrearEventoComponent implements OnInit {
         }
     }
 
+    setFrecuenciaFin(){
+        let fecha = moment(this.evento.inicio);
+
+        if(!this.evento.veces){
+            this.evento.veces = 1;
+        }
+
+        if(this.evento.frecuencia == "DAILY"){
+            this.evento.frecuencia_fin = fecha.add(this.evento.veces, 'day').format('YYYY-MM-DD');
+        }
+        if(this.evento.frecuencia == "WEEKLY"){
+            this.evento.frecuencia_fin = fecha.add(this.evento.veces, 'week').format('YYYY-MM-DD');
+        }
+        if(this.evento.frecuencia == "MONTHLY"){
+            this.evento.frecuencia_fin = fecha.add(this.evento.veces, 'month').format('YYYY-MM-DD');
+        }
+        if(this.evento.frecuencia == "YEARLY"){
+            this.evento.frecuencia_fin = fecha.add(this.evento.veces, 'year').format('YYYY-MM-DD');
+        }
+    }
+
     // Cliente
     public setCliente(cliente:any){
         if(!this.evento.id_cliente){

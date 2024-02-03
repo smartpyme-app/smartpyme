@@ -15,7 +15,7 @@ class LimiteSucursales
             $empresa = Empresa::where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->first();
 
             if($empresa->LimiteSucursales()){
-                return  Response()->json(['message' => 'Haz alcanzado el máximo de sucursales', 'code' => 500], 500);
+                return  Response()->json(['error' => ['Haz alcanzado el máximo de sucursales'], 'code' => 403], 403);
             }
         }
 

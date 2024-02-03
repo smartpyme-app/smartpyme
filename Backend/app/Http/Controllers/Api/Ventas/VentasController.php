@@ -604,7 +604,7 @@ class VentasController extends Controller
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
-            return view('reportes.ticket', compact('venta', 'empresa', 'documento'));
+            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
         }
 
         if ($documento->nombre == 'Factura') {

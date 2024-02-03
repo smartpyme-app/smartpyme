@@ -262,6 +262,95 @@ class ComprasController extends Controller
 
     }
 
+    public function facturacionConsigna(Request $request){
+        $request->validate([
+            'id'                => 'required',
+            'fecha'             => 'required',
+            'estado'            => 'required|max:255',
+            // 'referencia'        => 'required|numeric',
+            'tipo_documento'    => 'required|max:255',
+            'id_proveedor'      => 'required',
+            'detalles'          => 'required',
+            'iva'               => 'required|numeric',
+            'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
+            'sub_total'         => 'required|numeric',
+            'total'             => 'required|numeric',
+            'nota'              => 'max:255',
+            'id_usuario'        => 'required|numeric',
+            'id_sucursal'       => 'required|numeric',
+        ], [
+            'detalles.required' => 'Tiene que agregar productos a la venta',
+        ]);
+
+        DB::beginTransaction();
+      
+        try {
+            $compra = Compra::where('id', $request->id)->with('detalles')->firstOrFail();
+            if ($compra->total != $request->total) {
+                // Crear consigna
+                $consigna = new Compra();
+                $consigna->fill($request->all());
+                $consigna->estado = 'Consigna';
+                $consigna->sub_total = $compra->sub_total - $request->sub_total;
+                $consigna->total = $compra->total - $request->total;
+                $consigna->iva = $compra->iva - $request->iva;
+                $consigna->save();
+
+                foreach($request->detalles as $detalle){
+                    
+                    $detalle_compra = $compra->detalles()->where('id', $detalle['id'])->first();
+                    if ($detalle_compra) {
+                        if ($detalle_compra->cantidad > $detalle['cantidad']) {
+                            $detalle_consigna = new Detalle();
+                            $detalle_consigna->id_producto = $detalle['id_producto'];
+                            $detalle_consigna->costo = $detalle['costo'];
+                            $detalle_consigna->cantidad = $detalle_compra->cantidad - $detalle['cantidad'];
+                            $detalle_consigna->total = $detalle_consigna->costo * $detalle_consigna->cantidad;
+                            $detalle_consigna->id_compra = $consigna->id;
+                            $detalle_consigna->save();
+                        }
+                    }
+                  
+                }
+                
+                //Guardar nuevos detalles
+                $compra->detalles()->delete();
+
+                foreach ($request->detalles as $detalle) {
+                    if ($detalle['cantidad'] > 0) {
+                        $det = new Detalle();
+                        $det->id_producto = $detalle['id_producto'];
+                        $det->cantidad = $detalle['cantidad'];
+                        $det->costo = $detalle['costo'];
+                        $det->total = $detalle['cantidad'] * $detalle['costo'];
+                        $det->descuento = 0;
+                        $det->id_compra = $compra->id;
+                        $det->save();
+                    }
+                }
+                
+                $compra->total = $request->total;
+                $compra->iva = $request->iva;
+                $compra->sub_total = $request->sub_total;
+            }
+
+
+            $compra->fecha = $request->fecha;
+            $compra->estado = 'Pagada';
+            $compra->save();
+
+            DB::commit();
+            return Response()->json($compra, 200);
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                return Response()->json(['error' => $e->getMessage()], 400);
+            } catch (\Throwable $e) {
+                DB::rollback();
+                return Response()->json(['error' => $e->getMessage()], 400);
+            }
+    }
+
     public function libroCompras(Request $request) {
 
         $compras = Compra::whereBetween('fecha', [$request->inicio, $request->fin])
