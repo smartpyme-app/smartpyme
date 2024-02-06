@@ -190,7 +190,7 @@
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="fecha">Fecha:</label>
-                <input type="date" [(ngModel)]="venta.fecha" name="fecha" class="form-control" focus="true">
+                <input type="date" [(ngModel)]="venta.fecha" name="fecha" class="form-control">
             </div>
             <div class="form-group col-md-6">
                 <label for="forma_pago">Método de pago:</label>
@@ -216,6 +216,10 @@
                         {{ usuario.name }}
                     </ng-option>
                 </ng-select>
+            </div>
+            <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
+                <label for="fecha_pago">Fecha de pago:</label>
+                <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
             </div>
             <div class="form-group col-md-12">
                 <label for="observaciones">Observaciones:</label>

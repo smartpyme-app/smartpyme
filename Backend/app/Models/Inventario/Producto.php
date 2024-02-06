@@ -5,7 +5,7 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
-use JWTAuth;
+use Auth;
 
 class Producto extends Model {
 
@@ -31,21 +31,21 @@ class Producto extends Model {
     protected $appends = ['nombre_categoria', 'img'];
     protected $casts = ['enable' => 'string'];
 
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
+        if (Auth::check()) {
 
-            if ($usuario->tipo == 'Ventas') {
-                static::addGlobalScope('sucursal', function (Builder $builder) use ($usuario) {
-                    $builder->whereHas('inventarios', function($q) use ($usuario){
-                            return $q->where('id_sucursal', $usuario->id_sucursal);
+            if (Auth::user()->tipo == 'Ventas') {
+                static::addGlobalScope('sucursal', function (Builder $builder) {
+                    $builder->whereHas('inventarios', function($q){
+                            return $q->where('id_sucursal', Auth::user()->id_sucursal);
                         });
                 });
             }else{
-                static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                    $builder->where('id_empresa', $usuario->id_empresa);
+                static::addGlobalScope('empresa', function (Builder $builder) {
+                    $builder->where('id_empresa', Auth::user()->id_empresa);
                 });
             }
         }

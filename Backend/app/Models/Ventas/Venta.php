@@ -4,7 +4,7 @@ namespace App\Models\Ventas;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use JWTAuth;
+use Auth;
 
 class Venta extends Model {
 
@@ -52,13 +52,13 @@ class Venta extends Model {
     protected $appends = ['nombre_cliente', 'nombre_usuario',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
     protected $casts = ['recurrente' => 'string'];
     
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
     }

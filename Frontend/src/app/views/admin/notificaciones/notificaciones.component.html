@@ -12,64 +12,66 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.nombre">
-                <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarNotificaciones()" autocomplete="off">
+                                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                                </form>
+                <!-- <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
             </div>
         </div>
     </div>
 
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
-            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <button class="btn" [ngClass]="{ 'btn-primary' : filtros.leido == null }" (click)="loadAll()">Todos</button>
+            <button class="btn" [ngClass]="{ 'btn-primary' : filtros.leido == '0' }" (click)="filtros.leido = 0; filtrarNotificaciones();">No leidos</button>
             <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <select name="estado"  [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
-                <option value="">Prioridad</option>
-                <option value="1">Activo</option>
-                <option value="0">Inactivo</option>
+            <select name="tipo"  [(ngModel)]="filtros.tipo" (change)="filtrarNotificaciones()" class="form-select bg-default w-auto">
+                <option value="">Tipo</option>
+                <option value="Cuentas por pagar">Cuentas por pagar</option>
+                <option value="Cuentas por cobrar">Cuentas por cobrar</option>
+                <option value="Inventario bajo">Inventario bajo</option>
             </select>
-            <select name="estado"  [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
-                <option value="">Estado</option>
-                <option value="1">Activo</option>
-                <option value="0">Inactivo</option>
+            <select name="categoria"  [(ngModel)]="filtros.categoria" (change)="filtrarNotificaciones()" class="form-select bg-default w-auto">
+                <option value="">Categoria</option>
+                <option value="Ventas">Ventas</option>
+                <option value="Compras">Compras</option>
+                <option value="Inventarios">Inventarios</option>
             </select>
         </div>
     </div>
     <div class="row">
         <table class="table table-borderless table-hover">
-            <thead>
+            <!-- <thead>
                 <tr>
-                    <th>Descripcion</th>
+                    <th>Titulo</th>
                     <th>Tipo</th>
                     <th>Prioridad</th>
-                    <!-- <th class="text-center">Leido</th> -->
                     <th class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
-            </thead>
+            </thead> -->
             <tbody>
                 <tr>
-                    <td colspan="9" class="text-center" *ngIf="notificaciones?.total < 1 && !loading">
-                        <span class="badge bg-primary">No tiene notificaciones registrados</span>
+                    <td colspan="4" class="text-center" *ngIf="notificaciones?.total < 1 && !loading">
+                        <span class="badge bg-primary">No tiene notificaciones registradas</span>
                     </td>
-                    <td colspan="9" class="text-center" *ngIf="loading">
+                    <td colspan="4" class="text-center" *ngIf="loading">
                         <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
 
                 <tr (click)="openModal(mnotificacion, notificacion)" class="click" [ngClass]="{ 'fw-bold' : notificacion.leido == '0' }" *ngFor=" let notificacion of notificaciones?.data">                    
-                    <td><span [innerHTML]="notificacion.descripcion | truncate:30"></span></td>
-                    <td>{{notificacion.tipo}}</td>
-                    <td>{{notificacion.prioridad}}</td>
-                    <!-- <td class="text-center" >
-                        <input type="checkbox" [(ngModel)]="notificacion.leido" (change)="setEstado(notificacion)">
-                    </td> -->
+                    <td>{{ notificacion.tipo }}</td>
+                    <!-- <td>{{ notificacion.categoria }}</td> -->
+                    <td>{{ notificacion.titulo }}</td>
+                    <td><span [innerHTML]="notificacion.descripcion | truncate:70"></span></td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
-                            <a *ngIf="notificacion.id != 1" class="btn btn-default" (click)="delete(notificacion.id)" data-toggle="tooltip" title="Eliminar">
+                            <!-- <a *ngIf="notificacion.id != 1" class="btn btn-default" (click)="delete(notificacion.id)" data-toggle="tooltip" title="Eliminar">
                                 <i class="fa fa-trash"></i>
-                            </a>
-                            <a class="btn btn-default" routerLink="/notificacion/{{notificacion.id}}" data-toggle="tooltip" title="Ver">
+                            </a> -->
+                            <a class="btn btn-default" (click)="openModal(mnotificacion, notificacion)" data-toggle="tooltip" title="Ver detalles">
                                 <i class="fa fa-arrow-right"></i>
                             </a>
                         </div>  
@@ -93,56 +95,26 @@
    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <!-- <form autocomplete="off" (ngSubmit)="onSubmit()"> -->
         <div class="row">
-            <div [innerHTML]="notificacion.titulo"></div> 
-            <div [innerHTML]="notificacion.descripcion"></div> 
-        </div>
-    <!-- </form> -->
-  </div>
-</ng-template>
-
-<ng-template #mfilter>
-  <div class="modal-header">
-    <div class="modal-title text-center">
-        <h2 class="text-center no-margin">Filtros</h2>
-    </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="onFiltrar()">
-        <div class="row text-center">
-
-            <div class="form-group col-sm-12">
-                <label for="filtro.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
-                    <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-md-12">
-                <label for="tipo">* Tipo:</label>
-                <select name="tipo" [(ngModel)]="filtro.tipo" class="form-control form-select">
-                    <option value="">Todos</option>
-                    <option value="Administrador">Administrador</option>
-                    <option value="Supervisor">Supervisor</option>
-                    <option value="Vendedor">Vendedor</option>
-                    <option value="Cajero">Cajero</option>
-                </select>
-            </div>
-
-        </div>
-        <br><br>
-        <div class="row text-center">
-            <div class="col-xs-12">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
-                </button>
+            <div class="col-12">
+                <p [innerHTML]="notificacion.titulo"></p>
+                <p>
+                    <span class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : notificacion?.prioridad == 'Media', 'bg-danger' : notificacion?.prioridad == 'Alta', 'bg-info' : notificacion?.prioridad == 'Baja'}">
+                        Prioridad {{ notificacion.prioridad }}
+                    </span>
+                </p>
+                <p>Tipo: {{ notificacion.tipo }}</p>
+                <p>Categoria: {{ notificacion.categoria }}</p>
+                <div [innerHTML]="notificacion.descripcion"></div> 
             </div>
         </div>
-    </form>
+        <div class="d-grid mt-4">
+            <a class="btn btn-primary" routerLink="/{{notificacion.referencia}}/{{notificacion.id_referencia}}">
+                <span *ngIf="notificacion.tipo == 'Cuenta por cobrar' "> Pagar venta </span>
+                <span *ngIf="notificacion.tipo == 'Cuenta por pagar' && notificacion.categoria == 'Compras' "> Pagar compra </span>
+                <span *ngIf="notificacion.tipo == 'Cuenta por pagar' && notificacion.categoria == 'Gastos' "> Pagar gasto </span>
+                <span *ngIf="notificacion.tipo == 'Inventario bajo' "> Ver inventario </span>
+            </a>
+        </div>
   </div>
 </ng-template>

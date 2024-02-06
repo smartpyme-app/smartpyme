@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        'App\Console\Commands\Notificaciones',
     ];
 
     /**
@@ -25,6 +25,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+        $schedule->command('generate:notificaciones')->hourly();
+
+        $schedule->call(function () {
+                Log::info('Working');
+        })->everyFiveMinutes();
     }
 
     /**

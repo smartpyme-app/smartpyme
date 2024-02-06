@@ -43,16 +43,35 @@ Route::get('/clear-bd', function(){
 	
 })->name('clearBD');
 
-Route::get('/setEventosSucursal', function(){
+Route::get('/setNotificaiones', function(){
 	
-	$eventos = App\Models\Eventos\Evento::all();
 
-	foreach ($eventos as $evento) {
-		$evento->id_sucursal = $evento->usuario()->pluck('id_sucursal')->first();
-		$evento->save();
-	}
+	$fechaStart = \Carbon\Carbon::today();
+	$fechaEnd = \Carbon\Carbon::today()->addDay(3);
 
-	return "Listo XD";
+	$gastos = App\Models\Compras\Gastos\Gasto::where('estado', 'Pendiente')
+	                    ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
+	                    ->get();
+
+	$compras = App\Models\Compras\Compra::where('estado', 'Pendiente')
+	                    ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
+	                    ->get();
+
+	
+	$ventas = App\Models\Ventas\Venta::where('estado', 'Pendiente')
+                            ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
+                            ->where('id_empresa', 190)
+                            ->get();
+
+
+	$productos = App\Models\Inventario\Producto::whereHas('inventarios', function ($query) {
+                                $query->whereRaw('stock_minimo > 0')
+                                        ->whereRaw('stock <= stock_minimo');
+                            })
+                            ->where('id_empresa', 190)
+                            ->where('enable', true)->get();
+
+	return $ventas;
 	
 })->name('clearBD');
 

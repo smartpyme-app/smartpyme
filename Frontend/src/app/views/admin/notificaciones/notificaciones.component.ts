@@ -19,9 +19,7 @@ export class NotificacionesComponent implements OnInit {
     public notificaciones:any = [];
     public paginacion = [];
     public loading:boolean = false;
-    public filtrado:boolean = false;
-    public filtro:any = {};
-    public buscador:any = '';
+    public filtros:any = {};
 
     modalRef?: BsModalRef;
 
@@ -31,26 +29,27 @@ export class NotificacionesComponent implements OnInit {
         this.loadAll();
     }
 
-    public loadAll(){
-        this.loading = true;
-        this.filtro.id_sucursal = '';
-        this.filtro.tipo = '';
-        this.filtro.estado = '';
-        
-        this.apiService.getAll('notificaciones').subscribe(notificaciones => { 
-            this.notificaciones = notificaciones;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public loadAll() {
+        this.filtros.categoria = '';
+        this.filtros.tipo = '';
+        this.filtros.leido = null;
+        this.filtros.buscador = '';
+        this.filtros.orden = 'id';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
+        this.filtrarNotificaciones();
     }
 
-    public search(){
-        if(this.buscador && this.buscador.length > 1) {
-            this.loading = true;
-            this.apiService.read('notificaciones/buscar/', this.buscador).subscribe(notificaciones => { 
-                this.notificaciones = notificaciones;
-                this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
-        }
+    public filtrarNotificaciones(){
+        this.loading = true;
+        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
+            this.notificaciones = notificaciones;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); });
     }
 
     openModal(template: TemplateRef<any>, notificacion:any) {
@@ -89,16 +88,14 @@ export class NotificacionesComponent implements OnInit {
         }
     }
 
-
-    onFiltrar(){
+    public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.store('notificaciones/filtrar', this.filtro).subscribe(notificaciones => { 
+        this.apiService.paginate(this.notificaciones.path + '?page='+ event.page, this.filtros).subscribe(notificaciones => { 
             this.notificaciones = notificaciones;
-            this.loading = false; this.filtrado = true;
-            this.modalRef?.hide();
+            this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-
     }
+
 
 
 }

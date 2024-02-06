@@ -10,9 +10,23 @@ class NotificacionesController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request) {
        
-        $notificaciones = Notificacion::orderBy('id','desc')->paginate(10);
+        $notificaciones = Notificacion::when($request->tipo, function($q) use ($request){
+                                $q->where('tipo', $request->tipo);
+                            })
+                            ->when($request->categoria, function($q) use ($request){
+                                $q->where('categoria', $request->categoria);
+                            })
+                            ->when($request->leido !== null, function($q) use ($request){
+                                $q->where('leido', !!$request->leido);
+                            })
+                            ->when($request->buscador, function($query) use ($request){
+                                return $query->where('titulo', 'like' ,'%' . $request->buscador . '%')
+                                             ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
+                            })
+                            ->orderBy($request->orden, $request->direccion)
+                            ->paginate($request->paginate);
 
         return Response()->json($notificaciones, 200);
 
