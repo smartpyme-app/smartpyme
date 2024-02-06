@@ -45,6 +45,9 @@ class ProductosController extends Controller
                                                  ->orwhere('marca', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
                                 })
+                                ->when($request->nombre, function($q) use ($request){
+                                    $q->where('nombre', $request->nombre);
+                                })
                                 ->when($request->id_proveedor, function($q) use ($request){
                                     $q->whereHas('proveedores', function($q) use ($request){
                                         return $q->where("id_proveedor", $request->id_proveedor);
@@ -56,7 +59,7 @@ class ProductosController extends Controller
                                 ->whereIn('tipo', ['Producto', 'Compuesto'])
                                 // ->whereNotIn('id_categoria', [1,2])
                                 ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
+                                ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);
 
         return Response()->json($productos, 200);

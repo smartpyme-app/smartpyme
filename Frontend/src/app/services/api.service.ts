@@ -12,6 +12,7 @@ declare let $:any;
 
 export class ApiService {
 
+    public appUrl: string = environment.APP_URL;
     public baseUrl: string = environment.API_URL;
     public apiUrl =  this.baseUrl + '/api/';
 

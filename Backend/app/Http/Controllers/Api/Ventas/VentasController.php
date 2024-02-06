@@ -77,7 +77,7 @@ class VentasController extends Controller
                         })
                         ->where('cotizacion', 0)
                     ->orderBy($request->orden, $request->direccion)
-                    ->orderBy('id', 'desc')
+                    ->orderBy('correlativo', 'desc')
                     ->paginate($request->paginate);
 
         foreach ($ventas as $venta) {

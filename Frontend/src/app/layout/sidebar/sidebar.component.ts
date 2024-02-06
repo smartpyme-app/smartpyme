@@ -23,6 +23,7 @@ export class SidebarComponent implements OnInit {
     public loading: boolean = false;
     public filtros: any = {};
     public items: any = [];
+    public notificaciones: any = [];
 
     searchControl = new FormControl();
 
@@ -74,6 +75,7 @@ export class SidebarComponent implements OnInit {
             this.loading = false;
           });
 
+        this.loadNotificaciones();
     }
 
 
@@ -176,6 +178,14 @@ export class SidebarComponent implements OnInit {
             this.items = items;
             this.loading = false;
         }, error => {this.alertService.error(error);this.loading = false; });
+    }
+
+    public loadNotificaciones() {
+        this.filtros.leido = 0;
+        this.filtros.paginate = 1;
+        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
+            this.notificaciones = notificaciones;
+        }, error => {this.alertService.error(error); });
     }
 
 }

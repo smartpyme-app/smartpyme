@@ -64,5 +64,18 @@ export class ClienteInformacionComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    public verificarSiExiste(){
+        if(this.cliente.nombre && this.cliente.apellido){
+            this.apiService.getAll('clientes', { nombre: this.cliente.nombre, apellido: this.cliente.apellido, estado: 1, }).subscribe(clientes => { 
+                if(clientes.data[0]){
+                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
+                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/cliente/editar/' + clientes.data[0].id + '">Ver cliente</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+                    );
+                }
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+    }
+
 
 }

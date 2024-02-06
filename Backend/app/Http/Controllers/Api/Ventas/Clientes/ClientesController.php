@@ -21,10 +21,11 @@ class ClientesController extends Controller
     
 
     public function index(Request $request) {
-       
+        
         $clientes = Cliente::where('id','!=', 1)->withSum('ventas', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                    ->orwhere('apellido', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
@@ -32,6 +33,12 @@ class ClientesController extends Controller
                                     ->orwhere('red_social', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
+                    })
+                    ->when($request->nombre, function($q) use ($request){
+                        $q->where('nombre', $request->nombre);
+                    })
+                    ->when($request->apellido, function($q) use ($request){
+                        $q->where('apellido', $request->apellido);
                     })
                     ->when($request->tipo, function($q) use ($request){
                         $q->where('tipo', $request->tipo);
@@ -45,7 +52,7 @@ class ClientesController extends Controller
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);
                     })
-                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                     ->paginate($request->paginate);
 
         return Response()->json($clientes, 200);

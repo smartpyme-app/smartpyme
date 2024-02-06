@@ -225,6 +225,7 @@ img.icon-2{
         transition: width 0.3s;
         overflow: hidden;
         height: 100%;
+        background: #fff;
         transition: all 1s ease;
     }
 

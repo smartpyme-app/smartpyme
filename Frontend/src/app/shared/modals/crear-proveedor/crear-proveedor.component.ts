@@ -58,5 +58,18 @@ export class CrearProveedorComponent implements OnInit {
         },error => {this.alertService.error(error); this.saving = false; });
     }
 
+    public verificarSiExiste(){
+        if(this.proveedor.nombre && this.proveedor.apellido){
+            this.apiService.getAll('proveedores', { nombre: this.proveedor.nombre, apellido: this.proveedor.apellido, estado: 1, }).subscribe(proveedores => { 
+                if(proveedores.data[0]){
+                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
+                        'Por favor, verificar. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'
+                    );
+                }
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+    }
+
 
 }

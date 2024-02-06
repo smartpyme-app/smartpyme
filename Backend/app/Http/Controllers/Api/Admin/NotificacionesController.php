@@ -25,7 +25,7 @@ class NotificacionesController extends Controller
                                 return $query->where('titulo', 'like' ,'%' . $request->buscador . '%')
                                              ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
                             })
-                            ->orderBy($request->orden, $request->direccion)
+                            ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc' )
                             ->paginate($request->paginate);
 
         return Response()->json($notificaciones, 200);

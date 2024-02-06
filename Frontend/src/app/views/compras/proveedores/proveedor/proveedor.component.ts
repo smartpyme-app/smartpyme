@@ -65,4 +65,17 @@ export class ProveedorComponent implements OnInit {
     }
 
 
+    public verificarSiExiste(){
+        if(this.proveedor.nombre && this.proveedor.apellido){
+            this.apiService.getAll('proveedores', { nombre: this.proveedor.nombre, apellido: this.proveedor.apellido, estado: 1, }).subscribe(proveedores => { 
+                if(proveedores.data[0]){
+                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
+                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/proveedor/editar/' + proveedores.data[0].id + '">Ver proveedor</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+                    );
+                }
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+    }
+
 }

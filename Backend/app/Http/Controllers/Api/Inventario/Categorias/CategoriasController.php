@@ -58,7 +58,7 @@ class CategoriasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'        => 'required|max:255',
+            'nombre'        => 'required|max:255|unique:categorias,nombre',
             'descripcion'   => 'sometimes|max:255',
             'id_empresa'    => 'required|numeric',
         ]);

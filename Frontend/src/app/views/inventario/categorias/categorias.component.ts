@@ -41,6 +41,7 @@ export class CategoriasComponent implements OnInit {
             this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
             this.categoria.enable = true;
         }
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
@@ -59,6 +60,7 @@ export class CategoriasComponent implements OnInit {
             }else{
                 this.alertService.success('Categoria guardada', 'La categoria fue guardada exitosamente.');
             }
+            this.alertService.modal = false;
             this.loadAll();
             this.loading = false;
             this.modalRef?.hide();
@@ -85,6 +87,16 @@ export class CategoriasComponent implements OnInit {
             this.categorias = categorias;
             this.loading = false;
         }, error => {this.alertService.error(error); });
+    }
+
+    public verificarSiExiste(){
+        if(this.categoria.nombre){
+            if(this.categorias.filter( (item:any) => item.nombre.toLowerCase() == this.categoria.nombre.toLowerCase())[0]){
+                this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
+                    'Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+                );
+            }
+        }
     }
 
 

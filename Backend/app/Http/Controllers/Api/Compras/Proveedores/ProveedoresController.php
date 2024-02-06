@@ -29,10 +29,16 @@ class ProveedoresController extends Controller
                                     ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
                     })
+                    ->when($request->nombre, function($q) use ($request){
+                        $q->where('nombre', $request->nombre);
+                    })
+                    ->when($request->apellido, function($q) use ($request){
+                        $q->where('apellido', $request->apellido);
+                    })
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);
                     })
-                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                     ->paginate($request->paginate);
 
         return Response()->json($proveedores, 200);

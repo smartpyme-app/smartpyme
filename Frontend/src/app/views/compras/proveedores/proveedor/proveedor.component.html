@@ -27,7 +27,7 @@
                     </div>
                     <div class="form-group col-lg-3">
                         <label for="apellido">Apellido</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
+                        <input type="text" class="form-control" (change)="verificarSiExiste()"   placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="correo">Correo</label>
@@ -55,17 +55,13 @@
                         <label for="nombre_empresa">Empresa:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
                     </div>
-                    <div class="form-group col-6 col-lg-3">
+                    <div class="form-group col-6 col-lg-2">
                         <label for="ncr">NRC:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="nit">NIT:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit">
-                    </div>
-                    <div class="form-group col-6 col-lg-6">
-                        <label for="giro">Giro:</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
                         <label for="tipo_contribuyente">Tipo de contribuyente:</label>
@@ -75,6 +71,10 @@
                             <option value="Mediano">Mediano</option>
                             <option value="Grande">Grande</option>
                         </select>
+                    </div>
+                    <div class="form-group col-6 col-lg-6">
+                        <label for="giro">Giro:</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="telefono">Teléfono:</label>

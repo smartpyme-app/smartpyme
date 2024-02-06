@@ -93,6 +93,19 @@ export class ProductoInformacionComponent implements OnInit {
         var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
     }
 
+    public verificarSiExiste(){
+        if(this.producto.nombre){
+            this.apiService.getAll('productos', { nombre: this.producto.nombre, estado: 1, }).subscribe(productos => { 
+                if(productos.data[0]){
+                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
+                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+                    );
+                }
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+    }
+
     
 
 }
