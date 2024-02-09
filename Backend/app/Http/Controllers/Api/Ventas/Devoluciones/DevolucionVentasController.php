@@ -32,23 +32,22 @@ class DevolucionVentasController extends Controller
                             return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            return $query->where('fecha', '>=', $request->inicio);
+                        })
+                        ->when($request->fin, function($query) use ($request){
+                            return $query->where('fecha', '<=', $request->fin);
+                        })
+                        ->when($request->estado !== null, function($q) use ($request){
+                            $q->where('enable', !!$request->estado);
                         })
                         ->when($request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('enable', $request->estado);
                         })
                         ->when($request->forma_de_pago, function($query) use ($request){
                             return $query->where('forma_de_pago', $request->forma_de_pago);
                         })
                         ->when($request->id_cliente, function($query) use ($request){
-                            return $query->whereHas('cliente', function($query) use ($request)
-                            {
-                                $query->where('id_cliente', $request->id_cliente);
-
-                            });
+                            $query->where('id_cliente', $request->id_cliente);
                         })
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);

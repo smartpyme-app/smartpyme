@@ -12,7 +12,7 @@
             width: 10cm; height: 27cm;
             font-family: sans-serif;
             line-height: 15px;
-            margin-top: -1cm;
+            margin-top: -0.6cm;
         }
         .factura{margin: 2cm 0.5cm 0cm 0.5cm; position: relative; height: 13cm;}
         p{margin: 0px 0px 4px 0px; }

@@ -16,9 +16,9 @@ export class AbonosVentasComponent implements OnInit {
     public loading:boolean = false;
     public downloading:boolean = false;
 
-    public proveedores:any = [];
+    public clientes:any = [];
     public usuarios:any = [];
-    public sucursales:any = [];
+    public formaPagos:any = [];
     public documentos:any = [];
     public filtros:any = {};
     public filtrado:boolean = false;
@@ -33,9 +33,6 @@ export class AbonosVentasComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
-            this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -51,8 +48,9 @@ export class AbonosVentasComponent implements OnInit {
 
     public loadAll() {
         this.filtros.id_sucursal = '';
-        this.filtros.id_proveedor = '';
+        this.filtros.id_cliente = '';
         this.filtros.estado = '';
+        this.filtros.forma_pago = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
@@ -93,7 +91,7 @@ export class AbonosVentasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.abonos.path + '?page='+ event.page).subscribe(abonos => { 
+        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => { 
             this.abonos = abonos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -127,7 +125,14 @@ export class AbonosVentasComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+            this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
+
         this.modalRef = this.modalService.show(template);
     }
 

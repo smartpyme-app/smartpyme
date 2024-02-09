@@ -26,7 +26,13 @@ class DevolucionComprasController extends Controller
                             return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                            return $query->where('fecha', '>=', $request->inicio);
+                        })
+                        ->when($request->fin, function($query) use ($request){
+                            return $query->where('fecha', '<=', $request->fin);
+                        })
+                        ->when($request->estado !== null, function($q) use ($request){
+                            $q->where('enable', !!$request->estado);
                         })
                         ->when($request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
@@ -35,11 +41,7 @@ class DevolucionComprasController extends Controller
                             return $query->where('enable', $request->estado);
                         })
                         ->when($request->id_proveedor, function($query) use ($request){
-                            return $query->whereHas('proveedor', function($query) use ($request)
-                            {
-                                $query->where('id_proveedor', $request->id_proveedor);
-
-                            });
+                            $query->where('id_proveedor', $request->id_proveedor);
                         })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')

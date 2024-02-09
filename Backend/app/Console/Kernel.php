@@ -25,11 +25,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('generate:notificaciones')->hourly();
+        $schedule->command('generate:notificaciones')->daily();
 
         $schedule->call(function () {
-                Log::info('Working');
-        })->everyFiveMinutes();
+                \Log::info('Working');
+        })->daily();
     }
 
     /**

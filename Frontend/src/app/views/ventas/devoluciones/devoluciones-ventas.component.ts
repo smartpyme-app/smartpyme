@@ -50,9 +50,15 @@ export class DevolucionesVentasComponent implements OnInit {
 
     public filtrarVentas(){
         this.loading = true;
+        if(this.filtros.id_cliente == null){
+            this.filtros.id_cliente = '';
+        }
         this.apiService.getAll('devoluciones/ventas', this.filtros).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); });
     }
 
@@ -99,16 +105,16 @@ export class DevolucionesVentasComponent implements OnInit {
 
     openFilter(template: TemplateRef<any>) {     
 
-        if(!this.usuarios.data){
-            this.apiService.getAll('usuarios/filtrar/tipo/Mesero').subscribe(usuarios => { 
-                this.usuarios = usuarios.data;
-            }, error => {this.alertService.error(error); });
-        }
-        if(!this.sucursales.data){
-            this.apiService.getAll('sucursales').subscribe(sucursales => { 
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
-        }
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
+
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+        
+
         this.modalRef = this.modalService.show(template);
     }
 

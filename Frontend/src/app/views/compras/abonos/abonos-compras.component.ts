@@ -15,7 +15,7 @@ export class AbonosComprasComponent implements OnInit {
     public abono:any = {};
     public loading:boolean = false;
     public downloading:boolean = false;
-
+    public formaPagos:any = [];
     public proveedores:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
@@ -54,6 +54,7 @@ export class AbonosComprasComponent implements OnInit {
         this.filtros.id_proveedor = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.forma_pago = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -128,7 +129,9 @@ export class AbonosComprasComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+            this.formaPagos = formaPagos;
+        }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 

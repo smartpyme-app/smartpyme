@@ -19,7 +19,7 @@
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCompras()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.referencia">
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="filtrarCompras()" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
@@ -101,15 +101,14 @@
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h2 class="text-center no-margin">Filtros</h2>
+        <h2 class="text-center">Filtrar</h2>
     </div>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form autocomplete="off" (ngSubmit)="filtrarCompras()">
-        <div class="row text-center">
+        <div class="row">
 
             <div class="form-group col-sm-6">
                 <label for="">Del:</label>
@@ -119,53 +118,48 @@
                 <label for="">Al:</label>
                 <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
             </div>
-
-            <div class="form-group col-sm-12">
-                <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.sucursal_id" class="form-select" name="filtros.sucursal_id">
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    <option value="0">Anuladas</option>
+                    <option value="1">Confirmadas</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.usuario">Empleado:</label>
-                <select [(ngModel)]="filtros.usuario_id" class="form-select" name="filtros.usuario_id">
-                    <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
-                        {{ usuario.name }}
-                    </option>
-                </select>
+                <label for="filtros.id_proveedor">Proveedor:</label>
+                <ng-select name="id_proveedor" [(ngModel)]="filtros.id_proveedor" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{proveedor.nombre}}
+                    </ng-option>
+                </ng-select>
             </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.categoria">Categoría:</label>
-                <input type="text" list="compras" [(ngModel)]="filtros.categoria" class="form-control" name="filtros.categoria">
-                <datalist id="compras">
-                    <option value="Todas">
-                    <option value="Transporte">
-                    <option value="Alimentación">
-                    <option value="Viaticos">
-                    <option value="Agua">
-                    <option value="Luz">
-                    <option value="Teléfono">
-                    <option value="Internet">
-                    <option value="Cable">
-                    <option value="Material de oficina">
-                    <option value="Material de limpieza">
-                    <option value="Otros">
-                </datalist>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_usuario">Usuario:</label>
+                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
             </div>
         </div>
         
-        <br><br>
-        <div class="row text-center">
-            <div class="col-xs-12">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
-                </button>
-            </div>
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
         </div>
     </form>
   </div>

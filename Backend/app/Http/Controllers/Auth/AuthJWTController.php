@@ -172,7 +172,7 @@ class AuthJWTController extends Controller
             $usuario->url_n1co = "https://pay.n1co.shop/pl/yX99lF1Dl";
         }
         if ($empresa->plan == 'Avanzado'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/3Nja8UMAl";
+            $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
         }
 
         // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
