@@ -93,6 +93,11 @@
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
+                        <td class="text-right"> <b>Retención (1%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
@@ -126,20 +131,26 @@
             <label for="fecha_expiracion">Fecha de expiración:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
         </div>
-        <div class="form-group col-md-6 col-lg-2" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="fecha_pago">Fecha de pago:</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
         </div>
-        <div class="form-group col-md-6 col-lg-2 without-label" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
             <div class="form-switch bg-light-info rounded">
               <label for="recurrente">Recurrente</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-2 without-label">
+        <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="cobrar_impuestos">Con IVA</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="percepcion">Retención</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">

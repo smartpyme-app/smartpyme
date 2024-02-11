@@ -133,9 +133,9 @@ class VentasController extends Controller
                                     ->where('id_sucursal', $venta->id_sucursal)->first();
 
                         if ($inventario) {
-                            $inventario->stock += $det['cantidad'] * $comp->cantidad;
+                            $inventario->stock += $detalle->cantidad * $comp->cantidad;
                             $inventario->save();
-                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad) * -1);
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
                         }
                     }
 
@@ -156,9 +156,9 @@ class VentasController extends Controller
                                     ->where('id_sucursal', $venta->id_sucursal)->first();
 
                         if ($inventario) {
-                            $inventario->stock -= $det['cantidad'] * $comp->cantidad;
+                            $inventario->stock -= $detalle->cantidad * $comp->cantidad;
                             $inventario->save();
-                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad));
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
                         }
                     }
 

@@ -116,6 +116,11 @@
                     </tr>
                     <tr>
                         <td colspan="3" class="text-end"></td>
+                        <td class="text-end"><b>Retención:</b></td>
+                        <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"></td>
                         <td class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
