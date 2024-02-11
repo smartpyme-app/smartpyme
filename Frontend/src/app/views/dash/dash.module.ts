@@ -17,6 +17,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { DashRoutingModule } from './dash.routing.module';
 
 // import { FullCalendarModule } from '@fullcalendar/angular';
+import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
 import { DashComponent }         from './dash.component';
 
@@ -46,6 +47,7 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
     SharedModule,
     DashRoutingModule,
     NgSelectModule,
+    TourNgxBootstrapModule,
     PopoverModule.forRoot(),
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
