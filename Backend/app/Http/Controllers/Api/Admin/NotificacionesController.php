@@ -15,6 +15,9 @@ class NotificacionesController extends Controller
         $notificaciones = Notificacion::when($request->tipo, function($q) use ($request){
                                 $q->where('tipo', $request->tipo);
                             })
+                            ->when($request->referencia, function($q) use ($request){
+                                $q->where('referencia', $request->referencia);
+                            })
                             ->when($request->categoria, function($q) use ($request){
                                 $q->where('categoria', $request->categoria);
                             })

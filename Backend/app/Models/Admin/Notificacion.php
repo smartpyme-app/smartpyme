@@ -4,6 +4,7 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 use Auth;
 
 class Notificacion extends Model
@@ -23,6 +24,7 @@ class Notificacion extends Model
     ];
 
     protected $casts = ['leido' => 'string'];
+    protected $appends = ['created_at_human'];
 
     protected static function boot()
     {
@@ -33,6 +35,10 @@ class Notificacion extends Model
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function getCreatedAtHumanAttribute(){
+        return Carbon::parse($this->created_at)->diffForhumans();
     }
 
     public function usuario(){

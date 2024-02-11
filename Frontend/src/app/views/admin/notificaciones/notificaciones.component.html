@@ -13,8 +13,8 @@
         <div class="col">
             <div class="d-flex gap-2">
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarNotificaciones()" autocomplete="off">
-                                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
-                                </form>
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
                 <!-- <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
             </div>
         </div>
@@ -22,7 +22,7 @@
 
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
-            <button class="btn" [ngClass]="{ 'btn-primary' : filtros.leido == null }" (click)="loadAll()">Todos</button>
+            <button class="btn" [ngClass]="{ 'btn-primary' : filtros.leido == '' }" (click)="loadAll()">Todos</button>
             <button class="btn" [ngClass]="{ 'btn-primary' : filtros.leido == '0' }" (click)="filtros.leido = 0; filtrarNotificaciones();">No leidos</button>
             <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
@@ -32,12 +32,6 @@
                 <option value="Cuentas por pagar">Cuentas por pagar</option>
                 <option value="Cuentas por cobrar">Cuentas por cobrar</option>
                 <option value="Inventario bajo">Inventario bajo</option>
-            </select>
-            <select name="categoria"  [(ngModel)]="filtros.categoria" (change)="filtrarNotificaciones()" class="form-select bg-default w-auto">
-                <option value="">Categoria</option>
-                <option value="Ventas">Ventas</option>
-                <option value="Compras">Compras</option>
-                <option value="Inventarios">Inventarios</option>
             </select>
         </div>
     </div>
@@ -62,7 +56,10 @@
                 </tr>
 
                 <tr (click)="openModal(mnotificacion, notificacion)" class="click" [ngClass]="{ 'fw-bold' : notificacion.leido == '0' }" *ngFor=" let notificacion of notificaciones?.data">                    
-                    <td>{{ notificacion.tipo }}</td>
+                    <td>
+                        {{ notificacion.tipo }} <br>
+                        <small>{{ notificacion.created_at_human }}</small>
+                    </td>
                     <!-- <td>{{ notificacion.categoria }}</td> -->
                     <td>{{ notificacion.titulo }}</td>
                     <td><span [innerHTML]="notificacion.descripcion | truncate:70"></span></td>
@@ -99,23 +96,22 @@
             <div class="col-12">
                 <p [innerHTML]="notificacion.titulo"></p>
                 <p>
-                    <span class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : notificacion?.prioridad == 'Media', 'bg-danger' : notificacion?.prioridad == 'Alta', 'bg-info' : notificacion?.prioridad == 'Baja'}">
+                    <span *ngIf="notificacion.prioridad" class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : notificacion?.prioridad == 'Media', 'bg-danger' : notificacion?.prioridad == 'Alta', 'bg-info' : notificacion?.prioridad == 'Baja'}">
                         Prioridad {{ notificacion.prioridad }}
                     </span>
                 </p>
-                <p>Tipo: {{ notificacion.tipo }}</p>
-                <p>Categoria: {{ notificacion.categoria }}</p>
+                <p *ngIf="notificacion.tipo">Tipo: {{ notificacion.tipo }}</p>
                 <div [innerHTML]="notificacion.descripcion"></div> 
             </div>
         </div>
         <div class="d-grid mt-4">
-            <a *ngIf="notificacion.referencia && notificacion.id_referencia" class="btn btn-primary" routerLink="/{{notificacion.referencia}}/{{notificacion.id_referencia}}">
-                <span *ngIf="notificacion.tipo == 'Cuenta por cobrar' "> Pagar venta </span>
-                <span *ngIf="notificacion.tipo == 'Cuenta por pagar' && notificacion.categoria == 'Compras' "> Pagar compra </span>
-                <span *ngIf="notificacion.tipo == 'Cuenta por pagar' && notificacion.categoria == 'Gastos' "> Pagar gasto </span>
+            <a *ngIf="notificacion.referencia && notificacion.id_referencia" class="btn btn-primary" target="_black" routerLink="/{{notificacion.referencia}}/{{notificacion.id_referencia}}">
+                <span *ngIf="notificacion.tipo == 'Cuentas por cobrar' "> Ir a la venta </span>
+                <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'compra' "> Ir a la compra </span>
+                <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'gasto' "> Ir al gasto </span>
                 <span *ngIf="notificacion.tipo == 'Inventario bajo' "> Ver inventario </span>
             </a>
-            <button *ngIf="!notificacion.referencia && !notificacion.id_referencia" class="btn btn-primary"  (click)="modalRef.hide()">Entendido</button>
+            <button *ngIf="!notificacion.referencia && !notificacion.id_referencia" class="btn btn-primary"  (click)="modalRef.hide();">Entendido</button>
         </div>
   </div>
 </ng-template>

@@ -32,7 +32,7 @@ export class NotificacionesComponent implements OnInit {
     public loadAll() {
         this.filtros.categoria = '';
         this.filtros.tipo = '';
-        this.filtros.leido = null;
+        this.filtros.leido = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
         this.filtros.direccion = 'desc';
