@@ -27,6 +27,7 @@ class Gasto extends Model {
         'sub_total',
         'iva',
         'total',
+        'nota',
         'id_usuario',
         'id_empresa',
         'id_sucursal',

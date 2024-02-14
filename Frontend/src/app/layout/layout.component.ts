@@ -18,4 +18,5 @@ export class LayoutComponent  {
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
     }
+
 }

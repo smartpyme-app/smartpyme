@@ -24,7 +24,7 @@ export class NotificacionesContainerComponent implements OnInit, OnDestroy {
             if (this.alertMessage && (this.alertMessage.tipo == 'alert-success')) {
                 setTimeout(() => {
                     this.closeAlert();
-                }, 3000);
+                }, 5000);
             }
         });
     }

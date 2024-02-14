@@ -22,6 +22,7 @@
             "tsConfig": "tsconfig.app.json",
             "allowedCommonJsDependencies": [
               "chart.js",
+              "sweetalert2",
               "moment"
            ],
             "assets": [
@@ -42,6 +43,7 @@
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
+              "node_modules/sweetalert2/dist/sweetalert2.all.js",
               "src/assets/plugins/chart.js/Chart.bundle.min.js",
               "src/assets/plugins/owl.carousel/dist/js/owl.carousel.min.js",
               "src/assets/plugins/chartist/js/chartist.min.js",

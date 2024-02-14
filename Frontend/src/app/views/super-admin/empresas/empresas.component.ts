@@ -100,6 +100,42 @@ export class EmpresasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+    public setPlan(){
+        if(this.empresa.plan == 'Emprendedor'){
+            this.empresa.user_limit = 1;
+            this.empresa.sucursal_limit = 1;
+
+            if(this.empresa.tipo_plan == 'Mensual'){
+                this.empresa.total = 16.95;
+            }else{
+                this.empresa.total = 203.4;
+            }
+        }
+
+        if(this.empresa.plan == 'Estándar'){
+            this.empresa.user_limit = 2;
+            this.empresa.sucursal_limit = 1;
+
+            if(this.empresa.tipo_plan == 'Mensual'){
+                this.empresa.total = 28.25;
+            }else{
+                this.empresa.total = 339;
+            }
+        }
+
+        if(this.empresa.plan == 'Avanzado'){
+            this.empresa.user_limit = 5;
+            this.empresa.sucursal_limit = 2;
+
+            if(this.empresa.tipo_plan == 'Mensual'){
+                this.empresa.total = 56.5;
+            }else{
+                this.empresa.total = 678;
+            }
+        }
+
+    }
+
 
     openModal(template: TemplateRef<any>, empresa:any) {
         this.empresa = empresa;

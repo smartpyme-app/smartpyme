@@ -48,7 +48,8 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
         $request = $this->request;
         
         $detalles = Detalle::whereHas('compra', function($query) use ($request) {
-                            $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                            $query->when($request->buscador, function($query) use ($request){
+                                return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                         ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                         ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                         ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
@@ -89,7 +90,7 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
     public function map($row): array{
            $fields = [
               $row->compra()->pluck('fecha')->first(),
-              $row->compra()->first()->proveedor()->pluck('nombre')->first(),
+              $row->compra()->first() ? $row->compra()->first()->nombre_proveedor : 'Comsumidor Final',
               $row->compra()->first()->proveedor()->pluck('dui')->first(),
               $row->compra()->first()->proveedor()->pluck('nit')->first(),
               $row->producto()->pluck('nombre')->first(),

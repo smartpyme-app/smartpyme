@@ -90,10 +90,10 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                                 ->when($request->tipo_documento, function($query) use ($request){
                                     return $query->where('tipo_documento', $request->tipo_documento);
                                 })
-                            ->orderBy($request->orden, $request->direccion)
-                            ->orderBy('id', 'desc')
-                            ->where('estado', '!=', 'Pre-venta');
-                        })->get();
+                                ->where('cotizacion', 0)
+                                ->orderBy($request->orden, $request->direccion)
+                                ->orderBy('id', 'desc');
+                            })->get();
 
         return $detalles;
         
@@ -102,7 +102,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
     public function map($row): array{
            $fields = [
               $row->venta()->pluck('fecha')->first(),
-              $row->venta()->first()->cliente()->pluck('nombre')->first(),
+              $row->venta()->first() ? $row->venta()->first()->nombre_cliente : 'Comsumidor Final',
               $row->venta()->first()->cliente()->pluck('dui')->first(),
               $row->venta()->first()->cliente()->pluck('nit')->first(),
               $row->producto()->pluck('nombre')->first(),

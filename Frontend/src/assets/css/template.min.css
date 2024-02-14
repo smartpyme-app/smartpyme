@@ -564,3 +564,17 @@ img.icon-2{
             a:hover {
                 text-decoration:none;
             }
+
+
+/* Tour  */
+
+.tour-step-navigation {
+    display: flex;
+    justify-content: space-between;
+}
+
+h3.popover-title.popover-header {
+    background-color: #fff !important;
+    color: #00458F !important;
+    border-bottom: none;
+}

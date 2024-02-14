@@ -105,7 +105,7 @@ export class GastosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.gastos.path + '?page='+ event.page).subscribe(gastos => { 
+        this.apiService.paginate(this.gastos.path + '?page='+ event.page, this.filtros).subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

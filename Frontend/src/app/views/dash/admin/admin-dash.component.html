@@ -1,4 +1,4 @@
-<div class="card bg-white border-0 mb-4" tourAnchor="tour.inicio" id="tour.inicio">
+<div class="card bg-white border-0">
     <div class="card-body">
         <div class="row">
             <div class="col-md-6 col-lg-9">
@@ -17,7 +17,7 @@
     </div>
 </div>
 
-<div class="mb-4 row" tourAnchor="tour.filtros" id="tour.filtros">
+<div class="py-4 row" tourAnchor="tour.filtros" id="tour.filtros">
     <div class="col-10">
         <a class="btn me-2 tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtro.time == 'day', 'btn-default': filtro.time != 'day' }" (click)="setTime('day')">Hoy</a>
         <a class="btn mx-2 tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="setTime('week')">Semana</a>
@@ -29,15 +29,17 @@
     </div>    
 </div>
 
-<div class="row">
-    <div class="col-lg-12">
-        <app-datos [loading]="loading" [dash]="dash"></app-datos>
+<div tourAnchor="tour.resumen" id="tour.resumen">
+    <div class="row">
+        <div class="col-lg-12">
+            <app-datos [loading]="loading" [dash]="dash"></app-datos>
+        </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-lg-12">
-        <app-tops [loading]="loading" [dash]="dash"></app-tops>
+    <div class="row">
+        <div class="col-lg-12">
+            <app-tops [loading]="loading" [dash]="dash"></app-tops>
+        </div>
     </div>
 </div>
 

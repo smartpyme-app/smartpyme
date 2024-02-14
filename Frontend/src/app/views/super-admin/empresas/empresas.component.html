@@ -300,16 +300,39 @@
                 </div>
             </div>
 
-            <div class="form-group col-md-6 col-lg-4">
+            <div class="form-group col-6 mb-4">
+                <label class="w-100">Plan</label>
+                <div class="input-group">
+                    <select class="form-select" (change)="setPlan()" name="plan" [(ngModel)]="empresa.plan">
+                        <option value="">Selecciona aquí</option>
+                        <option value="Emprendedor">Emprendedor</option>
+                        <option value="Estándar">Estándar</option>
+                        <option value="Avanzado">Avanzado</option>
+                    </select>
+                    <select class="form-select" (change)="setPlan()" name="tipo_plan" [(ngModel)]="empresa.tipo_plan">
+                        <option value="">Selecciona aquí</option>
+                        <option value="Mensual">Mensual</option>
+                        <option value="Anual">Anual</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
                 <label>Límete de usuarios</label>
                 <input type="number" class="form-control" [(ngModel)]="empresa.user_limit" name="user_limit" placeholder="Escriba aquí">
             </div>
 
-            <div class="form-group col-md-6 col-lg-4">
+            <div class="form-group col-md-6 col-lg-3">
                 <label>Límete de sucursales</label>
                 <input type="number" class="form-control" [(ngModel)]="empresa.sucursal_limit" name="sucursal_limit" placeholder="Escriba aquí">
             </div>
-
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="total">Pago de plan</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
+                </div>
+            </div>
 
         </div>
 

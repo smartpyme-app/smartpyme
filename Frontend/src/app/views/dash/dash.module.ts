@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
+import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { TabsModule } from 'ngx-bootstrap/tabs';
@@ -16,16 +16,12 @@ import { SharedModule } from '../../shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DashRoutingModule } from './dash.routing.module';
 
-// import { FullCalendarModule } from '@fullcalendar/angular';
-import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
-
 import { DashComponent }         from './dash.component';
 
 import { AdminDashComponent }    from './admin/admin-dash.component';
 import { DatosComponent }        from './admin/datos/datos.component';
 import { DashOrdenesComponent }  from './admin/ordenes/dash-ordenes.component';
 
-// import { CalendarioComponent }   from './admin/calendario/calendario.component';
 import { TopsComponent }   from './admin/tops/tops.component';
 
 import { VendedorDashComponent }   from './vendedor/vendedor-dash.component';

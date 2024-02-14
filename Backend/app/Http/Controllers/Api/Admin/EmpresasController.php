@@ -8,6 +8,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Transaccion;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use JWTAuth;
 
@@ -117,106 +118,41 @@ class EmpresasController extends Controller
     }
 
     public function eliminarDatos(Request $request){
-        $empresa = Empresa::with('productos', 'categorias', 'clientes', 'proveedores', 'ventas', 'compras', 'presupuestos', 'gastos', 'deventas', 'decompras')->where('id', $request->id)->firstOrFail();
-        
+        $empresa = Empresa::where('id', $request->id)->firstOrFail();
+        $sucursales = $empresa->sucursales()->pluck('id')->toArray();
+
         if ($request->m_inventario) {
-            return $producto->ajustes()->count();
-            $empresa->productos->each(function ($producto) {
-                $producto->ajustes()->chunk(200, function ($ajustes) {
-                    $ajustes->each->delete();
-                });
-                $producto->kardex()->chunk(200, function ($kardex) {
-                    $kardex->each->delete();
-                });
-                $producto->precios()->chunk(200, function ($precios) {
-                    $precios->each->delete();
-                });
-                $producto->traslados()->chunk(200, function ($traslados) {
-                    $traslados->each->delete();
-                });
-                $producto->ajustes()->chunk(200, function ($ajustes) {
-                    $ajustes->each->delete();
-                });
-                $producto->inventarios()->chunk(200, function ($inventarios) {
-                    $inventarios->each->delete();
-                });
-            });
-            
-            $empresa->productos()->chunk(200, function ($productos) {
-                $productos->each->delete();
-            });
+            DB::table('productos')->where('id_empresa', $empresa->id)->delete();
+            DB::table('ajustes')->where('id_empresa', $empresa->id)->delete();
+            DB::table('traslados')->where('id_empresa', $empresa->id)->delete();
+            DB::table('inventario')->whereIn('id_sucursal', $sucursales)->delete();
         }
 
         if ($request->m_categorias) {
-            $empresa->categorias()->delete();
+            DB::table('categorias')->where('id_empresa', $empresa->id)->delete();
         }
 
         if ($request->m_clientes) {
-            $empresa->clientes()->chunk(200, function ($clientes) {
-                $clientes->delete();
-            });
+            DB::table('clientes')->where('id_empresa', $empresa->id)->delete();
         }
 
         if ($request->m_proveedores) {
-            $empresa->proveedores()->chunk(200, function ($proveedores) {
-                $proveedores->delete();
-            });
+            DB::table('proveedores')->where('id_empresa', $empresa->id)->delete();
         }
 
         if ($request->m_ventas) {
-            $empresa->ventas->each(function ($venta) {
-                $venta->detalles()->chunk(200, function ($detalles) {
-                    $detalles->delete();
-                });
-            });
-            $empresa->ventas()->chunk(200, function ($ventas) {
-                $ventas->delete();
-            });
-
-            $empresa->deventas->each(function ($deventa) {
-                $deventa->detalles()->chunk(200, function ($detalles) {
-                    $detalles->delete();
-                });
-            });
-            $empresa->deventas()->chunk(200, function ($deventas) {
-                $deventas->delete();
-            });
+            DB::table('ventas')->where('id_empresa', $empresa->id)->delete();
+            DB::table('devoluciones_venta')->where('id_empresa', $empresa->id)->delete();
         }
         if ($request->m_compras) {
-            $empresa->compras->each(function ($compra) {
-                $compra->detalles()->chunk(200, function ($detalles) {
-                    $detalles->delete();
-                });
-            });
-            $empresa->compras()->chunk(200, function ($compras) {
-                $compras->delete();
-            });
-
-            $empresa->decompras->each(function ($decompra) {
-                $decompra->detalles()->chunk(200, function ($detalles) {
-                    $detalles->delete();
-                });
-            });
-            $empresa->decompras()->chunk(200, function ($decompras) {
-                $decompras->delete();
-            });
+            DB::table('compras')->where('id_empresa', $empresa->id)->delete();
+            DB::table('devoluciones_compra')->where('id_empresa', $empresa->id)->delete();
         }
         if ($request->m_gastos) {
-            $empresa->gastos->each(function ($gasto) {
-                $gasto->detalles()->chunk(200, function ($detalles) {
-                    $detalles->delete();
-                });
-
-            });
-            $empresa->gastos()->chunk(200, function ($gastos) {
-                $gastos->delete();
-            });
+            DB::table('egresos')->where('id_empresa', $empresa->id)->delete();
         }
         if ($request->m_presupuestos) {
-            $empresa->presupuestos->each(function ($presupuesto) {
-                $presupuesto->detalles()->delete();
-            });
-            $empresa->presupuestos()->delete();
+            DB::table('presupuestos')->where('id_empresa', $empresa->id)->delete();
         }
 
 

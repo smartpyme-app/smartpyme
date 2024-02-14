@@ -86,7 +86,7 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
     public function map($row): array{
            $fields = [
               $row->fecha,
-              $row->proveedor()->pluck('nombre')->first(),
+              $row->nombre_proveedor,
               $row->proveedor()->pluck('dui')->first(),
               $row->proveedor()->pluck('nit')->first(),
               $row->tipo_documento,

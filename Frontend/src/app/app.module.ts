@@ -11,6 +11,7 @@ import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
+import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
 import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
@@ -56,6 +57,7 @@ import { LayoutModule } from '@layout/layout.module';
   imports: [
     BrowserModule,
     HttpClientModule,
+    TourNgxBootstrapModule,
     AppRoutingModule,
     NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
     SharedModule,
