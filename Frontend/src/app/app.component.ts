@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -14,68 +15,93 @@ import {
     selector: 'app-root',
     templateUrl: './app.component.html'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
     public usuario: any = {};
     public tourSteps: IStepOption[] = [];
-    constructor(public apiService: ApiService, public alertService: AlertService, private tourService: TourService) { }
+
+    @ViewChild('mtour') tourTemplate!: TemplateRef<any>;
+    modalRef!: BsModalRef;
+
+    constructor(public apiService: ApiService, public alertService: AlertService,
+        private tourService: TourService, private modalService: BsModalService
+    ) { }
     
 
     ngOnInit() {
 
 
         this.usuario = this.apiService.auth_user();
-        this.tourSteps = [{
-            anchorId: 'tour.resumen',
-            content: 'Conoce rápidamente como va tu negocio con estos indicadores.',
-            title: 'Resumen de ventas',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        },{
-            anchorId: 'tour.filtros',
-            content: 'Puedes filtrar facilmente los datos acá.',
-            title: 'Filtros',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        },{
-            anchorId: 'tour.sidebar',
-            content: 'Accede a todos los módulos desde acá.',
-            title: 'Menú',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        },{
-            anchorId: 'tour.sidebar_toogle',
-            content: 'Puedes minimizar en menú para tener más espacio.',
-            title: 'Minimiza el menú',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        },{
-            anchorId: 'tour.crear_venta',
-            content: 'Desde acá puedes crear ventas rápidamente.',
-            title: 'Agregar ventas',
-            // route: '/productos',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        },{
-            anchorId: 'tour.configuracion',
-            content: 'Gestiona los usuarios y sucursales de tu negocio desde acá.',
-            title: 'Configuración',
-            // route: '/productos',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        },{
-            anchorId: 'tour.cerrar_sesion',
-            content: 'Desde acá puedes cerrar sesión para proteger tu cuenta.',
-            title: 'Cerrar sesión',
-            // route: '/productos',
-            enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
-        }];
-
-            this.tourService.enableHotkeys();
-            this.tourService.initialize(this.tourSteps);
-            if (!localStorage.getItem('sp_tour')) {
-                console.log('No')
-                // this.tourService.start();
+        this.tourSteps = [
+            {
+                anchorId: 'tour.resumen',
+                content: 'Te mostramos un resumen rápido de como va tu negocio.',
+                title: 'Indicadores',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.filtros',
+                content: 'Filtra rápidamente para ver la información que más te interesa.',
+                title: 'Filtros',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.sidebar',
+                content: 'Accede a todos los módulos de tu plan. <br> <b>Registra:</b> productos, servicios, ventas, compras, gastos y presupuestos.',
+                title: 'Menú',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.sidebar_toogle',
+                content: 'Puedes minimizar o maximizar este menú a tu gusto para tener más espacio.',
+                title: 'Minimiza el menú',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.crear_venta',
+                content: 'Crea ventas rápidamente desde este atajo.',
+                title: 'Crear venta',
+                // route: '/productos',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.configuracion',
+                content: 'Gestiona usuarios, sucursales y la información de ' + this.usuario.empresa.nombre + ' desde acá.',
+                title: 'Configuración',
+                // route: '/productos',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.cerrar_sesion',
+                content: 'Desde acá puedes cerrar sesión.',
+                title: 'Cerrar sesión',
+                // route: '/productos',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
             }
+        ];
 
+        if (!localStorage.getItem('sp_tour')) {
 
-        this.tourService.end$.subscribe(event => {
-              console.log('El recorrido ha finalizado.');
-                // localStorage.setItem('sp_tour', 'true');
-        });
+            setTimeout(() => {
+                console.log(this.tourTemplate);
+                this.modalRef = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+            }, 1000);
+            
+            this.tourService.end$.subscribe(event => {
+                this.omitirTour();
+            });
+        }
+
+    }
+
+    starTour(){
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
+
+        this.tourService.initialize(this.tourSteps);
+        this.tourService.start();
+    }
+
+    omitirTour(){
+        console.log('El recorrido ha finalizado.');
+        localStorage.setItem('sp_tour', 'true');
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
     }
 
 }

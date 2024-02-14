@@ -12,7 +12,7 @@ import { NgChartsModule } from 'ng2-charts';
 import { PipesModule } from '@pipes/pipes.module';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
-import { SharedModule } from '../../shared/shared.module';
+import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DashRoutingModule } from './dash.routing.module';
 

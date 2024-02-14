@@ -6,7 +6,7 @@ import { AppRoutingModule } from './app.routing.module';
 import { JwtInterceptor } from '@services/JwtInterceptor';
 import { QuicklinkModule } from 'ngx-quicklink';
 import { provideEnvironmentNgxMask } from 'ngx-mask';
-
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 import { CitasGuard } from '@guards/citas.guard';
@@ -59,6 +59,7 @@ import { LayoutModule } from '@layout/layout.module';
     HttpClientModule,
     TourNgxBootstrapModule,
     AppRoutingModule,
+    ModalModule.forRoot(),
     NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
     SharedModule,
     QuicklinkModule,
