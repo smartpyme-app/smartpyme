@@ -38,6 +38,12 @@ const routes: Routes = [
       loadChildren: () => import('./views/inventario/inventario.module').then(m => m.InventarioModule),
     },
 
+    // Paquetes
+    {
+      path: '', canActivate: [AuthGuard],
+      loadChildren: () => import('./views/paquetes/paquetes.module').then(m => m.PaquetesModule),
+    },
+
     // Compras
     {
       path: '', canActivate: [AuthGuard, AdminGuard],
