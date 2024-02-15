@@ -20,7 +20,9 @@ export class AppComponent implements OnInit {
     public tourSteps: IStepOption[] = [];
 
     @ViewChild('mtour') tourTemplate!: TemplateRef<any>;
-    modalRef!: BsModalRef;
+    @ViewChild('mtourend') tourEndTemplate!: TemplateRef<any>;
+    modalRefStarTour!: BsModalRef;
+    modalRefEndTour!: BsModalRef;
 
     constructor(public apiService: ApiService, public alertService: AlertService,
         private tourService: TourService, private modalService: BsModalService
@@ -44,7 +46,7 @@ export class AppComponent implements OnInit {
                 enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
             },{
                 anchorId: 'tour.sidebar',
-                content: 'Accede a todos los módulos de tu plan. <br> <b>Registra:</b> productos, servicios, ventas, compras, gastos y presupuestos.',
+                content: 'Aquí encontrarás todas las funciones de Smartpyme.. <br> <b>Registra:</b> productos, servicios, ventas, compras, gastos y presupuestos.',
                 title: 'Menú',
                 enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
             },{
@@ -53,16 +55,37 @@ export class AppComponent implements OnInit {
                 title: 'Minimiza el menú',
                 enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
             },{
+                anchorId: 'tour.configuracion',
+                content: 'Inicia por agregar toda la información de ' + this.usuario.empresa.nombre + ' en "Mi cuenta" dentro de configuraciones. Aquí podrás ingresar tu logo, datos de tu empresa, como también las preferencias del sistema.',
+                title: 'Minimiza el menú',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.productos',
+                content: 'Registra tus productos en "inventario".',
+                title: 'Productos',
+                route: '/productos',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.productos.toolbar',
+                content: 'En cada modulo tendras opciones para buscar, filtrar, importa y exportar registros.',
+                title: 'Toolbar',
+                route: '/productos',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
                 anchorId: 'tour.crear_venta',
                 content: 'Crea ventas rápidamente desde este atajo.',
                 title: 'Crear venta',
                 // route: '/productos',
                 enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
             },{
-                anchorId: 'tour.configuracion',
-                content: 'Gestiona usuarios, sucursales y la información de ' + this.usuario.empresa.nombre + ' desde acá.',
+                anchorId: 'tour.cierre_caja',
+                content: 'Aquí podrás ver el cierre de caja diario, pero también podrás aplicar filtros por días y descargar la información.',
                 title: 'Configuración',
-                // route: '/productos',
+                enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
+            },{
+                anchorId: 'tour.notificaciones',
+                content: 'Aquí recibirás tus recordatorios tanto de stock bajos, cuentas por cobrar, cuentas por pagar y mucho más.',
+                title: 'Notificaciones',
                 enableBackdrop: true, prevBtnTitle: 'Antes', nextBtnTitle: 'Siguiente', endBtnTitle: 'Finalizar'
             },{
                 anchorId: 'tour.cerrar_sesion',
@@ -73,23 +96,24 @@ export class AppComponent implements OnInit {
             }
         ];
 
-        // if (!localStorage.getItem('sp_tour')) {
+        if (!localStorage.getItem('sp_tour')) {
 
-        //     setTimeout(() => {
-        //         console.log(this.tourTemplate);
-        //         this.modalRef = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
-        //     }, 1000);
+            setTimeout(() => {
+                console.log(this.tourTemplate);
+                this.modalRefStarTour = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+            }, 1000);
             
-        //     this.tourService.end$.subscribe(event => {
-        //         this.omitirTour();
-        //     });
-        // }
+            this.tourService.end$.subscribe(event => {
+                this.modalRefEndTour = this.modalService.show(this.tourEndTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+                this.omitirTour();
+            });
+        }
 
     }
 
     starTour(){
-        if(this.modalRef){
-            this.modalRef.hide();
+        if(this.modalRefStarTour){
+            this.modalRefStarTour.hide();
         }
 
         this.tourService.initialize(this.tourSteps);
@@ -99,8 +123,8 @@ export class AppComponent implements OnInit {
     omitirTour(){
         console.log('El recorrido ha finalizado.');
         localStorage.setItem('sp_tour', 'true');
-        if(this.modalRef){
-            this.modalRef.hide();
+        if(this.modalRefStarTour){
+            this.modalRefStarTour.hide();
         }
     }
 
