@@ -114,8 +114,8 @@ export class TiendaVentaPaquetesComponent implements OnInit {
             // radio.checked = true
             this.detalle = Object.assign({}, paquete);
             this.detalle.id_paquete    = paquete.id;
-            this.detalle.nombre_producto = paquete.nombre;
-            this.detalle.img            = paquete.img;
+            this.detalle.nombre_producto = 'Servicio de importación de paquetería';
+            this.detalle.img            = 'productos/default.jpg';
             this.detalle.precio         = parseFloat(paquete.precio);
             this.detalle.cantidad       = parseFloat(paquete.peso);
             this.detalle.descuento      = 0;
