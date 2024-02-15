@@ -11,7 +11,7 @@
             </span>
         </div>
 
-        <div class="col-md-6 mb-3">
+        <div class="col-md-6 mb-3" tourAnchor="tour.productos.toolbar" id="tour.productos.toolbar">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
