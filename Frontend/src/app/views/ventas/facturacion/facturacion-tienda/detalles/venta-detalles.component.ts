@@ -74,7 +74,7 @@ export class VentaDetallesComponent implements OnInit {
     // Agregar detalle
         productoSelect(producto:any):void{
 
-            if (producto.stock < producto.cantidad) {
+            if (producto.tipo != 'Servicio' && (producto.stock < producto.cantidad)) {
                 if (this.apiService.auth_user().empresa.vender_sin_stock == 0) {
 
 
