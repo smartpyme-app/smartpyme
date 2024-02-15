@@ -15,6 +15,7 @@ export class PaquetesComponent implements OnInit {
 
     public paquetes:any = [];
     public sucursales:any = [];
+    public clientes:any = [];
     public paquete:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
@@ -27,6 +28,10 @@ export class PaquetesComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
+
         this.loadAll();
     }
 
@@ -67,19 +72,6 @@ export class PaquetesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>, paquete:any) {
         this.paquete = paquete;
-
-        if (!this.paquete.id) {
-            this.paquete.id_empresa = this.apiService.auth_user().id_empresa;
-            this.paquete.id_usuario = this.apiService.auth_user().id;
-            this.paquete.frecuencia = '';
-            this.paquete.tipo = 'Sin confirmar';
-            this.paquete.duracion = "1 hora";
-            this.paquete.estado = "Activo";
-            this.paquete.id_cliente = '';
-            this.paquete.id_servicio = '';
-            this.paquete.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.paquete.inicio =  moment().format('YYYY-MM-DD HH') + ':00';
-        }
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
@@ -93,8 +85,16 @@ export class PaquetesComponent implements OnInit {
 
     public setEstado(paquete:any, estado:any){
         this.paquete = paquete;
-        this.paquete.tipo = estado;
+        this.paquete.estado = estado;
         this.onSubmit();
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.paquetes.path + '?page='+ event.page, this.filtros).subscribe(paquetes => { 
+            this.paquetes = paquetes;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public delete(paquete:any){

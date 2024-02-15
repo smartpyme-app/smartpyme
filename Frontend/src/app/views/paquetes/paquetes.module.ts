@@ -15,6 +15,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { PaquetesRoutingModule } from '@views/paquetes/paquetes.routing.module';
 import { PaquetesComponent } from './paquetes.component';
+import { PaqueteComponent } from './paquete/paquete.component';
 
 @NgModule({
   imports: [
@@ -32,9 +33,11 @@ import { PaquetesComponent } from './paquetes.component';
   ],
   declarations: [
     PaquetesComponent,
+    PaqueteComponent
   ],
   exports: [
     PaquetesComponent,
+    PaqueteComponent
   ]
 })
 export class PaquetesModule { }
