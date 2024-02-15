@@ -73,17 +73,17 @@ export class AppComponent implements OnInit {
             }
         ];
 
-        if (!localStorage.getItem('sp_tour')) {
+        // if (!localStorage.getItem('sp_tour')) {
 
-            // setTimeout(() => {
-            //     console.log(this.tourTemplate);
-            //     this.modalRef = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
-            // }, 1000);
+        //     setTimeout(() => {
+        //         console.log(this.tourTemplate);
+        //         this.modalRef = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+        //     }, 1000);
             
-            // this.tourService.end$.subscribe(event => {
-            //     this.omitirTour();
-            // });
-        }
+        //     this.tourService.end$.subscribe(event => {
+        //         this.omitirTour();
+        //     });
+        // }
 
     }
 
