@@ -47,7 +47,7 @@
                     <ng-option value=""> Consumidor final </ng-option>
                     <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
                     <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
+                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
                     </ng-option>
                 </ng-select>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>

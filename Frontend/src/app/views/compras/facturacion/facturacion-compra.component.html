@@ -51,7 +51,7 @@
                     <ng-option value=""> Seleccione aquí </ng-option>
                     <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
                     <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
                     </ng-option>
                 </ng-select>
                 <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>

@@ -10,6 +10,9 @@
                 </p>
             </div>
         </div>
+        <div class="col-md-12" *ngIf="dashboards.total == 0">
+            Aún no hay configurados reportes, cuando lo estes aparecerán acá.
+        </div>
         <div class="col-md-12" *ngFor="let dashboard of dashboards.data">
             <div [innerHTML]="dashboard.codigo_embed"></div>
         </div>

@@ -49,7 +49,7 @@
                     <ng-select name="id_proveedor" [(ngModel)]="gasto.id_proveedor" class="form-select p-0">
                         <ng-option value="">Seleccione aquí</ng-option>
                         <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                            {{ proveedor.tipo == 'Persona' ? proveedor.nombre_completo : proveedor.nombre_empresa | truncate:30 }}
+                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
                         </ng-option>
                     </ng-select>
                     <app-crear-proveedor (update)="setProveedor($event)"></app-crear-proveedor>
