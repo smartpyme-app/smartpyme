@@ -140,7 +140,7 @@
                 <ng-select name="id_proveedor" [(ngModel)]="filtros.id_proveedor" class="form-select p-0">
                     <ng-option value="">Todos</ng-option>
                     <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{proveedor.nombre}}
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
                     </ng-option>
                 </ng-select>
             </div>
