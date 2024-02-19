@@ -37,8 +37,10 @@ export class HeaderComponent implements OnInit {
     }
 
     public toggleSidebar(){
-        const myDiv = document.getElementById('sidebar')!;
-        if (this.isVisible) {
+        const myDiv = document.getElementById('tour.sidebar')!;
+        console.log(this.isVisible);
+        console.log(myDiv);
+        if (myDiv && this.isVisible) {
           myDiv.style.marginLeft  = '-280px';
         } else {
           myDiv.style.marginLeft  = '0px';

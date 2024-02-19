@@ -22,7 +22,7 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'id_empresa',
         'enable',
-        'codigo',
+        'tour_bienvenida',
         'id_sucursal',
         'tipo',
         'modulo_citas',

@@ -38,12 +38,9 @@ class Devolucion extends Model {
 
 
     public function getNombreClienteAttribute()
-    {
-        if ($this->cliente()->first()) {
-            return $this->cliente()->pluck('nombre')->first();
-        }
-        if ($this->nombre) {
-            return $this->nombre;
+    {   $cliente = $this->cliente()->first();
+        if ($cliente) {
+            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
         }
         return 'Consumidor Final';
     }
