@@ -108,20 +108,20 @@ export class DashComponent implements OnInit {
             }
         ];
 
-        if (!localStorage.getItem('sp_tour')) {
+        // if (!localStorage.getItem('sp_tour')) {
 
-            setTimeout(() => {
-                if(!localStorage.getItem('sp_tour_iniciado')){
-                    this.modalRefStarTour = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
-                }
-            }, 1000);
+        //     setTimeout(() => {
+        //         if(!localStorage.getItem('sp_tour_iniciado')){
+        //             this.modalRefStarTour = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+        //         }
+        //     }, 1000);
             
-            this.tourService.end$.subscribe(event => {
-                this.modalRefEndTour = this.modalService.show(this.tourEndTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
-                localStorage.setItem('sp_tour', 'true');
-                localStorage.setItem('sp_tour_iniciado', 'false');
-            });
-        }
+        //     this.tourService.end$.subscribe(event => {
+        //         this.modalRefEndTour = this.modalService.show(this.tourEndTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+        //         localStorage.setItem('sp_tour', 'true');
+        //         localStorage.setItem('sp_tour_iniciado', 'false');
+        //     });
+        // }
 
     }    
 

@@ -59,10 +59,16 @@ export class FacturacionComponent implements OnInit {
     public loadData(){
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
+                if(this.apiService.auth_user().tipo != 'Administrador'){
+                    this.sucursales = this.sucursales.filter((item:any) => item.id == this.apiService.auth_user().id_sucursal );
+                }
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
+            if(this.apiService.auth_user().tipo != 'Administrador'){
+                this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
+            }
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('bancos/list').subscribe(bancos => {
