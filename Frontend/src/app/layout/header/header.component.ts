@@ -1,6 +1,7 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { ApiService } from '../../services/api.service';
+import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
 
 // declare var $:any;
 
@@ -11,11 +12,13 @@ import { ApiService } from '../../services/api.service';
 export class HeaderComponent implements OnInit {
 
     public usuario: any = {};
+    public filtros: any = {};
     public elem: any;
+    public notificaciones: any = [];
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
 
-    constructor(private apiService: ApiService, @Inject(DOCUMENT) private document: any) { }
+    constructor(private apiService: ApiService, private alertService: AlertService, @Inject(DOCUMENT) private document: any) { }
 
     ngOnInit() {
         // $('.drop-down').dropdown();
@@ -23,6 +26,8 @@ export class HeaderComponent implements OnInit {
         this.apiService.loadTheme();
 
         this.elem = document.documentElement;
+
+        this.loadNotificaciones();
     }
 
     public fullscreen() {
@@ -46,6 +51,14 @@ export class HeaderComponent implements OnInit {
           myDiv.style.marginLeft  = '0px';
         }
         this.isVisible = !this.isVisible;
+    }
+
+    public loadNotificaciones() {
+        this.filtros.leido = 0;
+        this.filtros.paginate = 1;
+        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
+            this.notificaciones = notificaciones;
+        }, error => {this.alertService.error(error); });
     }
 
 

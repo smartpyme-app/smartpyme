@@ -13,35 +13,10 @@
                 </a>
             </li>
             <li>
-                <a class="btn d-inline-flex align-items-center text-decoration-none rounded px-2 dropdown-toggle" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a [routerLink]="['/notificaciones']" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2">
                     <i class="fa fa-bell"></i>
-                    <span class="badge badge-primary">3</span>
+                    <span style="font-size: 10px; line-height: 15px;" class="badge bg-primary">{{ notificaciones.total ? notificaciones.total : 0 }}</span>
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="offcanvasNavbarDropdown">
-                    <li  class="notification-unread">
-                        <a href="javascript:void()" class="dropdown-item">
-                            <span class="mr-3 avatar-icon bg-success-lighten-2"><i class="icon-calender"></i></span>
-                            <div class="notification-content">
-                                <h6 class="notification-heading">Event Started</h6>
-                                <span class="notification-text">One hour ago</span> 
-                            </div>
-                        </a>
-                    </li>
-                    <li  class="notification-unread">
-                        <a href="javascript:void()" class="dropdown-item">
-                            <span class="mr-3 avatar-icon bg-danger-lighten-2"><i class="icon-calender"></i></span>
-                            <div class="notification-content">
-                                <h6 class="notification-heading">Event Started</h6>
-                                <span class="notification-text">One hour ago</span> 
-                            </div>
-                        </a>
-                    </li>
-                    <li class="notification-unread">
-                        <a class="dropdown-item bg-primary px-4 text-white" href="email-inbox.html">
-                            <span>See all messagese </span>
-                        </a>
-                    </li>
-                </ul>
             </li>
             <!-- <app-theme></app-theme> -->
             <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
