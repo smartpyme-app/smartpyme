@@ -108,20 +108,15 @@ export class DashComponent implements OnInit {
             }
         ];
 
-        // if (!localStorage.getItem('sp_tour')) {
+        if (this.usuario.tour_bienvenida == '0' && this.usuario.tipo == 'Administrador') {
 
-        //     setTimeout(() => {
-        //         if(!localStorage.getItem('sp_tour_iniciado')){
-        //             this.modalRefStarTour = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
-        //         }
-        //     }, 1000);
+            setTimeout(() => {
+                if(!localStorage.getItem('sp_tour_iniciado')){
+                    this.modalRefStarTour = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+                }
+            }, 1000);
             
-        //     this.tourService.end$.subscribe(event => {
-        //         this.modalRefEndTour = this.modalService.show(this.tourEndTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
-        //         localStorage.setItem('sp_tour', 'true');
-        //         localStorage.setItem('sp_tour_iniciado', 'false');
-        //     });
-        // }
+        }
 
     }    
 
@@ -132,15 +127,28 @@ export class DashComponent implements OnInit {
 
         this.tourService.initialize(this.tourSteps);
         this.tourService.start();
+
+        this.tourService.end$.subscribe(event => {
+            this.modalRefEndTour = this.modalService.show(this.tourEndTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+            this.saveTour();
+            localStorage.setItem('sp_tour_iniciado', 'false');
+        });
+
         localStorage.setItem('sp_tour_iniciado', 'true');
     }
 
     omitirTour(){
-        localStorage.setItem('sp_tour', 'true');
+        this.saveTour();
         localStorage.setItem('sp_tour_iniciado', 'false');
         if(this.modalRefStarTour){
             this.modalRefStarTour.hide();
         }
+    }
+
+    saveTour(){
+        this.usuario.tour_bienvenida = true;
+        this.apiService.store('usuario', this.usuario).subscribe(usuario => {
+        },error => {this.alertService.error(error); });
     }
 
 
