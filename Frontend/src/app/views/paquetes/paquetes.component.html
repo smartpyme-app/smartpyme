@@ -52,12 +52,13 @@
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>WR</th>
+                        <th class="d-none d-md-table-cell">Cliente</th>
                         <th class="d-none d-md-table-cell">Shipper</th>
                         <th class="d-none d-md-table-cell">Consignee</th>
                         <th class="d-none d-md-table-cell">Carrier</th>
                         <th class="d-none d-md-table-cell">Piezas</th>
                         <th class="d-none d-md-table-cell">Peso</th>
-                        <th class="d-none d-md-table-cell">Volumen</th>
+                        <!-- <th class="d-none d-md-table-cell">Volumen</th> -->
                         <th class="d-none d-md-table-cell">Número de traking</th>
                         <th>Estado</th>
                         <th class="text-center">Más</th>
@@ -77,12 +78,13 @@
                         
                         <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
                         <td>{{paquete.wr}}</td>
+                        <td>{{paquete.nombre_cliente}}</td>
                         <td>{{paquete.transportista}}</td>
                         <td>{{paquete.consignatario}}</td>
                         <td>{{paquete.transportador}}</td>
                         <td>{{paquete.piezas}}</td>
                         <td>{{paquete.peso}}</td>
-                        <td>{{paquete.volumen}}</td>
+                        <!-- <td>{{paquete.volumen}}</td> -->
                         <td>{{paquete.num_seguimiento}}</td>
                         <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(paquete)" [(ngModel)]="paquete.estado" [ngClass]="{'bg-light-warning' : paquete?.estado == 'En bodega', 'bg-light-info' : paquete?.estado == 'En proceso', 'bg-light-success' : paquete?.estado == 'Entregado'}">

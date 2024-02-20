@@ -44,10 +44,10 @@ export class TiendaVentaPaquetesComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtros.id_cliente = '';
+        this.filtros.id_cliente = this.venta.id_cliente;
         this.filtros.id_usuario = '';
         this.filtros.tipo = '';
-        this.filtros.estado = '';
+        this.filtros.estado = 'En bodega';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
@@ -57,6 +57,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
 
     public filtrarPaquetes(){
         this.loading = true;
+        this.venta.id_cliente = this.filtros.id_cliente;
         this.apiService.getAll('paquetes', this.filtros).subscribe(paquetes => { 
             this.paquetes = paquetes;
             console.log(this.paquetes);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Inventario\PaquetesController;
     Route::post('/paquete',              [PaquetesController::class, 'store']);
     Route::get('/paquete/{id}',          [PaquetesController::class, 'read']);
     Route::delete('/paquete/{id}',       [PaquetesController::class, 'delete']);
+    Route::post('/paquetes/importar',          [PaquetesController::class, 'import']);
     Route::get('/paquetes/exportar',          [PaquetesController::class, 'export']);
 
 

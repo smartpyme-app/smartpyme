@@ -22,9 +22,10 @@ class Paquete extends Model {
         'peso',
         'precio',
         'volumen',
+        'cuenta_a_tercero',
+        'total',
         'nota',
         'id_cliente',
-        'id_proveedor',
         'id_usuario',
         'id_sucursal',
         'id_empresa',
@@ -51,10 +52,10 @@ class Paquete extends Model {
         
     }
 
-    public function getNombreClienteAttribute()
+     public function getNombreClienteAttribute()
     {   $cliente = $this->cliente()->first();
         if ($cliente) {
-            return $cliente->tipo == 'Persona' ? $cliente->nombre . ' ' . $cliente->apellido : $cliente->nombre_empresa;
+            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
         }
         return 'Consumidor Final';
     }
