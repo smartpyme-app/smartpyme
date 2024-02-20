@@ -39,9 +39,10 @@ class Producto extends Model {
 
             if (Auth::user()->tipo == 'Ventas') {
                 static::addGlobalScope('sucursal', function (Builder $builder) {
-                    $builder->whereHas('inventarios', function($q){
-                            return $q->where('id_sucursal', Auth::user()->id_sucursal);
-                        });
+                    $builder->with('inventarios', function($q){
+                        return $q->where('id_sucursal', Auth::user()->id_sucursal);
+                                ;
+                    })->where('id_empresa', Auth::user()->id_empresa);
                 });
             }else{
                 static::addGlobalScope('empresa', function (Builder $builder) {
