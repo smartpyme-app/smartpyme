@@ -55,7 +55,6 @@ export class CajaVentasComponent implements OnInit {
     public loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_cliente = '';
-        this.filtros.inicio = this.apiService.date();
         this.filtros.id_usuario = this.apiService.auth_user().id;
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
