@@ -1,10 +1,5 @@
-<div class="d-flex justify-content-end mb-3">
-    <div class="col-lg-7 justify-content-end d-flex gap-2">
-        <app-tienda-venta-buscador class="w-100" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-buscador>
-        <app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
-        <app-tienda-venta-paquetes [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-paquetes>
-    </div>
-</div>
+<app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
+
 <div class="row">
     <div class="col-md-12 table-responsive">
         <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">

@@ -13,8 +13,7 @@ class Detalle extends Model {
         'precio',
         'costo',
         'descuento',
-        'no_sujeta',
-        'exenta',
+        // 'total_costo',
         'total',
         'id_venta'
     );
