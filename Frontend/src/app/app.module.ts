@@ -43,9 +43,6 @@ import { LayoutModule } from '@layout/layout.module';
 // Contabilidad
   import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
 
-// Paquetes
-  import { PaquetesModule } from '@views/paquetes/paquetes.module';
-
  // Admin
   import { AdminModule } from '@views/admin/admin.module';
   import { ReportesModule } from '@views/reportes/reportes.module';
@@ -78,7 +75,6 @@ import { LayoutModule } from '@layout/layout.module';
     AdminModule,
     ReportesModule,
     CitasModule,
-    PaquetesModule,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
                 AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],
