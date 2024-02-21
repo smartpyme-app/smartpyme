@@ -1,36 +1,7 @@
-<div class="d-flex justify-content-end mb-3">
-    <div class="col-lg-7 d-flex gap-2">
-        <form class="d-flex input-group buscador" name="form" autocomplete="off">
-            <div class="input-group">
-                <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
-                <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
-            </div>
-            <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
-              <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
-                <!-- <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1">  -->
-                <span id="producto_nombre" class="col-7">
-                    <!-- <small>Nombre:</small> <br> -->
-                    {{ producto.nombre }} <br>
-                    <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
-                </span>
-                <span class="col-3 text-center" id="stock">
-                    <!-- <small>Stock:</small> <br> -->
-                    <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | filter:'id_sucursal':venta.id_sucursal | sum:'stock' }} en stock</span>
-                </span>
-                <span class="col-2 text-right">
-                    <!-- <small>Precio:</small> <br> -->
-                    <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
-                </span>
-              </a>
-            </ul>
-        </form>
-
-        <button tooltip="Consultar productos (F6)" (click)="openModal(inventario)" class="btn btn-default tcla-F6">
-            <i class="fa fa-list"></i>
-            <!-- <img src="/assets/icons/search.png" class="icon"> -->
-        </button>
-    </div>
-</div>
+<button tooltip="Consultar productos (F6)" (click)="openModal(inventario)" class="btn btn-default tcla-F6">
+    <i class="fa fa-list"></i>
+    <!-- <img src="/assets/icons/search.png" class="icon"> -->
+</button>
 
 <ng-template #inventario>
     <div class="modal-header">

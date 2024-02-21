@@ -18,6 +18,7 @@ use App\Models\Admin\Documento;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Paquete;
 use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
@@ -253,6 +254,18 @@ class VentasController extends Controller
 
                 $detalle->fill($det);
                 $detalle->save();
+
+                // Pagar si es paquete
+                if (isset($det['id_paquete'])) {
+                    $paquete = Paquete::find($det['id_paquete']);
+                    if ($paquete) {
+                        $paquete->estado = ($venta->estado == 'Pagada') ? 'Facturado' : 'Pendiente';
+                        $paquete->id_venta = $venta->id;
+                        $paquete->id_venta_detalle = $detalle->id;
+                        $paquete->save();
+                    }
+                }
+
 
                 // Actualizar inventario
                 if ($request->cotizacion == 0) {

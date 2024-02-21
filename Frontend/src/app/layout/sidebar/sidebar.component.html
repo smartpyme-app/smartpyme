@@ -51,6 +51,16 @@
                 </a>
             </li>
             <li class="mb-1">
+                <button (click)="togglePaquetes()" tooltip="Paquetes" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!paquetesIsCollapsed" aria-controls="collapseBasic">
+                    <img src="/assets/icons/box.png" class="icon me-2">Paquetes
+                </button>
+                <div [collapse]="paquetesIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                  </ul>
+                </div>
+            </li>
+            <li class="mb-1">
                 <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
                     <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
                 </button>

@@ -1,0 +1,309 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Registros</h2>
+    <button *ngIf="apiService.canCreate()" routerLink="/paquete/crear" tooltip="Crear paquete (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir paquete</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="paquetes?.total">
+                Mostrando {{ paquetes?.to }} de {{ paquetes?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'paquetes'"></app-importar-excel>
+                <button tooltip="Descargar paquetes"  class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPaquetes()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/paquetes">Todos</button>
+            <!-- <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/paquetes">Devoluciones</button> -->
+            <!-- <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/paquetes/abonos">Abonos</button> -->
+            <!-- <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/paquetes/recurrentes">Recurrentes</button> -->
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="estado" (change)="filtrarPaquetes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="En bodega">En bodega</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Facturado">Facturado</option>
+            </select>
+            <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
+                <ng-option value="">Cliente</ng-option>
+                <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                    {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                </ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th>Cliente</th>
+                        <th>Asesor</th>
+                        <th>WR</th>
+                        <!-- <th class="d-none d-md-table-cell">Shipper</th> -->
+                        <!-- <th class="d-none d-md-table-cell">Consignee</th> -->
+                        <th>Guía</th>
+                        <th>Seguimiento</th>
+                        <th class="text-end">Piezas</th>
+                        <th class="text-end">Peso</th>
+                        <!-- <th>Volumen</th> -->
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="paquetes?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene paquetes registrados</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor=" let paquete of paquetes?.data">
+                        
+                        <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
+                        <td>{{paquete.nombre_cliente}}</td>
+                        <td>{{paquete.nombre_asesor}}</td>
+                        <td>{{paquete.wr}}</td>
+                        <td>{{paquete.num_guia}}</td>
+                        <td>{{paquete.num_seguimiento}}</td>
+                        <!-- <td>{{paquete.transportista}}</td> -->
+                        <!-- <td>{{paquete.consignatario}}</td> -->
+                        <!-- <td>{{paquete.transportador}}</td> -->
+                        <td class="text-end">{{paquete.piezas}}</td>
+                        <td class="text-end">{{paquete.peso}}</td>
+                        <td>
+                            <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : paquete?.estado == 'En bodega', 'bg-warning' : paquete?.estado == 'Pendiente', 'bg-success' : paquete?.estado == 'Facturado'}">
+                                {{ paquete.estado }}
+                            </span>
+                        </td>
+                        <td class="text-end">{{paquete.total | currency}}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a (click)="openModal(mpaquete, paquete)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="apiService.canEdit()" routerLink="/paquete/editar/{{paquete.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="paquetes?.last_page > 1">
+            <app-pagination [items]="paquetes" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de paquetes</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de paquetes en un archivo de Excel.</p>
+        <div class="row">
+            <div class="d-grid mt-4">
+                <p>Descargar los detalles de paquetes por producto.</p>
+                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
+                    <span *ngIf="downloadingDetalles">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <p>Descargar los detalles de paquetes totales.</p>
+                <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingVentas">Descargar Ventas</span>
+                    <span *ngIf="downloadingVentas">Descargando...</span>
+                </button>
+            </div>
+        </div>
+  </div>
+</ng-template>
+
+<ng-template #mpaquete>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Detalles del paquete</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form name="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-3">
+                <label for="fecha">Fecha:</label>
+                <p>{{ paquete.fecha | date:'dd/mm/yyy'}}</p>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="estado">Estado:</label>
+                <p>{{ paquete.estado }}</p>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="id_usuario">Usuario:</label>
+                <p>{{ paquete.nombre_usuario }}</p>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="id_usuario">Asesor:</label>
+                <p>{{ paquete.nombre_asesor }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="id_cliente">Cliente:</label>
+                <p>{{ paquete.nombre_cliente }}</p>
+            </div>
+            <!-- <div class="form-group col-md-4">
+                <label for="transportista">Transportista:</label>
+                <p>{{ paquete.transportista }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="consignatario">Consignatario:</label>
+                <p>{{ paquete.consignatario }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="transportador">Transportador:</label>
+                <p>{{ paquete.transportador }}</p>
+            </div> -->
+            <div class="form-group col-md-4">
+                <label for="wr">WR:</label>
+                <p>{{ paquete.wr }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="num_seguimiento">Num. Seguimiento:</label>
+                <p>{{ paquete.num_seguimiento }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="num_guia">Num. Guia:</label>
+                <p>{{ paquete.num_guia }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="piezas">Piezas:</label>
+                <p>{{ paquete.piezas }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="peso">Peso:</label>
+                <p>{{ paquete.peso }} Lb</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="volumen">Volumen:</label>
+                <p>{{ paquete.volumen }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="volumen">Cuenta a tercero:</label>
+                <p>{{ paquete.cuenta_a_terceros | currency }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="total">Total:</label>
+                <p>{{ paquete.total | currency }}</p>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="nota">Nota:</label>
+                <p>{{ paquete.nota ? paquete.nota : 'Ninguna' }}</p>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarPaquetes()">
+        <div class="row">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="En bodega">En bodega</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Entregado">Entregado</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_cliente">Cliente:</label>
+                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                        {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_asesor">Asesor:</label>
+                <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="filtros.id_asesor">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_usuario">Usuario:</label>
+                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

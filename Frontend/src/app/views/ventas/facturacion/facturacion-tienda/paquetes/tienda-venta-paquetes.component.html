@@ -1,0 +1,115 @@
+<button tooltip="Consultar paquetes (F7)" (click)="openModal(mpaquetes)" class="btn btn-default tcla-F7">
+    <img src="/assets/icons/box.png" class="icon">
+</button>
+
+<ng-template #mpaquetes>
+    <div class="modal-header">
+        <h3 class="modal-title text-center">Consulta de paquetes</h3>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body">
+    <!-- <form autocomplete="off" (submit)="onSubmit()"> -->
+        <section class="bg-white p-4 rounded mb-3">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <span class="text-muted" *ngIf="paquetes?.total">
+                        Mostrando {{ paquetes?.to }} de {{ paquetes?.total + ' registros' }}
+                    </span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex gap-2">
+                        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPaquetes()" autocomplete="off">
+                            <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                        </form>
+                        <select name="estado" (change)="filtrarPaquetes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                            <option value="">Estado</option>
+                            <option value="En bodega">En bodega</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Facturado">Facturado</option>
+                        </select>
+                        <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default w-auto p-0">
+                            <ng-option value="">Cliente</ng-option>
+                            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="table-responsive">
+                    <table class="table table-borderless table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                                <th>Cliente</th>
+                                <th>Asesor</th>
+                                <th>WR</th>
+                                <!-- <th class="d-none d-md-table-cell">Shipper</th> -->
+                                <!-- <th class="d-none d-md-table-cell">Consignee</th> -->
+                                <th>Guía</th>
+                                <th>Seguimiento</th>
+                                <th class="text-end">Piezas</th>
+                                <th class="text-end">Peso</th>
+                                <!-- <th>Volumen</th> -->
+                                <th>Estado</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end"><input type="checkbox" id="marcarPaquetes" class="form-check d-inline" (click)="onCheckAllPaquete()"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center" *ngIf="paquetes?.total < 1 && !loading">
+                                    <span class="badge bg-primary">No tiene paquetes registrados</span>
+                                </td>
+                                <td colspan="10" class="text-center" *ngIf="loading">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+
+                            <tr *ngFor=" let paquete of paquetes?.data">
+                                
+                                <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
+                                <td>{{paquete.nombre_cliente}}</td>
+                                <td>{{paquete.nombre_asesor}}</td>
+                                <td>{{paquete.wr}}</td>
+                                <td>{{paquete.num_guia}}</td>
+                                <td>{{paquete.num_seguimiento}}</td>
+                                <!-- <td>{{paquete.transportista}}</td> -->
+                                <!-- <td>{{paquete.consignatario}}</td> -->
+                                <!-- <td>{{paquete.transportador}}</td> -->
+                                <td class="text-end">{{paquete.piezas}}</td>
+                                <td class="text-end">{{paquete.peso}}</td>
+                                <td>
+                                    <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : paquete?.estado == 'En bodega', 'bg-warning' : paquete?.estado == 'Pendiente', 'bg-success' : paquete?.estado == 'Facturado'}">
+                                        {{ paquete.estado }}
+                                    </span>
+                                </td>
+                                <td class="text-end">{{paquete.total | currency}}</td>
+                                <td class="text-end">
+                                    <input type="checkbox" name="paquetes" id="paquete{{paquete.id}}" class="form-check d-inline" (click)="onCheckPaquete(paquete)">
+                                    <!-- <button (click)="onCheckProducto(paquete)" class="btn btn-primary float-end">Agregar</button> -->
+                                </td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-12" *ngIf="paquetes?.last_page > 1">
+                    <app-pagination [items]="paquetes" (setPagination)="setPagination($event)"></app-pagination>
+                </div>
+            </div>
+        </section>
+        <section>
+            <div class="row">
+                <div class="col">
+                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">Agregar <span *ngIf="detalles.length > 0">{{ detalles.length }} paquete</span><span *ngIf="detalles.length > 1">s</span></button>
+                </div>
+            </div>
+        </section>
+    <!-- </form> -->
+    </div>
+</ng-template>

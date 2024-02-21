@@ -162,6 +162,14 @@
                     <option value="Ventas">Ventas</option>
                 </select>
             </div>
+            <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
+                <label for="codigo_autorizacion">Código para autorizaciones:</label>
+                <input type="password" class="form-control" [(ngModel)]="usuario.codigo_autorizacion" name="codigo_autorizacion" placeholder="Código para autorizaciones de venta">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="codigo">Código:</label>
+                <input type="text" class="form-control" [(ngModel)]="usuario.codigo" name="codigo" placeholder="Código interno">
+            </div>
             <div class="form-group col-md-6">
                 <label for="id_sucursal">* Sucursal:</label>
                 <select [(ngModel)]="usuario.id_sucursal" class="form-control form-select" name="id_sucursal">
