@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Ventas\Abono;
 use App\Models\Ventas\Venta;
+use App\Models\Inventario\Paquete;
 use Barryvdh\DomPDF\Facade as PDF;
-use JWTAuth;
+use Illuminate\Support\Facades\DB;
 use App\Exports\AbonosVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use JWTAuth;
 
 class AbonosController extends Controller
 {
@@ -80,26 +82,53 @@ class AbonosController extends Controller
             'id_sucursal'    => 'required|numeric',
         ]);
 
-        if($request->id)
-            $abono = Abono::findOrFail($request->id);
-        else
-            $abono = new Abono;
+        DB::beginTransaction();
+         
+        try {
 
-        
-        $abono->fill($request->all());
-        $abono->save();
+            if($request->id)
+                $abono = Abono::findOrFail($request->id);
+            else
+                $abono = new Abono;
 
-        if ($venta && $venta->saldo <= 0) {
-            $venta->estado = 'Pagada';
-            $venta->save();
-        }
+            
+            $abono->fill($request->all());
+            $abono->save();
 
-        if ($venta && $venta->saldo > 0) {
-            $venta->estado = 'Pendiente';
-            $venta->save();
-        }
+            if ($venta && $venta->saldo <= 0) {
+                $venta->estado = 'Pagada';
+                $venta->save();
 
+                // Actualziar si es paquete
+                    $paquetes = Paquete::where('id_venta', $venta->id)->get();
+                    foreach ($paquetes as $paquete) {
+                        $paquete->estado = 'Facturado';
+                        $paquete->save();
+                    }
+            }
+
+            if ($venta && $venta->saldo > 0) {
+                $venta->estado = 'Pendiente';
+                $venta->save();
+
+                // Actualziar si es paquete
+                    $paquetes = Paquete::where('id_venta', $venta->id)->get();
+                    foreach ($paquetes as $paquete) {
+                        $paquete->estado = 'Pendiente';
+                        $paquete->save();
+                    }
+            }
+
+        DB::commit();
         return Response()->json($abono, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
 
     }
 

@@ -22,6 +22,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
     public clientes:any = [];
     public detalle:any = {};
     public detalles:any = [];
+    public servicio:any = {};
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
@@ -41,6 +42,16 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         }, error => {this.alertService.error(error); });
         this.loadAll();
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+        
+        this.apiService.getAll('productos', {buscador: 'Servicio de importación de paquetería'}).subscribe(productos => { 
+            if(productos.data[0]){
+                this.servicio = productos.data[0];
+            }else{
+                alert('No se encontro un servicio para facturar paquetes, debe ingresar a servicios y agregarlo con el nombre: "Servicio de importación de paquetería"');
+                this.modalRef.hide();
+            }
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public loadAll() {
@@ -60,9 +71,14 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.venta.id_cliente = this.filtros.id_cliente;
         this.apiService.getAll('paquetes', this.filtros).subscribe(paquetes => { 
             this.paquetes = paquetes;
-            console.log(this.paquetes);
+            
+            this.detalles = [];
+            let radio = document.getElementById('marcarPaquetes') as HTMLInputElement;
+            radio.checked = false;
+
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
     }
 
     public setOrden(columna: string) {
@@ -112,16 +128,33 @@ export class TiendaVentaPaquetesComponent implements OnInit {
     onCheckPaquete(paquete:any){
         let radio = document.getElementById('paquete' + paquete.id) as HTMLInputElement;
         if(radio.checked){
-            // radio.checked = true
-            this.detalle = Object.assign({}, paquete);
+            this.detalle = Object.assign({}, this.servicio);
+            this.detalle.id_producto    = this.servicio.id;
+            this.detalle.nombre_producto = this.servicio.nombre + ' Numero: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
+            this.detalle.img            = this.servicio.img;
+            // this.detalle.precio         = parseFloat(this.servicio.precio);
             this.detalle.id_paquete    = paquete.id;
-            this.detalle.nombre_producto = 'Servicio de importación de paquetería';
-            this.detalle.img            = 'productos/default.jpg';
             this.detalle.precio         = parseFloat(paquete.precio);
+            this.detalle.cuenta_a_terceros         = parseFloat(paquete.cuenta_a_terceros);
+            this.detalle.total         = parseFloat(paquete.total);
+
+            // this.detalle.precios        = this.servicio.precios;
+            // this.detalle.precios.unshift({
+            //         'precio' : this.detalle.precio
+            //     });
+            this.detalle.costo          = parseFloat(this.servicio.costo);
+            this.servicio.inventarios        = this.servicio.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+            if(this.servicio.inventarios.length > 0){
+                this.detalle.stock          = parseFloat(this.sumPipe.transform(this.servicio.inventarios, 'stock'));
+            }else{
+                this.detalle.stock = null;
+            }
+            // this.detalle.cantidad       = 1;
             this.detalle.cantidad       = parseFloat(paquete.peso);
             this.detalle.descuento      = 0;
             this.detalle.descuento_porcentaje      = 0;
             this.detalles.unshift(this.detalle);
+
         }else{
             // radio.checked = false;
             const indexAEliminar = this.detalles.findIndex((item:any) => item.id_paquete === paquete.id);
@@ -132,6 +165,14 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         }
 
         console.log(this.detalles);
+    }
+
+    onCheckAllPaquete(){
+        this.paquetes.data.forEach((paquete:any) => {
+            let radio = document.getElementById('paquete' + paquete.id) as HTMLInputElement;
+            radio.checked = !radio.checked;
+            this.onCheckPaquete(paquete);
+        });
     }
 
     onSubmit(){

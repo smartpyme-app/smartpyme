@@ -22,16 +22,19 @@ class Paquete extends Model {
         'peso',
         'precio',
         'volumen',
-        'cuenta_a_tercero',
+        'cuanta_a_terceros',
         'total',
         'nota',
+        'id_venta',
+        'id_venta_detalle',
         'id_cliente',
+        'id_asesor',
         'id_usuario',
         'id_sucursal',
         'id_empresa',
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario'];
+    protected $appends = ['nombre_cliente', 'nombre_asesor', 'nombre_usuario'];
 
     protected static function boot()
     {
@@ -65,6 +68,11 @@ class Paquete extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
+    public function getNombreAsesorAttribute()
+    {
+        return $this->asesor()->pluck('name')->first();
+    }
+
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
@@ -76,9 +84,21 @@ class Paquete extends Model {
     public function proveedor(){
         return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor', 'id_proveedor');
     }
+
+    public function venta(){
+        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
+    }
+
+    public function ventaDetalle(){
+        return $this->belongsTo('App\Models\Ventas\Detalle','id_venta_detalle');
+    }
     
     public function usuario(){
         return $this->belongsTo('App\Models\User', 'id_usuario');
+    }
+    
+    public function asesor(){
+        return $this->belongsTo('App\Models\User', 'id_asesor');
     }
 
 

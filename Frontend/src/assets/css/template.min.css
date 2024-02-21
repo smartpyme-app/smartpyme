@@ -55,6 +55,9 @@ img.icon-2{
     .bg-light-info{
       background-color: #E6F2FF !important;
     }
+    .bg-light-dark{
+      background-color: #DDDDDD !important;
+    }
 
     .bg-warning{
         background-color: #FFDCC4 !important;

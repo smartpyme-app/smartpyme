@@ -5,6 +5,7 @@ namespace App\Imports;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Clientes\Cliente;
+use App\Models\User;
 
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -21,6 +22,8 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
     
     public function model(array $row)
     {
+        // throw new \Exception($mensaje);
+        
         ++$this->numRows;
         $usuario = JWTAuth::parseToken()->authenticate();
 
@@ -53,9 +56,10 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
         $paquete->precio    = $row['precio'];
         $paquete->volumen   = isset($row['volumen']) ? $row['volumen'] : null;
         $paquete->nota      = isset($row['nota']) ? $row['nota'] : '';
-        $paquete->cuenta_a_tercero    = $row['cuenta_a_tercero'];
+        $paquete->cuanta_a_terceros    = $row['cuanta_a_terceros'];
         $paquete->total    = $row['total'];
         $paquete->id_cliente    = $id_cliente;
+        $paquete->id_asesor     = isset($row['codigo_asesor']) ? User::where('codigo', $row['codigo_asesor'])->pluck('id')->first() : null;
         $paquete->id_usuario    = $usuario->id;
         $paquete->id_sucursal   = $usuario->id_sucursal;
         $paquete->id_empresa    = $usuario->id_empresa;
@@ -69,13 +73,14 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
     {
         return [
             'cliente'   => 'required|string',
+            'codigo_asesor'    => 'required',
             'wr'    => 'required',
             // 'seguimiento'    => 'required',
             'guia'    => 'required',
             'piezas'    => 'required|numeric',
             'precio'    => 'required|numeric',
             'peso'      => 'required|numeric',
-            // 'cuenta_a_tercero' => 'required|numeric',
+            'cuanta_a_terceros' => 'required|numeric',
             'total'      => 'required|numeric',
         ];
     }

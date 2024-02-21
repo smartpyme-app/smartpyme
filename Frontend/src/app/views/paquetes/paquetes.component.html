@@ -34,15 +34,15 @@
             <select name="estado" (change)="filtrarPaquetes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="En bodega">En bodega</option>
-                <option value="En proceso">En proceso</option>
-                <option value="Entregado">Entregado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Facturado">Facturado</option>
             </select>
-            <select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default w-auto">
-                <option value="">Cliente</option>
-                <option *ngFor="let cliente of clientes" [value]="cliente.id">
+            <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
+                <ng-option value="">Cliente</ng-option>
+                <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
                     {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                </option>
-            </select>
+                </ng-option>
+            </ng-select>
         </div>
     </div>
     <div class="row">
@@ -51,16 +51,18 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th>Cliente</th>
+                        <th>Asesor</th>
                         <th>WR</th>
-                        <th class="d-none d-md-table-cell">Cliente</th>
-                        <th class="d-none d-md-table-cell">Shipper</th>
-                        <th class="d-none d-md-table-cell">Consignee</th>
-                        <th class="d-none d-md-table-cell">Carrier</th>
-                        <th class="d-none d-md-table-cell">Piezas</th>
-                        <th class="d-none d-md-table-cell">Peso</th>
-                        <!-- <th class="d-none d-md-table-cell">Volumen</th> -->
-                        <th class="d-none d-md-table-cell">Número de traking</th>
+                        <!-- <th class="d-none d-md-table-cell">Shipper</th> -->
+                        <!-- <th class="d-none d-md-table-cell">Consignee</th> -->
+                        <th>Guía</th>
+                        <th>Seguimiento</th>
+                        <th class="text-end">Piezas</th>
+                        <th class="text-end">Peso</th>
+                        <!-- <th>Volumen</th> -->
                         <th>Estado</th>
+                        <th class="text-end">Total</th>
                         <th class="text-center">Más</th>
                     </tr>
                 </thead>
@@ -77,22 +79,22 @@
                     <tr *ngFor=" let paquete of paquetes?.data">
                         
                         <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
-                        <td>{{paquete.wr}}</td>
                         <td>{{paquete.nombre_cliente}}</td>
-                        <td>{{paquete.transportista}}</td>
-                        <td>{{paquete.consignatario}}</td>
-                        <td>{{paquete.transportador}}</td>
-                        <td>{{paquete.piezas}}</td>
-                        <td>{{paquete.peso}}</td>
-                        <!-- <td>{{paquete.volumen}}</td> -->
+                        <td>{{paquete.nombre_asesor}}</td>
+                        <td>{{paquete.wr}}</td>
+                        <td>{{paquete.num_guia}}</td>
                         <td>{{paquete.num_seguimiento}}</td>
+                        <!-- <td>{{paquete.transportista}}</td> -->
+                        <!-- <td>{{paquete.consignatario}}</td> -->
+                        <!-- <td>{{paquete.transportador}}</td> -->
+                        <td class="text-end">{{paquete.piezas}}</td>
+                        <td class="text-end">{{paquete.peso}}</td>
                         <td>
-                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(paquete)" [(ngModel)]="paquete.estado" [ngClass]="{'bg-light-warning' : paquete?.estado == 'En bodega', 'bg-light-info' : paquete?.estado == 'En proceso', 'bg-light-success' : paquete?.estado == 'Entregado'}">
-                                <option value="En bodega">En bodega</option>
-                                <option value="En proceso">En proceso</option>
-                                <option value="Entregado">Entregado</option>
-                            </select>
+                            <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : paquete?.estado == 'En bodega', 'bg-warning' : paquete?.estado == 'Pendiente', 'bg-success' : paquete?.estado == 'Facturado'}">
+                                {{ paquete.estado }}
+                            </span>
                         </td>
+                        <td class="text-end">{{paquete.total | currency}}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
@@ -156,23 +158,27 @@
     <app-notificaciones-container></app-notificaciones-container>
     <form name="form" (ngSubmit)="onSubmit()">
         <div class="row">
-            <div class="form-group col-md-2">
+            <div class="form-group col-md-3">
                 <label for="fecha">Fecha:</label>
                 <p>{{ paquete.fecha | date:'dd/mm/yyy'}}</p>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="estado">Estado:</label>
+                <p>{{ paquete.estado }}</p>
             </div>
             <div class="form-group col-md-3">
                 <label for="id_usuario">Usuario:</label>
                 <p>{{ paquete.nombre_usuario }}</p>
             </div>
             <div class="form-group col-md-3">
-                <label for="estado">Estado:</label>
-                <p>{{ paquete.estado }}</p>
+                <label for="id_usuario">Asesor:</label>
+                <p>{{ paquete.nombre_asesor }}</p>
             </div>
             <div class="form-group col-md-4">
                 <label for="id_cliente">Cliente:</label>
                 <p>{{ paquete.nombre_cliente }}</p>
             </div>
-            <div class="form-group col-md-4">
+            <!-- <div class="form-group col-md-4">
                 <label for="transportista">Transportista:</label>
                 <p>{{ paquete.transportista }}</p>
             </div>
@@ -183,17 +189,17 @@
             <div class="form-group col-md-4">
                 <label for="transportador">Transportador:</label>
                 <p>{{ paquete.transportador }}</p>
-            </div>
+            </div> -->
             <div class="form-group col-md-4">
                 <label for="wr">WR:</label>
                 <p>{{ paquete.wr }}</p>
             </div>
             <div class="form-group col-md-4">
-                <label for="num_seguimiento">Num Seguimiento:</label>
+                <label for="num_seguimiento">Num. Seguimiento:</label>
                 <p>{{ paquete.num_seguimiento }}</p>
             </div>
             <div class="form-group col-md-4">
-                <label for="num_guia">Num Guia:</label>
+                <label for="num_guia">Num. Guia:</label>
                 <p>{{ paquete.num_guia }}</p>
             </div>
             <div class="form-group col-md-4">
@@ -207,6 +213,14 @@
             <div class="form-group col-md-4">
                 <label for="volumen">Volumen:</label>
                 <p>{{ paquete.volumen }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="volumen">Cuenta a tercero:</label>
+                <p>{{ paquete.cuenta_a_terceros | currency }}</p>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="total">Total:</label>
+                <p>{{ paquete.total | currency }}</p>
             </div>
             <div class="form-group col-md-12">
                 <label for="nota">Nota:</label>
@@ -241,37 +255,9 @@
                 <label for="filtros.estado">Estado:</label>
                 <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
                     <option value="">Todos</option>
-                    <option value="Pagada">Pagadas</option>
-                    <option value="Pendiente">Pendientes</option>
-                    <option value="Anulada">Anuladas</option>
-                    <option value="Consigna">Consignas</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.forma_pago">Método de pago:</label>
-                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
-                    <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
-                        {{ formaPago.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_documento">Documento:</label>
-                <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
-                    <option value="">Todos</option>
-                    <option *ngFor="let documento of documentos" [value]="documento.id">
-                        {{ documento.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_canal">Canal:</label>
-                <select [(ngModel)]="filtros.id_canal" class="form-control form-select" name="filtros.id_canal">
-                    <option value="">Todos</option>
-                    <option *ngFor="let canal of canales" [value]="canal.id">
-                        {{ canal.nombre }}
-                    </option>
+                    <option value="En bodega">En bodega</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Entregado">Entregado</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -288,7 +274,16 @@
                 <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
                     <ng-option value="">Todos</ng-option>
                     <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{cliente.nombre}}
+                        {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_asesor">Asesor:</label>
+                <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="filtros.id_asesor">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
                     </ng-option>
                 </ng-select>
             </div>

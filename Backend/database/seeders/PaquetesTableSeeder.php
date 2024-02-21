@@ -33,8 +33,8 @@ class PaquetesTableSeeder extends Seeder {
             $table->precio          = 4.99;
             $table->volumen         = $faker->numberBetween(50, 100);
             $table->id_cliente      = Cliente::inRandomOrder()->first()->id;
-            $table->id_proveedor    = Proveedor::inRandomOrder()->first()->id;
-            $table->id_usuario      = 195;
+            $table->id_asesor       = 195;
+            $table->id_usuario      = User::inRandomOrder()->first()->id;
             $table->id_sucursal     = 8;
             $table->id_empresa      = 13;
             $table->save();

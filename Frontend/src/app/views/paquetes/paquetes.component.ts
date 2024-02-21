@@ -16,6 +16,7 @@ export class PaquetesComponent implements OnInit {
     public paquetes:any = [];
     public sucursales:any = [];
     public clientes:any = [];
+    public usuarios:any = [];
     public paquete:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
@@ -48,6 +49,8 @@ export class PaquetesComponent implements OnInit {
 
     public loadAll() {
         this.filtros.id_cliente = '';
+        this.filtros.id_sucursal = '';
+        this.filtros.id_asesor = '';
         this.filtros.id_usuario = '';
         this.filtros.tipo = '';
         this.filtros.estado = '';
@@ -78,14 +81,16 @@ export class PaquetesComponent implements OnInit {
 
 
     public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
 
-    public setEstado(paquete:any, estado:any){
+    public setEstado(paquete:any){
         this.paquete = paquete;
-        this.paquete.estado = estado;
         this.onSubmit();
     }
 
@@ -126,9 +131,9 @@ export class PaquetesComponent implements OnInit {
         this.apiService.store('paquete', this.paquete).subscribe(paquete => {
             if (!this.paquete.id) {
                 this.loadAll();
-                this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
+                this.alertService.success('Paquete creada', 'El paquete fue añadida exitosamente.');
             }else{
-                this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
+                this.alertService.success('Paquete guardada', 'El paquete fue guardada exitosamente.');
             }
             this.saving = false;
             if(this.modalRef){

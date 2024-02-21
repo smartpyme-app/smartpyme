@@ -32,8 +32,14 @@ class PaquetesController extends Controller
                                 ->when($request->wr, function($q) use ($request){
                                     $q->where('wr', $request->wr);
                                 })
-                                ->when($request->id_proveedor, function($q) use ($request){
-                                    return $q->where("id_proveedor", $request->id_proveedor);
+                                ->when($request->id_cliente, function($q) use ($request){
+                                    return $q->where("id_cliente", $request->id_cliente);
+                                })
+                                ->when($request->id_asesor, function($q) use ($request){
+                                    return $q->where("id_asesor", $request->id_asesor);
+                                })
+                                ->when($request->id_usuario, function($q) use ($request){
+                                    return $q->where("id_usuario", $request->id_usuario);
                                 })
                                 ->when($request->estado, function($q) use ($request){
                                     $q->where('estado', $request->estado);
@@ -88,18 +94,17 @@ class PaquetesController extends Controller
         $request->validate([
             'fecha' => 'required|max:255',
             'wr' => 'required|max:255',
-            'transportista' => 'required|max:255',
-            'consignatario' => 'required|max:255',
-            'transportador' => 'required|max:255',
+            // 'transportista' => 'required|max:255',
+            // 'consignatario' => 'required|max:255',
+            // 'transportador' => 'required|max:255',
             'estado' => 'required|max:255',
-            'num_seguimiento' => 'required|max:255',
+            // 'num_seguimiento' => 'required|max:255',
             'num_guia' => 'required|max:255',
             'piezas' => 'required',
             'peso'  => 'required',
             'precio'  => 'required',
-            'volumen'  => 'required',
+            // 'volumen'  => 'required',
             'id_cliente'  => 'required',
-            'id_proveedor'  => 'required',
             'id_usuario'  => 'required',
             'id_sucursal' => 'required',
             'id_empresa' => 'required',
