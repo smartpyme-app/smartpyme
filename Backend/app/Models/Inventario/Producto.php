@@ -66,7 +66,11 @@ class Producto extends Model {
 
     public function getImgAttribute() 
     {
-        return 'productos/default.jpg';
+        if ($this->imagenes()->count() > 0) {
+            return $this->imagenes->pluck('img')->first();
+        }else{
+            return 'productos/default.jpg';
+        }
     }
     
     public function getNombreCategoriaAttribute()
