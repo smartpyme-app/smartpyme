@@ -41,17 +41,19 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         else{
             this.loading = true;
             this.venta.cliente = {};
-            this.cargarDocumentos();
             this.apiService.read('venta/', id).subscribe(venta => {
                 this.venta = venta;
                 this.venta.id = null;
                 this.venta.fecha = this.apiService.date();
                 this.venta.id_venta = id;
                 this.venta.tipo = 'Interna';
+                this.venta.correlativo = null;
+                this.venta.id_documento = null;
                 this.venta.observaciones = '';
 
                 this.venta.percepcion = this.venta.iva_percibido > 0 ? true : false; 
                 this.venta.retencion = this.venta.iva_retenido > 0 ? true : false;
+                this.venta.cobrar_impuestos = (this.venta.iva > 0) ?true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
@@ -61,6 +63,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.venta.id_usuario = this.apiService.auth_user().id;
                 this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
                 this.sumTotal();
+                this.cargarDocumentos();
                 this.loading = false;
             }, error => {this.alertService.error(error);this.loading = false;});
         }
@@ -68,9 +71,24 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     }
 
     cargarDocumentos(){
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
+            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
+
+            this.documentos = this.documentos.filter((x:any) => x.nombre == 'Nota de crédito');
+            let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
+            if(documento){
+                this.venta.id_documento = documento.id;
+                this.venta.correlativo = documento.correlativo;
+            }
+
         }, error => {this.alertService.error(error);});
+    }
+
+    public setDocumento(id_documento:any){
+        let documento = this.documentos.find((x:any) => x.id == id_documento);
+        this.venta.id_documento = documento.id;
+        this.venta.correlativo = documento.correlativo;
     }
 
     cargarDatosIniciales(){
@@ -99,6 +117,10 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
     public sumTotal() {
         this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(2);
+        
+        this.venta.exenta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'))).toFixed(4);
+        this.venta.no_sujeta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'))).toFixed(4);
+        
         this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0; 
         this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0; 
 
@@ -113,7 +135,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto'))).toFixed(2);
         this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(2);
         // this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(2);
-        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(2);
+        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.cuenta_a_terceros) + parseFloat(this.venta.exenta) + parseFloat(this.venta.no_sujeta) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(2);
     }
 
 

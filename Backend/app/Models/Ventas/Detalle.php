@@ -9,11 +9,14 @@ class Detalle extends Model {
     protected $table = 'detalles_venta';
     protected $fillable = array(
         'id_producto',
+        'descripcion',
         'cantidad',
         'precio',
         'costo',
         'descuento',
-        // 'total_costo',
+        'no_sujeta',
+        'exenta',
+        'cuenta_a_terceros',
         'total',
         'id_venta'
     );
@@ -21,11 +24,31 @@ class Detalle extends Model {
     protected $appends = ['nombre_producto', 'img'];
 
     public function getNombreProductoAttribute(){
-        return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
+        if ($this->descripcion) {
+            return $this->descripcion;
+        }else{
+            $paquete = $this->paquete()->first();
+            if ($paquete) {
+                return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first() . ' Numero: ' . $paquete->wr . ' Guia: ' . $paquete->num_guia;
+            }
+            return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
+        }
+    }
+
+    public function getDescripcionAttribute($value){
+        if (is_null($value)) {
+            $paquete = $this->paquete()->first();
+            if ($paquete) {
+                return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first() . ' Numero: ' . $paquete->wr . ' Guia: ' . $paquete->num_guia;
+            }
+            return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
+        }else{
+            return $value;
+        }
     }
 
     public function getImgAttribute(){
-        return $this->producto()->withoutGlobalScopes()->first()->img;
+        return $this->producto()->withoutGlobalScopes()->first() ? $this->producto()->withoutGlobalScopes()->first()->img : null;
     }
 
     public function producto(){
@@ -34,6 +57,10 @@ class Detalle extends Model {
 
     public function venta(){
         return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
+    }
+
+    public function paquete(){
+        return $this->hasOne('App\Models\Inventario\Paquete','id_venta_detalle');
     }
 
 

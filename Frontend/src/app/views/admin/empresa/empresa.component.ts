@@ -81,11 +81,13 @@ export class EmpresaComponent implements OnInit {
     }
 
     setCobrarIVA(){
-        if(this.empresa.cobra_iva == 'NO' || this.empresa.cobra_iva == '' || this.empresa.cobra_iva == null){
-            this.empresa.cobra_iva = 'Si';
-        }else{
+        console.log(this.empresa.cobra_iva);
+        if(this.empresa.cobra_iva == 'Si'){
             this.empresa.cobra_iva = 'No';
+        }else{
+            this.empresa.cobra_iva = 'Si';
         }
+        console.log(this.empresa.cobra_iva);
     }
      
 

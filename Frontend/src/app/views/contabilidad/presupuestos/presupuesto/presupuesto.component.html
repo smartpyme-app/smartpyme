@@ -12,6 +12,17 @@
                     <label for="nombre">Título</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="titulo" [(ngModel)]="presupuesto.titulo">
                 </div>
+                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-6">
+                    <label for="">Proyecto</label>
+                    <div class="input-group flex-nowrap">
+                        <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="presupuesto.id_proyecto" class="form-select p-0">
+                            <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                                {{ proyecto.nombre }}
+                            </ng-option>
+                        </ng-select>
+                        <app-crear-proyecto [id_proyecto]="presupuesto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+                    </div>
+                </div>
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="fecha_inicio">Desde</label>
                     <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_inicio" [(ngModel)]="presupuesto.fecha_inicio">
@@ -20,25 +31,39 @@
                     <label for="fecha_fin">Hasta</label>
                     <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_fin" [(ngModel)]="presupuesto.fecha_fin">
                 </div>
-                <div class="form-group col-md-6 col-lg-4">
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="ingresos">Ingresos totales estimados</label>
                     <div class="input-group">
                         <div class="input-group-text">$</div>
                         <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="ingresos" [(ngModel)]="presupuesto.ingresos">
                     </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="egresos">Egresos totales estimados</label>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="egresos">Gastos totales estimados</label>
                     <div class="input-group">
                         <div class="input-group-text">$</div>
                         <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="egresos" [(ngModel)]="presupuesto.egresos">
                     </div>
+                </div>  
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="egresos">Compras totales estimados</label>
+                    <div class="input-group">
+                        <div class="input-group-text">$</div>
+                        <input type="number" class="form-control" (change)="calUtilidad()" (keyup)="calUtilidad()" placeholder="Escribe aquí" name="compras" [(ngModel)]="presupuesto.compras">
+                    </div>
                 </div>                
-                <div class="form-group col-md-6 col-lg-4">
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="utilidad">Utilidad esperada</label>
                     <div class="input-group">
                         <div class="input-group-text">$</div>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" name="utilidad" [(ngModel)]="presupuesto.utilidad">
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="utilidad" disabled [(ngModel)]="presupuesto.utilidad">
+                    </div>
+                </div>             
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="margen">Margen</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" placeholder="Escribe aquí" name="margen" disabled [(ngModel)]="presupuesto.margen">
+                        <div class="input-group-text">%</div>
                     </div>
                 </div>
                 <div class="form-group col-lg-4 without-label">

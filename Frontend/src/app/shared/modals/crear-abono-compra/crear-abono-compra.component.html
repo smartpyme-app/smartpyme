@@ -20,6 +20,10 @@
                 <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
             </select>
         </div>
+        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo'">
+            <label for="referencia">Referencia:</label>
+            <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
+        </div>
 
         <div class="form-group col-md-12">
             <table class="table table-bordered">

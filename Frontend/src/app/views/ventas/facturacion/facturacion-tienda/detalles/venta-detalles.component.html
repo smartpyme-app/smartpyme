@@ -1,5 +1,11 @@
-<app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
-
+<div class="d-flex justify-content-end mb-3">
+    <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
+        <app-tienda-venta-buscador class="w-100" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-buscador>
+        <app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
+        <app-tienda-venta-paquetes *ngIf="apiService.auth_user().empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-paquetes>
+        <app-tienda-venta-citas *ngIf="apiService.auth_user().empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
+    </div>
+</div>
 <div class="row">
     <div class="col-md-12 table-responsive">
         <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
@@ -23,18 +29,19 @@
                 </tr>
                 <tr *ngFor="let detalle of venta?.detalles; let i = index">
                     <td>
-                        <div class="d-flex gap-3">
+                        <div class="d-flex gap-3" *ngIf="!apiService.auth_user().empresa.editar_descripcion_venta">
                             <div>
                                 <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                             </div>
                             <div>
-                                {{ detalle.nombre_producto }} <br>
+                                {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
                                 <ul style="font-size: 14px;">
                                     <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.nombre_compuesto }}</li>
                                 </ul>
                             </div>
                         </div>
+                        <input class="form-control" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta" type="text" [(ngModel)]="detalle.descripcion" name="descripcion">
                     </td>
                     <td style="width: 150px;">
                         <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">

@@ -12,6 +12,7 @@ class Abono extends Model {
     protected $fillable = array(
         'fecha',
         'concepto',
+        'referencia',
         'estado',
         'nombre_de',
         'forma_pago',

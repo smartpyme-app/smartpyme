@@ -43,35 +43,9 @@ Route::get('/clear-bd', function(){
 	
 })->name('clearBD');
 
-Route::get('/setNotificaiones', function(){
+Route::get('/empresaAbonos', function(){
 	
-
-	$fechaStart = \Carbon\Carbon::today();
-	$fechaEnd = \Carbon\Carbon::today()->addDay(3);
-
-	$gastos = App\Models\Compras\Gastos\Gasto::where('estado', 'Pendiente')
-	                    ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
-	                    ->get();
-
-	$compras = App\Models\Compras\Compra::where('estado', 'Pendiente')
-	                    ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
-	                    ->get();
-
-	
-	$ventas = App\Models\Ventas\Venta::where('estado', 'Pendiente')
-                            ->whereBetween('fecha_pago', [$fechaStart, $fechaEnd])
-                            ->where('id_empresa', 190)
-                            ->get();
-
-
-	$productos = App\Models\Inventario\Producto::whereHas('inventarios', function ($query) {
-                                $query->whereRaw('stock_minimo > 0')
-                                        ->whereRaw('stock <= stock_minimo');
-                            })
-                            ->where('id_empresa', 190)
-                            ->where('enable', true)->get();
-
-	return $ventas;
+	$abonos = App\Models\Ventas\Abono::where('id_empresa', null)->get();
 	
 })->name('clearBD');
 
@@ -91,6 +65,26 @@ Route::get('/setPais', function(){
 	}
 
 	return "Listo XD";
+	
+})->name('clearBD');
+
+Route::get('/setIVA', function(){
+	
+	$empresas = App\Models\Admin\Empresa::where('cobra_iva', 'Si')
+							->whereNotNull('iva')
+							->with('impuestos')
+							->doesntHave('impuestos')
+							->get();
+
+	foreach ($empresas as $empresa) {
+		$impuesto = new \App\Models\Admin\Impuesto;
+		$impuesto->nombre = 'IVA';
+		$impuesto->porcentaje = $empresa->iva;
+		$impuesto->id_empresa = $empresa->id;
+		$impuesto->save();
+	}
+
+	return $empresas;
 	
 })->name('clearBD');
 

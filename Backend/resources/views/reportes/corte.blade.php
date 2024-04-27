@@ -113,12 +113,12 @@
         </div>
         <h2 style="margin:0px;" class="text-center">Corte del día</h2>
         <p style="margin-bottom:10px; font-size: 14px;" class="text-center">
-            @if ($indicadores->sucursal)
-                <b>Sucursal: </b>{{ $indicadores->sucursal->nombre }}
+            @if ($indicadores->id_sucursal)
+                <b>Sucursal: </b>{{ $indicadores->sucursal()->pluck('nombre')->first() }}
             @else
                 <b>Sucursal: </b>Todas
             @endif
-            <b style="margin-left: 100px;">Fecha: </b>{{\Carbon\Carbon::parse($indicadores->fecha)->format('d/m/Y')}}
+            <b style="margin-left: 100px;">Fecha: </b>{{\Carbon\Carbon::parse($indicadores->inicio)->format('d/m/Y')}}
         </p>
 
         <table class="table table-bordered table-hover border-primary mb-3">
@@ -187,9 +187,9 @@
                 @endif
             @endforeach
 
-            {{-- <tr><td>Abonos</td><td class="text-right">{{ $indicadores->getCantidadRecibos() }}</td><td class="text-right">${{ number_format($indicadores->getTotalRecibos(), 2) }}</td></tr> --}}
+            <tr><td>Abonos</td><td class="text-right">{{ $indicadores->getCantidadRecibos() }}</td><td class="text-right">${{ number_format($indicadores->getTotalRecibos(), 2) }}</td></tr>
             <tr><td>Devoluciones</td><td class="text-right">{{ $indicadores->getCantidadDevolucionesVenta() }}</td><td class="text-right">${{ number_format($indicadores->getTotalDevolucionesVenta(), 2) }}</td></tr>
-            {{-- <tr><td>Gastos</td><td class="text-right">{{ $indicadores->getCantidadGastosPagados() }}</td><td class="text-right">${{ number_format($indicadores->getTotalGastosPagados(), 2) }}</td></tr> --}}
+            <tr><td>Gastos</td><td class="text-right">{{ $indicadores->getCantidadGastosPagados() }}</td><td class="text-right">${{ number_format($indicadores->getTotalGastosPagados(), 2) }}</td></tr>
             <tr><td>Cuentas por cobrar</td><td class="text-right">{{ $indicadores->getCantidadVentasPendientes() }}</td><td class="text-right">${{ number_format($indicadores->getTotalVentasPendientes(), 2) }}</td></tr>
             </tbody>
         </table>
@@ -214,7 +214,7 @@
                     <td class="text-right">{{ $formadepago['cantidad'] }}</td>
                     <td class="text-right">${{ number_format($formadepago['total'],2) }}</td>
                 </tr> 
-                <tr>
+                {{-- <tr>
                     <td><li class="ml-4">Ventas</li> </td> 
                     <td class="text-right">{{ $indicadores->ventas_pagadas->where('forma_pago', $formadepago['nombre'])->count() - $indicadores->devoluciones_ventas->where('forma_pago', $formadepago['nombre'])->count() }}</td>
                     <td class="text-right">${{ number_format($indicadores->ventas_pagadas->where('forma_pago', $formadepago['nombre'])->sum('saldo') - $indicadores->devoluciones_ventas->where('forma_pago', $formadepago['nombre'])->sum('total'), 2) }}</td>
@@ -228,7 +228,7 @@
                     <td><li class="ml-4">Gastos</li> </td> 
                     <td class="text-right">{{ $indicadores->gastos->where('forma_pago', $formadepago['nombre'])->count() }}</td>
                     <td class="text-right">${{ number_format($indicadores->gastos->where('forma_pago', $formadepago['nombre'])->sum('monto'), 2) }}</td>
-                </tr>         
+                </tr>   --}}       
             @endif
             @endforeach
             </tbody>
@@ -318,9 +318,9 @@
                 @endif
                 @foreach ($indicadores->getDocumentoConDevolucion() as $devolucion)
                 <tr>
-                    <td>{{ $devolucion->venta()->first()->sucursal }} - {{$devolucion->venta()->first()->documento}}</td>
+                    <td>{{ $devolucion->venta()->first()->nombre_sucursal }} - {{$devolucion->venta()->first()->nombre_documento}}</td>
                     <td class="text-right">{{$devolucion->venta()->first()->correlativo}}</td>
-                    <td class="text-right">${{number_format($devolucion->venta()->first()->total_venta,2)}}</td>
+                    <td class="text-right">${{number_format($devolucion->venta()->first()->total,2)}}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -348,9 +348,9 @@
                 @endif
                 @foreach ($indicadores->getDocumentosAnulados() as $venta)
                 <tr>
-                    <td>{{ $venta->sucursal }} - {{$venta->documento}}</td>
+                    <td>{{ $venta->nombre_sucursal }} - {{$venta->nombre_documento}}</td>
                     <td class="text-right">{{$venta->correlativo}}</td>
-                    <td class="text-right">${{number_format($venta->total_venta,2)}}</td>
+                    <td class="text-right">${{number_format($venta->total,2)}}</td>
                 </tr>
                 @endforeach
             </tbody>

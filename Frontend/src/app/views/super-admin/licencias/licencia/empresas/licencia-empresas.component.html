@@ -1,0 +1,80 @@
+<div class="row">
+    <h6 class="my-3 font-weight-bold" (click)="loadAll()">
+        Empresas
+
+        <a *ngIf="licencia.num_licencias > licencia.num_empresas" class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar empresa">
+            <i class="fa fa-plus"></i> Agregar empresa
+        </a>
+    </h6>
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th class="d-none d-md-table-cell">DUI</th>
+                    <th class="d-none d-md-table-cell">NCR</th>
+                    <th class="text-center"><i class="fa fa-cog"></i> </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" class="text-center" *ngIf="loading">
+                        <span class="badge bg-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="6" class="text-center" *ngIf="!loading && licencia?.empresas.length == 0">
+                        <span class="badge bg-primary">No tiene empresas agregados</span>
+                    </td>
+                </tr>        
+                <tr *ngFor=" let empresa of licencia.empresas">
+                    <td>{{ empresa?.nombre_empresa }}</td>
+                    <td>{{ empresa?.empresa.correo }}</td>
+                    <td>{{ empresa?.empresa.telefono }}</td>
+                    <td>{{ empresa?.empresa.dui }}</td>
+                    <td>{{ empresa?.empresa.ncr }}</td>
+                    <td class="text-center">
+                        <a (click)="delete(empresa)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<ng-template #mbodega>
+  <div class="modal-header">
+    <h3 class="modal-title text-center">Agregar empresa</h3>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="row">
+            <p class="col-12"><span class="fw-medium">Institución:</span> {{ licencia.nombre_empresa }}</p>
+            <div class="mb-3 col-12"> 
+                <label for="" class="fw-medium">Empresa:</label>
+                <div class="input-group">
+                    <ng-select name="id_empresa" [(ngModel)]="empresa.id_empresa" class="form-select p-0">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
+                            {{ empresa.nombre }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-empresa [id_empresa]="empresa.id_empresa" (update)="setEmpresa($event)"></app-crear-empresa>
+                </div>
+            </div>
+        </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary">
+                <span *ngIf="!loading">Agregar</span>
+                <span *ngIf="loading">Agregando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+

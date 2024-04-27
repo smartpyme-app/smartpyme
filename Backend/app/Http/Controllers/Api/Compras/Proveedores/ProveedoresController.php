@@ -74,9 +74,9 @@ class ProveedoresController extends Controller
             'apellido'       => 'required_if:tipo,"Persona"|max:255',
             'nombre_empresa'    => 'required_if:tipo,"Empresa"',
             'tipo'    => 'required|max:255',
-            'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,
-            'dui'       => 'nullable|unique:proveedores,dui,'. $request->id,
-            'nit'       => 'nullable|unique:proveedores,nit,'. $request->id,
+            // 'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,
+            // 'dui'       => 'nullable|unique:proveedores,dui,'. $request->id,
+            // 'nit'       => 'nullable|unique:proveedores,nit,'. $request->id,
             // 'id_usuario'     => 'required|integer|exists:users,id',
             'id_empresa'     => 'required|integer|exists:empresas,id',
         ],[

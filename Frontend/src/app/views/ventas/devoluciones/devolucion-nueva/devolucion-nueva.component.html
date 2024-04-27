@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <h3>Nueva devolucion de venta</h3>
+    <h3>Nueva devolución de venta</h3>
     <button class="btn btn-light text-danger" routerLink="/devoluciones/ventas">Cancelar <i class="fa fa-close"></i></button>
 </div>
 
@@ -7,11 +7,21 @@
 <form  name="facturacion" autocomplete="off" (ngSubmit)="onDevolucion()">
     <div class="card-body">
         <div class="row">
-            <div class="form-group col-md-2">
+            <div class="form-group col-md-4 col-lg-2">
                 <label for="fecha">Fecha</label><br>
                 <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha" required>
             </div>
-            <div class="form-group col-md-10">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="venta.id_documento">
+                <label for="id_documento">Documento</label>
+                <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                    <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-2" *ngIf="venta.id_documento">
+                <label for="correlativo">Correlativo</label>
+                <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+            </div>
+            <div class="form-group col-md-6">
                 <div class="form-group">
                     <label for="">Observaciones:</label>
                     <input type="text" class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" placeholder="Escribe aquí" required>
@@ -30,7 +40,7 @@
                     <th>Tipo de documento</th>
                 </tr>
                 <tr>
-                    <td>{{ venta.fecha | date:'yy/MM/yyyy'}}</td>
+                    <td>{{ venta.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{ venta.nombre_cliente }}</td>
                     <td>{{ venta.nombre_usuario }}</td>
                     <td>{{ venta.estado }}</td>
@@ -55,44 +65,26 @@
                             <td class="text-right"> IVA: </td>
                             <td width="70px" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
-                       <!--  <tr>
-                            <td class="text-right">
-                                <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="venta.percepcion">
-                                        <input id="venta.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.percepcion" name="venta.percepcion" *ngIf="!loading">
-                                        IVA percibido:
-                                    </label>
-                                </div>
-                            </td>
-                            <td  width="70px" class="text-right">
-                               {{ (venta.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">
-                                <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="venta.retencion">
-                                        <input id="venta.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="venta.retencion" *ngIf="!loading">
-                                        IVA retenido:
-                                    </label>
-                                </div>
-                            </td>
-                            <td  width="70px" class="text-right">
-                               {{ (venta.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
-                            </td>
-                        </tr> -->
-                      <!--   <tr>
-                            <td class="text-right">No Sujeta:</td>
-                            <td width="70px" class="text-right">{{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">Exenta:</td>
-                            <td width="70px" class="text-right">{{ venta.exenta | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right">Gravada:</td>
-                            <td width="70px" class="text-right">{{ venta.gravada | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr> -->
+                       <tr *ngIf="venta.retencion">
+                           <td class="text-right"> <b>Retención (1%)</b></td>
+                           <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                           <td style="width: 50px;"></td>
+                       </tr>
+                       <tr *ngIf="venta.exenta > 0">
+                           <td class="text-right"> <b>Ventas Exentas</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 50px;"></td>
+                       </tr>
+                       <tr *ngIf="venta.no_sujeta > 0">
+                           <td class="text-right"> <b>Ventas No Sujetas</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 50px;"></td>
+                       </tr>
+                       <tr *ngIf="venta.cuenta_a_terceros > 0">
+                           <td class="text-right"> <b>Cuenta a terceros</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 50px;"></td>
+                       </tr>
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
                             <td width="70px" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>

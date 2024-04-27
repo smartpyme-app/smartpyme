@@ -1,0 +1,59 @@
+import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+@Component({
+  selector: 'app-licencia',
+  templateUrl: './licencia.component.html'
+})
+export class LicenciaComponent implements OnInit {
+
+    public licencia:any = {};
+    public loading = false;
+    public saving = false;
+    modalRef?: BsModalRef;
+
+    constructor( 
+        private apiService: ApiService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+    ) { }
+
+    ngOnInit() {
+        this.loadAll();
+
+        // this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        //     this.sucursales = sucursales;
+        // }, error => {this.alertService.error(error);});
+    }
+
+    public loadAll(){
+        const id = +this.route.snapshot.paramMap.get('id')!;
+        if (id) {
+            this.loading = true;
+            this.apiService.read('licencia/', id).subscribe(licencia => {
+                this.licencia = licencia;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }else{
+            this.licencia = {};
+        }
+
+    }
+
+    public onSubmit(){
+        this.saving = true;
+
+        this.apiService.store('licencia', this.licencia).subscribe(licencia => {
+            if (!this.licencia.id) {
+                this.alertService.success('Licencia guardado', 'El licencia fue guardado exitosamente.');
+            }else{
+                this.alertService.success('Licencia creado', 'El licencia fue añadido exitosamente.');
+            }
+            this.router.navigate(['/admin/licencias']);
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+}

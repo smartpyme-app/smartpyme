@@ -72,23 +72,28 @@
                 </tr>
                 <tr>
                     <td>
-                        <p>{{ $venta->nombre_cliente }}</p>
+                        <p><b>Nombre:</b> {{ $venta->nombre_cliente }}</p>
                         <p>
+                            <b>Dirección: </b>
                             {{ $venta->cliente()->pluck('municipio')->first() }}
                             {{ $venta->cliente()->pluck('departamento')->first() }}
                             {{ $venta->cliente()->pluck('direccion')->first() }} <br>
                         </p>
+                        <p><b>NCR:</b>{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                        <p><b>DUI:</b>{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                        <p><b>Teléfono:</b>{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>
-                        <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                        <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
-                        <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
-                    </td>
-                    <td>
-                        <p class="text-right">Abono #{{ $recibo->id }}</p>
-                        <p class="text-right">Forma pago: {{$recibo->forma_pago}}</p>
-                        <p class="text-right">Venta: {{$venta->nombre_documento}} #{{$venta->correlativo}}</p>
-                        <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($recibo->fecha)->format('d/m/Y') }}</p>
+                        <p class="text-left"><b>Abono #:</b> {{ $recibo->id }}</p>
+                        <p class="text-left"><b>Forma pago:</b> {{$recibo->forma_pago}}</p>
+                        @if ($recibo->detalle_banco)
+                            <p class="text-left"><b>Banco:</b> {{$recibo->detalle_banco}}</p>
+                        @endif
+                        @if ($recibo->referencia)
+                            <p class="text-left"><b>Referencia:</b> {{$recibo->referencia}}</p>
+                        @endif
+                        <p class="text-left"><b>Venta:</b> {{$venta->nombre_documento}} #{{$venta->correlativo}}</p>
+                        <p class="text-left"><b>Fecha:</b> {{ \Carbon\Carbon::parse($recibo->fecha)->format('d/m/Y') }}</p>
                     </td>
                 </tr>
             </tbody>

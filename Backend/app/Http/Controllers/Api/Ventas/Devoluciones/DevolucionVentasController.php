@@ -20,7 +20,7 @@ use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Creditos\Credito;
 use Illuminate\Support\Facades\DB;
-
+use Barryvdh\DomPDF\Facade as PDF;
 
 class DevolucionVentasController extends Controller
 {
@@ -64,7 +64,7 @@ class DevolucionVentasController extends Controller
 
     public function read($id) {
 
-        $venta = Devolucion::where('id', $id)->with('detalles', 'cliente')->first();
+        $venta = Devolucion::where('id', $id)->with('detalles', 'venta', 'cliente')->first();
         return Response()->json($venta, 200);
 
     }
@@ -165,6 +165,8 @@ class DevolucionVentasController extends Controller
                 
             }
             
+        // Incrementar el correlarivo
+            Documento::where('id', $devolucion->id_documento)->increment('correlativo');
         
         DB::commit();
         return Response()->json($devolucion, 200);
@@ -183,27 +185,9 @@ class DevolucionVentasController extends Controller
     public function generarDoc($id){
         $venta = Devolucion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
 
-        $empresa = Empresa::find(1);
-
-        $partes = explode('.', strval( number_format($venta->total, 2) ));
-
-        $venta->total_letras = \NumeroALetras::convertir($partes[0], 'Dolares con ') . $partes[1].'/100';
-
-        if ($venta->tipo_documento == 'Factura') {
-
-            return view('reportes.factura', compact('venta', 'empresa'));
-        }
-        elseif ($venta->tipo_documento == 'Credito Fiscal') {
-
-            return view('reportes.credito', compact('venta', 'empresa'));
-
-        }elseif ($venta->tipo_documento == 'Ticket') {
-
-            return view('reportes.ticket-devolucion', compact('venta', 'empresa'));
-        }
-        else{
-            return "Venta sin tipo";
-        }
+        $pdf = PDF::loadView('reportes.facturacion.nota-credito', compact('venta'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('nota-credito-' . $venta->id . '.pdf');
 
     }
 

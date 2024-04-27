@@ -22,7 +22,7 @@ class Indicador extends Model
     public $ventas_pagadas;
     public $cxc;
     public $cxp;
-    public $recibos;
+    public $abonos;
     public $compras;
     public $gastos;
     public $devoluciones_ventas;
@@ -34,7 +34,12 @@ class Indicador extends Model
         'inicio',
         'fin',
         'id_sucursal',
+        'id_usuario',
     ];
+
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
+    }
 
     public function __construct(array $attributes = [])
     {
@@ -44,6 +49,9 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
+                        })
                         ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
@@ -52,6 +60,9 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
+                        })
                         ->where('estado', 'Pagada')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
@@ -59,6 +70,9 @@ class Indicador extends Model
         $this->ventas_anuladas = Venta::where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
+                        })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
                         })
                         ->where('estado', 'Anulada')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -69,6 +83,9 @@ class Indicador extends Model
                             $q->where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
+                            })
+                            ->when($this->id_usuario, function($q){
+                                $q->where('id_usuario', $this->id_usuario);
                             });
                         })
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -78,11 +95,14 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
+                        })
                         ->where('estado', 'Pendiente')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
-        $this->recibos = Abono::where('estado', 'Confirmado')
+        $this->abonos = Abono::where('estado', 'Confirmado')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->whereHas('venta', function($q){
                             $q->when($this->id_sucursal, function($q){
@@ -94,6 +114,9 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
+                        })
                         ->where('estado', 'Pagada')
                         ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -104,6 +127,9 @@ class Indicador extends Model
                             $q->where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
+                            })
+                            ->when($this->id_usuario, function($q){
+                                $q->where('id_usuario', $this->id_usuario);
                             });
                         })
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -113,6 +139,9 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
+                        })
                         ->where('estado', 'Pendiente')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
@@ -120,6 +149,9 @@ class Indicador extends Model
         $this->gastos = Gasto::where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
+                        })
+                        ->when($this->id_usuario, function($q){
+                            $q->where('id_usuario', $this->id_usuario);
                         })
                         ->where('estado', '!=', 'Cancelado')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -139,12 +171,12 @@ class Indicador extends Model
 
     public function getTotalRecibos(){
 
-        return $this->recibos->sum('total');
+        return $this->abonos->sum('total');
     }
 
     public function getCantidadRecibos(){
 
-        return $this->recibos->count();
+        return $this->abonos->count();
     }
 
     public function getTotalDevolucionesVenta(){
@@ -256,6 +288,18 @@ class Indicador extends Model
                  })->sortByDesc('total')->values()->all();
     }
 
+    public function getAbonosByFormaPago(){
+
+        return $this->abonos->groupBy('forma_pago')->map(function ($group) {
+                    return [
+                        'id' => $group->first()['id'],
+                        'nombre' => $group->first()['forma_pago'],
+                        'cantidad' => $group->count(),
+                        'total' => $group->sum('total'),
+                    ];
+                 })->sortByDesc('total')->values()->all();
+    }
+
     public function getResumenCaja(){
 
         $caja = collect();
@@ -266,11 +310,11 @@ class Indicador extends Model
         foreach ($formasDePago as $forma) {
             $forma->cantidad = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->count() 
                                 + $this->gastos->where('forma_pago', $forma['nombre'])->count()
-                                + $this->recibos->where('forma_pago', $forma['nombre'])->count()
+                                + $this->abonos->where('forma_pago', $forma['nombre'])->count()
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->count();
             $forma->total = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->sum('total') 
                                 + $this->gastos->where('forma_pago', $forma['nombre'])->sum('total')
-                                + $this->recibos->where('forma_pago', $forma['nombre'])->sum('total')
+                                + $this->abonos->where('forma_pago', $forma['nombre'])->sum('total')
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->sum('total');
         }
 

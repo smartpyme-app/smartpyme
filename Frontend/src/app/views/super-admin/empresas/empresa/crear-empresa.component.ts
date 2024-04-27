@@ -1,0 +1,173 @@
+import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+
+@Component({
+  selector: 'app-crear-empresa',
+  templateUrl: './crear-empresa.component.html'
+})
+
+export class CrearEmpresaComponent implements OnInit {
+
+    public empresas:any = [];
+    public empresa:any = {};
+    public loading:boolean = false;
+    public saving:boolean = false;
+    public licencia:boolean = false;
+    public filtros:any = {};
+
+    modalRef!: BsModalRef;
+
+    constructor( 
+        private apiService: ApiService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+    ) { }
+
+    ngOnInit() {
+        this.loadAll();
+    }
+
+    public loadAll(){
+        const id = +this.route.snapshot.paramMap.get('id')!;
+        if (id) {
+            this.loading = true;
+            this.apiService.read('empresa/', id).subscribe(empresa => {
+                this.empresa = empresa;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }else{
+            this.empresa = {};
+            this.empresa.industria = '';
+            this.empresa.iva = 13; 
+            this.empresa.moneda = 'USD';
+            this.empresa.plan = 'Emprendedor';
+            this.empresa.tipo_plan = 'Mensual';
+            this.empresa.pais = 'El Salvador';
+            this.empresa.tipo_contribuyente = '';
+            this.empresa.activo = 1;
+            this.empresa.modulo_citas = 1;
+            this.empresa.vender_sin_stock = 1;
+            this.empresa.editar_precio_venta = 1;
+            this.empresa.numero_lineas_impresion = 6;
+            this.setPlan();
+        }
+
+        // Para cotizaciones Pre-venta
+        if (this.route.snapshot.queryParamMap.get('licencia')) {
+            this.licencia = true;
+        }
+    }
+
+
+    public delete(id:number) {
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('empresa/', id) .subscribe(data => {
+                for (let i = 0; i < this.empresas['data'].length; i++) { 
+                    if (this.empresas['data'][i].id == data.id )
+                        this.empresas['data'].splice(i, 1);
+                }
+            }, error => {this.alertService.error(error); });
+                   
+        }
+
+    }
+
+    public onSubmit() {
+        this.saving = true;
+        this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+            this.loadAll();
+            this.saving = false;
+            if(!this.empresas.id){
+                this.alertService.success('Empresa creada', 'La empresa fue añadida exitosamente.');
+            }else{
+                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
+            }
+            
+            if(this.licencia){
+                let data:any = {};
+                data.id_empresa = empresa.id;
+                data.id_licencia = this.apiService.auth_user().empresa.licencia.id;                
+                this.apiService.store('licencia/empresa', data).subscribe(empresa => {
+                },error => {this.alertService.error(error); this.saving = false; });
+            }
+        },error => {this.alertService.error(error); this.saving = false; });
+
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.empresas.path + '?page='+ event.page, this.filtros).subscribe(empresas => { 
+            this.empresas = empresas;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public setPlan(){
+        if(this.empresa.plan == 'Emprendedor'){
+            this.empresa.user_limit = 1;
+            this.empresa.sucursal_limit = 1;
+
+            if(this.empresa.tipo_plan == 'Mensual'){
+                this.empresa.total = 16.95;
+            }else{
+                this.empresa.total = 203.4;
+            }
+        }
+
+        if(this.empresa.plan == 'Estándar'){
+            this.empresa.user_limit = 2;
+            this.empresa.sucursal_limit = 1;
+
+            if(this.empresa.tipo_plan == 'Mensual'){
+                this.empresa.total = 28.25;
+            }else{
+                this.empresa.total = 339;
+            }
+        }
+
+        if(this.empresa.plan == 'Avanzado'){
+            this.empresa.user_limit = 5;
+            this.empresa.sucursal_limit = 2;
+
+            if(this.empresa.tipo_plan == 'Mensual'){
+                this.empresa.total = 56.5;
+            }else{
+                this.empresa.total = 678;
+            }
+        }
+
+    }
+
+    setCobrarIVA(){
+        console.log(this.empresa.cobra_iva);
+        if(this.empresa.cobra_iva == 'Si'){
+            this.empresa.cobra_iva = 'No';
+        }else{
+            this.empresa.cobra_iva = 'Si';
+        }
+        console.log(this.empresa.cobra_iva);
+    }
+
+
+    openModal(template: TemplateRef<any>, empresa:any) {
+        this.empresa = empresa;
+        if (!this.empresa.id) {
+            this.empresa.industria = '';
+            this.empresa.iva = 13; 
+            this.empresa.moneda = 'USD';
+            this.empresa.plan = 'Emprendedor';
+            this.empresa.tipo_plan = 'Mensual';
+            this.empresa.activo = 1;
+            this.empresa.modulo_citas = 1;
+            this.empresa.vender_sin_stock = 1;
+            this.empresa.editar_precio_venta = 1;
+            this.empresa.numero_lineas_impresion = 6;
+        }
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+
+}

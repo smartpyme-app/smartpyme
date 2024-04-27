@@ -49,6 +49,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/inventario/traslados.php');
 		require base_path('routes/modulos/inventario/ajustes.php');
 		require base_path('routes/modulos/inventario/bodegas.php');
+		require base_path('routes/modulos/inventario/paquetes.php');
 
 	// Eventos
 		require base_path('routes/modulos/eventos/eventos.php');
@@ -64,6 +65,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/contabilidad/activos.php');
 		require base_path('routes/modulos/contabilidad/cajas-chicas.php');
 		require base_path('routes/modulos/contabilidad/presupuestos.php');
+		require base_path('routes/modulos/contabilidad/proyectos.php');
 
 	// Admin
 		require base_path('routes/modulos/admin/empresas.php');
@@ -76,6 +78,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/admin/usuarios.php');
 		require base_path('routes/modulos/admin/accesos.php');
 		require base_path('routes/modulos/admin/transacciones.php');
+		require base_path('routes/modulos/admin/licencias.php');
 
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');

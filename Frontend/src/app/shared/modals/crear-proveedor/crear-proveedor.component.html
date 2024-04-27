@@ -4,12 +4,12 @@
 </button>
 
 <ng-template #mproveedor>
-    <div class="modal-header text-center">
+    <div class="modal-header justify-content-between">
         <h3 class="modal-title">
             <span *ngIf="!id_proveedor">Nuevo proveedor</span>
             <span *ngIf="id_proveedor">Editar proveedor</span>
         </h3>
-        <button class="btn btn-light text-danger" (click)="modalRef.hide(); this.alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body p-3">
         <app-notificaciones-container></app-notificaciones-container>

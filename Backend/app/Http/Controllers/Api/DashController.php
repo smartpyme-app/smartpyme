@@ -91,7 +91,7 @@ class DashController extends Controller
     public function corte(Request $request){
         $usuario = JWTAuth::parseToken()->authenticate();
 
-        $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal]);
+        $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario]);
         
         $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();
         $indicadores->totalRecibos = $indicadores->getTotalRecibos();
@@ -100,6 +100,8 @@ class DashController extends Controller
         $indicadores->totalGastosPagados = $indicadores->getTotalGastosPagados();
 
         $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
+        $indicadores->resumen_de_caja = $indicadores->getResumenCaja();
+
         $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
         $indicadores->total_ventas_banco = $indicadores->getVentasByBanco();
         $indicadores->total_documentos_emitidos = $indicadores->getDocumentoEmitidos();
@@ -119,15 +121,52 @@ class DashController extends Controller
         return Response()->json($indicadores, 200);
     }
 
-    public function cortePdf($id_sucursal = null, $fechaDe = null)
+    public function organizaciones(Request $request) {
+
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        $empresa = Empresa::with('licencia.empresas.empresa')->where('id', $usuario->id_empresa)->firstOrFail();
+
+        $empresa->licencia->usuarios_activos = $empresa->licencia->usuarios()->where('enable', true)->count();
+        $empresa->licencia->usuarios_inactivos = $empresa->licencia->usuarios()->where('enable', false)->count();
+        $empresa->licencia->licencias_dispobibles = $empresa->licencia->num_licencias - $empresa->licencia->num_empresas;
+
+        foreach ($empresa->licencia->empresas as $data) {
+            $empresaD = $data->empresa()->first();
+
+            $fechaInicio = Carbon::now()->subDays(15); // Obtener la fecha de hace 15 días
+            $fechaFin = Carbon::now(); // Fecha actual
+
+            $data->ultimo_login = $empresaD->usuarios()->withoutGlobalScopes()->orderby('ultimo_login', 'desc')->pluck('ultimo_login')->first();
+            $data->total_ventas = $empresaD->ventas()->withoutGlobalScopes()->count();
+            $data->total_gastos = $empresaD->gastos()->withoutGlobalScopes()->count();
+            $data->total_compras = $empresaD->compras()->withoutGlobalScopes()->count();
+            $data->total_accesos = $empresaD->usuarios->flatMap(function ($usuario) use ($fechaInicio, $fechaFin) {
+                                        return $usuario->accesos()->whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
+                                    })->count();
+        }
+
+        return Response()->json($empresa, 200);
+
+    }
+
+    public function cortePdf($id_usuario = null, $id_sucursal = null, $fechaDe = null)
     {
+
+        if ($id_sucursal == 'null') {
+            $id_sucursal = null;
+        }
+
+        if ($id_usuario == 'null') {
+            $id_usuario = null;
+        }
 
         $usuario = JWTAuth::parseToken()->authenticate();
 
         if (!$fechaDe)
             $fechaDe = date("Y-m-d");
 
-        $indicadores = new Indicador(['inicio' => $fechaDe, 'fin' => $fechaDe, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $id_sucursal]);
+        $indicadores = new Indicador(['inicio' => $fechaDe, 'fin' => $fechaDe, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $id_sucursal, 'id_usuario' => $id_usuario]);
 
         $pdf = \PDF::loadView('reportes.corte', compact('indicadores'));
         return $pdf->stream();

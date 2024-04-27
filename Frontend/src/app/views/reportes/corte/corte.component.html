@@ -1,12 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <div class="col-md-6 mb-3">
-       <h2 class="page-heading">Cierre de caja</h2>
+    <div class="col-md-4 mb-3">
+       <h2 class="page-heading" (click)="filtrar()">Cierre de caja</h2>
     </div>
 
-    <div class="col-md-6 mb-3">
+    <div class="col-md-8 mb-3">
         <div class="d-flex gap-2">
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
-            <input type="date" name="fecha"  (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
+            <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
+            <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" class="form-select  p-0" name="filtros.id_usuario">
+                <ng-option value="">Usuario</ng-option>
+                <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                    {{ usuario.name }}
+                </ng-option>
+            </ng-select>
             <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
                 <option value="" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
@@ -106,12 +112,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngIf="indicadores?.total_ventas_forma_pago?.length < 1">
+                        <tr *ngIf="indicadores?.resumen_de_caja?.length < 1">
                             <td colspan="3">
                                 <p class="text-muted">No hay datos que mostrar</p>
                             </td>
                         </tr>
-                        <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
+                        <tr *ngFor="let forma_pago of indicadores?.resumen_de_caja">
                             <td>{{ forma_pago.nombre }}</td>
                             <td class="text-right">{{ forma_pago.cantidad }}</td>
                             <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>

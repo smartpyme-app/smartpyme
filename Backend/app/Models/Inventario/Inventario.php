@@ -4,9 +4,10 @@ namespace App\Models\Inventario;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 class Inventario extends Model {
 
+    use SoftDeletes;
     protected $table = 'inventario';
     protected $fillable = array(
         'id_producto',

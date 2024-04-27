@@ -30,7 +30,10 @@ export class DevolucionVentaComponent implements OnInit {
 	) { }
 
 	ngOnInit() {
-
+        this.venta.sub_total = 0;
+        this.venta.iva = 0;
+        this.venta.descuento = 0;
+        this.venta.total = 0;
         this.loadAll();	        
 	}
 

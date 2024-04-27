@@ -56,7 +56,7 @@ class AuthJWTController extends Controller
         $acceso->fecha = $user->ultimo_login;
         $acceso->save();
 
-        $user->empresa = $user->empresa()->first();
+        $user->empresa = $user->empresa()->with('licencia')->first();
         
         return response()->json(['token' => $token, 'user' => $user], 200);
 
@@ -174,6 +174,9 @@ class AuthJWTController extends Controller
         if ($empresa->plan == 'Avanzado'){
             $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
         }
+        if ($empresa->plan == 'Pro'){
+            $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
+        }
 
         // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
 
@@ -211,7 +214,7 @@ class AuthJWTController extends Controller
 
     protected function sendResetLinkFailedResponse($response)
     {
-        return response()->json(['message' => "El correo no esta en nuestros registros"], 500);
+        return response()->json(['error' => "El correo ingresado no esta en nuestros registros"], 400);
     }
 
 

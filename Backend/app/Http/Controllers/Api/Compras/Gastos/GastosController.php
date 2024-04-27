@@ -29,7 +29,14 @@ class GastosController extends Controller
                         return $query->where('id_usuario', $request->id_usuario);
                     })
                     ->when($request->buscador, function($query) use ($request){
-                        return $query->where('concepto', 'like' ,'%' . $request->buscador . '%');
+                        return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
+                            ->orwhere('referencia', 'like', '%'.$request->buscador.'%');
+                    })
+                    ->when($request->inicio, function($query) use ($request){
+                        return $query->where('fecha', '>=', $request->inicio);
+                    })
+                    ->when($request->fin, function($query) use ($request){
+                        return $query->where('fecha', '<=', $request->fin);
                     })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')

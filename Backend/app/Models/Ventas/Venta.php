@@ -32,14 +32,17 @@ class Venta extends Model {
         'total_costo',
         'descuento',
         'sub_total',
-        // 'no_sujeta',
-        // 'exenta',
-        // 'gravada',
+        'no_sujeta',
+        'exenta',
+        'cuenta_a_terceros',
         'total',
         'observaciones',
         'recurrente',
         'cotizacion',
+        'descripcion_personalizada',
+        'descripcion_impresion',
         'id_caja',
+        'id_proyecto',
         'id_bodega',
         'id_corte',
         'id_cliente',
@@ -62,7 +65,6 @@ class Venta extends Model {
             });
         }
     }
-
 
     public function getNombreClienteAttribute()
     {   $cliente = $this->cliente()->first();

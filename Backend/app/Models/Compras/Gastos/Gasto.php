@@ -29,6 +29,7 @@ class Gasto extends Model {
         'total',
         'nota',
         'id_usuario',
+        'id_proyecto',
         'id_empresa',
         'id_sucursal',
     );
@@ -57,7 +58,7 @@ class Gasto extends Model {
     public function getNombreProveedorAttribute()
     {   $proveedor = $this->proveedor()->first();
         if ($proveedor) {
-            return $proveedor->tipo == 'Persona' ? $proveedor->nombre . ' ' . $proveedor->apellido : $proveedor->nombre_empresa;
+            return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
         return 'Consumidor Final';
     }

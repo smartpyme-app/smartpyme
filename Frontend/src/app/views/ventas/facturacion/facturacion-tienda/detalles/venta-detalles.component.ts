@@ -28,7 +28,7 @@ export class VentaDetallesComponent implements OnInit {
     public loading:boolean = false;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
@@ -127,14 +127,28 @@ export class VentaDetallesComponent implements OnInit {
             this.detalle.id = null;
             
             // Verifica si el producto ya fue ingresado
-            let detalle = this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
-            
-            if(detalle) {
-                this.detalle = detalle;
-                this.detalle.cantidad += producto.cantidad;
-            }
+                let detalle = null// this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
+                
+                if(detalle) {
+                    this.detalle = detalle;
+                    this.detalle.cantidad += producto.cantidad;
+                }
+
             this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
-            this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
+            
+            if(!this.detalle.exenta){
+                this.detalle.exenta = 0;
+            }
+            if(!this.detalle.no_sujeta){
+                this.detalle.no_sujeta = 0;
+            }
+            if(!this.detalle.cuenta_a_terceros){
+                this.detalle.cuenta_a_terceros = 0;
+            }
+
+            if(!this.detalle.total){
+                this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
+            }
             
             
             if(!detalle)
@@ -143,6 +157,7 @@ export class VentaDetallesComponent implements OnInit {
             this.update.emit(this.venta);
             this.detalle = {};
             if (this.modalRef) { this.modalRef.hide() }
+            console.log(this.venta);
         }
 
     // Eliminar detalle
@@ -157,10 +172,16 @@ export class VentaDetallesComponent implements OnInit {
               cancelButtonText: 'Cancelar'
             }).then((result) => {
               if (result.isConfirmed) {
-                    const indexAEliminar = this.venta.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                let indexAEliminar;
+                    if(detalle.id_paquete){
+                        indexAEliminar = this.venta.detalles.findIndex((item:any) => item.id_paquete === detalle.id_paquete);
+                    }else{
+                        indexAEliminar = this.venta.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                    }
                     if (indexAEliminar !== -1) {
                       this.venta.detalles.splice(indexAEliminar, 1);
                     }
+                this.update.emit(this.venta);
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
               }

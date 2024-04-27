@@ -40,6 +40,13 @@ export class DevolucionVentaDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
+        if(!this.detalle.exenta){
+            this.detalle.exenta = 0;
+        }
+        if(!this.detalle.no_sujeta){
+            this.detalle.no_sujeta = 0;
+        }
+        
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(2);
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(2);
         this.update.emit(this.venta);

@@ -106,7 +106,7 @@ export class TiendaVentaProductoComponent implements OnInit {
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+        this.detalle.descripcion = producto.nombre;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.precios        = producto.precios;
@@ -133,7 +133,7 @@ export class TiendaVentaProductoComponent implements OnInit {
             // radio.checked = true
             this.detalle = Object.assign({}, producto);
             this.detalle.id_producto    = producto.id;
-            this.detalle.nombre_producto = producto.nombre;
+            this.detalle.descripcion = producto.nombre;
             this.detalle.img            = producto.img;
             this.detalle.precio         = parseFloat(producto.precio);
             this.detalle.precios        = producto.precios;

@@ -45,6 +45,10 @@ class ProductosController extends Controller
                                                  ->orwhere('marca', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
                                 })
+                                ->when($request->sin_stock, function($query) use ($request){
+                                    return $query->join('inventario', 'productos.id', '=', 'inventario.id_producto')
+                                    ->whereRaw('COALESCE(inventario.stock, 0) < COALESCE(inventario.stock_minimo, 0)');
+                                })
                                 ->when($request->nombre, function($q) use ($request){
                                     $q->where('nombre', $request->nombre);
                                 })

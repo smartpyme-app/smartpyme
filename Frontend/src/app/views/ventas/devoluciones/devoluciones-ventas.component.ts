@@ -128,6 +128,10 @@ export class DevolucionesVentasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    public imprimir(venta:any){
+        window.open(this.apiService.baseUrl + '/api/devolucion/facturacion/impresion/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
     public descargar(){
         this.downloading = true;
         this.apiService.export('devoluciones/ventas/exportar', this.filtros).subscribe((data:Blob) => {

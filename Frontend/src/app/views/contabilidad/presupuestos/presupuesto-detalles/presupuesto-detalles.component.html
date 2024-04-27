@@ -25,12 +25,20 @@
                 <p>{{ presupuesto.ingresos | currency }}</p>
             </div>
             <div class="form-group col-md-6 col-lg-3">
-                <label class="fw-medium" for="egresos">Egresos totales estimados</label>
+                <label class="fw-medium" for="egresos">Gastos totales estimados</label>
                 <p>{{ presupuesto.egresos | currency }}</p>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label class="fw-medium" for="compras">Compras totales estimados</label>
+                <p>{{ presupuesto.compras | currency }}</p>
             </div>
             <div class="form-group col-md-6 col-lg-3">
                 <label class="fw-medium" for="utilidad">Utilidad esperada</label>
                 <p>{{ presupuesto.utilidad | currency }}</p>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label class="fw-medium" for="margen">Margen esperado</label>
+                <p>{{ presupuesto.margen }}%</p>
             </div>
             
         <div class="row">

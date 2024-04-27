@@ -3,13 +3,13 @@
 namespace App\Models\Inventario;
 
 use Illuminate\Database\Eloquent\Model;
-// use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
 class Producto extends Model {
 
-    // use SoftDeletes;
+    use SoftDeletes;
     protected $table = 'productos';
     protected $fillable = array(
         'nombre',
@@ -41,7 +41,6 @@ class Producto extends Model {
                 static::addGlobalScope('sucursal', function (Builder $builder) {
                     $builder->with('inventarios', function($q){
                         return $q->where('id_sucursal', Auth::user()->id_sucursal);
-                                ;
                     })->where('id_empresa', Auth::user()->id_empresa);
                 });
             }else{

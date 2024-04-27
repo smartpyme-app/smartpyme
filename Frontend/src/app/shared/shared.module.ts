@@ -30,6 +30,7 @@ import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.compone
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
+import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
@@ -38,6 +39,7 @@ import { TimerComponent } from './parts/timer/timer.component';
 import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
+import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 
 @NgModule({
   imports: [
@@ -64,6 +66,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     NotificacionesContainerComponent,
     NotFoundComponent,
     ImportarExcelComponent,
+    DescargarExcelComponent,
     CrearCategoriaActivoComponent,
     CrearCategoriaComponent,
     CrearSubCategoriaComponent,
@@ -74,7 +77,8 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
-    CrearEventoComponent
+    CrearEventoComponent,
+    CrearProyectoComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -90,6 +94,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     NotificacionesContainerComponent,
     NotFoundComponent,
     ImportarExcelComponent,
+    DescargarExcelComponent,
     CrearCategoriaActivoComponent,
     CrearCategoriaComponent,
     CrearSubCategoriaComponent,
@@ -100,7 +105,8 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
-    CrearEventoComponent
+    CrearEventoComponent,
+    CrearProyectoComponent
   ],
   providers: [AlertService],
 })

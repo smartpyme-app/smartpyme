@@ -19,6 +19,7 @@ export class FacturacionComponent implements OnInit {
     public evento: any= {};
     public detalle: any = {};
     public clientes:any = [];
+    public proyectos:any = [];
     public usuarios:any = [];
     public documentos:any = [];
     public formaPagos:any = [];
@@ -31,7 +32,7 @@ export class FacturacionComponent implements OnInit {
     public saving = false;
     public duplicarventa = false;
     public facturarCotizacion = false;
-    public imprimir:boolean = false;
+    public api:boolean = false;
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -59,14 +60,14 @@ export class FacturacionComponent implements OnInit {
     public loadData(){
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
-                if(this.apiService.auth_user().tipo != 'Administrador'){
-                    this.sucursales = this.sucursales.filter((item:any) => item.id == this.apiService.auth_user().id_sucursal );
-                }
+            if(this.apiService.auth_user().tipo != 'Administrador'){
+                this.sucursales = this.sucursales.filter((item:any) => item.id == this.apiService.auth_user().id_sucursal );
+            }
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
-            if(this.apiService.auth_user().tipo != 'Administrador'){
+            if(this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor'){
                 this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
             }
         }, error => {this.alertService.error(error);});
@@ -95,6 +96,11 @@ export class FacturacionComponent implements OnInit {
 
         this.apiService.getAll('clientes/list').subscribe(clientes => {
             this.clientes = clientes;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+            this.proyectos = proyectos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
@@ -163,6 +169,11 @@ export class FacturacionComponent implements OnInit {
             this.venta.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
         }
 
+        // Para proyectos
+        if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+            this.venta.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
+        }
+
         // Para cotizaciones Pre-venta
         if (this.route.snapshot.queryParamMap.get('cotizacion')) {
             this.venta.cotizacion = 1;
@@ -214,6 +225,12 @@ export class FacturacionComponent implements OnInit {
                 this.venta.detalles.forEach((detalle:any) => {
                     detalle.id = null;
                 });
+
+                // Para proyectos
+                if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                    this.venta.detalles = [];
+                }
+
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
@@ -228,7 +245,7 @@ export class FacturacionComponent implements OnInit {
                 this.apiService.read('servicio/', evento.id_servicio).subscribe(servicio => {
                     let detalle:any = {};
                     detalle.id_producto    = servicio.id;
-                    detalle.nombre_producto = servicio.nombre;
+                    detalle.descripcion = servicio.nombre;
                     detalle.img            = servicio.img;
                     detalle.precio         = parseFloat(servicio.precio);
                     detalle.costo          = parseFloat(servicio.costo);
@@ -256,6 +273,11 @@ export class FacturacionComponent implements OnInit {
 
     public sumTotal() {
         this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(4);
+        
+        this.venta.exenta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'))).toFixed(4);
+        this.venta.no_sujeta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'))).toFixed(4);
+        this.venta.cuenta_a_terceros = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'))).toFixed(4);
+        
         this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0; 
         this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0; 
 
@@ -270,7 +292,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto'))).toFixed(4);
         this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(4);
         this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(4);
-        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(4);
+        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.cuenta_a_terceros) + parseFloat(this.venta.exenta) + parseFloat(this.venta.no_sujeta) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(4);
     }
 
     // Cliente
@@ -283,6 +305,14 @@ export class FacturacionComponent implements OnInit {
             this.venta.retencion = 1;
             this.sumTotal();
         }
+    }
+
+    // Proyecto
+    public setProyecto(proyecto:any){
+        if(!this.venta.id_proyecto){
+            this.proyectos.push(proyecto);
+        }
+        this.venta.id_proyecto = proyecto.id;
     }
 
     public setCredito(){
@@ -352,22 +382,6 @@ export class FacturacionComponent implements OnInit {
 
             this.apiService.store('facturacion', this.venta).subscribe(venta => {
 
-                if(this.imprimir) {
-                    window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-                }
-                if (this.modalRef) { this.modalRef.hide() }
-                this.saving = false;
-                // this.cargarDatosIniciales();
-                // this.router.navigate(['/venta/crear']);
-                if(this.venta.cotizacion == 1){
-                    this.router.navigate(['/cotizaciones']);
-                    this.alertService.success('Cotización creada', 'La cotizacion fue añadida exitosamente.');
-                }else{
-                    this.router.navigate(['/ventas']);
-                    this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
-                }
-
-
                 // Si es cotización
                 if(this.facturarCotizacion){
                     this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
@@ -376,8 +390,25 @@ export class FacturacionComponent implements OnInit {
 
                         },error => {this.alertService.error(error); this.saving = false; });
                     },error => {this.alertService.error(error); this.saving = false; });
-
                 }
+                
+                if(this.venta.cotizacion != 1 && this.apiService.auth_user().empresa.impresion_en_facturacion) {
+                    window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+                    this.cargarDatosIniciales();
+                    this.router.navigate(['/venta/crear']);
+                }else{
+
+                    if(this.venta.cotizacion == 1){
+                        this.router.navigate(['/cotizaciones']);
+                        this.alertService.success('Cotización creada', 'La cotizacion fue añadida exitosamente.');
+                    }else{
+                        this.router.navigate(['/ventas']);
+                        this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
+                    }
+                }
+
+                if (this.modalRef) { this.modalRef.hide() }
+                this.saving = false;
 
 
             },error => {this.alertService.error(error); this.saving = false; });

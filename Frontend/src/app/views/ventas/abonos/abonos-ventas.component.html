@@ -136,7 +136,7 @@
                 <ng-select [(ngModel)]="filtros.id_cliente" class="form-select p-0" name="filtros.id_cliente">
                     <ng-option value="">Todos</ng-option>
                     <ng-option *ngFor="let cliente of clientes" [ngValue]="cliente.id">
-                        {{ cliente.nombre }}
+                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
                     </ng-option>
                 </ng-select>
             </div>

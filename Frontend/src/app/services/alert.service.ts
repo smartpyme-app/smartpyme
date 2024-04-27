@@ -24,8 +24,8 @@ export class AlertService {
         this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : message});
     }
 
-    info(message: any) {
-        this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message});
+    info(titulo: any = null, message: any) {
+        this.alertSubject.next({'tipo': 'alert-info' ,'titulo': titulo, 'mensaje' : message});
     }
 
     error(message: any) {

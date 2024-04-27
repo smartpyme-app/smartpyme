@@ -113,13 +113,32 @@
                 </div>
                 <div class="row mt-3">
                     <h5 class="my-3">Preferencias del sistema</h5>
+                    <p class="mb-0 fw-bold">Módulos habilitados</p>
                     <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="modulo_citas">Módulo de citas</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
                         </div>
                     </div>
-
+                    <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-3 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="modulo_citas">Módulo de proyectos</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
+                        </div>
+                    </div>
+                    <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-3 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="modulo_citas">Módulo de paquetes</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
+                        </div>
+                    </div>
+                    <p class="mb-0 fw-bold">Facturación</p>
+                    <div class="form-group col-md-6 col-xl-3 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="cobrar_iva">Cobrar IVA</label>
+                          <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">
+                        </div>
+                    </div>
                     <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="vender_sin_stock">Vender sin stock</label>
@@ -136,10 +155,18 @@
 
                     <div class="form-group col-md-6 col-xl-3 without-label">
                         <div class="form-switch bg-light-info rounded">
-                          <label for="cobrar_iva">Cobrar IVA</label>
-                          <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">
+                          <label for="editar_descripcion_venta">Editar descripción venta</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
                         </div>
                     </div>
+
+                    <div class="form-group col-md-6 col-xl-4 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="impresion_en_facturacion">Imprimir al momento de facturar</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion">
+                        </div>
+                    </div>
+
 
                     <p class="my-3 pt-5">
                         ¿Quieres eliminar los datos de tu cuenta?

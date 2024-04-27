@@ -1,0 +1,108 @@
+<button tooltip="Consultar citas (F8)" (click)="openModal(mcitas)" class="btn btn-default tcla-F7">
+    <img src="/assets/icons/calendar.png" class="icon">
+</button>
+
+<ng-template #mcitas>
+    <div class="modal-header">
+        <h3 class="modal-title text-center">Consulta de citas</h3>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+    <!-- <form autocomplete="off" (submit)="onSubmit()"> -->
+        <section class="bg-white p-4 rounded mb-3">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <span class="text-muted" *ngIf="citas?.total">
+                        Mostrando {{ citas?.to }} de {{ citas?.total + ' registros' }}
+                    </span>
+                </div>
+
+                <div class="col-md-12 mb-3">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <div>
+                            <!-- <a class="btn me-2 tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtros.time == 'day', 'btn-default': filtros.time != 'day' }" (click)="setTime('day')">Hoy</a> -->
+                            <a class="btn mx-2 tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtros.time == 'week', 'btn-default': filtros.time != 'week' }" (click)="setTime('week')">Semana</a>
+                            <a class="btn mx-2 tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</a>
+                            <a class="btn mx-2 tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</a>
+                        </div>
+                        <div>
+                            <input type="date" [(ngModel)]="filtros.inicio" name="inicio" class="form-control">
+                        </div>
+                        <div>
+                            <input type="date" [(ngModel)]="filtros.fin" name="fin" class="form-control">
+                        </div>
+                        <select name="tipo" (change)="filtrarCitas()" [(ngModel)]="filtros.tipo" class="form-select bg-default w-auto">
+                            <option value="">Estado</option>
+                            <option value="Sin confirmar">Sin confirmar</option>
+                            <option value="Confirmado">Confirmado</option>
+                            <option value="Cancelado">Cancelado</option>
+                            <option value="Pagado">Pagado</option>
+                            <option value="Pendiente">Pendiente</option>
+                        </select>
+                        <ng-select name="id_cliente" (change)="filtrarCitas()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default w-auto p-0" style="min-width: 250px;">
+                            <ng-option value="">Cliente</ng-option>
+                            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="table-responsive">
+                    <table class="table table-borderless table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th (click)="setOrden('inicio')" [ngClass]="{'sorted-asc': filtros.orden == 'inicio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'inicio' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                                <th>Cliente</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Servicio</th>
+                                <th class="text-end"><input type="checkbox" id="marcarPaquetes" class="form-check d-inline" (click)="onCheckAllPaquete()"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center" *ngIf="citas?.total < 1 && !loading">
+                                    <span class="badge bg-primary">No tiene citas registrados</span>
+                                </td>
+                                <td colspan="6" class="text-center" *ngIf="loading">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+
+                            <tr *ngFor=" let cita of citas?.data">
+                                
+                                <td><span tooltip="{{ cita.created_at | date:'hh:mm a'}}">{{cita.inicio | date:'dd/MM/yyyy'}}</span></td>
+                                <td>{{cita.nombre_cliente}}</td>
+                                <td>{{cita.descripcion}}</td>
+                                <td>
+                                    <small class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-dark' : cita?.tipo == 'Pendiente','bg-warning' : cita?.tipo == 'Sin confirmar', 'bg-danger' : cita?.tipo == 'Cancelado', 'bg-info' : cita?.tipo == 'Confirmado', 'bg-success' : cita?.tipo == 'Pagado'}">{{ cita.tipo }}</small>
+                                </td>
+                                <td>{{cita.nombre_servicio}}</td>
+                                <td class="text-end">
+                                    <input type="checkbox" name="citas" id="cita{{cita.id}}" class="form-check d-inline" (click)="onCheckPaquete(cita)">
+                                    <!-- <button (click)="onCheckProducto(cita)" class="btn btn-primary float-end">Agregar</button> -->
+                                </td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-12" *ngIf="citas?.last_page > 1">
+                    <app-pagination [items]="citas" (setPagination)="setPagination($event)"></app-pagination>
+                </div>
+            </div>
+        </section>
+        <section>
+            <div class="row">
+                <div class="col">
+                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">Agregar <span *ngIf="detalles.length > 0">{{ detalles.length }} cita</span><span *ngIf="detalles.length > 1">s</span></button>
+                </div>
+            </div>
+        </section>
+    <!-- </form> -->
+    </div>
+</ng-template>

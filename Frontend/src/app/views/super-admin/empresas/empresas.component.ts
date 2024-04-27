@@ -3,7 +3,6 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
-
 @Component({
   selector: 'app-empresas',
   templateUrl: './empresas.component.html'
@@ -134,6 +133,16 @@ export class EmpresasComponent implements OnInit {
             }
         }
 
+    }
+
+    setCobrarIVA(){
+        console.log(this.empresa.cobra_iva);
+        if(this.empresa.cobra_iva == 'Si'){
+            this.empresa.cobra_iva = 'No';
+        }else{
+            this.empresa.cobra_iva = 'Si';
+        }
+        console.log(this.empresa.cobra_iva);
     }
 
 

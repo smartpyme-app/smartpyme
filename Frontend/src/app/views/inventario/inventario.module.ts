@@ -14,6 +14,7 @@ import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
+
 import { InventarioRoutingModule } from './inventario.routing.module';
 
 import { ProductosComponent } from './productos/productos.component';
@@ -57,8 +58,8 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     PipesModule,
     TagInputModule,
     NgChartsModule,
-    TourNgxBootstrapModule,
     NgSelectModule,
+    TourNgxBootstrapModule,
     NgxMaskDirective, NgxMaskPipe,
     InventarioRoutingModule,
     TabsModule.forRoot(),

@@ -13,7 +13,7 @@ class Acceso extends Model
     ];
 
     public function usuario(){
-        return $this->belongsTo('App\User', 'usuario_id');
+        return $this->belongsTo('App\Models\User', 'usuario_id');
     }
 
 }

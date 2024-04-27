@@ -32,6 +32,7 @@ class AbonosVentasExport implements FromCollection, WithHeadings, WithMapping
             'Estado',
             'Forma pago',
             'Banco',
+            'Referencia',
             'Total',
             'Nota',
         ];
@@ -87,6 +88,7 @@ class AbonosVentasExport implements FromCollection, WithHeadings, WithMapping
               $row->estado == 'Confirmado' ? 'Pagado' : $row->estado,
               $row->forma_pago,
               $row->detalle_banco,
+              $row->referencia,
               number_format($row->total,2),
               $row->nota,
          ];

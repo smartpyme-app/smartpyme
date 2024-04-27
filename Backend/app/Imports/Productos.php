@@ -64,7 +64,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $producto->nombre = $row['nombre'];
         $producto->precio = $row['precio'];
         $producto->costo = $row['costo'];
-        $producto->stock = $row['stock'];
+        $producto->stock = $row['sucursal_1_stock'];
         $producto->id_categoria = $id_categoria;
         $producto->codigo = $row['codigo'];
         $producto->descripcion = $row['descripcion'];
@@ -83,19 +83,19 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
         $sucursales = Sucursal::all();
 
-        if (isset($sucursales[0]) && isset($row['stock'])) {
+        if (isset($sucursales[0]) && isset($row['sucursal_1_stock'])) {
             $inventario = new Inventario();
             $inventario->id_producto = $producto->id;
             $inventario->id_sucursal = $sucursales[0]->id;
-            $inventario->stock = isset($row['stock']) ? $row['stock'] : 0;
+            $inventario->stock = isset($row['sucursal_1_stock']) ? $row['sucursal_1_stock'] : 0;
             $inventario->save(); 
         }
 
-        if (isset($sucursales[1]) && isset($row['stock_2'])) {
+        if (isset($sucursales[1]) && isset($row['sucursal_2_stock'])) {
             $inventario = new Inventario();
             $inventario->id_producto = $producto->id;
             $inventario->id_sucursal = $sucursales[1]->id;
-            $inventario->stock = isset($row['stock_2']) ? $row['stock_2'] : 0;
+            $inventario->stock = isset($row['sucursal_2_stock']) ? $row['sucursal_2_stock'] : 0;
             $inventario->save(); 
         }
 
@@ -119,7 +119,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             'nombre' => 'required|string',
             'precio' => 'required|numeric',
             'costo' => 'required|numeric',
-            'stock' => 'required|numeric',
+            'sucursal_1_stock' => 'required|numeric',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
             // 'codigo_de_barra' => 'sometimes|string',

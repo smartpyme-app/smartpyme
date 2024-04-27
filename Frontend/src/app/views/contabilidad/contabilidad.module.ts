@@ -14,6 +14,9 @@ import { ContabilidadRoutingModule } from './contabilidad.routing.module';
 import { PresupuestosComponent } from './presupuestos/presupuestos.component';
 import { PresupuestoComponent } from './presupuestos/presupuesto/presupuesto.component';
 import { PresupuestoDetallesComponent } from './presupuestos/presupuesto-detalles/presupuesto-detalles.component';
+import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component';
+import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
+import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 
 @NgModule({
   imports: [
@@ -32,12 +35,18 @@ import { PresupuestoDetallesComponent } from './presupuestos/presupuesto-detalle
   declarations: [
     PresupuestosComponent,
     PresupuestoComponent,
-    PresupuestoDetallesComponent
+    PresupuestoDetallesComponent,
+    ConsumidorFinalComponent,
+    ContribuyentesComponent,
+    LibroComprasComponent
   ],
   exports: [
     PresupuestosComponent,
     PresupuestoComponent,
-    PresupuestoDetallesComponent
+    PresupuestoDetallesComponent,
+    ConsumidorFinalComponent,
+    ContribuyentesComponent,
+    LibroComprasComponent
   ]
 })
 export class ContabilidadModule { }

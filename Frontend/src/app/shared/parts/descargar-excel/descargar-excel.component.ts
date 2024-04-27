@@ -20,6 +20,8 @@ export class DescargarExcelComponent implements OnInit {
         tmpElemento.href = 'data:' + data_type + ', ' + tabla_html;
         tmpElemento.download = this.nombre + '.xls';
         tmpElemento.click();
+
+        console.log(tabla_div);
     }
 
 

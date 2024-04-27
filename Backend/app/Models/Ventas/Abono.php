@@ -4,7 +4,7 @@ namespace App\Models\Ventas;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use JWTAuth;
+use Auth;
 
 class Abono extends Model {
 
@@ -12,6 +12,7 @@ class Abono extends Model {
     protected $fillable = array(
         'fecha',
         'concepto',
+        'referencia',
         'estado',
         'nombre_de',
         'forma_pago',
@@ -28,13 +29,13 @@ class Abono extends Model {
         'id_empresa',
     );
 
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
     }

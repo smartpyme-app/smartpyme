@@ -32,7 +32,7 @@
             <ng-select name="id_cliente" (change)="filtrarVentas()" [(ngModel)]="filtros.id_cliente" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
                 <ng-option value="">Cliente</ng-option>
                 <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                    {{cliente.nombre}}
+                    {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
                 </ng-option>
             </ng-select>
         </div>
@@ -81,7 +81,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" class="btn">
+                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a routerLink="/venta/{{venta.id}}" class="btn">

@@ -278,7 +278,18 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
                 </div>
             </div>
-
+            <div class="form-group col-md-6 col-xl-6 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="modulo_paquetes">Módulo de paquetes</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-xl-6 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="modulo_proyectos">Módulo de proyectos</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
+                </div>
+            </div>
             <div class="form-group col-md-6 col-xl-6 without-label">
                 <div class="form-switch bg-light-info rounded">
                   <label for="vender_sin_stock">Vender sin stock</label>
@@ -308,6 +319,7 @@
                         <option value="Emprendedor">Emprendedor</option>
                         <option value="Estándar">Estándar</option>
                         <option value="Avanzado">Avanzado</option>
+                        <option value="Pro">Pro</option>
                     </select>
                     <select class="form-select" (change)="setPlan()" name="tipo_plan" [(ngModel)]="empresa.tipo_plan">
                         <option value="">Selecciona aquí</option>
@@ -332,6 +344,14 @@
                     <span class="input-group-text">$</span>
                     <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
                 </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label>Referido</label>
+                <input type="text" class="form-control" [(ngModel)]="empresa.referido" name="referido" placeholder="Escriba aquí">
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label>Campaña</label>
+                <input type="text" class="form-control" [(ngModel)]="empresa.campania" name="campania" placeholder="Escriba aquí">
             </div>
 
         </div>

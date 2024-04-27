@@ -1,170 +1,126 @@
+<!DOCTYPE html>
 <html>
-
 <head>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <title>{{$venta->documento}} - {{$venta->correlativo}}</title>
+    <title>Velo {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
+
+        *{ font-size: 10px; margin: 0; padding: 0;}
+        html, body{
+            width: 23.5cm; height: 21.5cm;
+            font-family: serif;
+/*            border: 1px solid red;*/
+        }
+
+        #factura{
+            margin-left: 0cm;
+            margin-top: -2cm;
+            position: relative;
+        }
+
+        #header > *, #totales > *{
+            position: absolute;
+            margin: 0px;
+        }
+
+        #fecha          {top: 4cm; left: 14.5cm; }
+        #ncr           {top: 4.3cm; left: 14.5cm; }
+        #nit            {top: 4.6cm; left: 14.5cm; }
+        #giro            {top: 4.9cm; left: 14.5cm; }
         
-        p {
-            font-size: 12px;
-        }
-        html { margin: 0px;}
-        table, tr, th, td {
-            font-size: 14px;
-        }
-        tr, td, th{
-             border-style : hidden!important;
-             font-size: 12px;
-        }
+        #cliente        {top: 4cm; left: 2.5cm; width: 9cm;}
+        #direccion      {top: 4.3cm; left: 2.5cm; width: 9cm;}
+        #municipio      {top: 4.6cm; left: 2.5cm; width: 9cm;}
+        #condicion      {top: 4.6cm; left: 6.5cm; }
+        #departamento      {top: 5.5cm; left: 2.5cm; width: 9cm;}
 
-        @page {
-            margin: 10px 15px;
-        }
-        header {
-            position: fixed;
-            left: 0px;
-            top: -160px;
-            right: 0px;
-            height: 100px;
-            background-color: #ddd;
-            text-align: center;
-        }
 
-        footer .page:after {
-            content: counter(page);
-        }
+        table   {position: absolute; top: 6.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
+        table td{height: 0.6cm; text-align: left;}
 
-        .no-margin p {
-            margin: 0 !important;
-        }
+        .cantidad{ width: 1.5cm; text-align: center;}
+        .codigo{ width: 2.7cm; text-align: left;}
+        .producto{ width: 9.5cm; text-align: left;}
+        .precio{ width: 1.5cm; text-align: center;}
+        .sujetas{ width: 1.2cm; text-align: center;}
+        .exentas{ width: 1.2cm; text-align: center;}
+        .gravadas{ width: 2cm; text-align: right;}
+        
 
-        .img-logo {
-            width: 70px;
-        }
+        #letras     {top: 12cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
+        #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
 
-        #detalle{
-            margin-top: 3.2cm;
-            margin-right: 0.5cm;
-        }
-        #head-customer{
-            margin-top: 3.7cm;
-        }
-        #cliente{
-            margin-left: 2.0cm;
-        }
-        #fecha{
-            margin-top: 0cm;
-            margin-right: 4.9cm;
-        }
-        #cantidad{
-            width: 1.3cm;
-        }
-        #descripcion{
-            width: 10.0cm;
-            margin-left: 2.5cm;
-        }
-        #pre-uni{
-            width: 1.9cm;
-        }
-        #sujetas{
-            width: 1.5cm;
-        }
-        #exenta{
-            width: 1.5cm;
-        }
-        #grab{
-            width: 2.0cm;
-        }
-        #table{
-            height: 4.9cm;
-            width: 19.6cm;
-            margin-left: 0.55cm;
-        }
-        #total{
-            margin-left: 11cm;
-        }
-        #numeros{
-          margin-left: 1.6cm;
-          margin-top: 0.4cm;
-        }
-        #totales{
-            margin-right: 0.8cm;
-        }
-        #p-dep{
-            padding-left: 0.7cm;
-        }
-        #p-estado{
-            padding-left: 1.6cm;
-        }
-        #p-nit{
-            padding-top: 0.1cm;
-        }
+        #suma       {top: 12cm; left: 18cm; width: 2cm; text-align: right;}
+        #iva        {top: 12.3cm; left: 18cm; width: 2cm; text-align: right;}
+        #subtotal    {top: 12.6cm; left: 18cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 12.9cm; left: 18cm; width: 2cm; text-align: right;}
+        #iva_retenido     {top: 13.1cm; left: 18cm; width: 2cm; text-align: right;}
+        #no_sujetas     {top: 13.4cm; left: 18cm; width: 2cm; text-align: right;}
+        #exenta     {top: 13.7cm; left: 18cm; width: 2cm; text-align: right;}
+        #total      {top: 14cm; left: 18cm; width: 2cm; text-align: right;}
+
+        .no-print{position: absolute;}
+
     </style>
+    
+    <style media="print"> .no-print{display: none; } </style>
+
 </head>
-<body class="border" style="border-style: solid 1px;">
-    <div class="container_fluid" id="body">
-        <div class="d-flex d-block" id="head-customer">
-            <div class="float-left no-margin" id="cliente">
-                <p id="p-cliente">{{$cliente->nombre}} {{$cliente->apellido}}</p>
-                <p id="p-dirr">{{$cliente->direccion}}</p><br>
-                @if($venta->estado == 'Pagada')
-                    <p id="p-estado">CONTADO</p>
-                @elseif($venta->estado == 'Pendiente')
-                    <p id="p-estado">CREDITO</p>
-                @endif
-            </div>
-            <div class="float-right no-margin" id="fecha">
-                <p class="">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
-                <p class="">{{$cliente->ncr}}</p>
-                <p id="p-nit">{{$cliente->nit}}</p>
-                <p class="">{{$cliente->giro}}</p>
-                
-            </div>
-        </div>        
-        <div class="d-flex justify-content-center " id="detalle">
-                <table class="table-bordered" id="table">
-                    <thead>
-                        <tr>
-                            <th class="mr-3" id="cantidad" scope="col"></th>
-                            <th class="text-center" id="pre-uni" scope="col"></th>
-                            <th class="ml-5" id="descripcion" scope="col"></th>
-                            <th class="text-center" id="pre-uni" scope="col"></th>
-                            <th class="text-center" id="sujetas" scope="col"></th>
-                            <th class="text-center" id="exenta" scope="col"></th>
-                            <th class="text-center" id="grab" scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="">
-                        @php($total = 0);
+<body>
+<body>
 
-                        @foreach($venta->detalles as $detalle)
-                        <tr>
-                            <td class="text-right mr-3">{{ $detalle->cantidad }}</td>
-                            <td class="text-center">{{ $detalle->codigo }}</td>
-                            <td class="pl-5">&nbsp;&nbsp;{{ $detalle->producto }}</td>
-                            <td class="text-center ml-2">&nbsp;&nbsp;&nbsp;&nbsp;{{\Currency::currency(Auth::user()->moneda)->format(($detalle->precio))}}</td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
-                            <td class="text-center">{{\Currency::currency(Auth::user()->moneda)->format(($detalle->total))}}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            <div class="d-flex d-block" id="totales">
-                <div class="float-left no-margin" id="numeros">
-                    <p>{{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-                </div>
-                <div class="float-right no-margin" id="total">
-                    <p class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta->sub_total))}}</p>
-                    <p class="">{{\Currency::currency(Auth::user()->moneda)->format(($venta->iva))}}</p>
-                    <br><br><br>
-                    <p class="mt-2">{{\Currency::currency(Auth::user()->moneda)->format(($venta->total))}}</p>
-                </div>
-            </div> 
+    <section id="factura">
+        <div id="header">
+            <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+            <p id="cliente">{{ $venta->nombre_cliente }}</p>
+            @if ($venta->id_cliente)
+            <p id="direccion">{{ $cliente->direccion }}</p>
+            <p id="municipio">{{ $cliente->municipio }}</p>
+            {{-- <p id="departamento">{{ $cliente->departamento }}</p> --}}
+            @endif
+            @if($venta->estado == 'Pagada')
+                <p id="condicion">CONTADO</p>
+            @elseif($venta->estado == 'Pendiente')
+                <p id="condicion">CREDITO</p>
+            @endif
+            @if ($venta->id_cliente)
+            <p id="ncr">{{ $cliente->ncr }}</p>
+            <p id="nit">{{ $cliente->nit }}</p>
+            <p id="giro">{{ $cliente->giro }}</p>
+            @endif
         </div>
+                    
+        <table>
+            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+            @foreach($venta->detalles as $detalle)
+            <tr>
+                <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
+                <td class="codigo">     {{ $detalle->producto()->pluck('codigo')->first() }}</td>
+                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
+                <td class="sujetas">   </td>
+                <td class="exentas">    </td>
+                <td class="gravadas">  ${{ number_format($detalle->total, 2) }} </th>
+            </tr>
+            @endforeach
+        </table>
 
-    </div>
+        <div id="totales">
+            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+            <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>
+            <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>
+            <p id="subtotal"> $ {{ number_format($venta->sub_total, 2) }}</p>
+            @if($venta->iva_retenido > 0)
+            <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
+            @endif
+            @if($venta->no_sujeta > 0)
+            <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
+            @endif
+            @if($venta->exenta > 0)
+            <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p>
+            @endif
+            <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
+        </div>
+    </section>
+
 </body>
-
 </html>

@@ -1,4 +1,4 @@
-<div id="tour.sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
+<div  id="tour.sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
     <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
         <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
         <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
@@ -23,6 +23,11 @@
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/admin/empresas']" tooltip="Empresas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/briefcase.png" class="icon me-2">Empresas
+                </a>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/admin/licencias']" tooltip="Licencias" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/star.png" class="icon me-2">Licencias
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">

@@ -18,6 +18,8 @@ use App\Models\Admin\Documento;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Paquete;
+use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +36,9 @@ class VentasController extends Controller
     public function index(Request $request) {
        
         $ventas = Venta::when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                        return $query->whereHas('cliente', function($q) use ($request){
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
+                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
@@ -75,7 +79,8 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->where('cotizacion', 0)
+                    ->withSum('abonos', 'total')
+                    ->where('cotizacion', 0)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
@@ -139,6 +144,12 @@ class VentasController extends Controller
                         }
                     }
 
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Cancelado';
+                        $abono->save();
+                    }
+
                 }
                 // Cancelar anulación de venta y descargar stock
                 if(($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
@@ -160,6 +171,12 @@ class VentasController extends Controller
                             $inventario->save();
                             $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
                         }
+                    }
+
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Confirmado';
+                        $abono->save();
                     }
 
                 }
@@ -214,6 +231,7 @@ class VentasController extends Controller
             'detalles'          => 'required',
             // 'fecha_pago'        => 'required',
             'fecha_expiracion'  => 'required_if:cotizacion,1',
+            'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
             'credito'           => 'required_if:condicion,"Crédito"',
             'iva'               => 'required|numeric',
             'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
@@ -253,6 +271,30 @@ class VentasController extends Controller
 
                 $detalle->fill($det);
                 $detalle->save();
+
+                // Pagar si es paquete
+                if (isset($det['id_paquete'])) {
+                    $paquete = Paquete::find($det['id_paquete']);
+                    if ($paquete) {
+                        $paquete->estado = ($venta->estado == 'Pagada') ? 'Facturado' : 'Pendiente';
+                        $paquete->id_venta = $venta->id;
+                        $paquete->id_venta_detalle = $detalle->id;
+                        $paquete->save();
+                    }
+                }
+
+                // Pagar si es cita
+                    if(isset($det['id_cita'])){
+                        $evento = Evento::findOrfail($det['id_cita']);
+                        if ($venta->estado == 'Pagada') {
+                            $evento->estado = 'Pagado';
+                            $evento->estadoVerificarFrecuencia('Pagado');
+                        }else{
+                            $evento->estado = 'Pendiente';
+                            $evento->save();
+                        }
+                    }
+
 
                 // Actualizar inventario
                 if ($request->cotizacion == 0) {
@@ -297,6 +339,16 @@ class VentasController extends Controller
                     $evento->save();
                 }
             }
+
+        // Pagar si es proyecto
+        if ($request->id_proyecto) {
+            $proyecto = Proyecto::find($request->id_proyecto);
+            if ($proyecto) {
+                $proyecto->estado = ($venta->estado == 'Pagada') ? 'Facturado' : 'Pendiente';
+                $proyecto->save();
+            }
+        }
+
         // Impuestos
             if($request->impuestos){
                 foreach ($request->impuestos as $impuesto) {
@@ -461,139 +513,6 @@ class VentasController extends Controller
 
     }
 
-
-
-    // public function generarDoc($id){
-    //     $venta = Venta::where('id', $id)->with('detalles')->firstOrFail();
-    //     $documento = Documento::findOrfail($venta->id_documento);
-    //     $empresa = Empresa::findOrfail(JWTAuth::parseToken()->authenticate()->id_empresa);
-
-    //     $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
-    //     $formatter = new NumeroALetras();
-    //     $n = explode(".", number_format($venta->total,2));        
-    //     $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
-    //     $centavos = $formatter->toWords($n[1]);
-
-    //     if ($documento->nombre == 'Factura') {
-            
-    //         if($empresa->id == 38){
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.velo', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 62){ //62
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.hotel-eco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 84){ //84
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 75){ //84
-    //             // return View('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 104){ //104
-    //             // return View('reportes.facturacion.formatos_empresas.Factura-coloretes', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura-Coloretes', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 11){ //11
-    //             // return View('reportes.facturacion.formatos_empresas.Factura-organika', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-organika', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 365.669, 566.929133858]);
-    //         }
-    //         elseif($empresa->id == 12){ //12
-    //             // return View('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 365.669, 566.929133858]);
-    //         }
-    //         elseif($empresa->id == 128){ //128
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.kiero-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 283.46, 765.35]);  
-    //         }
-    //         elseif($empresa->id == 135){ //135
-    //             // return View('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 609.45, 467.72]);
-    //         }
-    //         elseif($empresa->id == 136){ //12
-    //             return View('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 365.669, 609.4488]);
-    //         }
-    //         elseif($empresa->id == 149){ //12
-    //             return View('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 24){ //24
-    //             // return View('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Via-del-Mar', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             // $pdf->setPaper([0, 0, 306, 396]);
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }else{
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 365.669, 566.929133858]);
-    //         }
-
-    //         return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
-
-    //     }
-        
-    //     if ($documento->nombre == 'Crédito fiscal') {
-
-    //         if($empresa->id == 24){
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.vetvia-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 38){
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.velo-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 62){ //62
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.hotel-eco-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait'); 
-    //         }
-    //         elseif($empresa->id == 128){ //128
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.kiero-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 283, 765]);  
-    //         }
-    //         elseif($empresa->id == 135){ //135
-    //             // return View('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 609.45, 467.72]);  
-    //         }
-    //         elseif($empresa->id == 136){ //136
-    //             // return View('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper([0, 0, 297.64, 382.68]); 
-    //         }
-    //         elseif($empresa->id == 158){//158
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Guaca-Mix-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }
-    //         elseif($empresa->id == 84){ //84
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-    //             $pdf->setPaper('US Letter', 'portrait');
-    //         }else{
-    //             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente'));
-    //             $pdf->setPaper([0, 0, 365.669, 566.929133858]);  
-    //         }     
-
-    //         return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
-
-
-    //     }
-
-    //     if ($documento->nombre == 'Ticket') {
-    //         return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
-    //     }
-
-    //     return "Sin documento para generar";
-
-    // }
-
     public function generarDoc($id){
 
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
@@ -608,7 +527,7 @@ class VentasController extends Controller
         }
 
         if ($documento->nombre == 'Factura') {
-            $cliente = Cliente::withoutGlobalScope('empresa')->findOrfail($venta->id_cliente);
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
@@ -625,6 +544,10 @@ class VentasController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.velo', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 212){ //212
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.fotopro', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('Letter', 'portrait');
+            }
             elseif(Auth::user()->id_empresa == 62){ //62
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.hotel-eco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -633,7 +556,7 @@ class VentasController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 75){ //84
+            elseif(Auth::user()->id_empresa == 75){ //75
                 // return View('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -672,7 +595,11 @@ class VentasController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 13){//177  OK V2
+            elseif(Auth::user()->id_empresa == 187){//187  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 177){//177  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('Legal', 'portrait');
             }
@@ -684,8 +611,9 @@ class VentasController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Via-del-Mar', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }else{
+                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 365.669, 566.929133858]);
+                $pdf->setPaper('US Letter', 'portrait');
             }
             
 
@@ -701,14 +629,18 @@ class VentasController extends Controller
             $n = explode(".", number_format($venta->total,2));
 
             
-            $dolares = $formatter->toWords(floatval(str_replace(',', '',$n)));
+            $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
             if(Auth::user()->id_empresa == 24){ //24
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.vetvia-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 38){
+            elseif(Auth::user()->id_empresa == 212){ //212
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-FotoPro', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 38){ //38
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.velo-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
@@ -738,16 +670,20 @@ class VentasController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Credicash', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 13){//177  OK V2
+            elseif(Auth::user()->id_empresa == 187){//187  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 177){//177  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('Legal', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 13){ //84
+            elseif(Auth::user()->id_empresa == 84){ //84
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }else{
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente'));
-                $pdf->setPaper([0, 0, 365.669, 566.929133858]);  
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
             }     
 
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
@@ -776,24 +712,39 @@ class VentasController extends Controller
         $star = $request->inicio;
         $end = $request->fin;
 
-        $ventas = Venta::where('tipo_documento', 'Credito Fiscal')
-                            ->where('estado', '!=', 'Pendiente')
+        $ventas = Venta::with('cliente')->where('estado', '!=', 'Pendiente')
+                            ->when($request->tipo_documento, function($query) use ($request){
+                                return $query->whereHas('documento', function($q) use ($request) {
+                                        $q->where('nombre', $request->tipo_documento);
+                                    });
+                            })
                             ->whereBetween('fecha', [$request->inicio, $request->fin])
+                            ->where('cotizacion', 0)
                             ->orderBy('fecha','desc')->get();
 
         $ivas = collect();
 
         foreach ($ventas as $venta) {
                 $ivas->push([
-                    'fecha'         => $venta->fecha,
-                    'correlativo'   => $venta->correlativo,
-                    'cliente'       => $venta->estado == 'Anulada' ?  'ANULADA': $venta->cliente_nombre,
-                    'registro'      => $venta->registro,
-                    'interno'       => $venta->subtotal,
-                    'iva'           => $venta->iva,
-                    'fovial'        => $venta->fovial,
-                    'cotrans'       => $venta->cotrans,
-                    'total'         => $venta->total
+                    'fecha'                 => $venta->fecha,
+                    'clase_documento'       => 1,
+                    'tipo_documento'        => '03',
+                    'num_resolucion'        => $venta->documento()->pluck('resolucion')->first(),
+                    'num_serie'             => $venta->documento()->pluck('numero_autorizacion')->first(),
+                    'num_documento'         => $venta->correlativo,
+                    'num_control_interno'   => $venta->correlativo,
+                    'nit_nrc'               => $venta->cliente()->pluck('nit')->first() ? $venta->cliente()->pluck('nit')->first() : $venta->cliente()->pluck('ncr')->first(),
+                    'nombre_cliente'        => $venta->nombre_cliente,
+                    'ventas_exentas'        => $venta->exenta,
+                    'ventas_no_sujetas'     => $venta->no_sujeta,
+                    'ventas_gravadas'       => $venta->sub_total,
+                    'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
+                    'debito_fiscal'         => $venta->iva,
+                    'ventas_cuenta_terceros'=> 0,
+                    'debito_cuenta_terceros'=> 0,
+                    'total'                 => $venta->total,
+                    'dui'                   => $venta->cliente()->pluck('dui')->first(),
+                    'num_anexto'            => 1,
                 ]);
         }
 

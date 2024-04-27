@@ -47,7 +47,7 @@ export class VentaComponent implements OnInit {
 
     public setEstado(abono:any){
         this.saving = false;
-        this.apiService.store('venta/abono/', abono).subscribe(abono => {
+        this.apiService.store('venta/abono', abono).subscribe(abono => {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});

@@ -107,9 +107,9 @@
 </section>
 
 <ng-template #majuste>
-  <div class="modal-header d-block">
+  <div class="modal-header justify-content-between">
     <h5 class="modal-title mb-0">Nuevo ajuste </h5>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
   </div>
   <div class="modal-body">
     <form (ngSubmit)="onSubmit()" autocomplete="off">

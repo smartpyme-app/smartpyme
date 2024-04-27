@@ -48,10 +48,18 @@ class DocumentosController extends Controller
             'id_sucursal'    => 'required|numeric'
         ]);
 
-        if($request->id)
+        if($request->id){
             $documento = Documento::findOrFail($request->id);
-        else
+        }
+        else{
             $documento = new Documento;
+
+            $existe = Documento::where('id_sucursal', $request->id_sucursal)->where('nombre', $request->nombre)->first();
+
+            if($existe)
+                return  Response()->json(['error' => 'Ya ha sido agregado el documento', 'code' => 400], 400);
+
+        }
 
 
         // Solo colocar un documento predeterminado por sucursal

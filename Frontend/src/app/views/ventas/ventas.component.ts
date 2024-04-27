@@ -131,6 +131,7 @@ export class VentasComponent implements OnInit {
         
         this.apiService.getAll('documentos').subscribe(documentos => {
             this.documentos = documentos;
+            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
@@ -139,6 +140,10 @@ export class VentasComponent implements OnInit {
 
         this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
             this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('canales/list').subscribe(canales => { 
+            this.canales = canales;
         }, error => {this.alertService.error(error); });
 
         this.modalRef = this.modalService.show(template);

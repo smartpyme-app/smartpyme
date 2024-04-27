@@ -18,7 +18,7 @@ export class HeaderComponent implements OnInit {
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
 
-    constructor(private apiService: ApiService, private alertService: AlertService, @Inject(DOCUMENT) private document: any) { }
+     constructor(private apiService: ApiService, private alertService: AlertService, @Inject(DOCUMENT) private document: any) { }
 
     ngOnInit() {
         // $('.drop-down').dropdown();
@@ -43,9 +43,7 @@ export class HeaderComponent implements OnInit {
 
     public toggleSidebar(){
         const myDiv = document.getElementById('tour.sidebar')!;
-        console.log(this.isVisible);
-        console.log(myDiv);
-        if (myDiv && this.isVisible) {
+        if (this.isVisible) {
           myDiv.style.marginLeft  = '-280px';
         } else {
           myDiv.style.marginLeft  = '0px';

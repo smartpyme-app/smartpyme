@@ -18,6 +18,7 @@ export class FacturacionCompraComponent implements OnInit {
     public compra: any= {};
     public detalle: any = {};
     public proveedores:any = [];
+    public proyectos:any = [];
     public usuarios:any = [];
     public documentos:any = [];
     public formaPagos:any = [];
@@ -78,6 +79,11 @@ export class FacturacionCompraComponent implements OnInit {
 
         this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+            this.proyectos = proyectos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
@@ -170,6 +176,10 @@ export class FacturacionCompraComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
+        if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+            this.compra.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
+        }
+
          // Facturar cotizacion
         if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
             this.facturarCotizacion = true;
@@ -220,6 +230,14 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.retencion = 1;
             this.sumTotal();
         }
+    }
+
+    // Proyecto
+    public setProyecto(proyecto:any){
+        if(!this.compra.id_proyecto){
+            this.proyectos.push(proyecto);
+        }
+        this.compra.id_proyecto = proyecto.id;
     }
 
     public setCredito(){

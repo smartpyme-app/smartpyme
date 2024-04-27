@@ -56,8 +56,8 @@
             @if ($cliente->giro)
             <p><b>Giro:</b> {{ $cliente->giro }}</p>
             @endif
-            @if ($cliente->nit)
-            <p><b>NIT:</b> {{ $cliente->nit }}</p>
+            @if ($cliente->dui)
+            <p><b>DUI:</b> {{ $cliente->dui }}</p>
             @endif
             <p><b>Fecha:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p><b>Pago:</b> {{ $venta->forma_pago }} @if ($venta->detalle_banco) <b>Banco:</b> {{$venta->detalle_banco}} @endif </p>

@@ -1,0 +1,299 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ proyecto.id ? 'Editar ' : 'Crear ' }} Proyecto</h3>
+    <button class="btn btn-light text-danger" routerLink="/proyectos"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3">
+        <div class="row">
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="nombre">Nombre:</label>
+                <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="">Fecha Inicio:</label>
+                <input type='date' class="form-control" name="fecha_inicio" [(ngModel)]="proyecto.fecha_inicio"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="">Fecha Fin:</label>
+                <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_fin"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="estado">Estado:</label>
+                <select class="form-select" name="estado" [(ngModel)]="proyecto.estado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Facturado">Facturado</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="descripcion">Descripción:</label><br>
+                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="proyecto.descripcion" name="descripcion" cols="30" rows="3"></textarea>
+            </div>
+
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar proyecto  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="row">
+            <h6 class="my-3 font-weight-bold">
+                Cotizaciones
+                <a class="btn btn-default float-end" routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1, id_proyecto:proyecto.id }" tooltip="Agregar cotización">
+                    <i class="fa fa-plus"></i> Agregar Cotización
+                </a>
+            </h6>
+        </div>
+            <div class="row">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3" class="text-center" *ngIf="proyecto?.cotizaciones?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene cotizaciones registradas</span>
+                            </td>
+                            <td colspan="3" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+
+                        <tr class="animated fadeIn" *ngFor=" let venta of proyecto.cotizaciones">
+                            
+                            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td>
+                                <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                            </td>
+                            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="text-end">Total Cotizaciones</td>
+                            <td class="text-end">{{proyecto.ingresos_esperados | currency }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end">Facturado</td>
+                            <td class="text-end">{{proyecto.ventas | sum:'total' | currency}}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end">Diferencia</td>
+                            <td class="text-end">{{ (proyecto.ingresos_esperados - (proyecto.ventas | sum:'total')) | currency}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="row">
+            <h6 class="my-3 font-weight-bold">
+                Compras
+                <a class="btn btn-default float-end" routerLink="/compra/crear" [queryParams]="{ id_proyecto:proyecto.id }" tooltip="Agregar compra">
+                    <i class="fa fa-plus"></i> Agregar Compra
+                </a>
+            </h6>
+        </div>
+        <div class="row">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Proveedor</th>
+                            <th class="d-none d-md-table-cell">Documento</th>
+                            <th class="d-none d-md-table-cell">Método de pago</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="10" class="text-center" *ngIf="proyecto?.compras?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene compras registradas</span>
+                            </td>
+                            <td colspan="10" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+
+                        <tr class="animated fadeIn" *ngFor=" let compra of proyecto.compras">
+                            
+                            <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td>{{compra.nombre_proveedor | truncate:30 }}</td>
+                            <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
+                            <td>{{compra.forma_pago}}</td>
+                            <td>
+                                <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
+                            </td>
+                            <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-end">Total Compras</td>
+                            <td class="text-end">{{proyecto.compras | sum:'total' | currency }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="text-end">Presupuestado</td>
+                            <td class="text-end">{{proyecto.compras_esperados | currency}}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="text-end">Diferencia</td>
+                            <td class="text-end">{{ (proyecto.compras_esperados - (proyecto.compras | sum:'total')) | currency}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="row">
+            <h6 class="my-3 font-weight-bold">
+                Gastos
+                <a class="btn btn-default float-end" routerLink="/gasto/crear" [queryParams]="{ id_proyecto:proyecto.id }" tooltip="Agregar gasto">
+                    <i class="fa fa-plus"></i> Agregar gasto
+                </a>
+            </h6>
+        </div>
+        <div class="row">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <!-- <th>Usuario</th> -->
+                            <th>Proveedor</th>
+                            <th>Concepto</th>
+                            <th>Método de pago</th>
+                            <th>Estado</th>
+                            <!-- <th>Descripción</th> -->
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="10" class="text-center" *ngIf="proyecto?.gastos?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene gastos registradas</span>
+                            </td>
+                            <td colspan="10" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+
+                        <tr class="animated fadeIn" *ngFor=" let gasto of proyecto.gastos">
+                            
+                            <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
+                            <!-- <td>{{gasto.nombre_usuario }}</td> -->
+                            <td>{{gasto.nombre_proveedor | truncate:30 }}</td>
+                            <td>{{gasto.concepto}}</td>
+                            <td>{{gasto.forma_pago}}</td>
+                            <td>
+                                <span class="badge" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
+                                    {{gasto.estado}}
+                                </span>
+                            </td>
+                            <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
+
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-end">Total Gastos</td>
+                            <td class="text-end">{{proyecto.gastos | sum:'total' | currency }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="text-end">Presupuestado</td>
+                            <td class="text-end">{{proyecto.gastos_esperados | currency}}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="text-end">Diferencia</td>
+                            <td class="text-end">{{ (proyecto.gastos_esperados - (proyecto.gastos | sum:'total')) | currency}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="row">
+            <h6 class="my-3 font-weight-bold">
+                Facturación
+                <a class="btn btn-default float-end" routerLink="/venta/crear" [queryParams]="{ id_proyecto:proyecto.id }" tooltip="Agregar factura">
+                    <i class="fa fa-plus"></i> Agregar factura
+                </a>
+            </h6>
+        </div>
+
+        <div class="row">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th class="d-none d-md-table-cell">Documento</th>
+                            <th class="d-none d-md-table-cell">Método de pago</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center" *ngIf="proyecto?.ventas?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene ventas registradas</span>
+                            </td>
+                            <td colspan="5" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+
+                        <tr class="animated fadeIn" *ngFor=" let venta of proyecto.ventas">
+                            
+                            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td>{{venta.nombre_documento}} #{{venta.referencia}}</td>
+                            <td>{{venta.forma_pago}}</td>
+                            <td>
+                                <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                            </td>
+                            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end">Total Ingresos</td>
+                            <td class="text-end">{{proyecto.ventas | sum:'total' | currency }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="text-end">Presupuestado</td>
+                            <td class="text-end">{{proyecto.ingresos_esperados | currency}}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="text-end">Diferencia</td>
+                            <td class="text-end">{{ (proyecto.ingresos_esperados - (proyecto.ventas | sum:'total')) | currency}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+

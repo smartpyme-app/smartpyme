@@ -1,0 +1,119 @@
+import { Component, OnInit, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+@Component({
+  selector: 'app-licencias',
+  templateUrl: './licencias.component.html'
+})
+
+export class LicenciasComponent implements OnInit {
+
+    public licencias:any = [];
+    public empresas:any = [];
+    public licencia:any = {};
+    public loading:boolean = false;
+    public saving:boolean = false;
+    public filtros:any = {};
+
+    modalRef!: BsModalRef;
+
+    constructor(public apiService: ApiService, private alertService: AlertService,
+                private modalService: BsModalService
+    ){}
+
+    ngOnInit() {
+        this.apiService.getAll('empresas/list').subscribe(empresas => { 
+            this.empresas = empresas;
+        }, error => {this.alertService.error(error); });
+
+        this.loadAll();
+    }
+
+    public loadAll() {
+        this.filtros.activo = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'id';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 10;
+
+        this.loading = true;
+        this.filtrarLicencias();
+    }
+
+    public filtrarLicencias(){
+        this.apiService.getAll('licencias', this.filtros).subscribe(licencias => { 
+            this.licencias = licencias;
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
+    }
+
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.filtrarLicencias();
+    }
+
+
+    public setEstado(licencia:any){
+        this.apiService.store('licencia', licencia).subscribe(licencia => { 
+            this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
+        }, error => {this.alertService.error(error); });
+    }
+
+
+    public delete(id:number) {
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('licencia/', id) .subscribe(data => {
+                for (let i = 0; i < this.licencias['data'].length; i++) { 
+                    if (this.licencias['data'][i].id == data.id )
+                        this.licencias['data'].splice(i, 1);
+                }
+            }, error => {this.alertService.error(error); });
+                   
+        }
+
+    }
+
+    public onSubmit() {
+        this.saving = true;
+        this.apiService.store('licencia', this.licencia).subscribe(licencia => {
+            this.loadAll();
+            this.saving = false;
+            if(!this.licencias.id){
+                this.alertService.success('Licencia creada', 'La licencia fue añadida exitosamente.');
+            }else{
+                this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
+            }
+            this.modalRef?.hide();
+            this.alertService.modal = false;
+        },error => {this.alertService.error(error); this.saving = false; });
+
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.licencias.path + '?page='+ event.page, this.filtros).subscribe(licencias => { 
+            this.licencias = licencias;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+
+    openModal(template: TemplateRef<any>, licencia:any) {
+        this.licencia = licencia;
+        if (!this.licencia.id) {
+            // this.licencia.industria = '';
+        }
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    }
+
+
+}

@@ -12,7 +12,7 @@
             <h6 class="col-12"> Información </h6>
             <div class="form-group col-lg-3">
                 <label class="fw-medium">Fecha</label>
-                <p>{{ compra.fecha | date:'yy/MM/yyyy'}} {{ compra.created_at | date:'hh:mm a'}}</p>
+                <p>{{ compra.fecha | date:'dd/MM/yyyy'}} {{ compra.created_at | date:'hh:mm a'}}</p>
             </div>
             <div class="form-group col-lg-6">
                 <label class="fw-medium">Proveedor</label>
@@ -24,7 +24,7 @@
             </div>
             <div class="form-group col-lg-3">
                 <label class="fw-medium">Fecha pago</label>
-                <p>{{ compra.fecha_pago | date:'yy/MM/yyyy' }}</p>
+                <p>{{ compra.fecha_pago | date:'dd/MM/yyyy' }}</p>
             </div> 
             <div class="form-group col-lg-3">
                 <label class="fw-medium">Forma de pago</label>

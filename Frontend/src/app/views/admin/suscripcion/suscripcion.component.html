@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Suscripción</h2>
+    <h2 class="page-heading" (click)="loadAll()">Suscripción</h2>
      <button (click)="openModal(msuscripcion)"  tooltip="Cancelar suscripción" class="btn btn-danger tcla-F4"><i class="fa fa-ban"></i> Cancelar suscripción</button>
 </section>
 
@@ -21,7 +21,7 @@
         </div>
         <div class="form-group col-md-6 col-lg-2">
             <label class="fw-bold">Estado</label> <br>
-            <p class="badge" [ngClass]="{'bg-success' : suscripcion.estado == 'Activo', 'bg-danger' : suscripcion.estado == 'Vencido' }">{{ suscripcion.estado }}</p>
+            <p class="badge" [ngClass]="{'bg-success' : suscripcion?.estado_plan?.estado == 'Activo', 'bg-danger' : suscripcion?.estado_plan?.estado != 'Activo' }">{{ suscripcion?.estado_plan?.estado }}</p>
         </div>
         <div class="form-group col-md-6 col-lg-2">
             <label class="fw-bold">Costo</label>

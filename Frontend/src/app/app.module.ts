@@ -11,6 +11,7 @@ import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
+import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
 import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
@@ -28,6 +29,9 @@ import { LayoutModule } from '@layout/layout.module';
 // Super Admin
   import { SuperAdminModule } from '@views/super-admin/super-admin.module';
 
+// Organizacion Admin
+  import { OrganizacionesAdminModule } from '@views/organizaciones-admin/organizaciones-admin.module';
+
 // Ventas
   import { VentasModule } from '@views/ventas/ventas.module';
   import { ClientesModule } from '@views/ventas/clientes/clientes.module';
@@ -43,6 +47,12 @@ import { LayoutModule } from '@layout/layout.module';
 // Contabilidad
   import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
 
+// Paquetes
+  import { PaquetesModule } from '@views/paquetes/paquetes.module';
+
+// Proyectos
+  import { ProyectosModule } from '@views/proyectos/proyectos.module';
+
  // Admin
   import { AdminModule } from '@views/admin/admin.module';
   import { ReportesModule } from '@views/reportes/reportes.module';
@@ -56,6 +66,7 @@ import { LayoutModule } from '@layout/layout.module';
   imports: [
     BrowserModule,
     HttpClientModule,
+    TourNgxBootstrapModule,
     AppRoutingModule,
     ModalModule.forRoot(),
     NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
@@ -75,6 +86,8 @@ import { LayoutModule } from '@layout/layout.module';
     AdminModule,
     ReportesModule,
     CitasModule,
+    PaquetesModule,
+    ProyectosModule,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
                 AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],

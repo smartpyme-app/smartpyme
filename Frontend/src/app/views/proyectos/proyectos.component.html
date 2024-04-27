@@ -1,0 +1,316 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Registros</h2>
+    <button *ngIf="apiService.canCreate()" routerLink="/proyecto/crear" tooltip="Crear proyecto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proyecto</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="proyectos?.total">
+                Mostrando {{ proyectos?.to }} de {{ proyectos?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'proyectos'"></app-importar-excel>
+                <button tooltip="Descargar proyectos"  class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPaquetes()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/proyectos">Todos</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="estado" (change)="filtrarPaquetes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Facturado">Facturado</option>
+            </select>
+            <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
+                <ng-option value="">Cliente</ng-option>
+                <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                    {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                </ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th (click)="setOrden('fecha_inicio')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'desc'}" class="click">Inicio</th>
+                        <th (click)="setOrden('fecha_fin')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_fin' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_fin' && filtros.direccion == 'desc'}" class="click">Finaliza</th>
+                        <th>Estado</th>
+                        <th class="text-end">Ingresos Esperados</th>
+                        <th class="text-end">Gastos Esperados</th>
+                        <th class="text-end">Compras Esperadas</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="11" class="text-center" *ngIf="proyectos?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene proyectos registrados</span>
+                        </td>
+                        <td colspan="11" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor=" let proyecto of proyectos?.data">
+                        
+                        <td>{{proyecto.nombre}}</td>
+                        <td>{{proyecto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
+                        <td>{{proyecto.fecha_fin | date:'dd/MM/yyyy'}}</td>
+                        <td>
+                            <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : proyecto?.estado == 'En proceso', 'bg-warning' : proyecto?.estado == 'Pendiente', 'bg-success' : proyecto?.estado == 'Facturado'}">
+                                {{ proyecto.estado }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <span *ngIf="proyecto.ingresos_esperados">{{proyecto.ingresos_esperados | currency}}</span>
+                            <span *ngIf="!proyecto.ingresos_esperados">No definido</span>
+                        </td>
+                        <td class="text-end">
+                            <span *ngIf="proyecto.gastos_esperados">{{proyecto.gastos_esperados | currency}}</span>
+                            <span *ngIf="!proyecto.gastos_esperados">No definido</span>
+                        </td>
+                        <td class="text-end">
+                            <span *ngIf="proyecto.compras_esperados">{{proyecto.compras_esperados | currency}}</span>
+                            <span *ngIf="!proyecto.compras_esperados">No definido</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/proyecto/editar/{{proyecto.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <span class="fa fa-magnifying-glass icon me-2"></span> Ver detalles
+                                    </a>
+                                </div>
+                                <div class="list-group border-0">
+                                    <a routerLink="/cotizacion/crear" [queryParams]="{  cotizacion:1, id_proyecto:proyecto.id }" class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/tag.png" class="icon me-2"> Agregar cotización
+                                    </a>
+                                </div>
+                                <div *ngIf="!proyecto?.presupuesto?.id" class="list-group border-0">
+                                    <a routerLink="/presupuesto/crear" [queryParams]="{ id_proyecto:proyecto.id }"  class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/coin-stack.png" class="icon me-2"> Agregar presupuesto
+                                    </a>
+                                </div>
+                                <div *ngIf="proyecto?.presupuesto?.id" class="list-group border-0">
+                                    <a routerLink="/presupuesto/editar/{{proyecto.presupuesto.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/coin-stack.png" class="icon me-2"> Ver presupuesto
+                                    </a>
+                                </div>
+                                <div class="list-group border-0">
+                                    <a routerLink="/gasto/crear" [queryParams]="{ id_proyecto:proyecto.id }"  class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/log-out.png" class="icon me-2"> Agregar gasto
+                                    </a>
+                                </div>
+                                <div class="list-group border-0">
+                                    <a routerLink="/compra/crear" [queryParams]="{ id_proyecto:proyecto.id }"  class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/log-in.png" class="icon me-2"> Agregar compra
+                                    </a>
+                                </div>
+                                <div *ngIf="proyecto?.cotizacion?.id && proyecto.estado != 'Facturado'" class="list-group border-0">
+                                    <a routerLink="/venta/crear" [queryParams]="{ id_proyecto:proyecto.id, facturar_cotizacion: 1, id_venta: proyecto.cotizacion.id }" class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/trending-up.png" class="icon me-2"> Facturar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="proyectos?.last_page > 1">
+            <app-pagination [items]="proyectos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de proyectos</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de proyectos en un archivo de Excel.</p>
+        <div class="row">
+            <div class="d-grid mt-4">
+                <p>Descargar los detalles de proyectos por producto.</p>
+                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
+                    <span *ngIf="downloadingDetalles">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <p>Descargar los detalles de proyectos totales.</p>
+                <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingVentas">Descargar Ventas</span>
+                    <span *ngIf="downloadingVentas">Descargando...</span>
+                </button>
+            </div>
+        </div>
+  </div>
+</ng-template>
+
+<ng-template #mproyecto>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Detalles del proyecto</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form name="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="col-6">
+                <div class="row">
+                    <div class="form-group col-md-12">
+                        <label for="fecha"><b>Fecha:</b> {{ proyecto.fecha | date:'dd/mm/yyy'}}</label>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="estado"><b>Estado:</b> {{ proyecto.estado }}</label>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="id_usuario"><b>Usuario:</b> {{ proyecto.nombre_usuario }}</label>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="id_usuario"><b>Asesor:</b> {{ proyecto.nombre_asesor }}</label>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="id_cliente"><b>Cliente:</b> {{ proyecto.nombre_cliente }}</label>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="num_seguimiento"><b>Num. Seguimiento:</b> {{ proyecto.num_seguimiento }}</label>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="num_guia"><b>Num. Guia:</b> {{ proyecto.num_guia }}</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group col-md-12">
+                    <label for="wr"><b>WR:</b> {{ proyecto.wr }}</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="embalaje"><b>Embalaje:</b> {{ proyecto.embalaje }}</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="piezas"><b>Piezas:</b> {{ proyecto.piezas }}</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="peso"><b>Peso:</b> {{ proyecto.peso }} Lb</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="volumen"><b>Volumen:</b> {{ proyecto.volumen }}</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="precio"><b>Precio:</b> {{ proyecto.precio | currency }}</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="cuenta_a_terceros"><b>Cuenta a tercero:</b> {{ proyecto.cuenta_a_terceros | currency }}</label>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="total"><b>Total:</b> {{ proyecto.total | currency }}</label>
+                </div>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="nota"><b>Nota:</b> {{ proyecto.nota ? proyecto.nota : 'Ninguna' }}</label>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarPaquetes()">
+        <div class="row">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="En bodega">En bodega</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Entregado">Entregado</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_cliente">Cliente:</label>
+                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                        {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_asesor">Asesor:</label>
+                <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="filtros.id_asesor">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_usuario">Usuario:</label>
+                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

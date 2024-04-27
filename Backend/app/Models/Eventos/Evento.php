@@ -116,11 +116,11 @@ class Evento extends Model
     }
 
     public function getNombreClienteAttribute()
-    {
-        if ($this->cliente()->first()) {
-            return $this->cliente()->pluck('nombre')->first();
+    {   $cliente = $this->cliente()->first();
+        if ($cliente) {
+            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
         }
-        return null;
+        return 'Consumidor Final';
     }
 
     public function cliente(){

@@ -1,149 +1,114 @@
+<!DOCTYPE html>
 <html>
-
 <head>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
     <title>{{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
+
+        *{ font-size: 14px; margin: 0; padding: 0;}
+        html, body{
+        }
+
+        #factura{
+            /* Media carta*/
+            width: 13.97cm; height: 21.59cm;
+            font-family: serif;
+/*            border: 1px solid red;*/
+            width: 13.97cm; height: 21.59cm;
+        }
+
+        #header > *, #totales > *{
+            position: absolute;
+            margin: 0px;
+        }
+
+        #fecha          {top: 3.5cm; left: 12cm; }
+        #cliente        {top: 4.5cm; left: 2.2cm; width: 9cm;}
+        #direccion      {top: 5cm; left: 2.2cm; width: 9cm;}
+/*        #municipio      {top: 6.5cm; left: 2.2cm; width: 5cm;}*/
+/*        #departamento   {top: 7cm; left: 3cm; width: 5cm;}*/
+        #nit            {top: 5.5cm; left: 9cm; }
+/*        #nrc            {top: 6.5cm; left: 10cm; }*/
+/*        #giro            {top: 7.5cm; left: 9cm; }*/
+/*        #condicion      {top: 8cm; left: 10cm; }*/
+
+
+        table   {position: absolute; top: 7cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
+        table td{height: 0.6cm; text-align: left;}
+
+        .cantidad{ width: 1cm; text-align: center;}
+        .producto{ width: 7cm; text-align: left;}
+        .precio{ width: 1.8cm; text-align: center;}
+        .sujetas{ width: 1.5cm; text-align: center;}
+        .exentas{ width: 1.5cm; text-align: center;}
+        .gravadas{ width: 1.8cm; text-align: right;}
         
-        p {
-            font-size: 12px;
-        }
-        html { margin: 0px;}
-        table, tr, th, td {
-            font-size: 14px;
-        }
-        tr, td, th{
-             border-style : hidden!important;
-             font-size: 12px;
-        }
 
-        @page {
-            margin: 10px 15px;
-        }
-        header {
-            position: fixed;
-            left: 0px;
-            top: -160px;
-            right: 0px;
-            height: 100px;
-            background-color: #ddd;
-            text-align: center;
-        }
+        #letras     {top: 17cm; left: 2cm; width: 5cm; word-break: break-all; white-space: normal;}
 
-        footer .page:after {
-            content: counter(page);
-        }
+        #suma       {top: 17cm; left: 14cm; width: 2cm; text-align: right;}
+/*        #iva        {top: 16.2cm; left: 14cm; width: 2cm; text-align: right;}*/
+        #exenta     {top: 17.5cm; left: 14cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 18cm; left: 14cm; width: 2cm; text-align: right;}
+        #sub_total  {top: 18.5cm; left: 14cm; width: 2cm; text-align: right;}
+        #iva_retenido{top: 19cm; left: 14cm; width: 2cm; text-align: right;}
+        #total      {top: 19.5cm; left: 14cm; width: 2cm; text-align: right;}
 
-        .no-margin p {
-            margin: 0 !important;
-        }
+        .no-print{position: absolute;}
 
-        .img-logo {
-            width: 70px;
-        }
-
-        #detalle{
-            margin-top: 4.1cm;
-            margin-right: 0.5cm;
-        }
-        #head-customer{
-            margin-top: 4.35cm;
-        }
-        #cliente{
-            margin-left: 1.8cm;
-        }
-        #fecha{
-            margin-right: 2.0cm;
-        }
-        #cantidad{
-            width: 0.3cm;
-        }
-        #descripcion{
-            width: 5.5cm;
-        }
-        #pre-uni{
-            width: 1.0cm;
-        }
-        #sujetas{
-            width: 0.9cm;
-        }
-        #exenta{
-            width: 1.0cm;
-        }
-        #grab{
-            width: 1.0cm;
-        }
-        #table{
-            height: 6.5cm;
-            width: 7.6cm;
-            margin-left: 0.55cm;
-        }
-        #total{
-            margin-left: 10cm;
-        }
-        #body{
-            
-        }
-        #totales{
-            margin-right: 0.8cm;
-        }
     </style>
+    
+    <style media="print"> .no-print{display: none; } </style>
+
 </head>
-<body class="">
-    <div class="container_fluid" id="body">
-        <div class="d-flex d-block" id="head-customer">
-            <div class="float-left no-margin" id="cliente">
-                <p class="">{{$venta->nombre_cliente}}</p>
-                <p class="">{{$cliente->direccion}}</p>
-            </div>
-            <div class="float-right no-margin" id="fecha">
-                <p class="">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
-                <p class="">{{$cliente->nit}}</p>
-            </div>
-        </div>        
-        <div class="d-flex justify-content-center" id="detalle">
-                <table class="table table-sm border-0" id="table">
-                    <thead>
-                        <tr>
-                            <th class="text-center" id="cantidad" scope="col"></th>
-                            <th class="text-center" id="descripcion" scope="col"></th>
-                            <th class="text-center" id="pre-uni" scope="col"></th>
-                            <th class="text-center" id="sujetas" scope="col"></th>
-                            <th class="text-center" id="exenta" scope="col"></th>
-                            <th class="text-center" id="grab" scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php($iva = $venta->empresa()->pluck('iva')->first() / 100);
+<body>
+<body>
 
-                        @foreach($venta->detalles as $detalle)
-                        <tr>
-                            <td class="text-center">{{ $detalle->cantidad }}</td>
-                            <td class="text-center">{{ $detalle->nombre_producto }}</td>
-                            <td class="text-center">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
-                            <td class="text-center">${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            <div class="d-flex d-block" id="totales">
-                <div class="float-left no-margin" id="cliente">
-                    
-                </div>
-                <div class="float-right no-margin" id="total">
-                    <p class="">${{number_format($venta->total,2)}}</p>
-                    {{-- <p class="">${{number_format($venta->iva,2)}}</p> --}}
-                    {{-- <p class="">${{number_format($venta->sub_total,2)}}</p> --}}
-                    <br><br>
-                    <p class="mt-1">${{number_format($venta->total,2)}}</p>
-                </div>
-            </div> 
+    <section id="factura">
+        <div id="header">
+            <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+            <p id="cliente">{{ $venta->nombre_cliente }}</p>
+            <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            {{-- <p id="municipio">{{ $cliente->municipio }}</p> --}}
+            {{-- <p id="departamento">{{ $cliente->departamento }}</p> --}}
+            {{-- <p id="nit">{{ $cliente->nit }}</p> --}}
+            {{-- <p id="nrc">{{ $cliente->ncr }}</p> --}}
+            {{-- <p id="giro">{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p> --}}
+            {{-- <p id="condicion">
+                @if ($venta->estado == 'Pagada')
+                    X
+                @else
+                    <span style="margin-left: 1.6cm;">X</span>
+                @endif
+            </p> --}}
+            <p id="nit">{{ $cliente->dui ? $cliente->dui : $cliente->nit }}</p>
         </div>
+                    
+        <table>
+            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+            @foreach($venta->detalles as $detalle)
+            <tr>
+                <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
+                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
+                <td class="sujetas">   </td>
+                <td class="exentas">    </td>
+                <td class="gravadas">  ${{ number_format($detalle->total, 2) }} </th>
+            </tr>
+            @endforeach
+        </table>
 
-    </div>
+        <div id="totales">
+            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+            <p id="suma"> $ {{ number_format($venta->total, 2) }}</p>
+            {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
+            <p id="sub_total"> $ {{ number_format($venta->total, 2) }}</p>
+            <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
+            <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p>
+            <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
+            <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
+        </div>
+    </section>
+
 </body>
-
 </html>

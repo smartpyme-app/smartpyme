@@ -12,13 +12,17 @@ import { ModalModule } from 'ngx-bootstrap/modal';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
-
+import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 
 import { SuperAdminRoutingModule } from './super-admin.routing.module';
 
 import { EmpresasComponent } from './empresas/empresas.component';
+import { CrearEmpresaComponent } from './empresas/empresa/crear-empresa.component';
+import { LicenciasComponent } from './licencias/licencias.component';
+import { LicenciaComponent } from './licencias/licencia/licencia.component';
+import { LicenciaEmpresasComponent } from './licencias/licencia/empresas/licencia-empresas.component';
 import { AdminUsuariosComponent } from './usuarios/admin-usuarios.component';
 import { DashboardsComponent } from './dashboards/dashboards.component';
 import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
@@ -33,6 +37,7 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
     TagInputModule,
     NgSelectModule,
     SuperAdminRoutingModule,
+    NgxMaskDirective, NgxMaskPipe,
     FocusModule.forRoot(),
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
@@ -40,12 +45,20 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
   ],
   declarations: [
     EmpresasComponent,
+    CrearEmpresaComponent,
+    LicenciasComponent,
+    LicenciaComponent,
+    LicenciaEmpresasComponent,
     AdminUsuariosComponent,
     DashboardsComponent,
     DashboardComponent
   ],
   exports: [
     EmpresasComponent,
+    CrearEmpresaComponent,
+    LicenciasComponent,
+    LicenciaComponent,
+    LicenciaEmpresasComponent,
     AdminUsuariosComponent,
     DashboardsComponent,
     DashboardComponent

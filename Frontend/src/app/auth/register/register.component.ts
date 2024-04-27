@@ -104,6 +104,17 @@ export class RegisterComponent implements OnInit {
             }
         }
 
+        if(this.user.empresa.plan == 'Pro'){
+            this.user.empresa.user_limit = 5;
+            this.user.empresa.sucursal_limit = 2;
+
+            if(this.user.empresa.tipo_plan == 'Mensual'){
+                this.user.empresa.total = 113;
+            }else{
+                this.user.empresa.total = 1220;
+            }
+        }
+
     }
 
     setModeda(){

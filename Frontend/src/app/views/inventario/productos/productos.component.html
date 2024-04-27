@@ -11,7 +11,7 @@
             </span>
         </div>
 
-        <div class="col-md-6 mb-3" tourAnchor="tour.productos.toolbar" id="tour.productos.toolbar">
+        <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar" >
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
@@ -95,7 +95,7 @@
                         <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div *ngIf="filtros.id_sucursal">
+                            <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_sucursal" (click)="openModalAjuste(majuste, producto)">
                                 {{ producto.inventarios | filter:'id_sucursal':filtros.id_sucursal | sum:'stock' }}
                             </div>
                             <div *ngIf="!filtros.id_sucursal">
@@ -206,7 +206,12 @@
                     </option>
                 </select>
             </div>
-
+            <div class="form-group col-md-12 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="sin_stock">Con stock bajo</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="filtros.sin_stock" name="sin_stock">
+                </div>
+            </div>
             
         </div>
         
@@ -216,6 +221,47 @@
                 <span *ngIf="loading">Filtrando...</span>
             </button>
         </div>
+    </form>
+  </div>
+</ng-template>
+
+
+<ng-template #majuste>
+  <div class="modal-header justify-content-between">
+    <h5 class="modal-title mb-0">Ajuste de stock </h5>
+    <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="onSubmitAjuste()" autocomplete="off">
+        <div class="row">
+            <app-notificaciones-container></app-notificaciones-container>
+            <p><b>Sucursal:</b> {{ inventario.nombre_sucursal }}</p>
+            <p><b>Producto:</b> {{ producto.nombre }}</p>
+            <p><span class="badge bg-info">{{ ajuste.stock_actual | number:'1.0' }} unidades</span></p>
+            <div class="form-group col-md-12">
+                <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
+                <input type="text" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real" focus="true">
+            </div>
+            
+            <div class="form-groumdcol-xs-12" *ngIf="ajuste.stock_real">
+                <label for="ajuste">Se realizá un ajuste de:</label>
+                <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>
+                <p *ngIf="!ajuste.stock_real"> 0</p>
+            </div>
+
+            <div class="form-group col-md-12">
+                <label for="concepto">Nota del ajuste:</label>
+                <input type="text" class="form-control" [(ngModel)]="ajuste.concepto" name="concepto">
+            </div>
+
+        </div>
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !ajuste.stock_real">
+                <span *ngIf="!loading">Guardar</span>
+                <span *ngIf="loading">Guardando...</span>
+            </button>
+        </div>
+
     </form>
   </div>
 </ng-template>

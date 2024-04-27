@@ -12,7 +12,7 @@ import { ApiService } from '@services/api.service';
 export class PresupuestoComponent implements OnInit {
 
 	public presupuesto: any = {};
-
+    public proyectos:any = [];
     public loading = false;
     public saving = false;
     modalRef!: BsModalRef;
@@ -26,6 +26,11 @@ export class PresupuestoComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+            this.proyectos = proyectos;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+
         this.loadAll();
 	}
 
@@ -43,9 +48,32 @@ export class PresupuestoComponent implements OnInit {
 	            this.presupuesto.fecha = this.apiService.date();
 	            this.presupuesto.id_empresa = this.apiService.auth_user().empresa.id;
 	            this.presupuesto.estado = "En Proceso";
+
+                // Para proyectos
+                if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                    this.presupuesto.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
+                    this.apiService.read('proyecto/', this.presupuesto.id_proyecto).subscribe(proyecto => {
+                        this.loading = false;
+                        if(proyecto.cotizacion){
+                            this.presupuesto.ingresos = proyecto.cotizacion.total;
+                        }
+                        this.presupuesto.fecha_inicio = proyecto.fecha_inicio;
+                        this.presupuesto.fecha_fin = proyecto.fecha_fin;
+                        this.alertService.info('Genial','Hemos completado alguna información en base a los datos del proyecto.');
+                    }, error => {this.alertService.error(error); this.loading = false; });
+                }
 	        }
 	    });
 	}
+
+    // Proyecto
+    public setProyecto(proyecto:any){
+        if(!this.presupuesto.id_proyecto){
+            this.proyectos.push(proyecto);
+        }
+        this.presupuesto.id_proyecto = proyecto.id;
+    }
+
 
 	public onSubmit() {
         this.saving = true;
@@ -80,7 +108,8 @@ export class PresupuestoComponent implements OnInit {
     }
 
     calUtilidad(){
-        this.presupuesto.utilidad = (this.presupuesto.ingresos - this.presupuesto.egresos).toFixed(2);
+        this.presupuesto.utilidad = (this.presupuesto.ingresos - this.presupuesto.egresos - this.presupuesto.compras).toFixed(2);
+         this.presupuesto.margen = (this.presupuesto.utilidad / this.presupuesto.ingresos * 100).toFixed(2)
     }
 
 }

@@ -5,7 +5,7 @@
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
-    <title>Dentalkey {{$venta->documento}} - {{$venta->correlativo}}</title>
+    <title>Dentalkey {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 12px; margin: 0; padding: 0;}
@@ -75,7 +75,7 @@
     <section id="factura">
         <div id="header">
             <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-            <p id="cliente">{{ $venta->cliente }}</p>
+            <p id="cliente">{{ $venta->nombre_cliente }}</p>
             <p id="direccion">{{ $cliente->direccion }}</p>
             <p id="departamento">{{ $cliente->departamento }}</p>
             <p id="nit">{{ $cliente->nit }}</p>
@@ -89,7 +89,7 @@
             @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 2) }}</td>
-                <td class="producto">   {{ $detalle->producto  }}</td>
+                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
                 <td class="precio">     $ {{ number_format($detalle->precio , 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>

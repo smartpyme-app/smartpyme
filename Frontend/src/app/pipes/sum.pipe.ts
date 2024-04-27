@@ -9,5 +9,8 @@ export class SumPipe implements PipeTransform {
   		if(items) {
 	        return items.reduce((a, b) => parseFloat(a) + parseFloat(b[attr]), 0);
   		}
+      else{
+        return 0;
+      }
     }
 }

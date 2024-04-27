@@ -16,16 +16,16 @@
                     <th>Fecha</th>
                     <th>Cliente</th>
                     <th>Usuario</th>
-                    <th>Tipo de documento</th>
-                    <th>ID venta</th>
+                    <th>Venta</th>
                 </tr>
                 <tr>
-                    <td>{{ venta.fecha | date:'yy/MM/yyyy'}}</td>
+                    <td>{{ venta.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{ venta.nombre_cliente }}</td>
                     <td>{{ venta.nombre_usuario }}</td>
-                    <td>{{ venta.tipo_documento }}</td>
-                    <td>{{ venta.venta_id }}</td>
+                    <td>{{ venta.venta.nombre_documento }} #{{ venta.venta.correlativo }}</td>
                 </tr>
+                <tr><th colspan="4">Observaciones:</th></tr>
+                <tr><td colspan="4">{{ venta.observaciones }}</td></tr>
             </table>
         </div>    
     </div>
@@ -41,10 +41,10 @@
                     <tr>
                         <th class="text-center">N°</th>
                         <th>Producto</th>
-                        <th class="text-center">Precio</th>
-                        <th class="text-center">Descuento</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-center">Total</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Descuento</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,30 +57,50 @@
                     <tr *ngFor="let detalle of venta.detalles; let i=index">
                         <td class="text-center"> {{ i + 1 }} </td>
                         <td> {{ detalle.nombre_producto }} </td>
-                        <td class="text-center">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center">{{ detalle.cantidad }}</td>
-                        <td class="text-center">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.cantidad }}</td>
+                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
-                        <td colspan="4" class="text-right"></td>
-                        <td class="text-right"><b>Sub Total:</b></td>
-                        <td class="text-center"><b>{{ venta?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>Sub Total:</b></td>
+                        <td class="text-end"><b>{{ venta?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="4" class="text-right"></td>
-                        <td class="text-right"><b>IVA:</b></td>
-                        <td class="text-center"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>IVA:</b></td>
+                        <td class="text-end"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="venta?.descuento > 0">
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>Descuento:</b></td>
+                        <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="venta?.iva_retenido > 0">
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>Retención:</b></td>
+                        <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="venta?.exenta > 0">
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>Ventas Exentas:</b></td>
+                        <td class="text-end"><b>{{ venta?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="venta?.no_sujeta > 0">
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>Ventas No Sujetas:</b></td>
+                        <td class="text-end"><b>{{ venta?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="venta.cuenta_a_terceros > 0">
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"> <b>Cuenta a terceros</b> </td>
+                        <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
                     <tr>
-                        <td colspan="4" class="text-right"></td>
-                        <td class="text-right"><b>Descuento:</b></td>
-                        <td class="text-center"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr>
-                        <td colspan="4" class="text-right"></td>
-                        <td class="text-right"><b>Total:</b></td>
-                        <td class="text-center"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td colspan="4" class="text-end"></td>
+                        <td class="text-end"><b>Total:</b></td>
+                        <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                 </tbody>
             </table>

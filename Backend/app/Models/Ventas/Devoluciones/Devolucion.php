@@ -11,9 +11,15 @@ class Devolucion extends Model {
     protected $table = 'devoluciones_venta';
     protected $fillable = array(
         'fecha',
-        'total',
+        'correlativo',
+        'id_documento',
         'sub_total',
+        'no_sujeta',
+        'exenta',
+        'cuenta_a_terceros',
+        'total',
         'iva',
+        'iva_retenido',
         'observaciones',
         'id_cliente',
         'id_empresa',
@@ -22,7 +28,7 @@ class Devolucion extends Model {
         'id_usuario'
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'exenta', 'gravada', 'no_sujeta'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario'];
     protected $casts = ['enable' => 'string'];
 
     protected static function booted()
@@ -56,19 +62,6 @@ class Devolucion extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
-    public function getExentaAttribute(){
-        return $this->detalles()->get()->sum('Exenta');
-    }
-
-    public function getGravadaAttribute(){
-        return $this->detalles()->get()->sum('Gravada');
-    }
-
-    public function getNoSujetaAttribute(){
-        return $this->detalles()->get()->sum('No Sujeta');
-    }
-
-    // Relaciones
 
     public function cliente(){
         return $this->belongsTo('App\Models\Ventas\Clientes\Cliente','id_cliente');

@@ -1,0 +1,122 @@
+<div class="card bg-white border-0">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 col-lg-9">
+                <h3 class="mb-1" (click)="onFiltrar()">Hola, {{ usuario.name.split(' ')[0] }}, este es el uso de tus licencias.</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-3">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="d-flex gap-2">
+                <div class="col">
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-body pt-2 pb-0">
+                            <div class="row justify-content-between">
+                                <div class="col py-4">
+                                    <h6 class="text-dark mb-3"><img src="/assets/icons/trending-up.png" class="icon me-2">Licencias Totales</h6>
+                                    <h3 class="text-dark">{{ (dash?.licencia?.num_licencias ? dash?.licencia?.num_licencias : 0) | number }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-body pt-2 pb-0">
+                            <div class="row justify-content-between">
+                                <div class="col py-4">
+                                    <h6 class="text-dark mb-3"><img src="/assets/icons/log-out.png" class="icon me-2">Licencias Asignadas</h6>
+                                    <h3 class="text-dark">{{ (dash?.licencia?.num_empresas ? dash?.licencia?.num_empresas : 0) | number }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-body pt-2 pb-0">
+                            <div class="row justify-content-between">
+                                <div class="col py-4">
+                                    <h6 class="text-dark mb-3"><img src="/assets/icons/log-out.png" class="icon me-2">Usuarios Activos</h6>
+                                    <h3 class="text-dark">{{ (dash?.licencia?.usuarios_activos ? dash?.licencia?.usuarios_activos : 0) | number }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-body pt-2 pb-0">
+                            <div class="row justify-content-between">
+                                <div class="col py-4">
+                                    <h6 class="text-dark mb-3"><img src="/assets/icons/log-out.png" class="icon me-2">Usuarios Inactivos</h6>
+                                    <h3 class="text-dark">{{ (dash?.licencia?.usuarios_inactivos ? dash?.licencia?.usuarios_inactivos : 0) | number }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-body pt-2 pb-0">
+                            <div class="row justify-content-between">
+                                <div class="col py-4">
+                                    <h6 class="text-dark mb-3"><img src="/assets/icons/repeat.png" class="icon me-2">Licencias disponibles</h6>
+                                    <h3 class="text-dark">{{ (dash?.licencia?.licencias_dispobibles ? dash?.licencia?.licencias_dispobibles : 0) | number }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card bg-white border-0">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="table-responsive">                    
+                    <table class="table table-borderless table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Plan</th>
+                                <th>Último login</th>
+                                <th colspan="text-end">Login últimos 15 días</th>
+                                <th colspan="text-end">Ventas registradas</th>
+                                <th colspan="text-end">Gastos registradas</th>
+                                <th colspan="text-end">Compras registradas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center" *ngIf="dash?.licencia?.empresas?.length < 1 && !loading">
+                                    <span class="badge bg-primary">No tiene ventas registradas</span>
+                                </td>
+                                <td colspan="10" class="text-center" *ngIf="loading">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+
+                            <tr *ngFor=" let empresa of dash?.licencia?.empresas">
+                                <td>{{ empresa.nombre_empresa }}</td>
+                                <td>{{ empresa.empresa.plan }}</td>
+                                <td>{{ empresa.ultimo_login | date:'dd/mm/yyyy' }}</td>
+                                <td colspan="text-end">{{ empresa.total_accesos | number }}</td>
+                                <td colspan="text-end">{{ empresa.total_ventas | number }}</td>
+                                <td colspan="text-end">{{ empresa.total_gastos | number }}</td>
+                                <td colspan="text-end">{{ empresa.total_compras | number }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

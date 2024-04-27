@@ -36,6 +36,8 @@ class Empresa extends Model {
         'pais',
         'total',
         'editar_precio_venta',
+        'editar_descripcion_venta',
+        'impresion_en_facturacion',
         'plan',
         'cobra_iva',
         'tipo_plan',
@@ -45,6 +47,9 @@ class Empresa extends Model {
         'wompi_aplicativo',
         'wompi_id',
         'wompi_secret',
+        'modulo_paquetes',
+        'modulo_citas',
+        'modulo_proyectos',
         'activo'
     ];
 
@@ -106,9 +111,9 @@ class Empresa extends Model {
         return $this->hasMany('App\Models\Inventario\Producto', 'id_empresa');
     }
 
-    // public function promociones(){
-    //     return $this->hasMany('App\Models\Inventario\Promocion', 'id_empresa');
-    // }
+    public function licencia(){
+        return $this->hasOne('App\Models\Licencias\Licencia', 'id_empresa');
+    }
 
     public function dashboards(){
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');
@@ -143,6 +148,10 @@ class Empresa extends Model {
 
     public function ajustes(){
         return $this->hasMany('App\Models\Inventario\Ajuste', 'id_empresa');
+    }
+
+    public function impuestos(){
+        return $this->hasMany('App\Models\Admin\Impuesto', 'id_empresa');
     }
 
     public function traslados(){

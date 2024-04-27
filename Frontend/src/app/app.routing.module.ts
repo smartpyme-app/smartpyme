@@ -38,6 +38,18 @@ const routes: Routes = [
       loadChildren: () => import('./views/inventario/inventario.module').then(m => m.InventarioModule),
     },
 
+    // Paquetes
+    {
+      path: '', canActivate: [AuthGuard],
+      loadChildren: () => import('./views/paquetes/paquetes.module').then(m => m.PaquetesModule),
+    },
+
+    // Proyectos
+    {
+      path: '', canActivate: [AuthGuard],
+      loadChildren: () => import('./views/proyectos/proyectos.module').then(m => m.ProyectosModule),
+    },
+
     // Compras
     {
       path: '', canActivate: [AuthGuard, AdminGuard],
@@ -64,6 +76,12 @@ const routes: Routes = [
     {
       path: '', canActivate: [AuthGuard, SuperAdminGuard],
       loadChildren: () => import('./views/super-admin/super-admin.module').then(m => m.SuperAdminModule),
+    },
+
+    // Organizaciones Admin
+    {
+      path: '', canActivate: [AuthGuard],
+      loadChildren: () => import('./views/organizaciones-admin/organizaciones-admin.module').then(m => m.OrganizacionesAdminModule),
     },
 
     // Not Found

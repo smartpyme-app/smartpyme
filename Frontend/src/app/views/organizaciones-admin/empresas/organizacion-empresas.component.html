@@ -1,0 +1,178 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Empresas</h2>
+    <div class="d-flex gap-2">
+        <button (click)="openModal(mempresa, {})"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
+        <button routerLink="/organizacion/empresa/crear" [queryParams]="{ licencia:1 }"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Crear empresa</button>
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="empresas?.total">
+                Mostrando {{ empresas?.to }} de {{ empresas?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <!-- <button tooltip="Descargar empresas" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button> -->
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarEmpresas()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <!-- <button tooltip="Filtrar (F3)" (click)="filtrarEmpresas()" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)"  (click)="loadAll()">Todos</button>
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="activo" (change)="filtrarEmpresas()" [(ngModel)]="filtros.activo" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th (click)="setOrden('id')" [ngClass]="{'sorted-asc': filtros.orden == 'id' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id' && filtros.direccion == 'desc'}" class="click">ID</th>
+                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
+                        <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha Suscripción</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="empresas?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene empresas registradas</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr class="animated fadeIn" *ngFor=" let empresa of empresas?.data">
+                        
+                        <td>{{empresa.id }}</td>
+                        <td>{{empresa.nombre_empresa }}</td>
+                        <td>{{empresa.created_at | date:'dd/MM/yyyy' }}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/organizacion/empresa/{{empresa.id_empresa}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a *ngIf="empresa.activo != 'Cancelado'" (click)="setEstado(empresa, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Cancelar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="empresas?.last_page > 1">
+            <app-pagination [items]="empresas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="filtrarEmpresas()">
+        <div class="row text-center">
+            <app-notificaciones-container></app-notificaciones-container>
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+
+            <div class="form-group col-sm-6">
+                <label for="filtros.categoria">Categoría:</label>
+                <input type="text" list="empresas" [(ngModel)]="filtros.categoria" class="form-control" name="filtros.categoria">
+                <datalist id="empresas">
+                    <option value="Todas">
+                    <option value="Transporte">
+                    <option value="Alimentación">
+                    <option value="Viaticos">
+                    <option value="Agua">
+                    <option value="Luz">
+                    <option value="Teléfono">
+                    <option value="Internet">
+                    <option value="Cable">
+                    <option value="Material de oficina">
+                    <option value="Material de limpieza">
+                    <option value="Otros">
+                </datalist>
+            </div>
+        </div>
+        
+        <br><br>
+        <div class="row text-center">
+            <div class="col-xs-12">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mempresa>
+  <div class="modal-header">
+    <div class="modal-title">
+        <h2 class="text-center"> Añadir empresa </h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="id_empresa">Empresa:</label>
+                <ng-select [(ngModel)]="empresa.id_empresa" class="form-select p-0" name="id_empresa">
+                    <ng-option *ngFor="let empresa of empresasList" [value]="empresa.id">
+                        {{ empresa.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
+
+        <div class="d-grid mt-5">
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Añadir</span>
+                <span *ngIf="saving">Añadiendo...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

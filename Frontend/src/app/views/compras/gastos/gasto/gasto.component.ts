@@ -16,6 +16,7 @@ export class GastoComponent implements OnInit {
 
     public gasto:any = {};
     public categorias:any = [];
+    public proyectos:any = [];
     public proveedores:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
@@ -27,7 +28,7 @@ export class GastoComponent implements OnInit {
     modalRef?: BsModalRef;
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
+	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
 	) { }
 
@@ -59,6 +60,11 @@ export class GastoComponent implements OnInit {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+            this.proyectos = proyectos;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public loadAll(){
@@ -83,6 +89,11 @@ export class GastoComponent implements OnInit {
             this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
             this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.gasto.id_usuario = this.apiService.auth_user().id;
+
+            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+                this.gasto.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
+            }
+
         }
 
         // Duplicar gasto
@@ -106,6 +117,14 @@ export class GastoComponent implements OnInit {
     public setProveedor(proveedor:any){
         this.proveedores.push(proveedor);
         this.gasto.id_proveedor = proveedor.id;
+    }
+
+    // Proyecto
+    public setProyecto(proyecto:any){
+        if(!this.gasto.id_proyecto){
+            this.proyectos.push(proyecto);
+        }
+        this.gasto.id_proyecto = proyecto.id;
     }
 
     public setFechaPago(){

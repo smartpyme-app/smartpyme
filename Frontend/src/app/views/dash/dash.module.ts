@@ -18,6 +18,8 @@ import { DashRoutingModule } from './dash.routing.module';
 
 import { DashComponent }         from './dash.component';
 
+import { OrganizacionesDashComponent }    from './organizaciones/organizaciones-dash.component';
+
 import { AdminDashComponent }    from './admin/admin-dash.component';
 import { DatosComponent }        from './admin/datos/datos.component';
 import { DashOrdenesComponent }  from './admin/ordenes/dash-ordenes.component';
@@ -58,6 +60,7 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
     DashOrdenesComponent,
     // CalendarioComponent,
     TopsComponent,
+    OrganizacionesDashComponent,
     AdminDashComponent,
     CajaDashComponent,
     CajaOrdenesComponent,
@@ -72,6 +75,7 @@ import { CajaDevolucionesComponent }   from './caja/devoluciones/caja-devolucion
     DatosComponent,
     DashOrdenesComponent,
     TopsComponent,
+    OrganizacionesDashComponent,
     AdminDashComponent,
     CajaDashComponent,
     CajaOrdenesComponent,

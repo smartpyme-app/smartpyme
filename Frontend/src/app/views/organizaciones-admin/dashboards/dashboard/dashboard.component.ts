@@ -1,0 +1,39 @@
+import { Component, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+@Component({
+  selector: 'app-dashboard',
+  templateUrl: './dashboard.component.html'
+})
+export class DashboardComponent implements OnInit {
+
+    public dashboard: any = {};
+    public loading = false;
+    public htmlContent!: SafeHtml;
+
+    constructor( 
+        public apiService: ApiService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router,
+        private sanitizer: DomSanitizer
+    ) { }
+
+    ngOnInit() {
+        const id = +this.route.snapshot.paramMap.get('id')!;
+        
+        this.loading = true;
+
+        this.apiService.read('dashboard/', id).subscribe(dashboard => { 
+            this.dashboard = dashboard;
+            this.htmlContent = this.sanitizer.bypassSecurityTrustHtml(this.dashboard.codigo_embed);
+
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+
+
+    }
+
+}

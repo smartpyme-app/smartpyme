@@ -49,7 +49,7 @@ export class DocumentosComponent implements OnInit {
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
-
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
@@ -69,6 +69,7 @@ export class DocumentosComponent implements OnInit {
             }
             this.loading = false;
             this.loadAll();
+            this.alertService.modal = false;
             this.modalRef.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
     }

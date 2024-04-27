@@ -10,6 +10,7 @@ import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { HistorialVentasComponent } from './ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from './ventas/detalle/detalle-ventas.component';
@@ -31,6 +32,7 @@ import { ReportesComponent } from './reportes.component';
     RouterModule,
     PipesModule,
     SharedModule,
+    NgSelectModule,
     ProgressbarModule.forRoot(),
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),

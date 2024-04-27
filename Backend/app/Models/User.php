@@ -23,6 +23,7 @@ class User extends Authenticatable implements JWTSubject
         'id_empresa',
         'enable',
         'tour_bienvenida',
+        'codigo',
         'id_sucursal',
         'tipo',
         'modulo_citas',
@@ -68,6 +69,10 @@ class User extends Authenticatable implements JWTSubject
 
     public function sucursal(){
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    }
+
+    public function accesos(){
+        return $this->hasMany('App\Models\Admin\Acceso', 'id_usuario');
     }
 
     public function getJWTIdentifier() {

@@ -85,6 +85,17 @@
                     <!-- <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto> -->
                 </div>
             </div>
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
+                <label for="">Proyecto</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="gasto.id_proyecto" class="form-select p-0">
+                        <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                            {{ proyecto.nombre }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-proyecto [id_proyecto]="gasto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+                </div>
+            </div>
         </div>
     </div>
     <div class="bg-white rounded p-3 mb-3">

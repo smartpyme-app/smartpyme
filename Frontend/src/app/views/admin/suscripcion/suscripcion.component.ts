@@ -23,14 +23,18 @@ export class SuscripcionComponent implements OnInit {
   	) { }
 
   	ngOnInit() {
-  	    this.loading = true;
+  	    this.loadAll();
+  	}
+    
+    public loadAll(){
+        this.loading = true;
         this.usuario = this.apiService.auth_user();
         this.apiService.getAll('suscripcion').subscribe(suscripcion => {
             this.suscripcion = suscripcion;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
-  	}
-     
+    }
+    
   	public onSubmit() {
   	    this.saving = true;
   	    this.apiService.store('suscripcion', this.suscripcion).subscribe(suscripcion => {
