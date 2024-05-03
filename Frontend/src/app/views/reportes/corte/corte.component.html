@@ -73,20 +73,21 @@
                         </tr>
                     </thead>
                   <tbody>
-                    <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
+                    <!-- <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
                         <td>
                             {{ forma_pago.nombre }}
                         </td>
                         <td class="text-right">{{ forma_pago.cantidad }}</td>
                         <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
-                        <!-- <span *ngIf="forma_pago.nombre == 'Tarjeta de crédito/débito'">
+                        <span *ngIf="forma_pago.nombre == 'Tarjeta de crédito/débito'">
                             <tr  *ngFor="let banco of indicadores.total_ventas_banco">
                                 <td><li class="ml-4">{{ banco.nombre }}</li> </td>
                                 <td class="text-right">{{ banco.cantidad }} </td>
                                 <td class="text-right"> ${{ banco.total }}</td>
                             </tr>
-                        </span> -->
-                    </tr>
+                        </span>
+                    </tr> -->
+                    <tr><td>Ventas</td><td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td><td class="text-right">${{ indicadores.totalVentasPagadas }}</td></tr>
                     <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">${{ indicadores.totalRecibos }}</td></tr>
                     <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">${{ indicadores.totalDevolucionesVenta }}</td></tr>
                     <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">${{ indicadores.totalGastosPagados }}</td></tr>

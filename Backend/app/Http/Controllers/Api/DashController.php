@@ -94,6 +94,7 @@ class DashController extends Controller
         $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario]);
         
         $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();
+        $indicadores->cantidadVentasPagadas = $indicadores->getCantidadVentasPagadas();
         $indicadores->totalRecibos = $indicadores->getTotalRecibos();
         $indicadores->totalVentasPendientes = $indicadores->getTotalVentasPendientes();
         $indicadores->totalDevolucionesVenta = $indicadores->getTotalDevolucionesVenta();
