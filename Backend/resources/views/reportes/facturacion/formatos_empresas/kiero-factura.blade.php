@@ -14,7 +14,7 @@
             line-height: 15px;
             margin-top: -0.6cm;
         }
-        .factura{margin: 2cm 0.5cm 0cm 0.5cm; position: relative; height: 12cm;}
+        .factura{margin: 2cm 0.2cm 0cm 0.2cm; position: relative; height: 12cm;}
         p{margin: 0px 0px 4px 0px; }
 
         table   {text-align: left; border-collapse: collapse; width: 100%;}
@@ -26,9 +26,9 @@
 /*        table#footer td{ border: 1px solid #000; line-height: 15px;}*/
 
         .cantidad{ width: 0.7cm; text-align: left;}
-        .producto{ width: 4cm; text-align: left;}
-        .precio{ width: 1.2cm; text-align: left;}
-        .gravadas{ width: 1.2cm; text-align: left;}
+        .producto{ width: 3.8cm; text-align: left;}
+        .precio{ width: 1.3cm; text-align: left;}
+        .gravadas{ width: 1.3cm; text-align: left;}
         .letras{ margin-top: 120px; position: absolute; bottom: -400px;}
         
         .no-print{position: absolute;}
