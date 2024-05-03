@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 @Component({
   selector: 'app-ventas',
@@ -14,6 +15,7 @@ export class VentasComponent implements OnInit {
     public venta:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public sending:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingVentas:boolean = false;
 
@@ -29,7 +31,7 @@ export class VentasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(public apiService: ApiService, private mhService: MHService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
@@ -129,12 +131,12 @@ export class VentasComponent implements OnInit {
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
         
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
@@ -246,6 +248,71 @@ export class VentasComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
         this.modalRef = this.modalService.show(template);
+    }
+
+
+    // DTE
+
+    openDTE(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template);
+        if(!this.venta.dte){
+            this.emitirDTE();
+        }
+    }
+
+    imprimirDTEPDF(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEJSON(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    emitirDTE(){
+        this.saving = true;
+        this.apiService.store('generarDTE', this.venta).subscribe(dte => {
+            // this.alertService.success('DTE generado.', 'El documento ha sido generado.');
+            this.venta.dte = dte;
+            this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                this.venta.dte.firmaElectronica = dteFirmado.body;
+                // this.alertService.success('DTE firmado.', 'El documento ha sido firmado.');
+                
+                this.mhService.enviarDTE(this.venta, dteFirmado.body).subscribe(dte => {
+                    if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                        this.venta.dte.sello = dte.selloRecibido;
+                        this.apiService.store('venta', this.venta).subscribe(data => {
+                            // this.alertService.success('Venta guardada.', 'El documento ha sido guardada.');
+                        },error => {this.alertService.error(error); this.saving = false; });
+                    }
+                    this.alertService.modal = false;
+                    this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                },error => {
+                    if(error.error.descripcionMsg){
+                        this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                    }
+                    if(error.error.observaciones.length > 0){
+                        this.alertService.warning('Hubo un problema', error.error.observaciones);
+                    }
+                    this.saving = false;
+                });
+
+            },error => {this.alertService.error(error);this.saving = false; });
+
+        },error => {this.alertService.error(error);this.saving = false; });
+    }
+
+     enviarDTE(){
+        this.sending = true;
+        this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
+            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.sending = false;
+
+            setTimeout(()=>{
+                this.modalRef?.hide();
+            },5000);
+        },error => {this.alertService.error(error); this.sending = false; });
     }
 
 

@@ -123,6 +123,14 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
+
+                                    <a *ngIf="!venta?.dte?.sello" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="venta?.dte?.sello" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
+
                                     <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
@@ -171,7 +179,7 @@
 <ng-template #mabono>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">Recibo de pago </h5>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-crear-abono-venta [venta]="venta" (update)="filtrarVentas()"></app-crear-abono-venta>
@@ -283,6 +291,37 @@
   </div>
 </ng-template>
 
+<ng-template #mDTE>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">DTE </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="d-grid">
+
+            <button *ngIf="venta?.dte?.sello" (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
+                Ver JSON
+            </button>
+
+            <button *ngIf="venta?.dte?.sello" (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
+                Ver PDF
+            </button>
+
+            <button *ngIf="venta?.dte?.sello" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!sending">Enviar por correo</span>
+                <span *ngIf="sending">Enviando...</span>
+            </button>
+
+            <button *ngIf="!venta?.dte?.sello" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!saving">Emitir</span>
+                <span *ngIf="saving">Emitiendo...</span>
+            </button>
+
+        </div>
+  </div>
+</ng-template>
+
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
@@ -327,7 +366,7 @@
                 <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
                     <option value="">Todos</option>
                     <option *ngFor="let documento of documentos" [value]="documento.id">
-                        {{ documento.nombre }}
+                        {{ documento.nombre | filter:'id_sucursal':venta.id_sucursal"}}
                     </option>
                 </select>
             </div>

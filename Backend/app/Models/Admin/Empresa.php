@@ -50,7 +50,17 @@ class Empresa extends Model {
         'modulo_paquetes',
         'modulo_citas',
         'modulo_proyectos',
-        'activo'
+        'activo',
+
+        'cod_municipio',
+        'cod_departamento',
+        'cod_actividad_economica',
+        'tipo_establecimiento',
+        'mh_pwd_certificado',
+        'mh_usuario',
+        'mh_contrasena',
+        'cod_estable_mh',
+        'cod_estable',
     ];
 
     protected $appends = ['estado_plan'];

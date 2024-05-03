@@ -13,10 +13,11 @@ import { ApiService } from '@services/api.service';
 export class ProductoInformacionComponent implements OnInit {
 
     @Input() producto: any = {};
-    public categorias:any[] = [];
+    public categorias:any = [];
     public usuario:any = {};
     public categoria:any = {};
-    public bodegas:any[] = [];
+    public bodegas:any = [];
+    public medidas:any = [];
     public loading = false;
     public guardar = false;
 
@@ -29,9 +30,12 @@ export class ProductoInformacionComponent implements OnInit {
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
+        
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
+
+        this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
     }
 

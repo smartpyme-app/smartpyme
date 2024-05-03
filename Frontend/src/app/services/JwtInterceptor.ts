@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpHeaders } from '@angular/common/http';
-import { ApiService } from './../services/api.service';
+import { ApiService } from '@services/api.service';
 
 @Injectable()
 export class JwtInterceptor  implements HttpInterceptor {
@@ -10,7 +10,15 @@ export class JwtInterceptor  implements HttpInterceptor {
   ){}
 
   intercept(req: HttpRequest<any>, next: HttpHandler) {
+
+    const saltarJWT = req.params.get('saltarJWT');
+
+    if (saltarJWT) {
+        return next.handle(req);
+    }
+
     let token = this.apiService.auth_token();
+
     if(token) {
       const httpRequest = req.clone({
         headers: new HttpHeaders({

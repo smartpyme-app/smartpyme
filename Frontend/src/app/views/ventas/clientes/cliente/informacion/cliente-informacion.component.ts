@@ -15,6 +15,9 @@ export class ClienteInformacionComponent implements OnInit {
     public cliente:any = {};
     public loading = false;
     public saving = false;
+    public departamentos:any = [];
+    public municipios:any = [];
+    public actividad_economicas:any = [];
 
     modalRef?: BsModalRef;
 
@@ -25,6 +28,9 @@ export class ClienteInformacionComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
     }
 
     public loadAll(){
@@ -47,6 +53,21 @@ export class ClienteInformacionComponent implements OnInit {
 
     public setTipo(tipo:any){
         this.cliente.tipo = tipo;
+    }
+
+    setGiro(){
+        this.cliente.giro = this.actividad_economicas.find((item:any) => item.cod == this.cliente.cod_giro).nombre;
+        console.log(this.cliente.giro);
+    }
+
+    setMunicipio(){
+        this.cliente.municipio = this.municipios.find((item:any) => item.cod == this.cliente.cod_municipio && item.cod_departamento == this.cliente.cod_departamento).nombre;
+    }
+
+    setDepartamento(){
+        this.cliente.departamento = this.departamentos.find((item:any) => item.cod == this.cliente.cod_departamento).nombre;
+        this.cliente.cod_municipio = null;
+        this.cliente.municipio = null;
     }
 
     public onSubmit():void{

@@ -33,6 +33,7 @@ export class AppComponent implements OnInit {
 
 
         this.usuario = this.apiService.auth_user();
+        
         this.tourSteps = [
             {
                 anchorId: 'tour.resumen',

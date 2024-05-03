@@ -36,7 +36,7 @@ export class ProductoComponent implements OnInit {
 	      	} else {
 				this.producto = {};
 				this.producto.tipo = 'Producto';
-				// this.producto.medida = 'Unidad';
+				this.producto.medida = 'Unidad';
 				this.producto.id_empresa = this.apiService.auth_user().id_empresa;
 
 				if (this.route.snapshot.queryParamMap.get('tipo')!) {

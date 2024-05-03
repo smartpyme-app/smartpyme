@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-
+import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -15,14 +15,23 @@ export class EmpresaComponent implements OnInit {
     public empresa: any = {};
     public loading = false;
     public saving = false;
+    public check = false;
+    public departamentos:any = [];
+    public municipios:any = [];
+    public actividad_economicas:any = [];
 
   	constructor( 
-  	    public apiService: ApiService, private alertService: AlertService,
+  	    public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
   	    private route: ActivatedRoute, private router: Router
   	) { }
 
   	ngOnInit() {
         this.loadAll();
+
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+
   	}
 
     public loadAll() {
@@ -47,6 +56,18 @@ export class EmpresaComponent implements OnInit {
   	        this.saving = false;
   	    },error => {this.alertService.error(error); this.saving = false; });
   	}
+
+    setGiro(){
+        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
+    }
+
+    setMunicipio(){
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio).nombre;
+    }
+
+    setDepartamento(){
+        this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
+    }
 
     setPais(){
         if(this.empresa.pais == 'El Salvador'){
@@ -105,5 +126,36 @@ export class EmpresaComponent implements OnInit {
             this.alertService.success('Logo actualizo', 'Tu logo fue guardado exitosamente.');
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
+
+    public onCheckMH() {
+        this.check = true;
+        
+        this.mhService.auth().subscribe(response => {
+            this.check = false;
+
+            if(response.status == 'ERROR'){
+                this.alertService.info('Revisar', response.body.descripcionMsg);
+            }else{
+                this.alertService.success('Conección exitosa', 'El proceso se realizo correctamente.');
+            }
+        },error => {this.alertService.error(error); this.check = false; });
+
+    }
+
+    public onCheckFE() {
+        this.check = true;
+        
+        this.mhService.verificarFirmador().subscribe(response => {
+            this.check = false;
+            console.log(response.status)
+            if (response.status === 200) {
+              this.alertService.success('La solicitud fue exitosa.', 'El proceso se realizo correctamente.');
+            } else {
+              this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
+            };
+        },error => {this.alertService.error(error); this.check = false; });
+
+    }
+
 
 }

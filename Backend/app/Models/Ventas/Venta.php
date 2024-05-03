@@ -49,7 +49,9 @@ class Venta extends Model {
         'id_usuario',
         'id_vendedor',
         'id_empresa',
-        'id_sucursal'
+        'id_sucursal',
+        'dte',
+        'dte_invalidacion',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
@@ -72,6 +74,11 @@ class Venta extends Model {
             return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
         }
         return 'Consumidor Final';
+    }
+
+    public function getDteAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
     }
 
     public function getNombreUsuarioAttribute()

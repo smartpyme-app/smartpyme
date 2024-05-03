@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 
 import { Router, ActivatedRoute } from '@angular/router';
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 declare let $:any;
 
@@ -18,7 +19,8 @@ export class LoginComponent implements OnInit {
     public anio:any = '';
     public showpassword:boolean = false;
 
-    constructor( private apiService: ApiService, private router: Router, private alertService: AlertService) { }
+    constructor( private apiService: ApiService, private mhService: MHService,
+        private router: Router, private alertService: AlertService) { }
 
     ngOnInit() {
         localStorage.clear();
@@ -32,6 +34,10 @@ export class LoginComponent implements OnInit {
             data => {
                 this.router.navigate(['/']);
                 this.loading = false;
+
+                this.mhService.login();
+                this.apiService.loadData();
+                
             },
             error => {
                 $('.container').addClass("animated shake");

@@ -16,6 +16,9 @@ export class CrearClienteComponent implements OnInit {
     @Output() update = new EventEmitter();
     public loading = false;
     public saving = false;
+    public departamentos:any = [];
+    public municipios:any = [];
+    public actividad_economicas:any = [];
 
     modalRef?: BsModalRef;
 
@@ -25,6 +28,9 @@ export class CrearClienteComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
     }
 
     openModal(template: TemplateRef<any>) {
@@ -56,6 +62,20 @@ export class CrearClienteComponent implements OnInit {
             this.alertService.modal = false;
             this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
         },error => {this.alertService.error(error); this.saving = false; });
+    }
+
+    setGiro(){
+        this.cliente.giro = this.actividad_economicas.find((item:any) => item.cod == this.cliente.cod_giro).nombre;
+    }
+
+    setMunicipio(){
+        this.cliente.municipio = this.municipios.find((item:any) => item.cod == this.cliente.cod_municipio && item.cod_departamento == this.cliente.cod_departamento).nombre;
+    }
+
+    setDepartamento(){
+        this.cliente.departamento = this.departamentos.find((item:any) => item.cod == this.cliente.cod_departamento).nombre;
+        this.cliente.cod_municipio = null;
+        this.cliente.municipio = null;
     }
 
     public verificarSiExiste(){
