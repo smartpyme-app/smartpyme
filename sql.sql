@@ -22,3 +22,15 @@ CREATE TABLE licencia_empresas (
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
+
+CREATE TABLE detalles_evento (
+    id int NOT NULL AUTO_INCREMENT,
+    id_producto int  NOT NULL,
+    cantidad int NOT NULL,
+    id_evento int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE eventos CHANGE id_servicio id_servicio INT(11) NULL;
