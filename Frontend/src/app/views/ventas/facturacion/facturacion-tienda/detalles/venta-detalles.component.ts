@@ -127,12 +127,15 @@ export class VentaDetallesComponent implements OnInit {
             this.detalle.id = null;
             
             // Verifica si el producto ya fue ingresado
-                let detalle = null// this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
+            let detalle = null;
+            if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
+                detalle = this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto)
+            }
                 
-                if(detalle) {
-                    this.detalle = detalle;
-                    this.detalle.cantidad += producto.cantidad;
-                }
+            if(detalle) {
+                this.detalle = detalle;
+                this.detalle.cantidad += producto.cantidad;
+            }
 
             this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
             

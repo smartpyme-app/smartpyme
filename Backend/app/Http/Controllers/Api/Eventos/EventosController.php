@@ -55,7 +55,7 @@ class EventosController extends Controller
 
     public function list(Request $request) {
        
-        $eventos = Evento::when($request->buscador, function($query) use ($request){
+        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')

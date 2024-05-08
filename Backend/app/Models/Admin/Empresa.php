@@ -36,6 +36,7 @@ class Empresa extends Model {
         'pais',
         'total',
         'editar_precio_venta',
+        'agrupar_detalles_venta',
         'editar_descripcion_venta',
         'impresion_en_facturacion',
         'plan',

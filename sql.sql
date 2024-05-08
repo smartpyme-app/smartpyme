@@ -23,6 +23,9 @@ CREATE TABLE licencia_empresas (
     PRIMARY KEY (id)
 );
 
+ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
+ALTER TABLE eventos CHANGE id_servicio id_servicio INT(11) NULL;
+
 CREATE TABLE detalles_evento (
     id int NOT NULL AUTO_INCREMENT,
     id_producto int  NOT NULL,
@@ -33,4 +36,3 @@ CREATE TABLE detalles_evento (
     PRIMARY KEY (id)
 );
 
-ALTER TABLE eventos CHANGE id_servicio id_servicio INT(11) NULL;
