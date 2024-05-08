@@ -37,18 +37,18 @@ class AjustesExport implements FromCollection, WithHeadings, WithMapping
     }
 
     public function map($row): array{
-           $fields = [
-              $row->producto()->pluck('nombre')->first(),
-              $row->producto()->first()->categoria()->pluck('nombre')->first(),
-              $row->sucursal()->pluck('nombre')->first(),
-              $row->stock_actual,
-              $row->ajuste,
-              $row->stock_real,
-              $row->usuario()->pluck('name')->first(),
-              \Carbon\Carbon::parse($row->created_at)->format('d/m/Y'),
-              $row->estado,
-              $row->concepto,
-         ];
+        $fields = [
+            $row->producto()->pluck('nombre')->first(),
+            $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
+            $row->sucursal()->pluck('nombre')->first(),
+            $row->stock_actual,
+            $row->ajuste,
+            $row->stock_real,
+            $row->usuario()->pluck('name')->first(),
+            \Carbon\Carbon::parse($row->created_at)->format('d/m/Y'),
+            $row->estado,
+            $row->concepto,
+        ];
         return $fields;
     }
 
