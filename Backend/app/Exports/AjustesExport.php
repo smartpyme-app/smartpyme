@@ -39,7 +39,7 @@ class AjustesExport implements FromCollection, WithHeadings, WithMapping
     public function map($row): array{
            $fields = [
               $row->producto()->pluck('nombre')->first(),
-              $row->producto()->first()->categoria()->pluck('nombre')->first(),
+              $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
               $row->sucursal()->pluck('nombre')->first(),
               $row->stock_actual,
               $row->ajuste,
