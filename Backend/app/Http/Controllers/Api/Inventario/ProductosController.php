@@ -52,6 +52,9 @@ class ProductosController extends Controller
                                 ->when($request->nombre, function($q) use ($request){
                                     $q->where('nombre', $request->nombre);
                                 })
+                                ->when($request->compuestos !== null, function($q) use ($request){
+                                    $q->whereHas('composiciones');
+                                })
                                 ->when($request->id_proveedor, function($q) use ($request){
                                     $q->whereHas('proveedores', function($q) use ($request){
                                         return $q->where("id_proveedor", $request->id_proveedor);
@@ -115,7 +118,8 @@ class ProductosController extends Controller
     public function read($id) {
 
         $producto = Producto::where('id', $id)
-                                ->with('inventarios', 'composiciones.compuesto', 'precios.usuarios', 'imagenes', 'proveedores.proveedor')
+                                ->with('inventarios', 'composiciones.compuesto', 'composiciones.opciones',
+                                    'precios.usuarios', 'imagenes', 'proveedores.proveedor')
                                 ->firstOrFail();
 
         return Response()->json($producto, 200);

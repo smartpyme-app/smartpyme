@@ -36,3 +36,13 @@ CREATE TABLE detalles_evento (
     PRIMARY KEY (id)
 );
 
+
+CREATE TABLE producto_composicion_opciones (
+    id int NOT NULL AUTO_INCREMENT,
+    id_composicion int  NOT NULL,
+    id_producto int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+

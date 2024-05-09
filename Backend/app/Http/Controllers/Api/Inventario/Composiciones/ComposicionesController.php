@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api\Inventario;
+namespace App\Http\Controllers\Api\Inventario\Composiciones;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Inventario\Composicion;
+use App\Models\Inventario\Composiciones\Composicion;
 
 class ComposicionesController extends Controller
 {
