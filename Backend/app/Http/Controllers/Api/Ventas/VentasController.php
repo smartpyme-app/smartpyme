@@ -299,10 +299,10 @@ class VentasController extends Controller
                 // Actualizar inventario
                 if ($request->cotizacion == 0) {
                     
-                    $producto = Producto::where('id', $det['id_producto'])
-                                        ->with('composiciones')->firstOrFail();
+                    // $producto = Producto::where('id', $det['id_producto'])
+                                        // ->with('composiciones')->firstOrFail();
 
-                    $inventario = Inventario::where('id_producto', $producto->id)
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])
                                         ->where('id_sucursal', $venta->id_sucursal)->first();
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
@@ -311,15 +311,15 @@ class VentasController extends Controller
                     }
 
                     // Inventario compuestos
-                    foreach ($producto->composiciones as $comp) {
+                    foreach ($det['composiciones'] as $comp) {
 
-                        $inventario = Inventario::where('id_producto', $comp->id_compuesto)
+                        $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
                                     ->where('id_sucursal', $venta->id_sucursal)->first();
 
                         if ($inventario) {
-                            $inventario->stock -= $det['cantidad'] * $comp->cantidad;
+                            $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
                             $inventario->save();
-                            $inventario->kardex($venta, ($det['cantidad'] * $comp->cantidad));
+                            $inventario->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
                         }
                     }
 

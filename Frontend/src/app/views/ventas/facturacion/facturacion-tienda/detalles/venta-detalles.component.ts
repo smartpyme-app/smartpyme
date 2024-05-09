@@ -196,5 +196,18 @@ export class VentaDetallesComponent implements OnInit {
         this.sumTotal.emit();
     }
 
+    public cambiarOpcion(composicion:any, opcion:any){
+
+        console.log(opcion);
+        let aux = Object.assign({}, composicion);
+
+        composicion.id_compuesto         = opcion.id_producto;
+        composicion.nombre_compuesto     = opcion.nombre_producto;
+
+        opcion.id_producto         = aux.id_compuesto;
+        opcion.nombre_compuesto      = aux.nombre_producto;
+
+    }
+
 
 }

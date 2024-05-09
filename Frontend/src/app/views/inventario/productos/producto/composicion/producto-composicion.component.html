@@ -93,7 +93,7 @@
         <app-notificaciones-container></app-notificaciones-container>
     <div class="row">
         <div class="form-group col-md-12">
-            <label for="">Selecciones un producto para agregarlo como opción:</label>
+            <label for="">Seleccione un producto para agregarlo como opción:</label>
             <ng-select name="id_producto" (change)="agregarOpcion()" [(ngModel)]="opcion.id_producto" class="form-select p-0">
                 <ng-option value="" selected>Seleccionar producto</ng-option>
                 <ng-option *ngFor="let producto of productos" [value]="producto.id">

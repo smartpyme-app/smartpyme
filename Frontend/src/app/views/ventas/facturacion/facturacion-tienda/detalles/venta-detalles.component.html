@@ -19,7 +19,7 @@
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="align-top">
                 <tr *ngIf="venta?.detalles?.length < 1">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
@@ -36,12 +36,38 @@
                             <div>
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
-                                <ul style="font-size: 14px;">
-                                    <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.nombre_compuesto }}</li>
-                                </ul>
+                                <div style="font-size: 14px;" >
+                                    <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true" *ngFor="let composicion of detalle?.composiciones">
+                                        <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
+                                        <span class="ms-5 badge bg-primary">{{ composicion?.opciones?.length }} Opciones</span>
+                                        <ng-template #popTemplate>
+                                            <ul class="list-group">
+                                                <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
+                                                    {{ opcion.nombre_producto }}
+                                                </button>
+                                            </ul>
+                                        </ng-template>
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <input class="form-control" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta" type="text" [(ngModel)]="detalle.descripcion" name="descripcion">
+                        <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
+                            <input class="form-control" type="text" [(ngModel)]="detalle.descripcion" name="descripcion">
+                            <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
+                            <div style="font-size: 14px;" >
+                                <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true" *ngFor="let composicion of detalle?.composiciones">
+                                    <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
+                                    <span class="ms-5 badge bg-primary">{{ composicion?.opciones?.length }} Opciones</span>
+                                    <ng-template #popTemplate>
+                                        <ul class="list-group">
+                                            <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
+                                                {{ opcion.nombre_producto }}
+                                            </button>
+                                        </ul>
+                                    </ng-template>
+                                </a>
+                            </div>
+                        </div>
                     </td>
                     <td style="width: 150px;">
                         <input type="number" tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }" name="cantidad">

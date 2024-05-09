@@ -12,9 +12,9 @@ class Opcion extends Model {
         'id_producto'
     );
 
-    protected $appends = ['producto_nombre'];
+    protected $appends = ['nombre_producto'];
 
-    public function getProductoNombreAttribute(){
+    public function getNombreProductoAttribute(){
         return $this->producto()->pluck('nombre')->first();
     }
 
