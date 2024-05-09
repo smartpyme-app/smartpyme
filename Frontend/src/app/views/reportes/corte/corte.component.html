@@ -26,31 +26,31 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentasPagadas ? indicadores.totalVentasPagadas : 0) | currency:'USD':'symbol':'1.2' }}
+            {{ (indicadores.totalVentasPagadas ? indicadores.totalVentasPagadas : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
     <div class="card p-3">
         <h3 class="text-center text-info">
-            {{ (indicadores.totalRecibos ? indicadores.totalRecibos : 0) | currency:'USD':'symbol':'1.2' }}
+            {{ (indicadores.totalRecibos ? indicadores.totalRecibos : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> ABONOS</p>
     </div>
     <div class="card p-3">
         <h3 class="text-center text-secondary">
-            {{ (indicadores.totalVentasPendientes ? indicadores.totalVentasPendientes : 0) | currency:'USD':'symbol':'1.2' }}
+            {{ (indicadores.totalVentasPendientes ? indicadores.totalVentasPendientes : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> CREDITOS</p>
     </div>
     <div class="card p-3">
         <h3 class="text-center text-danger">
-            {{ (indicadores.totalDevolucionesVenta ? indicadores.totalDevolucionesVenta : 0) | currency:'USD':'symbol':'1.2' }}
+            {{ (indicadores.totalDevolucionesVenta ? indicadores.totalDevolucionesVenta : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
     </div>
     <div class="card p-3" *ngIf="usuario.tipo == 'Administrador'">
         <h3 class="text-center text-secondary">
-            {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency:'USD':'symbol':'1.2' }}
+            {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
     </div>
@@ -78,7 +78,7 @@
                             {{ forma_pago.nombre }}
                         </td>
                         <td class="text-right">{{ forma_pago.cantidad }}</td>
-                        <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ forma_pago.total | currency }}</td>
                         <span *ngIf="forma_pago.nombre == 'Tarjeta de crédito/débito'">
                             <tr  *ngFor="let banco of indicadores.total_ventas_banco">
                                 <td><li class="ml-4">{{ banco.nombre }}</li> </td>
@@ -87,11 +87,11 @@
                             </tr>
                         </span>
                     </tr> -->
-                    <tr><td>Ventas</td><td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td><td class="text-right">${{ indicadores.totalVentasPagadas }}</td></tr>
-                    <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">${{ indicadores.totalRecibos }}</td></tr>
-                    <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">${{ indicadores.totalDevolucionesVenta }}</td></tr>
-                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">${{ indicadores.totalGastosPagados }}</td></tr>
-                    <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">${{ indicadores.totalVentasPendientes }}</td></tr>
+                    <tr><td>Ventas</td><td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td><td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td></tr>
+                    <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">{{ indicadores.totalRecibos | currency}}</td></tr>
+                    <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">{{ indicadores.totalDevolucionesVenta | currency}}</td></tr>
+                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">{{ indicadores.totalGastosPagados | currency}}</td></tr>
+                    <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">{{ indicadores.totalVentasPendientes | currency}}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -121,7 +121,7 @@
                         <tr *ngFor="let forma_pago of indicadores?.resumen_de_caja">
                             <td>{{ forma_pago.nombre }}</td>
                             <td class="text-right">{{ forma_pago.cantidad }}</td>
-                            <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-right">{{ forma_pago.total | currency }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -152,7 +152,7 @@
                         <tr *ngFor="let canal of indicadores?.total_ventas_canal">
                             <td>{{ canal.nombre }}</td>
                             <td class="text-right">{{ canal.cantidad }}</td>
-                            <td class="text-right">{{ canal.total | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-right">{{ canal.total | currency }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -182,8 +182,8 @@
                         </tr>
                         <tr *ngFor="let documento of indicadores?.total_documentos_emitidos">
                             <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                            <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
-                            <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-right" width="20%">{{ documento.inicio + ' - ' + documento.fin }}</td>
+                            <td class="text-right" width="17%">{{ documento.total | currency }}</td>
                         </tr>
 
                     </tbody>
@@ -212,10 +212,10 @@
                                 <p class="text-muted">No hay datos que mostrar</p>
                             </td>
                         </tr>
-                        <tr *ngFor="let documento of indicadores?.total_documentos_con_devolucion">
-                            <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                            <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
-                            <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <tr *ngFor="let devolucion of indicadores?.total_documentos_con_devolucion">
+                            <td>{{ devolucion?.venta?.nombre_documento }}</td>
+                            <td class="text-right" width="20%">{{ devolucion?.venta?.correlativo }}</td>
+                            <td class="text-right" width="17%">{{ devolucion.total | currency }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -243,10 +243,10 @@
                                 <p class="text-muted">No hay datos que mostrar</p>
                             </td>
                         </tr>
-                        <tr *ngFor="let documento of indicadores?.total_documentos_anulados">
-                            <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                            <td class="text-right" width="20%">{{ documento.nombre + documento.inicio + ' - ' + documento.nombre + documento.fin }}</td>
-                            <td class="text-right" width="17%">{{ documento.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <tr *ngFor="let venta of indicadores?.total_documentos_anulados">
+                            <td>{{ venta.nombre_documento }}</td>
+                            <td class="text-right" width="20%">{{ venta.correlativo }}</td>
+                            <td class="text-right" width="17%">{{ venta.total | currency }}</td>
                         </tr>
                     </tbody>
                 </table>

@@ -106,7 +106,7 @@ class DashController extends Controller
         $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
         $indicadores->total_ventas_banco = $indicadores->getVentasByBanco();
         $indicadores->total_documentos_emitidos = $indicadores->getDocumentoEmitidos();
-        $indicadores->total_documentos_con_devoluciones = $indicadores->getDocumentoConDevolucion();
+        $indicadores->total_documentos_con_devolucion = $indicadores->getDocumentoConDevolucion();
         $indicadores->total_documentos_anulados = $indicadores->getDocumentosAnulados();
 
         $indicadores->cantidadRecibos = $indicadores->getCantidadRecibos();

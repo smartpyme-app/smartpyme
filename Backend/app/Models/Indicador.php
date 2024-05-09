@@ -88,6 +88,7 @@ class Indicador extends Model
                                 $q->where('id_usuario', $this->id_usuario);
                             });
                         })
+                        ->with('venta')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
