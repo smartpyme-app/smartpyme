@@ -14,6 +14,17 @@
                        </figure>
                    </div>
                </div>
+               <div class="row justify-content-center">
+                <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
+
+                    <div class="btn btn-primary file-upload" type="button" > Agregar
+                        <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                    </div>
+                    <div class="btn btn-primary" type="button">Eliminar</div>
+
+                </div>
+
+               </div>
                 <h5 class="mb-3">Datos de mi empresa</h5>
                 <div class="row">
                     <div class="form-group col-md-6 col-lg-4">

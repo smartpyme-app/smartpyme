@@ -1,7 +1,9 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, Input, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { switchScan } from 'rxjs';
+import { NgModel } from '@angular/forms';
 
 
 @Component({
@@ -17,16 +19,56 @@ export class DocumentosComponent implements OnInit {
     public loading:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
+    public labelNombre: string = "Nota";
 
     modalRef!: BsModalRef;
+
 
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
+
     ngOnInit() {
 
         this.loadAll();
+        console.log(this.documento.nombre);
+
+
+
+    }
+
+    public onNombreChange(){
+
+        switch (this.documento.nombre) {
+            case "Factura":
+               console.log("es una factura");
+                break;
+
+           case "Crédito fiscal":
+               console.log("es una CCF");
+               break;
+
+           case "Ticket":
+               console.log("es una ticket");
+                   break;
+
+           case "Cotización":
+               console.log("es una Cotizacion");
+                   break;
+       
+            default:
+                break;
+        }
+
+        if (this.documento.nombre === "Orden de compra"){
+            this.labelNombre="Terminos y condiciones"
+        }else{
+            this.labelNombre="Notas"
+        }
+
+
+
     }
 
     public loadAll() {        
