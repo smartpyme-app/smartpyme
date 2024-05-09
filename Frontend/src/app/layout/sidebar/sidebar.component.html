@@ -35,13 +35,13 @@
             </li>
             <li class="mb-1">
                 <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
-                  <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
+                  <img src="/assets/icons/briefcase.png" class="icon me-2">Bienes
                 </button>
                 <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
-                    <li *ngIf="usuario.empresa.modulo_paquetes" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Paquetes</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><i class="fa-solid fa-house icon me-2"></i>Propiedades</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><i class="fa-solid fa-landmark icon me-2"></i>Lotes</a></li>
+                    <li *ngIf="usuario.empresa.modulo_paquetes" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><i class="fa-solid fa-car icon me-2"></i>Carros</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/materias-primas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/droplet.png" class="icon me-2">Materia prima</a></li> -->
                   </ul>
                 </div>
@@ -63,11 +63,11 @@
             </li> -->
             <li class="mb-1">
                 <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
-                    <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
+                    <img src="/assets/icons/trending-up.png" class="icon me-2">Ingresos
                 </button>
                 <div [collapse]="ventasIsCollapsed" [isAnimated]="true" id="ventas">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Cobros</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/promociones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li> -->
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
