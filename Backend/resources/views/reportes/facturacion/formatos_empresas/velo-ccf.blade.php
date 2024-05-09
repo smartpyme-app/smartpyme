@@ -34,10 +34,10 @@
         #departamento      {top: 6.5cm; left: 2.5cm; width: 9cm;}
 
 
-        table   {position: absolute; top: 6.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 7.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.6cm; text-align: left;}
 
-        .cantidad{ width: 1.5cm; text-align: center;}
+        .cantidad{  width: 1.5cm; text-align: center;}
         .codigo{ width: 2.7cm; text-align: left;}
         .producto{ width: 9.5cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
@@ -46,7 +46,7 @@
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {top: 12cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 13cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
 
         #suma       {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
@@ -56,7 +56,7 @@
         #iva_retenido     {top: 14.1cm; left: 18cm; width: 2cm; text-align: right;}
         #no_sujetas     {top: 14.4cm; left: 18cm; width: 2cm; text-align: right;}
         #exenta     {top: 14.7cm; left: 18cm; width: 2cm; text-align: right;}
-        #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right;}
+        #total      {top: 14cm; left: 18cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 
