@@ -87,7 +87,7 @@
 <ng-template #mopciones>
     <div class="modal-header">
     <h4 class="modal-title pull-left">Opciones</h4>
-        <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide()"><i class="fa fa-close"></i></button>
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
@@ -116,7 +116,7 @@
                         </td>
                     </tr>
                     <tr *ngFor="let opcion of composicion.opciones">
-                        <td>{{ opcion.producto_nombre }}</td>
+                        <td>{{ opcion.nombre_producto }}</td>
                         <td class="text-center">
                             <a (click)="deleteOpcion(opcion)" class="btn btn-danger">Eliminar</a>
                         </td>
