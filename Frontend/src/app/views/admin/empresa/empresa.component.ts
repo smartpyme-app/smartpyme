@@ -106,4 +106,20 @@ export class EmpresaComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
 
+    setDefaultFile(event:any){
+
+        this.empresa.file='/assets/img/usuarios/default.png';
+        let formData:FormData = new FormData();
+
+        for (var key in this.empresa) {
+            formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
+        }
+        
+        this.apiService.store('empresa', formData).subscribe(empresa => {
+            this.empresa.logo = ' /assets/img/usuarios/default.png';
+            this.loading = false;
+            this.alertService.success('Logo actualizo', 'Tu logo fue guardado exitosamente.');
+        }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
+    }
+
 }

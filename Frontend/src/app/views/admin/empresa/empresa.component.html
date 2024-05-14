@@ -9,7 +9,8 @@
                <div class="row justify-content-center">
                    <div class="form-group col-6 col-sm-4 col-md-2">
                        <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
-                           <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo }}" alt="logo">
+                           <!-- <img class="img-fluid" src="" alt="logo"> -->
+                           <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo  || '/assets/img/usuarios/default.png'}}" alt="logo">
                            <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                        </figure>
                    </div>
@@ -20,7 +21,8 @@
                     <div class="btn btn-primary file-upload" type="button" > Agregar
                         <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                     </div>
-                    <div class="btn btn-primary" type="button">Eliminar</div>
+                    <div class="btn btn-primary" type="button" >Eliminar</div>
+                    <!-- <button class="btn btn-primary" (click)="setDefaultFile($event)">Elim</button> -->
 
                 </div>
 
