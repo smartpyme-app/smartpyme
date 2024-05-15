@@ -102,7 +102,7 @@
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="documento.nombre">Nombre</label>
-                <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre">
+                <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre" (ngModelChange)="onNombreChange()">
                     <option value="Factura">Factura</option>
                     <option value="Crédito fiscal">Crédito fiscal</option>
                     <option value="Ticket">Ticket</option>
@@ -147,7 +147,7 @@
                 </div>
             </div>
             <div class="form-group col-12">
-                <label for="documento.nota">Nota</label>
+                <label for="documento.nota">{{labelNombre}}</label>
                 <textarea name="documento.nota" class="form-control" cols="30" rows="3" [(ngModel)]="documento.nota"></textarea>
             </div>
         </div>
