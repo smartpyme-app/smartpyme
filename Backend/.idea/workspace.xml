@@ -19,7 +19,10 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8e8d365-a3c8-419d-b6b0-30cdf3f88e2e" name="Default Changelist" comment="" />
+    <list default="true" id="d8e8d365-a3c8-419d-b6b0-30cdf3f88e2e" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/views/reportes/facturacion/formatos_empresas/smartpyme-ccf.blade.php" beforeDir="false" afterPath="$PROJECT_DIR$/resources/views/reportes/facturacion/formatos_empresas/smartpyme-ccf.blade.php" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -201,6 +204,7 @@
       <workItem from="1715214906971" duration="284000" />
       <workItem from="1715227688819" duration="4062000" />
       <workItem from="1715264277132" duration="1189000" />
+      <workItem from="1715796757004" duration="3090000" />
     </task>
     <servers />
   </component>
@@ -220,10 +224,10 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1715114006122">
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1715796821580">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/1920.0.1536.832/0.0.1920.1040@0.0.1920.1040" timestamp="1715114006122" />
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/1920.0.1536.832/0.0.1920.1040@0.0.1920.1040" timestamp="1715796821580" />
     <state x="2418" y="180" width="672" height="543" key="search.everywhere.popup/1920.0.1536.832/0.0.1920.1040@1920.0.1536.832" timestamp="1714775133989" />
   </component>
 </project>
