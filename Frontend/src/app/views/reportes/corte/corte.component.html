@@ -26,7 +26,7 @@
 <section class="d-flex justify-content-between gap-2">
     <div class="card p-3">
         <h3 class="text-center text-success">
-            {{ (indicadores.totalVentasPagadas ? indicadores.totalVentasPagadas : 0) | currency }}
+            {{ (indicadores.totalVentas ? indicadores.totalVentas : 0) | currency }}
         </h3>
         <p class="mb-0 text-center">TOTAL <br> VENTAS </p>
     </div>
@@ -67,30 +67,25 @@
                 <table class="table table-borderless mb-3">
                     <thead>
                         <tr class="bg-primary text-white">
-                            <th>Forma de pago</th>
+                            <th>Detalle</th>
                             <th class="text-right" width="30%">N° de transacciones</th>
                             <th class="text-right" width="17%">Total</th>
                         </tr>
                     </thead>
                   <tbody>
-                    <!-- <tr *ngFor="let forma_pago of indicadores?.total_ventas_forma_pago">
-                        <td>
-                            {{ forma_pago.nombre }}
-                        </td>
-                        <td class="text-right">{{ forma_pago.cantidad }}</td>
-                        <td class="text-right">{{ forma_pago.total | currency }}</td>
-                        <span *ngIf="forma_pago.nombre == 'Tarjeta de crédito/débito'">
-                            <tr  *ngFor="let banco of indicadores.total_ventas_banco">
-                                <td><li class="ml-4">{{ banco.nombre }}</li> </td>
-                                <td class="text-right">{{ banco.cantidad }} </td>
-                                <td class="text-right"> ${{ banco.total }}</td>
-                            </tr>
-                        </span>
-                    </tr> -->
-                    <tr><td>Ventas</td><td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td><td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td></tr>
+                    <tr>
+                        <td>Ventas del día</td>
+                        <td class="text-right">{{ indicadores.cantidadVentasPagadas }}</td>
+                        <td class="text-right">{{ indicadores.totalVentasPagadas | currency}}</td>
+                    </tr>
+                    <tr>
+                        <td>Ventas al crédito</td>
+                        <td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td>
+                        <td class="text-right">{{ indicadores.totalVentasPendientes| currency}}</td>
+                    </tr>
                     <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">{{ indicadores.totalRecibos | currency}}</td></tr>
                     <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">{{ indicadores.totalDevolucionesVenta | currency}}</td></tr>
-                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">{{ indicadores.totalGastosPagados | currency}}</td></tr>
+                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastos }}</td><td class="text-right">{{ indicadores.totalGastos | currency}}</td></tr>
                     <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">{{ indicadores.totalVentasPendientes | currency}}</td></tr>
                     </tbody>
                 </table>

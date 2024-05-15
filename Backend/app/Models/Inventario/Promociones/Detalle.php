@@ -19,11 +19,11 @@ class Detalle extends Model
     protected $appends = ['nombre_producto'];
 
     public function promocion(){
-        return $this->belongsTo('App\Models\Promocion', 'id_promocion');
+        return $this->belongsTo('App\Models\Inventario\Promociones\Promocion', 'id_promocion');
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Producto', 'id_producto');
+        return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
     public function getNombreProductoAttribute(){

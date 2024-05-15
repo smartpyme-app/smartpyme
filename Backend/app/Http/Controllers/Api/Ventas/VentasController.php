@@ -12,6 +12,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\DetalleCombo;
+use App\Models\Ventas\MetodoDePago;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
 use App\Models\Admin\Documento;
@@ -37,7 +38,9 @@ class VentasController extends Controller
        
         $ventas = Venta::when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
-                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
                                  })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -97,7 +100,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto')->first();
+        $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
 
@@ -311,15 +314,17 @@ class VentasController extends Controller
                     }
 
                     // Inventario compuestos
-                    foreach ($det['composiciones'] as $comp) {
+                    if (isset($det['composiciones'])) {
+                        foreach ($det['composiciones'] as $comp) {
 
-                        $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                            $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
+                                        ->where('id_sucursal', $venta->id_sucursal)->first();
 
-                        if ($inventario) {
-                            $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
-                            $inventario->save();
-                            $inventario->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
+                            if ($inventario) {
+                                $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
+                                $inventario->save();
+                                $inventario->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
+                            }
                         }
                     }
 
@@ -359,6 +364,19 @@ class VentasController extends Controller
                     $venta_impuesto->save();
                 }
             }
+
+        // Pago en diferentes metodos
+        if (isset($request['metodos_de_pago'])) {
+            foreach ($request['metodos_de_pago'] as $metodo) {
+
+                $metodo_pago = new MetodoDePago;
+                $metodo_pago->id_venta = $venta->id;
+                $metodo_pago->nombre = $metodo['nombre'];
+                $metodo_pago->total = $metodo['total'];
+                $metodo_pago->save();
+
+            }
+        }
             
 
         // Incrementar el correlarivo
