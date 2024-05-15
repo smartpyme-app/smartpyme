@@ -21,6 +21,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d8e8d365-a3c8-419d-b6b0-30cdf3f88e2e" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/Api/Ventas/VentasController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/Api/Ventas/VentasController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/resources/views/reportes/facturacion/formatos_empresas/smartpyme-ccf.blade.php" beforeDir="false" afterPath="$PROJECT_DIR$/resources/views/reportes/facturacion/formatos_empresas/smartpyme-ccf.blade.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
