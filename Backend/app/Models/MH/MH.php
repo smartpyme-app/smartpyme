@@ -11,7 +11,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 class MH extends Model
 {
     // protected $url_firmado = 'http://localhost:8113/firmardocumento/';
-    protected $url_firmado = 'http://203.161.49.180:8113/firmardocumento/';
+    protected $url_firmado = 'https://firmador.smartpyme.site:8443/firmardocumento/';
     protected $url_mh = 'https://apitest.dtes.mh.gob.sv/fesv/recepciondte';
     protected $url_anular_dte = 'https://apitest.dtes.mh.gob.sv/fesv/anulardte';
     protected $url_auth = 'https://apitest.dtes.mh.gob.sv/seguridad/auth';

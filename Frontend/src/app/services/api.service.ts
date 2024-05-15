@@ -109,10 +109,6 @@ export class ApiService {
     }
 
     loadData(){
-        // this.getAll('clientes/list').subscribe(clientes => { 
-        //     localStorage.setItem('clientes', JSON.stringify(clientes));
-        // }, error => {this.alertService.error(error); });
-
 
         this.getAll('formas-de-pago').subscribe(metodospago => {
             localStorage.setItem('metodospago', JSON.stringify(metodospago));

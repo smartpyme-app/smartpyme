@@ -32,11 +32,17 @@ export class LoginComponent implements OnInit {
         this.apiService.login(this.user)
         .subscribe(
             data => {
+                this.user = this.apiService.auth_user();
+                if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
+                    this.mhService.login();
+                }
+
+                setTimeout(()=>{
+                    this.apiService.loadData();
+                },2000);
+
                 this.router.navigate(['/']);
                 this.loading = false;
-
-                this.mhService.login();
-                this.apiService.loadData();
                 
             },
             error => {

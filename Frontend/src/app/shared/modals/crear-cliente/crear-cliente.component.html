@@ -37,20 +37,16 @@
                             <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                         </div>
                         <div class="form-group col-6 col-lg-3">
-                            <label for="correo">Correo</label>
-                            <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
-                        </div>
-                        <div class="form-group col-6 col-lg-3">
                             <label for="dui">DUI</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
                         </div>
                         <div class="form-group col-6 col-lg-3">
-                            <label for="fecha_cumpleanos">Fecha de cumpleaños</label>
-                            <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_cumpleanos" [(ngModel)]="cliente.fecha_cumpleanos">
-                        </div>
-                        <div class="form-group col-6 col-lg-3">
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                        </div>
+                        <div class="form-group col-6 col-lg-6">
+                            <label for="correo">Correo</label>
+                            <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
                         </div>
                         <div class="form-group col-md-6 col-lg-3">
                             <label for="departamento">Departamento:</label>
@@ -68,11 +64,15 @@
                                 </ng-option>
                             </ng-select>
                         </div>
-                        <div class="form-group col-12 col-md-8">
+                        <div class="form-group col-12 col-md-6">
                             <label for="direccion">Dirección:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
                         </div>
-                        <div class="form-group col-12 col-lg-4">
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="fecha_cumpleanos">Fecha de cumpleaños</label>
+                            <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_cumpleanos" [(ngModel)]="cliente.fecha_cumpleanos">
+                        </div>
+                        <div class="form-group col-12 col-lg-3">
                             <label for="red_social">Red social:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="red_social" [(ngModel)]="cliente.red_social">
                         </div>

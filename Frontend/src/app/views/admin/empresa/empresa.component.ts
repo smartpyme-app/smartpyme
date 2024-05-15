@@ -15,10 +15,13 @@ export class EmpresaComponent implements OnInit {
     public empresa: any = {};
     public loading = false;
     public saving = false;
-    public check = false;
+    public cheking = false;
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
+
+    public showpassword:boolean = false;
+    public showpassword2:boolean = false;
 
   	constructor( 
   	    public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
@@ -42,19 +45,24 @@ export class EmpresaComponent implements OnInit {
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
-  	public onSubmit() {
-  	    this.saving = true;
-  	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
-  	        this.empresa = empresa;
+  	public onSubmit(): Promise<any> {
 
-            let user:any = {}; 
-            user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-            user.empresa = empresa;
-            localStorage.setItem('SP_auth_user', JSON.stringify(user));
+        return new Promise((resolve, reject) => {
+      	    this.saving = true;
+      	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+      	        this.empresa = empresa;
 
-            this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
-  	        this.saving = false;
-  	    },error => {this.alertService.error(error); this.saving = false; });
+                let user:any = {}; 
+                user = JSON.parse(localStorage.getItem('SP_auth_user')!);
+                user.empresa = empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(user));
+
+                this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
+      	        this.saving = false;
+                resolve(null);
+      	    },error => {this.alertService.error(error); this.saving = false; resolve(null);});
+            
+        });
   	}
 
     setGiro(){
@@ -127,33 +135,43 @@ export class EmpresaComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
 
-    public onCheckMH() {
-        this.check = true;
+    public onCheckMH():void {
+        this.cheking = true;
         
-        this.mhService.auth().subscribe(response => {
-            this.check = false;
+        this.onSubmit().then(() => {
+            this.mhService.auth().subscribe(response => {
+                this.cheking = false;
 
-            if(response.status == 'ERROR'){
-                this.alertService.info('Revisar', response.body.descripcionMsg);
-            }else{
-                this.alertService.success('Conección exitosa', 'El proceso se realizo correctamente.');
-            }
-        },error => {this.alertService.error(error); this.check = false; });
+                if(response.status == 'ERROR'){
+                    this.alertService.info('Revisar', response.body.descripcionMsg);
+                }else{
+                    this.alertService.success('Conección exitosa', 'El proceso se realizo correctamente.');
+                }
+            },error => {this.alertService.error(error); this.cheking = false; });
+        });
 
     }
 
+    public mostrarPassword(){
+        this.showpassword = !this.showpassword;
+    }  
+    
+    public mostrarPassword2(){
+        this.showpassword2 = !this.showpassword2;
+    } 
+
     public onCheckFE() {
-        this.check = true;
+        this.cheking = true;
         
-        this.mhService.verificarFirmador().subscribe(response => {
-            this.check = false;
-            console.log(response.status)
-            if (response.status === 200) {
-              this.alertService.success('La solicitud fue exitosa.', 'El proceso se realizo correctamente.');
-            } else {
-              this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
-            };
-        },error => {this.alertService.error(error); this.check = false; });
+            this.mhService.verificarFirmador().subscribe(response => {
+                this.cheking = false;
+                console.log(response.status)
+                if (response.status === 200) {
+                  this.alertService.success('La solicitud fue exitosa.', 'El proceso se realizo correctamente.');
+                } else {
+                  this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
+                };
+            },error => {this.alertService.error(error); this.cheking = false; });
 
     }
 

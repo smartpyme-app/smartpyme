@@ -83,22 +83,20 @@ class ClientesController extends Controller
         $request->validate([
             'nombre'         => 'required_if:tipo,"Persona"',
             'apellido'       => 'required_if:tipo,"Persona"',
-            'nombre_empresa'    => 'required_if:tipo,"Empresa"',
-            // 'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
-            // 'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
-            // 'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
+            'nombre_empresa' => 'required_if:tipo,"Empresa"',
+            'ncr'            => 'required_if:tipo,"Empresa"',
+            'nit'            => 'required_if:tipo,"Empresa"',
             'id_usuario'     => 'required|numeric',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
-            'dui'           => 'required_if:ncr,null|max:255',
-            'correo'           => 'required|max:255',
+            'dui'            => 'required_if:tipo,"Persona"',
+            'correo'         => 'nullable|max:255|email:rfc,dns',
             'municipio'     => 'required|max:255',
             'departamento'  => 'required|max:255',
             'direccion'     => 'required|max:255',
-            'cod_giro'      => 'required_with:ncr|max:255',
+            'giro'      => 'required_if:tipo,"Empresa"|max:255',
         ],[
-            'cod_giro.required_with' => 'El campo giro es obligatorio.',
-            'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
+            // 'nombre.required_if' => 'El campo nombre es obligatorio.',
+            // 'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
         ]);
 
         if($request->id)

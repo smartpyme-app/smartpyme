@@ -272,35 +272,12 @@ export class VentasComponent implements OnInit {
 
     emitirDTE(){
         this.saving = true;
-        this.apiService.store('generarDTE', this.venta).subscribe(dte => {
-            // this.alertService.success('DTE generado.', 'El documento ha sido generado.');
-            this.venta.dte = dte;
-            this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-                this.venta.dte.firmaElectronica = dteFirmado.body;
-                // this.alertService.success('DTE firmado.', 'El documento ha sido firmado.');
-                
-                this.mhService.enviarDTE(this.venta, dteFirmado.body).subscribe(dte => {
-                    if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                        this.venta.dte.sello = dte.selloRecibido;
-                        this.apiService.store('venta', this.venta).subscribe(data => {
-                            // this.alertService.success('Venta guardada.', 'El documento ha sido guardada.');
-                        },error => {this.alertService.error(error); this.saving = false; });
-                    }
-                    this.alertService.modal = false;
-                    this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
-                },error => {
-                    if(error.error.descripcionMsg){
-                        this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                    }
-                    if(error.error.observaciones.length > 0){
-                        this.alertService.warning('Hubo un problema', error.error.observaciones);
-                    }
-                    this.saving = false;
-                });
-
-            },error => {this.alertService.error(error);this.saving = false; });
-
-        },error => {this.alertService.error(error);this.saving = false; });
+        this.mhService.emitirDTE(this.venta).then(() => {
+            this.saving = false;
+        }).catch((error) => {
+            this.saving = false;
+            this.alertService.warning('Hubo un problema', error);
+        });
     }
 
      enviarDTE(){
