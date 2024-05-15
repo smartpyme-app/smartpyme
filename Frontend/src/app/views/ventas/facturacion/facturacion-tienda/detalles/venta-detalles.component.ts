@@ -127,12 +127,15 @@ export class VentaDetallesComponent implements OnInit {
             this.detalle.id = null;
             
             // Verifica si el producto ya fue ingresado
-                let detalle = null// this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
+            let detalle = null;
+            if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
+                detalle = this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto)
+            }
                 
-                if(detalle) {
-                    this.detalle = detalle;
-                    this.detalle.cantidad += producto.cantidad;
-                }
+            if(detalle) {
+                this.detalle = detalle;
+                this.detalle.cantidad += producto.cantidad;
+            }
 
             this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
             
@@ -191,6 +194,19 @@ export class VentaDetallesComponent implements OnInit {
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+
+    public cambiarOpcion(composicion:any, opcion:any){
+
+        console.log(opcion);
+        let aux = Object.assign({}, composicion);
+
+        composicion.id_compuesto         = opcion.id_producto;
+        composicion.nombre_compuesto     = opcion.nombre_producto;
+
+        opcion.id_producto         = aux.id_compuesto;
+        opcion.nombre_compuesto      = aux.nombre_producto;
+
     }
 
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Inventario;
+namespace App\Models\Inventario\Composiciones;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -29,6 +29,10 @@ class Composicion extends Model {
 
     public function compuesto(){
         return $this->belongsTo('App\Models\Inventario\Producto','id_compuesto');
+    }
+
+    public function opciones(){
+        return $this->hasMany('App\Models\Inventario\Composiciones\Opcion','id_composicion');
     }
 
 

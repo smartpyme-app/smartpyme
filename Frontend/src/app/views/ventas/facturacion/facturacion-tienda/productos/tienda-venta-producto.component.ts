@@ -142,7 +142,7 @@ export class TiendaVentaProductoComponent implements OnInit {
                 });
             this.detalle.costo          = parseFloat(producto.costo);
             producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
-            if(producto.inventarios.length > 0){
+            if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
                 this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
             }else{
                 this.detalle.stock = null;

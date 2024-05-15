@@ -14,6 +14,7 @@ export class ProductoComposicionComponent implements OnInit {
     @Input() producto: any = {};
 	public composicion: any = {};
     public productos:any = [];
+    public opcion: any = {};
 	public loading:boolean = false;
     public saving:boolean = false;
     public buscador:string = '';
@@ -67,6 +68,39 @@ export class ProductoComposicionComponent implements OnInit {
             },error => {this.alertService.error(error); this.loading = false;});
         }
     }
+
+    // Opciones
+
+        public openModalOpciones(template: TemplateRef<any>, composicion:any) {
+            this.composicion = composicion;
+            this.apiService.getAll('productos/list').subscribe(productos => {
+                this.productos = productos;
+            }, error => {this.alertService.error(error);});
+
+            this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        }
+
+
+        public agregarOpcion(){
+            this.loading = true;
+            this.opcion.id_composicion = this.composicion.id;
+            this.apiService.store('producto/composicion/opcion', this.opcion).subscribe(opcion => {
+                this.composicion.opciones.push(opcion);
+                this.opcion = {};
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
+        }
+
+        public deleteOpcion(opcion:any){
+            if (confirm('¿Desea eliminar el Registro?')) {
+                this.apiService.delete('producto/composicion/opcion/', opcion.id).subscribe(opcion => {
+                    for (let i = 0; i < this.composicion.opciones.length; i++) { 
+                        if (this.composicion.opciones[i].id == opcion.id )
+                            this.composicion.opciones.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
+            }
+        }
 
 
 }

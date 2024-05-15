@@ -94,7 +94,7 @@ class Producto extends Model {
     }
 
     public function composiciones(){
-        return $this->hasMany('App\Models\Inventario\Composicion','id_producto');
+        return $this->hasMany('App\Models\Inventario\Composiciones\Composicion', 'id_producto');
     }
 
     public function precios(){

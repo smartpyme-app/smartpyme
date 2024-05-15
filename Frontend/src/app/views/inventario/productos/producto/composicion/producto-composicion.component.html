@@ -15,6 +15,7 @@
                     <th>Categoria</th>
                     <th class="text-end">Precio</th>
                     <th class="text-end">Cantidad</th>
+                    <th class="text-end">Opciones</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>
@@ -35,10 +36,12 @@
                     <td>{{ composicion?.compuesto.nombre_categoria }}</td>
                     <td class="text-end">{{ composicion?.compuesto.precio | currency }}</td>
                     <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
+                    <td class="text-end">{{ composicion?.opciones?.length }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a (click)="delete(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
                             <a (click)="openModal(mComposicion, composicion)" class="btn btn-light"><i class="fa fa-pencil-alt"></i></a>
+                            <a (click)="openModalOpciones(mopciones, composicion)" class="btn btn-light" tooltip="Opciones"><i class="fa fa-list-alt"></i></a>
                         </div>
                     </td>
                 </tr>
@@ -78,5 +81,49 @@
             </button>
         </div>
         </form>
+  </div>
+</ng-template>
+
+<ng-template #mopciones>
+    <div class="modal-header">
+    <h4 class="modal-title pull-left">Opciones</h4>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide()"><i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+    <div class="row">
+        <div class="form-group col-md-12">
+            <label for="">Seleccione un producto para agregarlo como opción:</label>
+            <ng-select name="id_producto" (change)="agregarOpcion()" [(ngModel)]="opcion.id_producto" class="form-select p-0">
+                <ng-option value="" selected>Seleccionar producto</ng-option>
+                <ng-option *ngFor="let producto of productos" [value]="producto.id">
+                    {{producto.nombre}}
+                </ng-option>
+            </ng-select>
+        </div>
+
+        <label><b>Opciones:</b></label>
+
+        <div class="form-group col-md-12">
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <td colspan="2" class="text-center" *ngIf="composicion?.opciones?.length < 1">
+                            <span class="badge bg-primary">No tiene opciones registradas</span>
+                        </td>
+                        <td colspan="2" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let opcion of composicion.opciones">
+                        <td>{{ opcion.nombre_producto }}</td>
+                        <td class="text-center">
+                            <a (click)="deleteOpcion(opcion)" class="btn btn-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
   </div>
 </ng-template>

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\MetodoDePago;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Abono;
 use App\Models\Compras\Compra;
@@ -44,6 +45,18 @@ class Indicador extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
+
+        $this->detalles_metodos_de_pago = MetodoDePago::whereHas('venta', function($q){
+                            $q->where('id_empresa', $this->id_empresa)
+                            ->when($this->id_sucursal, function($q){
+                                $q->where('id_sucursal', $this->id_sucursal);
+                            })
+                            ->when($this->id_usuario, function($q){
+                                $q->where('id_usuario', $this->id_usuario);
+                            })
+                            ->whereBetween('fecha', [$this->inicio, $this->fin]);
+                        })
+                        ->get();
 
         $this->ventas = Venta::where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
@@ -88,6 +101,7 @@ class Indicador extends Model
                                 $q->where('id_usuario', $this->id_usuario);
                             });
                         })
+                        ->with('venta')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
@@ -107,7 +121,8 @@ class Indicador extends Model
                         ->whereHas('venta', function($q){
                             $q->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
-                            })->where('id_empresa', $this->id_empresa);
+                            })->where('id_empresa', $this->id_empresa)
+                            ->where('fecha', '<', date('Y-m-d'));
                         })->get();
 
         $this->compras = Compra::where('id_empresa', $this->id_empresa)
@@ -199,6 +214,11 @@ class Indicador extends Model
         return $this->cxc->count();
     }
 
+    public function getCantidadComprasPagadas(){
+
+        return $this->compras->count();
+    }
+
     public function getTotalComprasPagadas(){
 
         return $this->compras->sum('total');
@@ -216,12 +236,17 @@ class Indicador extends Model
 
     public function getCantidadDevolucionesCompra(){
 
-        return $this->devoluciones_compras->sum('total');
+        return $this->devoluciones_compras->count();
     }
 
     public function getTotalComprasPendientes(){
 
         return $this->cxp->sum('total');
+    }
+
+    public function getCantidadComprasPendientes(){
+
+        return $this->cxp->count();
     }
 
     public function getTotalGastosPagados(){
@@ -232,6 +257,11 @@ class Indicador extends Model
     public function getCantidadGastosPagados(){
 
         return $this->gastos->where('estado', 'Confirmado')->count();
+    }
+
+    public function getCantidadGastosPendientes(){
+
+        return $this->gastos->where('estado', 'Pendiente')->count();
     }
 
     public function getTotalGastosPendientes(){
@@ -251,6 +281,14 @@ class Indicador extends Model
                 - $this->getTotalDevolucionesVenta();
     }
 
+    public function getCantidadGastos(){
+        return $this->getCantidadComprasPagadas() 
+                + $this->getCantidadGastosPagados()
+                + $this->getCantidadComprasPendientes()
+                + $this->getCantidadGastosPendientes()
+                - $this->getCantidadDevolucionesCompra();
+    }
+
     public function getTotalGastos(){
         return $this->getTotalComprasPagadas() 
                 + $this->getTotalGastosPagados()
@@ -266,7 +304,7 @@ class Indicador extends Model
 
     public function getVentasByCanal(){
 
-        return $this->ventas_pagadas->groupBy('id_canal')->map(function ($group) {
+        return $this->ventas->groupBy('id_canal')->map(function ($group) {
                     return [
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()->canal()->pluck('nombre')->first(),
@@ -278,7 +316,9 @@ class Indicador extends Model
 
     public function getVentasByFormaPago(){
 
-        return $this->ventas_pagadas->groupBy('forma_pago')->map(function ($group) {
+        $formasDePago = [];
+
+        $ventas = $this->ventas_pagadas->where('forma_pago', '!=', 'Multiple')->groupBy('forma_pago')->map(function ($group) {
                     return [
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()['forma_pago'],
@@ -286,6 +326,28 @@ class Indicador extends Model
                         'total' => $group->sum('total') - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->sum('total'),
                     ];
                  })->sortByDesc('total')->values()->all();
+
+        $detalles = $this->detalles_metodos_de_pago->groupBy('nombre')->map(function ($group) {
+                    return [
+                        'id' => $group->first()['id'],
+                        'nombre' => $group->first()['nombre'],
+                        'cantidad' => $group->count(),
+                        'total' => $group->sum('total'),
+                    ];
+                 })->sortByDesc('total')->values()->all();
+
+        $ventasYDetalles = collect(array_merge($ventas, $detalles));
+
+        $resultado = $ventasYDetalles->groupBy('nombre')->map(function ($group) {
+                    return [
+                        'id' => $group->first()['id'],
+                        'nombre' => $group->first()['nombre'],
+                        'cantidad' => $group->count(),
+                        'total' => $group->sum('total'),
+                    ];
+                 })->sortByDesc('total')->values()->all();
+
+        return $resultado;
     }
 
     public function getAbonosByFormaPago(){
@@ -309,12 +371,21 @@ class Indicador extends Model
 
         foreach ($formasDePago as $forma) {
             $forma->cantidad = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->count() 
-                                + $this->gastos->where('forma_pago', $forma['nombre'])->count()
-                                + $this->abonos->where('forma_pago', $forma['nombre'])->count()
+                                + $this->detalles_metodos_de_pago->where('nombre', $forma['nombre'])->count()
+                                + $this->abonos->where('forma_pago', $forma['nombre'])
+                                    ->reject(function ($abono) {
+                                        return Carbon::parse($abono->venta->fecha)->equalTo(Carbon::parse($abono->fecha));
+                                    })
+                                ->count()
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->count();
+            
             $forma->total = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->sum('total') 
-                                + $this->gastos->where('forma_pago', $forma['nombre'])->sum('total')
-                                + $this->abonos->where('forma_pago', $forma['nombre'])->sum('total')
+                                + $this->detalles_metodos_de_pago->where('nombre', $forma['nombre'])->sum('total')
+                                + $this->abonos->where('forma_pago', $forma['nombre'])
+                                    ->reject(function ($abono) {
+                                        return Carbon::parse($abono->venta->fecha)->equalTo(Carbon::parse($abono->fecha));
+                                    })
+                                ->sum('total')
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->sum('total');
         }
 

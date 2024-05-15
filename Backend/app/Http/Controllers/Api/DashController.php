@@ -93,6 +93,7 @@ class DashController extends Controller
 
         $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario]);
         
+        $indicadores->totalVentas = $indicadores->getTotalVentas();
         $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();
         $indicadores->cantidadVentasPagadas = $indicadores->getCantidadVentasPagadas();
         $indicadores->totalRecibos = $indicadores->getTotalRecibos();
@@ -106,17 +107,16 @@ class DashController extends Controller
         $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
         $indicadores->total_ventas_banco = $indicadores->getVentasByBanco();
         $indicadores->total_documentos_emitidos = $indicadores->getDocumentoEmitidos();
-        $indicadores->total_documentos_con_devoluciones = $indicadores->getDocumentoConDevolucion();
+        $indicadores->total_documentos_con_devolucion = $indicadores->getDocumentoConDevolucion();
         $indicadores->total_documentos_anulados = $indicadores->getDocumentosAnulados();
 
         $indicadores->cantidadRecibos = $indicadores->getCantidadRecibos();
-        $indicadores->totalRecibos = $indicadores->getTotalRecibos();
         $indicadores->cantidadDevolucionesVenta = $indicadores->getCantidadDevolucionesVenta();
-        $indicadores->totalDevolucionesVenta = $indicadores->getTotalDevolucionesVenta();
         $indicadores->cantidadGastosPagados = $indicadores->getCantidadGastosPagados();
-        $indicadores->totalGastosPagados = $indicadores->getTotalGastosPagados();
         $indicadores->cantidadVentasPendientes = $indicadores->getCantidadVentasPendientes();
-        $indicadores->totalVentasPendientes = $indicadores->getTotalVentasPendientes();
+
+        $indicadores->cantidadGastos = $indicadores->getCantidadGastos();
+        $indicadores->totalGastos = $indicadores->getTotalGastos();
 
 
         return Response()->json($indicadores, 200);

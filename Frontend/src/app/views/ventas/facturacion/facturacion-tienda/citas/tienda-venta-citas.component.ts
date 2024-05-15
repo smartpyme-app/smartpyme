@@ -24,10 +24,10 @@ export class TiendaVentaCitasComponent implements OnInit {
     public clientes:any = [];
     public detalle:any = {};
     public detalles:any = [];
-    public servicio:any = {};
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
+    public saving:boolean = false;
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -104,67 +104,54 @@ export class TiendaVentaCitasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-
-    selectProducto(cita:any){
-        this.detalle = Object.assign({}, cita);
-        this.detalle.id_cita    = cita.id;
-        this.detalle.descripcion   = cita.servicio.nombre;
-        this.detalle.img            = cita.servicio.img;
-        this.detalle.precio         = parseFloat(this.servicio.precio);
-        this.detalle.precios        = this.servicio.precios;
-        this.detalle.precios.unshift({
-                'precio' : this.detalle.precio
-            });
-        this.detalle.costo          = parseFloat(this.servicio.costo);
-        this.servicio.inventarios        = this.servicio.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
-        if(this.servicio.inventarios.length > 0 && this.servicio.tipo != 'Servicio'){
-            this.detalle.stock          = parseFloat(this.sumPipe.transform(this.servicio.inventarios, 'stock'));
-        }else{
-            this.detalle.stock = null;
-        }
-        this.detalle.cantidad       = 1;
-        this.detalle.descuento      = 0;
-        this.detalle.descuento_porcentaje      = 0;
-        console.log(this.detalle);
-        this.onSubmit();
-    }
-
     onCheckPaquete(cita:any){
         console.log(cita);
         let radio = document.getElementById('cita' + cita.id) as HTMLInputElement;
-        this.servicio = cita.servicio;
         if(radio.checked){
-            this.detalle = Object.assign({}, this.servicio);
-            this.detalle.id_producto    = this.servicio.id;
-            this.detalle.descripcion = this.servicio.nombre;
-            this.detalle.img            = this.servicio.img;
-            this.detalle.id_cita        = cita.id;
-            this.detalle.costo          = parseFloat(this.servicio.costo);
-            this.detalle.precio         = parseFloat(this.servicio.precio);
-            this.detalle.precios        = this.servicio.precios;
-            this.detalle.precios.unshift({
-                    'precio' : this.detalle.precio
-                });
-            this.detalle.costo          = parseFloat(this.servicio.costo);
-            this.servicio.inventarios        = this.servicio.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
-            if(this.servicio.inventarios.length > 0 && this.servicio.tipo != 'Servicio'){
-                this.detalle.stock          = parseFloat(this.sumPipe.transform(this.servicio.inventarios, 'stock'));
-            }else{
-                this.detalle.stock = null;
-            }
+            
+            cita.productos.forEach((detalleProducto: any) => {
+                this.saving = true;
+                this.apiService.read('producto/', detalleProducto.id_producto).subscribe(producto => {
+                    let detalle:any = {};
+                    detalle.id_cita    = cita.id;
+                    detalle.id_producto    = producto.id;
+                    detalle.descripcion = producto.nombre;
+                    detalle.img            = producto.img;
+                    detalle.precio         = parseFloat(producto.precio);
+                    detalle.costo          = parseFloat(producto.costo);
+                    if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
+                        producto.inventarios   = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+                        detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+                    }else{
+                        detalle.stock = null;
+                    }
+                    detalle.cantidad       = detalleProducto.cantidad;
+                    detalle.descuento      = 0;
+                    detalle.descuento_porcentaje      = 0;
+                    detalle.total_costo = detalle.costo;
+                    detalle.total      = detalle.precio;
 
-            this.detalle.cantidad       = 1;
-            this.detalle.descuento      = 0;
-            this.detalle.descuento_porcentaje      = 0;
-            this.detalles.unshift(this.detalle);
+                    if(!detalle.exenta){
+                        detalle.exenta = 0;
+                    }
+                    if(!detalle.no_sujeta){
+                        detalle.no_sujeta = 0;
+                    }
+                    if(!detalle.cuenta_a_terceros){
+                        detalle.cuenta_a_terceros = 0;
+                    }
+
+                    detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
+
+                    this.detalles.unshift(detalle);
+                    this.saving = false;
+                }, error => {this.alertService.error(error); this.saving = false;});
+            });
 
         }else{
-            // radio.checked = false;
-            const indexAEliminar = this.detalles.findIndex((item:any) => item.id_cita === cita.id);
-            if (indexAEliminar !== -1) {
-              this.detalles.splice(indexAEliminar, 1);
-            }
-            console.log(indexAEliminar);
+            
+            this.detalles = this.detalles.filter((item:any) => item.id_cita !== cita.id);
+
         }
 
         console.log(this.detalles);

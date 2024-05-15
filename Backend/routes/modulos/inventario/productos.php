@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
-use App\Http\Controllers\Api\Inventario\ComposicionesController;
+use App\Http\Controllers\Api\Inventario\Composiciones\ComposicionesController;
+use App\Http\Controllers\Api\Inventario\Composiciones\OpcionesController;
 use App\Http\Controllers\Api\Inventario\PreciosController;
 use App\Http\Controllers\Api\Inventario\PromocionesController;
 use App\Http\Controllers\Api\Inventario\ImagenesController;
@@ -31,6 +32,9 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
     Route::delete('/producto/composicion/{id}', [ComposicionesController::class, 'delete']);
+
+    Route::post('/producto/composicion/opcion',        [OpcionesController::class, 'store']);
+    Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, 'delete']);
 
 // Precios
     Route::post('/producto/precio',        [PreciosController::class, 'store']);

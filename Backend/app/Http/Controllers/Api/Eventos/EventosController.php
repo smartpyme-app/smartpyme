@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Empresa;
 use App\Models\Eventos\Evento;
+use App\Models\Eventos\Detalle;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use stdClass;
@@ -15,7 +16,7 @@ class EventosController extends Controller
 
     public function index(Request $request) {
        
-        $eventos = Evento::with('cliente', 'servicio.inventarios', 'servicio.precios')->when($request->buscador, function($query) use ($request){
+        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -54,7 +55,7 @@ class EventosController extends Controller
 
     public function list(Request $request) {
        
-        $eventos = Evento::when($request->buscador, function($query) use ($request){
+        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -134,7 +135,7 @@ class EventosController extends Controller
 
     public function read($id) {
 
-        $evento = Evento::findOrFail($id);
+        $evento = Evento::with('productos')->where('id', $id)->firstOrFail();
         return Response()->json($evento, 200);
 
     }
@@ -144,7 +145,7 @@ class EventosController extends Controller
         $request->validate([
             'descripcion' => 'required|string',
             'id_cliente'  => 'required|numeric',
-            'id_servicio' => 'required|numeric',
+            // 'id_servicio' => 'required|numeric',
             'frecuencia_fin' => 'required_with:frecuencia',
             'inicio' => 'required|date',
         ],[
@@ -153,28 +154,54 @@ class EventosController extends Controller
             'frecuencia_fin.required_with' => 'El campo terminar de repetir es obligatorio.'
         ]);
         
-        if($request->id)
-            $evento = Evento::findOrFail($request->id);
-        else
-            $evento = new Evento;
+        DB::beginTransaction();
+         
+        try {
 
-        if($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Confirmado')){
-            $evento->estadoVerificarFrecuencia('Confirmado');
-        }
-        elseif($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Sin confirmar')){
-            $evento->estadoVerificarFrecuencia('Sin confirmar');
-        }
-        elseif($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Cancelado')){
-            $evento->estadoVerificarFrecuencia('Cancelado');
-        }else{
-            $evento->fill($request->all());
-            $evento->save();
-        }
-        
-        $evento->notificar();
+            if($request->id)
+                $evento = Evento::findOrFail($request->id);
+            else
+                $evento = new Evento;
 
 
+            if($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Confirmado')){
+                $evento->estadoVerificarFrecuencia('Confirmado');
+            }
+            elseif($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Sin confirmar')){
+                $evento->estadoVerificarFrecuencia('Sin confirmar');
+            }
+            elseif($request->id && ($request['tipo'] != $evento->tipo) && ($request['tipo'] == 'Cancelado')){
+                $evento->estadoVerificarFrecuencia('Cancelado');
+            }else{
+                $evento->fill($request->all());
+                $evento->save();
+            }
+            
+        // Guardar detalles
+            foreach ($request->productos as $det) {
+                if(isset($det['id']))
+                    $detalle = Detalle::findOrFail($det['id']);
+                else
+                    $detalle = new Detalle;
+
+                $det['id_evento'] = $evento->id;
+                $detalle->fill($det);
+                $detalle->save();
+            }
+            
+            $evento->notificar();
+
+        DB::commit();
         return Response()->json($evento, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
+
     }
 
 

@@ -242,33 +242,57 @@ export class FacturacionComponent implements OnInit {
                 this.evento = evento;
                 this.venta.id_cliente = evento.id_cliente;
                 this.venta.id_evento = evento.id;
-                this.apiService.read('servicio/', evento.id_servicio).subscribe(servicio => {
-                    let detalle:any = {};
-                    detalle.id_producto    = servicio.id;
-                    detalle.descripcion = servicio.nombre;
-                    detalle.img            = servicio.img;
-                    detalle.precio         = parseFloat(servicio.precio);
-                    detalle.costo          = parseFloat(servicio.costo);
-                    // if(servicio.inventarios.length > 0){
-                    //     servicio.inventarios   = servicio.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
-                    //     detalle.stock          = parseFloat(this.sumPipe.transform(servicio.inventarios, 'stock'));
-                    // }else{
-                        detalle.stock = null;
-                    // }
-                    detalle.cantidad       = 1;
-                    detalle.descuento      = 0;
-                    detalle.descuento_porcentaje      = 0;
-                    detalle.total_costo = detalle.costo;
-                    detalle.total      = detalle.precio;
-                    this.venta.detalles.push(detalle);
-                    this.sumTotal();
-                    this.loading = false;
-                    console.log(this.venta);
-                }, error => {this.alertService.error(error); this.loading = false;});
+
+                this.evento.productos.forEach((detalleProducto: any) => {
+                    this.apiService.read('producto/', detalleProducto.id_producto).subscribe(producto => {
+                        let detalle:any = {};
+                        detalle.id_producto    = producto.id;
+                        detalle.descripcion = producto.nombre;
+                        detalle.img            = producto.img;
+                        detalle.precio         = parseFloat(producto.precio);
+                        detalle.costo          = parseFloat(producto.costo);
+                        if(producto.inventarios.length > 0){
+                            producto.inventarios   = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+                            detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+                        }else{
+                            detalle.stock = null;
+                        }
+                        detalle.cantidad       = detalleProducto.cantidad;
+                        detalle.descuento      = 0;
+                        detalle.descuento_porcentaje      = 0;
+                        detalle.total_costo = detalle.costo;
+                        detalle.total      = detalle.precio;
+
+                        if(!detalle.exenta){
+                            detalle.exenta = 0;
+                        }
+                        if(!detalle.no_sujeta){
+                            detalle.no_sujeta = 0;
+                        }
+                        if(!detalle.cuenta_a_terceros){
+                            detalle.cuenta_a_terceros = 0;
+                        }
+
+                        detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
+
+                        this.venta.detalles.push(detalle);
+                        this.sumTotal();
+                        this.loading = false;
+                        console.log(this.venta);
+                    }, error => {this.alertService.error(error); this.loading = false;});
+                });
             }, error => {this.alertService.error(error); this.loading = false;});
         }
         this.cargarDocumentos();
         this.loadData();
+    }
+
+    totalPorMetodoDePago(){
+        // Agregar los metodos que tengan asignado un monto
+        this.venta.metodos_de_pago = this.formaPagos.filter((item:any) => item.total && (item.total > 0))
+        this.formaPagos.push({'nombre': 'Multiple'})
+        this.venta.forma_pago = 'Multiple';
+        console.log(this.venta);
     }
 
     public sumTotal() {

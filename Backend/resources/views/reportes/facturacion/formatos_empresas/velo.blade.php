@@ -24,8 +24,8 @@
 
         #fecha          {top: 4.5cm; left: 16cm; }
         #nit            {top: 5cm; left: 16cm; }
-        #condicion      {top: 5.5cm; left: 16.5cm; }
-        #cliente        {top: 4cm; left: 2.5cm; width: 9cm;}
+        #condicion      {top: 5.4cm; left: 16.5cm; }
+        #cliente        {top: 3.8cm; left: 2.5cm; width: 9cm;}
         #direccion      {top: 4.5cm; left: 2.5cm; width: 9cm;}
         #municipio      {top: 5cm; left: 2.5cm; width: 9cm;}
         #departamento      {top: 5.5cm; left: 2.5cm; width: 9cm;}
@@ -46,10 +46,10 @@
         #letras     {top: 12cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
 
-        #suma       {top: 12cm; left: 18cm; width: 2cm; text-align: right;}
+        #suma       {top: 11.7cm; left: 18cm; width: 2cm; text-align: right;}
         #no_sujeta  {top: 12.5cm; left: 18cm; width: 2cm; text-align: right;}
         #exenta     {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
-        #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right;}
+        #total      {top: 14.6cm; left: 18cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 

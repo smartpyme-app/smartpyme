@@ -49,6 +49,25 @@ Route::get('/empresaAbonos', function(){
 	
 })->name('clearBD');
 
+Route::get('/setDetalleCitas', function(){
+	
+	$eventos = App\Models\Eventos\Evento::all();
+
+	foreach ($eventos as $evento) {
+		$servicio = App\Models\Inventario\Producto::find($evento->id_servicio);
+
+		if ($servicio) {
+			$detalle = new App\Models\Eventos\Detalle;
+			$detalle->cantidad = 1;
+			$detalle->id_producto = $servicio->id;
+			$detalle->id_evento = $evento->id;
+			$detalle->save();
+		}
+	}
+	return "Listo XD";
+	
+})->name('clearBD');
+
 Route::get('/setPais', function(){
 	
 	$empresas = App\Models\Admin\Empresa::all();

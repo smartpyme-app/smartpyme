@@ -14,9 +14,11 @@ import * as moment from 'moment';
 export class CrearEventoComponent implements OnInit {
 
     @Input() evento: any = {};
-    public servicios:any = [];
+    public productos:any = [];
     public clientes:any = [];
     public usuarios:any = [];
+    public detalle:any = {};
+    public productoSeleccionado:any = undefined;
     @Output() update = new EventEmitter();
     public loading = false;
     public saving:boolean = false;
@@ -33,8 +35,8 @@ export class CrearEventoComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('servicios/list').subscribe(servicios => {
-            this.servicios = servicios;
+        this.apiService.getAll('productos/list').subscribe(productos => {
+            this.productos = productos;
         }, error => {this.alertService.error(error);});
         
         this.apiService.getAll('clientes/list').subscribe(clientes => {
@@ -115,6 +117,29 @@ export class CrearEventoComponent implements OnInit {
             this.saving = false;
             // this.modalRef!.hide();
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+
+    public agregarDetalle(){
+
+        if(this.productoSeleccionado.id){
+            this.detalle.nombre_producto = this.productoSeleccionado.nombre;
+            this.detalle.id_producto = this.productoSeleccionado.id;
+            this.detalle.cantidad = 1;
+            this.detalle.id_evento = this.evento.id;
+
+            let detalle = Object.assign({}, this.detalle);
+
+            this.evento.productos.unshift(detalle);
+            this.detalle = {};
+            this.productoSeleccionado = null;
+            console.log(this.productoSeleccionado);
+        }
+
+    }
+
+    public eliminarDetalle(index: number) {
+        this.evento.productos.splice(index, 1);
     }
 
 

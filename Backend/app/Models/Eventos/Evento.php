@@ -139,6 +139,10 @@ class Evento extends Model
        return $this->belongsTo('App\Models\Inventario\Producto', 'id_servicio');
     }
 
+    public function productos(){
+       return $this->hasMany('App\Models\Eventos\Detalle', 'id_evento');
+    }
+
     public function usuario(){
        return $this->belongsTo('App\Models\User', 'id_usuario');
     }

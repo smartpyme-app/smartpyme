@@ -1,0 +1,38 @@
+<button tooltip="Ingresar más de un método de pago" (click)="openModal(inventario)" class="btn btn-light">
+    <i class="fa fa-gear"></i>
+</button>
+
+<ng-template #inventario>
+    <div class="modal-header">
+        <h3 class="modal-title text-center">Métodos de pago</h3>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <section class="bg-white p-2 p-md-4 rounded mb-3">
+            <div class="row">
+                <table class="table table-borderless">
+                    <tr *ngFor="let formaPago of formaPagos">
+                        <td>{{ formaPago.nombre }}:</td>
+                        <td width="150px"><input autocomplete="off" class="text-end" type="text" [(ngModel)]="formaPago.total" (keyup)="sumTotal()" name="total" class="form-control text-end"></td>
+                    </tr>
+                    <tr>
+                        <td><b>Total: </b></td>
+                        <td class="text-end"><b>{{formaPagos.total | currency  }}</b></td>
+                    </tr>
+                    <tr>
+                        <td><b>Total de la venta: </b></td>
+                        <td class="text-end"><b>{{venta.total | currency  }}</b></td>
+                    </tr>
+                    <tr>
+                        <td><b>Cuadre: </b></td>
+                        <td class="text-end"><b [ngClass]="{ 'text-danger' : (formaPagos.total - venta.total) < 0 }">{{formaPagos.total - venta.total | currency  }}</b></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="row d-grid">
+                <button class="btn btn-primary" [disabled]="(venta.total == 0) || (formaPagos.total != venta.total)" (click)="onSubmit()">Aplicar cambios</button>
+            </div>
+        </section>
+    </div>
+</ng-template>

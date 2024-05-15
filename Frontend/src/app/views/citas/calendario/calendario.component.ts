@@ -113,11 +113,13 @@ export class CalendarioComponent implements OnInit {
         this.evento.estado = "Activo";
         this.evento.id_cliente = '';
         this.evento.id_servicio = '';
+        this.evento.productos = [];
         this.evento.id_empresa = this.apiService.auth_user().id_empresa;
         this.evento.id_usuario = this.apiService.auth_user().id;
         this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.evento.inicio =  moment(arg.dateStr + ' ' + moment().format('HH:mm')).format('YYYY-MM-DD HH:mm:ss');
         this.setTime();
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(this.meventoTemplate, {class: 'modal-lg'});
     }
 

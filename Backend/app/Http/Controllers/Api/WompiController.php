@@ -44,9 +44,8 @@ class WompiController extends Controller
                     $venta->id_wompi_link = $transaccion['idEnlace'];
                     $venta->save();
                     return view('wompi.link-wompi', compact('venta', 'transaccion'));
-                }else{
-                    return Response()->json(['error' => $transaccion['mensajes'][0], 'code' => 422], 422);
                 }
+                return $transaccion .': Lo sentimos pero no se pudo generar el enlace a través de Wompi. Verifique si su aplicativo esta activo o consulte a soporte.';
             }
         }
 
