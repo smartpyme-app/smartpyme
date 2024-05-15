@@ -35,7 +35,7 @@ class VentasController extends Controller
 {
 
     public function index(Request $request) {
-       
+
         $ventas = Venta::when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -100,7 +100,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto')->first();
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
 
@@ -122,9 +122,9 @@ class VentasController extends Controller
 
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
-                                        
+
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->id_sucursal)->first();
-                
+
                 // Anular venta y regresar stock
                 if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
 
@@ -184,7 +184,7 @@ class VentasController extends Controller
 
                 }
             }
-        
+
         $venta->fill($request->all());
         $venta->save();
 
@@ -212,7 +212,7 @@ class VentasController extends Controller
     public function corte() {
 
         $usuario = JWTAuth::parseToken()->authenticate();
-       
+
         $caja   = Caja::where('id', $usuario->id_caja)->with('corte')->firstOrFail();
         $corte  = $caja->corte;
         $ventas = $corte->ventas()->orderBy('id', 'desc')
@@ -251,9 +251,9 @@ class VentasController extends Controller
         ]);
 
         DB::beginTransaction();
-         
+
         try {
-        
+
         // Guardamos la venta
             if($request->id)
                 $venta = Venta::findOrFail($request->id);
@@ -270,7 +270,7 @@ class VentasController extends Controller
                 else
                     $detalle = new Detalle;
                 $det['id_venta'] = $venta->id;
-                
+
 
                 $detalle->fill($det);
                 $detalle->save();
@@ -301,7 +301,7 @@ class VentasController extends Controller
 
                 // Actualizar inventario
                 if ($request->cotizacion == 0) {
-                    
+
                     // $producto = Producto::where('id', $det['id_producto'])
                                         // ->with('composiciones')->firstOrFail();
 
@@ -330,7 +330,7 @@ class VentasController extends Controller
 
 
                 }
-                
+
             }
 
         // Evento
@@ -377,12 +377,12 @@ class VentasController extends Controller
 
             }
         }
-            
+
 
         // Incrementar el correlarivo
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
-        
+
         DB::commit();
         return Response()->json($venta, 200);
 
@@ -393,7 +393,7 @@ class VentasController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-        
+
 
     }
 
@@ -422,7 +422,7 @@ class VentasController extends Controller
         ]);
 
         DB::beginTransaction();
-      
+
         try {
             $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
             if ($venta->total != $request->total) {
@@ -437,7 +437,7 @@ class VentasController extends Controller
                 $consigna->save();
 
                 foreach($request->detalles as $detalle){
-                    
+
                     $detalle_venta = $venta->detalles()->where('id', $detalle['id'])->first();
                     if ($detalle_venta) {
                         if ($detalle_venta->cantidad > $detalle['cantidad']) {
@@ -450,9 +450,9 @@ class VentasController extends Controller
                             $detalle_consigna->save();
                         }
                     }
-                  
+
                 }
-                
+
                 //Guardar nuevos detalles
                 $venta->detalles()->delete();
 
@@ -468,7 +468,7 @@ class VentasController extends Controller
                         $det->save();
                     }
                 }
-                
+
                 $venta->total = $request->total;
                 $venta->iva = $request->iva;
                 $venta->sub_total = $request->sub_total;
@@ -494,10 +494,10 @@ class VentasController extends Controller
     public function pendientes() {
 
         $usuario = JWTAuth::parseToken()->authenticate();
-       
+
         $caja    = Caja::where('id', $usuario->id_caja)->with('corte')->firstOrFail();
         $corte   = $caja->corte;
-        
+
         if ($corte) {
             if (!$corte->cierre)
                 $corte->cierre = Carbon::now()->toDateTimeString(); ;
@@ -510,7 +510,7 @@ class VentasController extends Controller
                                 ->orderBy('id', 'desc')
                                 ->paginate(5000);
         }
-        
+
 
         return Response()->json($ventas, 200);
 
@@ -552,7 +552,7 @@ class VentasController extends Controller
             $formatter = new NumeroALetras();
             $n = explode(".", number_format($venta->total,2));
 
-            
+
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
@@ -596,7 +596,7 @@ class VentasController extends Controller
             }
             elseif(Auth::user()->id_empresa == 128){ //128
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.kiero-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 283.46, 765.35]);  
+                $pdf->setPaper([0, 0, 283.46, 765.35]);
             }
             elseif(Auth::user()->id_empresa == 135){ //135
                 // return View('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -628,12 +628,16 @@ class VentasController extends Controller
             elseif(Auth::user()->id_empresa == 24 ){ //24  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Via-del-Mar', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 59 ){ //59  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
             }else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            
+
 
             return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
         }
@@ -646,7 +650,7 @@ class VentasController extends Controller
             $formatter = new NumeroALetras();
             $n = explode(".", number_format($venta->total,2));
 
-            
+
             $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
             $centavos = $formatter->toWords($n[1]);
 
@@ -664,21 +668,21 @@ class VentasController extends Controller
             }
             elseif(Auth::user()->id_empresa == 62){ //62
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.hotel-eco-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait'); 
+                $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 128){ //128
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.kiero-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 283, 765]);  
+                $pdf->setPaper([0, 0, 283, 765]);
             }
             elseif(Auth::user()->id_empresa == 135){ //135
                 // return View('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 609.45, 467.72]);  
+                $pdf->setPaper([0, 0, 609.45, 467.72]);
             }
             elseif(Auth::user()->id_empresa == 136){ //136
                 // return View('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 297.64, 382.68]); 
+                $pdf->setPaper([0, 0, 297.64, 382.68]);
             }
             elseif(Auth::user()->id_empresa == 158){//158
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Guaca-Mix-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -699,10 +703,14 @@ class VentasController extends Controller
             elseif(Auth::user()->id_empresa == 84){ //84
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 59){ //59
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.smartpyme-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
             }else{
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
-            }     
+            }
 
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
@@ -773,7 +781,7 @@ class VentasController extends Controller
     }
 
     public function cxc() {
-       
+
         $cobros = Venta::where('estado', 'Pendiente')->orderBy('fecha','desc')->paginate(10);
 
         return Response()->json($cobros, 200);
@@ -781,7 +789,7 @@ class VentasController extends Controller
     }
 
     public function cxcBuscar($txt) {
-       
+
         $cobros = Venta::where('estado', 'Pendiente')
                         ->whereHas('cliente', function($query) use ($txt) {
                             $query->where('nombre', 'like' ,'%' . $txt . '%');
@@ -799,7 +807,7 @@ class VentasController extends Controller
                         ->groupBy(function($date) {
                             return Carbon::parse($date->fecha)->format('d-m-Y');
                         });
-        
+
         $movimientos = collect();
 
         foreach ($ventas as $venta) {

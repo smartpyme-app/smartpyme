@@ -39,7 +39,7 @@
 
         .cantidad{  width: 1.5cm; text-align: center;}
         .codigo{ width: 2.7cm; text-align: left;}
-        .producto{ width: 9.5cm; text-align: left;}
+        .producto{ width: 11.5cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
         .sujetas{ width: 1.2cm; text-align: center;}
         .exentas{ width: 1.2cm; text-align: center;}
@@ -94,7 +94,7 @@
         @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
-                <td class="codigo">     {{ $detalle->producto()->pluck('codigo')->first() }}</td>
+{{--                <td class="codigo">     {{ $detalle->producto()->pluck('codigo')->first() }}</td>--}}
                 <td class="producto">   {{ $detalle->nombre_producto  }}</td>
                 <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
                 <td class="sujetas">   </td>
