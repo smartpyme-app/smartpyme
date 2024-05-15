@@ -137,6 +137,10 @@ class Venta extends Model {
         return $this->hasMany('App\Models\Ventas\Impuesto', 'id_venta');
     }
 
+    public function metodos_de_pago(){
+        return $this->hasMany('App\Models\Ventas\MetodoDePago', 'id_venta');
+    }
+
     public function documento(){
         return $this->belongsTo('App\Models\Admin\Documento','id_documento');
     }

@@ -181,9 +181,12 @@
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="forma_pago">Método de pago</label>
-            <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
-                <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
-            </select>
+            <div class="input-group flex-nowrap">
+                <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
+                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                </select>
+                <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
             <label for="detalle_banco">Bancos</label>

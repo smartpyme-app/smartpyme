@@ -46,3 +46,12 @@ CREATE TABLE producto_composicion_opciones (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE venta_metodos_pago (
+    id int NOT NULL AUTO_INCREMENT,
+    id_venta int  NOT NULL,
+    nombre varchar(255) NOT NULL,
+    total decimal(9,2) NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);

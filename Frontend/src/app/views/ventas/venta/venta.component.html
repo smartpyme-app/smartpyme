@@ -153,6 +153,39 @@
 
 </div>
 
+<div class="card" *ngIf="venta.metodos_de_pago?.length > 0">
+    <h5 class="card-title p-3">
+        Métodos de pago
+    </h5>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th width="75">N°</th>
+                        <th>Nombre</th>
+                        <th width="100" class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let metodo of venta.metodos_de_pago; let i=index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ metodo.nombre }}</td>
+                        <td class="text-end">{{ metodo.total | currency }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2" class="text-end"><b>Total:</b></td>
+                        <td class="text-end"><b>{{ venta?.metodos_de_pago | sum:'total' | currency }}</b></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+
 <ng-template #mabono>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">Recibo de pago </h5>

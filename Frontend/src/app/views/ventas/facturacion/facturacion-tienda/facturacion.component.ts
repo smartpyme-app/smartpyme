@@ -287,6 +287,14 @@ export class FacturacionComponent implements OnInit {
         this.loadData();
     }
 
+    totalPorMetodoDePago(){
+        // Agregar los metodos que tengan asignado un monto
+        this.venta.metodos_de_pago = this.formaPagos.filter((item:any) => item.total && (item.total > 0))
+        this.formaPagos.push({'nombre': 'Multiple'})
+        this.venta.forma_pago = 'Multiple';
+        console.log(this.venta);
+    }
+
     public sumTotal() {
         this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(4);
         
