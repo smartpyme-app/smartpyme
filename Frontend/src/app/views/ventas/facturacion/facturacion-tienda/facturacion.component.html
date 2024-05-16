@@ -32,7 +32,6 @@
                 </option>
             </select>
         </div> -->
-
         <!-- cliente -->
         <div class="form-group col-md-6 col-lg-3 mb-3">
             <label for="">Cliente</label>
@@ -153,12 +152,14 @@
 
 </section>
 
+<!-- tercera seccion METODOS DE PAGO Y MONTO -->
+
 <section class="card border-0 p-3 mb-3">
     <!-- <h6 class="mt-3">Métodos de pago</h6> -->
 
     <div class="row mt-3">
         <!-- metodo de pago -->
-        <div class="form-group col-md-6 col-lg-4" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="forma_pago">Método de pago</label>
             <div class="input-group flex-nowrap">
                 <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
@@ -167,139 +168,139 @@
                 <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
             </div>
         </div>
+        <!-- COTIZACION terminos de venta  -->
+        <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
+            <label for="observaciones">Términos de venta:</label><br>
+            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+        </div>
+        <!-- VENTA monto pago  -->
+        <div class="form-group col-md-6 col-lg-3"  *ngIf="venta.cotizacion != 1">
+            <label for="monto_pago">Monto pago:</label><br>
+            <div class="input-group">
+                <div class="input-group-text">$</div>
+                <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - venta.total).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
+            </div>
+        </div>
+        <!-- VENTA cambio  -->
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            <label for="cambio">Cambio:</label><br>
+            <div class="input-group">
+                <div class="input-group-text">$</div>
+                <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
+            </div>
+        </div>
         <!-- bancos  -->
-        <div class="form-group col-md-6 col-lg-4 mb-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
+        <div class="form-group col-md-6 col-lg-3 mb-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
             <label for="detalle_banco">Bancos</label>
             <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
                 <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
             </select>
         </div>
-
     </div>
         <!-- Monto de pago, Cambio, Canal  -->
         <div class="row mt-3">
-            <!-- COTIZACION terminos de venta  -->
-           <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
-               <label for="observaciones">Términos de venta:</label><br>
-               <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
-           </div>
-           <!-- VENTA monto pago  -->
-           <div class="form-group col-md-6 col-lg-4"  *ngIf="venta.cotizacion != 1">
-               <label for="monto_pago">Monto pago:</label><br>
-               <div class="input-group">
-                   <div class="input-group-text">$</div>
-                   <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - venta.total).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
-               </div>
-           </div>
-           <!-- VENTA cambio  -->
-           <div class="form-group col-md-6 col-lg-4" *ngIf="venta.cotizacion != 1">
-               <label for="cambio">Cambio:</label><br>
-               <div class="input-group">
-                   <div class="input-group-text">$</div>
-                   <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
-               </div>
-           </div>
-       </div>
+    </div>
 </section>
 
-<!-- tercera seccion DETALLES Y SERVICIOS  -->
+<!-- cuarta seccion DETALLES Y SERVICIOS  -->
 <section class="card border-0 p-3 mb-3"> 
 
     <!-- trigger button para el collapse  -->
     <div class="row justify-content-md-center ">  
         <div class="col-lg-4">
-            <a href="#collapseExample" class="btn btn-primary" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample"><h6>Detalles avanzados <img src="assets/icons/arrow-down-circle.png" class="icon2 ms-2"></h6></a> 
+            <a href="#collapseExample" class="btn btn-primary" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample"><h6 class="mt-1">Detalles avanzados <i class="fa-sharp fa-solid fa-arrow-down"></i></h6></a> 
         </div>    <!-- Estado: {{ venta.estado }} -->
     </div> 
     <div class="collapse" id="collapseExample">
     <!-- toggles  -->
-    <div class="row">
-        <!-- toggle venta al credito  -->
-        <div class="form-group col-md-6 col-lg-2 without-label mb-3" *ngIf="venta.cotizacion != 1">
-            <div class="form-switch bg-light-info  rounded">
-              <label for="credito">Venta crédito</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
+        <div class="row">
+            <!-- toggle venta al credito  -->
+            <div class="form-group col-md-6 col-lg-2 without-label mb-3" *ngIf="venta.cotizacion != 1">
+                <div class="form-switch bg-light-info  rounded">
+                  <label for="credito">Venta crédito</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
+                </div>
+            </div>
+            <!-- toogle consigna -->
+            <div class="form-group col-md-6 col-lg-2 without-label mb-3" *ngIf="venta.cotizacion != 1">
+                <div class="form-switch bg-light-info  rounded">
+                  <label for="consigna">Consigna</label>
+                  <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+                </div>
+            </div>
+            <!-- ventas con iva toogle  -->
+            <div class="form-group col-md-6 col-lg-2 without-label mb-3">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="cobrar_impuestos">Con IVA</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
+                </div>
+            </div>
+            <!-- retencion toogle  -->
+            <div class="form-group col-md-6 col-lg-2 without-label mb-3">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="percepcion">Retención</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
+                </div>
+            </div>
+            <!-- ventas recurrente toogle  -->
+            <div class="form-group col-md-6 col-lg-2 without-label mb-3" *ngIf="venta.cotizacion != 1">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="recurrente">Recurrente</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
+                </div>
             </div>
         </div>
-        <!-- toogle consigna -->
-        <div class="form-group col-md-6 col-lg-2 without-label mb-3" *ngIf="venta.cotizacion != 1">
-            <div class="form-switch bg-light-info  rounded">
-              <label for="consigna">Consigna</label>
-              <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
-            </div>
-        </div>
-        <!-- ventas con iva toogle  -->
-        <div class="form-group col-md-6 col-lg-2 without-label mb-3">
-            <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
-            </div>
-        </div>
-        <!-- retencion toogle  -->
-        <div class="form-group col-md-6 col-lg-2 without-label mb-3">
-            <div class="form-switch bg-light-info rounded">
-              <label for="percepcion">Retención</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
-            </div>
-        </div>
-        <!-- ventas recurrente toogle  -->
-        <div class="form-group col-md-6 col-lg-2 without-label mb-3" *ngIf="venta.cotizacion != 1">
-            <div class="form-switch bg-light-info rounded">
-              <label for="recurrente">Recurrente</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
-            </div>
-        </div>
-    </div>
     <!-- canal, sucursal, fecha de pago  -->
-    <div class="row mt-3">
-        <!-- fecha de expiracion para COTIZACION  -->
-        <div class="form-group col-md-4 col-lg-4 mb-3" *ngIf="venta.cotizacion == 1">
-            <label for="fecha_expiracion">Fecha de expiración:</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
+        <div class="row mt-3">
+            <!-- fecha de expiracion para COTIZACION  -->
+            <div class="form-group col-md-4 col-lg-4 mb-3" *ngIf="venta.cotizacion == 1">
+                <label for="fecha_expiracion">Fecha de expiración:</label><br>
+                <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion" id="fecha_expiracion">
+            </div>
+            <!-- fecha de pago para VENTAS  -->
+            <div class="form-group col-md-6 col-lg-4 mb-3" *ngIf="venta.cotizacion != 1">
+                <label for="fecha_pago">Fecha de pago:</label><br>
+                <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
+            </div>
+            <!-- sucursal --> 
+            <div class="form-group col-md-6 col-lg-4 mb-3">
+                <label for="id_sucursal">Sucursal</label>
+                <select name="id_sucursal" [(ngModel)]="venta.id_sucursal" class="form-select">
+                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <!-- VENTAS canal  -->
+            <div class="form-group col-md-6 col-lg-4" *ngIf="venta.cotizacion != 1">
+                <label for="id_canal">Canal</label>
+                <select name="id_canal" [(ngModel)]="venta.id_canal" class="form-select">
+                    <option value="">Seleccione aquí</option>
+                    <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
+                </select>
+            </div>
         </div>
-        <!-- fecha de pago para VENTAS  -->
-        <div class="form-group col-md-6 col-lg-4 mb-3" *ngIf="venta.cotizacion != 1">
-            <label for="fecha_pago">Fecha de pago:</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
-        </div>
-        <!-- sucursal --> 
-        <div class="form-group col-md-6 col-lg-4 mb-3">
-            <label for="id_sucursal">Sucursal</label>
-            <select name="id_sucursal" [(ngModel)]="venta.id_sucursal" class="form-select">
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
-                    {{ sucursal.nombre }}
-                </option>
-            </select>
-        </div>
-        <!-- VENTAS canal  -->
-        <div class="form-group col-md-6 col-lg-4" *ngIf="venta.cotizacion != 1">
-            <label for="id_canal">Canal</label>
-            <select name="id_canal" [(ngModel)]="venta.id_canal" class="form-select">
-                <option value="">Seleccione aquí</option>
-                <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
-            </select>
-        </div>
-    </div>
         <!-- observaciones -->
         <div class="form-group col-md-12 col-lg-4" *ngIf="venta.cotizacion != 1">
             <label for="observaciones">Observaciones:</label><br>
             <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
         </div>
-    </div>
     <!-- agrupar detalles de venta y personalizar descripción -->
-    <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">
-        <div class="form-group col-md-12 col-lg-6 without-label">
-            <div class="form-switch bg-light-info rounded">
-              <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
+        <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">
+            <div class="form-group col-md-12 col-lg-6 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
+                </div>
+            </div>
+            <div class="form-group col-md-12 col-lg-6" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
+                <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
+                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
             </div>
         </div>
-        <div class="form-group col-md-12 col-lg-6" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
-            <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
-            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
-        </div>
     </div>
+
     <!-- procesar venta/ cotizacion button  -->
     <div class="row mt-5">
         <div class="col-md-12">
