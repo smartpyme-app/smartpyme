@@ -37,17 +37,21 @@
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
                                 <div style="font-size: 14px;" >
-                                    <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true" *ngFor="let composicion of detalle?.composiciones">
-                                        <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
-                                        <span class="ms-5 badge bg-primary">{{ composicion?.opciones?.length }} Opciones</span>
-                                        <ng-template #popTemplate>
-                                            <ul class="list-group">
-                                                <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
-                                                    {{ opcion.nombre_producto }}
-                                                </button>
-                                            </ul>
-                                        </ng-template>
-                                    </a>
+                                    <ul>
+                                        <li *ngFor="let composicion of detalle?.composiciones">
+                                            <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true">
+                                                <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
+                                                <span class="ms-5 badge bg-primary float-end" *ngIf="composicion?.opciones?.length > 0">{{ composicion?.opciones?.length }} Opciones</span>
+                                                <ng-template #popTemplate>
+                                                    <ul class="list-group">
+                                                        <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
+                                                            {{ opcion.nombre_producto }}
+                                                        </button>
+                                                    </ul>
+                                                </ng-template>
+                                            </a>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -55,17 +59,21 @@
                             <input class="form-control" type="text" [(ngModel)]="detalle.descripcion" name="descripcion">
                             <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
                             <div style="font-size: 14px;" >
-                                <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true" *ngFor="let composicion of detalle?.composiciones">
-                                    <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
-                                    <span class="ms-5 badge bg-primary">{{ composicion?.opciones?.length }} Opciones</span>
-                                    <ng-template #popTemplate>
-                                        <ul class="list-group">
-                                            <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
-                                                {{ opcion.nombre_producto }}
-                                            </button>
-                                        </ul>
-                                    </ng-template>
-                                </a>
+                                <ul>
+                                    <li *ngFor="let composicion of detalle?.composiciones">
+                                        <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true">
+                                            <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
+                                            <span class="ms-5 badge bg-primary float-end" *ngIf="composicion?.opciones?.length > 0">{{ composicion?.opciones?.length }} Opciones</span>
+                                            <ng-template #popTemplate>
+                                                <ul class="list-group">
+                                                    <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
+                                                        {{ opcion.nombre_producto }}
+                                                    </button>
+                                                </ul>
+                                            </ng-template>
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </td>

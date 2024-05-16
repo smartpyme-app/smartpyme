@@ -366,7 +366,7 @@
                 <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
                     <option value="">Todos</option>
                     <option *ngFor="let documento of documentos" [value]="documento.id">
-                        {{ documento.nombre | filter:'id_sucursal':venta.id_sucursal"}}
+                        {{ documento.nombre | filter:'id_sucursal':venta.id_sucursal }}
                     </option>
                 </select>
             </div>

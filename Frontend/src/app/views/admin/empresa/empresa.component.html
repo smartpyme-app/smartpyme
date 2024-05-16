@@ -227,11 +227,11 @@
     <tab heading="Facturación electrónica">
         <section class="bg-white rounded p-3 mb-3">
             <div class="row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_usuario">Usuario:</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario" placeholder="Escribe aquí">
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_contrasena">Contraseña de la API:</label>
                     <div class="input-group">
                         <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena" [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel" id="mh_contrasena" required />
@@ -240,7 +240,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_pwd_certificado">Clave Privada del Certificado:</label>
                     <div class="input-group">
                         <input [type]="showpassword2 ? 'text' : 'password'" class="form-control" name="mh_pwd_certificado" [(ngModel)]="empresa.mh_pwd_certificado" placeholder="Escribe aquí" #mh_pwd_certificado="ngModel" id="mh_pwd_certificado" required />

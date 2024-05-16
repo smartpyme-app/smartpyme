@@ -92,20 +92,19 @@ export class MHService {
                     this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            // venta.estado = 'Emitido';
                             this.apiService.store('venta', venta).subscribe(data => {
-                                // this.alertService.success('Venta guardada.', 'El documento ha sido guardada.');
-                            },error => {this.alertService.error(error); resolve(null);});
-                            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
-                            resolve(null);
+                                resolve(data);
+                            },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.descripcionMsg){
-                            reject(new Error(error.error.descripcionMsg));
+                        if(error.error && error.error.observaciones.length > 0){
+                            reject(error.error.observaciones);
                         }
-                        else if(error.error && error.error.observaciones.length > 0){
-                            reject(new Error(error.error.observaciones));
+                        else if(error.error && error.error.descripcionMsg){
+                            reject(error.error.descripcionMsg);
                         }else{
-                            reject(new Error(error));
+                            reject(error);
                         }
                     });
 
