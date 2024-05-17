@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
@@ -11,6 +11,8 @@ import Swal from 'sweetalert2';
   templateUrl: './empresa.component.html'
 })
 export class EmpresaComponent implements OnInit {
+
+    // @ViewChild('fileUploader') profileImage:ElementRef;
 
     public empresa: any = {};
     public loading = false;
@@ -121,5 +123,10 @@ export class EmpresaComponent implements OnInit {
             this.alertService.success('Logo actualizo', 'Tu logo fue guardado exitosamente.');
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
+
+    
+//   resetFileUploader() { 
+//     this.profileImage.nativeElement.value = null;
+//   }
 
 }
