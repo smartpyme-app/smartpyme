@@ -207,12 +207,12 @@
 <section class="card border-0 p-3 mb-3"> 
 
     <!-- trigger button para el collapse  -->
-    <div class="row justify-content-md-center ">  
-        <div class="col-lg-4">
-            <a href="#collapseExample" class="btn btn-primary" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample"><h6 class="mt-1">Detalles avanzados <i class="fa-sharp fa-solid fa-arrow-down"></i></h6></a> 
+    <div class="row" data-bs-toggle="collapse" data-bs-target="#collapseFactaAvanz" aria-controls="collapseFactaAvanz" aria-expanded="true">  
+        <div class="col-lg-6"> <label >Detalles de facturación</label>
+        <button class="btn btn-link text-decoration-none border ml-3"><i class="fa-solid fa-square-caret-down"></i></button> 
         </div>    <!-- Estado: {{ venta.estado }} -->
     </div> 
-    <div class="collapse" id="collapseExample">
+    <div class="collapse show" id="collapseFactaAvanz">
     <!-- toggles  -->
         <div class="row">
             <!-- toggle venta al credito  -->
