@@ -207,10 +207,10 @@
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
-            <label for="monto_pago">Monto pago:</label><br>
+            <label for="monto_pago">Efectivo recibido:</label><br>
             <div class="input-group">
                 <div class="input-group-text">$</div>
-                <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - venta.total).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
+                <input type="number" class="form-control" (keyup)="venta.cambio = venta.monto_pago ? (venta.monto_pago - (venta.efectivo ? venta.efectivo : venta.total)).toFixed(2) : ''" [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">

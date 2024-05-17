@@ -292,6 +292,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.metodos_de_pago = this.formaPagos.filter((item:any) => item.total && (item.total > 0))
         this.formaPagos.push({'nombre': 'Multiple'})
         this.venta.forma_pago = 'Multiple';
+        this.venta.efectivo = this.formaPagos.find((item:any) => item.nombre == 'Efectivo').total;
         console.log(this.venta);
     }
 
