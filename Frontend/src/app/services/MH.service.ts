@@ -50,7 +50,7 @@ export class MHService {
         let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
 
         if(!token){
-            return throwError('No esta el token');
+            return throwError('Vuelva a iniciar sesión para conectarse a hacienda.');
         }
         const headers = new HttpHeaders({
           'Content-Type': 'application/json',

@@ -43,7 +43,7 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($venta->empresa()->pluck('logo')->first())
-                            {{-- <img height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo"> --}}
+                            <img height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
@@ -51,7 +51,7 @@
                         <h2>Factura</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">
-                        {{-- {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($venta->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!} --}}
+                        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($venta->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
                     </td>
                 </tr>
             </tbody>

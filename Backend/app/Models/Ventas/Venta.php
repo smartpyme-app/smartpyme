@@ -129,7 +129,7 @@ class Venta extends Model {
     }
 
     public function vendedor(){
-        return $this->belongsTo('App\Models\Empleados\Empleados\Empleado','id_vendedor');
+        return $this->belongsTo('App\Models\User','id_vendedor');
     }
 
     public function bodega(){

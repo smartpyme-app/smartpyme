@@ -159,7 +159,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
         this.venta.id_bodega = this.apiService.auth_user().id_bodega;
         this.venta.id_usuario = this.apiService.auth_user().id;
-        this.venta.id_vendedor = this.apiService.auth_user().id_empleado;
+        this.venta.id_vendedor = this.apiService.auth_user().id;
         this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.venta.id_empresa = this.apiService.auth_user().id_empresa;
         let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);

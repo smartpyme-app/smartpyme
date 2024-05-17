@@ -64,8 +64,12 @@ class MH extends Model
     public function generarDTE($venta){
         $this->venta = $venta;
         // $this->caja = $this->venta->caja()->first();
-        $this->caja_codigo = '0001';
         $this->empresa = $this->venta->empresa()->first();
+
+        $this->caja_codigo = '0001';
+        $this->empresa->cod_estable_mh = '0001';
+        $this->empresa->tipoEstablecimiento = 'Casa matriz';
+        $this->empresa->tipo_establecimiento = '02';
 
         $this->venta->ambiente = '00'; // 00 Modo prueba 01 Modo producción
         $this->venta->tipoModelo = 1; // 1 Modelo Facturación previo 2 Modelo Facturación diferido
@@ -214,7 +218,7 @@ class MH extends Model
                 $this->empresa->tipoEstablecimiento = '04';
                 break;
             default:
-                $this->empresa->tipoEstablecimiento = '20';
+                $this->empresa->tipoEstablecimiento = '02';
                 break;
         }
 
@@ -296,7 +300,7 @@ class MH extends Model
 
     protected function receptor(){
 
-        if (!$this->venta->cliente_id) {
+        if (!$this->venta->id_cliente) {
             return [
               "tipoDocumento" => NULL, //36 NIT 13 DUI
               "numDocumento" => NULL,

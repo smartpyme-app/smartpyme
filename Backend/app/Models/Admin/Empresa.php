@@ -39,6 +39,7 @@ class Empresa extends Model {
         'agrupar_detalles_venta',
         'editar_descripcion_venta',
         'impresion_en_facturacion',
+        'vendedor_detalle_venta',
         'plan',
         'cobra_iva',
         'tipo_plan',
