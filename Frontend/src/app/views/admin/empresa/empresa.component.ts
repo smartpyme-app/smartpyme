@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Renderer2} from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
@@ -12,15 +12,16 @@ import Swal from 'sweetalert2';
 })
 export class EmpresaComponent implements OnInit {
 
-    // @ViewChild('fileUploader') profileImage:ElementRef;
-
+    @ViewChild("takeInput") inputVar!: ElementRef<any>;
+    @ViewChild("imageProfPic") picProf!: ElementRef<any>;
     public empresa: any = {};
     public loading = false;
     public saving = false;
 
+
   	constructor( 
   	    public apiService: ApiService, private alertService: AlertService,
-  	    private route: ActivatedRoute, private router: Router
+  	    private route: ActivatedRoute, private router: Router, public renderer2: Renderer2
   	) { }
 
   	ngOnInit() {
@@ -125,8 +126,11 @@ export class EmpresaComponent implements OnInit {
     }
 
     
-//   resetFileUploader() { 
-//     this.profileImage.nativeElement.value = null;
-//   }
+  resetFileUploader() { 
+    const img_pic= this.picProf.nativeElement;
+
+    this.inputVar.nativeElement.value = "";
+    this.renderer2.setAttribute(img_pic,'src', 'https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg');
+  }
 
 }
