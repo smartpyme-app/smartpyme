@@ -58,5 +58,8 @@ CREATE TABLE venta_metodos_pago (
 );
 
 ALTER TABLE empresas ADD vendedor_detalle_venta BOOL DEFAULT false after agrupar_detalles_venta;
+ALTER TABLE empresas ADD facturacion_electronica BOOL DEFAULT false after vendedor_detalle_venta;
+ALTER TABLE empresas ADD fe_ambiente varchar(10) DEFAULT '00' after facturacion_electronica;
+
 ALTER TABLE ventas ADD id_vendedor INT(11) NULL after id_usuario;
 ALTER TABLE detalles_venta ADD id_vendedor INT(11) NULL after id_venta;

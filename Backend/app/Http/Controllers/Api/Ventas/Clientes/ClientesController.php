@@ -15,6 +15,7 @@ use App\Imports\ClientesEmpresas;
 use App\Exports\ClientesPersonasExport;
 use App\Exports\ClientesEmpresasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Auth;
 
 class ClientesController extends Controller
 {
@@ -80,24 +81,41 @@ class ClientesController extends Controller
     public function store(Request $request)
     {
 
-        $request->validate([
-            'nombre'         => 'required_if:tipo,"Persona"',
-            'apellido'       => 'required_if:tipo,"Persona"',
-            'nombre_empresa' => 'required_if:tipo,"Empresa"',
-            'ncr'            => 'required_if:tipo,"Empresa"',
-            'nit'            => 'required_if:tipo,"Empresa"',
-            'id_usuario'     => 'required|numeric',
-            'id_empresa'     => 'required|numeric|exists:empresas,id',
-            'dui'            => 'required_if:tipo,"Persona"',
-            'correo'         => 'nullable|max:255|email:rfc,dns',
-            'municipio'     => 'required|max:255',
-            'departamento'  => 'required|max:255',
-            'direccion'     => 'required|max:255',
-            'giro'      => 'required_if:tipo,"Empresa"|max:255',
-        ],[
-            // 'nombre.required_if' => 'El campo nombre es obligatorio.',
-            // 'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
-        ]);
+        if (Auth::user()->empresa()->pluck('facturacion_electronica')->firstOrFail()) {
+            $request->validate([
+                'nombre'         => 'required_if:tipo,"Persona"',
+                'apellido'       => 'required_if:tipo,"Persona"',
+                'nombre_empresa' => 'required_if:tipo,"Empresa"',
+                'ncr'            => 'required_if:tipo,"Empresa"',
+                'nit'            => 'required_if:tipo,"Empresa"',
+                'id_usuario'     => 'required|numeric',
+                'id_empresa'     => 'required|numeric|exists:empresas,id',
+                'dui'            => 'required_if:tipo,"Persona"',
+                'correo'         => 'nullable|max:255|email:rfc,dns',
+                'municipio'     => 'required|max:255',
+                'departamento'  => 'required|max:255',
+                'direccion'     => 'required|max:255',
+                'giro'      => 'required_if:tipo,"Empresa"|max:255',
+            ],[
+                // 'nombre.required_if' => 'El campo nombre es obligatorio.',
+                // 'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
+            ]);
+        }{
+            $request->validate([
+                'nombre'         => 'required_if:tipo,"Persona"',
+                'apellido'       => 'required_if:tipo,"Persona"',
+                'nombre_empresa'    => 'required_if:tipo,"Empresa"',
+                // 'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
+                // 'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
+                // 'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
+                'id_usuario'     => 'required|numeric',
+                'id_empresa'     => 'required|numeric|exists:empresas,id',
+            ],[
+                'nombre.required_if' => 'El campo nombre es obligatorio.',
+                'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
+            ]);
+        }
+
 
         if($request->id)
             $cliente = Cliente::findOrFail($request->id);

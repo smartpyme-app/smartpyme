@@ -54,6 +54,8 @@ class Empresa extends Model {
         'modulo_proyectos',
         'activo',
 
+        'facturacion_electronica',
+        'fe_ambiente',
         'cod_municipio',
         'cod_departamento',
         'cod_actividad_economica',

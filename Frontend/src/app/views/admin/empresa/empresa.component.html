@@ -145,71 +145,87 @@
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row mt-3">
-                    <p class="mb-0 fw-bold">Módulos habilitados</p>
+                    <h4 class="mb-0 fw-bold">Módulos habilitados</h4>
                     <div class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="modulo_citas">Módulo de citas</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
                         </div>
                     </div>
                     <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="modulo_citas">Módulo de proyectos</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
                         </div>
                     </div>
                     <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="modulo_citas">Módulo de paquetes</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
                         </div>
                     </div>
-                    <p class="mb-0 fw-bold">Facturación</p>
-                    <div class="form-group col-md-6 col-xl-4 without-label">
+                    <hr>
+                    <h4 class="mb-0 fw-bold">Facturación</h4>
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Activará el calculo de IVA por defecto.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="cobrar_iva">Cobrar por defecto IVA</label>
-                          <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">
+                          <label for="cobrar_iva">Cobrar IVA</label>
+                          <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
                         </div>
                     </div>
-                    <div class="form-group col-md-6 col-xl-4 without-label">
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permite poder vender sin stock, sino solicitará autorización.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="vender_sin_stock">Vender productos sin stock</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
-                        </div>
-                    </div>
-
-                    <div class="form-group col-md-6 col-xl-4 without-label">
-                        <div class="form-switch bg-light-info rounded">
-                          <label for="editar_precio_venta">Editar precio de venta</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
+                          <label for="vender_sin_stock">Vender sin stock</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-xl-4 without-label">
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permite cambiar el precio en facturación.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="agrupar_detalles_venta">Agrupar los detalles de venta</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.agrupar_detalles_venta" name="agrupar_detalles_venta">
+                          <label for="editar_precio_venta">Editar precio</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-xl-4 without-label">
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Puedes agrupar todos los detalles en una sola descripción.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="editar_descripcion_venta">Editar la descripción de los detalles</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
+                          <label for="agrupar_detalles_venta">Agrupar detalles</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.agrupar_detalles_venta" name="agrupar_detalles_venta">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-xl-4 without-label">
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Puedes editar las descripciones de los detalles de productos que agregues.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="impresion_en_facturacion">Imprimir al momento de facturar</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion">
+                          <label for="editar_descripcion_venta">Editar descripciones</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
                         </div>
                     </div>
 
-                    <div class="form-group col-md-6 col-xl-4 without-label">
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Se imprimirá el documento al momento de procesar la venta.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="vendedor_detalle_venta">Asignar vendedor por detalle de venta</label>
-                          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.vendedor_detalle_venta" name="vendedor_detalle_venta">
+                          <label for="impresion_en_facturacion">Imprimir en facturación</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Podrás seleccionar un vendedor por cada detalle de venta.</p>
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="vendedor_detalle_venta">Vendedor por detalle</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vendedor_detalle_venta" name="vendedor_detalle_venta">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Habilitará el modulo para configurar Facturación Electrónica.</p>
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="facturacion_electronica">Facturación electrónica</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="facturacion_electronica">
                         </div>
                     </div>
 
@@ -231,7 +247,7 @@
             </div>
         </form>
     </tab>
-    <tab heading="Facturación electrónica">
+    <tab heading="Facturación electrónica" *ngIf="empresa.facturacion_electronica">
         <section class="bg-white rounded p-3 mb-3">
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
@@ -255,9 +271,14 @@
                             <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword2, 'fa-eye': showpassword2 }"></i>
                         </button>
                     </div>
-                </div>
-                <div class="col-md-12">
-                </div>  
+                </div> 
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="mh_pwd_certificado">Ambiente:</label>
+                    <select name="fe_ambiente" class="form-select" [(ngModel)]="empresa.fe_ambiente">
+                        <option value="00">Pruebas</option>
+                        <option value="01">Producción</option>
+                    </select>
+                </div> 
             </div>
         </section>
         <div class="bg-white rounded p-3 mb-3">
