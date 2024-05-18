@@ -5,7 +5,7 @@
     <title>Orden de compra #{{ $compra->referencia }} - {{ $compra->nombre_proveedor }}</title>
     <style>
 
-        *{
+        *{ 
             margin: 0cm;
             font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
         }
@@ -36,7 +36,7 @@
 
 
     </style>
-
+    
 </head>
 <body>
 {{-- <body onload="javascript:print();"> --}}
@@ -88,7 +88,7 @@
                     </td>
                 </tr>
             </tbody>
-        </table>
+        </table> 
 
         <br>
 
@@ -146,7 +146,6 @@
         <br>
         <h4>Términos y condiciones:</h4>
         <p>{{ $compra->observaciones }}</p>
-{{--        <p>{{$compra->documento()->pluck("notas")->first()}}</p>--}}
         <br>
 
     </section>
