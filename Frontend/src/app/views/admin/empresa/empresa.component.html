@@ -10,7 +10,8 @@
                    <div class="form-group col-6 col-sm-4 col-md-2">
                        <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
                            <!-- <img class="img-fluid" src="" alt="logo"> -->
-                           <img #imageProfPic class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo  || '/assets/img/usuarios/default.png'}}" alt="logo">
+                           <img #imageProfPic class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo" *ngIf="empresa.logo != null">
+                           <img #imageProfPic class="img-fluid" src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg" alt="logo" *ngIf="empresa.logo == null">
                            <input #takeInput type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                        </figure>
                    </div>
@@ -18,7 +19,7 @@
                <div class="row justify-content-center">
                 <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
 
-                    <div class="btn btn-primary file-upload" type="button" > Agregar
+                    <div class="btn btn-primary file-upload mr-3" type="button"> Agregar
                         <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                     </div>
                     <div class="btn btn-primary" (click)="resetFileUploader()" type="button">Eliminar</div>

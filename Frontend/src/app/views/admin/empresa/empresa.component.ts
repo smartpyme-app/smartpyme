@@ -109,28 +109,28 @@ export class EmpresaComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
 
-    setDefaultFile(event:any){
-
-        this.empresa.file='/assets/img/usuarios/default.png';
-        let formData:FormData = new FormData();
-
-        for (var key in this.empresa) {
-            formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
-        }
-        
-        this.apiService.store('empresa', formData).subscribe(empresa => {
-            this.empresa.logo = ' /assets/img/usuarios/default.png';
-            this.loading = false;
-            this.alertService.success('Logo actualizo', 'Tu logo fue guardado exitosamente.');
-        }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
-    }
-
     
   resetFileUploader() { 
     const img_pic= this.picProf.nativeElement;
 
     this.inputVar.nativeElement.value = "";
+    
+
+    this.empresa.file = null;
+        
+    let formData:FormData = new FormData();
+    for (var key in this.empresa) {
+        formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
+    }
+    this.loading = true;
+    this.apiService.store('empresa', formData).subscribe(empresa => {
+        this.empresa.logo = null;
+        this.loading = false;
+        this.alertService.warning('Logo actualizo', 'Para guardar los cambios haga click en el boton Guardar');
+    }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
+
     this.renderer2.setAttribute(img_pic,'src', 'https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg');
   }
+
 
 }
