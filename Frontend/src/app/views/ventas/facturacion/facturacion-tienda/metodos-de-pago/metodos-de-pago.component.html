@@ -32,7 +32,7 @@
                 </div>
 
                 <div class="row d-grid">
-                    <button class="btn btn-primary" [disabled]="(venta.total == 0) || (formaPagos.total != venta.total)">Aplicar cambios</button>
+                    <button class="btn btn-primary" [disabled]="aplicarCambios">Aplicar cambios</button>
                 </div>
             </form>
         </section>
