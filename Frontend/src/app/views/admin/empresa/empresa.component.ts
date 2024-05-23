@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-
+import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -17,15 +17,27 @@ export class EmpresaComponent implements OnInit {
     public empresa: any = {};
     public loading = false;
     public saving = false;
+    public cheking = false;
+    public departamentos:any = [];
+    public municipios:any = [];
+    public actividad_economicas:any = [];
+
+    public showpassword:boolean = false;
+    public showpassword2:boolean = false;
 
 
-  	constructor( 
+  	constructor(
   	    public apiService: ApiService, private alertService: AlertService,
   	    private route: ActivatedRoute, private router: Router, public renderer2: Renderer2
   	) { }
 
   	ngOnInit() {
         this.loadAll();
+
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+
   	}
 
     public loadAll() {
@@ -36,20 +48,37 @@ export class EmpresaComponent implements OnInit {
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
-  	public onSubmit() {
-  	    this.saving = true;
-  	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
-  	        this.empresa = empresa;
+  	public onSubmit(): Promise<any> {
 
-            let user:any = {}; 
-            user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-            user.empresa = empresa;
-            localStorage.setItem('SP_auth_user', JSON.stringify(user));
+        return new Promise((resolve, reject) => {
+      	    this.saving = true;
+      	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+      	        this.empresa = empresa;
 
-            this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
-  	        this.saving = false;
-  	    },error => {this.alertService.error(error); this.saving = false; });
+                let user:any = {};
+                user = JSON.parse(localStorage.getItem('SP_auth_user')!);
+                user.empresa = empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(user));
+
+                this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
+      	        this.saving = false;
+                resolve(null);
+      	    },error => {this.alertService.error(error); this.saving = false; resolve(null);});
+
+        });
   	}
+
+    setGiro(){
+        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
+    }
+
+    setMunicipio(){
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio).nombre;
+    }
+
+    setDepartamento(){
+        this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
+    }
 
     setPais(){
         if(this.empresa.pais == 'El Salvador'){
@@ -92,11 +121,11 @@ export class EmpresaComponent implements OnInit {
         }
         console.log(this.empresa.cobra_iva);
     }
-     
+
 
     setFile(event:any) {
         this.empresa.file = event.target.files[0];
-        
+
         let formData:FormData = new FormData();
         for (var key in this.empresa) {
             formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
@@ -109,15 +138,15 @@ export class EmpresaComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
 
-    
-  resetFileUploader() { 
+
+  resetFileUploader() {
     const img_pic= this.picProf.nativeElement;
 
     this.inputVar.nativeElement.value = "";
-    
+
 
     this.empresa.file = null;
-        
+
     let formData:FormData = new FormData();
     for (var key in this.empresa) {
         formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);

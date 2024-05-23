@@ -18,7 +18,8 @@ class Detalle extends Model {
         'exenta',
         'cuenta_a_terceros',
         'total',
-        'id_venta'
+        'id_venta',
+        'id_vendedor',
     );
 
     protected $appends = ['nombre_producto', 'img'];
@@ -63,6 +64,9 @@ class Detalle extends Model {
         return $this->hasOne('App\Models\Inventario\Paquete','id_venta_detalle');
     }
 
+    public function vendedor(){
+        return $this->belongsTo('App\Models\User','id_vendedor');
+    }
 
 
 }

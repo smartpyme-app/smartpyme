@@ -10,7 +10,7 @@ import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
-
+import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -49,6 +49,7 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
     PipesModule,
     TagInputModule,
     NgSelectModule,
+    NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
     FocusModule.forRoot()
   ],

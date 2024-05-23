@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Ventas\Clientes\ClientesController;
 use App\Http\Controllers\Api\Ventas\Clientes\DocumentosController;
 use App\Http\Controllers\Api\Ventas\VentasController;
 
+
     Route::get('/clientes',                         [ClientesController::class, 'index']);
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);

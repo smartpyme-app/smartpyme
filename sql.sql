@@ -24,6 +24,7 @@ CREATE TABLE licencia_empresas (
 );
 
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
+
 ALTER TABLE eventos CHANGE id_servicio id_servicio INT(11) NULL;
 
 CREATE TABLE detalles_evento (
@@ -55,3 +56,10 @@ CREATE TABLE venta_metodos_pago (
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
+
+ALTER TABLE empresas ADD vendedor_detalle_venta BOOL DEFAULT false after agrupar_detalles_venta;
+ALTER TABLE empresas ADD facturacion_electronica BOOL DEFAULT false after vendedor_detalle_venta;
+ALTER TABLE empresas ADD fe_ambiente varchar(10) DEFAULT '00' after facturacion_electronica;
+
+ALTER TABLE ventas ADD id_vendedor INT(11) NULL after id_usuario;
+ALTER TABLE detalles_venta ADD id_vendedor INT(11) NULL after id_venta;

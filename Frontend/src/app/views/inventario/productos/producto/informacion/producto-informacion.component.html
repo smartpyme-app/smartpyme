@@ -20,7 +20,11 @@
         </div>
         <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.medida" name="medida" placeholder="Escribe aquí" required>
+            <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+                <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+                    {{ medida.nombre }}
+                </ng-option>
+            </ng-select>
         </div>
 
         <h6 class="my-3 font-weight-bold">Organización</h6>

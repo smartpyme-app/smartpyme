@@ -14,6 +14,7 @@ import { ApiService } from '@services/api.service';
 export class VentaComponent implements OnInit {
 
     public venta:any = {};
+    public usuario:any = {};
     public loading = false;
     public saving = false;
 
@@ -26,7 +27,7 @@ export class VentaComponent implements OnInit {
     }
 
     ngOnInit() {
-
+        this.usuario = this.apiService.auth_user();
         this.loadAll();
 
     }

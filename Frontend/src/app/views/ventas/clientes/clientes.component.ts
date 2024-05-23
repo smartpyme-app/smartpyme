@@ -51,6 +51,7 @@ export class ClientesComponent implements OnInit {
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
+    
     public setOrden(columna: string) {
         if (this.filtros.orden === columna) {
           this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';

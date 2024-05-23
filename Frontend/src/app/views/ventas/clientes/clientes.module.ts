@@ -12,6 +12,7 @@ import { TabsModule } from 'ngx-bootstrap/tabs';
 import { NgChartsModule } from 'ng2-charts';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { ClientesComponent } from './clientes.component';
 import { ClienteComponent } from './cliente/cliente.component';
@@ -33,6 +34,7 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
     PipesModule,
     TagInputModule,
     NgChartsModule,
+    NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     PopoverModule.forRoot(),
     TabsModule.forRoot(),

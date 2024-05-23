@@ -35,6 +35,11 @@ class Cliente extends Model {
        'etiquetas',
        'id_usuario',
        'id_empresa',
+
+       'cod_giro',
+       'cod_municipio',
+       'cod_departamento',
+
     ];
     protected $appends = ['nombre_completo'];
     protected $casts = ['enable' => 'boolean'];

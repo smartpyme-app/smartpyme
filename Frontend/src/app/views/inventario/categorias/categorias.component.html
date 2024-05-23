@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Lotes</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mcategoria, {})" tooltip="Crear categoria (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir lote</button>
+    <h2 class="page-heading">Categorias</h2>
+    <button *ngIf="apiService.canCreate()" (click)="openModal(mcategoria, {})" tooltip="Crear categoria (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir categoria</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -35,7 +35,7 @@
             <table class="table table-borderless table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Lotes</th>
+                        <th>Categoria</th>
                         <th class="d-none d-md-table-cell">Descripción</th>
                         <th class="d-none d-lg-table-cell">Estado</th>
                         <th class="text-center">Más</th>
@@ -44,7 +44,7 @@
                 <tbody>
                     <tr>
                         <td colspan="8" class="text-center" *ngIf="categorias?.length < 1 && !loading">
-                            <span class="badge bg-primary">No tiene lotes registrados</span>
+                            <span class="badge bg-primary">No tiene categorias registrados</span>
                         </td>
                         <td colspan="8" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>

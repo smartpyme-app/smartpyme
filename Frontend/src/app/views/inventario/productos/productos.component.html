@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Propiedades</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir propiedad</button>
+    <h2 class="page-heading">Inventario</h2>
+    <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
@@ -57,7 +57,7 @@
                 <thead>
                     <tr>
                         <!-- <th><input type="checkbox" class="form-check"></th> -->
-                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Propiedades</th>
+                        <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Producto</th>
                         <th (click)="setOrden('enable')" [ngClass]="{'sorted-asc': filtros.orden == 'enable' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'enable' && filtros.direccion == 'desc'}" class="click d-none d-lg-table-cell">Estado</th>
                         <th (click)="setOrden('categoria')" [ngClass]="{'sorted-asc': filtros.orden == 'categoria' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'categoria' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Categoría</th>
                         <th (click)="setOrden('codigo')" [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Código</th>

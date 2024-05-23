@@ -14,6 +14,8 @@ import Swal from 'sweetalert2';
 export class VentaDetallesComponent implements OnInit {
 
     @Input() venta: any = {};
+    @Input() usuarios: any = {};
+    public usuario:any = {};
     public detalle:any = {};
     public supervisor:any = {};
 
@@ -33,7 +35,7 @@ export class VentaDetallesComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-
+        this.usuario = this.apiService.auth_user();
     }
 
     openModalEdit(template: TemplateRef<any>, detalle:any) {
@@ -152,6 +154,8 @@ export class VentaDetallesComponent implements OnInit {
             if(!this.detalle.total){
                 this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
             }
+
+            this.detalle.id_vendedor = this.venta.id_vendedor;
             
             
             if(!detalle)

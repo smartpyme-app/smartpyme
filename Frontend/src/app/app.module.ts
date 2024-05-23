@@ -15,6 +15,7 @@ import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
 import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
+import { MHService } from './services/MH.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
 
@@ -90,7 +91,8 @@ import { LayoutModule } from '@layout/layout.module';
     ProyectosModule,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService, SumPipe, provideEnvironmentNgxMask()],
+                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService,
+                MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })
 

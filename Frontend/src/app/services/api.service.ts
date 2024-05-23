@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
-import { AlertService } from '../services/alert.service';
+import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 
 import * as moment from 'moment';
@@ -106,6 +106,29 @@ export class ApiService {
             $('.icon-theme').removeClass('fas');
             $('.icon-theme').addClass('far');
         }
+    }
+
+    loadData(){
+
+        this.getAll('formas-de-pago').subscribe(metodospago => {
+            localStorage.setItem('metodospago', JSON.stringify(metodospago));
+        }, error => {this.alertService.error(error);});
+        
+        this.getAll('municipios').subscribe(municipios => { 
+            localStorage.setItem('municipios', JSON.stringify(municipios));
+        }, error => {this.alertService.error(error); });
+
+        this.getAll('departamentos').subscribe(departamentos => { 
+            localStorage.setItem('departamentos', JSON.stringify(departamentos));
+        }, error => {this.alertService.error(error); });
+
+        this.getAll('actividades_economicas').subscribe(actividad_economicas => { 
+            localStorage.setItem('actividad_economicas', JSON.stringify(actividad_economicas));
+        }, error => {this.alertService.error(error); });
+
+        this.getAll('unidades').subscribe(medidas => {
+            localStorage.setItem('unidades_medidas', JSON.stringify(medidas));
+        }, error => {this.alertService.error(error);});
     }
 
     isAdmin(){

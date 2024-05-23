@@ -48,12 +48,15 @@ class Indicador extends Model
 
         $this->detalles_metodos_de_pago = MetodoDePago::whereHas('venta', function($q){
                             $q->where('id_empresa', $this->id_empresa)
+                            ->where('estado', 'Pagada')
+                            ->whereDoesntHave('devoluciones')
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
                             })
+                            ->where('cotizacion', 0)
                             ->whereBetween('fecha', [$this->inicio, $this->fin]);
                         })
                         ->get();
@@ -76,6 +79,7 @@ class Indicador extends Model
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
                         })
+                        ->where('cotizacion', 0)
                         ->where('estado', 'Pagada')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
@@ -87,6 +91,7 @@ class Indicador extends Model
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
                         })
+                        ->where('cotizacion', 0)
                         ->where('estado', 'Anulada')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
@@ -113,6 +118,7 @@ class Indicador extends Model
                             $q->where('id_usuario', $this->id_usuario);
                         })
                         ->where('estado', 'Pendiente')
+                        ->where('cotizacion', 0)
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
@@ -277,8 +283,8 @@ class Indicador extends Model
 
     public function getTotalVentas(){
         return $this->getTotalVentasPagadas()
-                + $this->getTotalVentasPendientes()
-                - $this->getTotalDevolucionesVenta();
+                + $this->getTotalVentasPendientes();
+                // - $this->getTotalDevolucionesVenta();
     }
 
     public function getCantidadGastos(){
@@ -304,7 +310,7 @@ class Indicador extends Model
 
     public function getVentasByCanal(){
 
-        return $this->ventas->groupBy('id_canal')->map(function ($group) {
+        return $this->ventas->where('estado', '!=', 'Anulada')->groupBy('id_canal')->map(function ($group) {
                     return [
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()->canal()->pluck('nombre')->first(),
