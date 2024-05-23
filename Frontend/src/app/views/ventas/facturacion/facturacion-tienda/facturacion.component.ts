@@ -33,6 +33,7 @@ export class FacturacionComponent implements OnInit {
     public duplicarventa = false;
     public facturarCotizacion = false;
     public api:boolean = false;
+    public terminos:any = "";
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -103,6 +104,7 @@ export class FacturacionComponent implements OnInit {
             this.proyectos = proyectos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
     }
 
     public cargarDocumentos(){
@@ -137,6 +139,7 @@ export class FacturacionComponent implements OnInit {
     }
 
     public cargarDatosIniciales(){
+
         this.venta = {};
         this.venta.fecha = this.apiService.date();
         this.venta.fecha_pago = this.apiService.date();
@@ -163,6 +166,9 @@ export class FacturacionComponent implements OnInit {
         this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.venta.id_empresa = this.apiService.auth_user().id_empresa;
         let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
+        this.terminos = this.apiService.auth_user().empresa.cotizacion_compras_terminos;
+
+
         if (corte) {
             this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
             this.venta.caja_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
@@ -178,6 +184,8 @@ export class FacturacionComponent implements OnInit {
         if (this.route.snapshot.queryParamMap.get('cotizacion')) {
             this.venta.cotizacion = 1;
             this.venta.estado = 'Pendiente';
+            // aqui dbe ir el validador del boton para saber si el cliente acepto colocar los terminos por default 
+            this.venta.observaciones=this.apiService.auth_user().empresa.cotizacion_compras_terminos;
         }
 
         // Para editar cotizaciones Pre-venta

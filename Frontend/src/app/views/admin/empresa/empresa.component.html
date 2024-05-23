@@ -178,20 +178,24 @@
                           <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
                         </div>
                     </div>
-
                     <div class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
                           <label for="impresion_en_facturacion">Imprimir al momento de facturar</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion">
                         </div>
                     </div>
-
-
                     <p class="my-3 pt-5">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
-
+                </div>
+            <!-- terminos y condiciones -->
+                <div class="row">
+                    <div class="form-group col-md-6 col-xl-4 without-label">
+                          <label for="impresion_en_facturacion">Terminos y condiciones Generales para documentos</label>
+                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion"> -->
+                          <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
+                    </div>
                 </div>
         </div>
     </div>
