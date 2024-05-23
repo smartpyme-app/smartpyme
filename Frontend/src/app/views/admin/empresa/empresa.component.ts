@@ -12,6 +12,8 @@ import Swal from 'sweetalert2';
 })
 export class EmpresaComponent implements OnInit {
 
+    isShow = true;
+
     @ViewChild("takeInput") inputVar!: ElementRef<any>;
     @ViewChild("imageProfPic") picProf!: ElementRef<any>;
     public empresa: any = {};
@@ -159,6 +161,10 @@ export class EmpresaComponent implements OnInit {
     }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
 
     this.renderer2.setAttribute(img_pic,'src', 'https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg');
+  }
+
+  toggleDisplay() {
+    this.isShow = !this.isShow;
   }
 
 
