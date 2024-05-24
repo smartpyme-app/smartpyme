@@ -45,7 +45,8 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Total',
             'Empresa',
             'Observaciones', 
-            'Usuario'
+            'Usuario',
+            'Vendedor',
         ];
     }
 
@@ -80,6 +81,9 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                                 })
                                 ->when($request->id_documento, function($query) use ($request){
                                     return $query->where('id_documento', $request->id_documento);
+                                })
+                                ->when($request->id_vendedor, function($query) use ($request){
+                                    return $query->where('id_vendedor', $request->id_vendedor);
                                 })
                                 ->when($request->estado, function($query) use ($request){
                                     return $query->where('estado', $request->estado);
@@ -124,6 +128,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $row->venta()->first()->sucursal()->first()->empresa()->pluck('nombre')->first(),
               $row->venta()->pluck('observaciones')->first(),
               $row->venta()->first()->usuario()->pluck('name')->first(),
+              $row->vendedor()->pluck('name')->first(),
          ];
         return $fields;
     }

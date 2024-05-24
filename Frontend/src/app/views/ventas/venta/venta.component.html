@@ -20,12 +20,12 @@
                 <p>{{ venta.fecha | date:'dd/MM/yyyy'}} {{ venta.created_at | date:'hh:mm a'}}</p>
             </div>
             <div class="form-group col-lg-4">
-                <label class="fw-medium">Cliente</label>
-                <p>{{ venta.nombre_cliente }}</p>
-            </div>
-            <div class="form-group col-lg-4">
                 <label class="fw-medium">Estado</label>
                 <p>{{ venta.estado }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Cliente</label>
+                <p>{{ venta.nombre_cliente }}</p>
             </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Fecha pago</label>
@@ -44,12 +44,16 @@
                 <p>{{ venta.nombre_documento }} # {{ venta.correlativo }}</p>
             </div>
             <div class="form-group col-lg-4">
+                <label class="fw-medium">Sucursal</label>
+                <p>{{ venta.nombre_sucursal }}</p>
+            </div>
+            <div class="form-group col-lg-4">
                 <label class="fw-medium">Usuario</label>
                 <p>{{ venta.nombre_usuario }}</p>
             </div>
             <div class="form-group col-lg-4">
-                <label class="fw-medium">Sucursal</label>
-                <p>{{ venta.nombre_sucursal }}</p>
+                <label class="fw-medium">Vendedor</label>
+                <p>{{ venta.nombre_vendedor }}</p>
             </div>
         </div>
     </div>

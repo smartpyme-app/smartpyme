@@ -28,6 +28,8 @@ class PaquetesController extends Controller
                                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
                                                  })
                                                  ->orwhere('num_guia', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('embalaje', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('nota', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('wr', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('num_seguimiento', 'like' ,"%" . $request->buscador . "%");
                                 })
