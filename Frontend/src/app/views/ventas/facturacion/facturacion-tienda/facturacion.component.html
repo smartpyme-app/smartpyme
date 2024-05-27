@@ -181,8 +181,8 @@
         </div>
         <div class="orm-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-                <label for="percepcion">Terminos y condiciones</label>
-                <input class="form-check-input float-end" type="checkbox" role="switch" (change)="showTerms()" name="terminos_condiciones">
+                <label for="percepcion">Términos y condiciones</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)="showTerms()"[(ngModel)]="venta.terminos" name="terminos_condiciones">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">

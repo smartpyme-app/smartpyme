@@ -472,7 +472,12 @@ export class FacturacionComponent implements OnInit {
             const terms_condi= this.areaTerminos.nativeElement;
             this.renderer2.setProperty(terms_condi,'value',this.terminos);
             this.renderer2.setAttribute(terms_condi,'rows', '5' );
-            console.log("Son los termino sy condiciones");
+            console.log(this.venta.terminos);
+            if(!this.venta.terminos){
+                this.renderer2.setProperty(terms_condi,'value','');
+                this.renderer2.setAttribute(terms_condi,'rows', '3' );
+                this.renderer2.setAttribute(terms_condi,'placeholder', 'Escribe aqui' );
+            } 
 
         }
 
