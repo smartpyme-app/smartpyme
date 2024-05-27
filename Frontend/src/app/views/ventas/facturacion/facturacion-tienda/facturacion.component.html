@@ -179,6 +179,12 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
             </div>
         </div>
+        <div class="orm-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+                <label for="percepcion">Terminos y condiciones</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)="showTerms()" name="terminos_condiciones">
+            </div>
+        </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="forma_pago">Método de pago</label>
             <div class="input-group flex-nowrap">
@@ -204,7 +210,7 @@
         </div>
         <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
             <label for="observaciones">Términos de venta:</label><br>
-            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+            <textarea #terminos class="form-control" placeholder="Escribe aqui"  name="observaciones" cols="30" rows="3"></textarea>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="monto_pago">Efectivo recibido:</label><br>

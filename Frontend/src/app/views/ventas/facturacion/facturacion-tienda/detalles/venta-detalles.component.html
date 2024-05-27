@@ -21,6 +21,7 @@
                 </tr>
             </thead>
             <tbody class="align-top">
+                <!-- if no h ay ningun producto -->
                 <tr *ngIf="venta?.detalles?.length < 1">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
@@ -29,6 +30,7 @@
                     </td>
                 </tr>
                 <tr *ngFor="let detalle of venta?.detalles; let i = index">
+                    <!-- detalle de vendedor  -->
                     <td *ngIf="usuario.empresa.vendedor_detalle_venta">
                         <select name="id_vendedor" [(ngModel)]="detalle.id_vendedor" class="form-select">
                             <option [value]="usuario.id" *ngFor="let usuario of usuarios">

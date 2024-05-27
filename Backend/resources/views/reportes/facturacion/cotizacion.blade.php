@@ -14,7 +14,7 @@
             margin: 50px;
         }
         h1,h2,h3,h4,h5,h6{
-            color: #005CBB !important;
+            color: #000000 !important;
         }
 
         table{
@@ -31,7 +31,7 @@
             text-align: right !important;
         }
         .border-bottom{
-            border-bottom: 1px solid #005CBB !important;
+            border-bottom: 1px solid #000000 !important;
         }
 
 
