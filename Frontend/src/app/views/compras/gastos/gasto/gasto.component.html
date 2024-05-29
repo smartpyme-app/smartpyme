@@ -101,21 +101,25 @@
     <div class="bg-white rounded p-3 mb-3">
         <h6>Detalle de facturación</h6>
         <div class="row">
-            <div class="form-group col-md-12 col-lg-6">
+            <div class="form-group col-md-12 col-lg-4">
                 <label for="">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
             </div>
             <div class="form-group col-md-4 col-lg-2">
                 <label for="">Sub total:</label>
-                <input type='number' class="form-control" name="sub_total" [(ngModel)]="gasto.sub_total"/>
+                <input type='number' class="form-control" name="sub_total" (change)="setTotal()" [(ngModel)]="gasto.sub_total"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
                 <label for="">IVA:</label>
-                <input type='number' class="form-control" name="iva" [(ngModel)]="gasto.iva"/>
+                <input type='number' disabled class="form-control" name="iva" [(ngModel)]="gasto.iva"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="">Percepción:</label>
+                <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
                 <label for="" class="fw-medium">Total:</label>
-                <input type='number' class="form-control" name="total" [(ngModel)]="gasto.total"/>
+                <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="forma_pago">Forma de pago:</label>
@@ -149,7 +153,13 @@
             <div class="form-group col-md-4 col-lg-3 without-label ">
                 <div class="form-switch bg-light-info rounded">
                   <label for="impuesto">IVA</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setIva()" [(ngModel)]="gasto.impuesto" name="impuesto">
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.impuesto" name="impuesto">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="percepcion">Percepción</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
                 </div>
             </div>
             <div class="form-group col-md-12">

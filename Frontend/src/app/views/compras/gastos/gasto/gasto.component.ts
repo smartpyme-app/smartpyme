@@ -145,7 +145,21 @@ export class GastoComponent implements OnInit {
         }
     }
 
-    public setIva(){
+    public setTotal(){
+
+        if(this.gasto.impuesto){
+            this.gasto.total = (this.gasto.sub_total + (this.gasto.sub_total * (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
+            this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
+        }else{
+            this.gasto.iva = 0;
+            this.gasto.total = this.gasto.sub_total;
+        }
+        this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
+        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido)).toFixed(2);
+    }
+
+    public setSubTotal(){
+
         if(this.gasto.impuesto){
             this.gasto.sub_total = (this.gasto.total / (1 + (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
             this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
@@ -153,6 +167,8 @@ export class GastoComponent implements OnInit {
             this.gasto.iva = 0;
             this.gasto.sub_total = this.gasto.total;
         }
+        this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
+        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido)).toFixed(2);
     }
 
 
