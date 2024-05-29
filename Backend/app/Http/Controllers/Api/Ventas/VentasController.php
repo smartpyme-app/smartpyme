@@ -630,7 +630,11 @@ class VentasController extends Controller
                 $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 174 ){ //174  OK V2
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Via-del-Mar', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Consultora-Raices', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 59 ){ //59  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -703,7 +707,12 @@ class VentasController extends Controller
             elseif(Auth::user()->id_empresa == 84){ //84
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
-            }else{
+            }
+            elseif(Auth::user()->id_empresa == 59){ //59
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.smartpyme-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            else{
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
