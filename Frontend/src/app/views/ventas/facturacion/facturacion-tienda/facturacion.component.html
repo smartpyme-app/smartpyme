@@ -7,10 +7,12 @@
 
 <section class="card border-0 p-3 mb-3">
     <div class="row">
+        <!-- fecha  -->
         <div class="form-group col-md-4 col-lg-2">
             <label for="fecha">Fecha</label><br>
             <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
         </div>
+        <!-- usuario  -->
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>
             <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
@@ -19,28 +21,17 @@
                 </option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <!-- sucursal --> 
+        <!-- <div class="form-group col-md-4 col-lg-3">
             <label for="id_sucursal">Sucursal</label>
             <select name="id_sucursal" [(ngModel)]="venta.id_sucursal" class="form-select">
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
                     {{ sucursal.nombre }}
                 </option>
             </select>
-        </div>
-        <div class="form-group col-md-4 col-lg-2">
-            <label for="id_documento">Documento</label>
-            <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
-                <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
-            </select>
-        </div>
-        <div class="form-group col-md-4 col-lg-2">
-            <label for="correlativo">Correlativo</label>
-            <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
-        </div>
-    </div>
-    <div class="row">
-        <h6 class="mt-3">Detalles de la venta</h6>
-        <div class="form-group col-md-12 col-lg-4">
+        </div> -->
+        <!-- cliente -->
+        <div class="form-group col-md-6 col-lg-3 mb-3">
             <label for="">Cliente</label>
             <div class="input-group flex-nowrap">
                 <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="venta.id_cliente" class="form-select p-0">
@@ -53,10 +44,29 @@
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
             </div>
         </div>
-        <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
+        <!-- documento -->
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="id_documento">Documento</label>
+            <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+            </select>
+        </div>
+        <!-- correlativo  -->
+        <div class="form-group col-md-4 col-lg-2">
+            <label for="correlativo">Correlativo</label>
+            <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+        </div>
+    </div>
+
+
+    <div class="row">
+        <!-- <h6 class="mt-3">Detalles de la venta</h6> -->
+        <!-- observaciones -->
+        <!-- <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
             <label for="observaciones">Observaciones:</label><br>
             <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
-        </div>
+        </div> -->
+        <!-- proyecto -->
         <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
             <label for="">Proyecto</label>
             <div class="input-group flex-nowrap">
