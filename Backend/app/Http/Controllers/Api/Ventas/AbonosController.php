@@ -102,6 +102,7 @@ class AbonosController extends Controller
                 // Actualziar si es paquete
                     $paquetes = Paquete::where('id_venta', $venta->id)->get();
                     foreach ($paquetes as $paquete) {
+                        $paquete->fecha = $abono->fecha;
                         $paquete->estado = 'Facturado';
                         $paquete->save();
                     }
@@ -114,6 +115,7 @@ class AbonosController extends Controller
                 // Actualziar si es paquete
                     $paquetes = Paquete::where('id_venta', $venta->id)->get();
                     foreach ($paquetes as $paquete) {
+                        $paquete->fecha = $abono->fecha;
                         $paquete->estado = 'Pendiente';
                         $paquete->save();
                     }
