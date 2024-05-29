@@ -36,6 +36,9 @@ class PaquetesController extends Controller
                                 ->when($request->wr, function($q) use ($request){
                                     $q->where('wr', $request->wr);
                                 })
+                                ->when($request->cuenta_a_terceros !== null, function($q) use ($request){
+                                    $q->where('cuenta_a_terceros', '>', 0);
+                                })
                                 ->when($request->id_cliente, function($q) use ($request){
                                     return $q->where("id_cliente", $request->id_cliente);
                                 })
@@ -47,6 +50,12 @@ class PaquetesController extends Controller
                                 })
                                 ->when($request->estado, function($q) use ($request){
                                     $q->where('estado', $request->estado);
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);
