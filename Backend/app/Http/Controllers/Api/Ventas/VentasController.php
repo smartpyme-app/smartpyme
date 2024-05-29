@@ -289,6 +289,7 @@ class VentasController extends Controller
                     $paquete = Paquete::find($det['id_paquete']);
                     if ($paquete) {
                         $paquete->estado = ($venta->estado == 'Pagada') ? 'Facturado' : 'Pendiente';
+                        $paquete->fecha = $venta->fecha;
                         $paquete->id_venta = $venta->id;
                         $paquete->id_venta_detalle = $detalle->id;
                         $paquete->save();
