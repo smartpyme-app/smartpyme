@@ -242,7 +242,8 @@
         <!-- Terminos de venta COTIZACIONES -->
         <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
             <label for="observaciones">Términos de venta:</label><br>
-            <textarea #terminos class="form-control" placeholder="Escribe aqui" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+            <textarea  class="form-control" placeholder="Escribe aqui" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+            <!-- #terminos -->
         </div>
     <!-- agrupar detalles de venta y personalizar descripción -->
         <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">

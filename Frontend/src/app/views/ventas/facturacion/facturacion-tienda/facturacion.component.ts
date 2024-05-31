@@ -469,16 +469,20 @@ export class FacturacionComponent implements OnInit {
         }
 
         public showTerms(){
-            const terms_condi= this.areaTerminos.nativeElement;
-            this.renderer2.setProperty(terms_condi,'value',this.terminos);
-            this.renderer2.setAttribute(terms_condi,'rows', '5' );
+            // const terms_condi= this.areaTerminos.nativeElement;
+
+            this.venta.observaciones= this.terminos;
+            // const terms_condi= this.venta.observaciones.nativeElement;
+            // this.renderer2.setProperty(terms_condi,'value',this.terminos);
+            // this.renderer2.setAttribute(terms_condi,'rows', '5' );
             console.log(this.venta.terminos);
             if(!this.venta.terminos){
-                this.renderer2.setProperty(terms_condi,'value','');
-                this.renderer2.setAttribute(terms_condi,'rows', '3' );
-                this.renderer2.setAttribute(terms_condi,'placeholder', 'Escribe aqui' );
-            } 
 
+                this.venta.observaciones= "";
+            //     this.renderer2.setProperty(terms_condi,'value','');
+            //     this.renderer2.setAttribute(terms_condi,'rows', '3' );
+            //     this.renderer2.setAttribute(terms_condi,'placeholder', 'Escribe aqui' );
+            } 
         }
 
 
