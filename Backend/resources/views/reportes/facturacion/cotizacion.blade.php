@@ -145,7 +145,7 @@
 
         <br>
         <h4>Términos y condiciones:</h4>
-        <p>{{ $venta->observaciones }}</p>
+        <p>{!! nl2br(e($venta->observaciones))  !!} </p>
         <br>
 
         <br>
