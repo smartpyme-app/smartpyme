@@ -46,17 +46,9 @@
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
                                 <div style="font-size: 14px;" >
                                     <ul>
-                                        <li *ngFor="let composicion of detalle?.composiciones">
-                                            <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true">
-                                                <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
-                                                <span class="ms-5 badge bg-primary float-end" *ngIf="composicion?.opciones?.length > 0">{{ composicion?.opciones?.length }} Opciones</span>
-                                                <ng-template #popTemplate>
-                                                    <ul class="list-group">
-                                                        <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
-                                                            {{ opcion.nombre_producto }}
-                                                        </button>
-                                                    </ul>
-                                                </ng-template>
+                                        <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
+                                            <a class="click text-dark text-decoration-none" (click)="openModalCompuesto(mcomposicion, composicion)">
+                                                {{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}
                                             </a>
                                         </li>
                                     </ul>
@@ -68,17 +60,9 @@
                             <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
                             <div style="font-size: 14px;" >
                                 <ul>
-                                    <li *ngFor="let composicion of detalle?.composiciones">
-                                        <a class="ms-2 text-dark text-decoration-none" placement="right" href="javascript:void(0);" #pop="bs-popover" [popover]="popTemplate" [outsideClick]="true">
-                                            <b>{{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}</b>
-                                            <span class="ms-5 badge bg-primary float-end" *ngIf="composicion?.opciones?.length > 0">{{ composicion?.opciones?.length }} Opciones</span>
-                                            <ng-template #popTemplate>
-                                                <ul class="list-group">
-                                                    <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); pop.hide();" >
-                                                        {{ opcion.nombre_producto }}
-                                                    </button>
-                                                </ul>
-                                            </ng-template>
+                                    <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
+                                        <a class="click text-dark text-decoration-none" (click)="openModalCompuesto(mcomposicion, composicion)">
+                                            {{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}
                                         </a>
                                     </li>
                                 </ul>
@@ -138,6 +122,31 @@
                 </button>
             </div>
         </form>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #mcomposicion>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Opciones</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+        <div class="col-12">
+            
+            <p>Seleccione el sustituto de <b>{{ composicion.nombre_compuesto }}</b>:</p>
+            <br>
+            <div *ngIf="composicion.opciones.length > 0" style="max-height: 300px; overflow: auto;">
+                <ul class="list-group">
+                    <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones" (click)="cambiarOpcion(composicion, opcion); modalRef.hide();" >
+                        {{ opcion.nombre_producto }}
+                    </button>
+                </ul>
+            </div>
+            <p class="alert bg-info" *ngIf="composicion.opciones.length == 0">No tiene productos sustitutos, puede agregarlos en la configuración del producto.</p>
+            <br>
+        </div>
     </div>
   </div>
 </ng-template>

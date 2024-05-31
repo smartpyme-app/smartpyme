@@ -49,6 +49,9 @@ export class ServiciosComponent implements OnInit {
 
     public filtrarServicios(){
         this.loading = true;
+        if(!this.filtros.id_categoria){
+            this.filtros.id_categoria = '';
+        }
         this.apiService.getAll('servicios', this.filtros).subscribe(servicios => { 
             this.servicios = servicios;
             this.loading = false;

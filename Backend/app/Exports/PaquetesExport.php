@@ -23,6 +23,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
 
     public function headings():array{
        return[
+            'fecha',
             'cliente',
             'codigo_asesor',
             'wr',
@@ -42,6 +43,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($row): array{
             $fields = [
+              $row->fecha,
               $row->nombre_cliente,
               $row->asesor() ? $row->asesor()->pluck('codigo')->first() : '',
               $row->wr,
@@ -93,6 +95,12 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
                                 })
                                 ->when($request->id_usuario, function($q) use ($request){
                                     return $q->where("id_usuario", $request->id_usuario);
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
                                 })
                                 ->when($request->estado, function($q) use ($request){
                                     $q->where('estado', $request->estado);

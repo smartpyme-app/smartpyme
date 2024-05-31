@@ -54,6 +54,15 @@ export class GastosComponent implements OnInit {
 
     public filtrarGastos(){
         this.loading = true;
+
+        if(!this.filtros.id_proveedor){
+            this.filtros.id_proveedor = '';
+        }
+
+        if(!this.filtros.id_usuario){
+            this.filtros.id_usuario = '';
+        }
+        
         this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;

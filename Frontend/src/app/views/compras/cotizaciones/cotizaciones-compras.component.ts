@@ -64,6 +64,9 @@ export class CotizacionesComprasComponent implements OnInit {
 
     public filtrarCompras(){
         this.loading = true;
+        if(!this.filtros.id_proveedor){
+            this.filtros.id_proveedor = '';
+        }
         this.apiService.getAll('ordenes-de-compras', this.filtros).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;

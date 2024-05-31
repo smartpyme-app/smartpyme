@@ -64,6 +64,9 @@ export class PaquetesComponent implements OnInit {
 
     public filtrarPaquetes(){
         this.loading = true;
+        if(!this.filtros.id_cliente){
+            this.filtros.id_cliente = '';
+        }
         this.apiService.getAll('paquetes', this.filtros).subscribe(paquetes => { 
             this.paquetes = paquetes;
             this.loading = false;

@@ -62,6 +62,10 @@ export class ProductosComponent implements OnInit {
             this.filtros.sin_stock = '';
         }
 
+        if(!this.filtros.id_categoria){
+            this.filtros.id_categoria = '';
+        }
+
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;

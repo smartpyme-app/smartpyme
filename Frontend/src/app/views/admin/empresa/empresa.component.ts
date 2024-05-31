@@ -70,11 +70,13 @@ export class EmpresaComponent implements OnInit {
     }
 
     setMunicipio(){
-        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio).nombre;
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento).nombre;
     }
 
     setDepartamento(){
         this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
+        this.empresa.cod_municipio = null;
+        this.empresa.municipio = null;
     }
 
     setPais(){
