@@ -5,7 +5,7 @@
     <title>Cotización #{{ $venta->correlativo }} - {{ $venta->nombre_cliente }}</title>
     <style>
 
-        *{ 
+        *{
             margin: 0cm;
             font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
         }
@@ -14,7 +14,7 @@
             margin: 50px;
         }
         h1,h2,h3,h4,h5,h6{
-            color: #005CBB !important;
+            color: #000000 !important;
         }
 
         table{
@@ -31,12 +31,12 @@
             text-align: right !important;
         }
         .border-bottom{
-            border-bottom: 1px solid #005CBB !important;
+            border-bottom: 1px solid #000000 !important;
         }
 
 
     </style>
-    
+
 </head>
 <body>
 {{-- <body onload="javascript:print();"> --}}
@@ -88,7 +88,7 @@
                     </td>
                 </tr>
             </tbody>
-        </table> 
+        </table>
 
         <br>
 
@@ -147,6 +147,15 @@
         <h4>Términos y condiciones:</h4>
         <p>{{ $venta->observaciones }}</p>
         <br>
+
+        <br>
+        <br>
+        <br>
+
+        <h4>Firma:</h4>
+        <p>____________________________</p>
+
+
 
     </section>
 

@@ -37,7 +37,7 @@
         table td{height: 0.5cm; text-align: left;}
 
         .cantidad{ width: 1.5cm; text-align: center;}
-        .producto{ width: 10cm; text-align: left;}
+        .producto{ width: 10.5cm; text-align: left;}
         .precio{ width: 2cm; text-align: center;}
         .sujetas{ width: 1.4cm; text-align: center;}
         .exentas{ width: 1.4cm; text-align: center;}
@@ -46,13 +46,13 @@
 
         #letras     {top: 12cm; left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 11cm; left: 17cm; width: 2cm; text-align: right;}
-        #iva        {top: 11.4cm; left: 17cm; width: 2cm; text-align: right;}
-        #sub_total  {top: 11.8cm; left: 17cm; width: 2cm; text-align: right;}
-        #iva_retenido  {top: 11.9cm; left: 17cm; width: 2cm; text-align: right;}
-        #no_sujeta  {top: 12.1cm; left: 17cm; width: 2cm; text-align: right;}
-        #exenta     {top: 12.4cm; left: 17cm; width: 2cm; text-align: right;}
-        #total      {top: 12.7cm; left: 17cm; width: 2cm; text-align: right;}
+        #suma       {top: 11.4cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #iva        {top: 11.8cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #sub_total  {top: 12.2cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #iva_retenido  {top: 12.6cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 13cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #exenta     {top: 13.4cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #total      {top: 13.6cm; left: 17.5cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 
