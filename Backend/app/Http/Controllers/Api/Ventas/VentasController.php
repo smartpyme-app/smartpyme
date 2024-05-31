@@ -435,7 +435,7 @@ class VentasController extends Controller
 
         try {
             $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
-            if ($venta->total != $request->total) {
+            if (round($venta->total, 2) > round($request->total, 2)) {
                 // Crear consigna
                 $consigna = new Venta();
                 $consigna->fill($request->all());
