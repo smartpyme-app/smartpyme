@@ -53,6 +53,7 @@ class Empresa extends Model {
         'modulo_citas',
         'modulo_proyectos',
         'activo',
+        'cotizacion_compras_terminos',
 
         'facturacion_electronica',
         'fe_ambiente',
@@ -175,7 +176,7 @@ class Empresa extends Model {
     public function presupuestos(){
         return $this->hasMany('App\Models\Contabilidad\Presupuesto', 'id_empresa');
     }
-    
+
     public function categorias(){
         return $this->hasMany('App\Models\Inventario\Categorias\Categoria', 'id_empresa');
     }
@@ -197,7 +198,7 @@ class Empresa extends Model {
         $next_pay = $this->pagos()->pluck('created_at')->last();
         if($this->pagos()->count())
             $next_pay->addMonth(1);
-        
+
         return $next_pay;
     }
 

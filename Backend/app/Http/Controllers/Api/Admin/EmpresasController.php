@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
+use Carbon\Carbon;
 use JWTAuth;
 
 class EmpresasController extends Controller

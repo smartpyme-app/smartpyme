@@ -39,7 +39,7 @@ class Cliente extends Model {
        'cod_giro',
        'cod_municipio',
        'cod_departamento',
-
+       
     ];
     protected $appends = ['nombre_completo'];
     protected $casts = ['enable' => 'boolean'];
