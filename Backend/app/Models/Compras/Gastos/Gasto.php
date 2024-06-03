@@ -26,6 +26,7 @@ class Gasto extends Model {
         'proveedor',
         'sub_total',
         'iva',
+        'iva_percibido',
         'total',
         'nota',
         'id_usuario',

@@ -1,6 +1,5 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -17,6 +16,7 @@ export class VentaDetallesComponent implements OnInit {
     @Input() usuarios: any = {};
     public usuario:any = {};
     public detalle:any = {};
+    public composicion:any = {};
     public supervisor:any = {};
 
     @Output() update = new EventEmitter();
@@ -61,6 +61,12 @@ export class VentaDetallesComponent implements OnInit {
     public modalSupervisor(detalle:any){
         this.detalle = detalle;
         this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
+    }
+
+    public openModalCompuesto(template: TemplateRef<any>, composicion:any){
+        this.composicion = composicion;
+        console.log(this.composicion);
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public supervisorCheck(){
@@ -200,16 +206,20 @@ export class VentaDetallesComponent implements OnInit {
         this.sumTotal.emit();
     }
 
-    public cambiarOpcion(composicion:any, opcion:any){
-
-        console.log(opcion);
+    cambiarOpcion(composicion:any, opcion:any){
         let aux = Object.assign({}, composicion);
 
-        composicion.id_compuesto         = opcion.id_producto;
+        console.log(composicion);
+        console.log(opcion);
+
+        composicion.id_compuesto = opcion.id_producto;
         composicion.nombre_compuesto     = opcion.nombre_producto;
 
-        opcion.id_producto         = aux.id_compuesto;
-        opcion.nombre_compuesto      = aux.nombre_producto;
+        opcion.id_producto  = aux.id_compuesto;
+        opcion.nombre_producto      = aux.nombre_compuesto;
+
+        console.log(composicion);
+        console.log(opcion);
 
     }
 

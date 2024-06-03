@@ -28,6 +28,9 @@ class GastosController extends Controller
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
                     })
+                    ->when($request->id_sucursal, function($query) use ($request){
+                        return $query->where('id_sucursal', $request->id_sucursal);
+                    })
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
                             ->orwhere('referencia', 'like', '%'.$request->buscador.'%');

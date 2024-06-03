@@ -54,7 +54,7 @@ class Venta extends Model {
         'dte_invalidacion',
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
     protected $casts = ['recurrente' => 'string'];
     
     protected static function boot()
@@ -82,6 +82,11 @@ class Venta extends Model {
     }
 
     public function getNombreUsuarioAttribute()
+    {
+        return $this->usuario()->pluck('name')->first();
+    }
+
+    public function getNombreVendedorAttribute()
     {
         return $this->usuario()->pluck('name')->first();
     }

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
+use Carbon\Carbon;
 use JWTAuth;
 
 class EmpresasController extends Controller
@@ -122,10 +123,10 @@ class EmpresasController extends Controller
         $sucursales = $empresa->sucursales()->pluck('id')->toArray();
 
         if ($request->m_inventario) {
-            DB::table('productos')->where('id_empresa', $empresa->id)->delete();
+            DB::table('productos')->where('id_empresa', $empresa->id)->update(['deleted_at' => Carbon::now()]);
+            DB::table('inventario')->whereIn('id_sucursal', $sucursales)->update(['deleted_at' => Carbon::now()]);
             DB::table('ajustes')->where('id_empresa', $empresa->id)->delete();
             DB::table('traslados')->where('id_empresa', $empresa->id)->delete();
-            DB::table('inventario')->whereIn('id_sucursal', $sucursales)->delete();
         }
 
         if ($request->m_categorias) {

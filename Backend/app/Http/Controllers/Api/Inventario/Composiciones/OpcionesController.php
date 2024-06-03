@@ -17,10 +17,17 @@ class OpcionesController extends Controller
             'id_composicion'  => 'required|numeric',
         ]);
 
-        if($request->id)
+        if($request->id){
             $opcion = Opcion::findOrFail($request->id);
-        else
+        }
+        else{
             $opcion = new Opcion;
+
+            $existe = Opcion::where('id_producto', $request->id_producto)->where('id_composicion', $request->id_composicion)->first();
+
+            if($existe)
+                return  Response()->json(['error' => 'Ya ha sido agregado el producto.', 'code' => 400], 400);
+        }
         
         $opcion->fill($request->all());
         $opcion->save();

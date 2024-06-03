@@ -48,6 +48,7 @@ export class ProductoComposicionComponent implements OnInit {
         this.saving = true;
         this.apiService.store('producto/composicion', this.composicion).subscribe(composicion => {
             if(!this.composicion.id) {
+                composicion.opciones = [];
                 this.producto.composiciones.unshift(composicion);
             }
             this.composicion = {};

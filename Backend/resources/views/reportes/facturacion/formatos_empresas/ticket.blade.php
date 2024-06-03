@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
+  <script language="javascript">setTimeout("self.close();",500)</script>
   <title>Ticket</title>
   <style media="all">
     h1, h2, h3{
@@ -43,7 +43,7 @@
         </p>
         <br>
         @if ($empresa->logo)
-            <img src="{{asset($empresa->logo)}}" alt="Logo">
+            <img src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">
         @endif
         @if ($venta->sucursal()->first())
             <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
@@ -106,11 +106,11 @@
             </tr>
         </thead>
         <tbody>
-            @php($iva = $venta->empresa()->iva / 100);
+            @php($iva = 13 / 100);
             @foreach($venta->detalles as $detalle)
             <tr>
                 <td>
-                    {{ $detalle->producto }}
+                    {{ $detalle->nombre_producto }}
                     @if ($detalle->producto()->first()->promocion()->first())
                       @foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det)
                         <p style="font-size: 8px !important; margin: 0px;">{{ $det->nombre_producto }} x {{ $det->cantidad }}</p>
@@ -125,17 +125,27 @@
         </tbody>
         <tfoot>
             <tr class="mt-4">
-                <td class="text-right" colspan="3">GRAVADO:</td>
-                <td class="text-right">${{number_format($venta->total,2) }}</td>
+                <td class="text-right" colspan="3">Sub Total:</td>
+                <td class="text-right">${{number_format($venta->sub_total + $venta->iva,2) }}</td>
+            </tr>
+            <tr class="mt-4">
+                <td class="text-right" colspan="3">VENTA GRAVADA:</td>
+                <td class="text-right">${{number_format($venta->sub_total,2) }}</td>
             </tr>
             <tr>
-                <td class="text-right" colspan="3">EXENTO:</td>
-                <td class="text-right">$0.00</td>
+                <td class="text-right" colspan="3">VENTA EXENTA:</td>
+                <td class="text-right">${{number_format($venta->exenta,2) }}</td>
             </tr>
             <tr>
-                <td class="text-right" colspan="3">NO SUJETO:</td>
-                <td class="text-right">$0.00</td>
+                <td class="text-right" colspan="3">VENTA NO SUJETA:</td>
+                <td class="text-right">${{number_format($venta->no_sujeta,2) }}</td>
             </tr>
+            @if ($venta->cuenta_a_terceros > 0)
+                <tr>
+                    <td class="text-right" colspan="3">CUENTA A TERCEROS:</td>
+                    <td class="text-right">${{number_format($venta->cuenta_a_terceros,2) }}</td>
+                </tr>
+            @endif
             @if ($venta->costo_envio)
                 <tr>
                     <td class="text-right" colspan="3">ENVIO:</td>

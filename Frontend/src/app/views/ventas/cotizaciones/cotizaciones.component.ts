@@ -68,6 +68,9 @@ export class CotizacionesComponent implements OnInit {
 
     public filtrarVentas(){
         this.loading = true;
+        if(!this.filtros.id_cliente){
+            this.filtros.id_cliente = '';
+        }
         this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;

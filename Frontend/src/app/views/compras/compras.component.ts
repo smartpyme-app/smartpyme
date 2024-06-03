@@ -59,6 +59,15 @@ export class ComprasComponent implements OnInit {
 
     public filtrarCompras(){
         this.loading = true;
+        
+        if(!this.filtros.id_proveedor){
+            this.filtros.id_proveedor = '';
+        }
+
+        if(!this.filtros.id_usuario){
+            this.filtros.id_usuario = '';
+        }
+
         this.apiService.getAll('compras', this.filtros).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;

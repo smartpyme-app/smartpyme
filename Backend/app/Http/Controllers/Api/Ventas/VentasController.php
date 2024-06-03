@@ -58,14 +58,23 @@ class VentasController extends Controller
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
                         ->when($request->id_cliente, function($query) use ($request){
                             return $query->where('id_cliente', $request->id_cliente);
                         })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
                         ->when($request->forma_pago, function($query) use ($request){
-                            return $query->where('forma_pago', $request->forma_pago);
+                            return $query->where('forma_pago', $request->forma_pago)
+                                    ->orwhereHas('metodos_de_pago', function($query) use ($request){
+                                        $query->where('nombre', $request->forma_pago);
+                                    });
+                        })
+                        ->when($request->id_vendedor, function($query) use ($request){
+                            return $query->where('id_vendedor', $request->id_vendedor)
+                                    ->orwhereHas('detalles', function($query) use ($request){
+                                        $query->where('id_vendedor', $request->id_vendedor);
+                                    });
                         })
                         ->when($request->id_canal, function($query) use ($request){
                             return $query->where('id_canal', $request->id_canal);
@@ -280,6 +289,7 @@ class VentasController extends Controller
                     $paquete = Paquete::find($det['id_paquete']);
                     if ($paquete) {
                         $paquete->estado = ($venta->estado == 'Pagada') ? 'Facturado' : 'Pendiente';
+                        $paquete->fecha = $venta->fecha;
                         $paquete->id_venta = $venta->id;
                         $paquete->id_venta_detalle = $detalle->id;
                         $paquete->save();
