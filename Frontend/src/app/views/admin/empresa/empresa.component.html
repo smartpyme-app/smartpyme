@@ -241,17 +241,17 @@
                         </div>
                     </div>
 
-                    <div class="form-group col-md-12 col-xl-6 without-label">
+                    <!-- <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
                         <div class="form-switch bg-light-info rounded">
-                          <label for="terms_cond_toggle">Términos y condiciones</label>
+                          <label for="terms_cond_toggle">Términos y condiciones</label> -->
                           <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="terms_cond_toggle"> -->
-                          <input class="form-check-input float-end" type="checkbox" role="switch" (change) = toggleDisplay()  name="terms_cond_toggle">
+                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change) = toggleDisplay()  name="terms_cond_toggle">
                         </div>
-                    </div>
+                    </div> -->
 
                                 <!-- terminos y condiciones -->
-                    <div class="form-group col-md-6 col-xl-8 without-label" [hidden] = isShow >
+                    <div class="form-group col-md-6 col-xl-8 without-label" >
                           <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
                           <!-- <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion"> -->
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
