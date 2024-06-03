@@ -1,8 +1,6 @@
 
-Backend/.idea/Backend.iml
-Backend/.idea/codeStyles/codeStyleConfig.xml
-Backend/.idea/modules.xml
-Backend/.idea/php.xml
-Backend/.idea/phpunit.xml
-Backend/.idea/vcs.xml
-Backend/.idea/workspace.xml
+/Backend/.idea
+Backend/composer.lock
+Backend/composer.lock
+Backend/package-lock.json
+Backend/composer.lock

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Renderer2} from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
@@ -12,6 +12,10 @@ import Swal from 'sweetalert2';
 })
 export class EmpresaComponent implements OnInit {
 
+    isShow = true;
+
+    @ViewChild("takeInput") inputVar!: ElementRef<any>;
+    @ViewChild("imageProfPic") picProf!: ElementRef<any>;
     public empresa: any = {};
     public loading = false;
     public saving = false;
@@ -23,9 +27,10 @@ export class EmpresaComponent implements OnInit {
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
 
-  	constructor( 
-  	    public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-  	    private route: ActivatedRoute, private router: Router
+
+  	constructor(
+  	    public apiService: ApiService, private alertService: AlertService,
+  	    private route: ActivatedRoute, private router: Router, public renderer2: Renderer2
   	) { }
 
   	ngOnInit() {
@@ -52,7 +57,7 @@ export class EmpresaComponent implements OnInit {
       	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
       	        this.empresa = empresa;
 
-                let user:any = {}; 
+                let user:any = {};
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
@@ -61,7 +66,7 @@ export class EmpresaComponent implements OnInit {
       	        this.saving = false;
                 resolve(null);
       	    },error => {this.alertService.error(error); this.saving = false; resolve(null);});
-            
+
         });
   	}
 
@@ -120,11 +125,11 @@ export class EmpresaComponent implements OnInit {
         }
         console.log(this.empresa.cobra_iva);
     }
-     
+
 
     setFile(event:any) {
         this.empresa.file = event.target.files[0];
-        
+
         let formData:FormData = new FormData();
         for (var key in this.empresa) {
             formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
@@ -137,45 +142,32 @@ export class EmpresaComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
 
-    public onCheckMH():void {
-        this.cheking = true;
-        
-        this.onSubmit().then(() => {
-            this.mhService.auth().subscribe(response => {
-                this.cheking = false;
 
-                if(response.status == 'ERROR'){
-                    this.alertService.info('Revisar', response.body.descripcionMsg);
-                }else{
-                    this.alertService.success('Conección exitosa', 'El proceso se realizo correctamente.');
-                }
-            },error => {this.alertService.error(error); this.cheking = false; });
-        });
+  resetFileUploader() {
+    const img_pic= this.picProf.nativeElement;
 
+    this.inputVar.nativeElement.value = "";
+
+
+    this.empresa.file = null;
+
+    let formData:FormData = new FormData();
+    for (var key in this.empresa) {
+        formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
     }
+    this.loading = true;
+    this.apiService.store('empresa', formData).subscribe(empresa => {
+        this.empresa.logo = null;
+        this.loading = false;
+        this.alertService.warning('Logo actualizo', 'Para guardar los cambios haga click en el boton Guardar');
+    }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
 
-    public mostrarPassword(){
-        this.showpassword = !this.showpassword;
-    }  
-    
-    public mostrarPassword2(){
-        this.showpassword2 = !this.showpassword2;
-    } 
+    this.renderer2.setAttribute(img_pic,'src', 'https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg');
+  }
 
-    public onCheckFE() {
-        this.cheking = true;
-        
-            this.mhService.verificarFirmador().subscribe(response => {
-                this.cheking = false;
-                console.log(response.status)
-                if (response.status === 200) {
-                  this.alertService.success('La solicitud fue exitosa.', 'El proceso se realizo correctamente.');
-                } else {
-                  this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
-                };
-            },error => {this.alertService.error(error); this.cheking = false; });
-
-    }
+//   toggleDisplay() {
+//     this.isShow = !this.isShow;
+//   }
 
 
 }

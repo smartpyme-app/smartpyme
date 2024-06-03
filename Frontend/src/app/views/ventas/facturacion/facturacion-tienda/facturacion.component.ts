@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, Renderer2, ElementRef} from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -14,6 +14,8 @@ import * as moment from 'moment';
 })
 
 export class FacturacionComponent implements OnInit {
+
+    @ViewChild("terminos") areaTerminos!: ElementRef<any>;
 
     public venta: any= {};
     public evento: any= {};
@@ -33,6 +35,7 @@ export class FacturacionComponent implements OnInit {
     public duplicarventa = false;
     public facturarCotizacion = false;
     public api:boolean = false;
+    public terminos:any = "";
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -47,7 +50,7 @@ export class FacturacionComponent implements OnInit {
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private modalService: BsModalService, private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router,
+        private route: ActivatedRoute, private router: Router,public renderer2: Renderer2,
 	) {
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
@@ -103,6 +106,7 @@ export class FacturacionComponent implements OnInit {
             this.proyectos = proyectos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
     }
 
     public cargarDocumentos(){
@@ -137,6 +141,7 @@ export class FacturacionComponent implements OnInit {
     }
 
     public cargarDatosIniciales(){
+
         this.venta = {};
         this.venta.fecha = this.apiService.date();
         this.venta.fecha_pago = this.apiService.date();
@@ -163,6 +168,9 @@ export class FacturacionComponent implements OnInit {
         this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.venta.id_empresa = this.apiService.auth_user().id_empresa;
         let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
+        this.terminos = this.apiService.auth_user().empresa.cotizacion_compras_terminos;
+
+
         if (corte) {
             this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
             this.venta.caja_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
@@ -178,6 +186,8 @@ export class FacturacionComponent implements OnInit {
         if (this.route.snapshot.queryParamMap.get('cotizacion')) {
             this.venta.cotizacion = 1;
             this.venta.estado = 'Pendiente';
+            // aqui dbe ir el validador del boton para saber si el cliente acepto colocar los terminos por default 
+            // this.venta.observaciones=this.apiService.auth_user().empresa.cotizacion_compras_terminos;
         }
 
         // Para editar cotizaciones Pre-venta
@@ -297,6 +307,7 @@ export class FacturacionComponent implements OnInit {
     }
 
     public sumTotal() {
+        
         this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(4);
         
         this.venta.exenta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'))).toFixed(4);
@@ -318,6 +329,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(4);
         this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(4);
         this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.cuenta_a_terceros) + parseFloat(this.venta.exenta) + parseFloat(this.venta.no_sujeta) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(4);
+        
     }
 
     // Cliente
@@ -454,6 +466,23 @@ export class FacturacionComponent implements OnInit {
                 this.loading = false;
                 this.supervisor = {};
             },error => {this.alertService.error(error); this.loading = false; });
+        }
+
+        public showTerms(){
+            // const terms_condi= this.areaTerminos.nativeElement;
+
+            this.venta.observaciones= this.terminos;
+            // const terms_condi= this.venta.observaciones.nativeElement;
+            // this.renderer2.setProperty(terms_condi,'value',this.terminos);
+            // this.renderer2.setAttribute(terms_condi,'rows', '5' );
+            console.log(this.venta.terminos);
+            if(!this.venta.terminos){
+
+                this.venta.observaciones= "";
+            //     this.renderer2.setProperty(terms_condi,'value','');
+            //     this.renderer2.setAttribute(terms_condi,'rows', '3' );
+            //     this.renderer2.setAttribute(terms_condi,'placeholder', 'Escribe aqui' );
+            } 
         }
 
 

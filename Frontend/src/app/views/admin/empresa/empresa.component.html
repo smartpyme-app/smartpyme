@@ -9,11 +9,23 @@
                <div class="row justify-content-center">
                    <div class="form-group col-6 col-sm-4 col-md-2">
                        <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
-                           <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo }}" alt="logo">
-                           <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                           <!-- <img class="img-fluid" src="" alt="logo"> -->
+                           <img #imageProfPic class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo" *ngIf="empresa.logo != null">
+                           <img #imageProfPic class="img-fluid" src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg" alt="logo" *ngIf="empresa.logo == null">
+                           <input #takeInput type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                        </figure>
                    </div>
                </div>
+               <div class="row justify-content-center">
+                <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
+                    <div class="btn btn-primary file-upload mr-3" type="button"> Agregar
+                        <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                    </div>
+                    <div class="btn btn-primary" (click)="resetFileUploader()" type="button">Eliminar</div>
+                </div>
+
+               </div>
+                <h5 class="mb-3">Datos de mi empresa</h5>
                 <div class="row">
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="nombre">Nombre</label>
@@ -229,13 +241,27 @@
                         </div>
                     </div> -->
 
+                    <!-- <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="terms_cond_toggle">Términos y condiciones</label> -->
+                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="terms_cond_toggle"> -->
+                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change) = toggleDisplay()  name="terms_cond_toggle">
+                        </div>
+                    </div> -->
 
+                                <!-- terminos y condiciones -->
+                    <div class="form-group col-md-6 col-xl-8 without-label" >
+                          <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
+                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion"> -->
+                          <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
+                    </div>
                     <p class="my-3 pt-5">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
-
                 </div>
+
             </section>
             <div class="bg-white rounded p-3 mb-3">
                 <div class="form-group col-sm-12 pt-2 pb-4">
@@ -271,14 +297,14 @@
                             <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword2, 'fa-eye': showpassword2 }"></i>
                         </button>
                     </div>
-                </div> 
+                </div>
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="mh_pwd_certificado">Ambiente:</label>
                     <select name="fe_ambiente" class="form-select" [(ngModel)]="empresa.fe_ambiente">
                         <option value="00">Pruebas</option>
                         <option value="01">Producción</option>
                     </select>
-                </div> 
+                </div>
             </div>
         </section>
         <div class="bg-white rounded p-3 mb-3">
@@ -291,6 +317,3 @@
         </div>
     </tab>
 </tabset>
-
-
-

@@ -35,7 +35,7 @@ class VentasController extends Controller
 {
 
     public function index(Request $request) {
-       
+
         $ventas = Venta::when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
