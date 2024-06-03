@@ -66,3 +66,5 @@ ALTER TABLE ventas ADD id_vendedor INT(11) NULL after id_usuario;
 ALTER TABLE detalles_venta ADD id_vendedor INT(11) NULL after id_venta;
 
 ALTER TABLE egresos ADD iva_percibido decimal(9,2) NULL after iva;
+
+ALTER TABLE clientes ADD pais varchar(255) after direccion;
