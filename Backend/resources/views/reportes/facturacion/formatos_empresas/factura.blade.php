@@ -42,7 +42,7 @@
         .sujetas{ width: 1.5cm; text-align: center;}
         .exentas{ width: 1.5cm; text-align: center;}
         .gravadas{ width: 1.8cm; text-align: right;}
-        
+
 
         #letras     {top: 17cm; left: 2cm; width: 5cm; word-break: break-all; white-space: normal;}
 
@@ -57,7 +57,7 @@
         .no-print{position: absolute;}
 
     </style>
-    
+
     <style media="print"> .no-print{display: none; } </style>
 
 </head>
@@ -68,7 +68,11 @@
         <div id="header">
             <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p id="cliente">{{ $venta->nombre_cliente }}</p>
-            <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            @if($venta->cliente->direccion == null)
+                <p id="direccion">{{ $cliente->empresa_direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            @else
+                <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            @endif
             {{-- <p id="municipio">{{ $cliente->municipio }}</p> --}}
             {{-- <p id="departamento">{{ $cliente->departamento }}</p> --}}
             {{-- <p id="nit">{{ $cliente->nit }}</p> --}}
@@ -83,7 +87,7 @@
             </p> --}}
             <p id="nit">{{ $cliente->dui ? $cliente->dui : $cliente->nit }}</p>
         </div>
-                    
+
         <table>
             @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
             @foreach($venta->detalles as $detalle)

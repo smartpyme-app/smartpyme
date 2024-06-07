@@ -17,6 +17,10 @@
         .factura{margin: 4cm 0.2cm 0cm 0.2cm; position: relative; height: 12cm;}
         p{margin: 0px 0px 4px 0px; }
 
+        .head{
+            margin-top: 4cm;
+        }
+
         table   {text-align: left; border-collapse: collapse; width: 100%;}
         table th{border: 0px solid #000; text-align: left; line-height: 15px; padding-right: 10px;  font-size: 14px !important;}
         table td{height: 0.5cm; padding-right: 10px;  font-size: 14px !important;}
@@ -44,7 +48,7 @@
 
 
     <section class="factura">
-        <div id="header" style="margin-bottom: 20px;">
+        <div id="header"class="head" style="margin-bottom: 20px;">
             <p><b>Cliente:</b> {{ $venta->cliente }}</p>
             @if ($cliente->ncr)
             <p><b>NCR:</b> {{ $cliente->ncr }}</p>

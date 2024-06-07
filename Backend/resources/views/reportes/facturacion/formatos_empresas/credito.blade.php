@@ -42,7 +42,7 @@
         .sujetas{ width: 1.5cm; text-align: center;}
         .exentas{ width: 1.5cm; text-align: center;}
         .gravadas{ width: 2cm; text-align: right;}
-        
+
 
         #letras     {top: 12cm; left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
 
@@ -57,7 +57,7 @@
         .no-print{position: absolute;}
 
     </style>
-    
+
     <style media="print"> .no-print{display: none; } </style>
 
 </head>
@@ -69,7 +69,9 @@
             <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p id="cliente">{{ $venta->nombre_cliente }}</p>
             <p id="direccion">{{ $cliente->empresa_direccion ? $cliente->empresa_direccion : $cliente->direccion }}</p>
-            {{-- <p id="municipio">{{ $cliente->municipio }}</p> --}}
+
+
+{{--            <p id="municipio">{{ $cliente->municipio }}</p>--}}
             <p id="departamento">{{ $cliente->departamento }}</p>
             <p id="nit">{{ $cliente->nit }}</p>
             <p id="nrc">{{ $cliente->ncr }}</p>
@@ -83,7 +85,7 @@
             </p>
             <p id="nit">{{ $cliente->nit }}</p>
         </div>
-                    
+
         <table>
             @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
             @foreach($venta->detalles as $detalle)
