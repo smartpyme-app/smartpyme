@@ -146,7 +146,7 @@ export class EmpresaComponent implements OnInit {
                     this.alertService.info('Revisar', response.body.descripcionMsg);
                 }else{
                     this.cheking = false;
-                    this.alertService.success('Conección a la API exitosa', 'El proceso se realizo correctamente.');
+                    this.alertService.success('Conexión a la API exitosa', 'El proceso se realizo correctamente.');
                 }
             },error => {this.alertService.error(error); this.cheking = false; });
         });
@@ -168,14 +168,14 @@ export class EmpresaComponent implements OnInit {
                 this.cheking = false;
                 console.log(response.status)
                 if (response.status === 200) {
-                  this.alertService.success('Conección al firmador exitosa.', 'El proceso se realizo correctamente.');
+                  this.alertService.success('Conexión al firmador exitosa.', 'El proceso se realizo correctamente.');
                 } else {
                   this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
                 };
             },error => {
                 console.log(error)
                 if (error.status == 200) {
-                  this.alertService.success('Conección al firmador exitosa.', 'El proceso se realizo correctamente.');
+                  this.alertService.success('Conexión al firmador exitosa.', 'El proceso se realizo correctamente.');
                 } else {
                   this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
                 };
