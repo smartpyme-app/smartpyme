@@ -6,6 +6,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Ajuste;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Proveedor as ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
@@ -89,6 +90,24 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             $inventario->id_sucursal = $sucursales[0]->id;
             $inventario->stock = isset($row['sucursal_1_stock']) ? $row['sucursal_1_stock'] : 0;
             $inventario->save(); 
+
+
+            $ajuste = Ajuste::create([
+                'concepto' => 'Ajuste inicial',
+                'id_producto' => $producto->id,
+                'id_sucursal' => $sucursales[0]->id,
+                'stock_actual' => 0,
+                'stock_real' => $inventario->stock,
+                'ajuste' => $inventario->stock,
+                'estado' => 'Confirmado',
+                'id_empresa' => $usuario->id_empresa,
+                'id_usuario' => $usuario->id,
+            ]);
+            
+            if ($inventario) {
+                $inventario->kardex($ajuste, $ajuste->ajuste);
+            }
+
         }
 
         if (isset($sucursales[1]) && isset($row['sucursal_2_stock'])) {
@@ -96,7 +115,24 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             $inventario->id_producto = $producto->id;
             $inventario->id_sucursal = $sucursales[1]->id;
             $inventario->stock = isset($row['sucursal_2_stock']) ? $row['sucursal_2_stock'] : 0;
-            $inventario->save(); 
+            $inventario->save();
+
+
+            $ajuste = Ajuste::create([
+                'concepto' => 'Ajuste inicial',
+                'id_producto' => $producto->id,
+                'id_sucursal' => $sucursales[1]->id,
+                'stock_actual' => 0,
+                'stock_real' => $inventario->stock,
+                'ajuste' => $inventario->stock,
+                'estado' => 'Confirmado',
+                'id_empresa' => $usuario->id_empresa,
+                'id_usuario' => $usuario->id,
+            ]);
+
+            if ($inventario) {
+                $inventario->kardex($ajuste, $ajuste->ajuste);
+            }
         }
 
         if ($sucursales->count() > 2) {
@@ -106,6 +142,23 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
                $inventario->id_sucursal = $sucursales[$i]->id;
                $inventario->stock = 0;
                $inventario->save();
+
+
+               $ajuste = Ajuste::create([
+                   'concepto' => 'Ajuste inicial',
+                   'id_producto' => $producto->id,
+                   'id_sucursal' => $sucursales[$i]->id,
+                   'stock_actual' => 0,
+                   'stock_real' => $inventario->stock,
+                   'ajuste' => $inventario->stock,
+                   'estado' => 'Confirmado',
+                   'id_empresa' => $usuario->id_empresa,
+                   'id_usuario' => $usuario->id,
+               ]);
+
+               if ($inventario) {
+                   $inventario->kardex($ajuste, $ajuste->ajuste);
+               }
            }
         }
 

@@ -16,6 +16,7 @@ class Detalle extends Model {
         'descuento',
         'no_sujeta',
         'exenta',
+        'gravada',
         'cuenta_a_terceros',
         'total',
         'id_venta',

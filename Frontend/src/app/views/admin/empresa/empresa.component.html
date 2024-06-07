@@ -10,19 +10,19 @@
                    <div class="form-group col-6 col-sm-4 col-md-2">
                        <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
                            <!-- <img class="img-fluid" src="" alt="logo"> -->
-                           <img #imageProfPic class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo" *ngIf="empresa.logo != null">
-                           <img #imageProfPic class="img-fluid" src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg" alt="logo" *ngIf="empresa.logo == null">
-                           <input #takeInput type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                           <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo" *ngIf="empresa.logo != null">
+                           <img class="img-fluid" src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg" alt="logo" *ngIf="empresa.logo == null">
+                           <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                        </figure>
                    </div>
                </div>
                <div class="row justify-content-center">
-                <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
+                <!-- <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
                     <div class="btn btn-primary file-upload mr-3" type="button"> Agregar
                         <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                     </div>
                     <div class="btn btn-primary" (click)="resetFileUploader()" type="button">Eliminar</div>
-                </div>
+                </div> -->
 
                </div>
                 <h5 class="mb-3">Datos de mi empresa</h5>
@@ -233,13 +233,13 @@
                         </div>
                     </div>
 
-                    <!-- <div class="form-group col-md-12 col-xl-6 without-label">
+                    <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Habilitará el modulo para configurar Facturación Electrónica.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="facturacion_electronica">Facturación electrónica</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="facturacion_electronica">
                         </div>
-                    </div> -->
+                    </div>
 
                     <!-- <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
@@ -251,11 +251,10 @@
                     </div> -->
 
                                 <!-- terminos y condiciones -->
-                    <div class="form-group col-md-6 col-xl-8 without-label" >
+                   <!--  <div class="form-group col-md-6 col-xl-8 without-label" >
                           <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
-                          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion"> -->
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
-                    </div>
+                    </div> -->
                     <p class="my-3 pt-5">
                         ¿Quieres eliminar los datos de tu cuenta?
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
@@ -304,6 +303,12 @@
                         <option value="00">Pruebas</option>
                         <option value="01">Producción</option>
                     </select>
+                </div>
+                <div class="form-group col-md-6 col-xl-4 without-label">
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="enviar_dte">Enviar DTE por correo</label>
+                      <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.enviar_dte" name="enviar_dte">
+                    </div>
                 </div>
             </div>
         </section>

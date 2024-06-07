@@ -83,11 +83,14 @@
                         <!-- <td>{{venta.estado != 'Pendiente' ? venta.forma_pago : 'Pendiente'}}</td> -->
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
                                 <span *ngIf="venta.estado != 'Pendiente'">{{ venta.estado }}</span>
                                 <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
                                     {{ venta.estado }}
                                 </a>
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta?.dte?.sello">
+                                    ✅                       
+                                </span>
                             </span>
                         </td>
                         <td class="text-end">

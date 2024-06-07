@@ -133,7 +133,7 @@ class MH extends Model
         $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
         $centavos = $formatter->toWords($n[1]);
 
-        $this->venta->total_en_letras = $dolares . 'DÓLARES CON' . $centavos . 'CENTAVOS.';
+        $this->venta->total_en_letras = $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
 
 
         // 01 Factura
@@ -301,21 +301,7 @@ class MH extends Model
     protected function receptor(){
 
         if (!$this->venta->id_cliente) {
-            return [
-              "tipoDocumento" => NULL, //36 NIT 13 DUI
-              "numDocumento" => NULL,
-              "nrc" => NULL,
-              "nombre" => $this->venta->nombre_cliente,
-              "codActividad" => NULL,
-              "descActividad" => NULL,
-              "direccion" => [
-                "departamento" => $this->venta->empresa->cod_departamento,
-                "municipio" => $this->venta->empresa->cod_municipio,
-                "complemento" => 'Sin dirección'
-              ],
-              "telefono" => '0000-0000',
-              "correo" => $this->venta->empresa->correo
-            ];
+            return NULL;
         }
 
         if ($this->venta->cliente->nit) {
@@ -366,16 +352,6 @@ class MH extends Model
     public function generarFactura(){
         $tributos = NULL;
 
-        if ($this->venta->fovial > 0 || $this->venta->cotrans > 0) {
-            $tributos = collect();
-            if ($this->venta->fovial > 0){ 
-                $tributos->push(['codigo' => 'D1', 'descripcion'=> 'FOVIAL ($0.20 Ctvs. por galón)', 'valor' => floatval(number_format($this->venta->fovial,2))]);
-            }
-            if ($this->venta->cotrans > 0){ 
-                $tributos->push(['codigo' => 'C8', 'descripcion'=> 'COTRANS ($0.10 Ctvs. por galón)', 'valor' => floatval(number_format($this->venta->cotrans,2))]);
-            }
-        }
-
         $this->venta->gravada = $this->venta->sub_total;
 
         return 
@@ -388,30 +364,30 @@ class MH extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detallesFactura(),
                 "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2)),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2)),
-                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2)),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2)),
+                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
+                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
+                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
+                  "subTotalVentas" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2)),
+                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2)),
+                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2)),
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2)),
+                  "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
+                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2)),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2)),
+                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
-                  "totalIva" => floatval(number_format($this->venta->iva, 2)),
+                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
                   "condicionOperacion" => $this->venta->cod_condicion,
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2)),
+                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
                       "referencia" => NULL,
                       "plazo" => NULL,
                       "periodo" => NULL
@@ -467,11 +443,11 @@ class MH extends Model
                 "codTributo" => $detalle->codTributo,
                 "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,2)),
-                "montoDescu" => floatval(number_format($detalle->descuento,2)),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2)),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2)),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2)),
+                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
+                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
+                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
+                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
                 "tributos" => $tributos,
                 "psv" => 0,
                 "noGravado" => 0,
@@ -504,32 +480,32 @@ class MH extends Model
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detallesCCF(),
-                "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2)),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2)),
-                  "totalGravada" => floatval(number_format($this->venta->gravada, 2)),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2)),
+               "resumen" => [
+                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
+                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
+                  "totalGravada" => floatval(number_format($this->venta->gravada, 2, '.', '')),
+                  "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2)),
+                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2)),
+                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total, 2)),
-                  "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2)),
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2)),
+                  "subTotal" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
+                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2)),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2)),
+                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
-                  // "totalIva" => floatval(number_format($this->venta->iva, 2)),
+                  // "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
                   "condicionOperacion" => $this->venta->cod_condicion,
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2)),
+                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
                       "referencia" => NULL,
                       "plazo" => NULL,
                       "periodo" => NULL
@@ -580,11 +556,11 @@ class MH extends Model
                 "codTributo" => $detalle->codTributo,
                 "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,2)),
-                "montoDescu" => floatval(number_format($detalle->descuento,2)),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2)),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2)),
-                "ventaGravada" => floatval(number_format($detalle->gravada,2)),
+                "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
+                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
+                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
+                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
                 "tributos" => ['20'],
                 "psv" => 0,
                 "noGravado" => 0,

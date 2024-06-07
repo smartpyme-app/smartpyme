@@ -61,6 +61,7 @@ ALTER TABLE empresas ADD vendedor_detalle_venta BOOL DEFAULT false after agrupar
 ALTER TABLE empresas ADD facturacion_electronica BOOL DEFAULT false after vendedor_detalle_venta;
 ALTER TABLE empresas ADD fe_ambiente varchar(10) DEFAULT '00' after facturacion_electronica;
 ALTER TABLE empresas ADD cotizacion_compras_terminos text NULL after fe_ambiente;
+ALTER TABLE empresas ADD enviar_dte BOOL DEFAULT false after fe_ambiente;
 
 ALTER TABLE ventas ADD id_vendedor INT(11) NULL after id_usuario;
 ALTER TABLE detalles_venta ADD id_vendedor INT(11) NULL after id_venta;

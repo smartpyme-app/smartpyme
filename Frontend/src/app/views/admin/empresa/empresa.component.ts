@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, Renderer2} from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
@@ -12,10 +12,6 @@ import Swal from 'sweetalert2';
 })
 export class EmpresaComponent implements OnInit {
 
-    isShow = true;
-
-    @ViewChild("takeInput") inputVar!: ElementRef<any>;
-    @ViewChild("imageProfPic") picProf!: ElementRef<any>;
     public empresa: any = {};
     public loading = false;
     public saving = false;
@@ -27,61 +23,58 @@ export class EmpresaComponent implements OnInit {
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
 
+    constructor( 
+        public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router
+    ) { }
 
-  	constructor(
-  	    public apiService: ApiService, private alertService: AlertService,
-  	    private route: ActivatedRoute, private router: Router, public renderer2: Renderer2
-  	) { }
-
-  	ngOnInit() {
+    ngOnInit() {
         this.loadAll();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
-  	}
+    }
 
     public loadAll() {
-  	    this.loading = true;
+        this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
-  	public onSubmit(): Promise<any> {
+    public onSubmit(): Promise<any> {
 
         return new Promise((resolve, reject) => {
-      	    this.saving = true;
-      	    this.apiService.store('empresa', this.empresa).subscribe(empresa => {
-      	        this.empresa = empresa;
+            this.saving = true;
+            this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+                this.empresa = empresa;
 
-                let user:any = {};
+                let user:any = {}; 
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
                 this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
-      	        this.saving = false;
+                this.saving = false;
                 resolve(null);
-      	    },error => {this.alertService.error(error); this.saving = false; resolve(null);});
-
+            },error => {this.alertService.error(error); this.saving = false; resolve(null);});
+            
         });
-  	}
+    }
 
     setGiro(){
         this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
     }
 
     setMunicipio(){
-        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento).nombre;
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio).nombre;
     }
 
     setDepartamento(){
         this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
-        this.empresa.cod_municipio = null;
-        this.empresa.municipio = null;
     }
 
     setPais(){
@@ -125,11 +118,11 @@ export class EmpresaComponent implements OnInit {
         }
         console.log(this.empresa.cobra_iva);
     }
-
+     
 
     setFile(event:any) {
         this.empresa.file = event.target.files[0];
-
+        
         let formData:FormData = new FormData();
         for (var key in this.empresa) {
             formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
@@ -142,32 +135,54 @@ export class EmpresaComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
     }
 
+    public onCheckMH():void {
+        this.cheking = true;
+        
+        this.onSubmit().then(() => {
+            this.mhService.auth().subscribe(response => {
 
-  resetFileUploader() {
-    const img_pic= this.picProf.nativeElement;
+                if(response.status == 'ERROR'){
+                    this.cheking = false;
+                    this.alertService.info('Revisar', response.body.descripcionMsg);
+                }else{
+                    this.cheking = false;
+                    this.alertService.success('Conección a la API exitosa', 'El proceso se realizo correctamente.');
+                }
+            },error => {this.alertService.error(error); this.cheking = false; });
+        });
 
-    this.inputVar.nativeElement.value = "";
-
-
-    this.empresa.file = null;
-
-    let formData:FormData = new FormData();
-    for (var key in this.empresa) {
-        formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
     }
-    this.loading = true;
-    this.apiService.store('empresa', formData).subscribe(empresa => {
-        this.empresa.logo = null;
-        this.loading = false;
-        this.alertService.warning('Logo actualizo', 'Para guardar los cambios haga click en el boton Guardar');
-    }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
 
-    this.renderer2.setAttribute(img_pic,'src', 'https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg');
-  }
+    public mostrarPassword(){
+        this.showpassword = !this.showpassword;
+    }  
+    
+    public mostrarPassword2(){
+        this.showpassword2 = !this.showpassword2;
+    } 
 
-//   toggleDisplay() {
-//     this.isShow = !this.isShow;
-//   }
+    public onCheckFE() {
+        this.cheking = true;
+        
+            this.mhService.verificarFirmador().subscribe(response => {
+                this.cheking = false;
+                console.log(response.status)
+                if (response.status === 200) {
+                  this.alertService.success('Conección al firmador exitosa.', 'El proceso se realizo correctamente.');
+                } else {
+                  this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
+                };
+            },error => {
+                console.log(error)
+                if (error.status == 200) {
+                  this.alertService.success('Conección al firmador exitosa.', 'El proceso se realizo correctamente.');
+                } else {
+                  this.alertService.warning('Datos incorrectos','No se pudo conectar al firmador');
+                };
+                this.cheking = false;
+            });
+
+    }
 
 
 }
