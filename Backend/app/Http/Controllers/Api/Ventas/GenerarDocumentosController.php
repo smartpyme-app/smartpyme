@@ -34,6 +34,7 @@ class GenerarDocumentosController extends Controller
             return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
         }
 
+//        factura
         if ($documento->nombre == 'Factura') {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
@@ -126,6 +127,10 @@ class GenerarDocumentosController extends Controller
             elseif(Auth::user()->id_empresa == 59 ){ //59  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 210 ){ //210  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
             }else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -136,6 +141,35 @@ class GenerarDocumentosController extends Controller
             return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
         }
 
+//        factura sujeto excluido
+        if ($documento->nombre == 'Sujeto excluido') {
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+
+            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            $formatter = new NumeroALetras();
+            $n = explode(".", number_format($venta->total,2));
+
+
+            $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
+            $centavos = $formatter->toWords($n[1]);
+
+            //return response()->json($n);
+
+            if(Auth::user()->id_empresa == 210){ //210
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-fact-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            } else{
+                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf = PDF::loadView('reportes.facturacion.factura-sujeto-excluido', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+
+
+            return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+        }
+
+//          credito fiscal
         if ($documento->nombre == 'Crédito fiscal') {
             $cliente = Cliente::withoutGlobalScope('empresa')->findOrfail($venta->id_cliente);
 
@@ -202,6 +236,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.smartpyme-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 210){ //210
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Arborea-Design', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -209,6 +247,8 @@ class GenerarDocumentosController extends Controller
 
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
+
+
     }
 
     public function anularDoc(){
