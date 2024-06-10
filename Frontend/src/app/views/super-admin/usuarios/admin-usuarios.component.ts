@@ -58,8 +58,8 @@ export class AdminUsuariosComponent implements OnInit {
         
         if (!this.usuario.id) {
             this.usuario.tipo = 'Administrador';
-            this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
+            // this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
+            // this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
         }
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {

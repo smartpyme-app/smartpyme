@@ -74,6 +74,12 @@ export class CrearEventoComponent implements OnInit {
         if(this.evento.duracion == '5 horas'){
             this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm:ss');
         }
+        if(this.evento.duracion == '8 horas'){
+            this.evento.fin = fecha.add(8, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
+        if(this.evento.duracion == '12 horas'){
+            this.evento.fin = fecha.add(12, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        }
     }
 
     setFrecuenciaFin(){
