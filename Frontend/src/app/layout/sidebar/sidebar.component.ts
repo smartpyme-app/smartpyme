@@ -19,6 +19,7 @@ export class SidebarComponent implements OnInit {
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
+    public bancosIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -65,6 +66,11 @@ export class SidebarComponent implements OnInit {
             localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
+        }
+        if (!localStorage.getItem('bancosIsCollapsed')) {
+            localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
+        }else{
+            this.bancosIsCollapsed = JSON.parse(localStorage.getItem('bancosIsCollapsed')!);
         }
         
         this.usuario = this.apiService.auth_user();
@@ -166,6 +172,15 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    toggleBancos() {
+        if(this.bancosIsCollapsed){
+            this.closeAll();
+        }
+        this.bancosIsCollapsed = !this.bancosIsCollapsed;
+        localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
 
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
@@ -187,6 +202,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.bancosIsCollapsed = true;
+        localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
     }
 
     public onSubmit(){

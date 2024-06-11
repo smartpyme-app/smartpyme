@@ -12,7 +12,7 @@ class TransaccionesController extends Controller
 
     public function index(Request $request) {
        
-        $transacciones = Transaccion::when($request->buscador, function($query) use ($request){
+        $transacciones = Transaccion::with('cuenta')->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
@@ -46,6 +46,7 @@ class TransaccionesController extends Controller
             'id_cuenta'     => 'required|numeric',
             'concepto'      => 'required|max:255',
             'tipo'          => 'required|max:255',
+            'estado'          => 'required|max:255',
             'total'         => 'required|numeric',
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',

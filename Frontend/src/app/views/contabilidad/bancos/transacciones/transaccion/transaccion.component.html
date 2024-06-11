@@ -1,0 +1,54 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ transaccion.id ? 'Editar ' : 'Crear ' }} Transacción</h3>
+    <button class="btn btn-light text-danger" routerLink="/bancos/transacciones"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3">
+        <div class="row">
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" name="fecha" [(ngModel)]="transaccion.fecha">
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="">Cuenta:</label>
+                <ng-select [(ngModel)]="transaccion.id_cuenta" class="form-select p-0" name="id_cuenta">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
+                        {{ cuenta.nombre_banco }} : {{ cuenta.numero }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-4 col-lg-4">
+                <label for="tipo">Tipo:</label>
+                <select class="form-select" name="tipo" [(ngModel)]="transaccion.tipo">
+                    <option value="">Seleccione aquí</option>
+                    <option value="Cargo">Cargo</option>
+                    <option value="Abono">Abono</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="concepto">Concepto:</label><br>
+                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="transaccion.concepto" name="concepto" cols="30" rows="3"></textarea>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="">Total:</label>
+                <input type='number' class="form-control" name="total" [(ngModel)]="transaccion.total"/>
+            </div>
+
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar transaccion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+</form>
+
+

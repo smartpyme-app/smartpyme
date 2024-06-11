@@ -14,7 +14,7 @@ class CuentasController extends Controller
        
         $cuentas = Cuenta::when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre_banco', 'like' ,'%' . $request->buscador . '%')
-                                                ->orwhere('numero_cuenta', 'like' ,'%' . $request->buscador . '%');
+                                                ->orwhere('numero', 'like' ,'%' . $request->buscador . '%');
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);
@@ -25,7 +25,7 @@ class CuentasController extends Controller
 
     public function list() {
        
-        $cuentas = Cuenta::orderby('nombre')
+        $cuentas = Cuenta::orderby('numero')
                                 // ->where('activo', true)
                                 ->get();
 
@@ -43,9 +43,9 @@ class CuentasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'numero_cuenta' => 'required|numeric',
+            'numero' => 'required|numeric',
             'nombre_banco'  => 'required|max:255',
-            'tipo_cuenta'   => 'required|max:255',
+            'tipo'   => 'required|max:255',
             'saldo'         => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);

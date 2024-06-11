@@ -1,0 +1,143 @@
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+import * as moment from 'moment';
+import Swal from 'sweetalert2';
+
+@Component({
+  selector: 'app-cheques',
+  templateUrl: './cheques.component.html'
+})
+
+export class ChequesComponent implements OnInit {
+
+    public cheques:any = [];
+    public sucursales:any = [];
+    public clientes:any = [];
+    public usuarios:any = [];
+    public cheque:any = {};
+    public loading:boolean = false;
+    public saving:boolean = false;
+    public filtros:any = {};
+
+    modalRef!: BsModalRef;
+
+    constructor(public apiService: ApiService, private alertService: AlertService,
+                private modalService: BsModalService
+    ){}
+
+    ngOnInit() {
+        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.clientes = clientes;
+        }, error => {this.alertService.error(error); });
+
+        this.loadAll();
+    }
+
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.filtrarCheques();
+    }
+
+    public loadAll() {
+        this.filtros.id_cliente = '';
+        this.filtros.tipo = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'id';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+        this.filtrarCheques();
+    }
+
+    public filtrarCheques(){
+        this.loading = true;
+        this.apiService.getAll('bancos/cheques', this.filtros).subscribe(cheques => { 
+            this.cheques = cheques;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+
+    public openModal(template: TemplateRef<any>, cheque:any) {
+        this.cheque = cheque;
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+    }
+
+
+    public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+    }
+
+
+    public setEstado(cheque:any){
+        this.cheque = cheque;
+        this.onSubmit();
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.cheques.path + '?page='+ event.page, this.filtros).subscribe(cheques => { 
+            this.cheques = cheques;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public delete(cheque:any){
+
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡No podrás revertir esto!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminarlo',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+                this.apiService.delete('cheque/', cheque.id) .subscribe(data => {
+                    for (let i = 0; i < this.cheques.data.length; i++) { 
+                        if (this.cheques.data[i].id == data.id )
+                            this.cheques.data.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });4
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+          }
+        });
+
+    }
+
+    public onSubmit(){
+        this.saving = true;
+        this.apiService.store('cheque', this.cheque).subscribe(cheque => {
+            if (!this.cheque.id) {
+                this.loadAll();
+                this.alertService.success('Paquete creada', 'El cheque fue añadida exitosamente.');
+            }else{
+                this.alertService.success('Paquete guardada', 'El cheque fue guardada exitosamente.');
+            }
+            this.saving = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+            this.alertService.modal = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+}

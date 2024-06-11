@@ -18,6 +18,13 @@ import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumid
 import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
 
+import { CuentasComponent } from '@views/contabilidad/bancos/cuentas/cuentas.component';
+import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuenta.component';
+import { ChequesComponent } from '@views/contabilidad/bancos/cheques/cheques.component';
+import { ChequeComponent } from '@views/contabilidad/bancos/cheques/cheque/cheque.component';
+import { TransaccionesComponent } from '@views/contabilidad/bancos/transacciones/transacciones.component';
+import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/transaccion/transaccion.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -38,7 +45,13 @@ import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-c
     PresupuestoDetallesComponent,
     ConsumidorFinalComponent,
     ContribuyentesComponent,
-    LibroComprasComponent
+    LibroComprasComponent,
+    CuentasComponent,
+    CuentaComponent,
+    ChequesComponent,
+    ChequeComponent,
+    TransaccionesComponent,
+    TransaccionComponent
   ],
   exports: [
     PresupuestosComponent,
@@ -46,7 +59,13 @@ import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-c
     PresupuestoDetallesComponent,
     ConsumidorFinalComponent,
     ContribuyentesComponent,
-    LibroComprasComponent
+    LibroComprasComponent,
+    CuentasComponent,
+    CuentaComponent,
+    ChequesComponent,
+    ChequeComponent,
+    TransaccionesComponent,
+    TransaccionComponent
   ]
 })
 export class ContabilidadModule { }

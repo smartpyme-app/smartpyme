@@ -15,6 +15,7 @@ class Detalle extends Model
         'concepto',
         'cargo',
         'abono',
+        'saldo'
     ];
 
     public function empresa(){

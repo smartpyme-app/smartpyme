@@ -1,0 +1,65 @@
+import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+
+import * as moment from 'moment';
+
+@Component({
+  selector: 'app-cuenta',
+  templateUrl: './cuenta.component.html'
+})
+export class CuentaComponent implements OnInit {
+
+    public cuenta:any = {};
+    public bancos:any = [];
+    public loading = false;
+    public saving = false;
+    modalRef?: BsModalRef;
+
+	constructor( 
+	    private apiService: ApiService, private alertService: AlertService,
+	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+	) { }
+
+	ngOnInit() {
+        this.loadAll();
+
+        this.apiService.getAll('bancos/list').subscribe(bancos => {
+            this.bancos = bancos;
+        }, error => {this.alertService.error(error);});
+    }
+
+    public loadAll(){
+        const id = +this.route.snapshot.paramMap.get('id')!;
+        if (id) {
+            this.loading = true;
+            this.apiService.read('/banco/cuenta/', id).subscribe(cuenta => {
+                this.cuenta = cuenta;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }else{
+            this.cuenta = {};
+            this.cuenta.id_empresa = this.apiService.auth_user().id_empresa;
+        }
+
+    }
+
+    public onSubmit(){
+        this.saving = true;
+
+        this.apiService.store('banco/cuenta', this.cuenta).subscribe(cuenta => {
+            if (!this.cuenta.id) {
+                this.alertService.success('Cuenta guardada', 'La cuenta fue guardada exitosamente.');
+            }else{
+                this.alertService.success('Cuenta creada', 'La cuenta fue añadida exitosamente.');
+            }
+            this.router.navigate(['/bancos/cuentas']);
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+}

@@ -51,16 +51,6 @@
                     <img src="/assets/icons/tool.png" class="icon me-2">Servicios
                 </a>
             </li>
-            <!-- <li *ngIf="usuario.empresa.modulo_paquetes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/paquetes']" tooltip="Paquetes" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/box.png" class="icon me-2">Paquetes
-                </a>
-            </li> -->
-            <!-- <li *ngIf="usuario.empresa.modulo_proyectos" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/proyectos']" tooltip="Proyectos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/share-2.png" class="icon me-2">Proyectos
-                </a>
-            </li> -->
             <li class="mb-1">
                 <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
                     <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
@@ -93,6 +83,19 @@
                 <a [routerLink]="['/gastos']" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
                 </a>
+            </li>
+            <li class="mb-1">
+                <button (click)="toggleBancos()" tooltip="Bancos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!bancosIsCollapsed" aria-controls="collapseBasic">
+                    <img src="/assets/icons/bank-account.png" class="icon me-2">Bancos
+                </button>
+                <div [collapse]="bancosIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/list.png" class="icon me-2">Cuentas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/cheques']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Cheques</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/transacciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/repeat.png" class="icon me-2">Transacciones</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/libro']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libro de bancos</a></li>
+                  </ul>
+                </div>
             </li>
             <li class="mb-1">
                 <button (click)="toggleFinanzas()" tooltip="Finanzas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed" aria-controls="collapseBasic">

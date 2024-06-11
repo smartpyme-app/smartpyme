@@ -24,6 +24,7 @@ class DetallesController extends Controller
             'concepto'      => 'required|max:255',
             'cargo'         => 'required|numeric',
             'abono'         => 'required|numeric',
+            'saldo'         => 'required|numeric',
         ]);
 
         if($request->id)
