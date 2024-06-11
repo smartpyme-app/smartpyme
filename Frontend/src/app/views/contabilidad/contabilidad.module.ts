@@ -25,6 +25,9 @@ import { ChequeComponent } from '@views/contabilidad/bancos/cheques/cheque/chequ
 import { TransaccionesComponent } from '@views/contabilidad/bancos/transacciones/transacciones.component';
 import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/transaccion/transaccion.component';
 
+import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component';
+import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -51,7 +54,9 @@ import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/t
     ChequesComponent,
     ChequeComponent,
     TransaccionesComponent,
-    TransaccionComponent
+    TransaccionComponent,
+    CatalogoCuentasComponent,
+    CatalogoCuentaComponent
   ],
   exports: [
     PresupuestosComponent,
@@ -65,7 +70,9 @@ import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/t
     ChequesComponent,
     ChequeComponent,
     TransaccionesComponent,
-    TransaccionComponent
+    TransaccionComponent,
+    CatalogoCuentasComponent,
+    CatalogoCuentaComponent
   ]
 })
 export class ContabilidadModule { }

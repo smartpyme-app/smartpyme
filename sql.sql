@@ -46,18 +46,18 @@ CREATE TABLE cuentas_bancarias_transacciones (
 
 CREATE TABLE catalogo_cuentas (
     id int NOT NULL AUTO_INCREMENT,
-    codigo varchar(255) NOT NULL,
+    codigo int NOT NULL,
     nombre varchar(255) NOT NULL,
-    id_cuenta_mayor int NOT NULL,
-    nivel int NOT NULL,
-    tipo varchar(255) NOT NULL,
-    sub_cuenta int NOT NULL,
+    naturaleza varchar(255) NOT NULL,
+    id_cuenta_padre int NOT NULL,
     rubro varchar(255) NOT NULL,
+    nivel int NOT NULL,
     id_empresa int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
+
 
 CREATE TABLE partidas (
     id int NOT NULL AUTO_INCREMENT,

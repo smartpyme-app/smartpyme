@@ -15,8 +15,8 @@
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'paquetes'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar paquetes" (click)="descargar()" class="btn btn-default tcla-F6">
-                                    <img src="/assets/icons/download.png" class="icon">
-                                </button>
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPaquetes()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>

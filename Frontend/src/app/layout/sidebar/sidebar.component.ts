@@ -18,7 +18,7 @@ export class SidebarComponent implements OnInit {
     public comprasIsCollapsed:boolean = true;
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
-    public paquetesIsCollapsed:boolean = true;
+    public contabilidadIsCollapsed:boolean = true;
     public bancosIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
@@ -62,10 +62,10 @@ export class SidebarComponent implements OnInit {
         }else{
             this.finanzasIsCollapsed = JSON.parse(localStorage.getItem('finanzasIsCollapsed')!);
         }
-        if (!localStorage.getItem('paquetesIsCollapsed')) {
-            localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
+        if (!localStorage.getItem('contabilidadIsCollapsed')) {
+            localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
         }else{
-            this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
+            this.contabilidadIsCollapsed = JSON.parse(localStorage.getItem('contabilidadIsCollapsed')!);
         }
         if (!localStorage.getItem('bancosIsCollapsed')) {
             localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
@@ -163,12 +163,12 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
-    togglePaquetes() {
-        if(this.paquetesIsCollapsed){
+    toggleContabilidad() {
+        if(this.contabilidadIsCollapsed){
             this.closeAll();
         }
-        this.paquetesIsCollapsed = !this.paquetesIsCollapsed;
-        localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
+        this.contabilidadIsCollapsed = !this.contabilidadIsCollapsed;
+        localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
@@ -200,8 +200,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
-        this.paquetesIsCollapsed = true;
-        localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.contabilidadIsCollapsed = true;
+        localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
         this.bancosIsCollapsed = true;
         localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
     }

@@ -1,0 +1,150 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Catalogo de cuentas</h2>
+    <button *ngIf="apiService.canCreate()" routerLink="/catalogo/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="cuentas?.total">
+                Mostrando {{ cuentas?.to }} de {{ cuentas?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-cuentas'"></app-importar-excel>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <!-- <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button> -->
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/catalogo/cuentas">Todos</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Codigo</th>
+                        <th>Nombre</th>
+                        <th>Nivel</th>
+                        <th>Tipo</th>
+                        <th>Rubro</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center" *ngIf="cuentas?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene cuentas bancarias registrados</span>
+                        </td>
+                        <td colspan="6" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor=" let cuenta of cuentas?.data">
+                        <td>{{cuenta.codigo}}</td>
+                        <td>{{cuenta.nombre}}</td>
+                        <td>{{cuenta.nivel}}</td>
+                        <td>{{cuenta.tipo}}</td>
+                        <td>{{cuenta.rubro}}</td>
+                        <td *ngIf="apiService.canEdit()" class="text-center">
+                            <a class="btn btn-light" routerLink="/catalogo/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="cuentas?.last_page > 1">
+            <app-pagination [items]="cuentas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarCuentas()">
+        <div class="row">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="En bodega">En bodega</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Entregado">Entregado</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_cliente">Cliente:</label>
+                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                        {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_asesor">Asesor:</label>
+                <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="filtros.id_asesor">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="filtros.id_usuario">Usuario:</label>
+                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

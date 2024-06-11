@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Contabilidad\Catalogo;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Contabilidad\Catalogo\Cuenta;
+use App\Imports\Catalogo;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CuentasController extends Controller
 {
@@ -45,11 +47,10 @@ class CuentasController extends Controller
         $request->validate([
             'codigo'        => 'required|max:255',
             'nombre'        => 'required|max:255',
-            'id_cuenta_mayor'   => 'required|numeric',
-            'nivel'         => 'required|numeric',
-            'tipo'          => 'required|max:255',
-            'sub_cuenta'    => 'required|numeric',
+            'naturaleza'    => 'required|max:255',
+            'id_cuenta_padre'   => 'required|numeric',
             'rubro'         => 'required|max:255',
+            'nivel'         => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
 
@@ -73,5 +74,21 @@ class CuentasController extends Controller
         return Response()->json($cuenta, 201);
 
     }
+
+    public function import(Request $request){
+        
+        $request->validate([
+            'file'          => 'required',
+        ],[
+            'file.required' => 'El documento es obligatorio.'
+        ]);
+
+        $import = new Productos();
+        Excel::import($import, $request->file);
+        
+        return Response()->json($import->getRowCount(), 200);
+
+    }
+
 
 }

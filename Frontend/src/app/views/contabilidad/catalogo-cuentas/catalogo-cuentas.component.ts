@@ -7,13 +7,16 @@ import * as moment from 'moment';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-cuentas',
-  templateUrl: './cuentas.component.html'
+  selector: 'app-catalogo-cuentas',
+  templateUrl: './catalogo-cuentas.component.html'
 })
 
-export class CuentasComponent implements OnInit {
+export class CatalogoCuentasComponent implements OnInit {
 
     public cuentas:any = [];
+    public sucursales:any = [];
+    public clientes:any = [];
+    public usuarios:any = [];
     public cuenta:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
@@ -44,7 +47,7 @@ export class CuentasComponent implements OnInit {
     public loadAll() {
         this.filtros.tipo = '';
         this.filtros.buscador = '';
-        this.filtros.orden = 'id';
+        this.filtros.orden = 'codigo';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
         this.filtrarCuentas();
@@ -52,7 +55,7 @@ export class CuentasComponent implements OnInit {
 
     public filtrarCuentas(){
         this.loading = true;
-        this.apiService.getAll('bancos/cuentas', this.filtros).subscribe(cuentas => { 
+        this.apiService.getAll('catalogo/cuentas', this.filtros).subscribe(cuentas => { 
             this.cuentas = cuentas;
             this.loading = false;
             if(this.modalRef){
@@ -70,6 +73,9 @@ export class CuentasComponent implements OnInit {
 
 
     public openFilter(template: TemplateRef<any>) {
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.usuarios = usuarios;
+        }, error => {this.alertService.error(error); });
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
@@ -117,9 +123,9 @@ export class CuentasComponent implements OnInit {
         this.apiService.store('cuenta', this.cuenta).subscribe(cuenta => {
             if (!this.cuenta.id) {
                 this.loadAll();
-                this.alertService.success('Cuenta creada', 'El cuenta fue añadida exitosamente.');
+                this.alertService.success('Paquete creada', 'El cuenta fue añadida exitosamente.');
             }else{
-                this.alertService.success('Cuenta guardada', 'El cuenta fue guardada exitosamente.');
+                this.alertService.success('Paquete guardada', 'El cuenta fue guardada exitosamente.');
             }
             this.saving = false;
             if(this.modalRef){

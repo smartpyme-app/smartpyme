@@ -14,11 +14,10 @@ class Cuenta extends Model
     protected $fillable = [
         'codigo',
         'nombre',
-        'id_cuenta_mayor',
-        'nivel',
-        'tipo',
-        'sub_cuenta',
+        'naturaleza',
+        'id_cuenta_padre',
         'rubro',
+        'nivel',
         'id_empresa',
     ];
 

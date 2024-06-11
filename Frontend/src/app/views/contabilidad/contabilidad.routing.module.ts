@@ -17,6 +17,9 @@ import { ChequeComponent } from '@views/contabilidad/bancos/cheques/cheque/chequ
 import { TransaccionesComponent } from '@views/contabilidad/bancos/transacciones/transacciones.component';
 import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/transaccion/transaccion.component';
 
+import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component';
+import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -41,6 +44,9 @@ const routes: Routes = [
 
         { path: 'bancos/transacciones', component: TransaccionesComponent, title: 'Transacciones' },
         { path: 'bancos/transaccion/:id', component: TransaccionComponent, title: 'Transacción' },
+
+        { path: 'catalogo/cuentas', component: CatalogoCuentasComponent, title: 'Catalogo de cuentas' },
+        { path: 'catalogo/cuenta/:id', component: CatalogoCuentaComponent, title: 'Catalogo cuenta' },
 
     ]
   }

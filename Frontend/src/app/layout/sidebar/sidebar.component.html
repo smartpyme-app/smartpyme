@@ -112,6 +112,23 @@
                   </ul>
                 </div>
             </li>
+            <li class="mb-1">
+                <button (click)="toggleContabilidad()" tooltip="Contabilidad" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!contabilidadIsCollapsed" aria-controls="collapseBasic">
+                    <img src="/assets/icons/book.png" class="icon me-2">Contabilidad
+                </button>
+                <div [collapse]="contabilidadIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/catalogo/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/list.png" class="icon me-2">Catalogo</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/partidas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/columns.png" class="icon me-2">Partidas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-diario']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Diario</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-mayor']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Mayor</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-auxiliar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Auxiliar</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/estado-de-resultados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Estado de Resultados</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/balance-de-comprobacion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Balance de comprobación</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/balance-general']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Balance general</a></li>
+                  </ul>
+                </div>
+            </li>
         </ul>
     </div>
     <div style="min-height: 37vh;">
