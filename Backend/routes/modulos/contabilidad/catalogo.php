@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Contabilidad\Catalogo\CuentasController;
 
@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\Contabilidad\Catalogo\CuentasController;
     Route::get('/catalogo/cuenta/{id}',         [CuentasController::class, 'read']);
     Route::delete('/catalogo/cuenta/{id}',      [CuentasController::class, 'delete']);
 
-    Route::post('/catalogo-cuentas/importar',   [CuentasController::class, 'import']);
+    Route::post('/catalogo-cuentas/importar',   [CuentasController::class, 'importCuentas']);
 
 
 ?>

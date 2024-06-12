@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Contabilidad\Catalogo;
 
 use App\Http\Controllers\Controller;
+use App\Imports\CatalogoImport;
 use Illuminate\Http\Request;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Imports\Catalogo;
@@ -10,10 +11,10 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CuentasController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $cuentas = Cuenta::when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                                 ->orwhere('codigo', 'like' ,'%' . $request->buscador . '%');
@@ -26,7 +27,7 @@ class CuentasController extends Controller
     }
 
     public function list() {
-       
+
         $cuentas = Cuenta::orderby('nombre')
                                 // ->where('activo', true)
                                 ->get();
@@ -34,7 +35,7 @@ class CuentasController extends Controller
         return Response()->json($cuentas, 200);
 
     }
-    
+
     public function read($id) {
 
         $cuenta = Cuenta::where('id', $id)->firstOrFail();
@@ -58,7 +59,7 @@ class CuentasController extends Controller
             $cuenta = Cuenta::findOrFail($request->id);
         else
             $cuenta = new Cuenta;
-        
+
         $cuenta->fill($request->all());
         $cuenta->save();
 
@@ -75,20 +76,18 @@ class CuentasController extends Controller
 
     }
 
-    public function import(Request $request){
-        
+    public function importCuentas(Request $request){
+
         $request->validate([
             'file'          => 'required',
         ],[
             'file.required' => 'El documento es obligatorio.'
         ]);
 
-        $import = new Productos();
+        $import = new CatalogoImport();
         Excel::import($import, $request->file);
-        
+
         return Response()->json($import->getRowCount(), 200);
 
     }
-
-
 }
