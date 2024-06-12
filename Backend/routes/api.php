@@ -15,14 +15,14 @@
 Route::get('/prueba', function(){ return Response()->json(['message' => 'Success'], 200); });
 
 require base_path('routes/modulos/auth.php');
-		
+
 Route::group(['middleware' => ['jwt.auth']], function () {
 
-
+//
 		require base_path('routes/modulos/dash.php');
 		require base_path('routes/modulos/facturacion.php');
 		require base_path('routes/modulos/recibos.php');
-	
+
 	// Ventas
 		require base_path('routes/modulos/ventas/ventas.php');
 		require base_path('routes/modulos/ventas/detalles.php');
@@ -53,20 +53,20 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Eventos
 		require base_path('routes/modulos/eventos/eventos.php');
-		
+
 	// Empleados
 		require base_path('routes/modulos/empleados/empleados.php');
 		require base_path('routes/modulos/empleados/planillas.php');
 		require base_path('routes/modulos/empleados/comisiones.php');
 		require base_path('routes/modulos/empleados/asistencias.php');
         require base_path('routes/modulos/empleados/metas.php');
-		
+
 	// Contabilidad
 		require base_path('routes/modulos/contabilidad/presupuestos.php');
 		require base_path('routes/modulos/contabilidad/proyectos.php');
 		require base_path('routes/modulos/contabilidad/catalogo.php');
 		require base_path('routes/modulos/contabilidad/partidas.php');
-		
+
 	// Bancos
 		require base_path('routes/modulos/bancos/cuentas.php');
 		require base_path('routes/modulos/bancos/cheques.php');
@@ -89,10 +89,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');
 
-		
+
 });
 
 
-Route::get('/prueba/factura', function () { 
-	return view('reportes/pruebas/factura');	
+Route::get('/prueba/factura', function () {
+	return view('reportes/pruebas/factura');
 });
