@@ -27,6 +27,8 @@ import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/t
 
 import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component';
 import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
+import { PartidasComponent } from './partidas/partidas.component';
+import { PartidaComponent } from './partidas/partida/partida.component';
 
 @NgModule({
   imports: [
@@ -56,7 +58,9 @@ import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/ca
     TransaccionesComponent,
     TransaccionComponent,
     CatalogoCuentasComponent,
-    CatalogoCuentaComponent
+    CatalogoCuentaComponent,
+    PartidasComponent,
+    PartidaComponent
   ],
   exports: [
     PresupuestosComponent,

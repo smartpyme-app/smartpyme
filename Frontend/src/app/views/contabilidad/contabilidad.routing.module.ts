@@ -20,6 +20,9 @@ import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/t
 import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component';
 import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
 
+import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
+import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -35,7 +38,6 @@ const routes: Routes = [
         { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent },
         { path: 'libro-compras', component: LibroComprasComponent },
 
-
         { path: 'bancos/cuentas', component: CuentasComponent, title: 'Cuentas' },
         { path: 'bancos/cuenta/:id', component: CuentaComponent, title: 'Cuenta' },
 
@@ -47,6 +49,9 @@ const routes: Routes = [
 
         { path: 'catalogo/cuentas', component: CatalogoCuentasComponent, title: 'Catalogo de cuentas' },
         { path: 'catalogo/cuenta/:id', component: CatalogoCuentaComponent, title: 'Catalogo cuenta' },
+        
+        { path: 'contabilidad/partidas', component: PartidasComponent, title: 'Partidas' },
+        { path: 'contabilidad/partida/:id', component: PartidaComponent, title: 'Partida' },
 
     ]
   }
