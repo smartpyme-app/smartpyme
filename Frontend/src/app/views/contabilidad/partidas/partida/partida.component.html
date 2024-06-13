@@ -1,1 +1,87 @@
-<p>partida works!</p>
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ partida.id ? 'Editar ' : 'Crear ' }} Partida</h3>
+    <button class="btn btn-light text-danger" routerLink="/partidas"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3">
+        <div class="row">
+
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" name="fecha" [(ngModel)]="partida.fecha"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="tipo">Tipo:</label>
+                <select class="form-select" name="tipo" [(ngModel)]="partida.tipo">
+                    <option value="Ingreso">Ingreso</option>
+                    <option value="Egreso">Egreso</option>
+                    <option value="Diario">Diario</option>
+                    <option value="CxC">CxC</option>
+                    <option value="CxP">CxP</option>
+                    <option value="Cierre">Cierre</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="estado">Estado:</label>
+                <select class="form-select" name="estado" [(ngModel)]="partida.estado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Aplicada">Aplicada</option>
+                    <option value="Anulada">Anulada</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="concepto">Concepto:</label>
+                <input type="text" class="form-control" name="concepto" [(ngModel)]="partida.concepto"/>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-12 table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th width="200px">Código</th>
+                            <th>Descripción</th>
+                            <th width="200px">Debe</th>
+                            <th width="200px">Haber</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="number" class="form-control"></td>
+                            <td><input type="text" class="form-control"></td>
+                            <td><input type="number" class="form-control"></td>
+                            <td><input type="number" class="form-control"></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="text-end">Totales:</td>
+                            <td class="text-end">$0.00</td>
+                            <td class="text-end">$0.00</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end">Diferencia:</td>
+                            <td class="text-end" colspan="2">$0.00</td>
+                        </tr>
+                    </tfoot>
+                    
+                </table>            
+            </div>
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar partida  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+</form>
+
+

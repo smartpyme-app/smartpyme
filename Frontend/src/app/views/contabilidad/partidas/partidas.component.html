@@ -1,19 +1,19 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Partidas</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/catalogo/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+    <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir partida</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="cuentas?.total">
-                Mostrando {{ cuentas?.to }} de {{ cuentas?.total + ' registros' }}
+            <span class="text-muted" *ngIf="partidas?.total">
+                Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
             </span>
         </div>
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-cuentas'"></app-importar-excel>
+                <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-partidas'"></app-importar-excel> -->
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -24,7 +24,7 @@
 
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/catalogo/cuentas">Todos</button>
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/contabilidad/partidas">Todas</button>
         </div>
     </div>
     <div class="row">
@@ -32,42 +32,56 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Codigo</th>
-                        <th>Nombre</th>
-                        <th>Nivel</th>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
                         <th>Tipo</th>
-                        <th>Rubro</th>
+                        <th>Estado</th>
                         <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="6" class="text-center" *ngIf="cuentas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene un catalogo de cuentas registrado</span>
+                        <td colspan="6" class="text-center" *ngIf="partidas?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
                         </td>
                         <td colspan="6" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
-                    <tr *ngFor=" let cuenta of cuentas?.data">
-                        <td>{{cuenta.codigo}}</td>
-                        <td>{{cuenta.nombre}}</td>
-                        <td>{{cuenta.nivel}}</td>
-                        <td>{{cuenta.tipo}}</td>
-                        <td>{{cuenta.rubro}}</td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
-                            <a class="btn btn-light" routerLink="/catalogo/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
-                                <i class="fa fa-pencil-alt"></i>
-                            </a>
+                    <tr *ngFor=" let partida of partidas?.data">
+                        <td>{{partida.fecha}}</td>
+                        <td>{{partida.concepto}}</td>
+                        <td>{{partida.tipo}}</td>
+                        <td>{{partida.estado}}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/contabilidad/partida/{{partida.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Aplicar
+                                    </a>
+                                    <a *ngIf="partida.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular
+                                    </a>
+                                    <a *ngIf="partida.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicar')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="cuentas?.last_page > 1">
-            <app-pagination [items]="cuentas" (setPagination)="setPagination($event)"></app-pagination>
+        <div class="col-12" *ngIf="partidas?.last_page > 1">
+            <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
 </section>

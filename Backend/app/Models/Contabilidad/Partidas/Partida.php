@@ -20,6 +20,8 @@ class Partida extends Model
         'id_empresa',
     ];
 
+    protected $appends = ['nombre_usuario'];
+    
     protected static function boot()
     {
         parent::boot();
@@ -30,7 +32,16 @@ class Partida extends Model
             });
         }
     }
+
+    public function getNombreUsuarioAttribute()
+    {   
+        return $this->usuario()->pluck('name')->first();
+    }
     
+    public function usuario(){
+        return $this->belongsTo('App\Models\User', 'id_usuario');
+    }
+
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }

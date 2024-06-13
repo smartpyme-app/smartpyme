@@ -37,7 +37,7 @@ export class CuentaComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('/banco/cuenta/', id).subscribe(cuenta => {
+            this.apiService.read('banco/cuenta/', id).subscribe(cuenta => {
                 this.cuenta = cuenta;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});

@@ -47,8 +47,8 @@ export class CatalogoCuentasComponent implements OnInit {
     public loadAll() {
         this.filtros.tipo = '';
         this.filtros.buscador = '';
-        this.filtros.orden = 'codigo';
-        this.filtros.direccion = 'desc';
+        this.filtros.orden = 'id';
+        this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
         this.filtrarCuentas();
     }

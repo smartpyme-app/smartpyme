@@ -49,7 +49,7 @@ CREATE TABLE catalogo_cuentas (
     codigo int NOT NULL,
     nombre varchar(255) NOT NULL,
     naturaleza varchar(255) NOT NULL,
-    id_cuenta_padre int NOT NULL,
+    id_cuenta_padre int NULL,
     rubro varchar(255) NOT NULL,
     nivel int NOT NULL,
     id_empresa int NOT NULL,

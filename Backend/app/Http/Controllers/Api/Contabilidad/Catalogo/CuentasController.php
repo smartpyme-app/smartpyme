@@ -28,9 +28,7 @@ class CuentasController extends Controller
 
     public function list() {
 
-        $cuentas = Cuenta::orderby('codigo')->get();
-//        dd($cuentas);
-
+        $cuentas = Cuenta::orderby('id')->get();
         return Response()->json($cuentas, 200);
 
     }

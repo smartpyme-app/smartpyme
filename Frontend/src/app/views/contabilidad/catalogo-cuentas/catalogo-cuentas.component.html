@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Catalogo de cuentas</h2>
+    <h2 class="page-heading">Catálogo de cuentas</h2>
     <button *ngIf="apiService.canCreate()" routerLink="/catalogo/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
 </section>
 
@@ -35,7 +35,7 @@
                         <th>Codigo</th>
                         <th>Nombre</th>
                         <th>Nivel</th>
-                        <th>Tipo</th>
+                        <th>Naturaleza</th>
                         <th>Rubro</th>
                         <th class="text-center">Más</th>
                     </tr>
@@ -54,7 +54,7 @@
                         <td>{{cuenta.codigo}}</td>
                         <td>{{cuenta.nombre}}</td>
                         <td>{{cuenta.nivel}}</td>
-                        <td>{{cuenta.tipo}}</td>
+                        <td>{{cuenta.naturaleza}}</td>
                         <td>{{cuenta.rubro}}</td>
                         <td *ngIf="apiService.canEdit()" class="text-center">
                             <a class="btn btn-light" routerLink="/catalogo/cuenta/{{cuenta.id}}" tooltip="Ver y editar">

@@ -47,8 +47,8 @@ const routes: Routes = [
         { path: 'bancos/transacciones', component: TransaccionesComponent, title: 'Transacciones' },
         { path: 'bancos/transaccion/:id', component: TransaccionComponent, title: 'Transacción' },
 
-        { path: 'catalogo/cuentas', component: CatalogoCuentasComponent, title: 'Catalogo de cuentas' },
-        { path: 'catalogo/cuenta/:id', component: CatalogoCuentaComponent, title: 'Catalogo cuenta' },
+        { path: 'catalogo/cuentas', component: CatalogoCuentasComponent, title: 'Catálogo de cuentas' },
+        { path: 'catalogo/cuenta/:id', component: CatalogoCuentaComponent, title: 'Catálogo cuenta' },
         
         { path: 'contabilidad/partidas', component: PartidasComponent, title: 'Partidas' },
         { path: 'contabilidad/partida/:id', component: PartidaComponent, title: 'Partida' },
