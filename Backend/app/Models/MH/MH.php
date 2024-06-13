@@ -323,7 +323,7 @@ class MH extends Model
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
                 "municipio" => $this->venta->cliente->cod_municipio,
-                "complemento" => $this->venta->cliente->direccion
+                "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
@@ -342,7 +342,7 @@ class MH extends Model
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
                 "municipio" => $this->venta->cliente->cod_departamento,
-                "complemento" => $this->venta->cliente->direccion
+                "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
