@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Ventas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contabilidad\Partidas\Detalle;
 use Illuminate\Http\Request;
 
 use JWTAuth;
@@ -254,6 +255,29 @@ class GenerarDocumentosController extends Controller
     public function anularDoc(){
 
         return view('reportes.anulacion');
+
+    }
+
+    public function generarRepLibroDiarioAux(){
+
+        $detalles = Detalle::where('id_cuenta', 110101)->get();
+        //dd();
+
+        $empresa = Empresa::findOrfail(13);
+//        dd($empresa->logo);
+//        return Response()->json($empresa, 200);
+
+        $desde= '28/03/2024';
+        $hasta= '28/03/2024';
+
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('detalles', 'empresa','desde', 'hasta'));
+        $pdf->setPaper('US Letter', 'landscape');
+
+                return  $pdf->stream();
+
+
+
+
 
     }
 
