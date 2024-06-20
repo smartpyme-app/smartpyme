@@ -18,10 +18,15 @@
             position: relative;
         }
 
-        #header > *, #totales > *{
+        .header > *, #totales > *{
             position: absolute;
-            margin: 0px;
+            margin: 10px;
         }
+
+        .header{
+            border: 1px solid black;
+        }
+
 
         #logo          {top: 0.5cm; left: 0.5cm }
         #empresa_nombre  { top: 0.5cm; left: 12.5cm;}
@@ -29,10 +34,6 @@
         #fechas_filtro  {top: 2.5cm; left: 11cm;}
         #fecha_actual   {top: 0.5cm; left: 20cm; }
         #hora_reporte    {top: 1.5cm; left: 20cm; }
-        #nit            {top: 4cm; left: 15cm; }
-        #giro            {top: 4.5cm; left: 15cm;}
-        #condicion      {top: 5.5cm; left: 17.5cm; }
-
 
         table   {position: absolute; top: 4.5cm; left: 2.5cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.5cm; text-align: left;}
@@ -44,18 +45,6 @@
         .abono{ width: 3cm; text-align: center;}
         .saldo{ width: 3cm; text-align: center;}
 
-
-        #letras     {top: 22.5cm; left: 3.5cm; width: 7cm; word-break: break-all; white-space: normal;}
-        #correlativo{top: 13cm; left: 2cm;; width: 9cm;;}
-
-        #suma       {top: 22cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #iva        {top: 22.3cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #sub_total  {top: 22.6cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 22.9cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #no_sujeta  {top: 23.2cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #exenta     {top: 23.5cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #cuenta_a_terceros {top: 24.5cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #total      {top: 16cm; left: 18cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;}
 
@@ -69,6 +58,11 @@
             padding-bottom: 50px; //height of your footer
         }
 
+        th {
+            border: 1px solid black;
+            padding: 5px;
+        }
+
     </style>
 
     <style media="print"> .no-print{display: none; } </style>
@@ -78,8 +72,7 @@
 <body>
 
 <section id="factura">
-    <div id="header">
-
+    <div class="header">
 {{--        a la derecha del documento --}}
         <p id="logo">{{$empresa->logo}}</p>
 
@@ -119,10 +112,30 @@
             @if($loop->iteration == 30 or $loop->iteration == 60 or $loop->iteration == 90 )
             </table>
                 <div class="page-break"></div>
+        <div class="header">
+
+            {{--        a la derecha del documento --}}
+            <p id="logo">{{$empresa->logo}}</p>
+
+            {{--        al centro del documento --}}
+            <p id="empresa_nombre">{{$empresa->nombre}}</p>
+            <p id="titulo_doc">Movimiento de una cuenta</p>
+            <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
+
+            {{--        a la izquierda del documento--}}
+            <p id="fecha_actual">4/05/2024</p>
+            <p id="hora_reporte">06:15:18 a.m.</p>
+
+        </div>
             <table class="table invoice-articles-table">
             <thead>
             <tr>
-                <th>#</th>
+                <th>Partida</th>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Cargo</th>
+                <th>Abono</th>
+                <th>Saldo</th>
                 ...
             </thead>
 
