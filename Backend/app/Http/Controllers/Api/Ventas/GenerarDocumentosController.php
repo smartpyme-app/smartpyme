@@ -260,8 +260,14 @@ class GenerarDocumentosController extends Controller
 
     public function generarRepLibroDiarioAux(){
 
-        $detalles = Detalle::where('id_cuenta', 110101)->get();
-        //dd();
+        $detalles = Detalle::get();
+        $duplica =$detalles->groupBy('id_cuenta');
+        $det_agrup= $duplica->all();
+        //dd($det_agrup);
+
+//        foreach ($det_agrup as $part_detalle){
+//            dd(key($det_agrup));
+//        }
 
         $empresa = Empresa::findOrfail(13);
 //        dd($empresa->logo);
@@ -270,15 +276,10 @@ class GenerarDocumentosController extends Controller
         $desde= '28/03/2024';
         $hasta= '28/03/2024';
 
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('detalles', 'empresa','desde', 'hasta'));
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('det_agrup', 'empresa','desde', 'hasta'));
         $pdf->setPaper('US Letter', 'landscape');
 
-                return  $pdf->stream();
-
-
-
-
-
+        return  $pdf->stream();
     }
 
 

@@ -89,81 +89,72 @@
 
     <div style="page-break-after:auto;">
     <table>
-
 {{--            titulo de la cuenta--}}
 {{--            <tr>Cuenta: {{ $num_cuenta }} - {{$nom_cuenta}}</tr>--}}
-        <tr>
-            <th>Partida</th>
-            <th>Fecha</th>
-            <th>Concepto</th>
-            <th>Cargo</th>
-            <th>Abono</th>
-            <th>Saldo</th>
-        </tr>
-            @foreach($detalles as $detalle_par)
-            <tr>
-                <td class="id_partida">     {{$detalle_par->id_partida}}    </td>
-                <td class="fecha_partida"> {{$detalle_par->created_at}}    </td>
-                <td class="concepto">        {{$detalle_par->concepto}}    </td>
-                <td class="cargo">            {{$detalle_par->cargo}}   </td>
-                <td class="abono">           {{$detalle_par->abono}}    </td>
-                <td class="saldo">            {{$detalle_par->saldo}}   </td>
-            </tr>
-            @if($loop->iteration == 30 or $loop->iteration == 60 or $loop->iteration == 90 )
-            </table>
-                <div class="page-break"></div>
-        <div class="header">
 
-            {{--        a la derecha del documento --}}
-            <p id="logo">{{$empresa->logo}}</p>
+            @foreach($det_agrup as $cuentas)
+                <tr>
+                    <th>Partida</th>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Cargo</th>
+                    <th>Abono</th>
+                    <th>Saldo</th>
+                </tr>
 
-            {{--        al centro del documento --}}
-            <p id="empresa_nombre">{{$empresa->nombre}}</p>
-            <p id="titulo_doc">Movimiento de una cuenta</p>
-            <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
+                @foreach($cuentas as $detalle_par)
+                    <tr>
+                        <td class="id_partida">     {{$detalle_par->id_cuenta}}    </td>
+                        <td class="fecha_partida">  {{$detalle_par->created_at}}    </td>
+                        <td class="concepto">       {{$detalle_par->concepto}}    </td>
+                        <td class="cargo">          {{$detalle_par->cargo}}   </td>
+                        <td class="abono">          {{$detalle_par->abono}}    </td>
+                        <td class="saldo">          {{$detalle_par->saldo}}   </td>
+                    </tr>
 
-            {{--        a la izquierda del documento--}}
-            <p id="fecha_actual">4/05/2024</p>
-            <p id="hora_reporte">06:15:18 a.m.</p>
+{{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
 
-        </div>
-            <table class="table invoice-articles-table">
-            <thead>
-            <tr>
-                <th>Partida</th>
-                <th>Fecha</th>
-                <th>Concepto</th>
-                <th>Cargo</th>
-                <th>Abono</th>
-                <th>Saldo</th>
-                ...
-            </thead>
+                    @if($loop->iteration % 30 === 0 or $loop->last == true)
 
-            @endif
+                        </table>
+                        <div class="page-break"></div>
+                            @if($loop->last == false)
+                                <div class="header">
+
+                                    {{--        a la derecha del documento --}}
+                                    <p id="logo">{{$empresa->logo}}</p>
+
+                                    {{--        al centro del documento --}}
+                                    <p id="empresa_nombre">{{$empresa->nombre}}</p>
+                                    <p id="titulo_doc">Movimiento de una cuenta</p>
+                                    <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
+
+                                    {{--        a la izquierda del documento--}}
+                                    <p id="fecha_actual">4/05/2024</p>
+                                    <p id="hora_reporte">06:15:18 a.m.</p>
+
+                                </div>
+                            @endif
+                        <table class="table invoice-articles-table">
+
+                        {{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
+                        @if($loop->last == false)
+                            <thead>
+                                <tr>
+                                    <th>Partida</th>
+                                    <th>Fecha</th>
+                                    <th>Concepto</th>
+                                    <th>Cargo</th>
+                                    <th>Abono</th>
+                                    <th>Saldo</th>
+                                    ...
+                            </thead>
+                        @endif
+                    @endif
+                @endforeach
             @endforeach
     </table>
 
-{{--    <div id="totales">--}}
-{{--        <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>--}}
-{{--        --}}{{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
-
-{{--        <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>--}}
-{{--        <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>--}}
-{{--        <p id="sub_total"> $ {{ number_format($venta->total, 2) }}</p>--}}
-{{--        @if($venta->iva_retenido > 0)--}}
-{{--            <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>--}}
-{{--        @endif--}}
-{{--        @if($venta->no_sujeta > 0)--}}
-{{--            <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>--}}
-{{--        @endif--}}
-{{--        @if($venta->exenta > 0)--}}
-{{--            <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p>--}}
-{{--        @endif--}}
-{{--        @if($venta->cuenta_a_terceros > 0)--}}
-{{--            <p id="cuenta_a_terceros"> $ {{ number_format($venta->cuenta_a_terceros, 2) }}</p>--}}
-{{--        @endif--}}
-{{--        <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>--}}
-{{--    </div>--}}
 </section>
 
 </body>
