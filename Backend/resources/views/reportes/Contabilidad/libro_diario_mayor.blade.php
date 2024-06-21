@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
+    {{-- revisar--}}
     <title>Libro diario auxiliar </title>
     <style>
 
@@ -30,20 +30,20 @@
 
         #logo          {top: 0.5cm; left: 0.5cm }
         #empresa_nombre  { top: 0.5cm; left: 9.5cm;}
-        #titulo_doc      {top: 1.5cm; left: 12cm;}
-        #fechas_filtro  {top: 2.5cm; left: 11cm;}
-        #fecha_actual   {top: 0.5cm; left: 20cm; }
-        #hora_reporte    {top: 1.5cm; left: 20cm; }
+        #titulo_doc      {top: 1.5cm; left: 9cm;}
+        #fechas_filtro  {top: 2.5cm; left: 8.5cm;}
+        #fecha_actual   {top: 0.5cm; left: 17cm; }
+        #hora_reporte    {top: 1.5cm; left: 17cm; }
 
-        table   {position: absolute; top: 4.5cm; left: 1cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 4.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.5cm; text-align: left;}
 
         .id_partida{ width: 1.5cm; text-align: center;}
-        .fecha_partida{ width: 5cm; text-align: center;}
-        .concepto{ width: 7cm; text-align: left;}
-        .cargo{ width: 3cm; text-align: center;}
-        .abono{ width: 3cm; text-align: center;}
-        .saldo{ width: 3cm; text-align: center;}
+        .fecha_partida{ width: 4cm; text-align: center;}
+        .concepto{ width: 9cm; text-align: left;}
+        .cargo{ width: 2cm; text-align: center;}
+        .abono{ width: 2cm; text-align: center;}
+        .saldo{ width: 2cm; text-align: center;}
 
 
         .no-print{position: absolute;}
@@ -114,11 +114,10 @@
 
                     {{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
 
-                    @if($loop->iteration % 30 === 0 or $loop->last == true)
+                    @if($loop->iteration % 40 === 0 or $loop->last == true)
 
         </table>
         <div class="page-break"></div>
-        @if($loop->last == false)
             <div class="header">
 
                 {{--        a la derecha del documento --}}
@@ -134,7 +133,6 @@
                 <p id="hora_reporte">06:15:18 a.m.</p>
 
             </div>
-        @endif
         <table class="table invoice-articles-table">
 
             {{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
