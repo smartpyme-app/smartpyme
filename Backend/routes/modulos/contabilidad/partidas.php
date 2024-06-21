@@ -8,9 +8,12 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
     Route::post('/partida',             [PartidasController::class, 'store']);
     Route::get('/partida/{id}',         [PartidasController::class, 'read']);
     Route::delete('/partida/{id}',      [PartidasController::class, 'delete']);
-    Route::get('/partidas/detalles',             [GenerarDocumentosController::class, 'generarRepLibroDiarioAux']);
+
+    Route::get('/partidas/detalles',             [GenerarDocumentosController::class, 'generarRepLibroDiarioAux']); //genera el libro diario auxiliar solamente como temporal
     Route::post('/partida/detalle',             [DetallesController::class, 'store']);
     Route::get('/partida/detalle/{id}',         [DetallesController::class, 'read']);
     Route::delete('/partida/detalle/{id}',      [DetallesController::class, 'delete']);
+
+    Route::get('/partidas/diario/mayor',        [GenerarDocumentosController::class, 'generarRepLibroDiarioMayor']); //genera el libro diario mayor solamente como temporal
 
 ?>
