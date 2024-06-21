@@ -66,6 +66,7 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/contabilidad/proyectos.php');
 		require base_path('routes/modulos/contabilidad/catalogo.php');
 		require base_path('routes/modulos/contabilidad/partidas.php');
+		require base_path('routes/modulos/contabilidad/reportes.php');
 
 	// Bancos
 		require base_path('routes/modulos/bancos/cuentas.php');
