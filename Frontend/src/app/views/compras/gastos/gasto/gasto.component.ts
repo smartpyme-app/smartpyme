@@ -1,8 +1,6 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -25,6 +23,7 @@ export class GastoComponent implements OnInit {
     public duplicargasto = false;
     public loading = false;
     public saving = false;
+    public documentos:any = [];
     modalRef?: BsModalRef;
 
 	constructor( 
@@ -107,6 +106,17 @@ export class GastoComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
+        this.cargarDocumentos();
+
+    }
+
+    public cargarDocumentos(){
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
+            this.documentos = documentos;
+            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.gasto.id_sucursal);
+            this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra'  && x.nombre!= 'Nota de crédito');
+            this.gasto.tipo_documento = 'Factura';
+        }, error => {this.alertService.error(error);});
     }
 
     public setCategoria(categoria:any){
