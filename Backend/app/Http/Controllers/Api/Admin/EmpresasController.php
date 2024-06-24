@@ -129,6 +129,10 @@ class EmpresasController extends Controller
             DB::table('traslados')->where('id_empresa', $empresa->id)->delete();
         }
 
+        if ($request->m_paquetes) {
+            DB::table('paquetes')->where('id_empresa', $empresa->id)->update(['deleted_at' => Carbon::now()]);
+        }
+
         if ($request->m_categorias) {
             DB::table('categorias')->where('id_empresa', $empresa->id)->delete();
         }

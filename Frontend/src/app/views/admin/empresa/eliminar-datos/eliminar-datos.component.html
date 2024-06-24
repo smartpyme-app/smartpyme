@@ -36,7 +36,17 @@
                                         <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_inventario" name="inventario">
                                     </div>
                                 </td>
-                            <tr>
+                            </tr>
+                            <tr *ngIf="apiService.auth_user().empresa.modulo_paquetes">
+                                <td>Paquetes</td>
+                                <td>Se eliminaran todos los paquetes registrados en tu cuenta.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_paquetes" name="paquetes">
+                                    </div>
+                                </td>
+                            </tr>
                             <tr>
                                 <td>Categorías</td>
                                 <td>Se eliminaran todas las categorías registradas.</td>
@@ -120,7 +130,7 @@
                     </table>
                 </div>
                 <div class="col-12 mt-3">
-                    <button type="submit" [disabled]="saving || (!empresa.m_inventario && !empresa.m_categorias && !empresa.m_ventas && !empresa.m_clientes && !empresa.m_proveedores && !empresa.m_compras && !empresa.m_gastos && !empresa.m_presupuestos)" class="btn btn-danger float-end">
+                    <button type="submit" [disabled]="saving || (!empresa.m_inventario && !empresa.m_categorias && !empresa.m_ventas && !empresa.m_clientes && !empresa.m_proveedores && !empresa.m_compras && !empresa.m_gastos && !empresa.m_presupuestos && !empresa.m_paquetes)" class="btn btn-danger float-end">
                         <span *ngIf="!saving">Eliminar datos</span>
                         <span *ngIf="saving">Eliminando...</span>
                     </button>

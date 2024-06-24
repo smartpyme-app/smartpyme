@@ -1,6 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Empresas</h2>
-    <button (click)="openModal(mempresa, {})"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
+    <!-- <button (click)="openModal(mempresa, {})"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button> -->
+    <button routerLink="/admin/empresa/crear"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,7 +14,6 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <!-- <button tooltip="Descargar empresas" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button> -->
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarEmpresas()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -77,7 +77,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a (click)="openModal(mempresa, empresa)" class="list-group-item list-group-item-action border-0 click">
+                                    <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a *ngIf="empresa.activo == 'Pendiente'" (click)="setEstado(empresa, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
@@ -155,212 +155,6 @@
                     <span *ngIf="loading">Filtrando...</span>
                 </button>
             </div>
-        </div>
-    </form>
-  </div>
-</ng-template>
-
-<ng-template #mempresa>
-  <div class="modal-header">
-    <div class="modal-title">
-        <h2 class="text-center">
-            <span *ngIf="empresa.id">Editar </span>
-            <span *ngIf="!empresa.id">Crear </span>
-            empresa
-        </h2>
-    </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="onSubmit()">
-        <app-notificaciones-container></app-notificaciones-container>
-        <div class="row">
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="nombre">Nombre</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre" placeholder="Escriba aquí" required>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="nombre_propietario">Propietario</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario" name="nombre_propietario" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="telefono">Teléfono</label>
-                <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="correo">Correo</label>
-                <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="municipio">Municipio</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="municipio" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="departamento">Departamento</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="departamento" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="direccion">Dirección</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="nit">NIT</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="ncr">NCR</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="giro">Giro</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.giro" name="giro" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label>Tipo de negocio</label>
-                <select class="form-select" name="industria" [(ngModel)]="empresa.industria">
-                    <option value="Comercio">Comercio</option>
-                    <option value="Servicio">Servicio</option>
-                    <option value="Ambos">Ambos</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="tipo_contribuyente">Tamaño</label>
-                <select class="form-select" [(ngModel)]="empresa.tipo_contribuyente" name="tipo_contribuyente">
-                    <option value="">Seleccione aquí</option>
-                    <option value="Pequeño">Pequeño</option>
-                    <option value="Mediano">Mediano</option>
-                    <option value="Grande">Grande</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="pais">País:</label>
-                <select class="form-select" name="pais" (change)="setPais()" [(ngModel)]="empresa.pais">
-                    <option value="Belice">+501 Belice</option>
-                    <option value="Guatemala">+502 Guatemala</option>
-                    <option value="El Salvador">+503 El Salvador</option>
-                    <option value="Honduras">+504 Honduras</option>
-                    <option value="Nicaragua">+505 Nicaragua</option>
-                    <option value="Costa Rica">+506 Costa Rica</option>
-                    <option value="Panamá">+507 Panamá</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="moneda">Moneda:</label>
-                <select class="form-select" [(ngModel)]="empresa.moneda" name="moneda">
-                    <option value="">Seleccione aquí</option>
-                    <option value="USD">USD</option>
-                    <option value="GTQ">GTQ</option>
-                    <option value="CRC">CRC</option>
-                    <option value="HNL">HNL</option>
-                    <option value="BZD">BZD</option>
-                    <option value="NIO">NIO</option>
-                    <option value="PAB">PAB</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="iva">IVA</label>
-                <div class="input-group">
-                    <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva" placeholder="Escriba aquí">
-                    <span class="input-group-text">%</span>
-                </div>
-            </div>
-            <!-- <div class="form-group col-md-12">
-                <label for="descripcion">Descripción</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escriba aquí">
-            </div> -->
-        </div>
-        <div class="row mt-3">
-            <h5 class="my-3">Preferencias del sistema</h5>
-            <div class="form-group col-md-6 col-xl-6 without-label">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="modulo_citas">Módulo de citas</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
-                </div>
-            </div>
-            <div class="form-group col-md-6 col-xl-6 without-label">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="modulo_paquetes">Módulo de paquetes</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
-                </div>
-            </div>
-            <div class="form-group col-md-6 col-xl-6 without-label">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="modulo_proyectos">Módulo de proyectos</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
-                </div>
-            </div>
-            <div class="form-group col-md-6 col-xl-6 without-label">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="vender_sin_stock">Vender sin stock</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
-                </div>
-            </div>
-
-            <div class="form-group col-md-6 col-xl-6 without-label">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="editar_precio_venta">Editar precio venta</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
-                </div>
-            </div>
-
-            <div class="form-group col-md-6 col-xl-6 without-label">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="cobrar_iva">Cobrar IVA</label>
-                  <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">
-                </div>
-            </div>
-
-            <div class="form-group col-6 mb-4">
-                <label class="w-100">Plan</label>
-                <div class="input-group">
-                    <select class="form-select" (change)="setPlan()" name="plan" [(ngModel)]="empresa.plan">
-                        <option value="">Selecciona aquí</option>
-                        <option value="Emprendedor">Emprendedor</option>
-                        <option value="Estándar">Estándar</option>
-                        <option value="Avanzado">Avanzado</option>
-                        <option value="Pro">Pro</option>
-                    </select>
-                    <select class="form-select" (change)="setPlan()" name="tipo_plan" [(ngModel)]="empresa.tipo_plan">
-                        <option value="">Selecciona aquí</option>
-                        <option value="Mensual">Mensual</option>
-                        <option value="Anual">Anual</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group col-md-6 col-lg-3">
-                <label>Límete de usuarios</label>
-                <input type="number" class="form-control" [(ngModel)]="empresa.user_limit" name="user_limit" placeholder="Escriba aquí">
-            </div>
-
-            <div class="form-group col-md-6 col-lg-3">
-                <label>Límete de sucursales</label>
-                <input type="number" class="form-control" [(ngModel)]="empresa.sucursal_limit" name="sucursal_limit" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="total">Pago de plan</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
-                </div>
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label>Referido</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.referido" name="referido" placeholder="Escriba aquí">
-            </div>
-            <div class="form-group col-md-6 col-lg-4">
-                <label>Campaña</label>
-                <input type="text" class="form-control" [(ngModel)]="empresa.campania" name="campania" placeholder="Escriba aquí">
-            </div>
-
-        </div>
-
-        <div class="d-grid mt-5">
-            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
-            </button>
         </div>
     </form>
   </div>
