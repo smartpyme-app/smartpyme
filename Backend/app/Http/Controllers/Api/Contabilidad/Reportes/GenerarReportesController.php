@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\Contabilidad\Reportes;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
+use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Contabilidad\Partidas\Detalle;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class GenerarReportesController extends Controller
 {
@@ -52,6 +54,22 @@ class GenerarReportesController extends Controller
         $pdf->setPaper('US Letter', 'portrait' );
 
         return $pdf->stream();
+
+    }
+
+    public function generarBalanceComprobacion(){
+
+        //$detalles = Detalle::where()->get();
+        $cuentas = Cuenta::all()->pluck('codigo')->toArray();
+//        dd($cuentas);
+        $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
+
+        $detalles = Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
+//        dd($detalles);
+
+        return response()->json($detalles, 200);
+
 
     }
 }
