@@ -78,10 +78,11 @@ export class CrearEmpresaComponent implements OnInit {
     public onSubmit() {
         this.saving = true;
         this.apiService.store('empresa', this.empresa).subscribe(empresa => {
-            this.loadAll();
             this.saving = false;
-            if(!this.empresas.id){
+            if(!this.empresa.id){
+                this.empresa = empresa;
                 this.alertService.success('Empresa creada', 'La empresa fue añadida exitosamente.');
+                this.router.navigate(['/admin/empresa/' + empresa.id]);
             }else{
                 this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
             }
@@ -103,6 +104,38 @@ export class CrearEmpresaComponent implements OnInit {
             this.empresas = empresas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    setPais(){
+        if(this.empresa.pais == 'El Salvador'){
+            this.empresa.moneda = 'USD';
+            this.empresa.iva = 13;
+        }
+        if(this.empresa.pais == 'Belice'){
+            this.empresa.moneda = 'BZD';
+            this.empresa.iva = 12.5;
+        }
+        if(this.empresa.pais == 'Guatemala'){
+            this.empresa.moneda = 'GTQ';
+            this.empresa.iva = 12;
+        }
+        if(this.empresa.pais == 'Honduras'){
+            this.empresa.moneda = 'HNL';
+            this.empresa.iva = 15;
+        }
+        if(this.empresa.pais == 'Nicaragua'){
+            this.empresa.moneda = 'NIO';
+            this.empresa.iva = 15;
+        }
+        if(this.empresa.pais == 'Costa Rica'){
+            this.empresa.moneda = 'CRC';
+            this.empresa.iva = 13;
+        }
+        if(this.empresa.pais == 'Panamá'){
+            this.empresa.moneda = 'PAB';
+            this.empresa.iva = 7;
+        }
+        console.log(this.empresa);
     }
 
     public setPlan(){

@@ -16,7 +16,7 @@ const routes: Routes = [
     component: LayoutComponent,
     children: [
         { path: 'empresas', component: EmpresasComponent, title: 'Empresas' },
-        { path: 'empresa/crear', component: CrearEmpresaComponent, title: 'Empresa' },
+        // { path: 'empresa/crear', component: CrearEmpresaComponent, title: 'Empresa' },
         { path: 'empresa/:id', component: CrearEmpresaComponent, title: 'Empresa' },
         { path: 'licencias', component: LicenciasComponent, title: 'Licencias' },
         { path: 'licencia/:id', component: LicenciaComponent, title: 'Licencia' },
