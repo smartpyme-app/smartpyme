@@ -59,16 +59,45 @@ class GenerarReportesController extends Controller
 
     public function generarBalanceComprobacion(){
 
-        //$detalles = Detalle::where()->get();
-        $cuentas = Cuenta::all()->pluck('codigo')->toArray();
-//        dd($cuentas);
+
+        //dd($cuentas);
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
 
         $detalles = Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
-//        dd($detalles);
 
-        return response()->json($detalles, 200);
+        //separacion de activos y gastos
+        $cuentas_deudoras = Cuenta::where('naturaleza','Deudor')->get();
+
+        //separacion de pasivos y productos
+        $cuentas_acreedoras = Cuenta::where('naturaleza','Acreedor')->get();
+
+        //obtención de datos por detalle de partida segun cuenta
+
+        $detalles = Detalle::get();
+        $detalles= $detalles->groupBy('id_cuenta');
+        foreach ($detalles as $det){
+                $saldo_cuenta = 0 ;
+                foreach ($det as $part_det){
+                    // Process posts
+                    $saldo_cuenta+=$part_det->saldo;
+                }
+
+            $det->put('saldo_cuenta', $saldo_cuenta);
+                //dd($det->last());
+        }
+
+        dd($detalles);
+
+        //creacion de reporte con las cuentas
+
+        $empresa = Empresa::findOrfail(13);
+
+        $pdf = PDF::loadView('reportes.contabilidad.balance_comprobacion', compact('cuentas_deudoras', 'cuentas_acreedoras', 'empresa'));
+        $pdf->setPaper('US Letter', 'portrait' );
+
+        return $pdf->stream();
+
 
 
     }
