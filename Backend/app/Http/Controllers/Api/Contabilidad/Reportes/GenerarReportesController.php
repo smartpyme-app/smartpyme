@@ -9,9 +9,52 @@ use App\Models\Contabilidad\Partidas\Detalle;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
+use Monolog\Handler\ZendMonitorHandler;
 
 class GenerarReportesController extends Controller
 {
+
+    public function mayorizacion($codigo_c){
+        // la idea es que pueda recibir un codigo de cuenta y buscar durante el mes el general de la cuenta con saldos
+
+        //$codigo_c = 110101;
+
+        //dd($cuentas);
+        $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
+
+        $detalles= Detalle::where('id_cuenta', $codigo_c)->whereBetween('created_at', [$startDate, $endDate])->get(); //colocar la fecha para el balance respectivo del mes
+
+        //naturaleza de la cuenta
+        $cuenta= Cuenta::where('codigo', $codigo_c)->first();
+
+        //debe
+        $debe= $detalles->sum('abono');
+
+        //haber
+        $haber=$detalles->sum('cargo');
+
+        //establecer la naturaleza para realizar los calculos de la cuenta segun su saldo
+        if($cuenta->naturaleza == 'Deudor'){
+            $saldo_calc = $debe - $haber;
+        }else{
+            $saldo_calc =$haber - $debe ;
+        }
+
+        //si la cuenta de es de una naturaleza se suma el debe y se resta el haber
+        // si una cuenta es de una naturaleza se suba el haber y se resta el debe
+
+        $mayorizada= new CuentaMayorizada();
+        $mayorizada->codigo= $codigo_c;
+        $mayorizada->saldo= $saldo_calc;
+        $mayorizada->cargo= $haber;
+        $mayorizada->abono= $debe;
+        $mayorizada->naturaleza_saldo= $cuenta->naturaleza;
+
+        return collect($mayorizada);
+
+    }
 
     public function generarRepLibroDiarioAux(){
 
@@ -59,17 +102,50 @@ class GenerarReportesController extends Controller
 
     public function generarBalanceComprobacion(){
 
-        //$detalles = Detalle::where()->get();
-        $cuentas = Cuenta::all()->pluck('codigo')->toArray();
-//        dd($cuentas);
+        //dd($cuentas);
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
 
         $detalles = Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
-//        dd($detalles);
 
-        return response()->json($detalles, 200);
+        //separacion de activos y gastos
+        $cuentas_deudoras = Cuenta::where('naturaleza','Deudor')->get();
+        $codigos_deudores= $cuentas_deudoras->pluck('codigo');
 
+        //separacion de pasivos y productos
+        $cuentas_acreedoras = Cuenta::where('naturaleza','Acreedor')->get();
+        $codigos_acreedoras = $cuentas_acreedoras->pluck('codigo');
+
+        //variable para las cuentas mayorizadas deudoras
+        $mayorizadas_deudoras= [];
+        foreach ($codigos_deudores as $c_deudo){
+
+            //dd($this->mayorizacion($c_deudo));
+
+            array_push($mayorizadas_deudoras, $this->mayorizacion($c_deudo));
+
+        }
+
+         //dd($mayorizadas_deudoras);
+
+        //variable para las cuentas mayorizadas acreedoras
+        $mayorizadas_acreedoras= [];
+        foreach ($codigos_acreedoras as $c_acree){
+
+            //dd($this->mayorizacion($c_deudo));
+
+            array_push($mayorizadas_acreedoras, $this->mayorizacion($c_acree));
+
+        }
+
+        //creacion de reporte con las cuentas
+
+        $empresa = Empresa::findOrfail(13);
+
+        $pdf = PDF::loadView('reportes.contabilidad.balance_comprobacion', compact('mayorizadas_deudoras', 'mayorizadas_acreedoras', 'empresa'));
+        $pdf->setPaper('US Letter', 'portrait' );
+
+        return $pdf->stream();
 
     }
 }
