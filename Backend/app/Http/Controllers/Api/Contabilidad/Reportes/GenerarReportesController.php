@@ -9,9 +9,49 @@ use App\Models\Contabilidad\Partidas\Detalle;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
+use Monolog\Handler\ZendMonitorHandler;
 
 class GenerarReportesController extends Controller
 {
+
+    public function mayorizacion(){
+        // la idea es que pueda recibir un codigo de cuenta y buscar durante el mes el general de la cuenta con saldos
+
+        $codigo_c = 110101;
+
+        $detalles= Detalle::where('id_cuenta', $codigo_c)->get();
+
+        //naturaleza de la cuenta
+        $cuenta= Cuenta::where('codigo', $codigo_c)->first();
+
+        //debe
+        $debe= $detalles->sum('abono');
+
+        //haber
+        $haber=$detalles->sum('cargo');
+
+        //establecer la naturaleza para realizar los calculos de la cuenta segun su saldo
+        if($cuenta->naturaleza == 'Deudor'){
+            $saldo_calc = $debe - $haber;
+        }else{
+            $saldo_calc =$haber - $debe ;
+        }
+
+        //si la cuenta de es de una naturaleza se suma el debe y se resta el haber
+        // si una cuenta es de una naturaleza se suba el haber y se resta el debe
+
+        $mayorizada= new CuentaMayorizada();
+        $mayorizada->codigo= $codigo_c;
+        $mayorizada->saldo= $saldo_calc;
+        $mayorizada->cargo= $haber;
+        $mayorizada->abono= $debe;
+        $mayorizada->naturaleza_saldo= $cuenta->naturaleza;
+
+
+        return $mayorizada;
+
+    }
 
     public function generarRepLibroDiarioAux(){
 
