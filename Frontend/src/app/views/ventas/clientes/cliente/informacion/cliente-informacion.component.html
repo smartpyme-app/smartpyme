@@ -13,7 +13,7 @@
     <div class="row">
         <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
             <div class="row">
-                <h6 class="col-12 pb-2 mb-4">Información de contacto</h6>
+                <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
                 <div class="form-group col-lg-3">
                     <label for="nombre">Nombre</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
@@ -23,34 +23,56 @@
                     <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                 </div>
                 <div class="form-group col-6 col-lg-3">
+                    <label for="dui">DUI</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
+                </div>
+                <div class="form-group col-6 col-lg-3">
                     <label for="correo">Correo</label>
                     <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
                 </div>
                 <div class="form-group col-6 col-lg-3">
-                    <label for="dui">DUI</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
+                    <label for="telefono">Teléfono:</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+                </div>
+                <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
+                    <label for="pais">Pais:</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                </div>
+                <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
+                    <label for="departamento">Departamento:</label>
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
+                        <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                            {{ departamento.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
+                    <label for="municipio">Municipio:</label>
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
+                        <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':cliente.departamento" [value]="municipio.cod">
+                            {{ municipio.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-12 col-md-6" *ngIf="cliente.tipo == 'Persona'">
+                    <label for="direccion">Dirección:</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="fecha_cumpleanos">Fecha de cumpleaños</label>
                     <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_cumpleanos" [(ngModel)]="cliente.fecha_cumpleanos">
                 </div>
                 <div class="form-group col-6 col-lg-3">
-                    <label for="telefono">Teléfono:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
-                </div>
-                <div class="form-group col-12 col-md-6">
-                    <label for="direccion">Dirección:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
-                </div>
-                <div class="form-group col-6 col-lg-3">
                     <label for="red_social">Red social:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="red_social" [(ngModel)]="cliente.red_social">
                 </div>
-                <div class="form-group col-lg-9">
+                <div class="form-group col-lg-6">
                     <label for="etiquetas">Etiquetas:</label>
                     <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
                 </div>
-                <div class="form-group col-lg-12">
+                <div class="form-group col-lg-6">
                     <label for="nota">Observaciones</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nota" [(ngModel)]="cliente.nota">
                 </div>
@@ -58,7 +80,7 @@
         </div>
         <div class="col-12" *ngIf="cliente.tipo == 'Empresa'" [ngClass]="{ 'order-1' :  cliente.tipo == 'Empresa', 'order-2' :  cliente.tipo == 'Persona' }">
             <div class="row">
-                <h6 class="col-12 pb-2 mb-4">Información de la empresa</h6>
+                <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
                 
                 <div class="form-group col-6 col-lg-4">
                     <label for="nombre_empresa">Empresa:</label>
@@ -66,7 +88,7 @@
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="nit">NIT:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit">
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
                 </div>
                 <div class="form-group col-6 col-lg-2">
                     <label for="ncr">NRC:</label>
@@ -83,21 +105,40 @@
                 </div>
                 <div class="form-group col-6 col-lg-6">
                     <label for="giro">Giro:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="cliente.giro">
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="cliente.giro">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="cliente.cod_giro">
+                        <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
+                            {{ actividad_economica.nombre }}
+                        </ng-option>
+                    </ng-select>
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="telefono">Teléfono:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="cliente.empresa_telefono">
                 </div>
-                <div class="form-group col-6 col-lg-3">
-                    <label for="municipio">Municipio:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
+                    <label for="pais">Pais:</label>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
                 </div>
-                <div class="form-group col-6 col-lg-3">
+                <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
                     <label for="departamento">Departamento:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
+                        <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                            {{ departamento.nombre }}
+                        </ng-option>
+                    </ng-select>
                 </div>
-                <div class="form-group col-12 col-md-9">
+                <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
+                    <label for="municipio">Municipio:</label>
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
+                        <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':cliente.departamento" [value]="municipio.cod">
+                            {{ municipio.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+                <div class="form-group col-12 col-md-6" *ngIf="cliente.tipo == 'Empresa'">
                     <label for="direccion">Dirección:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_direccion" [(ngModel)]="cliente.empresa_direccion">
                 </div>

@@ -96,16 +96,16 @@
                                 <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{movimiento.modelo}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
                             </td>
 
-                            <td class="text-center">{{movimiento.entrada_cantidad | number:'1.0' }}</td>
-                            <td class="text-center">{{movimiento.costo_unitario  | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-center">{{movimiento.entrada_valor  | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_cantidad | number:'1.0') : '' }}</td>
+                            <td class="text-center">{{ movimiento.costo_unitario > 0 ? (movimiento.costo_unitario | currency ): ''  }}</td>
+                            <td class="text-center">{{ movimiento.entrada_valor > 0 ? (movimiento.entrada_valor | currency ): ''  }}</td>
 
-                            <td class="text-center">{{movimiento.salida_cantidad | number:'1.0' }}</td>
-                            <td class="text-center">{{movimiento.precio_unitario  | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-center">{{movimiento.salida_valor  | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.salida_cantidad | number:'1.0') : '' }}</td>
+                            <td class="text-center">{{ movimiento.precio_unitario > 0 ? (movimiento.precio_unitario | currency ): ''  }}</td>
+                            <td class="text-center">{{ movimiento.salida_valor > 0 ? (movimiento.salida_valor | currency ): ''  }}</td>
 
-                            <td class="text-center">{{movimiento.total_cantidad | number:'1.0' }}</td>
-                            <td class="text-center">{{movimiento.total_valor  | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">{{ movimiento.total_cantidad > 0 ? (movimiento.total_cantidad | number:'1.0') : '' }}</td>
+                            <td class="text-center">{{ movimiento.total_valor > 0 ? (movimiento.total_valor | currency ): ''  }}</td>
                         </tr>
 
                     </tbody>

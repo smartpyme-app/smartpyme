@@ -24,6 +24,7 @@ class Cliente extends Model {
        'empresa_telefono',
        'empresa_direccion',
        'direccion',
+       'pais',
        'municipio',
        'departamento',
        'fecha_cumpleanos',

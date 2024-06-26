@@ -61,7 +61,7 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
         $paquete->otros    = $row['otros'];
         $paquete->total    = $row['total'];
         $paquete->id_cliente    = $id_cliente;
-        $paquete->id_asesor     = isset($row['codigo_asesor']) ? User::where('codigo', $row['codigo_asesor'])->pluck('id')->first() : null;
+        $paquete->id_asesor     = isset($row['codigo_asesor']) ? User::where('id_empresa', $usuario->id_empresa)->where('codigo', $row['codigo_asesor'])->pluck('id')->first() : null;
         $paquete->id_usuario    = $usuario->id;
         $paquete->id_sucursal   = $usuario->id_sucursal;
         $paquete->id_empresa    = $usuario->id_empresa;

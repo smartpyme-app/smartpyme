@@ -49,14 +49,14 @@ export class MHService {
     enviarDTE(venta: any, dteFirmado: any): Observable<any> {
         let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
 
-        if(!token){
-            return throwError('Vuelva a iniciar sesión para conectarse a hacienda.');
-        }
         const headers = new HttpHeaders({
           'Content-Type': 'application/json',
           'User-Agent': 'Angular',
           'Authorization': token.token,
         });
+
+        console.log(venta);
+        console.log(dteFirmado);
 
         let formData:any = {};
         formData.ambiente = venta.dte.identificacion.ambiente;
@@ -65,8 +65,27 @@ export class MHService {
         formData.tipoDte = venta.dte.identificacion.tipoDte;
         formData.documento = dteFirmado;
         formData.codigoGeneracion = venta.dte.codigoGeneracion;
+        console.log(formData);
 
         return this.http.post<any>(`${this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
+    }
+
+    anularDTE(venta: any, dteFirmado: any): Observable<any> {
+        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
+
+        const headers = new HttpHeaders({
+          'Content-Type': 'application/json',
+          'User-Agent': 'Angular',
+          'Authorization': token.token,
+        });
+
+        let formData:any = {};
+        formData.ambiente = venta.dte_invalidacion.identificacion.ambiente;
+        formData.idEnvio = venta.id;
+        formData.version = venta.dte_invalidacion.identificacion.version;
+        formData.documento = dteFirmado;
+
+        return this.http.post<any>(`${this.url_anular_dte}`, formData, { headers, params: { saltarJWT: true } });
     }
 
 

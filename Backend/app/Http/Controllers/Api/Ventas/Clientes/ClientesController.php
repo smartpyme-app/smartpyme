@@ -94,7 +94,8 @@ class ClientesController extends Controller
                 'correo'         => 'nullable|max:255|email:rfc,dns',
                 'municipio'     => 'required|max:255',
                 'departamento'  => 'required|max:255',
-                'direccion'     => 'required|max:255',
+                'direccion'       => 'required_if:tipo,"Persona"',
+                'empresa_direccion' => 'required_if:tipo,"Empresa"',
                 'giro'      => 'required_if:tipo,"Empresa"|max:255',
             ],[
                 // 'nombre.required_if' => 'El campo nombre es obligatorio.',

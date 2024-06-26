@@ -68,10 +68,13 @@
         <div id="header">
             <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p id="cliente">{{ $venta->nombre_cliente }}</p>
-            @if($venta->cliente->direccion == null)
-                <p id="direccion">{{ $cliente->empresa_direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
-            @else
-                <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            @if ($venta->id_cliente)
+                @if($venta->cliente->direccion == null)
+                    <p id="direccion">{{ $cliente->empresa_direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+                @else
+                    <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+                @endif
+            <p id="nit">{{ $cliente->dui ? $cliente->dui : $cliente->nit }}</p>
             @endif
             {{-- <p id="municipio">{{ $cliente->municipio }}</p> --}}
             {{-- <p id="departamento">{{ $cliente->departamento }}</p> --}}
@@ -85,7 +88,6 @@
                     <span style="margin-left: 1.6cm;">X</span>
                 @endif
             </p> --}}
-            <p id="nit">{{ $cliente->dui ? $cliente->dui : $cliente->nit }}</p>
         </div>
 
         <table>

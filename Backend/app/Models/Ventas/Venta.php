@@ -34,6 +34,7 @@ class Venta extends Model {
         'sub_total',
         'no_sujeta',
         'exenta',
+        'gravada',
         'cuenta_a_terceros',
         'total',
         'observaciones',

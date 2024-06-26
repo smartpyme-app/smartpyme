@@ -35,6 +35,9 @@ class Empresa extends Model {
         'moneda',
         'pais',
         'total',
+        'forma_pago',
+        'link_pago',
+        'fecha_ultimo_pago',
         'editar_precio_venta',
         'agrupar_detalles_venta',
         'editar_descripcion_venta',
@@ -56,6 +59,7 @@ class Empresa extends Model {
         'cotizacion_compras_terminos',
 
         'facturacion_electronica',
+        'enviar_dte',
         'fe_ambiente',
         'cod_municipio',
         'cod_departamento',
@@ -66,6 +70,11 @@ class Empresa extends Model {
         'mh_contrasena',
         'cod_estable_mh',
         'cod_estable',
+    ];
+
+    protected $casts = [
+        'enviar_dte' => 'boolean',
+        'facturacion_electronica' => 'boolean',
     ];
 
     protected $appends = ['estado_plan'];

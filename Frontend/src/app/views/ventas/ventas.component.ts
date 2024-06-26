@@ -170,7 +170,7 @@ export class VentasComponent implements OnInit {
         if(!this.documentos.length){
             this.apiService.getAll('documentos/list').subscribe(documentos => {
                 this.documentos = documentos;
-                this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
+                this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.usuario.id_sucursal);
             }, error => {this.alertService.error(error);});
         }
 

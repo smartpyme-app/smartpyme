@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\CajasController;
 use App\Http\Controllers\Api\Ventas\VentasController;
+use App\Http\Controllers\Api\Ventas\GenerarDocumentosController;
 use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionVentasController;
     
     // Info del Dash
@@ -9,7 +10,7 @@ use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionVentasController;
     // Registro de venta
     Route::post('/facturacion',              [VentasController::class, 'facturacion']);
     // Generar facturas
-    Route::get('/reporte/facturacion/{id}',  [VentasController::class, 'generarDoc']);
+    Route::get('/reporte/facturacion/{id}',  [GenerarDocumentosController::class, 'generarDoc']);
     Route::get('/reporte/devolucion/{id}',   [DevolucionVentasController::class, 'generarDoc']);
     // Imprimit anulación de factura
     Route::get('/reporte/anulacion',         [VentasController::class, 'anularDoc']);

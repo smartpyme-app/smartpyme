@@ -11,6 +11,7 @@ use App\Models\MH\Municipio;
 use App\Models\MH\Unidad;
 use App\Models\MH\MH;
 use Mail;
+use JWTAuth;
 use App\Models\Ventas\Venta;
 use Barryvdh\DomPDF\Facade as PDF;
 
@@ -50,9 +51,9 @@ class MHController extends Controller
 
         $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
-        $DTE = json_decode($venta->dte, true);
+        $DTE = $venta->dte;
 
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         return view('reportes.DTE-Ticket', compact('venta', 'DTE'));
 
@@ -115,15 +116,19 @@ class MHController extends Controller
     }
 
 
+    public function generarDTEAnulado(Request $request){
+        $venta = Venta::where('id', $request->id)->firstOrFail();
+        
+        $mh = new MH;
+        $DTEAnular = $mh->generarDTEAnulado($venta, $venta->dte);
+
+        return Response()->json($DTEAnular, 200);
+
+    }
+
     public function anularDTE(Request $request){
         $venta = Venta::where('id', $request->id)->firstOrFail();
         $DTE = json_decode($venta->dte, true);
-
-        if (!$venta->dte) {
-            $v = Venta::findOrFail($venta->id);
-            $v->estado = 'Anulada';
-            $v->save();
-        }
 
         $mh = new MH;
 
@@ -173,17 +178,17 @@ class MHController extends Controller
 
         $DTE = $venta->dte;
 
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
             $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('venta', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.facturacion.DTE-Factura', compact('venta', 'DTE'));
+            // return view('reportes.DTE-Factura', compact('venta', 'DTE'));
         }
         elseif ($DTE['identificacion']['tipoDte'] == '03') {
             $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('venta', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
-            // return view('reportes.facturacion.DTE-CCF', compact('venta', 'DTE'));
+            // return view('reportes.DTE-CCF', compact('venta', 'DTE'));
 
         }
 
@@ -204,8 +209,13 @@ class MHController extends Controller
         $venta = Venta::findOrFail($request->id);
 
         $DTE = $venta->dte;
+        
+        // Enviar solo en produccion
+        if (!JWTAuth::parseToken()->authenticate()->empresa()->pluck('enviar_dte')->first()) {
+            $DTE['receptor']['correo'] = $DTE['emisor']['correo'];
+        }
 
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('venta', 'DTE'));
@@ -216,7 +226,6 @@ class MHController extends Controller
         }
 
         $pdfContent = $pdf->output();
-
 
         if (isset($DTE['receptor']['correo'])) {
             Mail::send('mails.DTE', ['DTE' => $DTE ], function ($m) use ($pdfContent, $DTE) {

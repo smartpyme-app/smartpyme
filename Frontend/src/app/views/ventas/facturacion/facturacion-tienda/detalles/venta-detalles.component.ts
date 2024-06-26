@@ -153,12 +153,22 @@ export class VentaDetallesComponent implements OnInit {
             if(!this.detalle.no_sujeta){
                 this.detalle.no_sujeta = 0;
             }
+
+
             if(!this.detalle.cuenta_a_terceros){
                 this.detalle.cuenta_a_terceros = 0;
             }
 
             if(!this.detalle.total){
                 this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
+            }
+
+            if(!this.detalle.gravada){
+                this.detalle.gravada = this.detalle.total;
+            }
+
+            if(!this.detalle.iva){
+                this.detalle.iva = this.detalle.total * (this.apiService.auth_user().empresa.iva / 100);
             }
 
             this.detalle.id_vendedor = this.venta.id_vendedor;
