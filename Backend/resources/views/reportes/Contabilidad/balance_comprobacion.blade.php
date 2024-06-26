@@ -105,14 +105,15 @@
 
 {{--            ACTIVOS Y GASTOS--}}
 
-                @foreach($cuentas_deudoras as $detalle_par)
+                @foreach($mayorizadas_deudoras as $detalle_par)
                     <tr>
-                        <td class="codigo">     {{$detalle_par->codigo}}    </td>
-                        <td class="nombre">  {{$detalle_par->nombre}}    </td>
-                        <td class="sal_inic">       {{$detalle_par->naturaleza}}    </td>
-                        <td class="cargo">          {{$detalle_par->rubro}}   </td>
-                        <td class="abono">          {{$detalle_par->nivel}}    </td>
-                        <td class="sal_fin">          {{$detalle_par->id_empresa}}   </td>
+                        <td class="codigo">     {{$detalle_par['codigo']}}    </td>
+                        <td class="nombre">  Nombre de la cuenta     </td>
+{{--                        <td class="nombre">  {{$detalle_par->nombre}}    </td>--}}
+                        <td class="sal_inic">       {{$detalle_par['naturaleza_saldo']}}    </td>
+                        <td class="cargo">          {{$detalle_par['cargo']}}   </td>
+                        <td class="abono">          {{$detalle_par['abono']}}    </td>
+                        <td class="sal_fin">          {{$detalle_par['saldo']}}   </td>
                     </tr>
 
                     {{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
@@ -154,14 +155,15 @@
 
 
 {{--            PASIVOS Y PRODUCTOS --}}
-                @foreach($cuentas_acreedoras as $detalle_par)
+                @foreach($mayorizadas_acreedoras as $detalle_par)
                 <tr>
-                    <td class="codigo">     {{$detalle_par->codigo}}    </td>
-                    <td class="nombre">  {{$detalle_par->nombre}}    </td>
-                    <td class="sal_inic">       {{$detalle_par->naturaleza}}    </td>
-                    <td class="cargo">          {{$detalle_par->rubro}}   </td>
-                    <td class="abono">          {{$detalle_par->nivel}}    </td>
-                    <td class="sal_fin">          {{$detalle_par->id_empresa}}   </td>
+                    <td class="codigo">     {{$detalle_par['codigo']}}    </td>
+                    <td class="nombre">  Nombre de la cuenta    </td>
+{{--                    <td class="nombre">  {{$detalle_par->nombre}}    </td>--}}
+                    <td class="sal_inic">       {{$detalle_par['naturaleza_saldo']}}    </td>
+                    <td class="cargo">          {{$detalle_par['cargo']}}   </td>
+                    <td class="abono">          {{$detalle_par['abono']}}    </td>
+                    <td class="sal_fin">          {{$detalle_par['saldo']}}   </td>
                 </tr>
 
                 {{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}

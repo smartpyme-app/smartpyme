@@ -15,12 +15,16 @@ use Monolog\Handler\ZendMonitorHandler;
 class GenerarReportesController extends Controller
 {
 
-    public function mayorizacion(){
+    public function mayorizacion($codigo_c){
         // la idea es que pueda recibir un codigo de cuenta y buscar durante el mes el general de la cuenta con saldos
 
-        $codigo_c = 110101;
+        //$codigo_c = 110101;
 
-        $detalles= Detalle::where('id_cuenta', $codigo_c)->get();
+        //dd($cuentas);
+        $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
+
+        $detalles= Detalle::where('id_cuenta', $codigo_c)->whereBetween('created_at', [$startDate, $endDate])->get(); //colocar la fecha para el balance respectivo del mes
 
         //naturaleza de la cuenta
         $cuenta= Cuenta::where('codigo', $codigo_c)->first();
@@ -48,8 +52,7 @@ class GenerarReportesController extends Controller
         $mayorizada->abono= $debe;
         $mayorizada->naturaleza_saldo= $cuenta->naturaleza;
 
-
-        return $mayorizada;
+        return collect($mayorizada);
 
     }
 
@@ -99,7 +102,6 @@ class GenerarReportesController extends Controller
 
     public function generarBalanceComprobacion(){
 
-
         //dd($cuentas);
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
@@ -108,37 +110,42 @@ class GenerarReportesController extends Controller
 
         //separacion de activos y gastos
         $cuentas_deudoras = Cuenta::where('naturaleza','Deudor')->get();
+        $codigos_deudores= $cuentas_deudoras->pluck('codigo');
 
         //separacion de pasivos y productos
         $cuentas_acreedoras = Cuenta::where('naturaleza','Acreedor')->get();
+        $codigos_acreedoras = $cuentas_acreedoras->pluck('codigo');
 
-        //obtención de datos por detalle de partida segun cuenta
+        //variable para las cuentas mayorizadas deudoras
+        $mayorizadas_deudoras= [];
+        foreach ($codigos_deudores as $c_deudo){
 
-        $detalles = Detalle::get();
-        $detalles= $detalles->groupBy('id_cuenta');
-        foreach ($detalles as $det){
-                $saldo_cuenta = 0 ;
-                foreach ($det as $part_det){
-                    // Process posts
-                    $saldo_cuenta+=$part_det->saldo;
-                }
+            //dd($this->mayorizacion($c_deudo));
 
-            $det->put('saldo_cuenta', $saldo_cuenta);
-                //dd($det->last());
+            array_push($mayorizadas_deudoras, $this->mayorizacion($c_deudo));
+
         }
 
-        dd($detalles);
+         //dd($mayorizadas_deudoras);
+
+        //variable para las cuentas mayorizadas acreedoras
+        $mayorizadas_acreedoras= [];
+        foreach ($codigos_acreedoras as $c_acree){
+
+            //dd($this->mayorizacion($c_deudo));
+
+            array_push($mayorizadas_acreedoras, $this->mayorizacion($c_acree));
+
+        }
 
         //creacion de reporte con las cuentas
 
         $empresa = Empresa::findOrfail(13);
 
-        $pdf = PDF::loadView('reportes.contabilidad.balance_comprobacion', compact('cuentas_deudoras', 'cuentas_acreedoras', 'empresa'));
+        $pdf = PDF::loadView('reportes.contabilidad.balance_comprobacion', compact('mayorizadas_deudoras', 'mayorizadas_acreedoras', 'empresa'));
         $pdf->setPaper('US Letter', 'portrait' );
 
         return $pdf->stream();
-
-
 
     }
 }
