@@ -22,16 +22,16 @@
             margin: 0px;
         }
 
-        #fecha          {top: 3.2cm; left: 13cm; }
+        #fecha          {top: 4.3cm; left: 16cm; }
         #nit            {top: 5cm; left: 16cm; }
-        #condicion      {top: 3.9cm; left: 12.8cm; }
-        #cliente        {top: 3.2cm; left: 2.5cm; width: 9cm;}
+        #condicion      {top: 5cm; left: 12.8cm; }
+        #cliente        {top: 4.3cm; left: 2.5cm; width: 9cm;}
         #direccion      {top: 4.5cm; left: 2.5cm; width: 9cm;}
         #municipio      {top: 5cm; left: 2.5cm; width: 9cm;}
         #departamento      {top: 5.5cm; left: 2.5cm; width: 9cm;}
 
 
-        table   {position: absolute; top: 5.2cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 9.5cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.6cm; text-align: left;}
 
         .cantidad{ width: 1.3cm; text-align: center;}
@@ -46,10 +46,10 @@
         #letras     {top: 9.6cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
 
-        #suma       {top: 9.6cm; left: 18cm; width: 2cm; text-align: right;}
+        #suma       {top: 22.5cm; left: 18cm; width: 2cm; text-align: right;}
         #no_sujeta  {top: 12.5cm; left: 18cm; width: 2cm; text-align: right;}
         #exenta     {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
-        #total      {top: 12cm; left: 18cm; width: 2cm; text-align: right;}
+        #total      {top: 26cm; left: 18cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 
