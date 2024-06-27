@@ -108,8 +108,7 @@
                 @foreach($mayorizadas_deudoras as $detalle_par)
                     <tr>
                         <td class="codigo">     {{$detalle_par['codigo']}}    </td>
-                        <td class="nombre">  Nombre de la cuenta     </td>
-{{--                        <td class="nombre">  {{$detalle_par->nombre}}    </td>--}}
+                        <td class="nombre">  {{$detalle_par['nombre']}}    </td>
                         <td class="sal_inic">       {{$detalle_par['naturaleza_saldo']}}    </td>
                         <td class="cargo">          {{$detalle_par['cargo']}}   </td>
                         <td class="abono">          {{$detalle_par['abono']}}    </td>

@@ -47,6 +47,7 @@ class GenerarReportesController extends Controller
 
         $mayorizada= new CuentaMayorizada();
         $mayorizada->codigo= $codigo_c;
+        $mayorizada->nombre = $cuenta->nombre;
         $mayorizada->saldo= $saldo_calc;
         $mayorizada->cargo= $haber;
         $mayorizada->abono= $debe;
