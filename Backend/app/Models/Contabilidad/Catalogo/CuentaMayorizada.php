@@ -10,7 +10,7 @@ class CuentaMayorizada extends Model
     use HasFactory;
     protected $fillable = [
         'codigo',
-        'nombre', 
+        'nombre',
         'cargo',
         'abono',
         'saldo',

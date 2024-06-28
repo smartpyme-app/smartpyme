@@ -149,4 +149,12 @@ class GenerarReportesController extends Controller
         return $pdf->stream();
 
     }
+
+    public function generarBalanceGeneral(){
+
+        $pdf= PDF::loadView('reportes.contabilidad.balance_general');
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream();
+
+    }
 }
