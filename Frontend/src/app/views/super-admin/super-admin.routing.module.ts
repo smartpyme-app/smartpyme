@@ -9,6 +9,7 @@ import { LicenciaComponent }     from '@views/super-admin/licencias/licencia/lic
 import { AdminUsuariosComponent }     from '@views/super-admin/usuarios/admin-usuarios.component';
 import { DashboardsComponent }     from '@views/super-admin/dashboards/dashboards.component';
 import { DashboardComponent }     from '@views/super-admin/dashboards/dashboard/dashboard.component';
+import { AdminFacturacionesComponent } from './facturacion/admin-facturaciones.component';
 
 const routes: Routes = [
   {
@@ -23,6 +24,7 @@ const routes: Routes = [
         { path: 'usuarios', component: AdminUsuariosComponent, title: 'Usuarios' },
         { path: 'dashboards', component: DashboardsComponent, title: 'Dashboards' },
         { path: 'dashboard/:id', component: DashboardComponent, title: 'Dashboard' },
+        { path: 'facturaciones', component: AdminFacturacionesComponent, title: 'Facturacion' },
     ]
   }
 ];
