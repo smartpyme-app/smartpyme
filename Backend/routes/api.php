@@ -72,6 +72,7 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/bancos/cuentas.php');
 		require base_path('routes/modulos/bancos/cheques.php');
 		require base_path('routes/modulos/bancos/transacciones.php');
+		require base_path('routes/modulos/bancos/conciliaciones.php');
 
 	// Admin
 		require base_path('routes/modulos/admin/empresas.php');

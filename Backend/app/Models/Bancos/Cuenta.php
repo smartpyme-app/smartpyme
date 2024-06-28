@@ -33,4 +33,9 @@ class Cuenta extends Model
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
+
+    public function transacciones(){
+        return $this->hasMany('App\Models\Bancos\Transaccion', 'id_cuenta');
+    }
+
 }

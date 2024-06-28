@@ -8,4 +8,6 @@
     Route::post('/banco/cuenta',              [CuentasController::class, 'store']);
     Route::delete('/banco/cuenta/{id}',       [CuentasController::class, 'delete']);
 
+    Route::get('/banco/cuenta/libro/{id}/{del}/{al}', [CuentasController::class, 'libro']);
+
 ?>

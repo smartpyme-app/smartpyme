@@ -42,6 +42,25 @@ CREATE TABLE cuentas_bancarias_transacciones (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE cuentas_bancarias_conciliaciones (
+    id int NOT NULL AUTO_INCREMENT,
+    fecha date NOT NULL,
+    desde date NOT NULL,
+    hasta date NOT NULL,
+    id_cuenta int NOT NULL,
+    gastos decimal(10,2) NULL DEFAULT 0,
+    impuestos decimal(10,2) NULL DEFAULT 0,
+    otras_entradas decimal(10,2) NULL DEFAULT 0,
+    saldo_anterior decimal(10,2) NOT NULL,
+    saldo_actual decimal(10,2) NOT NULL,
+    nota varchar(255) NULL,
+    id_usuario int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
 -- Catalogo
 
 CREATE TABLE catalogo_cuentas (
