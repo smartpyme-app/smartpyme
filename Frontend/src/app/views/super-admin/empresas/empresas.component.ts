@@ -28,6 +28,8 @@ export class EmpresasComponent implements OnInit {
 
     public loadAll() {
         this.filtros.activo = '';
+        this.filtros.forma_pago = '';
+        this.filtros.plan = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
@@ -38,10 +40,11 @@ export class EmpresasComponent implements OnInit {
     }
 
     public filtrarEmpresas(){
+        this.loading = true;
         this.apiService.getAll('empresas', this.filtros).subscribe(empresas => { 
             this.empresas = empresas;
             this.loading = false;
-        }, error => {this.alertService.error(error); });
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setOrden(columna: string) {
@@ -97,6 +100,10 @@ export class EmpresasComponent implements OnInit {
             this.empresas = empresas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public openFilter(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
     }
 
 

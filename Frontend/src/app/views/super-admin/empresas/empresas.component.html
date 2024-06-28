@@ -17,7 +17,7 @@
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarEmpresas()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="filtrarEmpresas()" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
@@ -108,53 +108,75 @@
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h2 class="text-center no-margin">Filtros</h2>
+        <h2 class="text-center">Filtrar</h2>
     </div>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form autocomplete="off" (ngSubmit)="filtrarEmpresas()">
-        <div class="row text-center">
-            <app-notificaciones-container></app-notificaciones-container>
-            <div class="form-group col-sm-6">
-                <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="">Fecha de suscripción:</label>
+                <div class="input-group">
+                    <input type='date' class="form-control" name="filtros.suscripcion_inicio" [(ngModel)]="filtros.suscripcion_inicio"/>
+                    <input type='date' class="form-control" name="filtros.suscripcion_fin" [(ngModel)]="filtros.suscripcion_fin"/>
+                </div>
             </div>
-            <div class="form-group col-sm-6">
-                <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            <div class="form-group col-sm-12">
+                <label for="">Fecha de último pago:</label>
+                <div class="input-group">
+                    <input type='date' class="form-control" name="filtros.pago_inicio" [(ngModel)]="filtros.pago_inicio"/>
+                    <input type='date' class="form-control" name="filtros.pago_fin" [(ngModel)]="filtros.pago_fin"/>
+                </div>
             </div>
-
-            <div class="form-group col-sm-6">
-                <label for="filtros.categoria">Categoría:</label>
-                <input type="text" list="empresas" [(ngModel)]="filtros.categoria" class="form-control" name="filtros.categoria">
-                <datalist id="empresas">
-                    <option value="Todas">
-                    <option value="Transporte">
-                    <option value="Alimentación">
-                    <option value="Viaticos">
-                    <option value="Agua">
-                    <option value="Luz">
-                    <option value="Teléfono">
-                    <option value="Internet">
-                    <option value="Cable">
-                    <option value="Material de oficina">
-                    <option value="Material de limpieza">
-                    <option value="Otros">
-                </datalist>
+            <div class="form-group col-sm-12">
+                <label for="filtros.plan">Plan:</label>
+                <select class="form-select" name="filtros.plan" [(ngModel)]="filtros.plan">
+                    <option value="">Selecciona aquí</option>
+                    <option value="Emprendedor">Emprendedor</option>
+                    <option value="Estándar">Estándar</option>
+                    <option value="Avanzado">Avanzado</option>
+                    <option value="Pro">Pro</option>
+                </select>
             </div>
+            <div class="form-group col-sm-12">
+                <label for="filtros.forma_pago">Forma de pago:</label>
+                <select class="form-select" [(ngModel)]="filtros.forma_pago" name="forma_pago">
+                    <option value="">Seleccione aquí</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Tarjeta de crédito/débito">Tarjeta de crédito/débito</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="N1co">N1co</option>
+                    <option value="Wompi">Wompi</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="filtros.activo">Estado:</label>
+                <select name="activo" [(ngModel)]="filtros.activo" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+            </div>
+            <!-- <div class="form-group col-sm-6">
+                <label for="filtros.forma_pago">Método de pago:</label>
+                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
+                    <option value="">Todos</option>
+                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
+                        {{ formaPago.nombre }}
+                    </option>
+                    <option value="Multiple">Multiple</option>
+                </select>
+            </div> -->
         </div>
         
-        <br><br>
-        <div class="row text-center">
-            <div class="col-xs-12">
-                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
-                </button>
-            </div>
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
         </div>
     </form>
   </div>

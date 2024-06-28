@@ -107,7 +107,7 @@ class AuthJWTController extends Controller
                 $empresa = new Empresa();
             }
 
-        $empresa->activo = false;
+        $empresa->activo = true;
         $empresa->nombre = $request['empresa']['nombre'];
         $empresa->nombre_propietario = $request->name;
         $empresa->telefono = $request->telefono;
