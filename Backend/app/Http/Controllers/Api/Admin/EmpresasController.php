@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Sucursal;
 use App\Models\Transaccion;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -25,6 +26,24 @@ class EmpresasController extends Controller
                                 ->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                                  ->orwhere('correo', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                ->when($request->pago_inicio, function($query) use ($request){
+                                    return $query->where('fecha_ultimo_pago', '>=', $request->pago_inicio);
+                                })
+                                ->when($request->pago_fin, function($query) use ($request){
+                                    return $query->where('fecha_ultimo_pago', '<=', $request->pago_fin);
+                                })
+                                ->when($request->suscripcion_inicio, function($query) use ($request){
+                                    return $query->where('created_at', '>=', $request->suscripcion_inicio);
+                                })
+                                ->when($request->suscripcion_fin, function($query) use ($request){
+                                    return $query->where('created_at', '<=', $request->suscripcion_fin);
+                                })
+                                ->when($request->forma_pago, function($query) use ($request){
+                                    return $query->where('forma_pago', $request->forma_pago);
+                                })
+                                ->when($request->plan, function($query) use ($request){
+                                    return $query->where('plan', $request->plan);
                                 })
                                 ->orderBy($request->orden, $request->direccion)
                                 ->paginate($request->paginate);
@@ -78,6 +97,11 @@ class EmpresasController extends Controller
         }
 
         $empresa->save();
+
+        //Crear sucursal
+            if(!$request->id){
+                Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+            }
 
         return Response()->json($empresa, 200);
 
