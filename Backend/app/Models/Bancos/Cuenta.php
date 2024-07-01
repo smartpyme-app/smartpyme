@@ -15,7 +15,9 @@ class Cuenta extends Model
         'numero',
         'nombre_banco',
         'tipo',
+        'correlativo_cheques',
         'saldo',
+        'id_cuenta_contable',
         'id_empresa',
     ];
 

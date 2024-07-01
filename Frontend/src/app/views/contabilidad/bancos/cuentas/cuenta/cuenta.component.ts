@@ -16,6 +16,7 @@ export class CuentaComponent implements OnInit {
 
     public cuenta:any = {};
     public bancos:any = [];
+    public catalogo:any = [];
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
@@ -31,6 +32,10 @@ export class CuentaComponent implements OnInit {
         this.apiService.getAll('bancos/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
     }
 
     public loadAll(){
@@ -43,6 +48,8 @@ export class CuentaComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
             this.cuenta = {};
+            this.cuenta.nombre_banco = '';
+            this.cuenta.id_cuenta_contable = '';
             this.cuenta.id_empresa = this.apiService.auth_user().id_empresa;
         }
 

@@ -30,6 +30,7 @@ import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/c
 import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
 import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
+import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/detalles/partida-detalles.component';
 
 @NgModule({
   imports: [
@@ -62,8 +63,9 @@ import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.c
     CatalogoCuentaComponent,
     PartidasComponent,
     PartidaComponent,
+    PartidaDetallesComponent,
     ConciliacionesComponent,
-    ConciliacionComponent
+    ConciliacionComponent,
   ],
   exports: [
     PresupuestosComponent,
@@ -82,8 +84,9 @@ import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.c
     CatalogoCuentaComponent,
     PartidasComponent,
     PartidaComponent,
+    PartidaDetallesComponent,
     ConciliacionesComponent,
-    ConciliacionComponent
+    ConciliacionComponent,
   ]
 })
 export class ContabilidadModule { }
