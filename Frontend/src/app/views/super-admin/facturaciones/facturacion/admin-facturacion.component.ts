@@ -5,15 +5,15 @@ import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
-// import * as moment from 'moment';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-admin-facturacion',
-  templateUrl: './facturacion.component.html',
+  templateUrl: './admin-facturacion.component.html',
   providers: [ SumPipe ]
 })
 
-export class FacturacionComponent implements OnInit {
+export class AdminFacturacionComponent implements OnInit {
 
     public facturacion: any= {};
     public evento: any= {};
@@ -30,7 +30,7 @@ export class FacturacionComponent implements OnInit {
     public supervisor:any = {};
     public loading = false;
     public saving = false;
-    public duplicarventa = false;
+    public duplicarfacturacion = false;
     public facturarCotizacion = false;
     public api:boolean = false;
     
@@ -66,8 +66,8 @@ export class FacturacionComponent implements OnInit {
             }
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
-            this.clientes = clientes;
+        this.apiService.getAll('empresas/list').subscribe(empresas => {
+            this.clientes = empresas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -94,89 +94,63 @@ export class FacturacionComponent implements OnInit {
         this.facturacion.total_costo = 0;
         this.facturacion.total = 0;
         this.detalle = {};
-        this.facturacion.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
-        this.facturacion.id_bodega = this.apiService.auth_user().id_bodega;
         this.facturacion.id_usuario = this.apiService.auth_user().id;
-        this.facturacion.id_vendedor = this.apiService.auth_user().id;
-        this.facturacion.id_sucursal = this.apiService.auth_user().id_sucursal;
-        this.facturacion.id_empresa = this.apiService.auth_user().id_empresa;
-        let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
-        if (corte) {
-            this.facturacion.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
-            this.facturacion.caja_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
-            this.facturacion.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
+
+        // Para cotizaciones Pre-facturacion
+        if (this.route.snapshot.queryParamMap.get('id_empresa')) {
+            this.facturacion.id_empresa = +this.route.snapshot.queryParamMap.get('id_empresa')!;
         }
 
-        // Para proyectos
-        if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-            this.facturacion.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
-        }
-
-        // Para cotizaciones Pre-venta
-        if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-            this.facturacion.cotizacion = 1;
-            this.facturacion.estado = 'Pendiente';
-        }
-
-        // Para editar cotizaciones Pre-venta
+        // Para editar cotizaciones Pre-facturacion
         if (this.route.snapshot.paramMap.get('id')!) {
-            this.apiService.read('venta/', +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
-                this.facturacion = venta;
+            this.apiService.read('facturacion/', +this.route.snapshot.paramMap.get('id')!).subscribe(facturacion => {
+                this.facturacion = facturacion;
                 this.facturacion.cobrar_impuestos = (this.facturacion.iva > 0) ?true : false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
-        // Facturar venta recurrente
-        // Duplicar venta
-
-        if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_venta')!) {
-            this.duplicarventa = true;
-            this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
-                this.facturacion = venta;
-                this.facturacion.cobrar_impuestos = (this.facturacion.iva > 0) ?true : false;
-                this.facturacion.fecha = this.apiService.date();
-                this.facturacion.fecha_pago = this.apiService.date();
-                this.facturacion.id_documento = null;
-                this.facturacion.correlativo = null;
-                this.facturacion.id = null;
-                this.facturacion.detalles.forEach((detalle:any) => {
-                    detalle.id = null;
-                });
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }
 
         this.loadData();
     }
 
-    // Cliente
-    // public setCliente(cliente:any){
-    //     if(!this.venta.id_cliente){
-    //         this.clientes.push(cliente);
-    //     }
-    //     this.venta.id_cliente = cliente.id;
-    //     if(cliente.tipo_contribuyente == "Grande") {
-    //         this.venta.retencion = 1;
-    //         this.sumTotal();
-    //     }
-    // }
+    public setCredito(){
+        if(this.facturacion.credito){
+            this.facturacion.estado = 'Pendiente';
+            this.facturacion.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+        }else{
+            this.facturacion.estado = 'Pagada';
+            this.facturacion.fecha_pago = moment().format('YYYY-MM-DD');
+        }
+    }
 
-    // Guardar venta
+    // Cliente
+    public setCliente(cliente:any){
+        if(!this.facturacion.id_cliente){
+            this.clientes.push(cliente);
+        }
+        this.facturacion.id_cliente = cliente.id;
+        if(cliente.tipo_contribuyente == "Grande") {
+            this.facturacion.retencion = 1;
+        }
+    }
+
+    // Guardar facturacion
         public onSubmit() {
 
             this.saving = true;
 
-            // Si se esta duplicando una venta, esta ya no se marca como recurrente para
-            // que no aparezca en las ventas recurrentes
-            // if(this.duplicarventa){
-            //     this.venta.recurrente = false;
+            // Si se esta duplicando una facturacion, esta ya no se marca como recurrente para
+            // que no aparezca en las facturacions recurrentes
+            // if(this.duplicarfacturacion){
+            //     this.facturacion.recurrente = false;
             // }
 
             this.apiService.store('facturacion', this.facturacion).subscribe(facturacion => {
 
                 
 
-                this.router.navigate(['/ventas']);
-                this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
+                this.router.navigate(['/facturacions']);
+                this.alertService.success('Venta creado', 'La facturacion fue añadida exitosamente.');
                     
 
                 if (this.modalRef) { this.modalRef.hide() }

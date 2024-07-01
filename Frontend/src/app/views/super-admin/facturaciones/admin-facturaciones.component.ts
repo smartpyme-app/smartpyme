@@ -12,54 +12,62 @@ import { ApiService } from '@services/api.service';
 
 export class AdminFacturacionesComponent implements OnInit{
 
-  public transacciones:any= [];
-  public usuario:any = {};
-  public sucursales:any = [];
-  public filtros:any = {};
-  public loading:boolean = false;
+    public transacciones:any= [];
+    public usuario:any = {};
+    public sucursales:any = [];
+    public filtros:any = {};
+    public loading:boolean = false;
 
-  modalRef!: BsModalRef;
+    modalRef!: BsModalRef;
 
-  constructor(public apiService: ApiService, private alertService: AlertService,private modalService: BsModalService){};
+    constructor(public apiService: ApiService, private alertService: AlertService,private modalService: BsModalService){};
 
-  ngOnInit() {
-    this.usuario = this.apiService.auth_user();
-    this.loadAll();
+    ngOnInit() {
+        this.usuario = this.apiService.auth_user();
+        this.loadAll();
 
-    this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-        this.sucursales = sucursales;
-    }, error => {this.alertService.error(error); });
-}
-
-public loadAll() {
-  this.filtros.id_sucursal = '';
-  this.filtros.id_cliente = '';
-  this.filtros.id_usuario = '';
-  this.filtros.id_vendedor = '';
-  this.filtros.id_canal = '';
-  this.filtros.id_documento = '';
-  this.filtros.forma_pago = '';
-  this.filtros.estado = '';
-  this.filtros.buscador = '';
-  this.filtros.orden = 'fecha';
-  this.filtros.direccion = 'desc';
-  this.filtros.paginate = 10;
-
-  this.filtrarTransacciones();
-}
-
-public filtrarTransacciones(){
-
-  this.loading = true;
-  this.apiService.getAll('transacciones', this.filtros).subscribe(transacciones => { 
-    this.transacciones = transacciones;
-    this.loading = false;
-    if(this.modalRef){
-        this.modalRef.hide();
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
     }
-}, error => {this.alertService.error(error); this.loading = false;});
 
-}
+    public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_cliente = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_vendedor = '';
+        this.filtros.id_canal = '';
+        this.filtros.id_documento = '';
+        this.filtros.forma_pago = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+
+        this.filtrarTransacciones();
+    }
+
+    public filtrarTransacciones(){
+
+        this.loading = true;
+        this.apiService.getAll('transacciones', this.filtros).subscribe(transacciones => { 
+            this.transacciones = transacciones;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); this.loading = false;});
+
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.transacciones.path + '?page='+ event.page, this.filtros).subscribe(transacciones => { 
+            this.transacciones = transacciones;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
 
 
 }

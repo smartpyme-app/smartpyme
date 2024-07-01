@@ -10,6 +10,7 @@ import { AdminUsuariosComponent }     from '@views/super-admin/usuarios/admin-us
 import { DashboardsComponent }     from '@views/super-admin/dashboards/dashboards.component';
 import { DashboardComponent }     from '@views/super-admin/dashboards/dashboard/dashboard.component';
 import { AdminFacturacionesComponent } from './facturaciones/admin-facturaciones.component';
+import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-facturacion.component';
 
 const routes: Routes = [
   {
@@ -24,7 +25,9 @@ const routes: Routes = [
         { path: 'usuarios', component: AdminUsuariosComponent, title: 'Usuarios' },
         { path: 'dashboards', component: DashboardsComponent, title: 'Dashboards' },
         { path: 'dashboard/:id', component: DashboardComponent, title: 'Dashboard' },
+
         { path: 'facturaciones', component: AdminFacturacionesComponent, title: 'Facturacion' },
+        { path: 'facturacion/crear', component: AdminFacturacionComponent, title: 'Facturacion' },
     ]
   }
 ];

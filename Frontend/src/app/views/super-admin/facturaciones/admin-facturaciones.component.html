@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transaccion</button>
+    <button *ngIf="apiService.canCreate()" routerLink="/admin/facturacion/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transaccion</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,7 +13,7 @@
 
         <!-- <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <button tooltip="Descargar ventas" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <button tooltip="Descargar transacciones" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -24,10 +24,7 @@
 
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/ventas">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos">Abonos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes">Recurrentes</button>
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/admin/facturaciones">Todos</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
             <select name="estado" (change)="filtrarTransacciones()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
@@ -66,7 +63,7 @@
                 <tbody>
                     <tr>
                         <td colspan="10" class="text-center" *ngIf="transacciones?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene ventas registradas</span>
+                            <span class="badge bg-primary">No tiene transacciones registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
@@ -80,8 +77,10 @@
                         <!-- <a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a> -->
                         <td>{{transaccion.descripcion}}</td>
                         <td>{{transaccion.fecha_pago}}</td>
-                        <td>{{transaccion.estado}}</td>
-                        <td>{{transaccion.total}}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-info' : transaccion?.estado == 'Consigna', 'bg-success' : transaccion?.estado == 'Pagada', 'bg-primary' : transaccion?.estado == 'Pre-transaccion'}">{{ transaccion.estado }}</span>
+                        </td>
+                        <td>{{ transaccion.total | currency }}</td>
 
                     </tr>
                 </tbody>
@@ -89,7 +88,7 @@
         </div>
 
         <div class="col-12" *ngIf="transacciones?.last_page > 1">
-            <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+            <app-pagination [items]="transacciones" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
 </section>
@@ -106,22 +105,22 @@
 
 <ng-template #mdescargar>
   <div class="modal-header">
-    <h4 class="modal-title text-center">Descargar registro de ventas</h4>
+    <h4 class="modal-title text-center">Descargar registro de transacciones</h4>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-        <p class="alert bg-info">Acá puedes descargar los registros de ventas en un archivo de Excel.</p>
+        <p class="alert bg-info">Acá puedes descargar los registros de transacciones en un archivo de Excel.</p>
         <div class="row">
             <div class="d-grid mt-4">
-                <p>Descargar los detalles de ventas por producto.</p>
+                <p>Descargar los detalles de transacciones por producto.</p>
                 <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
                     <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
                     <span *ngIf="downloadingDetalles">Descargando...</span>
                 </button>
             </div>
             <div class="d-grid my-4">
-                <p>Descargar los detalles de ventas totales.</p>
+                <p>Descargar los detalles de transacciones totales.</p>
                 <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
                     <span *ngIf="!downloadingVentas">Descargar Ventas</span>
                     <span *ngIf="downloadingVentas">Descargando...</span>
@@ -186,7 +185,7 @@
                 <div class="form-group col-md-12 without-label">
                     <div class="form-switch bg-light-info rounded">
                       <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
-                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
+                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="transaccion.descripcion_personalizada">
                     </div>
                 </div>
                 <div class="form-group col-md-12" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
