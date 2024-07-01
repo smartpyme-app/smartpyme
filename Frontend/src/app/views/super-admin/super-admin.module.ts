@@ -26,7 +26,7 @@ import { LicenciaEmpresasComponent } from './licencias/licencia/empresas/licenci
 import { AdminUsuariosComponent } from './usuarios/admin-usuarios.component';
 import { DashboardsComponent } from './dashboards/dashboards.component';
 import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
-import { AdminFacturacionesComponent } from './facturacion/admin-facturaciones.component';
+import { AdminFacturacionesComponent } from './facturaciones/admin-facturaciones.component';
 
 @NgModule({
   imports: [

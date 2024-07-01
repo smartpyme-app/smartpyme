@@ -6,7 +6,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-admin-facturacion',
+  selector: 'app-admin-facturaciones',
   templateUrl: './admin-facturaciones.component.html'
 })
 
