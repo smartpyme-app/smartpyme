@@ -55,7 +55,7 @@
                         <th  [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
                         <!-- (click)="setOrden('fecha_pago')" -->
                         <th>Estado</th>
-                        <th [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
+                        <th>Total</th>
                         <!-- (click)="setOrden('total')" -->
                         <th class="text-center">Más</th>
                     </tr>
@@ -74,13 +74,44 @@
                         
                         <td><span tooltip="{{ transaccion.created_at | date:'hh:mm a'}}">{{transaccion.created_at | date:'dd/MM/yyyy'}}</span></td> <!-- posiblemente sea fecha_pago en lugar de solo fecha -->
                         <td>{{transaccion.cliente | truncate:30 }}</td>
-                        <!-- <a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a> -->
                         <td>{{transaccion.descripcion}}</td>
                         <td>{{transaccion.fecha_pago}}</td>
-                        <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-info' : transaccion?.estado == 'Consigna', 'bg-success' : transaccion?.estado == 'Pagada', 'bg-primary' : transaccion?.estado == 'Pre-transaccion'}">{{ transaccion.estado }}</span>
-                        </td>
+                        <td><span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-info' : transaccion?.estado == 'Consigna', 'bg-success' : transaccion?.estado == 'Pagada', 'bg-primary' : transaccion?.estado == 'Pre-transaccion'}">{{ transaccion.estado }}</span></td>
                         <td>{{ transaccion.total | currency }}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && !venta?.dte?.sello" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta?.dte?.sello" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
+                                    <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
+                                    </a>
+                                    <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular venta
+                                    </a>
+                                    <a *ngIf="transaccion.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
 
                     </tr>
                 </tbody>
