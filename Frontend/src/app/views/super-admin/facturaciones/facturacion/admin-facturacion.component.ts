@@ -18,7 +18,7 @@ export class AdminFacturacionComponent implements OnInit {
     public facturacion: any= {};
     public evento: any= {};
     public detalle: any = {};
-    public clientes:any = [];
+    public clientes:Array<object> = [];
     public proyectos:any = [];
     public usuarios:any = [];
     public documentos:any = [];
@@ -83,7 +83,8 @@ export class AdminFacturacionComponent implements OnInit {
         this.facturacion.estado = 'Pagada';
         this.facturacion.condicion = 'Contado';
         this.facturacion.detalle_banco = '';
-        this.facturacion.id_cliente = '';
+        this.facturacion.id_empresa = '';                  
+        this.facturacion.cliente = '';                  
         this.facturacion.detalles = [];
         this.facturacion.descuento = 0;
         this.facturacion.sub_total = 0;
@@ -134,22 +135,28 @@ export class AdminFacturacionComponent implements OnInit {
         }
     }
 
+      
+    //   public findNameById(list, id) {
+    //     return list.find((obj) => obj.id === id).name;
+    //   }
+      
+    //   console.log(findNameById(objectList, 36)); // will print "Steven"
+      
+
     // Guardar facturacion
         public onSubmit() {
 
             this.saving = true;
 
-            // Si se esta duplicando una facturacion, esta ya no se marca como recurrente para
-            // que no aparezca en las facturacions recurrentes
-            // if(this.duplicarfacturacion){
-            //     this.facturacion.recurrente = false;
-            // }
+ 
+            // this.clientes.find(({ id }) => id === this.facturacion.id_empresa);
 
-            this.apiService.store('facturacion', this.facturacion).subscribe(facturacion => {
+
+            this.apiService.store('transaccion', this.facturacion).subscribe(facturacion => {
 
                 
 
-                this.router.navigate(['/facturacions']);
+                this.router.navigate(['/admin/facturaciones']);
                 this.alertService.success('Venta creado', 'La facturacion fue añadida exitosamente.');
                     
 

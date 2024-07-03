@@ -40,7 +40,7 @@
         .sujetas{ width: 0.8cm; text-align: center;}
         .exentas{ width: 0.8cm; text-align: center;}
         .gravadas{ width: 1cm; text-align: right;}
-        
+
 
         #letras     {top: 15cm; left: 0.2cm; width: 5cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 16cm; left: 0.2cm;; width: 9cm;}
@@ -53,7 +53,7 @@
         .no-print{position: absolute;}
 
     </style>
-    
+
     <style media="print"> .no-print{display: none; } </style>
 
 </head>
@@ -69,7 +69,7 @@
             <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
             <p id="condicion"><b>Condición: </b>{{ $venta->estado == 'Pagada' ? 'Contado' : 'Crédito' }}</p>
         </div>
-                    
+
         <table>
             @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
             @foreach($venta->detalles as $detalle)
