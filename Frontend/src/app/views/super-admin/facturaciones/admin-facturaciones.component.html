@@ -94,19 +94,19 @@
                                     <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                     </a>
-                                    <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado != 'Anulada'" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
-                                    <a *ngIf="transaccion.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado == 'Anulada'" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a  (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
                                 </div>
