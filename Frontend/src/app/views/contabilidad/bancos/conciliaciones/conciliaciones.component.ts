@@ -7,14 +7,14 @@ import * as moment from 'moment';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-cuentas',
-  templateUrl: './cuentas.component.html'
+  selector: 'app-conciliaciones',
+  templateUrl: './conciliaciones.component.html'
 })
 
-export class CuentasComponent implements OnInit {
+export class ConciliacionesComponent implements OnInit {
 
-    public cuentas:any = [];
-    public cuenta:any = {};
+    public conciliaciones:any = [];
+    public conciliacion:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
     public filtros:any = {};
@@ -26,9 +26,6 @@ export class CuentasComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.cuenta.del = this.apiService.date();
-        this.cuenta.al  = this.apiService.date();
-
         this.loadAll();
     }
 
@@ -40,22 +37,23 @@ export class CuentasComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.filtrarCuentas();
+        this.filtrarConciliaciones();
     }
 
     public loadAll() {
         this.filtros.tipo = '';
+        this.filtros.estado = '';
         this.filtros.buscador = '';
-        this.filtros.orden = 'id';
+        this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarCuentas();
+        this.filtrarConciliaciones();
     }
 
-    public filtrarCuentas(){
+    public filtrarConciliaciones(){
         this.loading = true;
-        this.apiService.getAll('bancos/cuentas', this.filtros).subscribe(cuentas => { 
-            this.cuentas = cuentas;
+        this.apiService.getAll('bancos/conciliaciones', this.filtros).subscribe(conciliaciones => { 
+            this.conciliaciones = conciliaciones;
             this.loading = false;
             if(this.modalRef){
                 this.modalRef.hide();
@@ -64,8 +62,8 @@ export class CuentasComponent implements OnInit {
     }
 
 
-    public openModal(template: TemplateRef<any>, cuenta:any) {
-        this.cuenta = cuenta;
+    public openModal(template: TemplateRef<any>, conciliacion:any) {
+        this.conciliacion = conciliacion;
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
@@ -73,24 +71,24 @@ export class CuentasComponent implements OnInit {
 
     public openFilter(template: TemplateRef<any>) {
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
 
-    public setEstado(cuenta:any){
-        this.cuenta = cuenta;
+    public setEstado(conciliacion:any){
+        this.conciliacion = conciliacion;
         this.onSubmit();
     }
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.cuentas.path + '?page='+ event.page, this.filtros).subscribe(cuentas => { 
-            this.cuentas = cuentas;
+        this.apiService.paginate(this.conciliaciones.path + '?page='+ event.page, this.filtros).subscribe(conciliaciones => { 
+            this.conciliaciones = conciliaciones;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public delete(cuenta:any){
+    public delete(conciliacion:any){
 
         Swal.fire({
           title: '¿Estás seguro?',
@@ -101,10 +99,10 @@ export class CuentasComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('cuenta/', cuenta.id) .subscribe(data => {
-                    for (let i = 0; i < this.cuentas.data.length; i++) { 
-                        if (this.cuentas.data[i].id == data.id )
-                            this.cuentas.data.splice(i, 1);
+                this.apiService.delete('banco/conciliacion/', conciliacion.id) .subscribe(data => {
+                    for (let i = 0; i < this.conciliaciones.data.length; i++) { 
+                        if (this.conciliaciones.data[i].id == data.id )
+                            this.conciliaciones.data.splice(i, 1);
                     }
                 }, error => {this.alertService.error(error); });4
           } else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -114,18 +112,14 @@ export class CuentasComponent implements OnInit {
 
     }
 
-    public imprimir(cuenta:any){
-        window.open(this.apiService.baseUrl + '/api/banco/cuenta/libro/' + cuenta.id + '/' + cuenta.del + '/' + cuenta.al + '?token=' + this.apiService.auth_token());
-    }
-
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('cuenta', this.cuenta).subscribe(cuenta => {
-            if (!this.cuenta.id) {
+        this.apiService.store('banco/conciliacion', this.conciliacion).subscribe(conciliacion => {
+            if (!this.conciliacion.id) {
                 this.loadAll();
-                this.alertService.success('Cuenta creada', 'El cuenta fue añadida exitosamente.');
+                this.alertService.success('Conciliación creada', 'La conciliación fue añadida exitosamente.');
             }else{
-                this.alertService.success('Cuenta guardada', 'El cuenta fue guardada exitosamente.');
+                this.alertService.success('Conciliación guardada', 'La conciliación fue guardada exitosamente.');
             }
             this.saving = false;
             if(this.modalRef){

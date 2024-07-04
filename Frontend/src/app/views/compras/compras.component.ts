@@ -29,7 +29,7 @@ export class ComprasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(public apiService: ApiService, public alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
@@ -219,6 +219,7 @@ export class ComprasComponent implements OnInit {
 
     public openAbono(template: TemplateRef<any>, compra:any){
         this.compra = compra;
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }
 

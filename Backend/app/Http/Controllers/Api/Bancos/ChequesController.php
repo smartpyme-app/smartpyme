@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\Bancos;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Cheque;
+use App\Models\Bancos\Transaccion;
+use Illuminate\Support\Facades\DB;
+use Auth;
 
 class ChequesController extends Controller
 {
@@ -16,6 +19,7 @@ class ChequesController extends Controller
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
                                 })
                                 ->orderBy($request->orden, $request->direccion)
+                                ->orderBy('id', 'desc')
                                 ->paginate($request->paginate);
 
         return Response()->json($cheques, 200);
@@ -57,10 +61,46 @@ class ChequesController extends Controller
         else
             $cheque = new Cheque;
         
-        $cheque->fill($request->all());
-        $cheque->save();
+        
+        DB::beginTransaction();
 
+        try {
+
+            // Incrementar correlativo
+                if(!$request->id){
+                    $cheque->cuenta->increment('correlativo_cheques');
+                }
+
+            // Aprobar cheque
+                if(($cheque->estado == 'Pendiente') && ($request['estado'] == 'Aprobado')){
+
+                    $transaccion = new Transaccion;
+                    $transaccion->estado = 'Pendiente';
+                    $transaccion->tipo = 'Abono';
+                    $transaccion->concepto = 'Cheque: ' . $cheque->nombre_cuenta . ' #' . $cheque->correlativo;
+                    $transaccion->id_cuenta = $cheque->id_cuenta;
+                    $transaccion->total = $cheque->total;
+                    $transaccion->fecha = date('Y-m-d');
+                    $transaccion->id_empresa = $cheque->id_empresa;
+                    $transaccion->id_usuario = Auth::user()->id;
+                    $transaccion->save();
+
+                }
+
+            $cheque->fill($request->all());
+            $cheque->save();
+
+
+        DB::commit();
         return Response()->json($cheque, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
 
     }
 

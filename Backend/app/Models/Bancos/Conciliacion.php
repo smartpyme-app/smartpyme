@@ -7,23 +7,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class Cheque extends Model
+class Conciliacion extends Model
 {
     use HasFactory;
-    protected $table = 'cheques';
+    protected $table = 'cuentas_bancarias_conciliaciones';
     protected $fillable = [
         'fecha',
+        'desde',
+        'hasta',
         'id_cuenta',
-        'correlativo',
-        'anombrede',
-        'concepto',
-        'estado',
-        'total',
+        'gastos',
+        'impuestos',
+        'otras_entradas',
+        'saldo_anterior',
+        'saldo_actual',
+        'nota',
         'id_usuario',
         'id_empresa',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_cuenta'];
+    protected $appends = ['nombre_usuario'];
     
     protected static function boot()
     {
@@ -41,16 +44,9 @@ class Cheque extends Model
         return $this->usuario()->pluck('name')->first();
     }
 
-    public function getNombreCuentaAttribute()
-    {   
-        return $this->cuenta()->pluck('nombre_banco')->first();
-    }
-
-
     public function usuario(){
         return $this->belongsTo('App\Models\User', 'id_usuario');
     }
-
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
@@ -59,5 +55,5 @@ class Cheque extends Model
     public function cuenta(){
         return $this->belongsTo('App\Models\Bancos\Cuenta', 'id_cuenta');
     }
-
+    
 }

@@ -1,0 +1,113 @@
+<div class="d-flex justify-content-end mb-3">
+    <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
+        <a (click)="openModal(mcuenta, {})" class="btn btn-primary">Agregar</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 table-responsive">
+        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th width="200px">Cuenta</th>
+                    <th>Concepto</th>
+                    <th width="200px" class="text-end">Debe</th>
+                    <th width="200px" class="text-end">Haber</th>
+                    <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody class="align-top">
+                <!-- if no h ay ningun producto -->
+                <tr *ngIf="partida?.detalles?.length < 1">
+                    <td colspan="7" class="text-center">
+                        <p class="text-muted my-3">
+                            Agregue partidas
+                        </p>
+                    </td>
+                </tr>
+
+                <tr *ngFor="let detalle of partida?.detalles; let i = index">
+                    <!-- detalle de vendedor  -->
+                    <td>
+                        {{ detalle.codigo }} - {{ detalle.nombre_cuenta }}
+                    </td>
+                    <td>
+                        <input type="text" [(ngModel)]="detalle.concepto" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="concepto">
+                    </td>
+                    <td>
+                        <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe">
+                    </td>
+                    <td>
+                        <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber">
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group">
+                            <button class="btn btn-link" (click)="delete(detalle)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="text-end">Totales:</td>
+                    <td class="text-end">{{ partida.debe | currency }}</td>
+                    <td class="text-end">{{ partida.haber | currency }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="text-end">Diferencia:</td>
+                    <td class="text-end" colspan="2">{{ partida.diferencia | currency }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+
+<ng-template #mcuenta>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Cuenta</h4>
+  </div>
+  <div class="modal-body">
+    <form name="form" (ngSubmit)="onsubmit()">
+        <div class="row">
+
+            <div class="form-group col-md-12">
+                <label for="detalle.id_cuenta">Cuenta del catálogo:</label>
+                <ng-select [(ngModel)]="detalle.cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.cuenta">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="detalle.concepto">Concepto:</label>
+                <input type="text" class="form-control" name="concepto" [(ngModel)]="detalle.concepto">
+            </div>
+
+            <div class="form-group col-md-12 col-lg-6">
+                <label for="detalle.debe">Debe:</label>
+                <input type="text" class="form-control" name="debe" [(ngModel)]="detalle.debe">
+            </div>
+
+            <div class="form-group col-md-12 col-lg-6">
+                <label for="detalle.haber">Haber:</label>
+                <input type="text" class="form-control" name="haber" [(ngModel)]="detalle.haber">
+            </div>
+
+            <div class="d-grid mt-4">
+                <button [disabled]="loading" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Agregar</span>
+                    <span *ngIf="loading">Agregando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>

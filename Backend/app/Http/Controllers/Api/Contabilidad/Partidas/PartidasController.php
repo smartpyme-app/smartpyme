@@ -37,7 +37,7 @@ class PartidasController extends Controller
     
     public function read($id) {
 
-        $partida = Partida::where('id', $id)->firstOrFail();
+        $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
         return Response()->json($partida, 200);
 
     }
@@ -49,6 +49,7 @@ class PartidasController extends Controller
             'tipo'          => 'required|max:255',
             'concepto'      => 'required|max:255',
             'estado'        => 'required|max:255',
+            'detalles'      => 'required',
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);

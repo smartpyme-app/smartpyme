@@ -42,7 +42,8 @@ export class CrearAbonoVentaComponent implements OnInit {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
+        // this.apiService.getAll('bancos/list').subscribe(bancos => {
+        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 	}
@@ -62,8 +63,46 @@ export class CrearAbonoVentaComponent implements OnInit {
         }
 
         this.apiService.store('venta/abono', this.abono).subscribe(abono => {
+            
+            // Generar Transaccion
+                if(this.abono.detalle_banco && this.abono.forma_pago != 'Cheque'){
+                    let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
+                    let transaccion:any = {};
+                    transaccion.estado = 'Pendiente';
+                    transaccion.tipo = 'Abono';
+                    transaccion.concepto = 'Abono por venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
+                    transaccion.id_cuenta = cuenta.id;
+                    transaccion.total = this.abono.total;
+                    transaccion.fecha = this.apiService.date();
+                    transaccion.id_empresa = this.apiService.auth_user().id_empresa;
+                    transaccion.id_usuario = this.apiService.auth_user().id;
+
+                    this.apiService.store('banco/transaccion', transaccion).subscribe(transaccion => {
+
+                    }, error => {this.alertService.error(error); this.saving = false; });
+                }
+
+                if(this.abono.forma_pago == 'Cheque'){
+                    let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
+                    let cheque:any = {};
+                    cheque.estado = 'Pendiente';
+                    cheque.concepto = 'Abono por venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
+                    cheque.id_cuenta = cuenta.id;
+                    cheque.correlativo = cuenta.correlativo_cheques;
+                    cheque.anombrede = this.venta.nombre_cliente;
+                    cheque.total = this.abono.total;
+                    cheque.fecha = this.apiService.date();
+                    cheque.id_empresa = this.apiService.auth_user().id_empresa;
+                    cheque.id_usuario = this.apiService.auth_user().id;
+
+                    this.apiService.store('banco/cheque', cheque).subscribe(cheque => {
+
+                    }, error => {this.alertService.error(error); this.saving = false; });
+                }
+
             this.update.emit();
             this.router.navigate(['/ventas/abonos']);
+            this.alertService.modal = false;
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false; });
 

@@ -38,6 +38,10 @@ class Partida extends Model
         return $this->usuario()->pluck('name')->first();
     }
     
+    public function detalles(){
+        return $this->hasMany('App\Models\Contabilidad\Partidas\Detalle', 'id_partida');
+    }
+    
     public function usuario(){
         return $this->belongsTo('App\Models\User', 'id_usuario');
     }

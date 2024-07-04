@@ -85,10 +85,21 @@ export class ChequesComponent implements OnInit {
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
-
-    public setEstado(cheque:any){
-        this.cheque = cheque;
-        this.onSubmit();
+    public setEstado(cheque:any, estado:any){
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡Se aprobará el cheque!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, aprobarlo',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+                this.cheque = cheque;
+                this.cheque.estado = estado;
+                this.onSubmit();
+          } else if (result.dismiss === Swal.DismissReason.cancel) {}
+        });
     }
 
     public setPagination(event:any):void{
@@ -110,7 +121,7 @@ export class ChequesComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('cheque/', cheque.id) .subscribe(data => {
+                this.apiService.delete('banco/cheque/', cheque.id) .subscribe(data => {
                     for (let i = 0; i < this.cheques.data.length; i++) { 
                         if (this.cheques.data[i].id == data.id )
                             this.cheques.data.splice(i, 1);
@@ -125,12 +136,12 @@ export class ChequesComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('cheque', this.cheque).subscribe(cheque => {
+        this.apiService.store('banco/cheque', this.cheque).subscribe(cheque => {
             if (!this.cheque.id) {
                 this.loadAll();
-                this.alertService.success('Paquete creada', 'El cheque fue añadida exitosamente.');
+                this.alertService.success('Cheque creado', 'El cheque fue añadido exitosamente.');
             }else{
-                this.alertService.success('Paquete guardada', 'El cheque fue guardada exitosamente.');
+                this.alertService.success('Cheque guardado', 'El cheque fue guardado exitosamente.');
             }
             this.saving = false;
             if(this.modalRef){

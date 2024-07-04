@@ -11,11 +11,13 @@ class Detalle extends Model
     protected $table = 'partida_detalles';
     protected $fillable = [
         'id_cuenta',
-        'id_partida',
+        'codigo',
+        'nombre_cuenta',
         'concepto',
-        'cargo',
-        'abono',
-        'saldo'
+        'debe',
+        'haber',
+        'saldo',
+        'id_partida',
     ];
 
     public function empresa(){

@@ -1,0 +1,90 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ conciliacion.id ? 'Editar ' : 'Crear ' }} Conciliación</h3>
+    <button class="btn btn-light text-danger" routerLink="/bancos/conciliaciones"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="row">
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" name="fecha" [(ngModel)]="conciliacion.fecha">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="desde">Desde:</label>
+                <input type="date" class="form-control" name="desde" [(ngModel)]="conciliacion.desde">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="hasta">Hasta:</label>
+                <input type="date" class="form-control" name="hasta" [(ngModel)]="conciliacion.hasta">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="">Cuenta:</label>
+                <ng-select [(ngModel)]="conciliacion.id_cuenta" class="form-select p-0" name="id_cuenta">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
+                        {{ cuenta.nombre_banco }} : {{ cuenta.numero }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="nota">Nota:</label><br>
+                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="conciliacion.nota" name="nota" cols="30" rows="3"></textarea>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="gastos">Gastos bancarios:</label>
+                <input type='number' class="form-control" name="gastos" [(ngModel)]="conciliacion.gastos"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="impuestos">Impuestos bancarios:</label>
+                <input type='number' class="form-control" name="impuestos" [(ngModel)]="conciliacion.impuestos"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="otras_entradas">Otras entradas:</label>
+                <input type='number' class="form-control" name="otras_entradas" [(ngModel)]="conciliacion.otras_entradas"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="saldo_actual">Saldo:</label>
+                <input type='number' class="form-control" name="saldo_actual" [(ngModel)]="conciliacion.saldo_actual"/>
+            </div>
+
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center">Saldo anterior</th>
+                    <th class="text-center">Salidas</th>
+                    <th class="text-center">Entradas</th>
+                    <th class="text-center">Saldo Final</th>
+                    <th class="text-center">Diferencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-center">{{ conciliacion.saldo_anterior | currency }}</td>
+                    <td class="text-center">{{ conciliacion.salidas | currency }}</td>
+                    <td class="text-center">{{ conciliacion.entradas | currency }}</td>
+                    <td class="text-center">{{ conciliacion.saldo_final | currency }}</td>
+                    <td class="text-center">{{ conciliacion.diferencia | currency }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar conciliacion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+</form>
+
+
