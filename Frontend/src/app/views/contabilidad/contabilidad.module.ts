@@ -24,11 +24,13 @@ import { ChequesComponent } from '@views/contabilidad/bancos/cheques/cheques.com
 import { ChequeComponent } from '@views/contabilidad/bancos/cheques/cheque/cheque.component';
 import { TransaccionesComponent } from '@views/contabilidad/bancos/transacciones/transacciones.component';
 import { TransaccionComponent } from '@views/contabilidad/bancos/transacciones/transaccion/transaccion.component';
-
+import { ConciliacionesComponent } from '@views/contabilidad/bancos/conciliaciones/conciliaciones.component';
+import { ConciliacionComponent } from '@views/contabilidad/bancos/conciliaciones/conciliacion/conciliacion.component';
 import { CatalogoCuentasComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component';
 import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component';
 import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
+import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/detalles/partida-detalles.component';
 
 @NgModule({
   imports: [
@@ -60,7 +62,10 @@ import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.c
     CatalogoCuentasComponent,
     CatalogoCuentaComponent,
     PartidasComponent,
-    PartidaComponent
+    PartidaComponent,
+    PartidaDetallesComponent,
+    ConciliacionesComponent,
+    ConciliacionComponent,
   ],
   exports: [
     PresupuestosComponent,
@@ -78,7 +83,10 @@ import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.c
     CatalogoCuentasComponent,
     CatalogoCuentaComponent,
     PartidasComponent,
-    PartidaComponent
+    PartidaComponent,
+    PartidaDetallesComponent,
+    ConciliacionesComponent,
+    ConciliacionComponent,
   ]
 })
 export class ContabilidadModule { }

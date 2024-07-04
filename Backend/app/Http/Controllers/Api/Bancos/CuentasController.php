@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Bancos;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Cuenta;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class CuentasController extends Controller
 {
@@ -68,6 +69,28 @@ class CuentasController extends Controller
         $cuenta->delete();
 
         return Response()->json($cuenta, 201);
+
+    }
+
+    public function libro($id, $del, $al){
+
+        $cuenta = Cuenta::with(['transacciones' => function($q) use ($del, $al) {
+                                $q->where('fecha', '>=', $del)
+                                    ->where('fecha', '<=', $al)
+                                    ->where('estado', 'Aprobada');
+                            }])->where('id', $id)
+                            // ->orderBy('fecha', 'desc')
+                            ->orderBy('id', 'desc')
+                            ->firstOrFail();
+
+        $cuenta->del = $del;
+        $cuenta->al = $al;
+
+
+        $pdf = PDF::loadView('reportes.Contabilidad.libro-de-bancos', compact('cuenta'));
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream($cuenta->nombre_banco . '-libro' . '.pdf');
 
     }
 

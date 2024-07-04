@@ -31,7 +31,7 @@ export class VentasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private mhService: MHService, private alertService: AlertService,
+    constructor(public apiService: ApiService, private mhService: MHService, public alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
@@ -266,6 +266,7 @@ export class VentasComponent implements OnInit {
 
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }
 

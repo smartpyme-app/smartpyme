@@ -33,6 +33,7 @@
                     <tr>
                         <th>Fecha</th>
                         <th>Usuario</th>
+                        <th>Cuenta</th>
                         <th>Correlativo</th>
                         <th>A nombre de</th>
                         <th>Concepto</th>
@@ -43,16 +44,17 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="7" class="text-center" *ngIf="cheques?.total < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="cheques?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene cheques registrados</span>
                         </td>
-                        <td colspan="7" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor=" let cheque of cheques?.data">
                         <td>{{cheque.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{cheque.nombre_usuario}}</td>
+                        <td>{{cheque.nombre_cuenta}}</td>
                         <td>{{cheque.correlativo}}</td>
                         <td>{{cheque.anombrede}}</td>
                         <td>{{cheque.concepto}}</td>

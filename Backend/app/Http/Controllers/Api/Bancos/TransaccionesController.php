@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Bancos;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Transaccion;
+use Illuminate\Support\Facades\DB;
 
 class TransaccionesController extends Controller
 {
@@ -16,6 +17,7 @@ class TransaccionesController extends Controller
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
+                                ->orderBy('id', 'desc')
                                 ->paginate($request->paginate);
 
         return Response()->json($transacciones, 200);
@@ -52,15 +54,64 @@ class TransaccionesController extends Controller
             'id_empresa'    => 'required|numeric',
         ]);
 
-        if($request->id)
-            $transaccion = Transaccion::findOrFail($request->id);
-        else
-            $transaccion = new Transaccion;
-        
-        $transaccion->fill($request->all());
-        $transaccion->save();
+        DB::beginTransaction();
 
+        try {
+
+            if($request->id)
+                $transaccion = Transaccion::findOrFail($request->id);
+            else
+                $transaccion = new Transaccion;
+
+            // Aprobar transaccion
+                if(($transaccion->estado == 'Pendiente') && ($request['estado'] == 'Aprobada')){
+
+                    // $partida = new Partida;
+                    // $partida->fecha = date('Y-m-d');
+                    // $partida->tipo = 'Diario';
+                    // $partida->concepto = $transaccion->concepto;
+                    // $partida->estado = 'Pendiente';
+                    // $partida->id_empresa = $cheque->id_empresa;
+                    // $partida->id_usuario = Auth::user()->id;
+                    // $partida->save();
+
+                        // $detalle->id_cuenta 
+                        // $detalle->codigo    
+                        // $detalle->nombre_cuenta 
+                        // $detalle->concepto  
+                        // $detalle->debe  
+                        // $detalle->haber 
+                        // $detalle->saldo 
+                        // $detalle->id_partida = $partida->id; 
+                        // $detalle->save(); 
+
+                    //Actualizar saldo de cuanta
+                        $cuenta = $transaccion->cuenta()->first();
+
+                        if ($transaccion->tipo == 'Cargo') {
+                            $cuenta->saldo = $cuenta->saldo - $transaccion->total;
+                        }
+
+                        if ($transaccion->tipo == 'Abono') {
+                            $cuenta->saldo = $cuenta->saldo + $transaccion->total;
+                        }
+
+                        $cuenta->save();
+                }
+
+            $transaccion->fill($request->all());
+            $transaccion->save();
+
+        DB::commit();
         return Response()->json($transaccion, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
 
     }
 
