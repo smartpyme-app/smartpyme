@@ -13,10 +13,15 @@ import { ApiService } from '@services/api.service';
 export class AdminFacturacionesComponent implements OnInit{
 
     public transacciones:any= [];
+    public transaccion:any = {};
     public usuario:any = {};
     public sucursales:any = [];
     public filtros:any = {};
     public loading:boolean = false;
+    public usuarios:any = [];
+    public formaPagos:any = [];
+    // para el boton del modal
+    public saving:boolean = false;
 
     modalRef!: BsModalRef;
 
@@ -68,6 +73,54 @@ export class AdminFacturacionesComponent implements OnInit{
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
+    
+    public imprimir(transaccion:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + transaccion.id + '?token=' + this.apiService.auth_token());
+    }
+
+    public openModalEdit(template: TemplateRef<any>, transaccion:any) {
+        this.transaccion = transaccion;
+        
+        // if(!this.documentos.length){
+        //     this.apiService.getAll('documentos/list').subscribe(documentos => {
+        //         this.documentos = documentos;
+        //         this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
+        //     }, error => {this.alertService.error(error);});
+        // }
+
+        if(!this.formaPagos.length){
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
+
+        // if(!this.canales.length){
+        //     this.apiService.getAll('canales/list').subscribe(canales => { 
+        //         this.canales = canales;
+        //     }, error => {this.alertService.error(error); });
+        // }
+
+        this.modalRef = this.modalService.show(template);
+    }
+    public onSubmit() {
+        this.saving = true;            
+        this.apiService.store('transaccion', this.transaccion).subscribe(venta => {
+            this.transaccion = {};
+            this.saving = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+            this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
+
+    }
+
 
 
 }
