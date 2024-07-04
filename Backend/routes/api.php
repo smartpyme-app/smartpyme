@@ -16,7 +16,7 @@ Route::get('/prueba', function(){ return Response()->json(['message' => 'Success
 
 require base_path('routes/modulos/auth.php');
 
-//Route::group(['middleware' => ['jwt.auth']], function () {
+Route::group(['middleware' => ['jwt.auth']], function () {
 
 //
 		require base_path('routes/modulos/dash.php');
@@ -92,7 +92,7 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/super-admin/usuarios.php');
 
 
-//});
+});
 
 
 Route::get('/prueba/factura', function () {

@@ -75,9 +75,21 @@ export class TransaccionesComponent implements OnInit {
     }
 
 
-    public setEstado(transaccion:any){
-        this.transaccion = transaccion;
-        this.onSubmit();
+    public setEstado(transaccion:any, estado:any){
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡Se aprobará la transacción!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, aprobarla',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+                this.transaccion = transaccion;
+                this.transaccion.estado = estado;
+                this.onSubmit();
+          } else if (result.dismiss === Swal.DismissReason.cancel) {}
+        });
     }
 
     public setPagination(event:any):void{

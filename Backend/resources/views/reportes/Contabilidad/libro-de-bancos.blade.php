@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>libro de bancos {{ $cuenta->nombre_banco }}</title>
+    <title>Libro de bancos {{ $cuenta->nombre_banco }}</title>
     <style>
 
         *{
@@ -57,7 +57,7 @@
                     <th class="border-bottom text-left">Concepto</th>
                     <th class="border-bottom text-right">Cargos</th>
                     <th class="border-bottom text-right">Abonos</th>
-                    <th class="border-bottom text-right">Saldo</th>
+                    {{-- <th class="border-bottom text-right">Saldo</th> --}}
                 </tr>
             </thead>
             <tbody>
@@ -65,34 +65,35 @@
                 <tr>
                     <td class="border-bottom"> {{ \Carbon\Carbon::parse($transaccion->fecha)->format('d/m/Y')  }}</td>
                     <td class="border-bottom"> {{ $transaccion->concepto  }}</td>
-                    <td class="border-bottom text-right"> ${{ number_format($transaccion->cargo, 2) }}</td>
-                    <td class="border-bottom text-right"> ${{number_format($transaccion->abono , 2) }}</td>
-                    <td class="border-bottom text-right"> ${{ number_format($transaccion->saldo, 2) }}</th>
+                    <td class="border-bottom text-right"> 
+                        @if ($transaccion->tipo == 'Cargo')
+                            ${{ number_format($transaccion->total, 2) }}
+                        @endif
+                    </td>
+                    <td class="border-bottom text-right"> 
+                        @if ($transaccion->tipo == 'Abono')
+                            ${{ number_format($transaccion->total, 2) }}
+                        @endif
+                    </td>
+                    {{-- <td class="border-bottom text-right"> 
+                        ${{ number_format($transaccion->saldo, 2) }}
+                    </th> --}}
                 </tr>
                 @endforeach
             </tbody>
-  {{--           <tfoot>
+            <tfoot>
                 <tr>
-                    <td colspan="2"></td>
-                    <td class="text-right">Sumas</td>
-                    <td class="text-right">${{ number_format($cuenta->sub_total, 2) }}</td>
+                    <td colspan="1"></td>
+                    <td class="text-right"><b>Totales:</b></td>
+                    <td class="text-right"><b>${{ number_format($cuenta->transacciones->where('tipo', 'Cargo')->sum('total'), 2) }}</b></td>
+                    <td class="text-right"><b>${{ number_format($cuenta->transacciones->where('tipo', 'Abono')->sum('total'), 2) }}</b></td>
                 </tr>
                 <tr>
-                    <td colspan="2"></td>
-                    <td class="text-right">IVA</td>
-                    <td class="text-right">${{ number_format($cuenta->iva, 2) }}</td>
+                    <td colspan="1"></td>
+                    <td colspan="2" class="text-right"><b>Saldo:</b></td>
+                    <td class="text-right"><b>${{ number_format($cuenta->saldo, 2) }}</b></td>
                 </tr>
-                <tr>
-                    <td colspan="2"></td>
-                    <td class="text-right">Subtotal</td>
-                    <td class="text-right">${{ number_format($cuenta->sub_total + $cuenta->iva, 2) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="2"></td>
-                    <td class="text-right"><b>Total</b></td>
-                    <td class="text-right"><b>${{ number_format($cuenta->total, 2) }}</b></td>
-                </tr>
-            </tfoot> --}}
+            </tfoot>
         </table>
 
 

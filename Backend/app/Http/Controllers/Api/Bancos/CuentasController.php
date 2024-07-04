@@ -76,8 +76,12 @@ class CuentasController extends Controller
 
         $cuenta = Cuenta::with(['transacciones' => function($q) use ($del, $al) {
                                 $q->where('fecha', '>=', $del)
-                                  ->where('fecha', '<=', $al);
-                            }])->where('id', $id)->firstOrFail();
+                                    ->where('fecha', '<=', $al)
+                                    ->where('estado', 'Aprobada');
+                            }])->where('id', $id)
+                            // ->orderBy('fecha', 'desc')
+                            ->orderBy('id', 'desc')
+                            ->firstOrFail();
 
         $cuenta->del = $del;
         $cuenta->al = $al;

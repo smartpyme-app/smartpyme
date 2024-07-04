@@ -42,7 +42,8 @@ export class CrearAbonoCompraComponent implements OnInit {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
+        // this.apiService.getAll('bancos/list').subscribe(bancos => {
+        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 	}
@@ -62,6 +63,25 @@ export class CrearAbonoCompraComponent implements OnInit {
         }
 
         this.apiService.store('compra/abono', this.abono).subscribe(abono => {
+
+            // Generar Transaccion
+                if(this.abono.detalle_banco){
+                    let id_cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco).id;
+                    let transaccion:any = {};
+                    transaccion.estado = 'Pendiente';
+                    transaccion.tipo = 'Cargo';
+                    transaccion.concepto = 'Cargo por compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
+                    transaccion.id_cuenta = id_cuenta;
+                    transaccion.total = this.abono.total;
+                    transaccion.fecha = this.apiService.date();
+                    transaccion.id_empresa = this.apiService.auth_user().id_empresa;
+                    transaccion.id_usuario = this.apiService.auth_user().id;
+
+                    this.apiService.store('banco/transaccion', transaccion).subscribe(transaccion => {
+
+                    }, error => {this.alertService.error(error); this.saving = false; });
+                }
+            this.alertService.modal = false;
             this.update.emit();
             this.router.navigate(['/compras/abonos']);
             this.saving = false;

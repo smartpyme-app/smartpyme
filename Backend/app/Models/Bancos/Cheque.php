@@ -23,7 +23,7 @@ class Cheque extends Model
         'id_empresa',
     ];
 
-    protected $appends = ['nombre_usuario'];
+    protected $appends = ['nombre_usuario', 'nombre_cuenta'];
     
     protected static function boot()
     {
@@ -39,6 +39,11 @@ class Cheque extends Model
     public function getNombreUsuarioAttribute()
     {   
         return $this->usuario()->pluck('name')->first();
+    }
+
+    public function getNombreCuentaAttribute()
+    {   
+        return $this->cuenta()->pluck('nombre_banco')->first();
     }
 
 

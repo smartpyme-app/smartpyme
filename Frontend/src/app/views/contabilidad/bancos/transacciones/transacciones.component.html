@@ -34,8 +34,8 @@
                         <th>Fecha</th>
                         <th>Usuario</th>
                         <th>Cuenta</th>
-                        <th>Tipo</th>
                         <th>Concepto</th>
+                        <th>Tipo</th>
                         <th>Estado</th>
                         <th class="text-end">Total</th>
                         <th class="text-center">Más</th>
@@ -54,10 +54,12 @@
                         <td>{{transaccion.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{transaccion.nombre_usuario}}</td>
                         <td>{{transaccion.cuenta.nombre_banco}} : {{transaccion.cuenta.numero}}</td>
-                        <td>{{transaccion.tipo}}</td>
                         <td>{{transaccion.concepto}}</td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-success' : transaccion?.estado == 'Aprobado'}">{{ transaccion.estado }}</span>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : transaccion?.tipo == 'Cargo', 'bg-success' : transaccion?.tipo == 'Abono'}">{{ transaccion.tipo }}</span>
+                        </td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-success' : transaccion?.estado == 'Aprobada'}">{{ transaccion.estado }}</span>
                         </td>
                         <td class="text-end">{{transaccion.total | currency}}</td>
                         <td class="text-center">
@@ -69,7 +71,7 @@
                                     <a routerLink="/bancos/transaccion/{{transaccion.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(transaccion, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(transaccion, 'Aprobada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Aprobar
                                     </a>
                                     <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(transaccion, 'Anulada')" class="list-group-item list-group-item-action border-0 click">

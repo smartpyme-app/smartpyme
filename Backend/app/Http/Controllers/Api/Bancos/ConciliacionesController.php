@@ -16,6 +16,7 @@ class ConciliacionesController extends Controller
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
+                                ->orderBy('id', 'desc')
                                 ->paginate($request->paginate);
 
         return Response()->json($conciliaciones, 200);

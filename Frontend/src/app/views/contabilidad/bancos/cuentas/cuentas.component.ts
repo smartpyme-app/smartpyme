@@ -26,6 +26,8 @@ export class CuentasComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        this.cuenta.del = this.apiService.date();
+        this.cuenta.al  = this.apiService.date();
 
         this.loadAll();
     }
