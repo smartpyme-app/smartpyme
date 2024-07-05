@@ -14,8 +14,12 @@
             line-height: 15px;
             margin-top: -0.6cm;
         }
-        .factura{margin: 2cm 0.2cm 0cm 0.2cm; position: relative; height: 12cm;}
+        .factura{margin: 4cm 0.2cm 0cm 0.2cm; position: relative; height: 12cm;}
         p{margin: 0px 0px 4px 0px; }
+
+        .head{
+            margin-top: 4cm;
+        }
 
         table   {text-align: left; border-collapse: collapse; width: 100%;}
         table th{border: 0px solid #000; text-align: left; line-height: 15px; padding-right: 10px;  font-size: 14px !important;}
@@ -30,21 +34,21 @@
         .precio{ width: 1.3cm; text-align: left;}
         .gravadas{ width: 1.3cm; text-align: left;}
         .letras{ margin-top: 120px; position: absolute; bottom: -400px;}
-        
+
         .no-print{position: absolute;}
         .text-right{text-align: right;}
 
     </style>
-    
+
     <style media="print"> .no-print{display: none; } </style>
 
 </head>
 <body>
 <body>
 
-    
+
     <section class="factura">
-        <div id="header" style="margin-bottom: 20px;">
+        <div id="header"class="head" style="margin-bottom: 20px;">
             <p><b>Cliente:</b> {{ $venta->cliente }}</p>
             @if ($cliente->ncr)
             <p><b>NCR:</b> {{ $cliente->ncr }}</p>
@@ -52,7 +56,7 @@
             @if ($cliente->nit)
             <p><b>NIT:</b> {{ $cliente->nit }}</p>
             @endif
-            <p><b>Dirección:</b> {{ $cliente->municipio }} &nbsp;{{ $cliente->departamento }} &nbsp; {{ $cliente->direccion }} 
+            <p><b>Dirección:</b> {{ $cliente->municipio }} &nbsp;{{ $cliente->departamento }} &nbsp; {{ $cliente->direccion }}
             @if ($cliente->giro)
             <p><b>Giro:</b> {{ $cliente->giro }}</p>
             @endif
@@ -64,9 +68,9 @@
             <p><b>Vendedor:</b> {{ $venta->usuario }}</p>
 
         </div>
-                    
+
         @php($iva = $venta->empresa()->iva / 100)
-        
+
         <table>
             <thead>
                 <tr>

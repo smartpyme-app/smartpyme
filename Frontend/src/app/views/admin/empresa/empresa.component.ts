@@ -66,15 +66,17 @@ export class EmpresaComponent implements OnInit {
     }
 
     setGiro(){
-        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
+        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;
     }
 
     setMunicipio(){
-        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio).nombre;
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento).nombre;
     }
 
     setDepartamento(){
         this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
+        this.empresa.cod_municipio = null;
+        this.empresa.municipio = null;
     }
 
     setPais(){

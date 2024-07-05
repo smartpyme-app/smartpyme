@@ -90,6 +90,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');
+		require base_path('routes/modulos/super-admin/transacciones.php');
 
 
 });
