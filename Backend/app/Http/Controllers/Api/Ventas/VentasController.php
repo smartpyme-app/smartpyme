@@ -39,6 +39,7 @@ class VentasController extends Controller
         $ventas = Venta::when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
                                     ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
                                     ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
                                  })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')

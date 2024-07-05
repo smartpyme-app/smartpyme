@@ -27,6 +27,12 @@ import { AdminUsuariosComponent } from './usuarios/admin-usuarios.component';
 import { DashboardsComponent } from './dashboards/dashboards.component';
 import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 
+import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
+import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
+
+import { AdminFacturacionesComponent } from './facturaciones/admin-facturaciones.component';
+import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-facturacion.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -51,7 +57,11 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
     LicenciaEmpresasComponent,
     AdminUsuariosComponent,
     DashboardsComponent,
-    DashboardComponent
+    DashboardComponent,
+    AdminFacturacionesComponent,
+    AdminFacturacionComponent,
+    AdminSucursalesComponent,
+    AdminSucursalComponent
   ],
   exports: [
     EmpresasComponent,
@@ -61,7 +71,11 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
     LicenciaEmpresasComponent,
     AdminUsuariosComponent,
     DashboardsComponent,
-    DashboardComponent
+    DashboardComponent,
+    AdminFacturacionesComponent,
+    AdminFacturacionComponent,
+    AdminSucursalesComponent,
+    AdminSucursalComponent
   ]
 })
 export class SuperAdminModule { }

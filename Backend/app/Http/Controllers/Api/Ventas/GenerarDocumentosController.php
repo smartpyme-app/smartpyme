@@ -132,6 +132,10 @@ class GenerarDocumentosController extends Controller
             elseif(Auth::user()->id_empresa == 210 ){ //210  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 244 ){ //210  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-keke', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
             }else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -239,6 +243,10 @@ class GenerarDocumentosController extends Controller
             }
             elseif(Auth::user()->id_empresa == 210){ //210
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Arborea-Design', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 244){ //210
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-keke', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             else{

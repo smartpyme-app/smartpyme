@@ -23,9 +23,9 @@
             margin: 0px;
         }
 
-        #fecha          {top: 4cm; left: 16cm; }
-        #cliente        {top: 4cm; left: 4cm;}
-        #direccion      {top: 4.5cm; left: 4.5cm;}
+        #fecha          {top: 4.3cm; left: 16cm; }
+        #cliente        {top: 4.3cm; left: 4cm;}
+        #direccion      {top: 4.8cm; left: 4.5cm;}
         #municipio      {top: 4cm; left: 4.5cm;}
         #departamento   {top: 4.5cm; left: 4.5cm; }
         #nrc            {top: 3.5cm; left: 15cm; }
@@ -49,13 +49,13 @@
         #correlativo{top: 13cm; left: 2cm;; width: 9cm;;}
 
         #suma       {top: 22cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #iva        {top: 22.3cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #sub_total  {top: 22.6cm; left: 18cm; width: 1.5cm; text-align: right;}
+        #iva        {top: 22.5cm; left: 18cm; width: 1.5cm; text-align: right;}
+        #sub_total  {top: 23cm; left: 18cm; width: 1.5cm; text-align: right;}
         #iva_retenido  {top: 22.9cm; left: 18cm; width: 1.5cm; text-align: right;}
         #no_sujeta  {top: 23.2cm; left: 18cm; width: 1.5cm; text-align: right;}
         #exenta     {top: 23.5cm; left: 18cm; width: 1.5cm; text-align: right;}
         #cuenta_a_terceros {top: 24.5cm; left: 18cm; width: 1.5cm; text-align: right;}
-        #total      {top: 16cm; left: 18cm; width: 1.5cm; text-align: right;}
+        #total      {top: 26cm; left: 18cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;}
 

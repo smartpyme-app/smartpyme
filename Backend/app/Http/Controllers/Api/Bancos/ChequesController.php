@@ -66,11 +66,6 @@ class ChequesController extends Controller
 
         try {
 
-            // Incrementar correlativo
-                if(!$request->id){
-                    $cheque->cuenta->increment('correlativo_cheques');
-                }
-
             // Aprobar cheque
                 if(($cheque->estado == 'Pendiente') && ($request['estado'] == 'Aprobado')){
 
@@ -89,6 +84,11 @@ class ChequesController extends Controller
 
             $cheque->fill($request->all());
             $cheque->save();
+
+            // Incrementar correlativo
+                if(!$request->id){
+                    $cheque->cuenta->increment('correlativo_cheques');
+                }
 
 
         DB::commit();

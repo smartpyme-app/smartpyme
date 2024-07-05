@@ -195,14 +195,22 @@ export class VentaDetallesComponent implements OnInit {
               cancelButtonText: 'Cancelar'
             }).then((result) => {
               if (result.isConfirmed) {
-                let indexAEliminar;
+                let indexAEliminar:any;
+                
                     if(detalle.id_paquete){
                         indexAEliminar = this.venta.detalles.findIndex((item:any) => item.id_paquete === detalle.id_paquete);
                     }else{
                         indexAEliminar = this.venta.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
                     }
                     if (indexAEliminar !== -1) {
-                      this.venta.detalles.splice(indexAEliminar, 1);
+                        if(detalle.id) {
+                            this.apiService.delete('venta/detalle/', detalle.id).subscribe(detalle => {
+                                this.venta.detalles.splice(indexAEliminar, 1);
+                            },error => {this.alertService.error(error); this.loading = false; });
+                        }else{
+                            this.venta.detalles.splice(indexAEliminar, 1);
+                        }
+
                     }
                 this.update.emit(this.venta);
               } else if (result.dismiss === Swal.DismissReason.cancel) {
