@@ -30,7 +30,7 @@
 
         #logo          {top: 0.5cm; left: 0.5cm }
         #empresa_nombre  { top: 0.5cm; left: 9.5cm;}
-        #titulo_doc      {top: 1.5cm; left: 9cm;}
+        #titulo_doc      {top: 1.5cm; left: 9cm; font-weight: bold;}
         #fechas_filtro  {top: 2.5cm; left: 8.5cm;}
         #fecha_actual   {top: 0.5cm; left: 17cm; }
         #hora_reporte    {top: 1.5cm; left: 17cm; }
@@ -78,7 +78,7 @@
 
         {{--        al centro del documento --}}
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
-        <p id="titulo_doc">Movimiento de una cuenta</p>
+        <p id="titulo_doc">Libro Diario Mayor</p>
         <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
 
         {{--        a la izquierda del documento--}}
@@ -104,11 +104,11 @@
 
                 @foreach($cuentas as $detalle_par)
                     <tr>
-                        <td class="id_partida">     {{$detalle_par->id_cuenta}}    </td>
+                        <td class="id_partida">     {{$detalle_par->codigo}}    </td>
                         <td class="fecha_partida">  {{$detalle_par->created_at}}    </td>
                         <td class="concepto">       {{$detalle_par->concepto}}    </td>
-                        <td class="cargo">          {{$detalle_par->cargo}}   </td>
-                        <td class="abono">          {{$detalle_par->abono}}    </td>
+                        <td class="cargo">          {{$detalle_par->debe}}   </td>
+                        <td class="abono">          {{$detalle_par->haber}}    </td>
                         <td class="saldo">          {{$detalle_par->saldo}}   </td>
                     </tr>
 

@@ -62,7 +62,7 @@ class GenerarReportesController extends Controller
         // falta agregar totales y nombre y numero de cuenta arriba de cada table
 
         $detalles = Detalle::get();
-        $duplica =$detalles->groupBy('id_cuenta');
+        $duplica =$detalles->groupBy('codigo');
         $det_agrup= $duplica->all();
         //dd($det_agrup);
 
@@ -86,7 +86,7 @@ class GenerarReportesController extends Controller
     public function generarRepLibroDiarioMayor(){
 
         $detalles = Detalle::get();
-        $duplica =$detalles->groupBy('id_cuenta');
+        $duplica =$detalles->groupBy('codigo');
         $det_agrup= $duplica->all();
 
         $empresa = Empresa::findOrfail(13);

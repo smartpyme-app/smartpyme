@@ -74,7 +74,7 @@
 <section id="factura">
     <div class="header">
 {{--        a la derecha del documento --}}
-        <p id="logo">{{$empresa->logo}}</p>
+{{--        <p id="logo">{{$empresa->logo}}</p>--}}
 
 {{--        al centro del documento --}}
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
@@ -104,11 +104,11 @@
 
                 @foreach($cuentas as $detalle_par)
                     <tr>
-                        <td class="id_partida">     {{$detalle_par->id_cuenta}}    </td>
+                        <td class="id_partida">     {{$detalle_par->codigo}}    </td>
                         <td class="fecha_partida">  {{$detalle_par->created_at}}    </td>
                         <td class="concepto">       {{$detalle_par->concepto}}    </td>
-                        <td class="cargo">          {{$detalle_par->cargo}}   </td>
-                        <td class="abono">          {{$detalle_par->abono}}    </td>
+                        <td class="cargo">          {{$detalle_par->debe}}   </td>
+                        <td class="abono">          {{$detalle_par->haber}}    </td>
                         <td class="saldo">          {{$detalle_par->saldo}}   </td>
                     </tr>
 
@@ -118,7 +118,7 @@
 
                         </table>
                         <div class="page-break"></div>
-                            @if($loop->last == false)
+{{--                            @if($loop->last == false)--}}
                                 <div class="header">
 
                                     {{--        a la derecha del documento --}}
@@ -134,7 +134,7 @@
                                     <p id="hora_reporte">06:15:18 a.m.</p>
 
                                 </div>
-                            @endif
+{{--                            @endif--}}
                         <table class="table invoice-articles-table">
 
                         {{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
