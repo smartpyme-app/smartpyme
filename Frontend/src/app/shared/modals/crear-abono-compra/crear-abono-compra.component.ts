@@ -65,19 +65,37 @@ export class CrearAbonoCompraComponent implements OnInit {
         this.apiService.store('compra/abono', this.abono).subscribe(abono => {
 
             // Generar Transaccion
-                if(this.abono.detalle_banco){
-                    let id_cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco).id;
+                if(this.abono.detalle_banco && this.abono.forma_pago != 'Cheque'){
+                    let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
                     let transaccion:any = {};
                     transaccion.estado = 'Pendiente';
                     transaccion.tipo = 'Cargo';
                     transaccion.concepto = 'Cargo por compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
-                    transaccion.id_cuenta = id_cuenta;
+                    transaccion.id_cuenta = cuenta.id;
                     transaccion.total = this.abono.total;
                     transaccion.fecha = this.apiService.date();
                     transaccion.id_empresa = this.apiService.auth_user().id_empresa;
                     transaccion.id_usuario = this.apiService.auth_user().id;
 
                     this.apiService.store('banco/transaccion', transaccion).subscribe(transaccion => {
+
+                    }, error => {this.alertService.error(error); this.saving = false; });
+                }
+            // Generar cheque
+                if(this.abono.forma_pago == 'Cheque'){
+                    let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
+                    let cheque:any = {};
+                    cheque.estado = 'Pendiente';
+                    cheque.concepto = 'Cargo por compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
+                    cheque.id_cuenta = cuenta.id;
+                    cheque.correlativo = cuenta.correlativo_cheques;
+                    cheque.anombrede = this.compra.nombre_proveedor ? this.compra.nombre_proveedor : 'Sin nombre';
+                    cheque.total = this.abono.total;
+                    cheque.fecha = this.apiService.date();
+                    cheque.id_empresa = this.apiService.auth_user().id_empresa;
+                    cheque.id_usuario = this.apiService.auth_user().id;
+
+                    this.apiService.store('banco/cheque', cheque).subscribe(cheque => {
 
                     }, error => {this.alertService.error(error); this.saving = false; });
                 }

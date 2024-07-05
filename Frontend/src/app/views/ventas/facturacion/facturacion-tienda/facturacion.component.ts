@@ -72,7 +72,7 @@ export class FacturacionComponent implements OnInit {
             }
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
+        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 
@@ -115,9 +115,11 @@ export class FacturacionComponent implements OnInit {
                 let documento = this.documentos.find((x:any) => x.predeterminado == 1);
                 if(documento){
                     this.venta.id_documento = documento.id;
+                    this.venta.nombre_documento = documento.nombre;
                     this.venta.correlativo = documento.correlativo;
                 }else{
                     this.venta.id_documento = documentos[0].id;
+                    this.venta.nombre_documento = documentos[0].nombre;
                     this.venta.correlativo = documentos[0].correlativo;
                 }
 
@@ -126,6 +128,7 @@ export class FacturacionComponent implements OnInit {
                     let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
                     if(documento){
                         this.venta.id_documento = documento.id;
+                        this.venta.nombre_documento = documento.nombre;
                         this.venta.correlativo = documento.correlativo;
                     }
                 }else{
@@ -383,6 +386,7 @@ export class FacturacionComponent implements OnInit {
     public setDocumento(id_documento:any){
         let documento = this.documentos.find((x:any) => x.id == id_documento);
         this.venta.id_documento = documento.id;
+        this.venta.nombre_documento = documento.nombre;
         this.venta.correlativo = documento.correlativo;
     }
    
@@ -445,6 +449,44 @@ export class FacturacionComponent implements OnInit {
                     }else{
                         this.router.navigate(['/ventas']);
                         this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
+                    }
+                }
+
+                if(this.venta.cotizacion != 1){
+                    // Generar Transaccion
+                        if(this.venta.detalle_banco && this.venta.forma_pago != 'Cheque'){
+                            let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.venta.detalle_banco);
+                            let transaccion:any = {};
+                            transaccion.estado = 'Pendiente';
+                            transaccion.tipo = 'Abono';
+                            transaccion.concepto = 'Venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
+                            transaccion.id_cuenta = cuenta.id;
+                            transaccion.total = this.venta.total;
+                            transaccion.fecha = this.apiService.date();
+                            transaccion.id_empresa = this.apiService.auth_user().id_empresa;
+                            transaccion.id_usuario = this.apiService.auth_user().id;
+
+                            this.apiService.store('banco/transaccion', transaccion).subscribe(transaccion => {
+
+                            }, error => {this.alertService.error(error); this.saving = false; });
+                        }
+                    // Generar cheque
+                    if(this.venta.forma_pago == 'Cheque'){
+                        let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.venta.detalle_banco);
+                        let cheque:any = {};
+                        cheque.estado = 'Pendiente';
+                        cheque.concepto = 'Venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
+                        cheque.id_cuenta = cuenta.id;
+                        cheque.correlativo = cuenta.correlativo_cheques;
+                        cheque.anombrede = this.venta.nombre_cliente ? this.venta.nombre_cliente : 'Sin nombre';
+                        cheque.total = this.venta.total;
+                        cheque.fecha = this.apiService.date();
+                        cheque.id_empresa = this.apiService.auth_user().id_empresa;
+                        cheque.id_usuario = this.apiService.auth_user().id;
+
+                        this.apiService.store('banco/cheque', cheque).subscribe(cheque => {
+
+                        }, error => {this.alertService.error(error); this.saving = false; });
                     }
                 }
 
