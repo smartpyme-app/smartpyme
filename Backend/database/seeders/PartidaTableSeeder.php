@@ -19,11 +19,12 @@ class PartidaTableSeeder extends Seeder
 
         for($i = 0; $i <= 50 ; $i++){
             $table = new Partida();
-            $table->tipo = $faker->randomElement(['Contable','Transaccional']);
+            $table->fecha = $faker->date();
+            $table->tipo = $faker->randomElement(['Ingreso','Egreso','Diario','CxP','CxC','Cierre']);
             $table->concepto = $faker->text;
-            $table->estado = $faker->randomElement(['aprobado', 'denegado']);
+            $table->estado = $faker->randomElement(['Aprobado', 'Pendiente']);
             $table->id_usuario = $faker->numberBetween(1,4);
-            $table->id_empresa = 1;
+            $table->id_empresa = 13;
             $table->save();
         }
     }
