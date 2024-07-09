@@ -10,7 +10,7 @@ use Auth;
 class Cheque extends Model
 {
     use HasFactory;
-    protected $table = 'cheques';
+    protected $table = 'cuentas_bancarias_cheques';
     protected $fillable = [
         'fecha',
         'id_cuenta',

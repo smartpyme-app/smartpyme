@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\Contabilidad\partidas\PartidasController;
-use App\Http\Controllers\Api\Contabilidad\partidas\DetallesController;
+use App\Http\Controllers\Api\Contabilidad\Partidas\PartidasController;
+use App\Http\Controllers\Api\Contabilidad\Partidas\DetallesController;
 use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como prueba para obtener de la base de datos y mostrar el resultado
 
     Route::get('/partidas',             [PartidasController::class, 'index']);
