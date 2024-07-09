@@ -86,6 +86,11 @@ class Cliente extends Model {
         return $this->hasMany('App\Models\Ventas\Venta', 'id_cliente');
     }
 
+    public function paquetes() 
+    {
+        return $this->hasMany('App\Models\Inventario\Paquete', 'id_cliente');
+    }
+
     public function creditos() 
     {
         return $this->hasMany('App\Models\Creditos\Credito', 'id_cliente');

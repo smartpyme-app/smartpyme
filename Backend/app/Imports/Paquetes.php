@@ -82,6 +82,7 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
             'piezas'    => 'required|numeric',
             'precio'    => 'required|numeric',
             'peso'      => 'required|numeric',
+            'otros'      => 'required|numeric',
             'cuenta_a_terceros' => 'required|numeric',
             'embalaje' => 'required',
             'total'      => 'required|numeric',
