@@ -9,7 +9,7 @@
         html, body{
             width: 11cm; height: 21.5cm;
             font-family: serif;
-/*            border: 1px solid red;*/
+            /*            border: 1px solid red;*/
         }
 
         #factura{
@@ -42,7 +42,7 @@
         .sujetas{ width: 0.8cm; text-align: center;}
         .exentas{ width: 0.8cm; text-align: center;}
         .gravadas{ width: 1cm; text-align: right;}
-        
+
 
         #letras     {top: 15cm; left: 0.2cm; width: 5cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 16cm; left: 0.2cm;; width: 9cm;}
@@ -57,34 +57,34 @@
         .no-print{position: absolute;}
 
     </style>
-    
+
     <style media="print"> .no-print{display: none; } </style>
 
 </head>
 <body>
 <body>
 
-    <section id="factura">
-        <div id="header">
-            <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-            <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
-            <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
-            <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
-            <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
-            <p id="nrc"><b>NRC: </b>{{ $cliente->ncr }}</p>
-            <p id="giro"><b>Giro: </b>{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
-            <p id="condicion">
-                @if ($venta->estado == 'Pagada')
-                    Contado
-                @else
-                    Crédito
-                @endif
-            </p>
-        </div>
-                    
-        <table>
-            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
-            @foreach($venta->detalles as $detalle)
+<section id="factura">
+    <div id="header">
+        <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+        <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
+        <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+        <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
+        <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
+        <p id="nrc"><b>NRC: </b>{{ $cliente->ncr }}</p>
+        <p id="giro"><b>Giro: </b>{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
+        <p id="condicion">
+            @if ($venta->estado == 'Pagada')
+                Contado
+            @else
+                Crédito
+            @endif
+        </p>
+    </div>
+
+    <table>
+        @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+        @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto">   {{ $detalle->nombre_producto  }}</td>
@@ -93,19 +93,19 @@
                 <td class="exentas">    </td>
                 <td class="gravadas">  ${{ number_format($detalle->total, 2) }} </th>
             </tr>
-            @endforeach
-        </table>
+        @endforeach
+    </table>
 
-        <div id="totales">
-            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
+    <div id="totales">
+        <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+        {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
-            <p id="suma">SUMA: ${{ number_format($venta->sub_total, 2) }}</p>
-            <p id="iva">IVA: ${{ number_format($venta->iva, 2) }}</p>
-            <p id="sub_total">SUBTOTAL: ${{ number_format($venta->total, 2) }}</p>
-            <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
-        </div>
-    </section>
+        <p id="suma">SUMA: ${{ number_format($venta->sub_total, 2) }}</p>
+        <p id="iva">IVA: ${{ number_format($venta->iva, 2) }}</p>
+        <p id="sub_total">SUBTOTAL: ${{ number_format($venta->total, 2) }}</p>
+        <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
+    </div>
+</section>
 
 </body>
 </html>

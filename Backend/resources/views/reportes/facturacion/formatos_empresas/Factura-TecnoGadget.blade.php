@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-    {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
     <title>TecnoGadget {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
@@ -9,7 +8,7 @@
         html, body{
             width: 11cm; height: 21.5cm;
             font-family: serif;
-/*            border: 1px solid red;*/
+            /*            border: 1px solid red;*/
         }
 
         #factura{
@@ -60,19 +59,19 @@
 <body>
 <body>
 
-    <section id="factura">
-        <div id="header">
-            <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-            <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
-            <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
-            <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
-            <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
-            <p id="condicion"><b>Condición: </b>{{ $venta->estado == 'Pagada' ? 'Contado' : 'Crédito' }}</p>
-        </div>
+<section id="factura">
+    <div id="header">
+        <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+        <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
+        <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+        <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
+        <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
+        <p id="condicion"><b>Condición: </b>{{ $venta->estado == 'Pagada' ? 'Contado' : 'Crédito' }}</p>
+    </div>
 
-        <table>
-            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
-            @foreach($venta->detalles as $detalle)
+    <table>
+        @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+        @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto">   {{ $detalle->nombre_producto  }}</td>
@@ -81,18 +80,18 @@
                 <td class="exentas">    </td>
                 <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
-            @endforeach
-        </table>
+        @endforeach
+    </table>
 
-        <div id="totales">
-            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
+    <div id="totales">
+        <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+        {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
-            <p id="suma">SUMAS: ${{ number_format($venta->total, 2) }}</p>
-            {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
-            <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
-        </div>
-    </section>
+        <p id="suma">SUMAS: ${{ number_format($venta->total, 2) }}</p>
+        {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
+        <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
+    </div>
+</section>
 
 </body>
 </html>
