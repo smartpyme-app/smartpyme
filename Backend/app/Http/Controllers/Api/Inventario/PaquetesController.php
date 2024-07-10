@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Paquete;
+use App\Models\Ventas\Clientes\Cliente;
 
 use App\Imports\Paquetes;
 use App\Exports\PaquetesExport;
@@ -193,6 +194,19 @@ class PaquetesController extends Controller
         $paquetes->filter($request);
 
         return Excel::download($paquetes, 'paquetes.xlsx');
+    }
+
+    public function clientesPaquetesPendientes() {
+
+        $clientes = Cliente::orderBy('nombre','asc')
+                            ->whereHas('paquetes', function($query) {
+                                $query->where('estado', 'En bodega');
+                            })
+                            ->where('enable', true)
+                            ->get();
+        
+        return Response()->json($clientes, 200);
+
     }
 
 }

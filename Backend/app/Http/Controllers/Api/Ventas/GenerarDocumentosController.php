@@ -109,7 +109,7 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 177){//177  OK V2
+            elseif(Auth::user()->id_empresa == 130){//130  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('Legal', 'portrait');
             }
@@ -129,12 +129,12 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 210 ){ //210  OK V2
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            elseif(Auth::user()->id_empresa == 244 ){ //244 OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-keke', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 244 ){ //210  OK V2
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-keke', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            elseif(Auth::user()->id_empresa == 210 ){ //210  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -229,7 +229,7 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 177){//177  OK V2
+            elseif(Auth::user()->id_empresa == 130){//130  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('Legal', 'portrait');
             }
