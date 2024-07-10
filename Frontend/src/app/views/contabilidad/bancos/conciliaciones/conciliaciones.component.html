@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Conciliaciones</h2>
+    <h2 class="page-heading">Bancos</h2>
     <button *ngIf="apiService.canCreate()" routerLink="/bancos/conciliacion/crear" tooltip="Crear conciliación (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir conciliación</button>
 </section>
 
@@ -23,7 +23,25 @@
 
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/bancos/conciliaciones">Todos</button>
+            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/bancos/conciliaciones">Conciliaciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/transacciones']">Transacciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cheques']">Cheques</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="estado" (change)="filtrarConciliaciones()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Anulada">Anulada</option>
+                <option value="Consigna">Consigna</option>
+                <option value="Pagada">Pagada</option>
+            </select>
+            <select name="id_sucursal" (change)="filtrarConciliaciones()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    {{sucursal.nombre}}
+                </option>
+            </select>
         </div>
     </div>
     <div class="row">

@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Cheques</h2>
+    <h2 class="page-heading">Bancos</h2>
     <button *ngIf="apiService.canCreate()" routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
 </section>
 
@@ -23,7 +23,10 @@
 
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/bancos/cheques">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/bancos/conciliaciones">Conciliaciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/transacciones']">Transacciones</button>
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cheques']">Cheques</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
         </div>
     </div>
     <div class="row">

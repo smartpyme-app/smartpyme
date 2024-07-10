@@ -15,6 +15,7 @@ export class ConciliacionesComponent implements OnInit {
 
     public conciliaciones:any = [];
     public conciliacion:any = {};
+    public sucursales:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
     public filtros:any = {};
@@ -27,6 +28,10 @@ export class ConciliacionesComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -44,6 +49,7 @@ export class ConciliacionesComponent implements OnInit {
         this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.id_sucursal = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;

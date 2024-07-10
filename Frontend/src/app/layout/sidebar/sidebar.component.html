@@ -1,5 +1,5 @@
 <div class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}" tourAnchor="tour.sidebar" id="tour.sidebar">
-    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
+    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="height: 47px;">
         <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
         <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
         <button tourAnchor="tour.sidebar_toogle" id="tour.sidebar_toogle"  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
@@ -26,7 +26,7 @@
             </ul>
         </form>
     </div>
-    <div style="min-height: 40vh;">
+    <div style="min-height: 60vh;">
         <ul class="list-unstyled ps-0">
             <li *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Contador'" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
@@ -84,18 +84,10 @@
                     <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
                 </a>
             </li>
-            <li class="mb-1">
-                <button (click)="toggleBancos()" tooltip="Bancos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!bancosIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/bank-account.png" class="icon me-2">Bancos
-                </button>
-                <div [collapse]="bancosIsCollapsed" [isAnimated]="true">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/list.png" class="icon me-2">Cuentas</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/transacciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/repeat.png" class="icon me-2">Transacciones</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/cheques']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Cheques</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Conciliaciones</a></li>
-                  </ul>
-                </div>
+            <li *ngIf="usuario.empresa.modulo_citas"  class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/calendar.png" class="icon me-2">Citas
+                </a>
             </li>
             <li class="mb-1">
                 <button (click)="toggleFinanzas()" tooltip="Finanzas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed" aria-controls="collapseBasic">
@@ -103,11 +95,13 @@
                 </button>
                 <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Reportería</a></li>
+                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li> -->
+                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li> -->
+                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li> -->
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li> -->
                   </ul>
                 </div>
@@ -131,14 +125,13 @@
             </li>
         </ul>
     </div>
-    <div style="min-height: 37vh;">
+    <div style="min-height: 20vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
             <li tourAnchor="tour.crear_venta" id="tour.crear_venta" *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
             <li tourAnchor="tour.cierre_caja" id="tour.cierre_caja" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img src="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li>
-            <li tourAnchor="tour.notificaciones" id="tour.notificaciones" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center justify-content-between text-decoration-none py-1 w-100"><span><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</span><span class="badge bg-primary" *ngIf="notificaciones.total">{{ notificaciones.total ? notificaciones.total : 0 }}</span></a> </li>
-            <li *ngIf="usuario.empresa.modulo_citas" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
+            <!-- <li tourAnchor="tour.notificaciones" id="tour.notificaciones" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center justify-content-between text-decoration-none py-1 w-100"><span><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</span><span class="badge bg-primary" *ngIf="notificaciones.total">{{ notificaciones.total ? notificaciones.total : 0 }}</span></a> </li> -->
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
-            <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
+            <!-- <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
                 <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Configuraciones
                 </button>
@@ -155,7 +148,7 @@
                 <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-warning">
                     <img src="/assets/icons/log-out-stroke.png" class="icon me-2">Cerrar Sesión
                 </a>
-            </li>
+            </li> -->
         </ul>
     </div>
 </div>
