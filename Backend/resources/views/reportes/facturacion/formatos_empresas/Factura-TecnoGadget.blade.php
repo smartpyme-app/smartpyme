@@ -7,9 +7,10 @@
 
         *{ font-size: 12px; margin: 0; padding: 0;}
         html, body{
-            width: 11cm; height: 21.5cm;
+/*            width: 11cm; height: 21.5cm;*/
             font-family: serif;
 /*            border: 1px solid red;*/
+                margin-left: 1cm;
         }
 
         #factura{
@@ -32,7 +33,7 @@
 
 
         table   {position: absolute; top: 6.5cm; left: 0cm; text-align: left; border-collapse: collapse; }
-        table td{height: 0.6cm; text-align: left;}
+        table td{height: 0.6cm; text-align: left; word-break:break-all;}
 
         .cantidad{ width: 1cm; text-align: center;}
         .producto{ width: 3.7cm; text-align: left;}
@@ -60,13 +61,18 @@
 <body>
 <body>
 
-    <section id="factura">
+    @for ($i = 0; $i < 3; $i++)
+        {{-- expr --}}
+    
+    <section id="factura" style="margin-left: {{ 11 * $i  }}cm;">
         <div id="header">
             <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
+            @if ($venta->id_cliente)
             <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
             <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
             <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
+            @endif
             <p id="condicion"><b>Condición: </b>{{ $venta->estado == 'Pagada' ? 'Contado' : 'Crédito' }}</p>
         </div>
 
@@ -93,6 +99,8 @@
             <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
         </div>
     </section>
+
+    @endfor
 
 </body>
 </html>
