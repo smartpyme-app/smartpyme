@@ -126,8 +126,15 @@ export class EmpresaComponent implements OnInit {
         this.empresa.file = event.target.files[0];
         
         let formData:FormData = new FormData();
-        for (var key in this.empresa) {
-            formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
+        for (let key in this.empresa) {
+            if (this.empresa.hasOwnProperty(key)) {
+                let value = this.empresa[key];
+                if (typeof value === 'boolean') {
+                    formData.append(key, value ? '1' : '0');
+                } else {
+                    formData.append(key, value == null ? '' : value);
+                }
+            }
         }
         this.loading = true;
         this.apiService.store('empresa', formData).subscribe(empresa => {
