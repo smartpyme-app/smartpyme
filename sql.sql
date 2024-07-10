@@ -111,3 +111,5 @@ CREATE TABLE partida_detalles (
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
 
 ALTER TABLE smartpyme.catalogo_cuentas MODIFY COLUMN id_cuenta_padre int(11) NULL;
+
+ALTER TABLE smartpyme.catalogo_cuentas ADD acepta_datos BOOL NOT NULL;
