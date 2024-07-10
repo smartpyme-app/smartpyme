@@ -18,6 +18,9 @@ export class CrearEmpresaComponent implements OnInit {
     public saving:boolean = false;
     public licencia:boolean = false;
     public filtros:any = {};
+    public departamentos:any = [];
+    public municipios:any = [];
+    public actividad_economicas:any = [];
 
     modalRef!: BsModalRef;
 
@@ -28,6 +31,9 @@ export class CrearEmpresaComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
     }
 
     public loadAll(){
@@ -104,6 +110,20 @@ export class CrearEmpresaComponent implements OnInit {
             this.empresas = empresas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    setGiro(){
+        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;
+    }
+
+    setMunicipio(){
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento).nombre;
+    }
+
+    setDepartamento(){
+        this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
+        this.empresa.cod_municipio = null;
+        this.empresa.municipio = null;
     }
 
     setPais(){

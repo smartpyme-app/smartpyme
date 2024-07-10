@@ -40,7 +40,7 @@
         .sujetas{ width: {{ number_format($venta->pos_detalles_sujetas, 1) }}cm; text-align: right;}
         .exentas{ width: {{ number_format($venta->pos_detalles_exentas, 1) }}cm; text-align: right;}
         .gravadas{ width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
-        
+
         #letras     {position: absolute; top: {{ number_format($venta->pos_letras_y, 1) }}cm; left: {{ number_format($venta->pos_letras_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_producto, 1) }}cm;}
         #correlativo{position: absolute; top: {{ number_format($venta->pos_correlativo_y, 1) }}cm; left: {{ number_format($venta->pos_letras_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_producto, 1) }}cm;}
 
@@ -57,7 +57,7 @@
 		.no-print{position: absolute; top:0;}
 
 	</style>
-	
+
 	<style media="print"> .no-print{display: none; } </style>
 
 </head>
@@ -67,7 +67,11 @@
 	<section style="border:1px solid #ffffff00; background-image: url('/img/credito.jpg'); background-repeat: no-repeat; background-size: 100% 100%; height: 14.2cm; position: relative;">
 		<p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
 		<p id="cliente">{{ $venta->nombre_cliente }}</p>
-		<p id="direccion">{{ $venta->cliente->municipio }} {{ $venta->cliente->departamento }} {{ $venta->cliente->direccion }}</p>
+        @if($venta->cliente->direccion == null)
+            <p id="direccion">{{ $venta->cliente->municipio }} {{ $venta->cliente->departamento }} {{ $venta->cliente->empresa_direccion }}</p>
+        @else
+            <p id="direccion">{{ $venta->cliente->municipio }} {{ $venta->cliente->departamento }} {{ $venta->cliente->direccion }}</p>
+        @endif
 		<p id="dui">{{ $venta->cliente->nit }}</p>
 		<p id="nrc">{{ $venta->cliente->registro }}</p>
 		<p id="giro">{{ \Illuminate\Support\Str::limit($venta->cliente->giro, 50, $end = '...') }}</p>
@@ -78,7 +82,7 @@
 				Contado
 			@endif
 		</p> --}}
-					
+
 		<table>
 			@foreach($venta->detalles as $detalle)
 			<tr>
@@ -105,7 +109,7 @@
 		<p id="suma">		${{ number_format($venta->subtotal, 2) }}</p>
 		<p id="iva">		${{ number_format($venta->iva, 2) }}</p>
         <p id="subtotal">        ${{ number_format($venta->subtotal + $venta->iva, 2) }}</p>
-		
+
 		@if ($venta->iva_percibido > 0)
 			<p id="iva_percibido">	${{ number_format($venta->iva_percibido, 2) }}</p>
 		@endif
@@ -126,7 +130,7 @@
 		{{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
 	</section>
-	
+
     <p class="no-print">
         <button onClick="window.print();" autofocus>Imprimir</button>
         <button onClick="window.close();" autofocus>Cerrar</button>

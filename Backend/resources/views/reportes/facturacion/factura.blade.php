@@ -40,7 +40,7 @@
         .sujetas{ width: {{ number_format($venta->pos_detalles_sujetas, 1) }}cm; text-align: right;}
         .exentas{ width: {{ number_format($venta->pos_detalles_exentas, 1) }}cm; text-align: right;}
         .gravadas{ width: {{ number_format($venta->pos_detalles_gravadas, 1) }}cm; text-align: right;}
-        
+
         #letras     {position: absolute; top: {{ number_format($venta->pos_letras_y, 1) }}cm; left: {{ number_format($venta->pos_letras_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_producto, 1) }}cm;}
         #correlativo{position: absolute; top: {{ number_format($venta->pos_correlativo_y, 1) }}cm; left: {{ number_format($venta->pos_letras_x, 1) }}cm; width: {{ number_format($venta->pos_detalles_producto, 1) }}cm;}
 
@@ -55,7 +55,7 @@
         .no-print{position: absolute; top:0;}
 
     </style>
-	
+
 	<style media="print"> .no-print{display: none; } </style>
 
 </head>
@@ -66,14 +66,19 @@
 		<p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
 		<p id="cliente">{{ $venta->nombre_cliente }}</p>
         @if ($venta->cliente)
-    		<p id="direccion">{{ $venta->cliente->direccion }} {{ $venta->cliente->municipio }}</p>
+            @if($venta->cliente->direccion == null)
+                <p id="direccion">{{ $venta->cliente->empresa_direccion }} {{ $venta->cliente->municipio }} </p>
+            @else
+                <p id="direccion">{{ $venta->cliente->direccion }} {{ $venta->cliente->municipio }} </p>
+            @endif
+
 		    <p id="dui">{{ $venta->cliente->dui }}</p>
         @endif
 
 		{{-- <p id="condicion">
 			<span style="left: 300pt;">{{ $venta->condicion }}</span>
 		</p> --}}
-		
+
 		<table>
 			@foreach($venta->detalles as $detalle)
 			<tr>
@@ -98,7 +103,7 @@
 		</table>
 
 		<p id="suma">		${{ number_format($venta->gravada + $venta->iva, 2) }}</p>
-		
+
 		@if ($venta->no_sujeta > 0)
 			<p id="no_sujeta">	${{ number_format($venta->no_sujeta, 2) }}</p>
 		@endif

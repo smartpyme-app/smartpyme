@@ -16,7 +16,7 @@ Route::get('/prueba', function(){ return Response()->json(['message' => 'Success
 
 require base_path('routes/modulos/auth.php');
 
-//Route::group(['middleware' => ['jwt.auth']], function () {
+Route::group(['middleware' => ['jwt.auth']], function () {
 
 //
 		require base_path('routes/modulos/dash.php');
@@ -84,15 +84,15 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/admin/bancos.php');
 		require base_path('routes/modulos/admin/usuarios.php');
 		require base_path('routes/modulos/admin/accesos.php');
-		require base_path('routes/modulos/admin/transacciones.php');
 		require base_path('routes/modulos/admin/licencias.php');
 		require base_path('routes/modulos/admin/MH.php');
 
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');
+		require base_path('routes/modulos/super-admin/transacciones.php');
 
 
-//});
+});
 
 
 Route::get('/prueba/factura', function () {

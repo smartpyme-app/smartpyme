@@ -81,7 +81,7 @@ export class CrearAbonoVentaComponent implements OnInit {
 
                     }, error => {this.alertService.error(error); this.saving = false; });
                 }
-
+            // Generar cheque
                 if(this.abono.forma_pago == 'Cheque'){
                     let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
                     let cheque:any = {};
@@ -89,7 +89,7 @@ export class CrearAbonoVentaComponent implements OnInit {
                     cheque.concepto = 'Abono por venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
                     cheque.id_cuenta = cuenta.id;
                     cheque.correlativo = cuenta.correlativo_cheques;
-                    cheque.anombrede = this.venta.nombre_cliente;
+                    cheque.anombrede = this.venta.nombre_cliente ? this.venta.nombre_cliente : 'Sin nombre';
                     cheque.total = this.abono.total;
                     cheque.fecha = this.apiService.date();
                     cheque.id_empresa = this.apiService.auth_user().id_empresa;

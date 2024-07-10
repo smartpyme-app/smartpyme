@@ -13,7 +13,7 @@ CREATE TABLE cuentas_bancarias (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE cheques (
+CREATE TABLE cuentas_bancarias_cheques (
     id int NOT NULL AUTO_INCREMENT,
     fecha date NOT NULL,
     id_cuenta int NOT NULL,
