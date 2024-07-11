@@ -25,6 +25,8 @@ import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/ca
 import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
 
+import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -57,6 +59,8 @@ const routes: Routes = [
         
         { path: 'contabilidad/partidas', component: PartidasComponent, title: 'Partidas' },
         { path: 'contabilidad/partida/:id', component: PartidaComponent, title: 'Partida' },
+
+        { path: 'contabilidad/configuracion', component: ContabilidadConfiguracionComponent, title: 'Configuración' },
 
     ]
   }
