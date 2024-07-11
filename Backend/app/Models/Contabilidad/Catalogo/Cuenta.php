@@ -19,6 +19,7 @@ class Cuenta extends Model
         'rubro',
         'nivel',
         'id_empresa',
+        'acepta_datos',
     ];
 
     protected static function boot()
@@ -36,5 +37,5 @@ class Cuenta extends Model
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
-    
+
 }

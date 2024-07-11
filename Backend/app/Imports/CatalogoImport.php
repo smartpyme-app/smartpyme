@@ -17,6 +17,13 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         ++$this->numRows;
         $cuenta = new Cuenta();
 
+        if($row['acepta_datos'] == 'Si'){
+            $row['acepta_datos'] = 1;
+        }
+        elseif ($row['rubro'] == 'No'){
+            $row['acepta_datos'] = 0;
+        }
+
         if($row['rubro'] == 1){
             $row['rubro'] = 'Activos';
         }
@@ -45,6 +52,7 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
             $row['rubro'] = 'Otros';
         }
 
+
         $cuenta->codigo = $row['codigo'];
         $cuenta->nombre = $row['nombre'];
         $cuenta->naturaleza = $row['naturaleza'];
@@ -52,7 +60,9 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         $cuenta->rubro = $row['rubro'];
         $cuenta->nivel = $row['nivel'];
         $cuenta->id_empresa = Auth::user()->id_empresa;
+        $cuenta->acepta_datos= $row['acepta_datos'];
         $cuenta ->save();
+
 
     }
 
@@ -63,7 +73,7 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
             'nombre'       => 'required|string',
             'naturaleza'   => 'required|string',
             'rubro'        => 'required|int',
-            'nivel'        => 'required|int',
+            'nivel'        => 'required|int'
         ];
     }
 
