@@ -24,6 +24,7 @@ CREATE TABLE licencia_empresas (
 );
 
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
+ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
 
 ALTER TABLE eventos CHANGE id_servicio id_servicio INT(11) NULL;
 
