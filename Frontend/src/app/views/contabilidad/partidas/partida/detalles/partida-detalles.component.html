@@ -77,12 +77,14 @@
                 <label for="detalle.id_cuenta">Cuenta del catálogo:</label>
                 <ng-select [(ngModel)]="detalle.cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.cuenta">
                     <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta">
-                        <div class="d-flex align-items-center">
+                    <div *ngFor="let cuenta of catalogo">
+                        <ng-option  [value]="cuenta" *ngIf="cuenta.acepta_datos == 1">
+                        <div class="d-flex align-items-center" >
                             <span style="width: 75px;">{{ cuenta.codigo }} </span>
                             <span class="col-8"> - {{ cuenta.nombre }}</span>
                         </div>
-                    </ng-option>
+                        </ng-option>
+                    </div>  
                 </ng-select>
             </div>
 

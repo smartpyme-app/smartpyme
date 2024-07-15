@@ -17,12 +17,12 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         ++$this->numRows;
         $cuenta = new Cuenta();
 
-        if($row['acepta_datos'] == 'Si'){
-            $row['acepta_datos'] = 1;
-        }
-        elseif ($row['rubro'] == 'No'){
-            $row['acepta_datos'] = 0;
-        }
+//        if($row['acepta_datos'] == 'Si'){
+//            $row['acepta_datos'] = 1;
+//        }
+//        elseif ($row['rubro'] == 'No'){
+//            $row['acepta_datos'] = 0;
+//        }
 
         if($row['rubro'] == 1){
             $row['rubro'] = 'Activos';

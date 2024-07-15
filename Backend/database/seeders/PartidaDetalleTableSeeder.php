@@ -21,7 +21,7 @@ class PartidaDetalleTableSeeder extends Seeder
         for($i = 0; $i <= 150 ; $i++){
             $table= new Detalle();
             $table->id_cuenta = $faker->numberBetween(1, 801);
-            $table->codigo = $faker->randomElement(['440201', '5101', '21060101', '110101', '2201','420202']);
+            $table->codigo = $faker->randomElement(['440201', '51010101', '21060101', '11010101', '22010101','420202001']);
             $table->nombre_cuenta = $faker->randomElement(['Compras', 'Ventas', 'IVA DEBITO FISCAL', 'Prestamos Bancarios', '2201','420202']);
             $table->concepto = $faker->randomElement(['Venta', 'Caja', 'Iva Debito Fiscal']);
             $table->debe= $faker->randomFloat(2,200, 500);
@@ -30,8 +30,6 @@ class PartidaDetalleTableSeeder extends Seeder
             $table->id_partida = $faker->numberBetween(1,50);
             $table->save();
         }
-
-
 
     }
 }
