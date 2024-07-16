@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Contabilidad\Partidas\Detalle;
+use App\Models\Contabilidad\Partidas\Partida;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -85,6 +86,29 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioMayor(){
 
+        $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();
+
+        $partidas= Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
+//        partidas ya recogidas segun la fecha qued se ha creado, solo falta detallarlas
+
+
+        $detalles_cnts= $partidas->pluck('codigo');
+//        $cuents_rstl= array_unique($detalles_cnts);
+//        dd($detalles_cnts->unique());
+
+//        foreach ($detalles_cnts->unique() as $cuenta){
+//
+//            Cuenta::where()
+//
+//
+//        }
+
+        foreach ($partidas as $partida){
+
+            $detalle= Detalle::where('id_partida', $partida->id )->get();
+        }
+
         $detalles = Detalle::get();
         $duplica =$detalles->groupBy('codigo');
         $det_agrup= $duplica->all();
@@ -110,8 +134,9 @@ class GenerarReportesController extends Controller
         $detalles = Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
 
         //separacion de activos y gastos
+
         $cuentas_deudoras = Cuenta::where('naturaleza','Deudor')->get();
-        $codigos_deudores= $cuentas_deudoras->pluck('codigo');
+        $codigos_deudores = $cuentas_deudoras->pluck('codigo');
 
         //separacion de pasivos y productos
         $cuentas_acreedoras = Cuenta::where('naturaleza','Acreedor')->get();
