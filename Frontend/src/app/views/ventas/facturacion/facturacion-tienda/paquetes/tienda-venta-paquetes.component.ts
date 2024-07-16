@@ -37,7 +37,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
     }
 
     public openModal(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+        this.apiService.getAll('paquetes/pendientes/clientes').subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
         this.loadAll();

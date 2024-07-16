@@ -77,7 +77,6 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/admin/bancos.php');
 		require base_path('routes/modulos/admin/usuarios.php');
 		require base_path('routes/modulos/admin/accesos.php');
-		require base_path('routes/modulos/admin/transacciones.php');
 		require base_path('routes/modulos/admin/licencias.php');
 		require base_path('routes/modulos/admin/MH.php');
 

@@ -53,7 +53,7 @@
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="text-right">Precio sin IVA</th>
                         <th class="text-right">Precio con IVA</th>
-                        <th class="text-center">Más</th>
+                        <th class="text-center" *ngIf="apiService.canEdit()">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -79,8 +79,8 @@
                         <td class="d-none d-md-table-cell">{{ servicio.nombre_categoria }}</td>
                         <td class="text-right">{{ servicio.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (servicio.precio * 1) + (servicio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center">
-                            <a *ngIf="apiService.canEdit()" class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
+                        <td class="text-center" *ngIf="apiService.canEdit()">
+                            <a class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
                         </td>

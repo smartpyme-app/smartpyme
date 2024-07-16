@@ -24,7 +24,6 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
     {
         // throw new \Exception($mensaje);
         
-        ++$this->numRows;
         $usuario = JWTAuth::parseToken()->authenticate();
 
         $id_cliente = Cliente::where('nombre', $row['cliente'])
@@ -42,32 +41,43 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
             $id_cliente = $cliente->id;
         }
 
-        $paquete = new Paquete();
-        $paquete->fecha     = date('Y-m-d');
-        $paquete->wr        = $row['wr'];
-        $paquete->transportista = isset($row['transportista']) ? $row['transportista'] : '';
-        $paquete->consignatario = isset($row['consignatario']) ? $row['consignatario'] : '';
-        $paquete->transportador = isset($row['transportador']) ? $row['transportador'] : '';
-        $paquete->estado    = 'En bodega';
-        $paquete->num_seguimiento   = isset($row['seguimiento']) ? $row['seguimiento'] : '';
-        $paquete->num_guia  = isset($row['guia']) ? $row['guia'] : '';
-        $paquete->piezas    = $row['piezas'];
-        $paquete->embalaje    = $row['embalaje'];
-        $paquete->peso      = $row['peso'];
-        $paquete->precio    = $row['precio'];
-        $paquete->volumen   = isset($row['volumen']) ? $row['volumen'] : null;
-        $paquete->nota      = isset($row['nota']) ? $row['nota'] : '';
-        $paquete->cuenta_a_terceros    = $row['cuenta_a_terceros'];
-        $paquete->otros    = $row['otros'];
-        $paquete->total    = $row['total'];
-        $paquete->id_cliente    = $id_cliente;
-        $paquete->id_asesor     = isset($row['codigo_asesor']) ? User::where('id_empresa', $usuario->id_empresa)->where('codigo', $row['codigo_asesor'])->pluck('id')->first() : null;
-        $paquete->id_usuario    = $usuario->id;
-        $paquete->id_sucursal   = $usuario->id_sucursal;
-        $paquete->id_empresa    = $usuario->id_empresa;
-        $paquete->save();
+        $paquete = Paquete::where('wr', $row['wr'])
+                                ->where('id_empresa', $usuario->id_empresa)
+                                ->first();
 
-        return $paquete;
+        if (!$paquete) {
+
+            $paquete = new Paquete();
+            $paquete->fecha     = date('Y-m-d');
+            $paquete->wr        = $row['wr'];
+            $paquete->transportista = isset($row['transportista']) ? $row['transportista'] : '';
+            $paquete->consignatario = isset($row['consignatario']) ? $row['consignatario'] : '';
+            $paquete->transportador = isset($row['transportador']) ? $row['transportador'] : '';
+            $paquete->estado    = 'En bodega';
+            $paquete->num_seguimiento   = isset($row['seguimiento']) ? $row['seguimiento'] : '';
+            $paquete->num_guia  = isset($row['guia']) ? $row['guia'] : '';
+            $paquete->piezas    = $row['piezas'];
+            $paquete->embalaje    = $row['embalaje'];
+            $paquete->peso      = $row['peso'];
+            $paquete->precio    = $row['precio'];
+            $paquete->volumen   = isset($row['volumen']) ? $row['volumen'] : null;
+            $paquete->nota      = isset($row['nota']) ? $row['nota'] : '';
+            $paquete->cuenta_a_terceros    = $row['cuenta_a_terceros'];
+            $paquete->otros    = $row['otros'];
+            $paquete->total    = $row['total'];
+            $paquete->id_cliente    = $id_cliente;
+            $paquete->id_asesor     = isset($row['codigo_asesor']) ? User::where('id_empresa', $usuario->id_empresa)->where('codigo', $row['codigo_asesor'])->pluck('id')->first() : null;
+            $paquete->id_usuario    = $usuario->id;
+            $paquete->id_sucursal   = $usuario->id_sucursal;
+            $paquete->id_empresa    = $usuario->id_empresa;
+            $paquete->save();
+
+            ++$this->numRows;
+            
+            return $paquete;
+
+        }
+
 
     }
 
@@ -76,12 +86,14 @@ class Paquetes implements ToModel, WithHeadingRow, WithValidation
         return [
             'cliente'   => 'required|string',
             'codigo_asesor'    => 'required',
-            'wr'    => 'required|unique:paquetes,wr',
+            // 'wr'    => 'required|unique:paquetes,wr',
+            'wr'    => 'required',
             // 'seguimiento'    => 'required',
             'guia'    => 'required',
             'piezas'    => 'required|numeric',
             'precio'    => 'required|numeric',
             'peso'      => 'required|numeric',
+            'otros'      => 'required|numeric',
             'cuenta_a_terceros' => 'required|numeric',
             'embalaje' => 'required',
             'total'      => 'required|numeric',

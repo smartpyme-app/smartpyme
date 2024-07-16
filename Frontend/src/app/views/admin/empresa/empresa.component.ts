@@ -66,15 +66,17 @@ export class EmpresaComponent implements OnInit {
     }
 
     setGiro(){
-        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
+        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;
     }
 
     setMunicipio(){
-        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio).nombre;
+        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento).nombre;
     }
 
     setDepartamento(){
         this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
+        this.empresa.cod_municipio = null;
+        this.empresa.municipio = null;
     }
 
     setPais(){
@@ -124,8 +126,15 @@ export class EmpresaComponent implements OnInit {
         this.empresa.file = event.target.files[0];
         
         let formData:FormData = new FormData();
-        for (var key in this.empresa) {
-            formData.append(key, this.empresa[key] == null ? '' : this.empresa[key]);
+        for (let key in this.empresa) {
+            if (this.empresa.hasOwnProperty(key)) {
+                let value = this.empresa[key];
+                if (typeof value === 'boolean') {
+                    formData.append(key, value ? '1' : '0');
+                } else {
+                    formData.append(key, value == null ? '' : value);
+                }
+            }
         }
         this.loading = true;
         this.apiService.store('empresa', formData).subscribe(empresa => {

@@ -9,5 +9,7 @@ use App\Http\Controllers\Api\Inventario\PaquetesController;
     Route::post('/paquetes/importar',          [PaquetesController::class, 'import']);
     Route::get('/paquetes/exportar',          [PaquetesController::class, 'export']);
 
+    Route::get('/paquetes/pendientes/clientes',          [PaquetesController::class, 'clientesPaquetesPendientes']);
+
 
 ?>

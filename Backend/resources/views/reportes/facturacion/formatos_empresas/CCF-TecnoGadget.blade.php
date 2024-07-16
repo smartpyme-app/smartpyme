@@ -7,9 +7,10 @@
 
         *{ font-size: 12px; margin: 0; padding: 0;}
         html, body{
-            width: 11cm; height: 21.5cm;
+/*            width: 11cm; height: 21.5cm;*/
             font-family: serif;
-            /*            border: 1px solid red;*/
+/*            border: 1px solid red;*/
+                margin-left: 1cm;
         }
 
         #factura{
@@ -26,8 +27,8 @@
         #fecha          {top: 4cm; left: 6cm; }
         #cliente        {top: 4.5cm; left: 0.3cm; width: 8cm; white-space:nowrap;}
         #direccion      {top: 5cm; left: 0.3cm; width: 8cm; white-space:nowrap;}
-        #condicion      {top: 5.5cm; left: 5.7cm; }
-        #dui            {top: 5.5cm; left: 3.1cm; }
+        #condicion      {top: 5.5cm; left: 6.5cm; }
+        #dui            {top: 5.5cm; left: 4.1cm; }
         #nit            {top: 5.5cm; left: 0.3cm; }
         #nrc            {top: 6cm; left: 0.3cm; }
         #giro           {top: 6cm; left: 3cm; width: 4cm; white-space:nowrap;}
@@ -64,27 +65,30 @@
 <body>
 <body>
 
-<section id="factura">
-    <div id="header">
-        <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-        <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
-        <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
-        <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
-        <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
-        <p id="nrc"><b>NRC: </b>{{ $cliente->ncr }}</p>
-        <p id="giro"><b>Giro: </b>{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
-        <p id="condicion">
-            @if ($venta->estado == 'Pagada')
-                Contado
-            @else
-                Crédito
-            @endif
-        </p>
-    </div>
+    @for ($i = 0; $i < 3; $i++)
+        {{-- expr --}}
 
-    <table>
-        @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
-        @foreach($venta->detalles as $detalle)
+    <section id="factura" style="margin-left: {{ 11 * $i  }}cm;">
+        <div id="header">
+            <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
+            <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
+            <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
+            <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
+            <p id="nrc"><b>NRC: </b>{{ $cliente->ncr }}</p>
+            <p id="giro"><b>Giro: </b>{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>
+            <p id="condicion">
+                @if ($venta->estado == 'Pagada')
+                    Contado
+                @else
+                    Crédito
+                @endif
+            </p>
+        </div>
+
+        <table>
+            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+            @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto">   {{ $detalle->nombre_producto  }}</td>
@@ -106,6 +110,8 @@
         <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
     </div>
 </section>
+
+     @endfor
 
 </body>
 </html>
