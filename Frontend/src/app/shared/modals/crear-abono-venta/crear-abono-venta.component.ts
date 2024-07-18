@@ -70,8 +70,11 @@ export class CrearAbonoVentaComponent implements OnInit {
                     let transaccion:any = {};
                     transaccion.estado = 'Pendiente';
                     transaccion.tipo = 'Abono';
-                    transaccion.concepto = 'Abono por venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
+                    transaccion.tipo_operacion = 'Transferencia';
+                    transaccion.concepto = 'Abono de venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
                     transaccion.id_cuenta = cuenta.id;
+                    transaccion.referencia = 'Abono de Venta'
+                    transaccion.id_referencia = abono.id;
                     transaccion.total = this.abono.total;
                     transaccion.fecha = this.apiService.date();
                     transaccion.id_empresa = this.apiService.auth_user().id_empresa;
@@ -89,6 +92,8 @@ export class CrearAbonoVentaComponent implements OnInit {
                     cheque.concepto = 'Abono por venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
                     cheque.id_cuenta = cuenta.id;
                     cheque.correlativo = cuenta.correlativo_cheques;
+                    cheque.referencia = 'Abono por Venta'
+                    cheque.id_referencia = this.venta.id;
                     cheque.anombrede = this.venta.nombre_cliente ? this.venta.nombre_cliente : 'Sin nombre';
                     cheque.total = this.abono.total;
                     cheque.fecha = this.apiService.date();

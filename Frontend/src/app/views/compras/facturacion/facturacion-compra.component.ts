@@ -130,7 +130,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.cobrar_percepcion = false;
         this.compra.id_bodega = this.apiService.auth_user().id_bodega;
         this.compra.id_usuario = this.apiService.auth_user().id;
-        this.compra.id_vendedor = this.apiService.auth_user().id_empleado;
+        this.compra.id_vendedor = this.apiService.auth_user().id;
         this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.compra.id_empresa = this.apiService.auth_user().id_empresa;
         let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
@@ -315,8 +315,11 @@ export class FacturacionCompraComponent implements OnInit {
                             let transaccion:any = {};
                             transaccion.estado = 'Pendiente';
                             transaccion.tipo = 'Abono';
+                            transaccion.tipo_operacion = 'Transferencia';
                             transaccion.concepto = 'Compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
                             transaccion.id_cuenta = cuenta.id;
+                            transaccion.referencia = 'Compra'
+                            transaccion.id_referencia = compra.id;
                             transaccion.total = this.compra.total;
                             transaccion.fecha = this.apiService.date();
                             transaccion.id_empresa = this.apiService.auth_user().id_empresa;
@@ -334,6 +337,8 @@ export class FacturacionCompraComponent implements OnInit {
                         cheque.concepto = 'Compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
                         cheque.id_cuenta = cuenta.id;
                         cheque.correlativo = cuenta.correlativo_cheques;
+                        cheque.referencia = 'Compra'
+                        cheque.id_referencia = compra.id;
                         cheque.anombrede = this.compra.nombre_cliente ? this.compra.nombre_cliente : 'Sin nombre';
                         cheque.total = this.compra.total;
                         cheque.fecha = this.apiService.date();

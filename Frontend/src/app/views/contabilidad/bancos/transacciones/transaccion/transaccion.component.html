@@ -51,4 +51,35 @@
 
 </form>
 
+<div class="bg-white rounded p-3" *ngIf="transaccion.id">
+    
+    <h6 class="my-3 font-weight-bold">Comprobante</h6>
 
+    <div class="col-lg-3 col-md-4 col-sm-12">
+        <div class="card" *ngIf="!transaccion.url_referencia">
+            <div class="file">
+                <figure class="img-thumbnail file-upload d-flex flex-column justify-content-center align-items-center" tooltip="Agregar" style="min-height: 200px;">
+                    <i class="fa fa-image fa-2x text-muted"></i>
+                    <small class="text-muted">Agregar</small>
+                    <input type="file" name="img" (change)="setFile($event)" accept="image/jpeg, image/jpg, application/pdf" title="Agregar documento (jpg o pdf)">
+                </figure>
+            </div>
+        </div>
+
+       <div class="card file_manager" *ngIf="transaccion.url_referencia">
+           <div class="file">
+               <a class="click" (click)="verDocumento(transaccion)" title="Ver documento">
+                  <!--  <div class="hover">
+                       <button type="button" class="btn btn-icon btn-danger" (click)="delete(documento)" tooltip="Eliminar" placement="bottom">
+                           <i class="fa fa-trash"></i>
+                       </button>
+                   </div> -->
+                   <div class="icon">
+                       <i class="fa fa-file"></i>
+                   </div>
+               </a>
+           </div>
+       </div>
+    </div>
+
+</div>

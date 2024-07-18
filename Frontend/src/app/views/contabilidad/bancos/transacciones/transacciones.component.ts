@@ -17,6 +17,7 @@ export class TransaccionesComponent implements OnInit {
     public transaccion:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
     public filtros:any = {};
 
     modalRef!: BsModalRef;
@@ -100,6 +101,10 @@ export class TransaccionesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+    public verDocumento(transaccion:any){
+        var ventana = window.open(this.apiService.baseUrl + "/img/" + transaccion.url_referencia + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+    }
+
     public delete(transaccion:any){
 
         Swal.fire({
@@ -139,6 +144,23 @@ export class TransaccionesComponent implements OnInit {
             }
             this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('bancos/transacciones/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'transacciones.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 }
