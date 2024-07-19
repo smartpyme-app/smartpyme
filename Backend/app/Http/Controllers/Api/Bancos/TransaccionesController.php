@@ -31,6 +31,9 @@ class TransaccionesController extends Controller
                                 ->when($request->tipo, function($query) use ($request){
                                     return $query->where('tipo', $request->tipo);
                                 })
+                                ->when($request->tipo_operacion, function($query) use ($request){
+                                    return $query->where('tipo_operacion', $request->tipo_operacion);
+                                })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->orderBy('id', 'desc')
                                 ->paginate($request->paginate);

@@ -27,6 +27,15 @@
                     <option value="Abono">Abono</option>
                 </select>
             </div>
+            <div class="form-group col-md-4 col-lg-4">
+                <label for="tipo_operacion">Operación:</label>
+                <select class="form-select" name="tipo_operacion" [(ngModel)]="transaccion.tipo_operacion">
+                    <option value="">Seleccione aquí</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Depósito">Depósito</option>
+                </select>
+            </div>
             <div class="form-group col-md-12 col-lg-12">
                 <label for="concepto">Concepto:</label><br>
                 <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="transaccion.concepto" name="concepto" cols="30" rows="3"></textarea>

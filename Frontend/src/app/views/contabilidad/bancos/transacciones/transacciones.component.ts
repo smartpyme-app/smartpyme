@@ -43,6 +43,7 @@ export class TransaccionesComponent implements OnInit {
 
     public loadAll() {
         this.filtros.tipo = '';
+        this.filtros.tipo_operacion = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';

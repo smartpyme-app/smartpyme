@@ -159,6 +159,15 @@
                     <option value="Cargo">Cargo</option>
                 </select>
             </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.tipo_operacion">Operación:</label>
+                <select [(ngModel)]="filtros.tipo_operacion" class="form-control form-select" name="filtros.tipo_operacion">
+                    <option value="">Todos</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Depósito">Depósito</option>
+                </select>
+            </div>
         </div>
         
         <div class="d-grid mt-3">
