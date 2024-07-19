@@ -24,7 +24,7 @@
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="dui">DUI</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="correo">Correo</label>
@@ -98,7 +98,7 @@
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="nit">NIT:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
                 </div>
                 <div class="form-group col-6 col-lg-2">
                     <label for="ncr">NRC:</label>
