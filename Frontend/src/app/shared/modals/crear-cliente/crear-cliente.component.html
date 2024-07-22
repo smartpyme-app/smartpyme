@@ -166,14 +166,15 @@
                         </div>
                         <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
                             <label for="municipio">Municipio:</label>
+                            <!-- si la empresa ES SALVADOREÑA -->
                             <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
                             <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
                                 <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':cliente.departamento" [value]="municipio.cod">
                                     {{ municipio.nombre }}
                                 </ng-option>
                             </ng-select>
-
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                            <!-- si la empresa NO ES SALVADOREÑA -->
+                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
 
                         </div>
                         <div class="form-group col-12 col-md-12" *ngIf="cliente.tipo == 'Empresa'">
