@@ -62,7 +62,7 @@ export class FacturacionCompraComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
+        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
             this.bancos = bancos;
         }, error => {this.alertService.error(error);});
 
@@ -314,9 +314,9 @@ export class FacturacionCompraComponent implements OnInit {
                             let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.compra.detalle_banco);
                             let transaccion:any = {};
                             transaccion.estado = 'Pendiente';
-                            transaccion.tipo = 'Abono';
+                            transaccion.tipo = 'Cargo';
                             transaccion.tipo_operacion = 'Transferencia';
-                            transaccion.concepto = 'Compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
+                            transaccion.concepto = 'Compra: ' + this.compra.tipo_documento + ' #' + (this.compra.referencia ? this.compra.referencia : '');
                             transaccion.id_cuenta = cuenta.id;
                             transaccion.referencia = 'Compra'
                             transaccion.id_referencia = compra.id;
