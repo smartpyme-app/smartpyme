@@ -98,11 +98,13 @@
                         <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
-                        <label for="nit">NIT</label>
+                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
+                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'>
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
-                        <label for="ncr">NCR</label>
+                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
+                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
@@ -133,11 +135,13 @@
                     </div> -->
                     <div class="form-group col-md-8">
                         <label for="actividad_economica">Actividad económica:</label>
-                        <ng-select [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
+                        <ng-select *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
                             <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
                                 {{ actividad_economica.nombre }}
                             </ng-option>
                         </ng-select>
+
+                        <input type="text" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" class="form-control" [(ngModel)]="empresa.giro" name="empresa.cod_actividad_economica" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label for="pais">País:</label>
