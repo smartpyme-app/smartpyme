@@ -108,6 +108,10 @@ export class EmpresaComponent implements OnInit {
             this.empresa.moneda = 'PAB';
             this.empresa.iva = 7;
         }
+
+        this.empresa.cod_departamento= " ";
+        this.empresa.cod_municipio= " ";
+
         console.log(this.empresa);
     }
 
