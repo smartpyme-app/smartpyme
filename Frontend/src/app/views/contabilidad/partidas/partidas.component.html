@@ -1,7 +1,20 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Partidas</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir partida</button>
+    <div>
+        <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default mr-2"><i class="fa fa-plus"></i> Generar reporte</button>
+        <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir partida</button>
+    </div>
+
 </section>
+
+<div class="row">
+    <div class="col-lg-12">
+        <app-datos-partida [loading]="loading" ></app-datos-partida>
+        <!-- [dash]="dash" -->
+    </div>
+</div>
+
+
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
