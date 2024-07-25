@@ -11,14 +11,6 @@
                 <input type="date" class="form-control" name="fecha" [(ngModel)]="conciliacion.fecha">
             </div>
             <div class="form-group col-md-6 col-lg-3">
-                <label for="desde">Desde:</label>
-                <input type="date" class="form-control" name="desde" (change)="filtrarTransacciones()" [(ngModel)]="conciliacion.desde">
-            </div>
-            <div class="form-group col-md-6 col-lg-3">
-                <label for="hasta">Hasta:</label>
-                <input type="date" class="form-control" name="hasta" (change)="filtrarTransacciones()" [(ngModel)]="conciliacion.hasta">
-            </div>
-            <div class="form-group col-md-6 col-lg-3">
                 <label for="">Cuenta:</label>
                 <ng-select [(ngModel)]="conciliacion.id_cuenta" (change)="filtrarTransacciones()" class="form-select p-0" name="id_cuenta">
                     <ng-option value="">Seleccione aquí</ng-option>
@@ -27,25 +19,34 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="desde">Desde:</label>
+                <input type="date" class="form-control" name="desde" (change)="filtrarTransacciones()" [(ngModel)]="conciliacion.desde">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="hasta">Hasta:</label>
+                <input type="date" class="form-control" name="hasta" (change)="filtrarTransacciones()" [(ngModel)]="conciliacion.hasta">
+            </div>
             <div class="form-group col-md-12 col-lg-12">
-                <label for="nota">Nota:</label><br>
-                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="conciliacion.nota" name="nota" cols="30" rows="2"></textarea>
+                <label for="nota">Observaciones:</label><br>
+                <input type="text" placeholder="Escriba aquí" class="form-control" name="nota" [(ngModel)]="conciliacion.nota"/>
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="saldo_actual">Saldo <small>(al {{ conciliacion.hasta | date:'dd/MM/yyyy' }})</small>:</label>
+                <input type="number" placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="saldo_actual" [(ngModel)]="conciliacion.saldo_actual" (change)="verificar()"/>
             </div>
             <div class="form-group col-md-6 col-lg-3">
                 <label for="gastos">Gastos bancarios:</label>
-                <input type='number' class="form-control" name="gastos" [(ngModel)]="conciliacion.gastos"/>
+                <input type='number' placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="gastos" [(ngModel)]="conciliacion.gastos"/>
             </div>
             <div class="form-group col-md-6 col-lg-3">
                 <label for="impuestos">Impuestos bancarios:</label>
-                <input type='number' class="form-control" name="impuestos" [(ngModel)]="conciliacion.impuestos"/>
+                <input type='number' placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="impuestos" [(ngModel)]="conciliacion.impuestos"/>
             </div>
             <div class="form-group col-md-6 col-lg-3">
                 <label for="otras_entradas">Otras entradas:</label>
-                <input type='number' class="form-control" name="otras_entradas" [(ngModel)]="conciliacion.otras_entradas"/>
-            </div>
-            <div class="form-group col-md-6 col-lg-3">
-                <label for="saldo_actual">Saldo:</label>
-                <input type='number' class="form-control" name="saldo_actual" [(ngModel)]="conciliacion.saldo_actual" (change)="verificar()"/>
+                <input type='number' placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="otras_entradas" [(ngModel)]="conciliacion.otras_entradas"/>
             </div>
 
         </div>
@@ -53,23 +54,31 @@
 
 
     <div class="bg-white rounded p-3 mb-3">
-        <table class="table table-bordered">
+        <table class="table table-borderless">
             <thead>
                 <tr>
-                    <th class="text-center">Saldo anterior</th>
-                    <th class="text-center">Salidas</th>
-                    <th class="text-center">Entradas</th>
-                    <th class="text-center">Saldo Final</th>
-                    <th class="text-center">Diferencia</th>
+                    <td class="text-center">Saldo <br> última conciliación</td>
+                    <td class="text-center"></td>
+                    <td class="text-center">Entradas</td>
+                    <td class="text-center"></td>
+                    <td class="text-center">Salidas</td>
+                    <td class="text-center"></td>
+                    <td class="text-center">Saldo Final</td>
+                    <td class="text-center border-end"></td>
+                    <td class="text-center">Diferencia <br> con el extracto</td>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td class="text-center">{{ conciliacion.saldo_anterior | currency }}</td>
-                    <td class="text-center">{{ (conciliacion.salidas + (conciliacion.gastos ? conciliacion.gastos : 0) + (conciliacion.impuestos ? conciliacion.impuestos : 0)) | currency }}</td>
-                    <td class="text-center">{{ (conciliacion.entradas + (conciliacion.otras_entradas ? conciliacion.otras_entradas : 0)) | currency }}</td>
-                    <td class="text-center">{{ conciliacion.saldo_final | currency }}</td>
-                    <td class="text-center">{{ conciliacion.diferencia | currency }}</td>
+                    <td class="text-center"><h4>{{ conciliacion.saldo_anterior | currency }}</h4></td>
+                    <td class="text-center"><i class="fa fa-plus"></i></td>
+                    <td class="text-center text-success"><h4>{{ (conciliacion.entradas + (conciliacion.otras_entradas ? conciliacion.otras_entradas : 0)) | currency }}</h4></td>
+                    <td class="text-center"><i class="fa fa-minus"></i></td>
+                    <td class="text-center text-danger"><h4>{{ (conciliacion.salidas + (conciliacion.gastos ? conciliacion.gastos : 0) + (conciliacion.impuestos ? conciliacion.impuestos : 0)) | currency }}</h4></td>
+                    <td class="text-center"><i class="fa fa-arrow-right"></i></td>
+                    <td class="text-center"><h4>{{ conciliacion.saldo_final | currency }}</h4></td>
+                    <td class="text-center border-end"></td>
+                    <td class="text-center" [ngClass]="{ 'text-info' : conciliacion.diferencia == 0, 'text-danger' : conciliacion.diferencia != 0,  }"><h4>{{ conciliacion.diferencia | currency }}</h4></td>
                 </tr>
             </tbody>
         </table>
@@ -88,7 +97,7 @@
 </form>
 
 
-<div class="row">
+<div class="row" *ngIf="transacciones?.total">
     <h4>Listado de Transacciones</h4>
     <div class="table-responsive">
         <table class="table table-borderless table-hover mb-0">

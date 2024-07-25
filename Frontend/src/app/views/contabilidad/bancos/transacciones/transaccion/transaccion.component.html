@@ -6,11 +6,11 @@
 <form autocomplete="off" (ngSubmit)="onSubmit()">
     <div class="bg-white rounded p-3">
         <div class="row">
-            <div class="form-group col-md-6 col-lg-4">
+            <div class="form-group col-md-6 col-lg-3">
                 <label for="fecha">Fecha:</label>
                 <input type="date" class="form-control" name="fecha" [(ngModel)]="transaccion.fecha">
             </div>
-            <div class="form-group col-md-6 col-lg-4">
+            <div class="form-group col-md-6 col-lg-3">
                 <label for="">Cuenta:</label>
                 <ng-select [(ngModel)]="transaccion.id_cuenta" class="form-select p-0" name="id_cuenta">
                     <ng-option value="">Seleccione aquí</ng-option>
@@ -19,7 +19,7 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-4 col-lg-4">
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="tipo">Tipo:</label>
                 <select class="form-select" name="tipo" [(ngModel)]="transaccion.tipo">
                     <option value="">Seleccione aquí</option>
@@ -27,7 +27,7 @@
                     <option value="Abono">Abono</option>
                 </select>
             </div>
-            <div class="form-group col-md-4 col-lg-4">
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="tipo_operacion">Operación:</label>
                 <select class="form-select" name="tipo_operacion" [(ngModel)]="transaccion.tipo_operacion">
                     <option value="">Seleccione aquí</option>
@@ -36,13 +36,22 @@
                     <option value="Depósito">Depósito</option>
                 </select>
             </div>
-            <div class="form-group col-md-12 col-lg-12">
+            <div class="form-group col-md-12 col-lg-9">
                 <label for="concepto">Concepto:</label><br>
-                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="transaccion.concepto" name="concepto" cols="30" rows="3"></textarea>
+                <input type="text" class="form-control" name="concepto" [(ngModel)]="transaccion.concepto"/>
             </div>
             <div class="form-group col-md-6 col-lg-3">
                 <label for="">Total:</label>
-                <input type='number' class="form-control" name="total" [(ngModel)]="transaccion.total"/>
+                <input type="number" class="form-control" name="total" [(ngModel)]="transaccion.total"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-4" *ngIf="transaccion.id">
+                <label for="">Comprobante:</label>
+                <div class="input-group">
+                    <input type="file" name="img" [(ngModel)]="transaccion.url_referencia" class="form-control" (change)="setFile($event)" accept="image/jpeg, image/jpg, application/pdf" title="Agregar documento (jpg o pdf)">
+                    <button type="button" *ngIf="transaccion.url_referencia" class="btn btn-default" (click)="verDocumento(transaccion)" title="Ver documento">
+                         <i class="fa fa-file"></i>
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -50,7 +59,7 @@
 
 
     <div class="bg-white rounded p-3 mb-3">
-        <div class="form-group col-sm-12 pt-2 pb-4">
+        <div class="form-group col-sm-12 pb-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
                 <span *ngIf="!saving">Guardar transaccion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                 <span *ngIf="saving">Guardando...</span>
@@ -60,35 +69,3 @@
 
 </form>
 
-<div class="bg-white rounded p-3" *ngIf="transaccion.id">
-    
-    <h6 class="my-3 font-weight-bold">Comprobante</h6>
-
-    <div class="col-lg-3 col-md-4 col-sm-12">
-        <div class="card" *ngIf="!transaccion.url_referencia">
-            <div class="file">
-                <figure class="img-thumbnail file-upload d-flex flex-column justify-content-center align-items-center" tooltip="Agregar" style="min-height: 200px;">
-                    <i class="fa fa-image fa-2x text-muted"></i>
-                    <small class="text-muted">Agregar</small>
-                    <input type="file" name="img" (change)="setFile($event)" accept="image/jpeg, image/jpg, application/pdf" title="Agregar documento (jpg o pdf)">
-                </figure>
-            </div>
-        </div>
-
-       <div class="card file_manager" *ngIf="transaccion.url_referencia">
-           <div class="file">
-               <a class="click" (click)="verDocumento(transaccion)" title="Ver documento">
-                  <!--  <div class="hover">
-                       <button type="button" class="btn btn-icon btn-danger" (click)="delete(documento)" tooltip="Eliminar" placement="bottom">
-                           <i class="fa fa-trash"></i>
-                       </button>
-                   </div> -->
-                   <div class="icon">
-                       <i class="fa fa-file"></i>
-                   </div>
-               </a>
-           </div>
-       </div>
-    </div>
-
-</div>

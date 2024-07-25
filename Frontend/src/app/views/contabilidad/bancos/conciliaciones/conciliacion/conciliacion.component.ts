@@ -14,6 +14,7 @@ import * as moment from 'moment';
 export class ConciliacionComponent implements OnInit {
 
     public conciliacion:any = {};
+    public conciliacion_anterior:any = {};
     public cuentas:any = [];
     public transacciones:any = [];
     public filtros:any = {};
@@ -71,23 +72,32 @@ export class ConciliacionComponent implements OnInit {
 
     public filtrarTransacciones(){
         this.loading = true;
-        this.apiService.getAll('bancos/transacciones', this.filtros).subscribe(transacciones => { 
-            this.transacciones = transacciones;
-            this.loading = false;
+        this.filtros.id_cuenta = this.conciliacion.id_cuenta;
 
-            // Filtrar los objetos con tipo 'Abono'
-            const abonos = this.transacciones.data.filter((item:any) => item.tipo === 'Abono');
-            const cargos = this.transacciones.data.filter((item:any) => item.tipo === 'Cargo');
+        this.apiService.store('banco/ultima/conciliacion', this.filtros).subscribe(conciliacion => {
+            this.conciliacion_anterior = conciliacion;
+            
+            this.conciliacion.desde = this.conciliacion_anterior.hasta;
+            this.conciliacion.saldo_anterior = this.conciliacion_anterior.saldo_actual;
 
-            // Sumar los valores de los objetos filtrados
-            this.conciliacion.entradas = abonos.reduce((sum:any, item:any) => sum + parseFloat(item.total), 0);
-            this.conciliacion.salidas = cargos.reduce((sum:any, item:any) => sum + parseFloat(item.total), 0);
+            this.apiService.getAll('bancos/transacciones', this.filtros).subscribe(transacciones => { 
+                this.transacciones = transacciones;
+                this.loading = false;
 
-            console.log(this.conciliacion);
+                // Filtrar los objetos con tipo 'Abono'
+                const abonos = this.transacciones.data.filter((item:any) => item.tipo === 'Abono');
+                const cargos = this.transacciones.data.filter((item:any) => item.tipo === 'Cargo');
 
-            this.total();
+                // Sumar los valores de los objetos filtrados
+                this.conciliacion.entradas = abonos.reduce((sum:any, item:any) => sum + parseFloat(item.total), 0);
+                this.conciliacion.salidas = cargos.reduce((sum:any, item:any) => sum + parseFloat(item.total), 0);
 
-        }, error => {this.alertService.error(error); this.loading = false;});
+                console.log(this.conciliacion);
+
+                this.total();
+
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }, error => {this.alertService.error(error);});
     }
 
     public verificar(){
@@ -97,23 +107,29 @@ export class ConciliacionComponent implements OnInit {
 
     public total(){
         this.conciliacion.saldo_final = parseFloat(this.conciliacion.saldo_anterior ? this.conciliacion.saldo_anterior : 0) 
-                    + (parseFloat(this.conciliacion.entrada ? this.conciliacion.entradas : 0)
+                    + (parseFloat(this.conciliacion.entradas ? this.conciliacion.entradas : 0)
                     + parseFloat(this.conciliacion.otras_entradas ? this.conciliacion.otras_entradas : 0)) 
                     - (parseFloat(this.conciliacion.salidas ? this.conciliacion.salidas : 0) + parseFloat(this.conciliacion.impuestos ? this.conciliacion.impuestos : 0) + parseFloat(this.conciliacion.gastos ? this.conciliacion.gastos : 0));
     }
 
     public onSubmit(){
-        this.saving = true;
 
-        this.apiService.store('banco/conciliacion', this.conciliacion).subscribe(conciliacion => {
-            if (!this.conciliacion.id) {
-                this.alertService.success('Transacción guardado', 'El conciliacion fue guardado exitosamente.');
-            }else{
-                this.alertService.success('Transacción creado', 'El conciliacion fue añadido exitosamente.');
-            }
-            this.router.navigate(['/bancos/conciliaciones']);
-            this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+        if(this.conciliacion.diferencia != 0){
+            this.alertService.info('Verifica la conciliación', 'La conciliación no esta cuadrada, hay una diferencia en los valores ingresados')
+        }else{
+
+            this.saving = true;
+
+            this.apiService.store('banco/conciliacion', this.conciliacion).subscribe(conciliacion => {
+                if (!this.conciliacion.id) {
+                    this.alertService.success('Conciliación guardado', 'El conciliacion fue guardado exitosamente.');
+                }else{
+                    this.alertService.success('Conciliación creado', 'El conciliacion fue añadido exitosamente.');
+                }
+                this.router.navigate(['/bancos/conciliaciones']);
+                this.saving = false;
+            }, error => {this.alertService.error(error); this.saving = false;});
+        }
     }
 
 }

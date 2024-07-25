@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Bancos;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Conciliacion;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Bancos\ConciliacionExport;
 
 class ConciliacionesController extends Controller
 {
@@ -13,7 +15,16 @@ class ConciliacionesController extends Controller
     public function index(Request $request) {
        
         $conciliaciones = Conciliacion::with('cuenta')->when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
+                                    return $query->where('nota', 'like' ,'%' . $request->buscador . '%');
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
+                                })
+                                ->when($request->id_usuario, function($query) use ($request){
+                                    return $query->where('id_usuario', $request->id_usuario);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->orderBy('id', 'desc')
@@ -74,5 +85,21 @@ class ConciliacionesController extends Controller
         return Response()->json($conciliacion, 201);
 
     }
+
+    public function lastOne(Request $request) {
+
+        $conciliacion = Conciliacion::where('id_cuenta', $request->id_cuenta)->latest()->first();
+
+        return Response()->json($conciliacion, 200);
+
+    }
+
+    public function export(Request $request){
+        $conciliaciones = new ConciliacionExport();
+        $conciliaciones->filter($request);
+
+        return Excel::download($conciliaciones, 'conciliaciones.xlsx');
+    }
+
 
 }
