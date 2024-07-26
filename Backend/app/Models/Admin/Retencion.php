@@ -6,16 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class Impuesto extends Model {
+class Retencion extends Model {
 
-    protected $table = 'impuestos';
+    protected $table = 'retenciones';
     protected $fillable = array(
         'nombre',
         'porcentaje',
         'id_cuenta_contable_ventas',
         'id_cuenta_contable_compras',
         'id_empresa'
-
     );
 
     protected static function boot()

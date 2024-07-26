@@ -6,14 +6,14 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-impuestos',
-  templateUrl: './impuestos.component.html'
+  selector: 'app-retenciones',
+  templateUrl: './retenciones.component.html'
 })
 
-export class ImpuestosComponent implements OnInit {
+export class RetencionesComponent implements OnInit {
 
-    public impuestos:any = [];
-    public impuesto:any = {};
+    public retenciones:any = [];
+    public retencion:any = {};
     public catalogo:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
@@ -33,17 +33,17 @@ export class ImpuestosComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('impuestos').subscribe(impuestos => { 
-            this.impuestos = impuestos;
+        this.apiService.getAll('retenciones').subscribe(retenciones => { 
+            this.retenciones = retenciones;
             this.loading = false;this.filtrado = false;
         }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, impuesto:any) {
-        this.impuesto = impuesto;
-        if (!this.impuesto.id) {
-            this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
-            this.impuesto.enable = true;
+    public openModal(template: TemplateRef<any>, retencion:any) {
+        this.retencion = retencion;
+        if (!this.retencion.id) {
+            this.retencion.id_empresa = this.apiService.auth_user().id_empresa;
+            this.retencion.enable = true;
         }
         this.apiService.getAll('catalogo/list').subscribe(catalogo => {
             this.catalogo = catalogo;
@@ -51,19 +51,19 @@ export class ImpuestosComponent implements OnInit {
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
-    public setEstado(impuesto:any){
-        this.impuesto = impuesto;
+    public setEstado(retencion:any){
+        this.retencion = retencion;
         this.onSubmit();
     }
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('impuesto', this.impuesto).subscribe(impuesto => {
-            if (!this.impuesto.id) {
-                this.impuestos.push(impuesto);
-                this.alertService.success('Impuesto creado', 'El impuesto fue añadido exitosamente.');
+        this.apiService.store('retencion', this.retencion).subscribe(retencion => {
+            if (!this.retencion.id) {
+                this.retenciones.push(retencion);
+                this.alertService.success('Impuesto creado', 'El retencion fue añadido exitosamente.');
             }else{
-                this.alertService.success('Impuesto guardado', 'El impuesto fue guardado exitosamente.');
+                this.alertService.success('Impuesto guardado', 'El retencion fue guardado exitosamente.');
             }
             this.saving = false;
             this.modalRef.hide();
@@ -82,10 +82,10 @@ export class ImpuestosComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('impuesto/', id) .subscribe(data => {
-                    for (let i = 0; i < this.impuestos.length; i++) { 
-                        if (this.impuestos[i].id == data.id )
-                            this.impuestos.splice(i, 1);
+                this.apiService.delete('retencion/', id) .subscribe(data => {
+                    for (let i = 0; i < this.retenciones.length; i++) { 
+                        if (this.retenciones[i].id == data.id )
+                            this.retenciones.splice(i, 1);
                     }
                 }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {

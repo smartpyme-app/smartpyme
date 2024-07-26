@@ -1,13 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Impuestos</h2>
-    <button (click)="openModal(mdetalle, {})"  tooltip="Crear impuesto (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir impuesto</button>
+    <h2 class="page-heading">Retenciones</h2>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear retencion (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir retencion</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="impuestos?.lenght">
-                Mostrando {{ impuestos?.lenght + ' registros' }}
+            <span class="text-muted" *ngIf="retenciones?.lenght">
+                Mostrando {{ retenciones?.lenght + ' registros' }}
             </span>
         </div>
 
@@ -44,27 +44,27 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="impuestos?.lenght < 1 && !loading">
-                            <span class="badge bg-primary">No tiene impuestos registradas</span>
+                        <td colspan="10" class="text-center" *ngIf="retenciones?.lenght < 1 && !loading">
+                            <span class="badge bg-primary">No tiene retenciones registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
 
-                    <tr *ngFor="let impuesto of impuestos | filter:['nombre']:filtro.buscador">
-                        <td>{{impuesto.nombre }}</td>
-                        <td>{{impuesto.porcentaje}}%</td>
+                    <tr *ngFor="let retencion of retenciones | filter:['nombre']:filtro.buscador">
+                        <td>{{retencion.nombre }}</td>
+                        <td>{{retencion.porcentaje}}%</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a (click)="openModal(mdetalle, impuesto)" class="btn">
+                                    <a (click)="openModal(mdetalle, retencion)" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a  class="btn text-danger" (click)="delete(impuesto.id)">
+                                    <a  class="btn text-danger" (click)="delete(retencion.id)">
                                         <i class="fa fa-fw fa-trash"></i> Eliminar
                                     </a>
                                 </div>
@@ -76,8 +76,8 @@
             </table>
         </div>
 
-        <div class="col-12" *ngIf="impuestos?.last_page > 1">
-            <app-pagination [items]="impuestos" (setPagination)="setPagination($event)"></app-pagination>
+        <div class="col-12" *ngIf="retenciones?.last_page > 1">
+            <app-pagination [items]="retenciones" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
 </section>
@@ -86,7 +86,7 @@
 <ng-template #mdetalle>
   <div class="modal-header">
     <div class="modal-title">
-        <h2>Impuesto</h2>
+        <h2>Retención</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
@@ -94,13 +94,13 @@
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
             <div class="form-group col-lg-13">
-                <label for="impuesto.nombre">Nombre</label>
-                <input type="text" class="form-control" [(ngModel)]="impuesto.nombre" name="impuesto.nombre" focus="true">
+                <label for="retencion.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="retencion.nombre" name="retencion.nombre" focus="true">
             </div>
             <div class="form-group col-lg-13">
-                <label for="impuesto.porcentaje">Porcentaje</label>
+                <label for="retencion.porcentaje">Porcentaje</label>
                 <div class="input-group">
-                    <input type="number" class="form-control" [(ngModel)]="impuesto.porcentaje" name="impuesto.porcentaje">
+                    <input type="number" class="form-control" [(ngModel)]="retencion.porcentaje" name="retencion.porcentaje">
                     <span class="input-group-text">%</span>
                 </div>
             </div>
@@ -108,8 +108,8 @@
                 <div class="row">
                     <h6>Configuración Contable</h6>
                     <div class="form-group col-md-12">
-                        <label for="impuesto.id_cuenta_contable_ventas">Cuenta contable para ventas:</label>
-                        <ng-select [(ngModel)]="impuesto.id_cuenta_contable_ventas" class="form-select p-0" name="impuesto.id_cuenta_contable_ventas">
+                        <label for="retencion.id_cuenta_contable_ventas">Cuenta contable para ventas:</label>
+                        <ng-select [(ngModel)]="retencion.id_cuenta_contable_ventas" class="form-select p-0" name="retencion.id_cuenta_contable_ventas">
                             <ng-option value="">Seleccione aquí</ng-option>
                             <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
                                 <div class="d-flex align-items-center">
@@ -120,8 +120,8 @@
                         </ng-select>
                     </div>
                     <div class="form-group col-md-12">
-                        <label for="impuesto.id_cuenta_contable_compras">Cuenta contable para compras:</label>
-                        <ng-select [(ngModel)]="impuesto.id_cuenta_contable_compras" class="form-select p-0" name="impuesto.id_cuenta_contable_compras">
+                        <label for="retencion.id_cuenta_contable_compras">Cuenta contable para compras:</label>
+                        <ng-select [(ngModel)]="retencion.id_cuenta_contable_compras" class="form-select p-0" name="retencion.id_cuenta_contable_compras">
                             <ng-option value="">Seleccione aquí</ng-option>
                             <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
                                 <div class="d-flex align-items-center">
