@@ -230,7 +230,7 @@ img.icon-2{
         width: 280px;
         padding: 20px 12px;
         transition: width 0.3s;
-        overflow: hidden;
+/*        overflow: hidden;*/
         height: 100%;
         background: #fff;
         transition: all 1s ease;

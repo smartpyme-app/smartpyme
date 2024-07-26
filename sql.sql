@@ -71,6 +71,23 @@ CREATE TABLE cuentas_bancarias_conciliaciones (
 
 -- Catalogo
 
+CREATE TABLE contabilidad_configuracion (
+    id int NOT NULL AUTO_INCREMENT,
+    id_cuenta_ingresos int NOT NULL,
+    id_cuenta_devoluciones_ventas int NOT NULL,
+    id_cuenta_inventario int NOT NULL,
+    id_cuenta_ajustes_inventario int NOT NULL,
+    id_cuenta_cxc int NOT NULL,
+    id_cuenta_devoluciones_clientes int NOT NULL,
+    id_cuenta_cxp int NOT NULL,
+    id_cuenta_devoluciones_proveedores int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+
 CREATE TABLE catalogo_cuentas (
     id int NOT NULL AUTO_INCREMENT,
     codigo int NOT NULL,
@@ -114,7 +131,21 @@ CREATE TABLE partida_detalles (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE retenciones (
+    id int NOT NULL AUTO_INCREMENT,
+    nombre varchar(255) NOT NULL,
+    porcentaje decimal(10,2) NOT NULL,
+    id_cuenta_contable_ventas int NOT NULL,
+    id_cuenta_contable_compras int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
 ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
 
-ALTER TABLE smartpyme.catalogo_cuentas MODIFY COLUMN id_cuenta_padre int(11) NULL;
+ALTER TABLE impuestos ADD id_cuenta_contable_ventas INT NULL after porcentaje;
+ALTER TABLE impuestos ADD id_cuenta_contable_compras INT NULL after id_cuenta_contable_ventas;

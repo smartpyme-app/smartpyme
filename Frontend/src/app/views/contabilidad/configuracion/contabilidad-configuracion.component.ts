@@ -1,59 +1,62 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
-import * as moment from 'moment';
-
 @Component({
   selector: 'app-contabilidad-configuracion',
-  templateUrl: './contabilidad-configuracion.component.html',
+  templateUrl: './contabilidad-configuracion.component.html'
 })
-
 export class ContabilidadConfiguracionComponent implements OnInit {
 
-    public ivas:any[] = [];
-    public sucursales:any[] = [];
-    public loading:boolean = false;
-    public filtros:any = {};
+    public configuracion: any = {};
+    public cuentas: any = {};
+    public catalogo: any = [];
+    public loading = false;
+    public saving = false;
     modalRef!: BsModalRef;
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
+        private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
-    ) { }
-
-    ngOnInit() {   
-        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
-        this.filtros.tipo_documento = '';
-        this.filtros.time = 'day';
-        this.filtros.inicio = moment().startOf(this.filtros.time).format('YYYY-MM-DD');
-        this.filtros.fin = moment().endOf(this.filtros.time).format('YYYY-MM-DD');
-
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); this.loading = false;});
-
-        // this.loadAll();
+    ) { 
+        this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
-    public loadAll() {
-        this.loading = true;
-        this.apiService.getAll('contabilidad-configuracion', this.filtros).subscribe(ivas => { 
-            this.ivas = ivas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    ngOnInit() {
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
 
-    public setTime($time:any){
-        this.filtros.time = $time;
-        this.filtros.inicio = moment().startOf(this.filtros.time).format('YYYY-MM-DD');
-        this.filtros.fin = moment().endOf(this.filtros.time).format('YYYY-MM-DD');
         this.loadAll();
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
-    } 
+    public loadAll(){
+        this.loading = true;
+        this.apiService.read('contabilidad/configuracion/', this.apiService.auth_user().id_empresa).subscribe(configuracion => {
+            this.configuracion = configuracion;
+            if (!this.configuracion.id) {
+                this.configuracion = {};
+                this.configuracion.id_empresa = this.apiService.auth_user().id_empresa;
+            }
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false; });
+    }
+
+        public onSubmit() {
+            this.saving = true;
+            this.apiService.store('contabilidad/configuracion', this.configuracion).subscribe(configuracion => {
+                if (!this.configuracion.id) {
+                    this.alertService.success('Configuracion creada', 'El configuracion fue añadido exitosamente.');
+                }else{
+                    this.alertService.success('Configuracion guardada', 'El configuracion fue guardado exitosamente.');
+                }
+                this.saving = false;
+            }, error => {this.alertService.error(error); this.saving = false; });
+        }
+
 
 }
