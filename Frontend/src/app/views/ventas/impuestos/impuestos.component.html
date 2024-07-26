@@ -6,8 +6,8 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="impuestos?.lenght">
-                Mostrando {{ impuestos?.lenght + ' registros' }}
+            <span class="text-muted" *ngIf="impuestos?.length">
+                Mostrando {{ impuestos?.length + ' registros' }}
             </span>
         </div>
 
@@ -44,7 +44,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="impuestos?.lenght < 1 && !loading">
+                        <td colspan="10" class="text-center" *ngIf="impuestos?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene impuestos registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">

@@ -1,13 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Retenciones</h2>
-    <button (click)="openModal(mdetalle, {})"  tooltip="Crear retencion (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir retencion</button>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear retención (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir retención</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="retenciones?.lenght">
-                Mostrando {{ retenciones?.lenght + ' registros' }}
+            <span class="text-muted" *ngIf="retenciones?.length">
+                Mostrando {{ retenciones?.length + ' registros' }}
             </span>
         </div>
 
@@ -44,7 +44,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="retenciones?.lenght < 1 && !loading">
+                        <td colspan="10" class="text-center" *ngIf="retenciones?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene retenciones registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
