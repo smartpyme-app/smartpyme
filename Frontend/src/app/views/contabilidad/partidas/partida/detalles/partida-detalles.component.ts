@@ -23,6 +23,8 @@ export class PartidaDetallesComponent implements OnInit {
     public buscador:string = '';
     public loading:boolean = false;
 
+    rows = [{noQuestion : 0}];
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
@@ -102,6 +104,14 @@ export class PartidaDetallesComponent implements OnInit {
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+
+    public addNewRow() {
+        this.rows.push({noQuestion : 0});
+      }
+
+    public deleteRows(){
+        this.rows.pop();
     }
 
 

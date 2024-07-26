@@ -4,25 +4,27 @@
 </div>
 
 <form autocomplete="off" (ngSubmit)="onSubmit()">
-    <div class="bg-white rounded p-3">
-        <div class="row">
+    <div class="bg-white rounded p-3 mb-5">
 
-            <div class="form-group col-md-6 col-lg-2">
+        <div class="row mb-3 ">
+
+            <div class="justify-content-between d-flex">
+                <h4>Detalle</h4>
+                <div>
+                    <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary mr-2"><i class="fa fa-plus"></i>Crear proveedor</a>
+                    <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary tcla-F4"><i class="fa fa-plus"></i> Crear cliente</a>
+                    <!-- *ngIf="apiService.canCreate()" -->
+                </div>
+            </div>
+
+        </div>
+        <div class="row  mb-3 ">
+
+            <div class="form-group col-md-6 col-lg-4">
                 <label for="fecha">Fecha:</label>
                 <input type="date" class="form-control" name="fecha" [(ngModel)]="partida.fecha"/>
             </div>
-            <div class="form-group col-md-6 col-lg-2">
-                <label for="tipo">Tipo:</label>
-                <select class="form-select" name="tipo" [(ngModel)]="partida.tipo">
-                    <option value="Ingreso">Ingreso</option>
-                    <option value="Egreso">Egreso</option>
-                    <option value="Diario">Diario</option>
-                    <option value="CxC">CxC</option>
-                    <option value="CxP">CxP</option>
-                    <option value="Cierre">Cierre</option>
-                </select>
-            </div>
-            <div class="form-group col-md-6 col-lg-2">
+            <div class="form-group col-md-6 col-lg-4">
                 <label for="estado">Estado:</label>
                 <select class="form-select" name="estado" [(ngModel)]="partida.estado">
                     <option value="Pendiente">Pendiente</option>
@@ -30,16 +32,52 @@
                     <option value="Anulada">Anulada</option>
                 </select>
             </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="tipo">Tipo:</label>
+                <select class="form-select" name="tipo" [(ngModel)]="partida.tipo">
+                    <option value="Ingreso" >Ingreso</option>
+                    <option value="Egreso">Egreso</option>
+                    <option value="Diario">Diario</option>
+                    <option value="CxC">CxC</option>
+                    <option value="CxP">CxP</option>
+                    <option value="Cierre">Cierre</option>
+                </select>
+            </div>
+
             <div class="form-group col-md-12 col-lg-6">
                 <label for="concepto">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="partida.concepto"/>
             </div>
 
         </div>
-        
+        <div class="d-flex">
+            <div class="col-md-12 d-flex gap-2 mb-3">
+                <button class="btn btn-default" tooltip="Actualizar (F5)"  (click)="loadAll()" routerLink="/ventas">Crear cuenta</button>
+                <button class="btn btn-default"  routerLink="/devoluciones/ventas">Buscar en Partida</button>
+                <button class="btn btn-default"  routerLink="/ventas/abonos">Importar de CSV</button>
+                <button class="btn btn-default"  routerLink="/ventas/recurrentes">Ingresar compra</button>
+            </div>
+            <!-- <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+                <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                    <option value="">Estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Anulada">Anulada</option>
+                    <option value="Consigna">Consigna</option>
+                    <option value="Pagada">Pagada</option>
+                </select>
+                <select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+                    <option value="">Sucursal</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{sucursal.nombre}}
+                    </option>
+                </select>
+            </div> -->
+        </div>
+    </div>
+
         <app-partida-detalles [partida]="partida" (update)="updatePartida($event)" (sumTotal)="sumTotal()"></app-partida-detalles>
 
-     </div>
+    
 
 
     <div class="bg-white rounded p-3 mb-3">
