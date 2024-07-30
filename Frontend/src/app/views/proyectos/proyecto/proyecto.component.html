@@ -6,19 +6,31 @@
 <form autocomplete="off" (ngSubmit)="onSubmit()">
     <div class="bg-white rounded p-3">
         <div class="row">
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-12 col-lg-4">
+                <label for="">Cliente</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="proyecto.id_cliente" class="form-select p-0">
+                        <ng-option value=""> Seleccione aquí </ng-option>
+                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-cliente [id_cliente]="proyecto.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-8">
                 <label for="nombre">Nombre:</label>
                 <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-4">
                 <label for="">Fecha Inicio:</label>
                 <input type='date' class="form-control" name="fecha_inicio" [(ngModel)]="proyecto.fecha_inicio"/>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-4">
                 <label for="">Fecha Fin:</label>
                 <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_fin"/>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col-md-4 col-lg-4">
                 <label for="estado">Estado:</label>
                 <select class="form-select" name="estado" [(ngModel)]="proyecto.estado">
                     <option value="Pendiente">Pendiente</option>

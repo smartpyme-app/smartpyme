@@ -23,6 +23,9 @@ class ProyectosController extends Controller
                     ->when($request->fin, function($query) use ($request){
                         return $query->where('fecha_fin', '<=', $request->fin);
                     })
+                    ->when($request->id_cliente, function($query) use ($request){
+                        return $query->where('id_cliente', $request->id_cliente);
+                    })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
                     })
@@ -63,9 +66,12 @@ class ProyectosController extends Controller
             'fecha_inicio'  => 'required|date',
             'fecha_fin'     => 'required|date',
             'estado'        => 'required|max:255',
+            'id_cliente'   => 'required|numeric',
             'id_usuario'   => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
+        ],[
+            'id_cliente.required' => 'El cliente es requerido.'
         ]);
 
         if($request->id)
