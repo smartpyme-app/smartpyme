@@ -232,4 +232,15 @@ export class CitasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    // public filtrarVentas(){
+    //     this.loading = true;
+    //     this.apiService.getAll('eventos', this.filtros).subscribe(ventas => { 
+    //         this.ventas = ventas;
+    //         this.loading = false;
+    //         if(this.modalRef){
+    //             this.modalRef.hide();
+    //         }
+    //     }, error => {this.alertService.error(error); this.loading = false;});
+    // }
+
 }
