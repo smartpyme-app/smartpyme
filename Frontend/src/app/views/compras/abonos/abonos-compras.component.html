@@ -6,8 +6,15 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="abonos?.total">
-                Mostrando {{ abonos?.to }} de {{ abonos?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="abonos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarAbonos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ abonos?.total + ' registros' }}
             </span>
         </div>
 
@@ -16,7 +23,7 @@
                 <button [disabled]="downloading" tooltip="Descargar abonos de proveedores" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCompras()" autocomplete="off">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarAbonos()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
@@ -32,12 +39,12 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/compras/recurrentes">Recurrentes</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <select name="estado" (change)="filtrarCompras()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+            <select name="estado" (change)="filtrarAbonos()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Confirmado">Confirmado</option>
                 <option value="Cancelado">Cancelado</option>
             </select>
-            <!-- <ng-select name="id_proveedor" (change)="filtrarCompras()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
+            <!-- <ng-select name="id_proveedor" (change)="filtrarAbonos()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
                 <ng-option value="">Proveedores</ng-option>
                 <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
                     {{proveedor.nombre}}
@@ -125,7 +132,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="filtrarCompras()">
+    <form autocomplete="off" (ngSubmit)="filtrarAbonos()">
         <div class="row">
 
             <div class="form-group col-sm-6">
