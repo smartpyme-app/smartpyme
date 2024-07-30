@@ -20,7 +20,17 @@ export class CitasComponent implements OnInit {
     public evento:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+
+    public clientes:any = [];
+    public usuario:any = {};
+    public usuarios:any = [];
+    public sucursales:any = [];
+    public formaPagos:any = [];
+    public documentos:any = [];
+    public canales:any = [];
     public filtros:any = {};
+    public filtrado:boolean = false;
+    // public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -187,5 +197,50 @@ export class CitasComponent implements OnInit {
     updateCalendar(){
         this.calendario.loadAll();
     }
+
+    public openFilter(template: TemplateRef<any>) {
+        if(!this.clientes.length){
+            this.apiService.getAll('clientes/list').subscribe(clientes => { 
+                this.clientes = clientes;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.documentos.length){
+            this.apiService.getAll('documentos/list').subscribe(documentos => {
+                this.documentos = documentos;
+                this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.usuario.id_sucursal);
+            }, error => {this.alertService.error(error);});
+        }
+
+        if(!this.formaPagos.length){
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.canales.length){
+            this.apiService.getAll('canales/list').subscribe(canales => { 
+                this.canales = canales;
+            }, error => {this.alertService.error(error); });
+        }
+        this.modalRef = this.modalService.show(template);
+    }
+
+    // public filtrarVentas(){
+    //     this.loading = true;
+    //     this.apiService.getAll('eventos', this.filtros).subscribe(ventas => { 
+    //         this.ventas = ventas;
+    //         this.loading = false;
+    //         if(this.modalRef){
+    //             this.modalRef.hide();
+    //         }
+    //     }, error => {this.alertService.error(error); this.loading = false;});
+    // }
 
 }

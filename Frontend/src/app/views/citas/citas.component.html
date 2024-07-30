@@ -3,6 +3,8 @@
         <div class="bg-white p-3">
             <h3>Próximas Citas 
                 <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
+                <button tooltip="Filtrar" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+                <!--  -->
             </h3>
             <div class="table-responsive">
                 <table class="table table-borderless table-hover mb-0">
@@ -15,7 +17,7 @@
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-
+                        <!-- eventos traidos del componente -->
                         <tr *ngFor=" let evento of eventos?.data">
                             <td>
                                 <p class="m-0 d-flex justify-content-between">
@@ -151,6 +153,8 @@
   </div>
 </ng-template>
 
+<!-- filtro pop up -->
+
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
@@ -174,46 +178,11 @@
                 <label for="filtros.tipo">Estado:</label>
                 <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
                     <option value="">Todos</option>
-                    <option value="Pagada">Pagadas</option>
-                    <option value="Pendiente">Pendientes</option>
-                    <option value="Anulada">Anuladas</option>
-                    <option value="Consigna">Consignas</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.forma_pago">Forma de pago:</label>
-                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
-                    <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [ngValue]="formaPago.nombre">
-                        {{ formaPago.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_documento">Documento:</label>
-                <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
-                    <option value="">Todos</option>
-                    <option *ngFor="let documento of documentos" [ngValue]="documento.id">
-                        {{ documento.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_canal">Canal:</label>
-                <select [(ngModel)]="filtros.id_canal" class="form-control form-select" name="filtros.id_canal">
-                    <option value="">Todos</option>
-                    <option *ngFor="let canal of canales" [ngValue]="canal.id">
-                        {{ canal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
-                    <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    <option value="Sin confirmar">Sin confirmar</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Cancelado">Cancelado</option>
+                    <option value="Pagado">Pagado</option>
+                    <option value="Pendiente">Pendiente</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
