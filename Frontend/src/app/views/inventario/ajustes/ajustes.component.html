@@ -65,7 +65,7 @@
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Descripción</th>
                         <th>Estado</th>
-                        <th>Sucursal</th>
+                        <th>Bodega</th>
                         <th (click)="setOrden('ajuste')" [ngClass]="{'sorted-asc': filtros.orden == 'ajuste' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'ajuste' && filtros.direccion == 'desc'}" class="click text-center">Ajuste</th>
                     </tr>
                 </thead>
@@ -89,7 +89,7 @@
                                 <option value="Cancelado">Cancelado</option>
                             </select>
                         </td>
-                        <td>{{ ajuste.nombre_sucursal }}</td>
+                        <td>{{ ajuste.nombre_bodega }}</td>
                         <td class="text-center">
                             <span [ngClass]="{ 'text-danger' : ajuste.ajuste < 0, 'text-success' : ajuste.ajuste > 0 }" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                 {{ ajuste.ajuste }}

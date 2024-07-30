@@ -15,7 +15,7 @@ class DetallesController extends Controller
 
     public function index() {
 
-        $detalles = TrasladoDetalle::orderBy('id','desc')->paginate(7);
+        $detalles = Detalle::orderBy('id','desc')->paginate(7);
 
         return Response()->json($detalles, 200);
 
@@ -24,7 +24,7 @@ class DetallesController extends Controller
 
     public function read($id) {
 
-        $detalle = TrasladoDetalle::findOrFail($id);
+        $detalle = Detalle::findOrFail($id);
         return Response()->json($detalle, 200);
 
     }
@@ -39,9 +39,9 @@ class DetallesController extends Controller
         ]);
 
         if($request->id)
-            $detalle = TrasladoDetalle::findOrFail($request->id);
+            $detalle = Detalle::findOrFail($request->id);
         else
-            $detalle = new TrasladoDetalle;
+            $detalle = new Detalle;
 
         $detalle->fill($request->all());
         $detalle->save();
@@ -52,7 +52,7 @@ class DetallesController extends Controller
 
     public function delete($id)
     {
-        $detalle = TrasladoDetalle::findOrFail($id);
+        $detalle = Detalle::findOrFail($id);
 
         // Actualizar inventario si ya ha sido efectuado
         if ($detalle->traslado()->first()->estado == 'Aprobado') {

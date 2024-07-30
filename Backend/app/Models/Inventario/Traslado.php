@@ -13,8 +13,8 @@ class Traslado extends Model
     protected $table = 'traslados';
     protected $fillable = [
         'id_producto',
-        'id_sucursal_de',
-        'id_sucursal',
+        'id_bodega_de',
+        'id_bodega',
         'cantidad',
         'id_empresa',
         'id_usuario',
@@ -55,15 +55,15 @@ class Traslado extends Model
     }
 
     public function destino(){
-        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+        return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
+    }
+
+    public function origen(){
+        return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega_de');
     }
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
-    }
-
-    public function origen(){
-        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal_de');
     }
 
     public function usuario(){

@@ -18,7 +18,6 @@ use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Devoluciones\DetalleCompuesto;
 use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Models\Creditos\Credito;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
@@ -188,6 +187,7 @@ class DevolucionVentasController extends Controller
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
+            'id_bodega'       => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
             'id_empresa'       => 'required|numeric',
         ],[
@@ -233,7 +233,7 @@ class DevolucionVentasController extends Controller
                 }
 
                 $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                    ->where('id_sucursal', $request->id_sucursal)->first();
+                                    ->where('id_bodega', $request->id_bodega)->first();
 
                 if ($inventario) {
                     $inventario->stock += $det['cantidad'];
