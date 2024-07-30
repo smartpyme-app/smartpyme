@@ -358,6 +358,10 @@ img.icon-2{
         min-width: 160px;
     }
 
+    .popover{
+        max-width: 400px;
+    }
+
     .table tr:hover a.d-none, .card:hover > .d-none{
         display: inline !important;
         position: absolute;

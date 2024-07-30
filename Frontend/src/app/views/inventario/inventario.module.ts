@@ -49,6 +49,9 @@ import { ServiciosComponent } from './servicios/servicios.component';
 import { CategoriasComponent } from './categorias/categorias.component';
 import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias.component';
 
+import { BodegaComponent } from './bodegas/bodega/bodega.component';
+import { BodegasComponent } from './bodegas/bodegas.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -94,7 +97,9 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
-    SubCategoriasComponent
+    SubCategoriasComponent,
+    BodegaComponent,
+    BodegasComponent
   ],
   exports: [
   	ProductosComponent,
@@ -122,7 +127,9 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
-    SubCategoriasComponent
+    SubCategoriasComponent,
+    BodegaComponent,
+    BodegasComponent
   ]
 })
 export class InventarioModule { }

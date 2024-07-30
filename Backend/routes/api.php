@@ -77,6 +77,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Admin
 		require base_path('routes/modulos/admin/empresas.php');
+		require base_path('routes/modulos/admin/sucursales.php');
+		require base_path('routes/modulos/admin/dashboards.php');
 		require base_path('routes/modulos/admin/cajas.php');
 		require base_path('routes/modulos/admin/impuestos.php');
 		require base_path('routes/modulos/admin/formasdepago.php');

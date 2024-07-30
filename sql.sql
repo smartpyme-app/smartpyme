@@ -144,8 +144,48 @@ CREATE TABLE retenciones (
 );
 
 
+
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
 ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
 
 ALTER TABLE impuestos ADD id_cuenta_contable_ventas INT NULL after porcentaje;
 ALTER TABLE impuestos ADD id_cuenta_contable_compras INT NULL after id_cuenta_contable_ventas;
+
+
+-- Bodegas
+
+CREATE TABLE sucursal_bodegas (
+    id int NOT NULL AUTO_INCREMENT,
+    nombre varchar(255) NOT NULL,
+    descripcion varchar(255) NULL,
+    activo BOOLEAN DEFAULT true,
+    id_sucursal int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+
+RENAME TABLE sucursales TO sucursal_bodegas;
+
+ALTER TABLE `sucursal_bodegas`
+  DROP `telefono`,
+  DROP `correo`,
+  DROP `municipio`,
+  DROP `departamento`,
+  DROP `direccion`;
+
+
+ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
+UPDATE sucursal_bodegas SET id_sucursal=id;
+
+ALTER TABLE ajustes CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE traslados CHANGE id_sucursal_de id_bodega_de INT(11) NULL DEFAULT NULL;
+ALTER TABLE traslados CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
+ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;

@@ -40,6 +40,9 @@ class ComprasController extends Controller
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
+                        ->when($request->id_bodega, function($query) use ($request){
+                            return $query->where('id_bodega', $request->id_bodega);
+                        })
                         ->when($request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
                         })
@@ -123,6 +126,7 @@ class ComprasController extends Controller
             'forma_pago'        => 'required',
             'id_proveedor'      => 'required',
             'id_empresa'        => 'required',
+            'id_bodega'       => 'required',
             'id_sucursal'       => 'required',
             'id_usuario'        => 'required',
         ]);
@@ -135,7 +139,7 @@ class ComprasController extends Controller
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
                                         
-                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $compra->id_sucursal)->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
                 
                 // Anular compra y regresar stock
                 if(($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
@@ -240,7 +244,7 @@ class ComprasController extends Controller
                 
                 if ($request->cotizacion == 0) {
                     // Actualizar inventario
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_sucursal', $compra->id_sucursal)->first();
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
 
                     if ($inventario) {
                         $inventario->stock += $det['cantidad'];
@@ -289,6 +293,7 @@ class ComprasController extends Controller
             'total'             => 'required|numeric',
             'nota'              => 'max:255',
             'id_usuario'        => 'required|numeric',
+            'id_bodega'       => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
         ], [
             'detalles.required' => 'Tiene que agregar productos a la venta',

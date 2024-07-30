@@ -1,5 +1,5 @@
 <div class="row">
-    <h6 class="my-3 font-weight-bold" (click)="loadAll()">Inventario <span class="badge bg-default text-dark">{{ producto.inventarios | sum:'stock' }} unidades</span>
+    <h6 class="my-3 font-weight-bold">Inventario <span class="badge bg-default text-dark">{{ producto.inventarios | sum:'stock' }} unidades</span>
         <a class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar bodega">
             <i class="fa fa-plus"></i> Agregar inventario
         </a>
@@ -8,6 +8,7 @@
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
+                    <th>Bodega</th>
                     <th>Sucursal</th>
                     <th class="text-center d-none d-lg-table-cell">Stock mínino</th>
                     <th class="text-center d-none d-lg-table-cell">Stock máximo</th>
@@ -27,6 +28,7 @@
                     </td>
                 </tr>       
                 <tr *ngFor=" let bodega of producto.inventarios">
+                    <td>{{ bodega.nombre_bodega }}</td>
                     <td>{{ bodega.nombre_sucursal }}</td>
                     <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
                     <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
@@ -56,8 +58,8 @@
         <app-notificaciones-container></app-notificaciones-container>
         <div class="row">
             <div class="form-group col-md-12">
-                <label for="id_sucursal">Bodega:</label>
-                <select [(ngModel)]="inventario.id_sucursal" class="form-select" name="id_sucursal">
+                <label for="id_bodega">Bodega:</label>
+                <select [(ngModel)]="inventario.id_bodega" class="form-select" name="id_bodega">
                     <option value="">Seleccione aquí</option>
                     <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
                 </select>
