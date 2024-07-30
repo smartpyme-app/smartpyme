@@ -81,7 +81,8 @@ class MH extends Model
         if ($this->venta->nombre_documento == 'Crédito fiscal') {
             $this->venta->tipoDte = '03';
             $this->venta->version = 3;
-        }else{
+        }
+        if ($this->venta->nombre_documento == 'Factura') {
             $this->venta->tipoDte = '01';
             $this->venta->version = 1;
         }
@@ -398,7 +399,7 @@ class MH extends Model
                 "extension" => NULL,
                 "apendice" => [
                     [
-                    "campo" => "usuario",
+                    "campo" => "empleado",
                     "etiqueta" => "nombre",
                     "valor" => $this->venta->nombre_usuario
                     ]
@@ -516,7 +517,7 @@ class MH extends Model
                 "extension" => NULL,
                 "apendice" => [
                     [
-                    "campo" => "usuario",
+                    "campo" => "empleado",
                     "etiqueta" => "nombre",
                     "valor" => $this->venta->nombre_usuario
                     ]
@@ -527,7 +528,7 @@ class MH extends Model
     protected function detallesCCF(){
         $detalles = collect();
 
-        foreach ($this->venta->detalles->take(1) as $index => $detalle) {
+        foreach ($this->venta->detalles as $index => $detalle) {
 
             $cod = Unidad::where('nombre', ucfirst($detalle->unidad))->pluck('cod')->first();
             if ($cod){

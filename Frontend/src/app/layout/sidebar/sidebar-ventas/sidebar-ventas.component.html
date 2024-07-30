@@ -45,6 +45,11 @@
                     <img src="/assets/icons/users.png" class="icon me-2">Clientes
                 </a>
             </li>
+            <li *ngIf="usuario.empresa.modulo_citas" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/calendar.png" class="icon me-2">Citas
+                </a>
+            </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/cierre-de-caja']" tooltip="Cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja

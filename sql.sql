@@ -176,7 +176,6 @@ ALTER TABLE `sucursal_bodegas`
   DROP `departamento`,
   DROP `direccion`;
 
-
 ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
 UPDATE sucursal_bodegas SET id_sucursal=id;
 
@@ -189,3 +188,5 @@ ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
 
 ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
 ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
+
+ALTER TABLE proyectos ADD id_cliente INT NULL after enable;

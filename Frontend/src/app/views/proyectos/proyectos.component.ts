@@ -44,7 +44,7 @@ export class ProyectosComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.filtrarPaquetes();
+        this.filtrarProyectos();
     }
 
     public loadAll() {
@@ -58,11 +58,16 @@ export class ProyectosComponent implements OnInit {
         this.filtros.orden = 'fecha_inicio';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarPaquetes();
+        this.filtrarProyectos();
     }
 
-    public filtrarPaquetes(){
+    public filtrarProyectos(){
         this.loading = true;
+        
+        if(!this.filtros.id_cliente){
+            this.filtros.id_cliente = '';
+        }
+
         this.apiService.getAll('proyectos', this.filtros).subscribe(proyectos => { 
             this.proyectos = proyectos;
             this.loading = false;
