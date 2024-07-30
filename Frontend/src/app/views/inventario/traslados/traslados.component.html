@@ -7,8 +7,15 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="traslados?.total">
-                Mostrando {{ traslados?.to }} de {{ traslados?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="traslados?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarTraslados()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ traslados?.total + ' registros' }}
             </span>
         </div>
 

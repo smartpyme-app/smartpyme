@@ -6,8 +6,15 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="proyectos?.total">
-                Mostrando {{ proyectos?.to }} de {{ proyectos?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="proyectos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarProyectos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ proyectos?.total + ' registros' }}
             </span>
         </div>
 
@@ -15,7 +22,7 @@
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'proyectos'"></app-importar-excel>
                 <button tooltip="Descargar proyectos"  class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPaquetes()" autocomplete="off">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProyectos()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
@@ -28,13 +35,13 @@
             <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/proyectos">Todos</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select name="estado" (change)="filtrarPaquetes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+            <select name="estado" (change)="filtrarProyectos()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="En proceso">En proceso</option>
                 <option value="Facturado">Facturado</option>
             </select>
-            <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
+            <ng-select name="id_cliente" (change)="filtrarProyectos()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
                 <ng-option value="">Cliente</ng-option>
                 <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
                     {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
@@ -48,6 +55,7 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
+                        <th>Cliente</th>
                         <th (click)="setOrden('fecha_inicio')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'desc'}" class="click">Inicio</th>
                         <th (click)="setOrden('fecha_fin')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_fin' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_fin' && filtros.direccion == 'desc'}" class="click">Finaliza</th>
                         <th>Estado</th>
@@ -70,6 +78,7 @@
                     <tr *ngFor=" let proyecto of proyectos?.data">
                         
                         <td>{{proyecto.nombre}}</td>
+                        <td>{{proyecto.nombre_cliente}}</td>
                         <td>{{proyecto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
                         <td>{{proyecto.fecha_fin | date:'dd/MM/yyyy'}}</td>
                         <td>
@@ -247,7 +256,7 @@
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="filtrarPaquetes()">
+    <form autocomplete="off" (ngSubmit)="filtrarProyectos()">
         <div class="row">
 
             <div class="form-group col-sm-6">

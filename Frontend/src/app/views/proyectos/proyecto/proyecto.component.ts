@@ -71,6 +71,11 @@ export class ProyectoComponent implements OnInit {
 
     }
 
+    public setCliente(cliente:any){
+        this.clientes.push(cliente);
+        this.proyecto.id_cliente = cliente.id;
+    }
+
     public setProveedor(proveedor:any){
         this.proveedores.push(proveedor);
         this.proyecto.id_proveedor = proveedor.id;

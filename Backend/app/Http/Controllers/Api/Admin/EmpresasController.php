@@ -82,6 +82,21 @@ class EmpresasController extends Controller
         else
             $empresa = new Empresa;
         
+        //Bloquear usuarios
+        if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
+            foreach ($empresa->usuarios()->get() as $usuario) {
+                $usuario->enable = false;
+                $usuario->save();
+            }
+        }
+        //Des bloquear usuario Administrador
+        if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')){
+            foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
+                $usuario->enable = true;
+                $usuario->save();
+            }
+        }
+
         $empresa->fill($request->all());
 
         if ($request->hasFile('file')) {
@@ -95,6 +110,7 @@ class EmpresasController extends Controller
             $resize->save(public_path('img/'.$path), 50);
             $empresa->logo = "/" . $path;
         }
+
 
         $empresa->save();
 
