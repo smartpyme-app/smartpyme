@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TabsModule } from 'ngx-bootstrap/tabs';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgChartsModule } from 'ng2-charts';
@@ -45,7 +46,8 @@ import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.
     ContabilidadRoutingModule,
     PopoverModule.forRoot(),
     FocusModule.forRoot(),
-    TooltipModule.forRoot()
+    TooltipModule.forRoot(),
+    TabsModule.forRoot(),
   ],
   declarations: [
     PresupuestosComponent,
