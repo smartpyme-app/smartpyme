@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class PartidasController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $partidas = Partida::when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                                 ->orwhere('codigo', 'like' ,'%' . $request->buscador . '%');
@@ -26,7 +26,7 @@ class PartidasController extends Controller
     }
 
     public function list() {
-       
+
         $partidas = Partida::orderby('nombre')
                                 // ->where('activo', true)
                                 ->get();
@@ -34,7 +34,7 @@ class PartidasController extends Controller
         return Response()->json($partidas, 200);
 
     }
-    
+
     public function read($id) {
 
         $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
@@ -49,7 +49,7 @@ class PartidasController extends Controller
             'tipo'          => 'required|max:255',
             'concepto'      => 'required|max:255',
             'estado'        => 'required|max:255',
-            'detalles'      => 'required',
+//            'detalles'      => 'required',
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
@@ -62,7 +62,7 @@ class PartidasController extends Controller
                 $partida = Partida::findOrFail($request->id);
             else
                 $partida = new Partida;
-            
+
             $partida->fill($request->all());
             $partida->save();
 

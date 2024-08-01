@@ -49,7 +49,8 @@
 
                     <!-- select de las cuentas -->
                     <td>
-                        <ng-select [(ngModel)]="detalle.cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.cuenta" placeholder="Selecciona la cuenta">
+                        <ng-select  (change)="selectCuenta()" class="form-select p-0" name="detalle.cuenta" placeholder="Selecciona la cuenta">
+                            <!-- [(ngModel)]="detalle.cuenta" -->
                             <ng-option value="" >Seleccione aquí</ng-option>
                             <div *ngFor="let cuenta of catalogo">
                                 <ng-option  [value]="cuenta" *ngIf="cuenta.acepta_datos == 1">
@@ -63,15 +64,18 @@
                     </td>
                     <!-- concepto -->
                     <td>
-                        <input type="text" [(ngModel)]="detalle.concepto" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="concepto" placeholder="Concepto">
+                        <input type="text"   class="form-control" name="concepto" placeholder="Concepto">
+                        <!-- [(ngModel)]="detalle.concepto" -->
                     </td>
                     <!-- debe    -->
                     <td>
-                        <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" placeholder="$00.00">
+                        <input type="number"  (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" placeholder="$00.00">
+                        <!-- [(ngModel)]="detalle.debe" -->
                     </td>   
                     <!-- haber      -->
                     <td>
-                        <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" placeholder="$00.00">
+                        <input type="number"  (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" placeholder="$00.00">
+                        <!-- [(ngModel)]="detalle.haber" -->
                     </td>
                     <!-- borrado -->
                     <td>
