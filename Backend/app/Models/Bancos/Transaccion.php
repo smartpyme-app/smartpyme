@@ -17,12 +17,16 @@ class Transaccion extends Model
         'concepto',
         'tipo',
         'estado',
+        'tipo_operacion',
+        'referencia',
+        'id_referencia',
+        'url_referencia',
         'total',
         'id_empresa',
         'id_usuario',
     ];
 
-    protected $appends = ['nombre_usuario'];
+    protected $appends = ['nombre_usuario', 'ruta_referencia'];
     
     protected static function boot()
     {
@@ -38,6 +42,25 @@ class Transaccion extends Model
     public function getNombreUsuarioAttribute()
     {   
         return $this->usuario()->pluck('name')->first();
+    }
+
+    public function getRutaReferenciaAttribute(){
+        if ($this->referencia == 'Venta') {
+            return 'venta';
+        }
+        if ($this->referencia == 'Abono de Venta') {
+            return 'venta/abono';
+        }
+        if ($this->referencia == 'Abono de Compra') {
+            return 'compra/abono';
+        }
+        if ($this->referencia == 'Compra') {
+            return 'compra';
+        }
+        if ($this->referencia == 'Cheque') {
+            return 'bancos/cheque';
+        }
+
     }
 
     public function usuario(){

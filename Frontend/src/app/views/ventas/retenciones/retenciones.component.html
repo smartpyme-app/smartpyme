@@ -1,0 +1,145 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Retenciones</h2>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear retención (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir retención</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="retenciones?.length">
+                Mostrando {{ retenciones?.length + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtro.buscador" focus="true">
+                <!-- <button tooltip="Filtrar (F6)" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button> -->
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" (click)="loadAll()">Todos</button>
+            <!-- <button class="btn btn-default">Traslados</button> -->
+        </div>
+        <!-- <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado"  [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div> -->
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Porcentaje</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="retenciones?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene retenciones registradas</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor="let retencion of retenciones | filter:['nombre']:filtro.buscador">
+                        <td>{{retencion.nombre }}</td>
+                        <td>{{retencion.porcentaje}}%</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column align-items-start">
+                                    <a (click)="openModal(mdetalle, retencion)" class="btn">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a  class="btn text-danger" (click)="delete(retencion.id)">
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="retenciones?.last_page > 1">
+            <app-pagination [items]="retenciones" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title">
+        <h2>Retención</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-lg-13">
+                <label for="retencion.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="retencion.nombre" name="retencion.nombre" focus="true">
+            </div>
+            <div class="form-group col-lg-13">
+                <label for="retencion.porcentaje">Porcentaje</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" [(ngModel)]="retencion.porcentaje" name="retencion.porcentaje">
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="bg-white rounded p-3 my-3">
+                <div class="row">
+                    <h6>Configuración Contable</h6>
+                    <div class="form-group col-md-12">
+                        <label for="retencion.id_cuenta_contable_ventas">Cuenta contable para ventas:</label>
+                        <ng-select [(ngModel)]="retencion.id_cuenta_contable_ventas" class="form-select p-0" name="retencion.id_cuenta_contable_ventas">
+                            <ng-option value="">Seleccione aquí</ng-option>
+                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                                <div class="d-flex align-items-center">
+                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                </div>
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="retencion.id_cuenta_contable_compras">Cuenta contable para compras:</label>
+                        <ng-select [(ngModel)]="retencion.id_cuenta_contable_compras" class="form-select p-0" name="retencion.id_cuenta_contable_compras">
+                            <ng-option value="">Seleccione aquí</ng-option>
+                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                                <div class="d-flex align-items-center">
+                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                </div>
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

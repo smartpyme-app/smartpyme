@@ -16,13 +16,14 @@ class Proyecto extends Model {
         'descripcion',
         'estado',
         'enable',
+        'id_cliente',
         'id_usuario',
         'id_sucursal',
         'id_empresa',
     );
 
     protected $casts = ['enable' => 'string'];
-    protected $appends = ['ingresos_esperados', 'gastos_esperados', 'compras_esperados', 'ingresos_generados', 'gastos_generados', 'compras_generados'];
+    protected $appends = ['nombre_cliente', 'ingresos_esperados', 'gastos_esperados', 'compras_esperados', 'ingresos_generados', 'gastos_generados', 'compras_generados'];
 
     protected static function booted()
     {
@@ -34,6 +35,14 @@ class Proyecto extends Model {
             });
         }
         
+    }
+
+    public function getNombreClienteAttribute()
+    {   $cliente = $this->cliente()->first();
+        if ($cliente) {
+            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
+        }
+        return '';
     }
 
     public function getIngresosEsperadosAttribute(){
@@ -82,6 +91,10 @@ class Proyecto extends Model {
 
     public function ventas(){
         return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 0);
+    }
+
+    public function cliente(){
+        return $this->belongsTo('App\Models\Ventas\Clientes\Cliente', 'id_cliente');
     }
 
     public function empresa(){

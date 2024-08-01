@@ -18,7 +18,7 @@ export class HeaderComponent implements OnInit {
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
 
-     constructor(private apiService: ApiService, private alertService: AlertService, @Inject(DOCUMENT) private document: any) { }
+     constructor(public apiService: ApiService, private alertService: AlertService, @Inject(DOCUMENT) private document: any) { }
 
     ngOnInit() {
         // $('.drop-down').dropdown();

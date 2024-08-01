@@ -15,13 +15,17 @@ class Inventario extends Model {
         'stock_minimo',
         'stock_maximo',
         'nota',
-        'id_sucursal'
+        'id_bodega'
     );
 
-    protected $appends = ['nombre_sucursal'];
+    protected $appends = ['nombre_bodega', 'nombre_sucursal'];
+
+    public function getNombreBodegaAttribute(){
+        return $this->bodega()->pluck('nombre')->first();
+    }
 
     public function getNombreSucursalAttribute(){
-        return $this->sucursal()->pluck('nombre')->first();
+        return $this->bodega()->first()->nombre_sucursal;
     }
 
     public function kardex($modelo, $cantidad){
@@ -119,7 +123,7 @@ class Inventario extends Model {
         Kardex::create([
             'fecha'             => date('Y-m-d'),
             'id_producto'       => $this->id_producto,
-            'id_inventario'     => $this->id_sucursal,
+            'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
             'referencia'        => $modelo->id,
             'precio_unitario'   => $salidaCantidad ? $precio : null,
@@ -138,8 +142,8 @@ class Inventario extends Model {
         return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
-    public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    public function bodega(){
+        return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
     }
 
 }

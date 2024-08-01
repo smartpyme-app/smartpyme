@@ -8,4 +8,6 @@
     Route::post('/banco/cheque',              [ChequesController::class, 'store']);
     Route::delete('/banco/cheque/{id}',       [ChequesController::class, 'delete']);
 
+    Route::get('/bancos/cheques/exportar',    [ChequesController::class, 'export']);
+
 ?>

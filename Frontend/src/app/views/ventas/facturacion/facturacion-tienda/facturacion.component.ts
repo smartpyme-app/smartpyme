@@ -459,8 +459,11 @@ export class FacturacionComponent implements OnInit {
                             let transaccion:any = {};
                             transaccion.estado = 'Pendiente';
                             transaccion.tipo = 'Abono';
+                            transaccion.tipo_operacion = 'Transferencia';
                             transaccion.concepto = 'Venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
                             transaccion.id_cuenta = cuenta.id;
+                            transaccion.referencia = 'Venta'
+                            transaccion.id_referencia = venta.id;
                             transaccion.total = this.venta.total;
                             transaccion.fecha = this.apiService.date();
                             transaccion.id_empresa = this.apiService.auth_user().id_empresa;
@@ -478,6 +481,8 @@ export class FacturacionComponent implements OnInit {
                         cheque.concepto = 'Venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
                         cheque.id_cuenta = cuenta.id;
                         cheque.correlativo = cuenta.correlativo_cheques;
+                        cheque.referencia = 'Venta'
+                        cheque.id_referencia = venta.id;
                         cheque.anombrede = this.venta.nombre_cliente ? this.venta.nombre_cliente : 'Sin nombre';
                         cheque.total = this.venta.total;
                         cheque.fecha = this.apiService.date();

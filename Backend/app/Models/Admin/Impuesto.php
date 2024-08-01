@@ -12,6 +12,8 @@ class Impuesto extends Model {
     protected $fillable = array(
         'nombre',
         'porcentaje',
+        'id_cuenta_contable_ventas',
+        'id_cuenta_contable_compras',
         'id_empresa'
 
     );

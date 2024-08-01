@@ -8,6 +8,8 @@ use App\Models\Bancos\Cheque;
 use App\Models\Bancos\Transaccion;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Bancos\ChequesExport;
 
 class ChequesController extends Controller
 {
@@ -16,7 +18,19 @@ class ChequesController extends Controller
     public function index(Request $request) {
        
         $cheques = Cheque::when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
+                                    return $query->where('anombrede', 'like' ,'%' . $request->buscador . '%');
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
+                                })
+                                ->when($request->estado, function($query) use ($request){
+                                    return $query->where('estado', $request->estado);
+                                })
+                                ->when($request->id_cuenta, function($query) use ($request){
+                                    return $query->where('id_cuenta', $request->id_cuenta);
                                 })
                                 ->orderBy($request->orden, $request->direccion)
                                 ->orderBy('id', 'desc')
@@ -72,8 +86,11 @@ class ChequesController extends Controller
                     $transaccion = new Transaccion;
                     $transaccion->estado = 'Pendiente';
                     $transaccion->tipo = 'Abono';
+                    $transaccion->tipo_operacion = 'Cheque';
                     $transaccion->concepto = 'Cheque: ' . $cheque->nombre_cuenta . ' #' . $cheque->correlativo;
                     $transaccion->id_cuenta = $cheque->id_cuenta;
+                    $transaccion->referencia = 'Cheque';
+                    $transaccion->id_referencia = $cheque->id;
                     $transaccion->total = $cheque->total;
                     $transaccion->fecha = date('Y-m-d');
                     $transaccion->id_empresa = $cheque->id_empresa;
@@ -111,6 +128,13 @@ class ChequesController extends Controller
 
         return Response()->json($cheque, 201);
 
+    }
+
+    public function export(Request $request){
+        $cheques = new ChequesExport();
+        $cheques->filter($request);
+
+        return Excel::download($cheques, 'cheques.xlsx');
     }
 
 }

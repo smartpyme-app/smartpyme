@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Transaccion;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Bancos\TransaccionesExport;
 
 class TransaccionesController extends Controller
 {
@@ -15,6 +18,21 @@ class TransaccionesController extends Controller
        
         $transacciones = Transaccion::with('cuenta')->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
+                                })
+                                ->when($request->estado, function($query) use ($request){
+                                    return $query->where('estado', $request->estado);
+                                })
+                                ->when($request->tipo, function($query) use ($request){
+                                    return $query->where('tipo', $request->tipo);
+                                })
+                                ->when($request->tipo_operacion, function($query) use ($request){
+                                    return $query->where('tipo_operacion', $request->tipo_operacion);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->orderBy('id', 'desc')
@@ -47,6 +65,7 @@ class TransaccionesController extends Controller
             'fecha'         => 'required|date',
             'id_cuenta'     => 'required|numeric',
             'concepto'      => 'required|max:255',
+            'tipo_operacion' => 'required|max:255',
             'tipo'          => 'required|max:255',
             'estado'          => 'required|max:255',
             'total'         => 'required|numeric',
@@ -100,6 +119,15 @@ class TransaccionesController extends Controller
                 }
 
             $transaccion->fill($request->all());
+
+            if ($request->hasFile('file')) {
+                if ($request->id && $transaccion->url_referencia) {
+                    Storage::delete($transaccion->url_referencia);
+                }
+                $nombre = $request->file->store('documentos_transacciones');
+                $transaccion->url_referencia = $nombre;
+            }
+
             $transaccion->save();
 
         DB::commit();
@@ -122,6 +150,13 @@ class TransaccionesController extends Controller
 
         return Response()->json($transaccion, 201);
 
+    }
+
+    public function export(Request $request){
+        $transacciones = new TransaccionesExport();
+        $transacciones->filter($request);
+
+        return Excel::download($transacciones, 'transacciones.xlsx');
     }
 
 }

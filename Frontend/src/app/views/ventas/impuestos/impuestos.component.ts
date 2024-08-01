@@ -14,6 +14,7 @@ export class ImpuestosComponent implements OnInit {
 
     public impuestos:any = [];
     public impuesto:any = {};
+    public catalogo:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
     public filtro:any = {};
@@ -44,7 +45,10 @@ export class ImpuestosComponent implements OnInit {
             this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
             this.impuesto.enable = true;
         }
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(impuesto:any){

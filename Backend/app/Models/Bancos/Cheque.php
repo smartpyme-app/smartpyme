@@ -18,12 +18,14 @@ class Cheque extends Model
         'anombrede',
         'concepto',
         'estado',
+        'referencia',
+        'id_referencia',
         'total',
         'id_usuario',
         'id_empresa',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_cuenta'];
+    protected $appends = ['nombre_usuario', 'nombre_cuenta', 'ruta_referencia'];
     
     protected static function boot()
     {
@@ -46,6 +48,21 @@ class Cheque extends Model
         return $this->cuenta()->pluck('nombre_banco')->first();
     }
 
+    public function getRutaReferenciaAttribute(){
+        if ($this->referencia == 'Venta') {
+            return 'venta';
+        }
+        if ($this->referencia == 'Abono de Venta') {
+            return 'venta/abono';
+        }
+        if ($this->referencia == 'Abono de Compra') {
+            return 'compra/abono';
+        }
+        if ($this->referencia == 'Compra') {
+            return 'compra';
+        }
+
+    }
 
     public function usuario(){
         return $this->belongsTo('App\Models\User', 'id_usuario');

@@ -15,8 +15,11 @@ export class ConciliacionesComponent implements OnInit {
 
     public conciliaciones:any = [];
     public conciliacion:any = {};
+    public cuentas:any = [];
+    public usuarios:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
     public filtros:any = {};
 
     modalRef!: BsModalRef;
@@ -27,6 +30,10 @@ export class ConciliacionesComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+
+        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+            this.cuentas = cuentas;
+        }, error => {this.alertService.error(error);});
     }
 
     public setOrden(columna: string) {
@@ -41,9 +48,10 @@ export class ConciliacionesComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtros.tipo = '';
+        this.filtros.id_cuenta = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.id_usuario = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -65,13 +73,22 @@ export class ConciliacionesComponent implements OnInit {
     public openModal(template: TemplateRef<any>, conciliacion:any) {
         this.conciliacion = conciliacion;
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
 
     public openFilter(template: TemplateRef<any>) {
+
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
+        this.filtros.inicio = this.apiService.date();
+        this.filtros.fin    = this.apiService.date();
+
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
 
@@ -127,6 +144,23 @@ export class ConciliacionesComponent implements OnInit {
             }
             this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('bancos/conciliaciones/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'conciliaciones.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
     }
 
 }

@@ -140,7 +140,7 @@ class DevolucionComprasController extends Controller
                 $detalle->save();
                 
                 // Actualizar inventario
-                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_sucursal', $request->id_sucursal)->first();
+                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
 
                 if ($inventario) {
                     $inventario->stock -= $det['cantidad'];

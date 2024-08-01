@@ -70,8 +70,11 @@ export class CrearAbonoCompraComponent implements OnInit {
                     let transaccion:any = {};
                     transaccion.estado = 'Pendiente';
                     transaccion.tipo = 'Cargo';
-                    transaccion.concepto = 'Cargo por compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
+                    transaccion.tipo_operacion = 'Transferencia';
+                    transaccion.concepto = 'Abono de compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
                     transaccion.id_cuenta = cuenta.id;
+                    transaccion.referencia = 'Abono de Compra';
+                    transaccion.id_referencia = abono.id;
                     transaccion.total = this.abono.total;
                     transaccion.fecha = this.apiService.date();
                     transaccion.id_empresa = this.apiService.auth_user().id_empresa;
@@ -89,6 +92,8 @@ export class CrearAbonoCompraComponent implements OnInit {
                     cheque.concepto = 'Cargo por compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
                     cheque.id_cuenta = cuenta.id;
                     cheque.correlativo = cuenta.correlativo_cheques;
+                    cheque.referencia = 'Abono por Compra'
+                    cheque.id_referencia = this.compra.id;
                     cheque.anombrede = this.compra.nombre_proveedor ? this.compra.nombre_proveedor : 'Sin nombre';
                     cheque.total = this.abono.total;
                     cheque.fecha = this.apiService.date();

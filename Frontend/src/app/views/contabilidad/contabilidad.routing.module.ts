@@ -25,20 +25,22 @@ import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/ca
 import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
 
+import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
+
 const routes: Routes = [
   {
     path: '',
     component: LayoutComponent,
     children: [
-        { path: 'presupuestos', component: PresupuestosComponent },
+        { path: 'presupuestos', component: PresupuestosComponent, title: 'Presupuestos' },
 
         { path: 'presupuesto/crear', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/editar/:id', component: PresupuestoComponent, title: 'Presupuesto'},
         { path: 'presupuesto/detalles/:id', component: PresupuestoDetallesComponent, title: 'Presupuesto'},
 
-        { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent },
-        { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent },
-        { path: 'libro-compras', component: LibroComprasComponent },
+        { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent, title: 'Libro Contribuyentes' },
+        { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent, title: 'Libro Consumidor Final' },
+        { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras' },
 
         { path: 'bancos/cuentas', component: CuentasComponent, title: 'Cuentas' },
         { path: 'bancos/cuenta/:id', component: CuentaComponent, title: 'Cuenta' },
@@ -49,14 +51,16 @@ const routes: Routes = [
         { path: 'bancos/transacciones', component: TransaccionesComponent, title: 'Transacciones' },
         { path: 'bancos/transaccion/:id', component: TransaccionComponent, title: 'Transacción' },
 
-        { path: 'bancos/conciliaciones', component: ConciliacionesComponent, title: 'Transacciones' },
-        { path: 'bancos/conciliacion/:id', component: ConciliacionComponent, title: 'Transacción' },
+        { path: 'bancos/conciliaciones', component: ConciliacionesComponent, title: 'Conciliaciones' },
+        { path: 'bancos/conciliacion/:id', component: ConciliacionComponent, title: 'Conciliación' },
 
         { path: 'catalogo/cuentas', component: CatalogoCuentasComponent, title: 'Catálogo de cuentas' },
         { path: 'catalogo/cuenta/:id', component: CatalogoCuentaComponent, title: 'Catálogo cuenta' },
         
         { path: 'contabilidad/partidas', component: PartidasComponent, title: 'Partidas' },
         { path: 'contabilidad/partida/:id', component: PartidaComponent, title: 'Partida' },
+
+        { path: 'contabilidad/configuracion', component: ContabilidadConfiguracionComponent, title: 'Configuración' },
 
     ]
   }

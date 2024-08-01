@@ -15,11 +15,12 @@ export class ChequesComponent implements OnInit {
 
     public cheques:any = [];
     public sucursales:any = [];
-    public clientes:any = [];
+    public cuentas:any = [];
     public usuarios:any = [];
     public cheque:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public downloading:boolean = false;
     public filtros:any = {};
 
     modalRef!: BsModalRef;
@@ -29,9 +30,10 @@ export class ChequesComponent implements OnInit {
     ){}
 
     ngOnInit() {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+            this.cuentas = cuentas;
+        }, error => {this.alertService.error(error);});
 
         this.loadAll();
     }
@@ -48,7 +50,7 @@ export class ChequesComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtros.id_cliente = '';
+        this.filtros.id_cuenta = '';
         this.filtros.tipo = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
@@ -150,5 +152,23 @@ export class ChequesComponent implements OnInit {
             this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
+
+    public descargar(){
+        this.downloading = true;
+        this.apiService.export('bancos/cheques/exportar', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cheques.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
+    }
+
 
 }

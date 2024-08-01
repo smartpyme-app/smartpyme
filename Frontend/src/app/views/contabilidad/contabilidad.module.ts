@@ -33,6 +33,7 @@ import { PartidasComponent } from '@views/contabilidad/partidas/partidas.compone
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
 import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/detalles/partida-detalles.component';
 import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.component';
+import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
 
 @NgModule({
   imports: [
@@ -69,7 +70,9 @@ import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.
     PartidaDetallesComponent,
     ConciliacionesComponent,
     ConciliacionComponent,
-    ParditasDatosComponent
+    ParditasDatosComponent,
+    ContabilidadConfiguracionComponent,
+
   ],
   exports: [
     PresupuestosComponent,
@@ -91,7 +94,8 @@ import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.
     PartidaDetallesComponent,
     ConciliacionesComponent,
     ConciliacionComponent,
-    ParditasDatosComponent
+    ParditasDatosComponent,
+    ContabilidadConfiguracionComponent,
   ]
 })
 export class ContabilidadModule { }

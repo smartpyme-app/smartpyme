@@ -6,8 +6,15 @@
 <section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="productos?.total">
-                Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="productos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarProductos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ productos?.total + ' registros' }}
             </span>
         </div>
 
@@ -106,19 +113,27 @@
                                     Sin control
                                 </span>
                                 <ng-template #popTemplate>
-                                    <table width="200px">
+                                    <table class="table table-borderless">
                                         <thead>
                                             <tr>
+                                                <th>Bodega</th>
                                                 <th>Sucursal</th>
                                                 <th class="text-right">Stock</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr *ngFor="let inventario of producto?.inventarios">
-                                                <td>{{ inventario.nombre_sucursal}}</td>
+                                                <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
+                                                <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
                                                 <td class="text-right">{{ inventario.stock }}</td>
                                             </tr>
                                         </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <th class="text-right">{{ producto.inventarios | sum:'stock' }}</th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </ng-template>
                             </div>

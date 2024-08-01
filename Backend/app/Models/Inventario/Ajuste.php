@@ -12,7 +12,7 @@ class Ajuste extends Model {
     protected $fillable = array(
         'concepto',
         'id_producto',
-        'id_sucursal',
+        'id_bodega',
         'stock_actual',
         'stock_real',
         'ajuste',
@@ -21,7 +21,7 @@ class Ajuste extends Model {
         'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_sucursal'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega'];
 
     protected static function booted()
     {
@@ -45,13 +45,13 @@ class Ajuste extends Model {
         return  $this->producto()->first() ? $this->producto()->pluck('nombre')->first() : '';
     }
 
-    public function getNombreSucursalAttribute()
+    public function getNombreBodegaAttribute()
     {
-        return  $this->sucursal()->first() ? $this->sucursal()->pluck('nombre')->first() : '';
+        return  $this->bodega()->first() ? $this->bodega()->pluck('nombre')->first() : '';
     }
 
-    public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
+    public function bodega(){
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
     }
 
     public function empresa(){

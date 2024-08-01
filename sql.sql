@@ -21,6 +21,8 @@ CREATE TABLE cuentas_bancarias_cheques (
     anombrede varchar(255) NOT NULL,
     concepto varchar(255) NOT NULL,
     estado varchar(255) NOT NULL,
+    referencia varchar(255) NULL,
+    id_referencia int NULL,
     total decimal(10,2) NOT NULL,
     id_usuario int NOT NULL,
     id_empresa int NOT NULL,
@@ -35,8 +37,12 @@ CREATE TABLE cuentas_bancarias_transacciones (
     id_cuenta int NOT NULL,
     concepto varchar(255) NOT NULL,
     tipo varchar(255) NOT NULL,
+    tipo_operacion varchar(255) NOT NULL,
     estado varchar(255) NOT NULL,
     total decimal(10,2) NOT NULL,
+    referencia varchar(255) NULL,
+    id_referencia int NULL,
+    url_referencia varchar(255) NULL,
     id_usuario int NOT NULL,
     id_empresa int NOT NULL,
     created_at timestamp NULL,
@@ -64,6 +70,23 @@ CREATE TABLE cuentas_bancarias_conciliaciones (
 );
 
 -- Catalogo
+
+CREATE TABLE contabilidad_configuracion (
+    id int NOT NULL AUTO_INCREMENT,
+    id_cuenta_ingresos int NOT NULL,
+    id_cuenta_devoluciones_ventas int NOT NULL,
+    id_cuenta_inventario int NOT NULL,
+    id_cuenta_ajustes_inventario int NOT NULL,
+    id_cuenta_cxc int NOT NULL,
+    id_cuenta_devoluciones_clientes int NOT NULL,
+    id_cuenta_cxp int NOT NULL,
+    id_cuenta_devoluciones_proveedores int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
 
 CREATE TABLE catalogo_cuentas (
     id int NOT NULL AUTO_INCREMENT,
@@ -108,8 +131,63 @@ CREATE TABLE partida_detalles (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE retenciones (
+    id int NOT NULL AUTO_INCREMENT,
+    nombre varchar(255) NOT NULL,
+    porcentaje decimal(10,2) NOT NULL,
+    id_cuenta_contable_ventas int NOT NULL,
+    id_cuenta_contable_compras int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+
+
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
+ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
 
+ALTER TABLE impuestos ADD id_cuenta_contable_ventas INT NULL after porcentaje;
+ALTER TABLE impuestos ADD id_cuenta_contable_compras INT NULL after id_cuenta_contable_ventas;
+
+
+-- Bodegas
+
+CREATE TABLE sucursal_bodegas (
+    id int NOT NULL AUTO_INCREMENT,
+    nombre varchar(255) NOT NULL,
+    descripcion varchar(255) NULL,
+    activo BOOLEAN DEFAULT true,
+    id_sucursal int NOT NULL,
+    id_empresa int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+
+RENAME TABLE sucursales TO sucursal_bodegas;
+
+ALTER TABLE `sucursal_bodegas`
+  DROP `telefono`,
+  DROP `correo`,
+  DROP `municipio`,
+  DROP `departamento`,
+  DROP `direccion`;
+
+ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
+UPDATE sucursal_bodegas SET id_sucursal=id;
+
+ALTER TABLE ajustes CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE traslados CHANGE id_sucursal_de id_bodega_de INT(11) NULL DEFAULT NULL;
+ALTER TABLE traslados CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
+ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
 ALTER TABLE smartpyme.catalogo_cuentas MODIFY COLUMN id_cuenta_padre int(11) NULL;
-
 ALTER TABLE smartpyme.catalogo_cuentas ADD acepta_datos BOOL NOT NULL;
+ALTER TABLE proyectos ADD id_cliente INT NULL after enable;

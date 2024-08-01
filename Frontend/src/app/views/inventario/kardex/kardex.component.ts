@@ -12,7 +12,7 @@ export class KardexComponent implements OnInit {
 
 	public producto:any = [];
 	public productos:any[] = [];
-	public sucursales:any[] = [];
+	public bodegas:any[] = [];
 	public filtros:any = {};
 	public loading:boolean = false;
 
@@ -33,8 +33,8 @@ export class KardexComponent implements OnInit {
             this.loadAll();
         }
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
     }
