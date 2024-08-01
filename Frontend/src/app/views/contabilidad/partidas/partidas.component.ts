@@ -129,4 +129,12 @@ export class PartidasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    public imprimirDiarioAux(){
+        window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar' + '?token=' + this.apiService.auth_token());
+    }
+
+    public imprimirDiarioMayor(){
+        window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor' + '?token=' + this.apiService.auth_token());
+    }
+
 }

@@ -235,7 +235,7 @@
             <div class="tab-content" id="v-pills-tabContent">
               <!-- tab 1 formulario LIBRO DIARIO -->
               <div class="tab-pane fade show active" id="v-pills-home" role="tabpanel" aria-labelledby="v-pills-home-tab">
-                <form (ngSubmit)="onSubmit()">
+                <form (ngSubmit)="imprimirDiarioAux()">
                     <div class="row">
                         <div class="form-group col-md-8">
                             <label for="nombre">Titulo del reporte:</label>
@@ -267,7 +267,7 @@
                     <div class="row">          
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span >Guardar proyecto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                                <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                                 <span *ngIf="saving">Guardando...</span>
                             </button>
                         </div>
@@ -277,7 +277,7 @@
               <!-- tab 2 formulario LIBRO MAYOR -->
               <div class="tab-pane fade" id="v-pills-profile" role="tabpanel" aria-labelledby="v-pills-profile-tab">        
 
-              <form (ngSubmit)="onSubmit()">
+              <form (ngSubmit)="imprimirDiarioMayor()">
                     <div class="row">
                         <div class="form-group col-md-9">
                             <label for="nombre">Concepto:</label>
@@ -307,7 +307,7 @@
                     <div class="row">          
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span >Guardar proyecto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                                <span >Generar documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                                 <span *ngIf="saving">Guardando...</span>
                             </button>
                         </div>
@@ -317,19 +317,19 @@
               </div>
               <!-- tab 3 formulario LIBRO DIARIO MAYOR -->
               <div class="tab-pane fade" id="v-pills-messages" role="tabpanel" aria-labelledby="v-pills-messages-tab">
-                <form (ngSubmit)="onSubmit()">
+                <form (ngSubmit)="imprimirDiarioMayor()">
                     <div class="row">
 
                         <div class="form-group col-md-6">
                             <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_inicio"/>
+                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="proyecto.fecha_inicio"/>
                         </div>
                         <div class="form-group col-md-6">
                             <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_fin"/>
+                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="proyecto.fecha_fin"/>
                         </div>
 
-                        <div class="form-group col-md-8">
+                        <div class="form-group col-md-12">
                             <!-- toggle incluir # numero de página -->
                         </div>
         
@@ -337,7 +337,7 @@
                     <div class="row">          
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span >Guardar proyecto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                                <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                                 <span *ngIf="saving">Guardando...</span>
                             </button>
                         </div>
@@ -382,7 +382,7 @@
                     <div class="row">          
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span >Guardar proyecto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                                <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                                 <span *ngIf="saving">Guardando...</span>
                             </button>
                         </div>
