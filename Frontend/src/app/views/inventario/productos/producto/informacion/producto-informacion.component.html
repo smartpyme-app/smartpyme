@@ -1,10 +1,12 @@
 <form name="form" (ngSubmit)="onSubmit()">
     <div class="row">
         <h6 class="mb-3 font-weight-bold">Detalles</h6>
+        <!-- nombre  -->
         <div class="form-group col-md-12 col-lg-4">
             <label for="nombre">Nombre</label>
             <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
         </div>
+        <!-- codigo sku  -->
         <div class="form-group col-md-6 col-lg-3">
             <label for="codigo">Código</label>
             <div class="input-group">
@@ -14,10 +16,12 @@
                 </span>
             </div>
         </div>
+        <!-- codigo de barra  -->
         <div class="form-group col-md-6 col-lg-3">
             <label for="barcode">Código de barras</label>
             <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
         </div>
+        <!-- unidad de medida -->
         <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
             <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
@@ -28,6 +32,7 @@
         </div>
 
         <h6 class="my-3 font-weight-bold">Organización</h6>
+        <!-- categoria -->
         <div class="form-group col-md-6 col-lg-3">
             <label for="subcategoria_id" class="w-100">Categoria</label>
             <div class="input-group">
@@ -39,9 +44,36 @@
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
         </div>
+        <!-- subcategoria -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="subcategoria_id" class="w-100">Sub - Categoria</label>
+            <div class="input-group">
+                <ng-select name="id_categoria" [(ngModel)]="producto.subcategoria" class="form-select p-0" (change)="createSku()">
+                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
+                        {{categoria.nombre}}
+                    </ng-option>
+                </ng-select>
+                <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+            </div>
+        </div>
+        <!-- marca -->
         <div class="form-group col-md-6 col-lg-2">
             <label for="marca">Marca</label>
             <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+        </div>
+        <!-- proveedor  -->
+        <div class="form-group col-md-6 col-lg-4">
+            <label for="">Proveedor</label>
+            <div class="input-group flex-nowrap">
+                <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="producto.id_proveedor" class="form-select p-0">
+                    <ng-option value=""> Seleccione aquí </ng-option>
+                    <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
+                    </ng-option>
+                </ng-select>
+                <!-- <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor> -->
+            </div>
         </div>
         <div class="form-group col-md-12 col-lg-7">
             <label for="etiquetas">Etiquetas</label>
