@@ -77,6 +77,20 @@ export class CitasComponent implements OnInit {
                 this.modalRef.hide();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
+
+    }
+
+    updateCalendar(){
+        this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => { 
+            this.loading = false;
+
+            this.calendario.calendarOptions!.events = eventos;
+            this.eventos=eventos;
+            this.filtrarEventos();
+
+            // console.log('siu');
+            // this.update.emit();
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
@@ -194,9 +208,6 @@ export class CitasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
-    updateCalendar(){
-        this.calendario.loadAll();
-    }
 
     public openFilter(template: TemplateRef<any>) {
         if(!this.clientes.length){
