@@ -128,7 +128,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.detalle = {};
         this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
         this.compra.cobrar_percepcion = false;
-        this.compra.id_bodega = this.apiService.auth_user().id_bodega;
+        this.compra.id_bodega = this.apiService.auth_user().id_sucursal;
         this.compra.id_usuario = this.apiService.auth_user().id;
         this.compra.id_vendedor = this.apiService.auth_user().id;
         this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
