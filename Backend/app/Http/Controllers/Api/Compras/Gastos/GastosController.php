@@ -31,15 +31,22 @@ class GastosController extends Controller
                     ->when($request->id_sucursal, function($query) use ($request){
                         return $query->where('id_sucursal', $request->id_sucursal);
                     })
-                    ->when($request->buscador, function($query) use ($request){
-                        return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
-                            ->orwhere('referencia', 'like', '%'.$request->buscador.'%');
-                    })
                     ->when($request->inicio, function($query) use ($request){
                         return $query->where('fecha', '>=', $request->inicio);
                     })
                     ->when($request->fin, function($query) use ($request){
                         return $query->where('fecha', '<=', $request->fin);
+                    })
+                    ->when($request->buscador, function($query) use ($request){
+                    return $query->whereHas('proveedor', function($q) use ($request){
+                                $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
+                                ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
+                             })->orwhere('referencia', 'like', '%'.$request->buscador.'%')
+                                ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
+                                ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                     })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
