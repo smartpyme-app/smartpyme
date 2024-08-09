@@ -25,13 +25,7 @@ class ComprasController extends Controller
 
     public function index(Request $request) {
        
-        $compras = Compra::when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
+        $compras = Compra::when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->recurrente !== null, function($q) use ($request){
@@ -57,6 +51,17 @@ class ComprasController extends Controller
                         })
                         ->when($request->metodo_pago, function($query) use ($request){
                             return $query->where('metodo_pago', $request->metodo_pago);
+                        })
+                        ->when($request->buscador, function($query) use ($request){
+                        return $query->whereHas('proveedor', function($q) use ($request){
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
+                                 })->orwhere('referencia', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                         ->where('cotizacion', 0)
                         ->orderBy($request->orden, $request->direccion)

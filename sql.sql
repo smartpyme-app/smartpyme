@@ -147,6 +147,7 @@ CREATE TABLE retenciones (
 
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
 ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
+ALTER TABLE empresas ADD venta_consigna BOOL DEFAULT true after vendedor_inventario;
 
 ALTER TABLE impuestos ADD id_cuenta_contable_ventas INT NULL after porcentaje;
 ALTER TABLE impuestos ADD id_cuenta_contable_compras INT NULL after id_cuenta_contable_ventas;

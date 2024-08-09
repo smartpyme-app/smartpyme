@@ -147,7 +147,7 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1">
             <div class="form-switch border rounded">
               <label for="consigna">Consigna</label>
               <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
