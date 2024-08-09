@@ -10,7 +10,7 @@ import { ApiService } from '@services/api.service';
 export class MHService {
 
     public baseUrl: string = 'https://apitest.dtes.mh.gob.sv';
-    public url_firmado: string = 'https://firmador.smartpyme.site:8443/firmardocumento/';
+    public url_firmado: string = 'https://facturadtesv.com:8443/firmardocumento/';
     public url_recepciondte: string = 'https://apitest.dtes.mh.gob.sv/fesv/recepciondte';
     public url_anular_dte: string = 'https://apitest.dtes.mh.gob.sv/fesv/anulardte';
 

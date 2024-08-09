@@ -82,8 +82,10 @@ export class GastosComponent implements OnInit {
 
 
     public setEstado(gasto:any){
-        this.apiService.store('gasto', gasto).subscribe(gasto => { 
-            this.alertService.success('Gasto guardado', 'El gasto fue guardado exitosamente.');
+        this.gasto = gasto;
+        this.apiService.store('gasto', this.gasto).subscribe(gasto => { 
+            this.gasto = gasto;
+            this.alertService.success('Gasto guardado', 'El gasto fue cambiado a ' + this.gasto.estado.toLowerCase() + ' exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
