@@ -28,20 +28,21 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'DUI',
             'NIT',
             'Dirección',
-            'Documento', 
-            'Correlativo', 
+            'Documento',
+            'Correlativo',
             'Forma de pago',
             'Banco',
             'Estado',
             'Canal',
             'Costo',
+            'Cuenta terceros',
             'Sub Total',
             'Descuento',
             'IVA',
             'Utilidad',
             'Total',
             'Empresa',
-            'Observaciones', 
+            'Observaciones',
             'Usuario',
             'Vendedor'
         ];
@@ -50,7 +51,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
@@ -108,7 +109,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                             ->get();
 
         return $ventas;
-        
+
     }
 
     public function map($row): array{
@@ -125,6 +126,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
               $row->estado,
               $row->nombre_canal,
               round($row->total_costo, 2),
+              round($row->cuenta_a_terceros, 2),
               round($row->sub_total, 2),
               round($row->descuento, 2),
               round($row->iva, 2),
