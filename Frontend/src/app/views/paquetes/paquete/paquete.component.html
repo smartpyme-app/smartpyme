@@ -10,9 +10,17 @@
                 <label for="">Fecha:</label>
                 <input type='date' class="form-control" name="fecha" [(ngModel)]="paquete.fecha"/>
             </div>
-            <div class="form-group col-md-4 col-lg-2">
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="id_usuario">Usuario:</label>
                 <select name="id_usuario" [(ngModel)]="paquete.id_usuario" class="form-select">
+                    <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="id_usuario">Asesor:</label>
+                <select name="id_asesor" [(ngModel)]="paquete.id_asesor" class="form-select">
                     <option [value]="usuario.id" *ngFor="let usuario of usuarios">
                         {{ usuario.name }}
                     </option>
@@ -45,6 +53,10 @@
                     </ng-select>
                     <app-crear-cliente (update)="setProveedor($event)"></app-crear-cliente>
                 </div>
+            </div>
+            <div class="form-group col-md-8">
+                <label for="nota">Nota:</label>
+                <input type="text" class="form-control" name="nota" [(ngModel)]="paquete.nota" placeholder="Escriba aquí" />
             </div>
         </div>
      </div>
@@ -97,10 +109,6 @@
             <div class="form-group col-md-4 col-lg-2">
                 <label for="total">Total:</label>
                 <input type="number" class="form-control" name="total" [(ngModel)]="paquete.total" placeholder="Escriba aquí" />
-            </div>
-            <div class="form-group col-md-12">
-                <label for="nota">Nota:</label>
-                <input type="text" class="form-control" name="nota" [(ngModel)]="paquete.nota" placeholder="Escriba aquí" />
             </div>
         </div>
     </div>
