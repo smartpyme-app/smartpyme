@@ -280,10 +280,18 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Los usuarios de tipo "Vendedor" tambíen podrán crear y editar productos en inventario.</p>
+                        <p>Los usuarios de tipo "Vendedor" podrán crear y editar productos.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="vendedor_inventario">Gestión de productos por vendedores</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vendedor_inventario" name="vendedor_inventario">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Tendrás la opción de hacer ventas a consigna.</p>
+                        <div class="form-switch bg-light-info rounded">
+                          <label for="venta_consigna">Venta a consigna</label>
+                          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
                         </div>
                     </div>
 

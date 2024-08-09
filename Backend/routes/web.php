@@ -24,6 +24,31 @@ Route::get('/registro/{id}', [AuthJWTController::class, 'pagoFinish'])->name('pa
 Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])->name('suscripcion.ticket');
 
 
+Route::get('/asignarAsesores', function(){
+
+    $detalles = App\Models\Ventas\Detalle::where('id_empresa', 128)->get();
+
+
+    foreach ($detalles as $detalle) {
+
+        $paquete = Paquete::where('id_venta_detalle', $detalle->id)->first();
+        if ($paquete) {
+            $detalle->id_vendedor = $paquete->id_asesor;
+            $detalle->save();
+
+            $venta = $detalle->venta;
+            $venta->id_vendedor = $paquete->id_asesor;
+            $venta->save();
+        }
+
+    }
+
+    return 'Listo';
+
+
+});
+
+
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
