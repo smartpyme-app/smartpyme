@@ -73,3 +73,25 @@ ALTER TABLE egresos ADD iva_percibido decimal(9,2) NULL after iva;
 ALTER TABLE clientes ADD pais varchar(255) after direccion;
 
 ALTER TABLE proyectos ADD id_cliente INT NULL after enable;
+
+
+
+ALTER TABLE ventas ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE ventas ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE ventas ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE ventas ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+
+ALTER TABLE compras ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE compras ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE compras ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE compras ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+
+ALTER TABLE compras ADD renta_retenida DECIMAL(10,2) NULL DEFAULT '0' AFTER iva;
+ALTER TABLE compras ADD dte LONGTEXT NULL AFTER id_usuario;
+ALTER TABLE compras ADD dte_invalidacion LONGTEXT NULL AFTER dte;
+
+ALTER TABLE proveedores ADD cod_municipio varchar(10) NULL AFTER municipio;
+ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento;
+ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
+ALTER TABLE proveedores ADD correo varchar(255) NULL AFTER telefono;
+ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;

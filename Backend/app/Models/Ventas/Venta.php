@@ -10,6 +10,10 @@ class Venta extends Model {
 
     protected $table = 'ventas';
     protected $fillable = array(
+        'tipo_dte',
+        'numero_control',
+        'codigo_generacion',
+        'sello_mh',
         'fecha',
         'correlativo',
         'estado',
