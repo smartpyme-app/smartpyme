@@ -113,9 +113,11 @@ export class TrasladosComponent implements OnInit {
         this.traslado.id_empresa = this.apiService.auth_user().id_empresa;
         this.traslado.estado = 'Confirmado';
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => {this.alertService.error(error);});
+        if(!this.productos.length){
+            this.apiService.getAll('productos/list').subscribe(productos => {
+                this.productos = productos;
+            }, error => {this.alertService.error(error);});
+        }
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop:'static'});
     }

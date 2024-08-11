@@ -145,6 +145,7 @@ CREATE TABLE retenciones (
 
 
 
+
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
 ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
 ALTER TABLE empresas ADD venta_consigna BOOL DEFAULT true after vendedor_inventario;
@@ -157,6 +158,7 @@ ALTER TABLE impuestos ADD id_cuenta_contable_compras INT NULL after id_cuenta_co
 
 
 CREATE TABLE sucursal_bodegas AS SELECT * FROM sucursales;
+ALTER TABLE sucursal_bodegas ADD PRIMARY KEY(id);
 
 ALTER TABLE `sucursal_bodegas`
   DROP `telefono`,
@@ -177,3 +179,19 @@ ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
 
 ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
 ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
+
+
+--Traslados
+ALTER TABLE traslados ADD fecha date NULL after id;
+ALTER TABLE traslados CHANGE id_producto id_producto INT(11) NULL;
+ALTER TABLE traslados CHANGE concepto concepto VARCHAR(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;
+ALTER TABLE traslados CHANGE cantidad cantidad DECIMAL(10,2) NULL;
+CREATE TABLE traslado_detalles (
+    id int NOT NULL AUTO_INCREMENT,
+    id_producto INT NOT NULL,
+    cantidad decimal(10,2) NOT NULL,
+    id_traslado int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);

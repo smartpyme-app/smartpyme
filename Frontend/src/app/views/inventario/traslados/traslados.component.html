@@ -1,7 +1,10 @@
 
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+    <div class="d-flex gap-2">
+        <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+        <button *ngIf="apiService.canCreate()" [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado masivo</button>
+    </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -83,7 +86,8 @@
                         <td>{{ traslado.nombre_producto }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{traslado.id_producto}}"><i class="fa fa-edit"></i></a></td>
                         <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20 }}</span></td>
                         <td>
-                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)" [(ngModel)]="traslado.estado" [ngClass]="{'bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)" [(ngModel)]="traslado.estado" [ngClass]="{'bg-light-warning' : traslado?.estado == 'Pendiente','bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">
+                                <option value="Pendiente">Pendiente</option>
                                 <option value="Confirmado">Confirmado</option>
                                 <option value="Cancelado">Cancelado</option>
                             </select>
@@ -91,6 +95,33 @@
                         <td>{{ traslado.nombre_origen }}</td>
                         <td>{{ traslado.nombre_destino }}</td>
                         <td class="text-center"> {{ traslado.cantidad | number:'1.0' }} </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/traslado/{{traslado.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="traslado.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(traslado, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Aprobar
+                                    </a>
+                                    <a *ngIf="traslado.url_referencia" (click)="verDocumento(traslado)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa-regular fa-fw fa-file"></i> Ver comprobante
+                                    </a>
+                                    <a *ngIf="traslado.id_referencia" routerLink="/{{traslado.ruta_referencia}}/{{traslado.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                                    </a>
+                                    <a *ngIf="traslado.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(traslado, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Cancelar
+                                    </a>
+                                    <a *ngIf="traslado.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(traslado, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
                     </tr>
                 </tbody>
             </table>
