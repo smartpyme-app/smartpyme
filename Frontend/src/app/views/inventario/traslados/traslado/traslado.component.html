@@ -3,13 +3,11 @@
     <button class="btn btn-light text-danger" routerLink="/traslados"><i class="fa fa-arrow-left"></i> Regresar</button>
 </div>
 
-<div *ngIf="loading" class="row"> <p class="col-md-12 text-center text-muted mt-5">Cargando...</p> </div>
-
 <div *ngIf="bodegas.length && bodegas.length < 2" class="row">
     <p class="col-md-12 text-center text-muted mt-5">No hay bodegas suficientes para realizar este proceso</p>
 </div>
 
-<section class="card border-0 p-3 mb-3" *ngIf="bodegas.length >= 2">
+<section class="card border-0 p-3 mb-3">
     <div class="row">
         <div class="form-group col-md-2">
             <label for="fecha">Fecha:</label>
@@ -33,13 +31,13 @@
         </div>
 
         <div class="form-group col-md-5">
-            <label for="nota">Nota:</label>
-            <input type="text" class="form-control" [(ngModel)]="traslado.nota" name="nota" placeholder="Nota" required focus="true">
+            <label for="concepto">Nota:</label>
+            <input type="text" class="form-control" [(ngModel)]="traslado.concepto" name="concepto" placeholder="Nota" required>
         </div>
     </div>
 </section>
 
-<section class="card border-0 p-3 mb-3" *ngIf="bodegas.length >= 2">
+<section class="card border-0 p-3 mb-3">
                     
     <div class="d-flex justify-content-between mb-3">
             <h6 class="mt-3">Productos</h6>
@@ -56,10 +54,13 @@
                         <th width="100" class="text-center">N°</th>
                         <th>Producto</th>
                         <th width="200" class="text-center">Cantidad</th>
-                        <th width="100" class="text-center" *ngIf="traslado.estado == 'Pendiente'"><i class="fa fa-cog"></i></th>
+                        <th width="100" class="text-center" *ngIf="traslado.estado == 'Pendiente'">Mas</th>
                     </tr>
                 </thead>
                 <tbody>
+                    <tr *ngIf="traslado?.detalles.length == 0">
+                        <td colspan="4" class="text-center">No hay productos agregados</td>
+                    </tr>
                     <tr *ngFor=" let detalle of traslado?.detalles, let i=index">
                         <td class="text-center">{{ i + 1 }}</td>
                         <td>{{ detalle.nombre_producto }}</td>
@@ -78,19 +79,19 @@
 
 </section>
 
-<section class="card border-0 p-3 mb-3" *ngIf="bodegas.length >= 2">
+<section class="card border-0 p-3 mb-3">
     <div class="row">
         <div class="col-12">
             <!-- <a *ngIf="traslado.id" class="btn btn-default float-end tcla-F12 ml-2" href="{{ apiService.baseUrl + '/api/reporte/traslado/' + traslado.id + '?token=' + apiService.auth_token() }}" target="_blank" tooltip="Imprimir">
                 Imprimir (F12)
             </a> -->
-            <button title="Aplica el cargo y descargo de los inventarios" *ngIf="traslado.estado == 'Pendiente'" (click)="onAprobar()" [disabled]="loading || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F10  ml-2">
-                <span *ngIf="!loading">Autorizar <small>(F10)</small></span>
-                <span *ngIf="loading">Aplicando...</span>
+            <button title="Guarda el traslado sin afectar los inventarios para poder editarlo e imprimirlo" (click)="onGenerar()" [disabled]="saving || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F9">
+                <span *ngIf="!saving">Guardar <small>(F9)</small></span>
+                <span *ngIf="saving">Guardando...</span>
             </button>
-            <button title="Guarda el traslado sin afectar los inventarios para poder editarlo e imprimirlo" *ngIf="traslado.estado == 'Pendiente'" (click)="onGenerar()" [disabled]="loading || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F9 mr-2">
-                <span *ngIf="!loading">Guardar <small>(F9)</small></span>
-                <span *ngIf="loading">Generando...</span>
+            <button title="Aplica el cargo y descargo de los inventarios" *ngIf="traslado.id && traslado.estado == 'Pendiente'" (click)="onAprobar()" [disabled]="saving || traslado?.detalles?.length < 1" class="btn btn-primary float-end tcla-F10 me-2">
+                <span *ngIf="!saving">Autorizar <small>(F10)</small></span>
+                <span *ngIf="saving">Aplicando...</span>
             </button>
         </div>
     </div>
@@ -103,7 +104,7 @@
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-    <form #form="ngForm" name="form" class="buscador" autocomplete="off" (ngSubmit)="agregarDetalle()">
+    <form #form="ngForm" name="form" class="row buscador" autocomplete="off" (ngSubmit)="agregarDetalle()">
         <div class="form-group col-md-12">
             <label for="">Producto</label>
             <ng-select name="id_producto" (change)="selectProducto()" [(ngModel)]="detalle.id_producto" class="form-select p-0">
@@ -114,18 +115,18 @@
             </ng-select>
         </div>
 
-        <div class="form-group col-sm-12">
+        <div class="form-group col-md-12">
             <label for="cantidad">Cantidad:</label>
             <input id="cantidad" type="number" min="1" class="form-control text-center" [(ngModel)]="detalle.cantidad" name="cantidad" required>
         </div>
 
-        <div class="form-group col-md-6" *ngIf="detalle.cantidad">
-            <label for="traslado">Stock luego del traslado:</label>
+        <div class="form-group col-md-6" *ngIf="detalle.id_producto">
+            <label for="traslado">Stock luego del traslado {{ bodegaDe.nombre_bodega }}:</label>
             <p>{{ (bodegaDe.stock * 1) - (detalle.cantidad ? detalle.cantidad * 1 : 0) }}</p>
         </div>
         
-        <div class="form-group col-md-6" *ngIf="detalle.cantidad">
-            <label for="traslado">Stock luego del traslado:</label>
+        <div class="form-group col-md-6" *ngIf="detalle.id_producto">
+            <label for="traslado">Stock luego del traslado {{ bodegaPara.nombre_bodega }}:</label>
             <p>{{ (bodegaPara.stock * 1) + (detalle.cantidad ? detalle.cantidad * 1 : 0) }}</p>
         </div>
 

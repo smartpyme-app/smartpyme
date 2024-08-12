@@ -2,8 +2,8 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
     <div class="d-flex gap-2">
-        <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
-        <button *ngIf="apiService.canCreate()" [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado masivo</button>
+        <!-- <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button> -->
+        <button *ngIf="apiService.canCreate()" [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
     </div>
 </section>
 
@@ -83,7 +83,7 @@
                     </tr>
                     <tr *ngFor=" let traslado of traslados?.data">
                         <td>{{ traslado.created_at  | date:'dd/MM/yyyy' }}</td>
-                        <td>{{ traslado.nombre_producto }}<a class="float-end d-none"  tooltip="Ver información del producto" routerLink="/producto/{{traslado.id_producto}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{ traslado.nombre_producto }}</td>
                         <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20 }}</span></td>
                         <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)" [(ngModel)]="traslado.estado" [ngClass]="{'bg-light-warning' : traslado?.estado == 'Pendiente','bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">

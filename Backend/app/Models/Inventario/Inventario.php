@@ -77,7 +77,7 @@ class Inventario extends Model {
                 $salidaCantidad =  abs($cantidad);
             }
         }
-        else if ($clase == 'App\Models\Inventario\Traslado') {
+        else if ($clase == 'App\Models\Inventario\Traslados\Traslado') {
             if ($cantidad > 0) {
                 if ($modelo->estado == 'Cancelado') {
                     $clase = 'Traslado de ' . $modelo->destino()->pluck('nombre')->first() . ' cancelado';

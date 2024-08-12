@@ -11,7 +11,7 @@ class Traslado extends Model {
     protected $table = 'traslados';
     protected $fillable = array(
        'fecha',
-       'nota',
+       'concepto',
        'estado',
        'cantidad',
        'id_bodega_de',

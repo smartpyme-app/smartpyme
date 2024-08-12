@@ -100,6 +100,7 @@ export class TrasladoComponent implements OnInit {
 		this.traslado.detalles.push(this.detalle);
 		this.producto = {};
 		this.detalle = {};
+        this.alertService.modal = false;
         this.modalRef.hide();
 	}
 
@@ -124,6 +125,7 @@ export class TrasladoComponent implements OnInit {
     			this.saving = false;
     		}, error => {this.alertService.error(error); this.saving = false; });
         }
+        this.alertService.modal = false;
         this.modalRef.hide();
 	}
 
@@ -186,6 +188,7 @@ export class TrasladoComponent implements OnInit {
 	    agregarProductos(){
 	    	if(this.productos.length > 0) {
 	    		this.traslado.detalles = this.productos;
+	    		this.alertService.modal = false;
 	    		this.modalRef.hide();
 	    	}
 	    }

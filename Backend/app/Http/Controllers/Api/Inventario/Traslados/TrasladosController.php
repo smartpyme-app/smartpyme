@@ -18,7 +18,7 @@ class TrasladosController extends Controller
 
     public function index(Request $request) {
        
-        $traslados = Traslado::when($request->fin, function($query) use ($request){
+        $traslados = Traslado::with('detalles')->when($request->fin, function($query) use ($request){
                                 return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
                             ->when($request->id_bodega_de, function($query) use ($request){
@@ -68,6 +68,8 @@ class TrasladosController extends Controller
             'detalles'     => 'required',
             'concepto'     => 'required',
             'id_usuario'    => 'required|numeric'
+        ],[
+            'concepto.required' => 'El campo nota es obligatorio.'
         ]);
 
         if($request->id)
