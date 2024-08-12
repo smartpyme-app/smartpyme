@@ -8,7 +8,8 @@ import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-partidas',
-  templateUrl: './partidas.component.html'
+  templateUrl: './partidas.component.html',
+  styles: ['.bn_mrgn { margin-left: 10px; }']
 })
 
 export class PartidasComponent implements OnInit {
@@ -47,6 +48,7 @@ export class PartidasComponent implements OnInit {
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
+        this.filtros.estado = '';
         this.filtrarCuentas();
     }
 
@@ -60,6 +62,18 @@ export class PartidasComponent implements OnInit {
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
+
+
+    // public filtrarVentas(){
+    //     this.loading = true;
+    //     this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
+    //         this.ventas = ventas;
+    //         this.loading = false;
+    //         if(this.modalRef){
+    //             this.modalRef.hide();
+    //         }
+    //     }, error => {this.alertService.error(error); this.loading = false;});
+    // }
 
 
     public openModal(template: TemplateRef<any>, partida:any) {

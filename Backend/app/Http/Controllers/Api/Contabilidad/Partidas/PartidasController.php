@@ -15,8 +15,11 @@ class PartidasController extends Controller
     public function index(Request $request) {
 
         $partidas = Partida::when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                                ->orwhere('codigo', 'like' ,'%' . $request->buscador . '%');
+                                    return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
+                                                ->orwhere('tipo', 'like' ,'%' . $request->buscador . '%');
+                                })
+                                ->when($request->estado, function($query) use ($request){
+                                    return $query->where('estado', $request->estado);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);

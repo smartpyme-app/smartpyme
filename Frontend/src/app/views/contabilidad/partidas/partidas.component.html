@@ -1,8 +1,8 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Partidas</h2>
     <div>
-        <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default mr-2"><i class="fa fa-plus"></i> Generar reporte</button>
-        <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir partida</button>
+        <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img src="/assets/icons/download.png" style="height: 16px; width: 16px;" ></button>
+        <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default bn_mrgn" ><i class="fa fa-plus"></i> Añadir partida</button>
     </div>
 
 </section>
@@ -28,7 +28,7 @@
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-partidas'"></app-importar-excel>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas()" autocomplete="off">
-                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar concepto o tipo de partida" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
@@ -38,14 +38,13 @@
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
             <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/contabilidad/partidas">Todas</button>
-             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" >Por revisar</button> <!-- routerLink="/devoluciones/ventas" -->
+             <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos" >Por revisar</button> <!-- routerLink="/devoluciones/ventas" -->
         </div>
 
-        <div class="col-md-6 d-flex gap-2 mb-3">
-            <select name="estado"  class="form-select bg-default w-auto">
-                <!-- (change)="filtrarVentas()"  [(ngModel)]="filtros.estado" -->
+        <div class="col-md-6 d-flex gap-2 mb-3 justify-content-end">
+            <select name="estado" (change)="filtrarCuentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="" selected>Estado</option>
-                <option value="Pagada">Aplicada</option>
+                <option value="Aprobado">Aprobada</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Anulada">Anulada</option>
             </select>
