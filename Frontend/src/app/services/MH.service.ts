@@ -152,6 +152,47 @@ export class MHService {
         });
     }
 
+    emitirDTENotaCredito(venta:any): Promise<any> {
+
+        return new Promise((resolve, reject) => {
+            this.apiService.store('generarDTENotaCredito', venta).subscribe(dte => {
+                venta.dte = dte;
+                
+                this.firmarDTE(dte).subscribe(dteFirmado => {
+
+                    if(dteFirmado.status == 'ERROR'){
+                        reject(dteFirmado.body.mensaje);
+                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                    }
+
+                    venta.dte.firmaElectronica = dteFirmado.body;
+                    
+                    this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
+                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                            venta.dte.sello = dte.selloRecibido;
+                            venta.sello_mh = dte.selloRecibido;
+                            // venta.estado = 'Emitido';
+                            this.apiService.store('devoluciones/venta', venta).subscribe(data => {
+                                resolve(data);
+                            },error => {this.alertService.error(error);});
+                        }
+                    },error => {
+                        if(error.error && error.error.observaciones.length > 0){
+                            reject(error.error.observaciones);
+                        }
+                        else if(error.error && error.error.descripcionMsg){
+                            reject(error.error.descripcionMsg);
+                        }else{
+                            reject(error);
+                        }
+                    });
+
+                },error => {reject('No se pudo firmar el DTE');});
+
+            },error => {reject('No se pudo generar el DTE');});
+        });
+    }
+
     emitirDTESujetoExcluido(compra:any): Promise<any> {
 
         return new Promise((resolve, reject) => {

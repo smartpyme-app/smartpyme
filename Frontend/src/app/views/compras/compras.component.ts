@@ -248,11 +248,11 @@ export class ComprasComponent implements OnInit {
     }
 
     imprimirDTEPDF(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/sujetoexcluido/' + compra.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/sujetoexcluido/' + compra.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){

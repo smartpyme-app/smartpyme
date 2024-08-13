@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
 
     // Generar DTE
     Route::post('/generarDTE',          [MHDTEController::class, 'generarDTE']);
+    Route::post('/generarDTENotaCredito',          [MHDTEController::class, 'generarDTENotaCredito']);
     Route::post('/generarDTESujetoExcluido', [MHDTEController::class, 'generarDTESujetoExcluido']);
     Route::post('/generarDTEAnuladoSujetoExcluido',    [MHDTEController::class, 'generarDTEAnuladoSujetoExcluido']);
     Route::post('/generarContingencia',    [MHDTEController::class, 'generarContingencia']);
@@ -23,11 +24,8 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     // Anular DTE
     Route::post('/anularDTE',           [MHDTEController::class, 'anularDTE']);
     // Generar DTE JSON
-    Route::get('/reporte/dte/{id}',     [MHDTEController::class, 'generarDTEPDF']);
-    Route::get('/reporte/dte/sujetoexcluido/{id}',     [MHDTEController::class, 'generarDTEPDFSujetoExcluido']);
+    Route::get('/reporte/dte/{id}/{tipo}',     [MHDTEController::class, 'generarDTEPDF']);
     // Generar DTE PDF
-    Route::get('/reporte/dte-json/{id}',    [MHDTEController::class, 'generarDTEJSON']);
+    Route::get('/reporte/dte-json/{id}/{tipo}',    [MHDTEController::class, 'generarDTEJSON']);
     
-    Route::get('/reporte/dte-json/sujetoexcluido/{id}',    [MHDTEController::class, 'generarDTEJSONSujetoExcluido']);
-
 ?>
