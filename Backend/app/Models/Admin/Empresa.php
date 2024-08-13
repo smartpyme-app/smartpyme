@@ -43,6 +43,7 @@ class Empresa extends Model {
         'editar_descripcion_venta',
         'impresion_en_facturacion',
         'vendedor_detalle_venta',
+        'venta_consigna',
         'plan',
         'cobra_iva',
         'tipo_plan',

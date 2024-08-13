@@ -6,8 +6,15 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="gastos?.total">
-                Mostrando {{ gastos?.to }} de {{ gastos?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="gastos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarGastos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ gastos?.total + ' registros' }}
             </span>
         </div>
 
@@ -94,7 +101,7 @@
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(gasto, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEdit()" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-credit-card"></i> Pagar
                                     </a>
                                     <a *ngIf="apiService.canEdit()" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
@@ -103,10 +110,10 @@
                                     <a *ngIf="gasto.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
-                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEdit()" (click)="setEstado(gasto, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Cancelado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Cancelar
                                     </a>
-                                    <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEdit()" (click)="setEstado(gasto, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
                                 </div>

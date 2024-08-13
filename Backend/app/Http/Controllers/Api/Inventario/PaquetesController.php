@@ -24,16 +24,6 @@ class PaquetesController extends Controller
                                         return $q->where('id_sucursal', $request->id_sucursal);
                                     });
                                 })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->whereHas('cliente', function($q) use ($request){
-                                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
-                                                 })
-                                                 ->orwhere('num_guia', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('embalaje', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('nota', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('wr', 'like' ,"%" . $request->buscador . "%")
-                                                 ->orwhere('num_seguimiento', 'like' ,"%" . $request->buscador . "%");
-                                })
                                 ->when($request->wr, function($q) use ($request){
                                     $q->where('wr', $request->wr);
                                 })
@@ -57,6 +47,16 @@ class PaquetesController extends Controller
                                 })
                                 ->when($request->fin, function($query) use ($request){
                                     return $query->where('fecha', '<=', $request->fin);
+                                })
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->whereHas('cliente', function($q) use ($request){
+                                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%");
+                                                 })
+                                                 ->orwhere('num_guia', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('embalaje', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('nota', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('wr', 'like' ,"%" . $request->buscador . "%")
+                                                 ->orwhere('num_seguimiento', 'like' ,"%" . $request->buscador . "%");
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);

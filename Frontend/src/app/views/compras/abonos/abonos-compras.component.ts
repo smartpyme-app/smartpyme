@@ -46,7 +46,7 @@ export class AbonosComprasComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.filtrarCompras();
+        this.filtrarAbonos();
     }
 
     public loadAll() {
@@ -59,10 +59,10 @@ export class AbonosComprasComponent implements OnInit {
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
         
-        this.filtrarCompras();
+        this.filtrarAbonos();
     }
 
-    public filtrarCompras(){
+    public filtrarAbonos(){
         this.loading = true;
         this.apiService.getAll('compras/abonos', this.filtros).subscribe(abonos => { 
             this.abonos = abonos;
