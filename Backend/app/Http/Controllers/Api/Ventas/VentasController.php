@@ -81,6 +81,12 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
+                        ->when($request->dte == 0, function($query) {
+                                return $query->whereNull('sello_mh');
+                        })
+                        ->when($request->dte == 1, function($query) {
+                            return $query->whereNotNull('sello_mh');
+                        })
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -741,8 +747,11 @@ class VentasController extends Controller
     public function sinDevolucion(){
 
         $ventas = Venta::where('estado', '!=', 'Anulada')
-                        ->whereMonth('fecha', '>=' , date('m') - 1)
+                        ->whereMonth('fecha', '>=' , date('m') - 2)
                         ->whereYear('fecha', date('Y'))
+                        ->whereHas('documento', function($q){
+                            $q->whereIn('nombre', ['Factura', 'Crédito fiscal']);
+                        })
                         ->whereDoesntHave('devoluciones')
                         ->orderBy('fecha', 'DESC')
                         ->get();

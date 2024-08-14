@@ -10,6 +10,10 @@ class Venta extends Model {
 
     protected $table = 'ventas';
     protected $fillable = array(
+        'tipo_dte',
+        'numero_control',
+        'codigo_generacion',
+        'sello_mh',
         'fecha',
         'correlativo',
         'estado',
@@ -78,6 +82,11 @@ class Venta extends Model {
     }
 
     public function getDteAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
+    public function getDteInvalidacionAttribute($value) 
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }

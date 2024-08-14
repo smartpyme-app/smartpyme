@@ -43,12 +43,12 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            {{-- <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> --}}
+                            {{-- <img width="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> --}}
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
                         <h2>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h2>
-                        <h2>FACTURA</h2>
+                        <h2>FACTURA SUJETO EXCLUIDO</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">
                         {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
@@ -116,17 +116,17 @@
                         <br>
                     </td>
                     <td style="width: 50%; vertical-align: top;">
-                        @if ($DTE['receptor'])
-                            <p><b>Nombre o razón social: </b>{{ $DTE['receptor']['nombre'] }}</p>
-                            <p><b>Tipo de Documento:</b> {{ $DTE['receptor']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
-                            <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
-                            <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
-                            <p><b>Dirección:</b> {{ $DTE['receptor']['direccion']['complemento'] }}
-                                {{ $registro->cliente()->pluck('municipio')->first(); }}
-                                {{ $registro->cliente()->pluck('departamento')->first(); }}
+                        @if ($DTE['sujetoExcluido'])
+                            <p><b>Nombre o razón social: </b>{{ $DTE['sujetoExcluido']['nombre'] }}</p>
+                            <p><b>Tipo de Documento:</b> {{ $DTE['sujetoExcluido']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
+                            <p><b>Núm de Documento:</b> {{ $DTE['sujetoExcluido']['numDocumento'] }}</p>
+                            <p><b>Act. económica:</b> {{ $DTE['sujetoExcluido']['descActividad'] }}</p>
+                            <p><b>Dirección:</b> {{ $DTE['sujetoExcluido']['direccion']['complemento'] }}
+                                {{ $registro->proveedor()->pluck('municipio')->first(); }}
+                                {{ $registro->proveedor()->pluck('departamento')->first(); }}
                             </p>
-                            <p><b>Teléfono: </b>{{ $DTE['receptor']['telefono'] }}</p>
-                            <p><b>Correo: </b>{{ $DTE['receptor']['correo'] }}</p>
+                            <p><b>Teléfono: </b>{{ $DTE['sujetoExcluido']['telefono'] }}</p>
+                            <p><b>Correo: </b>{{ $DTE['sujetoExcluido']['correo'] }}</p>
                         @endif
                     </td>
                 </tr>
@@ -144,9 +144,7 @@
                     <th class="border-bottom">Descripción</th>
                     <th width="10%" class="border-bottom text-right">Precio Unitario</th>
                     <th width="10%" class="border-bottom text-right">Descuento por ítem</th>
-                    <th width="10%" class="border-bottom text-right">Ventas No Sujetas</th>
-                    <th width="10%" class="border-bottom text-right">Ventas Exentas</th>
-                    <th width="10%" class="border-bottom text-right">Ventas Gravadas</th>
+                    <th width="10%" class="border-bottom text-right">Compras</th>
                 </tr>
             </thead>
             <tbody>
@@ -158,73 +156,54 @@
                     <td class="border-bottom">   {{ $detalle['descripcion']  }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 4) }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['montoDescu'] , 2) }}</td>
-                    <td class="border-bottom text-right">   ${{ number_format($detalle['ventaNoSuj'], 2) }}</th>
-                    <td class="border-bottom text-right">   ${{ number_format($detalle['ventaExenta'], 2) }}</th>
-                    <td class="border-bottom text-right">   ${{ number_format($detalle['ventaGravada'], 2) }}</th>
+                    <td class="border-bottom text-right">   ${{ number_format($detalle['compra'], 2) }}</th>
                 </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr>
                     <td colspan="4"></td>
-                    <td class="bg-light" colspan="2"><b>Suma de ventas:</b> </td>
-                    <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalNoSuj'], 2) }}</td>
-                    <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalExenta'], 2) }}</td>
-                    <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalGravada'], 2) }}</td>
+                    <td class="bg-light" colspan="2"><b>Suma de compras:</b> </td>
+                    <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalCompra'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="4">Suma total de operaciones: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['subTotalVentas'], 2) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="4"></td>
-                    <td colspan="4">Monto global Desc., Rebajas y otros a ventas no sujetas: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['descuNoSuj'], 2) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="4"></td>
-                    <td colspan="4">Monto global Desc., Rebajas y otros a ventas exentas: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['descuExenta'], 2) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="4"></td>
-                    <td colspan="4">Monto global Desc., Rebajas y otros a ventas gravadas: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['descuGravada'], 2) }}</td>
+                    <td colspan="2">Monto global Desc., Rebajas y otros a compras: </td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['totalDescu'], 2) }}</td>
                 </tr>
 
                 @if (isset($DTE['resumen']['tributos']))
                     @foreach ($DTE['resumen']['tributos'] as $tributo)
                     <tr>
                         <td colspan="4"></td>
-                        <td colspan="4">{{ $tributo['descripcion'] }}: </td>
+                        <td colspan="2">{{ $tributo['descripcion'] }}: </td>
                         <td class="text-right">${{ number_format($tributo['valor'], 2) }}</td>
                     </tr>
                     @endforeach
                 @endif
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="4">Sub-Total: </td>
+                    <td colspan="2">Sub-Total: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['subTotal'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="4">IVA Percibido: (+) </td>
+                    <td colspan="2">IVA Percibido: (+) </td>
                     <td class="text-right">${{ number_format(0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="4">IVA Retenido: (-) </td>
+                    <td colspan="2">IVA Retenido: (-) </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td colspan="4">Retención de Renta: </td>
+                    <td colspan="2">Retención de Renta: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td class="bg-light" colspan="4"><b>Total a pagar:</b></td>
+                    <td class="bg-light" colspan="2"><b>Total a pagar:</b></td>
                     <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['totalPagar'], 2) }}</b></td>
                 </tr>
             </tfoot>
@@ -245,6 +224,16 @@
                         @endif
                     </td>
                 </tr>
+                @if (isset($DTE['apendice']))
+                    @foreach ($DTE['apendice'] as $atributo)
+                    <tr>
+                        <td colspan="2">
+                            <b>{{ $atributo['etiqueta'] }}:</b>
+                            {{ $atributo['valor'] }}
+                        </td>
+                    </tr>
+                    @endforeach
+                @endif
             </tbody>
         </table>
 

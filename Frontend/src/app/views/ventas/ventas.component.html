@@ -95,7 +95,7 @@
                                 <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
                                     {{ venta.estado }}
                                 </a>
-                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta?.dte?.sello">
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
                                     ✅                       
                                 </span>
                             </span>
@@ -134,10 +134,13 @@
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
 
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && !venta?.dte?.sello" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta?.dte?.sello" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE en contingencia
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
 
@@ -147,7 +150,7 @@
                                     <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                     </a>
-                                    <a *ngIf="venta.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado != 'Anulada' && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
                                     <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
@@ -310,20 +313,20 @@
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            <button *ngIf="venta?.dte?.sello" (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="venta.sello_mh" (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
                 Ver JSON
             </button>
 
-            <button *ngIf="venta?.dte?.sello" (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="venta.sello_mh" (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
                 Ver PDF
             </button>
 
-            <button *ngIf="venta?.dte?.sello" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!sending">Enviar por correo</span>
                 <span *ngIf="sending">Enviando...</span>
             </button>
 
-            <button *ngIf="!venta?.dte?.sello" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="!venta.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!saving">Emitir</span>
                 <span *ngIf="saving">Emitiendo...</span>
             </button>
@@ -425,6 +428,15 @@
                         {{ usuario.name }}
                     </ng-option>
                 </ng-select>
+            </div>
+
+            <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
+                <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
+                    <option value="">Todos</option>
+                    <option value="0">Sin emitir</option>
+                    <option value="1">Emitidos</option>
+                </select>
             </div>
         </div>
         

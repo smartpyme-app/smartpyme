@@ -10,6 +10,12 @@ class Devolucion extends Model {
 
     protected $table = 'devoluciones_venta';
     protected $fillable = array(
+        'tipo_dte',
+        'numero_control',
+        'codigo_generacion',
+        'sello_mh',
+        'dte',
+        'dte_invalidacion',
         'fecha',
         'correlativo',
         'id_documento',
@@ -28,7 +34,7 @@ class Devolucion extends Model {
         'id_usuario'
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_documento'];
     protected $casts = ['enable' => 'string'];
 
     protected static function booted()
@@ -42,6 +48,19 @@ class Devolucion extends Model {
         }
     }
 
+    public function getDteAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
+    public function getDteInvalidacionAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
+    public function getNombreDocumentoAttribute(){
+        return $this->documento()->pluck('nombre')->first();
+    }
 
     public function getNombreClienteAttribute()
     {   $cliente = $this->cliente()->first();
@@ -73,6 +92,10 @@ class Devolucion extends Model {
 
     public function sucursal(){
         return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
+    }
+
+    public function documento(){
+        return $this->belongsTo('App\Models\Admin\Documento','id_documento');
     }
 
     public function empresa(){

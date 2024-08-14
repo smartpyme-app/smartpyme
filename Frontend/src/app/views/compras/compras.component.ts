@@ -1,7 +1,8 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { AlertService } from '../../services/alert.service';
-import { ApiService } from '../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 declare var $:any;
 
@@ -22,6 +23,7 @@ export class ComprasComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     public saving:boolean = false;
+    public sending:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingCompras:boolean = false;
 
@@ -29,7 +31,7 @@ export class ComprasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
@@ -48,6 +50,7 @@ export class ComprasComponent implements OnInit {
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
         this.filtros.forma_pago = '';
+        this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
@@ -233,5 +236,94 @@ export class ComprasComponent implements OnInit {
 
         this.modalRef = this.modalService.show(template);
     }
+
+
+    openDTE(template: TemplateRef<any>, compra:any){
+        this.compra = compra;
+        this.modalRef = this.modalService.show(template);
+        this.alertService.modal = true;
+        if(!this.compra.dte){
+            this.emitirDTE();
+        }
+    }
+
+    imprimirDTEPDF(compra:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEJSON(compra:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    emitirDTE(){
+        this.saving = true;
+        this.mhService.emitirDTESujetoExcluido(this.compra).then((compra) => {
+            this.compra = compra;
+            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.saving = false;
+        }).catch((error) => {
+            this.saving = false;
+            this.alertService.warning('Hubo un problema', error);
+        });
+    }
+
+
+    enviarDTE(){
+        this.sending = true;
+        this.apiService.store('enviarDTE/sujetoexcluido', this.compra).subscribe(dte => {
+            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.sending = false;
+            setTimeout(()=>{
+                this.modalRef?.hide();
+            },5000);
+        },error => {this.alertService.error(error); this.sending = false; });
+    }
+
+    anularDTE(compra:any){
+        this.compra = compra;
+        if(compra.dte){
+            if (confirm('¿Confirma anular la compra y el DTE?')) {
+                this.compra = compra;
+                this.saving = true;
+                this.apiService.store('generarDTEAnuladoSujetoExcluido', this.compra).subscribe(dte => {
+                    // this.alertService.success('DTE generado.');
+                    this.compra.dte_invalidacion = dte;
+                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                        this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                        // this.alertService.success('DTE firmado.');
+                        
+                        this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
+                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                this.compra.dte_invalidacion.sello = dte.selloRecibido;
+                                this.compra.estado = 'Anulada';
+                                this.apiService.store('compra', this.compra).subscribe(data => {
+                                    // this.alertService.success('Compra guardada.');
+                                },error => {this.alertService.error(error); this.saving = false; });
+                            }
+
+                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                        },error => {
+                            if(error.error.descripcionMsg){
+                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                            }
+                            if(error.error.observaciones.length > 0){
+                                this.alertService.warning('Hubo un problema', error.error.observaciones);
+                            }
+                            this.saving = false;
+                        });
+
+                    },error => {this.alertService.error(error);this.saving = false; });
+
+                },error => {this.alertService.error(error);this.saving = false; });
+            }
+        }
+        else{
+            if (confirm('¿Confirma anular la compra?')){
+                compra.estado = 'Anulada';
+                this.onSubmit();
+            }
+        }
+    }
+
 
 }

@@ -42,16 +42,16 @@
                 <tr>
                     <td  style="width: 25%;">
                         {{-- Logo --}}
-                        @if ($venta->empresa()->pluck('logo')->first())
-                            <img height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                        @if ($registro->empresa()->pluck('logo')->first())
+                            <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
                         <h2>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h2>
-                        <h2>Comprobante de Crédito Fiscal</h2>
+                        <h2>COMPROBANTE DE CRÉDITO FISCAL</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">
-                        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($venta->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
+                        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
                     </td>
                 </tr>
             </tbody>
@@ -104,10 +104,11 @@
                     <td style="width: 50%; vertical-align: top;">
                         <p><b>Nombre o razón social: </b>{{ $DTE['emisor']['nombre'] }}</p>
                         <p><b>NIT:</b> {{ $DTE['emisor']['nit'] }}</p>
+                        <p><b>NRC:</b> {{ $DTE['emisor']['nrc'] }}</p>
                         <p><b>Act. económica:</b> {{ $DTE['emisor']['descActividad'] }}</p>
                         <p><b>Dirección:</b> {{ $DTE['emisor']['direccion']['complemento'] }}
-                            {{ $venta->empresa()->pluck('municipio')->first(); }}
-                            {{ $venta->empresa()->pluck('departamento')->first(); }}
+                            {{ $registro->empresa()->pluck('municipio')->first(); }}
+                            {{ $registro->empresa()->pluck('departamento')->first(); }}
                         </p>
                         
                         <p><b>Teléfono: </b>{{ $DTE['emisor']['telefono'] }}</p>
@@ -120,8 +121,8 @@
                         <p><b>NRC:</b> {{ $DTE['receptor']['nrc'] }}</p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                         <p><b>Dirección:</b> {{ $DTE['receptor']['direccion']['complemento'] }}
-                            {{ $venta->cliente()->pluck('municipio')->first(); }}
-                            {{ $venta->cliente()->pluck('departamento')->first(); }}
+                            {{ $registro->cliente()->pluck('municipio')->first(); }}
+                            {{ $registro->cliente()->pluck('departamento')->first(); }}
                         </p>
                         <p><b>Teléfono: </b>{{ $DTE['receptor']['telefono'] }}</p>
                         <p><b>Correo: </b>{{ $DTE['receptor']['correo'] }}</p>

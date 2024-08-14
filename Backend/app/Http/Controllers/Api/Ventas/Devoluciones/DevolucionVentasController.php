@@ -28,10 +28,7 @@ class DevolucionVentasController extends Controller
 
     public function index(Request $request) {
        
-        $ventas = Devolucion::when($request->buscador, function($query) use ($request){
-                            return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
+        $ventas = Devolucion::when($request->inicio, function($query) use ($request){
                             return $query->where('fecha', '>=', $request->inicio);
                         })
                         ->when($request->fin, function($query) use ($request){
@@ -51,6 +48,15 @@ class DevolucionVentasController extends Controller
                         })
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                        ->when($request->buscador, function($query) use ($request){
+                        return $query->whereHas('cliente', function($q) use ($request){
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
+                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%');
                         })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
@@ -74,7 +80,7 @@ class DevolucionVentasController extends Controller
     {
         $request->validate([
             'fecha'             => 'required',
-            'estado'            => 'required',
+            'enable'            => 'required',
             'observaciones'            => 'required',
             // 'id_cliente'        => 'required',
             'id_usuario'        => 'required',
