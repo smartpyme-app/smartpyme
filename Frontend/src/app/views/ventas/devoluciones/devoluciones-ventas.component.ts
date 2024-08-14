@@ -72,7 +72,7 @@ export class DevolucionesVentasComponent implements OnInit {
     }
 
     public onSubmit(){
-        this.apiService.store('devoluciones/venta', this.venta).subscribe(venta => { 
+        this.apiService.store('devolucion/venta', this.venta).subscribe(venta => { 
             this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
@@ -220,7 +220,7 @@ export class DevolucionesVentasComponent implements OnInit {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
                                 this.venta.sello_mh = dte.selloRecibido;
                                 this.venta.estado = 'Anulada';
-                                this.apiService.store('venta', this.venta).subscribe(data => {
+                                this.apiService.store('devolucion/venta', this.venta).subscribe(data => {
                                     // this.alertService.success('Venta guardada.');
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }

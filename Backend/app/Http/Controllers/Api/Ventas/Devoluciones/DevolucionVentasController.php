@@ -130,6 +130,7 @@ class DevolucionVentasController extends Controller
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
+            'id_empresa'       => 'required|numeric',
         ],[
             'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
@@ -147,9 +148,9 @@ class DevolucionVentasController extends Controller
             $devolucion->fill($request->all());
             $devolucion->save();
 
-            $venta = Venta::findOrFail($request['id_venta']);
-            $venta->estado = 'Anulada';
-            $venta->save();
+            // $venta = Venta::findOrFail($request['id_venta']);
+            // $venta->estado = 'Anulada';
+            // $venta->save();
 
 
         // Guardamos los detalles

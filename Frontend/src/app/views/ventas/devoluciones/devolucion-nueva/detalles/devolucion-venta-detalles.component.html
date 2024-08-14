@@ -12,14 +12,14 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngIf="venta?.detalles?.length < 1">
+                <tr *ngIf="devolucion?.detalles?.length < 1">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios
                         </p>
                     </td>
                 </tr>
-                <tr *ngFor="let detalle of venta?.detalles; let i = index">
+                <tr *ngFor="let detalle of devolucion?.detalles; let i = index">
                     <td>
                         <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.nombre_producto }}
@@ -36,7 +36,7 @@
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
-                            <button class="btn btn-link" (click)="delete(detalle)">
+                            <button type="button" class="btn btn-link" (click)="delete(detalle)">
                               <i class="fa fa-trash"></i>
                             </button>
                         </div>

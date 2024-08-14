@@ -172,7 +172,7 @@ export class MHService {
                             venta.dte.sello = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
                             // venta.estado = 'Emitido';
-                            this.apiService.store('devoluciones/venta', venta).subscribe(data => {
+                            this.apiService.store('devolucion/venta', venta).subscribe(data => {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }
