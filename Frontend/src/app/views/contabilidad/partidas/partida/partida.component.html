@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ partida.id ? 'Editar ' : 'Crear ' }} Partida</h3>
-    <button class="btn btn-light text-danger" routerLink="/partidas"><i class="fa fa-arrow-left"></i> Regresar</button>
+    <button class="btn btn-light text-danger" routerLink="/contabilidad/partidas"> Cancelar <i class="fa-solid fa-xmark"></i></button>
 </div>
 
 <form autocomplete="off" (ngSubmit)="onSubmit()">
@@ -11,8 +11,11 @@
             <div class="justify-content-between d-flex">
                 <h4>Detalle</h4>
                 <div>
-                    <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary mr-2"><i class="fa fa-plus"></i>Crear proveedor</a>
-                    <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary tcla-F4"><i class="fa fa-plus"></i> Crear cliente</a>
+                    <!-- <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary" style="margin-right: 10px;" ><img src="/assets/icons/user-plus.png" class="icon"> Crear proveedor</a> -->
+                    <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary  border-0" style="margin-right: 10px;" ><i class="fa-solid fa-user-plus"></i> Crear proveedor</a>
+                    <!-- <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary "><img src="/assets/icons/user-plus.png" class="icon"> Crear cliente</a> -->
+                    <a   tooltip="Crear partida (F4)" class="btn btn-outline-primary  border-0"><i class="fa-solid fa-user-plus"></i> Crear cliente</a>
+                    <!-- user-plus -->
                     <!-- *ngIf="apiService.canCreate()" -->
                 </div>
             </div>
@@ -83,7 +86,7 @@
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
             <button type="submit" [disabled]="saving || (partida.diferencia != 0)" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar partida  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="!saving">Crear Partida </span>
                 <span *ngIf="saving">Guardando...</span>
             </button>
         </div>
