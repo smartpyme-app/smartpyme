@@ -9,22 +9,22 @@
         <div class="row">
             <div class="form-group col-md-4 col-lg-2">
                 <label for="fecha">Fecha</label><br>
-                <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha" required>
+                <input type="date" class="form-control" [(ngModel)]="devolucion.fecha" name="fecha" id="fecha" required>
             </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="venta.id_documento">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.id_documento">
                 <label for="id_documento">Documento</label>
-                <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                <select name="id_documento" [(ngModel)]="devolucion.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
                     <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
                 </select>
             </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="venta.id_documento">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.id_documento">
                 <label for="correlativo">Correlativo</label>
-                <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+                <input type="number" class="form-control" [(ngModel)]="devolucion.correlativo" name="correlativo" id="correlativo">
             </div>
             <div class="form-group col-md-6">
                 <div class="form-group">
                     <label for="">Observaciones:</label>
-                    <input type="text" class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" placeholder="Escribe aquí" required>
+                    <input type="text" class="form-control" [(ngModel)]="devolucion.observaciones" name="observaciones" placeholder="Escribe aquí" required>
                 </div>
             </div>
         </div>
@@ -53,41 +53,41 @@
 
     <div class="card-body">
         <div class="row">
-            <app-devolucion-venta-detalles [venta]="venta" (update)="updateVenta($event)" (sumTotal)="sumTotal()"></app-devolucion-venta-detalles>
+            <app-devolucion-venta-detalles [devolucion]="devolucion" (update)="updateDevolucion($event)" (sumTotal)="sumTotal()"></app-devolucion-venta-detalles>
             <div class="col-md-12">
                 <table class="table table-sm table-borderless table-condensed mb-0">
                     <tbody>
                         <tr>
                             <td class="text-right"> Sub Total: </td>
-                            <td width="70px" class="text-right"> {{ venta.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.sub_total | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                         <tr>
                             <td class="text-right"> IVA: </td>
-                            <td width="70px" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.iva | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
-                       <tr *ngIf="venta.retencion">
+                       <tr *ngIf="devolucion.retencion">
                            <td class="text-right"> <b>Retención (1%)</b></td>
-                           <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                           <td style="width: 150px;" class="text-right"> {{ devolucion.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
                            <td style="width: 50px;"></td>
                        </tr>
-                       <tr *ngIf="venta.exenta > 0">
+                       <tr *ngIf="devolucion.exenta > 0">
                            <td class="text-right"> <b>Ventas Exentas</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
                            <td style="width: 50px;"></td>
                        </tr>
-                       <tr *ngIf="venta.no_sujeta > 0">
+                       <tr *ngIf="devolucion.no_sujeta > 0">
                            <td class="text-right"> <b>Ventas No Sujetas</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
                            <td style="width: 50px;"></td>
                        </tr>
-                       <tr *ngIf="venta.cuenta_a_terceros > 0">
+                       <tr *ngIf="devolucion.cuenta_a_terceros > 0">
                            <td class="text-right"> <b>Cuenta a terceros</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                            <td style="width: 50px;"></td>
                        </tr>
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
-                            <td width="70px" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td width="70px" class="text-right"><b> {{ devolucion.total | currency:'USD':'symbol':'1.2'}}</b> </td>
                         </tr>
                     </tbody>
                 </table>

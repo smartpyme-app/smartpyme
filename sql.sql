@@ -81,6 +81,13 @@ ALTER TABLE ventas ADD numero_control varchar(255) NULL AFTER id;
 ALTER TABLE ventas ADD codigo_generacion varchar(255) NULL AFTER id;
 ALTER TABLE ventas ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
 
+ALTER TABLE devoluciones_venta ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE devoluciones_venta ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE devoluciones_venta ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE devoluciones_venta ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+ALTER TABLE devoluciones_venta ADD dte LONGTEXT NULL AFTER id_usuario;
+ALTER TABLE devoluciones_venta ADD dte_invalidacion LONGTEXT NULL AFTER dte;
+
 ALTER TABLE compras ADD tipo_dte varchar(255) NULL AFTER id;
 ALTER TABLE compras ADD numero_control varchar(255) NULL AFTER id;
 ALTER TABLE compras ADD codigo_generacion varchar(255) NULL AFTER id;

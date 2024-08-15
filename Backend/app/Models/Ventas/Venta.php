@@ -86,6 +86,11 @@ class Venta extends Model {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
+    public function getDteInvalidacionAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
     public function getNombreUsuarioAttribute()
     {
         return $this->usuario()->pluck('name')->first();

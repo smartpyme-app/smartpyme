@@ -156,7 +156,7 @@ class MHCCF extends Model
 
         $tributos = NULL;
 
-        if ($this->venta->iva > 0 || $this->venta->fovial > 0 || $this->venta->cotrans > 0) {
+        if ($this->venta->iva > 0) {
             $tributos = collect();
             if ($this->venta->iva){ 
                 $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva,2))]);

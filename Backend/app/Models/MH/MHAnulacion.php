@@ -32,12 +32,12 @@ class MHAnulacion extends Model
         $num_documento = NULL;
 
 
-        if ($DTE['identificacion']['tipoDte'] == '01') {
+        if ($DTE['receptor'] && $DTE['identificacion']['tipoDte'] == '01') {
             $tipo_documento = $DTE['receptor']['tipoDocumento'];
             $num_documento = $DTE['receptor']['numDocumento'];
         }
 
-        if ($DTE['identificacion']['tipoDte'] == '03') {
+        if ($DTE['receptor'] && $DTE['identificacion']['tipoDte'] == '03') {
             $tipo_documento = '36';
             $num_documento = $DTE['receptor']['nit'];
         }
@@ -52,9 +52,9 @@ class MHAnulacion extends Model
             "codigoGeneracionR" => NULL, // Solo si el motivo es error, hay que mandar el que sustituye
             "tipoDocumento" => $tipo_documento,
             "numDocumento" => $num_documento,
-            "nombre" => $DTE['receptor']['nombre'],
-            "correo" => $DTE['receptor']['correo'],
-            "telefono" => $DTE['receptor']['telefono'],
+            "nombre" => $DTE['receptor'] ? $DTE['receptor']['nombre'] : NULL,
+            "correo" => $DTE['receptor'] ? $DTE['receptor']['correo'] : NULL,
+            "telefono" => $DTE['receptor'] ? $DTE['receptor']['telefono'] : NULL,
         ];
 
         // 1. Error en la Información del Documento Tributario Electrónico a invalidar.
@@ -92,7 +92,7 @@ class MHAnulacion extends Model
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nombre" => $this->empresa->nombre,
             "tipoEstablecimiento" => $this->empresa->tipoEstablecimiento,
-            "nomEstablecimiento" => $this->empresa->nombre_comercial,
+            "nomEstablecimiento" => $this->empresa->nombre,
             "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "telefono" => $this->empresa->telefono,

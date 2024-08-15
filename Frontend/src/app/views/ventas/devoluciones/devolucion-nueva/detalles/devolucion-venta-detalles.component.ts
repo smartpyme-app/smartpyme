@@ -11,7 +11,7 @@ import { ApiService } from '@services/api.service';
 })
 export class DevolucionVentaDetallesComponent implements OnInit {
 
-    @Input() venta: any = {};
+    @Input() devolucion: any = {};
     public detalle:any = {};
     public supervisor:any = {};
 
@@ -49,7 +49,7 @@ export class DevolucionVentaDetallesComponent implements OnInit {
         
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(2);
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(2);
-        this.update.emit(this.venta);
+        this.update.emit(this.devolucion);
     }
 
     public modalSupervisor(detalle:any){
@@ -71,10 +71,10 @@ export class DevolucionVentaDetallesComponent implements OnInit {
         public delete(detalle:any){
             if (confirm('Confirma eliminar el detalle')) { 
 
-                for (var i = 0; i < this.venta.detalles.length; ++i) {
-                    if (this.venta.detalles[i].producto_id === detalle.producto_id ){
-                        this.venta.detalles.splice(i, 1);
-                        this.update.emit(this.venta);
+                for (var i = 0; i < this.devolucion.detalles.length; ++i) {
+                    if (this.devolucion.detalles[i].producto_id === detalle.producto_id ){
+                        this.devolucion.detalles.splice(i, 1);
+                        this.update.emit(this.devolucion);
                     }
                 }
             }

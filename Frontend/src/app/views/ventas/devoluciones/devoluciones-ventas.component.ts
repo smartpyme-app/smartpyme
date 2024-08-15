@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 @Component({
   selector: 'app-devoluciones-ventas',
@@ -13,18 +14,21 @@ export class DevolucionesVentasComponent implements OnInit {
     public ventas:any = [];
     public id_venta:any = null;
     public loading:boolean = false;
+    public saving:boolean = false;
+    public sending:boolean = false;
     public downloading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
     public ventasList:any = [];
     public sucursales:any = [];
+    public venta:any = {};
     public filtros:any = {};
 
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private mhService: MHService,
     ){}
 
     ngOnInit() {
@@ -63,8 +67,12 @@ export class DevolucionesVentasComponent implements OnInit {
     }
 
     public setEstado(venta:any, estado:string){
-        venta.estado = estado;
-        this.apiService.store('venta', venta).subscribe(venta => { 
+        this.venta = venta;
+        this.venta.estado = estado;
+    }
+
+    public onSubmit(){
+        this.apiService.store('devolucion/venta', this.venta).subscribe(venta => { 
             this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
@@ -147,6 +155,98 @@ export class DevolucionesVentasComponent implements OnInit {
             this.downloading = false;
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
+    }
+
+    // DTE
+
+    openDTE(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template);
+        if(!this.venta.dte){
+            this.emitirDTE();
+        }
+    }
+
+    imprimirDTEPDF(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEJSON(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/05/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    emitirDTE(){
+        this.saving = true;
+        this.mhService.emitirDTENotaCredito(this.venta).then((venta) => {
+            this.venta = venta;
+            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.saving = false;
+        }).catch((error) => {
+            this.saving = false;
+            this.alertService.warning('Hubo un problema', error);
+        });
+    }
+
+    enviarDTE(){
+        this.sending = true;
+        this.apiService.store('enviarDTENotaCredito', this.venta).subscribe(dte => {
+            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.sending = false;
+            setTimeout(()=>{
+                this.modalRef?.hide();
+            },5000);
+        },error => {this.alertService.error(error); this.sending = false; });
+    }
+
+    anularDTE(venta:any){
+        this.venta = venta;
+        if(venta.dte){
+            if (confirm('¿Confirma anular la devolución y el DTE?')) {
+                this.venta = venta;
+                this.saving = true;
+                this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
+                    // this.alertService.success('DTE generado.');
+                    this.venta.dte_invalidacion = dte;
+                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                        
+                        if(dteFirmado.status == 'ERROR'){
+                            this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
+                        }
+                        
+                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                this.venta.dte_invalidacion.sello = dte.selloRecibido;
+                                this.venta.sello_mh = dte.selloRecibido;
+                                this.venta.estado = 'Anulada';
+                                this.apiService.store('devolucion/venta', this.venta).subscribe(data => {
+                                    // this.alertService.success('Venta guardada.');
+                                },error => {this.alertService.error(error); this.saving = false; });
+                            }
+
+                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                        },error => {
+                            if(error.error.descripcionMsg){
+                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                            }
+                            if(error.error.observaciones.length > 0){
+                                this.alertService.warning('Hubo un problema', error.error.observaciones);
+                            }
+                            this.saving = false;
+                        });
+
+                    },error => {this.alertService.error(error);this.saving = false; });
+
+                },error => {this.alertService.error(error);this.saving = false; });
+            }
+        }
+        else{
+            if (confirm('¿Confirma anular la devolución?')){
+                this.venta.estado = 'Anulada';
+                this.onSubmit();
+            }
+        }
     }
 
 
