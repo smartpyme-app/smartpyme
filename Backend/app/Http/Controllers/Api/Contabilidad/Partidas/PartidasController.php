@@ -10,13 +10,25 @@ use Illuminate\Support\Facades\DB;
 
 class PartidasController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $partidas = Partida::when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                                ->orwhere('codigo', 'like' ,'%' . $request->buscador . '%');
+                                    return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
+                                                ->orwhere('tipo', 'like' ,'%' . $request->buscador . '%');
+                                })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
+                                })
+                                ->when($request->estado, function($query) use ($request){
+                                    return $query->where('estado', $request->estado);
+                                })
+                                ->when($request->tipo, function($query) use ($request){
+                                    return $query->where('tipo', $request->tipo);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);
@@ -26,7 +38,7 @@ class PartidasController extends Controller
     }
 
     public function list() {
-       
+
         $partidas = Partida::orderby('nombre')
                                 // ->where('activo', true)
                                 ->get();
@@ -34,7 +46,7 @@ class PartidasController extends Controller
         return Response()->json($partidas, 200);
 
     }
-    
+
     public function read($id) {
 
         $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
@@ -49,7 +61,7 @@ class PartidasController extends Controller
             'tipo'          => 'required|max:255',
             'concepto'      => 'required|max:255',
             'estado'        => 'required|max:255',
-            'detalles'      => 'required',
+//            'detalles'      => 'required',
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
@@ -62,17 +74,20 @@ class PartidasController extends Controller
                 $partida = Partida::findOrFail($request->id);
             else
                 $partida = new Partida;
-            
+
             $partida->fill($request->all());
             $partida->save();
 
             // Detalles
-            foreach ($request->detalles as $item) {
-                if (!isset($item['id'])) {
-                    $detalle = new Detalle;
-                    $item['id_partida'] = $partida->id;
-                    $detalle->fill($item);
-                    $detalle->save();
+
+            if($request->detalles != null){
+                foreach ($request->detalles as $item) {
+                    if (!isset($item['id'])) {
+                        $detalle = new Detalle;
+                        $item['id_partida'] = $partida->id;
+                        $detalle->fill($item);
+                        $detalle->save();
+                    }
                 }
             }
 

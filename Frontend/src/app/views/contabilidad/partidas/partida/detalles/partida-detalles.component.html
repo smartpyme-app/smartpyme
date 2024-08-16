@@ -1,39 +1,31 @@
-<div class="d-flex justify-content-end mb-3">
-    <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
-        <a (click)="openModal(mcuenta, {})" class="btn btn-primary">Agregar</a>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-md-12 table-responsive">
-        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+
+<div class="row ">
+    <div class="col-md-12 table-responsive ">
+        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle p-3 bg-white rounded ">
             <thead>
                 <tr>
-                    <th width="100px">Codigo</th>
-                    <th width="300px">Cuenta</th>
+                    <th width="250px">Cuenta</th>
                     <th>Concepto</th>
-                    <th width="150px" class="text-end">Debe</th>
-                    <th width="150px" class="text-end">Haber</th>
+                    <th width="200px" class="text-end">Debe</th>
+                    <th width="200px" class="text-end">Haber</th>
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
             </thead>
             <tbody class="align-top">
                 <!-- if no h ay ningun producto -->
-                <tr *ngIf="partida?.detalles?.length < 1">
+                <!-- <tr *ngIf="partida?.detalles?.length < 1">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
                             Agregue partidas
                         </p>
                     </td>
-                </tr>
+                </tr> -->
 
-                <tr *ngFor="let detalle of partida?.detalles; let i = index">
+                <!-- <tr *ngFor="let detalle of partida?.detalles; let i = index"> -->
                     <!-- detalle de vendedor  -->
-                    <td>
-                        <input type="text" class="form-control" disabled [(ngModel)]="detalle.codigo">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control" disabled [(ngModel)]="detalle.nombre_cuenta">
+                    <!-- <td>
+                        {{ detalle.codigo }} - {{ detalle.nombre_cuenta }}
                     </td>
                     <td>
                         <input type="text" [(ngModel)]="detalle.concepto" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="concepto">
@@ -51,10 +43,80 @@
                             </button>
                         </div>
                     </td>
-                </tr>
+                </tr> -->
+
+                <tr *ngFor="let detalle of detalles; let i = index">
+                    <!-- cuenta -->
+                    <td>
+                      <ng-select 
+                        [(ngModel)]="detalle.cuenta"
+                        (change)="selectCuenta()"
+                        class="form-select p-0"
+                        name="detalle.cuenta-{{i}}" 
+                        placeholder="Selecciona la cuenta">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        <div *ngFor="let cuenta of catalogo">
+                          <ng-option [value]="cuenta" *ngIf="cuenta.acepta_datos === 1">
+                            <div class="d-flex align-items-center">
+                              <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                              <span class="col-8"> - {{ cuenta.nombre }}</span>
+                            </div>
+                          </ng-option>
+                        </div>
+                      </ng-select>
+                    </td>
+            
+                    <!-- concepto -->
+                    <td>
+                      <input 
+                        type="text" 
+                        [(ngModel)]="detalle.concepto"
+                        class="form-control" 
+                        name="concepto-{{i}}" 
+                        placeholder="Concepto">
+                    </td>
+            
+                    <!-- debe -->
+                    <td>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="detalle.debe"
+                        (change)="updateTotal(detalle)" 
+                        (keyup)="updateTotal(detalle)" 
+                        class="form-control text-end" 
+                        name="debe-{{i}}" 
+                        placeholder="$00.00">
+                    </td>
+            
+                    <!-- haber -->
+                    <td>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="detalle.haber"
+                        (change)="updateTotal(detalle)" 
+                        (keyup)="updateTotal(detalle)" 
+                        class="form-control text-end" 
+                        name="haber-{{i}}" 
+                        placeholder="$00.00">
+                    </td>
+            
+                    <!-- borrar -->
+                    <td>
+                      <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light" (click)="removeDetalle(i)">
+                          <img src="/assets/icons/trash-2.png" class="icon">
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
             </tbody>
             <tfoot>
                 <tr>
+                    <td>                    
+                        <div >
+                            <a (click)="addNewRow()" class="btn btn-outline-primary border-0 bg-light"> <i class="fa-solid fa-plus"></i> Agregar</a>
+                        </div>
+                    </td>
                     <td colspan="2" class="text-end">Totales:</td>
                     <td class="text-end">{{ partida.debe | currency }}</td>
                     <td class="text-end">{{ partida.haber | currency }}</td>

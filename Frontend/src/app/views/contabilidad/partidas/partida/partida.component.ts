@@ -17,6 +17,8 @@ export class PartidaComponent implements OnInit {
 
     public partida:any = {};
     public catalogos:any = [];
+    public proveedor: any = {};
+    public cliente: any = {};
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
@@ -77,6 +79,57 @@ export class PartidaComponent implements OnInit {
             this.router.navigate(['/contabilidad/partidas']);
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    openModalProveedor(template: TemplateRef<any>) {
+
+            this.proveedor = {};
+            this.proveedor.tipo = 'Persona';
+            this.proveedor.id_usuario = this.apiService.auth_user().id;
+            this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
+        
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public setTipo(tipo:any){
+        this.proveedor.tipo = tipo;
+    }
+    
+    public onSubmitProveedor() {
+        this.saving = true;
+        this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => {
+            // this.update.emit(proveedor);
+            this.modalRef?.hide();
+            this.saving = false;
+            this.alertService.modal = false;
+            this.alertService.success('Proveedor creado', 'Tu proveedor fue añadido exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
+    }
+
+    openModalCliente(template: TemplateRef<any>) {
+            this.cliente = {};
+            this.cliente.tipo = 'Persona';
+            this.cliente.id_usuario = this.apiService.auth_user().id;
+            this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
+        
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public setTipoCliente(tipo:any){
+        this.cliente.tipo = tipo;
+    }
+
+    public onSubmitCliente() {
+        this.saving = true;
+        this.apiService.store('cliente', this.cliente).subscribe(cliente => {
+            // this.update.emit(cliente);
+            this.modalRef?.hide();
+            this.saving = false;
+            this.alertService.modal = false;
+            this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
+        },error => {this.alertService.error(error); this.saving = false; });
     }
 
 }

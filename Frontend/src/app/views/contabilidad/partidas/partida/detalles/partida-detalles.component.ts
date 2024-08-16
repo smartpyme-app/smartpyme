@@ -8,13 +8,16 @@ import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-partida-detalles',
-  templateUrl: './partida-detalles.component.html'
+  templateUrl: './partida-detalles.component.html',
+  styles: ['table {  border-radius: 10px !important; }']
+
 })
 export class PartidaDetallesComponent implements OnInit {
 
     @Input() partida: any = {};
     public detalle:any = {};
     public catalogo:any = [];
+    public detalles: any= [];
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
@@ -22,6 +25,9 @@ export class PartidaDetallesComponent implements OnInit {
 
     public buscador:string = '';
     public loading:boolean = false;
+
+
+    rows = [{noQuestion : 0}];
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -102,6 +108,19 @@ export class PartidaDetallesComponent implements OnInit {
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+
+    public addNewRow() {
+        this.detalles.push({
+            cuenta: '',
+            concepto: '',
+            debe: 0,
+            haber: 0
+          });
+      }
+
+    public deleteRows(){
+        this.rows.pop();
     }
 
 

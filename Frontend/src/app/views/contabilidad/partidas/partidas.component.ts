@@ -8,7 +8,8 @@ import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-partidas',
-  templateUrl: './partidas.component.html'
+  templateUrl: './partidas.component.html',
+  styles: ['.bn_mrgn { margin-left: 10px; }']
 })
 
 export class PartidasComponent implements OnInit {
@@ -38,7 +39,7 @@ export class PartidasComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.filtrarCuentas();
+        this.filtrarPartidas();
     }
 
     public loadAll() {
@@ -47,10 +48,11 @@ export class PartidasComponent implements OnInit {
         this.filtros.orden = 'id';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        this.filtrarCuentas();
+        this.filtros.estado = '';
+        this.filtrarPartidas();
     }
 
-    public filtrarCuentas(){
+    public filtrarPartidas(){
         this.loading = true;
         this.apiService.getAll('partidas', this.filtros).subscribe(partidas => { 
             this.partidas = partidas;
@@ -60,6 +62,18 @@ export class PartidasComponent implements OnInit {
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
+
+
+    // public filtrarVentas(){
+    //     this.loading = true;
+    //     this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
+    //         this.ventas = ventas;
+    //         this.loading = false;
+    //         if(this.modalRef){
+    //             this.modalRef.hide();
+    //         }
+    //     }, error => {this.alertService.error(error); this.loading = false;});
+    // }
 
 
     public openModal(template: TemplateRef<any>, partida:any) {
@@ -78,6 +92,12 @@ export class PartidasComponent implements OnInit {
     public setEstado(partida:any){
         this.partida = partida;
         this.onSubmit();
+    }
+
+    public setEstadoChange(partida:any){
+        this.apiService.store('partida', partida).subscribe(producto => { 
+            this.alertService.success('Partida actualizada', 'El estado de la partida fue actualizado.');
+        }, error => {this.alertService.error(error); });
     }
 
     public setPagination(event:any):void{
@@ -127,6 +147,14 @@ export class PartidasComponent implements OnInit {
             }
             this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    public imprimirDiarioAux(){
+        window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar' + '?token=' + this.apiService.auth_token());
+    }
+
+    public imprimirDiarioMayor(){
+        window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor' + '?token=' + this.apiService.auth_token());
     }
 
 }

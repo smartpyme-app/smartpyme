@@ -25,7 +25,7 @@ use Auth;
 
 class ProductosController extends Controller
 {
-    
+
 
     public function index(Request $request) {
 
@@ -75,7 +75,7 @@ class ProductosController extends Controller
     }
 
     public function list() {
-       
+
         $productos = Producto::orderby('nombre')
                                 ->with('inventarios')
                                 ->where('enable', true)
@@ -103,7 +103,7 @@ class ProductosController extends Controller
 
 
     public function porCodigo($codigo) {
-       
+
         $producto = Producto::
                             where('codigo', $codigo )
                             ->wherehas('sucursales', function($q){
@@ -160,7 +160,7 @@ class ProductosController extends Controller
             $producto = Producto::findOrFail($request->id);
         else
             $producto = new Producto;
-        
+
 
         $producto->fill($request->all());
         $producto->save();
@@ -176,7 +176,6 @@ class ProductosController extends Controller
                 $inventario->save();
             }
         }
-
 
         return Response()->json($producto, 200);
 
@@ -203,7 +202,7 @@ class ProductosController extends Controller
             $producto = Producto::where('tipo', 'Producto')->findOrFail($request->id);
         else
             $producto = new Producto;
-        
+
         $producto->fill($request->all());
         $producto->save();
 
@@ -228,7 +227,7 @@ class ProductosController extends Controller
             $inventario->bodega_id = $sucursal->bodegas()->first()->id;
             // $inventario->sucursal_id = $producto_sucursal->id;
             $inventario->save();
-            
+
         }
 
         $producto = Producto::where('tipo', 'Producto')->where('id', $producto->id)->with('inventarios')->first();
@@ -253,8 +252,8 @@ class ProductosController extends Controller
     public function precios($id)
     {
         $producto = Producto::findOrFail($id);
-        
-        
+
+
         $ventas = DetalleVenta::where('producto_id', $producto->id)->get();
 
         $ventas_precios =  collect();
@@ -316,7 +315,7 @@ class ProductosController extends Controller
                                     $q->where('producto_id', $id);
                                 })
                                 ->orderBy('id','desc')->paginate(5);
-        
+
 
         return Response()->json($compras, 200);
 
@@ -325,7 +324,7 @@ class ProductosController extends Controller
     public function ajustes(Request $request, $id) {
 
         $ajustes = Ajuste::where('producto_id', $id)->orderBy('id','desc')->paginate(5);
-        
+
         return Response()->json($ajustes, 200);
 
     }
@@ -336,13 +335,13 @@ class ProductosController extends Controller
                                     $q->where('producto_id', $id);
                                 })
                                 ->orderBy('id','desc')->paginate(5);
-        
+
         return Response()->json($ventas, 200);
 
     }
 
     public function vendedor() {
-       
+
         $productos = Producto::where('tipo', 'Producto')->with('inventarios', 'sucursales')
                                 // ->whereNull('codigo')
                                 ->orderBy('id','desc')->paginate(12);
@@ -352,7 +351,7 @@ class ProductosController extends Controller
     }
 
     public function vendedorBuscador($txt) {
-       
+
         $productos = Producto::whereIn('tipo', ['Producto', 'Servicio'])->with('inventarios')
                                 ->where('nombre', 'like' ,'%' . $txt . '%')
                                 ->orwhere('codigo', 'like' ,'%' . $txt . '%')
@@ -363,7 +362,7 @@ class ProductosController extends Controller
 
 
     public function import(Request $request){
-        
+
         $request->validate([
             'file'          => 'required',
         ],[
@@ -372,7 +371,7 @@ class ProductosController extends Controller
 
         $import = new Productos();
         Excel::import($import, $request->file);
-        
+
         return Response()->json($import->getRowCount(), 200);
 
     }

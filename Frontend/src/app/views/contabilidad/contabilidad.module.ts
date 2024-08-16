@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TabsModule } from 'ngx-bootstrap/tabs';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgChartsModule } from 'ng2-charts';
@@ -31,6 +32,7 @@ import { CatalogoCuentaComponent } from '@views/contabilidad/catalogo-cuentas/ca
 import { PartidasComponent } from '@views/contabilidad/partidas/partidas.component';
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
 import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/detalles/partida-detalles.component';
+import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.component';
 import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
 
 @NgModule({
@@ -45,7 +47,8 @@ import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configur
     ContabilidadRoutingModule,
     PopoverModule.forRoot(),
     FocusModule.forRoot(),
-    TooltipModule.forRoot()
+    TooltipModule.forRoot(),
+    TabsModule.forRoot(),
   ],
   declarations: [
     PresupuestosComponent,
@@ -67,7 +70,9 @@ import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configur
     PartidaDetallesComponent,
     ConciliacionesComponent,
     ConciliacionComponent,
-    ContabilidadConfiguracionComponent
+    ParditasDatosComponent,
+    ContabilidadConfiguracionComponent,
+
   ],
   exports: [
     PresupuestosComponent,
@@ -89,7 +94,8 @@ import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configur
     PartidaDetallesComponent,
     ConciliacionesComponent,
     ConciliacionComponent,
-    ContabilidadConfiguracionComponent
+    ParditasDatosComponent,
+    ContabilidadConfiguracionComponent,
   ]
 })
 export class ContabilidadModule { }

@@ -88,6 +88,7 @@ export class FacturacionCompraComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
+
     public cargarDocumentos(){
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
