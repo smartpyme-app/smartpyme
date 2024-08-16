@@ -25,7 +25,7 @@ class Inventario extends Model {
     }
 
     public function getNombreSucursalAttribute(){
-        return $this->bodega()->first()->nombre_sucursal;
+        return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
     public function kardex($modelo, $cantidad){
