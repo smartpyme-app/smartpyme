@@ -49,9 +49,25 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
                         })
                     ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
-                        })
+                    })
+                    ->when($request->recurrente !== null, function($q) use ($request){
+                        $q->where('recurrente', !!$request->recurrente);
+                    })
+                    ->when($request->id_usuario, function($query) use ($request){
+                        return $query->where('id_usuario', $request->id_usuario);
+                    })
+                    ->when($request->id_sucursal, function($query) use ($request){
+                        return $query->where('id_sucursal', $request->id_sucursal);
+                    })
                     ->when($request->buscador, function($query) use ($request){
-                        return $query->where('concepto', 'like' ,'%' . $request->buscador . '%');
+                        return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
+                            ->orwhere('referencia', 'like', '%'.$request->buscador.'%');
+                    })
+                    ->when($request->inicio, function($query) use ($request){
+                        return $query->where('fecha', '>=', $request->inicio);
+                    })
+                    ->when($request->fin, function($query) use ($request){
+                        return $query->where('fecha', '<=', $request->fin);
                     })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')

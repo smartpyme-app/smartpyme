@@ -68,4 +68,24 @@ export class TransaccionComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    public setFile(event:any) {
+        this.transaccion.file = event.target.files[0];
+        
+        let formData:FormData = new FormData();
+        for (var key in this.transaccion) {
+            formData.append(key, this.transaccion[key]);
+        }
+
+        this.loading = true;
+        this.apiService.store('banco/transaccion', formData).subscribe(transaccion => {
+            this.transaccion.url_referencia = transaccion.url_referencia;
+            this.loading = false;
+            this.alertService.success('Documento guardado', 'La transaccion fue actualizada exitosamente.');
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public verDocumento(transaccion:any){
+        var ventana = window.open(this.apiService.baseUrl + "/img/" + transaccion.url_referencia + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+    }
+
 }

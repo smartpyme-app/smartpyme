@@ -18,7 +18,6 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Models\Creditos\Credito;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 
@@ -28,10 +27,7 @@ class DevolucionVentasController extends Controller
 
     public function index(Request $request) {
        
-        $ventas = Devolucion::when($request->buscador, function($query) use ($request){
-                            return $query->where('observaciones', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
+        $ventas = Devolucion::when($request->inicio, function($query) use ($request){
                             return $query->where('fecha', '>=', $request->inicio);
                         })
                         ->when($request->fin, function($query) use ($request){
@@ -51,6 +47,15 @@ class DevolucionVentasController extends Controller
                         })
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                        ->when($request->buscador, function($query) use ($request){
+                        return $query->whereHas('cliente', function($q) use ($request){
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
+                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%');
                         })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
@@ -74,7 +79,7 @@ class DevolucionVentasController extends Controller
     {
         $request->validate([
             'fecha'             => 'required',
-            'estado'            => 'required',
+            'enable'            => 'required',
             'observaciones'            => 'required',
             // 'id_cliente'        => 'required',
             'id_usuario'        => 'required',
@@ -123,7 +128,9 @@ class DevolucionVentasController extends Controller
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
+            'id_bodega'       => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
+            'id_empresa'       => 'required|numeric',
         ],[
             'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
@@ -141,9 +148,9 @@ class DevolucionVentasController extends Controller
             $devolucion->fill($request->all());
             $devolucion->save();
 
-            $venta = Venta::findOrFail($request['id_venta']);
-            $venta->estado = 'Anulada';
-            $venta->save();
+            // $venta = Venta::findOrFail($request['id_venta']);
+            // $venta->estado = 'Anulada';
+            // $venta->save();
 
 
         // Guardamos los detalles
@@ -155,7 +162,7 @@ class DevolucionVentasController extends Controller
                 $detalle->save();
 
                 $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                    ->where('id_sucursal', $request->id_sucursal)->first();
+                                    ->where('id_bodega', $request->id_bodega)->first();
 
                 if ($inventario) {
                     $inventario->stock += $det['cantidad'];

@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">
+    <h2 class="page-heading" (click)="loadAll()">
         <span *ngIf="!loading && compra.estado != 'Pre-compra'">Compra</span>
         <span *ngIf="!loading && compra.estado == 'Pre-compra'">Orden de compra</span>
     </h2>
@@ -91,23 +91,28 @@
                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="text-end"></td>
-                        <td class="text-end"><b>Sub Total:</b></td>
+                        <td colspan="2" class="text-end"></td>
+                        <td colspan="2" class="text-end"><b>Sub Total:</b></td>
                         <td class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="text-end"></td>
-                        <td class="text-end"><b>Descuento:</b></td>
+                        <td colspan="2" class="text-end"></td>
+                        <td colspan="2" class="text-end"><b>Descuento:</b></td>
                         <td class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr colspan="3" class="text-end">
-                        <td colspan="3" class="text-end"></td>
-                        <td class="text-end"><b>IVA</b></td>
+                    <tr>
+                        <td colspan="2" class="text-end"></td>
+                        <td colspan="2" class="text-end"><b>IVA</b></td>
                         <td class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
+                    <tr *ngIf="compra.renta_retenida">
+                        <td colspan="2" class="text-end"></td>
+                        <td colspan="2" class="text-end"><b>Renta retenida</b></td>
+                        <td class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
+                    </tr>
                     <tr>
-                        <td colspan="3" class="text-end"></td>
-                        <td class="text-end"><b>Total:</b></td>
+                        <td colspan="2" class="text-end"></td>
+                        <td colspan="2" class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                 </tbody>

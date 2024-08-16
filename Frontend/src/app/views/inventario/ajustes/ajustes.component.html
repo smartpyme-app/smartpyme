@@ -7,8 +7,15 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="ajustes?.total">
-                Mostrando {{ ajustes?.to }} de {{ ajustes?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="ajustes?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarAjustes()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ ajustes?.total + ' registros' }}
             </span>
         </div>
 
@@ -58,7 +65,7 @@
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Descripción</th>
                         <th>Estado</th>
-                        <th>Sucursal</th>
+                        <th>Bodega</th>
                         <th (click)="setOrden('ajuste')" [ngClass]="{'sorted-asc': filtros.orden == 'ajuste' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'ajuste' && filtros.direccion == 'desc'}" class="click text-center">Ajuste</th>
                     </tr>
                 </thead>
@@ -82,7 +89,7 @@
                                 <option value="Cancelado">Cancelado</option>
                             </select>
                         </td>
-                        <td>{{ ajuste.nombre_sucursal }}</td>
+                        <td>{{ ajuste.nombre_bodega }}</td>
                         <td class="text-center">
                             <span [ngClass]="{ 'text-danger' : ajuste.ajuste < 0, 'text-success' : ajuste.ajuste > 0 }" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                 {{ ajuste.ajuste }}

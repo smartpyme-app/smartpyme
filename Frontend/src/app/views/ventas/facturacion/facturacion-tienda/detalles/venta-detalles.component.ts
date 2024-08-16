@@ -171,8 +171,9 @@ export class VentaDetallesComponent implements OnInit {
                 this.detalle.iva = this.detalle.total * (this.apiService.auth_user().empresa.iva / 100);
             }
 
-            this.detalle.id_vendedor = this.venta.id_vendedor;
-            
+            if(!this.detalle.id_vendedor){
+                this.detalle.id_vendedor = this.venta.id_vendedor;
+            }            
             
             if(!detalle)
                 this.venta.detalles.push(this.detalle);

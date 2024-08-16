@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Models\Admin;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Auth;
+
+class Retencion extends Model {
+
+    protected $table = 'retenciones';
+    protected $fillable = array(
+        'nombre',
+        'porcentaje',
+        'id_cuenta_contable_ventas',
+        'id_cuenta_contable_compras',
+        'id_empresa'
+    );
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+
+}

@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Detalle extends Model {
 
-    protected $table = 'producto_traslado_detalles';
+    protected $table = 'traslado_detalles';
     protected $fillable = array(
-        'producto_id',
+        'id_producto',
         'cantidad',
-        'traslado_id'
+        'id_traslado'
     );
 
     protected $appends = ['nombre_producto', 'medida'];
@@ -27,11 +27,11 @@ class Detalle extends Model {
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','producto_id');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
     public function traslado(){
-        return $this->belongsTo('App\Models\Inventario\Traslados\Traslado','traslado_id');
+        return $this->belongsTo('App\Models\Inventario\Traslados\Traslado','id_traslado');
     }
 
 }

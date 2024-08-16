@@ -30,24 +30,21 @@ use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use App\Services\Contabilidad\VentasService;
 
 class VentasController extends Controller
 {
 
+    protected $contabilidadService;
+
+    public function __construct(VentasService $contabilidadService)
+    {
+        $this->contabilidadService = $contabilidadService;
+    }
+
     public function index(Request $request) {
 
-        $ventas = Venta::when($request->buscador, function($query) use ($request){
-                        return $query->whereHas('cliente', function($q) use ($request){
-                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
-                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
+        $ventas = Venta::when($request->inicio, function($query) use ($request){
                             return $query->where('fecha', '>=', $request->inicio);
                         })
                         ->when($request->fin, function($query) use ($request){
@@ -58,6 +55,9 @@ class VentasController extends Controller
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
+                        })
+                        ->when($request->id_bodega, function($query) use ($request){
+                            return $query->where('id_bodega', $request->id_bodega);
                         })
                         ->when($request->id_cliente, function($query) use ($request){
                             return $query->where('id_cliente', $request->id_cliente);
@@ -80,6 +80,9 @@ class VentasController extends Controller
                         ->when($request->id_canal, function($query) use ($request){
                             return $query->where('id_canal', $request->id_canal);
                         })
+                        ->when($request->id_proyecto, function($query) use ($request){
+                            return $query->where('id_proyecto', $request->id_proyecto);
+                        })
                         ->when($request->id_documento, function($query) use ($request){
                             return $query->where('id_documento', $request->id_documento);
                         })
@@ -91,6 +94,23 @@ class VentasController extends Controller
                         })
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                        ->when($request->dte == 0, function($query) {
+                                return $query->whereNull('sello_mh');
+                        })
+                        ->when($request->dte == 1, function($query) {
+                            return $query->whereNotNull('sello_mh');
+                        })
+                        ->when($request->buscador, function($query) use ($request){
+                        return $query->whereHas('cliente', function($q) use ($request){
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
+                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                     ->withSum('abonos', 'total')
                     ->where('cotizacion', 0)
@@ -112,6 +132,9 @@ class VentasController extends Controller
 
         $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
+
+        $this->contabilidadService->crearPartida($venta);
+
         return Response()->json($venta, 200);
 
     }
@@ -133,7 +156,7 @@ class VentasController extends Controller
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
 
-                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->id_sucursal)->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
                 // Anular venta y regresar stock
                 if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
@@ -148,7 +171,7 @@ class VentasController extends Controller
                     foreach ($producto->composiciones as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_compuesto)
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock += $detalle->cantidad * $comp->cantidad;
@@ -177,7 +200,7 @@ class VentasController extends Controller
                     foreach ($producto->composiciones as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_compuesto)
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock -= $detalle->cantidad * $comp->cantidad;
@@ -253,6 +276,7 @@ class VentasController extends Controller
             'total'             => 'required|numeric',
             'nota'              => 'max:255',
             'id_usuario'        => 'required|numeric',
+            'id_bodega'         => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
         ], [
             'detalles.required' => 'Tiene que agregar productos',
@@ -317,7 +341,7 @@ class VentasController extends Controller
                                         // ->with('composiciones')->firstOrFail();
 
                     $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                        ->where('id_sucursal', $venta->id_sucursal)->first();
+                                        ->where('id_bodega', $venta->id_bodega)->first();
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
                         $inventario->save();
@@ -329,7 +353,7 @@ class VentasController extends Controller
                         foreach ($det['composiciones'] as $comp) {
 
                             $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
-                                        ->where('id_sucursal', $venta->id_sucursal)->first();
+                                        ->where('id_bodega', $venta->id_bodega)->first();
 
                             if ($inventario) {
                                 $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
@@ -741,8 +765,11 @@ class VentasController extends Controller
     public function sinDevolucion(){
 
         $ventas = Venta::where('estado', '!=', 'Anulada')
-                        ->whereMonth('fecha', '>=' , date('m') - 1)
+                        ->whereMonth('fecha', '>=' , date('m') - 2)
                         ->whereYear('fecha', date('Y'))
+                        ->whereHas('documento', function($q){
+                            $q->whereIn('nombre', ['Factura', 'Crédito fiscal']);
+                        })
                         ->whereDoesntHave('devoluciones')
                         ->orderBy('fecha', 'DESC')
                         ->get();

@@ -154,12 +154,12 @@ img.icon-2{
     }
 
     .form-group{
-      margin-bottom: 15px !important;
+      margin-bottom: 20px !important;
     }
 
-    .form-select{
+    /*.form-select{
         min-width: 160px !important;
-    }
+    }*/
 
     .bg-default, .btn-default{
         background-color: #D7E2FF !important;
@@ -230,7 +230,7 @@ img.icon-2{
         width: 280px;
         padding: 20px 12px;
         transition: width 0.3s;
-        overflow: hidden;
+/*        overflow: hidden;*/
         height: 100%;
         background: #fff;
         transition: all 1s ease;
@@ -356,6 +356,10 @@ img.icon-2{
     table .popover-content.popover-body {
         padding: 5px 10px;
         min-width: 160px;
+    }
+
+    .popover{
+        max-width: 400px;
     }
 
     .table tr:hover a.d-none, .card:hover > .d-none{

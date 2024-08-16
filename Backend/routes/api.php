@@ -65,6 +65,7 @@ require base_path('routes/modulos/auth.php');
 		require base_path('routes/modulos/contabilidad/presupuestos.php');
 		require base_path('routes/modulos/contabilidad/proyectos.php');
 		require base_path('routes/modulos/contabilidad/catalogo.php');
+		require base_path('routes/modulos/contabilidad/configuracion.php');
 		require base_path('routes/modulos/contabilidad/partidas.php');
 		require base_path('routes/modulos/contabilidad/reportes.php');
 
@@ -76,6 +77,8 @@ require base_path('routes/modulos/auth.php');
 
 	// Admin
 		require base_path('routes/modulos/admin/empresas.php');
+		require base_path('routes/modulos/admin/sucursales.php');
+		require base_path('routes/modulos/admin/dashboards.php');
 		require base_path('routes/modulos/admin/cajas.php');
 		require base_path('routes/modulos/admin/impuestos.php');
 		require base_path('routes/modulos/admin/formasdepago.php');

@@ -2,8 +2,8 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-traslado',
@@ -17,8 +17,11 @@ export class TrasladoComponent implements OnInit {
 	public productos: any = [];
     public bodegas: any = [];
 	public producto: any = {};
+	public bodegaDe:any = {};
+	public bodegaPara:any = {};
 
     public loading = false;
+    public saving = false;
     modalRef!: BsModalRef;
 
 	constructor( 
@@ -32,8 +35,11 @@ export class TrasladoComponent implements OnInit {
     ngOnInit() {
         this.loadAll();
         this.loading = true;
-        this.apiService.getAll('bodegas').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
+
+            this.traslado.id_bodega_de = this.bodegas[0].id;
+            this.traslado.id_bodega = this.bodegas[1].id;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
 
@@ -45,10 +51,9 @@ export class TrasladoComponent implements OnInit {
         if(isNaN(id)){
     		this.traslado = {};
             this.traslado.fecha = this.apiService.date();
-            this.traslado.usuario_id = this.apiService.auth_user().id;
-            this.traslado.origen_id = 1;
-            this.traslado.destino_id = 2;
-            this.traslado.estado = "En Proceso";
+            this.traslado.id_usuario = this.apiService.auth_user().id;
+            this.traslado.id_empresa = this.apiService.auth_user().id_empresa;
+            this.traslado.estado = "Pendiente";
             this.traslado.detalles = [];
         }
         else{
@@ -63,25 +68,26 @@ export class TrasladoComponent implements OnInit {
 
 
 	openModal(template: TemplateRef<any>) {
+		this.alertService.modal = true;
+		if(!this.productos.length){
+		    this.apiService.getAll('productos/list').subscribe(productos => {
+		        this.productos = productos;
+		    }, error => {this.alertService.error(error);});
+		}
         this.modalRef = this.modalService.show(template);
     }
 
-    setOrigen(id:any){
-    	if(id == '1')
-    		this.traslado.destino_id = 2;
-    	else
-    		this.traslado.destino_id = 1;    	
-    }
-    setDestino(id:any){
-    	if(id == '1')
-    		this.traslado.origen_id = 2;
-    	else
-    		this.traslado.origen_id = 1; 
-    }
+    selectProducto(){
+    	this.producto = this.productos.find((item:any) => item.id == this.detalle.id_producto);
+        this.bodegaDe = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega_de);
+        this.bodegaPara = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega);
 
-    productoSelect(producto:any){
-    	this.producto = producto;
-        this.detalle.producto_id = this.producto.id;
+    	console.log(this.producto);
+    	console.log(this.traslado);
+    	console.log(this.bodegaDe);
+    	console.log(this.bodegaPara);
+
+        this.detalle.id_producto = this.producto.id;
         this.detalle.nombre_producto = this.producto.nombre;
         this.detalle.medida = this.producto.medida;
         this.detalle.medida = this.producto.medida;
@@ -94,15 +100,16 @@ export class TrasladoComponent implements OnInit {
 		this.traslado.detalles.push(this.detalle);
 		this.producto = {};
 		this.detalle = {};
+        this.alertService.modal = false;
         this.modalRef.hide();
 	}
 
 	public onSubmit() {
-        this.loading = true;
+        this.saving = true;
         this.apiService.store('traslado', this.traslado).subscribe(traslado => {
-            this.router.navigateByUrl('/traslado/'+ traslado.id);
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.router.navigateByUrl('/traslados');
+            this.saving = false;
+        }, error => {this.alertService.error(error); this.saving = false; });
     }
 
     openModalDetalle(template: TemplateRef<any>, detalle:any) {
@@ -112,25 +119,26 @@ export class TrasladoComponent implements OnInit {
 
     public editDetalle() {
         if(this.detalle.id) {
-            this.loading = true;
+            this.saving = true;
     	    this.apiService.store('traslado/detalle', this.detalle).subscribe(data => {
     	    	this.detalle = {};
-    			this.loading = false;
-    		}, error => {this.alertService.error(error); this.loading = false; });
+    			this.saving = false;
+    		}, error => {this.alertService.error(error); this.saving = false; });
         }
+        this.alertService.modal = false;
         this.modalRef.hide();
 	}
 
 	public onGenerar(){
 		if (confirm('¿Confirma la generación del traslado de inventario?')) {
-			this.traslado.estado = "En Proceso";
+			this.traslado.estado = "Pendiente";
 			this.onSubmit();
 		}
 	}
 
 	public onAprobar(){
 		if (confirm('¿Confirma la aprobación del traslado de inventario?')) {
-			this.traslado.estado = 'Aprobado';
+			this.traslado.estado = 'Confirmado';
 			this.onSubmit();
 		}
 	}
@@ -148,7 +156,7 @@ export class TrasladoComponent implements OnInit {
 	        	}, error => {this.alertService.error(error); });
 			}else{
 				for (var i = 0; i < this.traslado.detalles.length; ++i) {
-					if (this.traslado.detalles[i].producto_id === detalle.producto_id ){
+					if (this.traslado.detalles[i].id_producto === detalle.id_producto ){
 						this.traslado.detalles.splice(i, 1);
 					}
 				}
@@ -161,7 +169,7 @@ export class TrasladoComponent implements OnInit {
 	    openModalStock(template: TemplateRef<any>) {
 	    	this.loading = true;
 
-		    this.apiService.getAll('traslados/requisicion/' + this.traslado.origen_id + '/' + this.traslado.destino_id).subscribe(productos => {
+		    this.apiService.getAll('traslados/requisicion/' + this.traslado.id_origen + '/' + this.traslado.id_destino).subscribe(productos => {
 		       this.productos = productos;
 		       this.loading = false;
 			}, error => {this.alertService.error(error);this.loading = false;});
@@ -171,7 +179,7 @@ export class TrasladoComponent implements OnInit {
 
 	    eliminarProducto(producto:any){
 			for (var i = 0; i < this.productos.length; ++i) {
-				if (this.productos[i].producto_id === producto.producto_id ){
+				if (this.productos[i].id_producto === producto.id_producto ){
 					this.productos.splice(i, 1);
 				}
 			}
@@ -180,6 +188,7 @@ export class TrasladoComponent implements OnInit {
 	    agregarProductos(){
 	    	if(this.productos.length > 0) {
 	    		this.traslado.detalles = this.productos;
+	    		this.alertService.modal = false;
 	    		this.modalRef.hide();
 	    	}
 	    }

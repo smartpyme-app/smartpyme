@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-    {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
     <title>TecnoGadget {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
@@ -63,7 +62,7 @@
 
     @for ($i = 0; $i < 3; $i++)
         {{-- expr --}}
-    
+
     <section id="factura" style="margin-left: {{ 11 * $i  }}cm;">
         <div id="header">
             <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
@@ -87,18 +86,18 @@
                 <td class="exentas">    </td>
                 <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
-            @endforeach
-        </table>
+        @endforeach
+    </table>
 
-        <div id="totales">
-            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
+    <div id="totales">
+        <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+        {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
-            <p id="suma">SUMAS: ${{ number_format($venta->total, 2) }}</p>
-            {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
-            <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
-        </div>
-    </section>
+        <p id="suma">SUMAS: ${{ number_format($venta->total, 2) }}</p>
+        {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
+        <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
+    </div>
+</section>
 
     @endfor
 

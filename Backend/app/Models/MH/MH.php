@@ -21,49 +21,9 @@ class MH extends Model
     public $caja_codigo;
     public $empresa;
     
-    public function auth($empresa){
-        $this->empresa = $empresa;
-
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/x-www-form-urlencoded', 'User-Agent' => 'Laravel',
-        ])->asForm()->post($this->url_auth, [ 'user' => str_replace('-', '', $this->empresa->mh_usuario), 'pwd' => $this->empresa->mh_contrasena ]);
-
-        return $response->json();
-    }
-
-    public function firmarDTE($DTE)
-    {
-
-        $response = Http::post($this->url_firmado,[
-            'nit' => str_replace('-', '', $this->empresa->nit),
-            'activo' => true,
-            'passwordPri' => $this->empresa->mh_pwd_certificado,
-            'dteJson' => $DTE,
-        ]);
-
-        return $response->json();
-
-    }
-
-    public function enviarDTE($auth, $DTEFirmado){
-
-        $response = Http::withHeaders(['Content-Type' => 'application/JSON', 'User-Agent' => 'Laravel', 'Authorization' => $auth['body']['token'],
-        ])->post($this->url_mh, [
-            'ambiente' => $this->venta->ambiente,
-            'idEnvio' => $this->venta->correlativo,
-            'version' => $this->venta->version,
-            'tipoDte' => $this->venta->tipoDte,
-            'documento' => $DTEFirmado['body'],
-            'codigoGeneracion' => $this->venta->codigoGeneracion
-        ]);
-
-        return $response->json();
-
-    }   
 
     public function generarDTE($venta){
         $this->venta = $venta;
-        // $this->caja = $this->venta->caja()->first();
         $this->empresa = $this->venta->empresa()->first();
 
         $this->caja_codigo = '0001';
@@ -81,7 +41,8 @@ class MH extends Model
         if ($this->venta->nombre_documento == 'Crédito fiscal') {
             $this->venta->tipoDte = '03';
             $this->venta->version = 3;
-        }else{
+        }
+        if ($this->venta->nombre_documento == 'Factura') {
             $this->venta->tipoDte = '01';
             $this->venta->version = 1;
         }
@@ -244,19 +205,6 @@ class MH extends Model
 
     }
 
-    public function anularDTE($auth, $DTE, $DTEFirmado){
-
-        $response = Http::withHeaders(['Content-Type' => 'application/JSON', 'User-Agent' => 'Laravel', 'Authorization' => $auth['body']['token'],
-        ])->post($this->url_anular_dte, [
-            'ambiente' => $DTE['identificacion']['ambiente'],
-            'idEnvio' => $this->venta->id,
-            'version' => 2,
-            'documento' => $DTEFirmado['body'],
-        ]);
-
-        return $response->json();
-    }
-
     protected function identificador(){
         return [
             "version" => $this->venta->version,
@@ -349,115 +297,6 @@ class MH extends Model
             ];
     }
 
-    public function generarFactura(){
-        $tributos = NULL;
-
-        $this->venta->gravada = $this->venta->sub_total;
-
-        return 
-            [
-                "identificacion" => $this->identificador(),
-                "documentoRelacionado" => NULL,
-                "emisor" => $this->emisor(),
-                "receptor" => $this->receptor(),
-                "otrosDocumentos" => NULL,
-                "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detallesFactura(),
-                "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
-                  "descuNoSuj" => 0,
-                  "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
-                  "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
-                  "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
-                  "totalLetras" => $this->venta->total_en_letras,
-                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
-                  "saldoFavor" => 0,
-                  "condicionOperacion" => $this->venta->cod_condicion,
-                  "pagos" => [
-                    [
-                      "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
-                      "referencia" => NULL,
-                      "plazo" => NULL,
-                      "periodo" => NULL
-                    ]
-                  ],
-                  "numPagoElectronico" => ""
-                ],
-                "extension" => NULL,
-                "apendice" => [
-                    [
-                    "campo" => "usuario",
-                    "etiqueta" => "nombre",
-                    "valor" => $this->venta->nombre_usuario
-                    ]
-                ]
-            ];
-    }
-
-    protected function detallesFactura(){
-        $detalles = collect();
-
-        foreach ($this->venta->detalles as $index => $detalle) {
-
-            $cod = Unidad::where('nombre', ucfirst($detalle->unidad))->pluck('cod')->first();
-            if ($cod){
-                $detalle->cod_medida = $cod;
-            }else{
-                $detalle->cod_medida = 59;
-            }
-
-            // Tipo Item
-            if ($detalle->producto()->pluck('tipo')->first() == 'Servicio'){
-                $detalle->tipo_item = 2;
-            }else{
-                $detalle->tipo_item = 1;
-            }
-
-            $tributos = NULL;
-
-            $detalle->codTributo = NULL;
-
-            $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-            $detalle->iva = ($detalle->total * 0.13);
-            $detalle->gravada = $detalle->total;
-            $detalle->total = $detalle->total + $detalle->iva;
-
-            $detalles->push([
-                "numItem" => $index + 1,
-                "tipoItem" => $detalle->tipo_item,
-                "numeroDocumento" => NULL,
-                "cantidad" => floatval($detalle->cantidad),
-                "codigo" => $detalle->codigo,
-                "codTributo" => $detalle->codTributo,
-                "uniMedida" => $detalle->cod_medida,
-                "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
-                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
-                "tributos" => $tributos,
-                "psv" => 0,
-                "noGravado" => 0,
-                "ivaItem" => floatval(number_format($detalle->iva,2))
-              ]);
-        }
-
-        return $detalles;
-    }
-
     public function generarCCF(){
 
         $tributos = NULL;
@@ -516,7 +355,7 @@ class MH extends Model
                 "extension" => NULL,
                 "apendice" => [
                     [
-                    "campo" => "usuario",
+                    "campo" => "empleado",
                     "etiqueta" => "nombre",
                     "valor" => $this->venta->nombre_usuario
                     ]
@@ -527,7 +366,7 @@ class MH extends Model
     protected function detallesCCF(){
         $detalles = collect();
 
-        foreach ($this->venta->detalles->take(1) as $index => $detalle) {
+        foreach ($this->venta->detalles as $index => $detalle) {
 
             $cod = Unidad::where('nombre', ucfirst($detalle->unidad))->pluck('cod')->first();
             if ($cod){

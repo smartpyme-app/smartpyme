@@ -43,6 +43,7 @@ class Empresa extends Model {
         'editar_descripcion_venta',
         'impresion_en_facturacion',
         'vendedor_detalle_venta',
+        'venta_consigna',
         'plan',
         'cobra_iva',
         'tipo_plan',
@@ -58,6 +59,7 @@ class Empresa extends Model {
         'activo',
         'cotizacion_compras_terminos',
 
+        //Facturacíon
         'facturacion_electronica',
         'enviar_dte',
         'fe_ambiente',
@@ -70,6 +72,9 @@ class Empresa extends Model {
         'mh_contrasena',
         'cod_estable_mh',
         'cod_estable',
+
+        //Permiso para vendedores
+        'vendedor_inventario',
     ];
 
     protected $casts = [

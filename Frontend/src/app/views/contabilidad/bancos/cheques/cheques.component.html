@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Cheques</h2>
+    <h2 class="page-heading">Bancos</h2>
     <button *ngIf="apiService.canCreate()" routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
 </section>
 
@@ -13,17 +13,37 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
+                <button [disabled]="downloading" tooltip="Descargar cheques" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCheques()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
-                <!-- <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button> -->
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
 
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/bancos/cheques">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/bancos/conciliaciones">Conciliaciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/transacciones']">Transacciones</button>
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cheques']">Cheques</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="estado" (change)="filtrarCheques()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Anulado">Anulado</option>
+                <option value="Aprobado">Aprobado</option>
+            </select>
+            <select name="id_cuenta" (change)="filtrarCheques()" [(ngModel)]="filtros.id_cuenta" class="form-select bg-default w-auto">
+                <option value="">Cuenta</option>
+                <option [value]="cuenta.id" *ngFor="let cuenta of cuentas">
+                    {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
+                </option>
+            </select>
         </div>
     </div>
     <div class="row">
@@ -59,7 +79,7 @@
                         <td>{{cheque.anombrede}}</td>
                         <td>{{cheque.concepto}}</td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : cheque?.estado == 'Pendiente', 'bg-danger' : cheque?.estado == 'Anulada', 'bg-success' : cheque?.estado == 'Aprobado'}">{{ cheque.estado }}</span>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : cheque?.estado == 'Pendiente', 'bg-danger' : cheque?.estado == 'Anulado', 'bg-success' : cheque?.estado == 'Aprobado'}">{{ cheque.estado }}</span>
                         </td>
                         <td class="text-end">{{cheque.total | currency}}</td>
                         <td class="text-center">
@@ -74,10 +94,13 @@
                                     <a *ngIf="cheque.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(cheque, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Aprobar
                                     </a>
-                                    <a *ngIf="cheque.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(cheque, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="cheque.estado != 'Anulado' && apiService.canEdit()" (click)="setEstado(cheque, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular
                                     </a>
-                                    <a *ngIf="cheque.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="cheque.id_referencia" routerLink="/{{cheque.ruta_referencia}}/{{cheque.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                                    </a>
+                                    <a *ngIf="cheque.estado == 'Anulado' && apiService.canEdit()" (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
                                 </div>
@@ -118,46 +141,19 @@
                 <label for="filtros.estado">Estado:</label>
                 <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
                     <option value="">Todos</option>
-                    <option value="En bodega">En bodega</option>
-                    <option value="En proceso">En proceso</option>
-                    <option value="Entregado">Entregado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Anulado">Anulado</option>
+                    <option value="Aprobado">Aprobado</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                <label for="filtros.id_cuenta">Cuenta:</label>
+                <select name="id_cuenta" [(ngModel)]="filtros.id_cuenta" class="form-control form-select">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
+                    <option [value]="cuenta.id" *ngFor="let cuenta of cuentas">
+                        {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
                     </option>
                 </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_cliente">Cliente:</label>
-                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="filtros.id_asesor">Asesor:</label>
-                <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="filtros.id_asesor">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="filtros.id_usuario">Usuario:</label>
-                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
             </div>
         </div>
         

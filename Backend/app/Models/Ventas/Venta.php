@@ -10,6 +10,10 @@ class Venta extends Model {
 
     protected $table = 'ventas';
     protected $fillable = array(
+        'tipo_dte',
+        'numero_control',
+        'codigo_generacion',
+        'sello_mh',
         'fecha',
         'correlativo',
         'estado',
@@ -82,6 +86,11 @@ class Venta extends Model {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
+    public function getDteInvalidacionAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
     public function getNombreUsuarioAttribute()
     {
         return $this->usuario()->pluck('name')->first();
@@ -89,7 +98,7 @@ class Venta extends Model {
 
     public function getNombreVendedorAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        return $this->vendedor()->pluck('name')->first();
     }
 
     public function getNombreSucursalAttribute()

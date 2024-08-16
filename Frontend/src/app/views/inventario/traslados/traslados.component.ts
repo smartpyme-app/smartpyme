@@ -19,8 +19,8 @@ export class TrasladosComponent implements OnInit {
     public productos:any = [];
     public sucursales:any = [];
     public producto:any = {};
-    public sucursalDe:any = {};
-    public sucursalPara:any = {};
+    public bodegaDe:any = {};
+    public bodegaPara:any = {};
 
     modalRef!: BsModalRef;
 
@@ -38,9 +38,10 @@ export class TrasladosComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtros.id_sucursal_de = '';
-        this.filtros.id_sucursal_para = '';
+        this.filtros.id_bodega_de = '';
+        this.filtros.id_bodega_para = '';
         this.filtros.id_producto = '';
+        this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.search = '';
         this.filtros.orden = 'created_at';
@@ -96,27 +97,29 @@ export class TrasladosComponent implements OnInit {
     }
 
     public setSucursalDe(){
-        this.sucursalDe = this.producto?.inventarios.find((item:any) => item.id_sucursal == this.traslado.id_sucursal_de);
+        this.bodegaDe = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega_de);
     }
 
     public setSucursalPara(){
-        this.sucursalPara = this.producto?.inventarios.find((item:any) => item.id_sucursal == this.traslado.id_sucursal);
+        this.bodegaPara = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega);
     }
 
     public openModal(template: TemplateRef<any>) {
         this.traslado.id_producto = '';
-        this.traslado.id_sucursal = '';
-        this.traslado.id_sucursal_de = '';
+        this.traslado.id_bodega = '';
+        this.traslado.id_bodega_de = '';
 
         this.traslado.id_usuario = this.apiService.auth_user().id;
         this.traslado.id_empresa = this.apiService.auth_user().id_empresa;
         this.traslado.estado = 'Confirmado';
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => {this.alertService.error(error);});
+        if(!this.productos.length){
+            this.apiService.getAll('productos/list').subscribe(productos => {
+                this.productos = productos;
+            }, error => {this.alertService.error(error);});
+        }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop:'static'});
     }
 
     public openFilter(template: TemplateRef<any>) {

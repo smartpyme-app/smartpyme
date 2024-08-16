@@ -24,14 +24,14 @@ class TrasladosController extends Controller
         $traslados = Traslado::when($request->fin, function($query) use ($request){
                                 return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
-                            ->when($request->id_sucursal_de, function($query) use ($request){
+                            ->when($request->id_bodega_de, function($query) use ($request){
                                 return $query->whereHas('origen', function($q) use ($request){
-                                    $q->where('id_sucursal_de', $request->id_sucursal_de);
+                                    $q->where('id_bodega_de', $request->id_bodega_de);
                                 });
                             })
-                            ->when($request->id_sucursal_para, function($query) use ($request){
+                            ->when($request->id_bodega_para, function($query) use ($request){
                                 return $query->whereHas('destino', function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal_para);
+                                    $q->where('id_bodega', $request->id_bodega_para);
                                 });
                             })
                             ->when($request->search, function($query) use ($request){
@@ -58,8 +58,8 @@ class TrasladosController extends Controller
           // 'fecha'         => 'required',
           'estado'          => 'required',
           'id_producto'     => 'required',
-          'id_sucursal_de' => 'required|numeric',
-          'id_sucursal'     => 'required|numeric',
+          'id_bodega_de' => 'required|numeric',
+          'id_bodega'     => 'required|numeric',
           'concepto'        => 'required',
           'cantidad'      => 'required|numeric',
           'id_usuario'      => 'required|numeric'
@@ -73,15 +73,15 @@ class TrasladosController extends Controller
         try {
 
         // Disminuir origen
-        $origen = Inventario::where('id_producto', $request->id_producto)->where('id_sucursal', $request->id_sucursal_de)->first();
-        $destino = Inventario::where('id_producto', $request->id_producto)->where('id_sucursal', $request->id_sucursal)->first();
+        $origen = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega_de)->first();
+        $destino = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega)->first();
 
-        if ($origen->id_sucursal == $destino->id_sucursal) {
-            return  Response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
+        if ($origen->id_bodega == $destino->id_bodega) {
+            return  Response()->json(['error' => 'Has seleccionado la misma bodega.', 'code' => 400], 400);
         }
 
         if ($origen->stock < $request->cantidad) {
-            return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+            return  Response()->json(['error' => 'La bodega no tiene el stock suficiente.', 'code' => 400], 400);
         }
         
         
@@ -97,7 +97,7 @@ class TrasladosController extends Controller
             $destino->kardex($traslado, $traslado->cantidad);
 
         }else{
-            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+            return  Response()->json(['error' => 'Una de las bodegaes no tiene inventario.', 'code' => 400], 400);
         }
       
         DB::commit();
@@ -119,8 +119,8 @@ class TrasladosController extends Controller
         $traslado->estado = 'Cancelado';
         $traslado->save();
 
-        $origen = Inventario::where('id_producto', $traslado->id_producto)->where('id_sucursal', $traslado->id_sucursal_de)->first();
-        $destino = Inventario::where('id_producto', $traslado->id_producto)->where('id_sucursal', $traslado->id_sucursal)->first();
+        $origen = Inventario::where('id_producto', $traslado->id_producto)->where('id_bodega', $traslado->id_bodega_de)->first();
+        $destino = Inventario::where('id_producto', $traslado->id_producto)->where('id_bodega', $traslado->id_bodega)->first();
         
         if ($origen && $destino) {
             $origen->stock += $traslado->cantidad;
@@ -131,7 +131,7 @@ class TrasladosController extends Controller
             $destino->save();
             $destino->kardex($traslado, $traslado->cantidad);
         }else{
-            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario', 'code' => 400], 400);
+            return  Response()->json(['error' => 'Una de las bodegaes no tiene inventario', 'code' => 400], 400);
         }
 
         return Response()->json($traslado, 201);

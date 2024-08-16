@@ -18,6 +18,7 @@ export class PresupuestosComponent implements OnInit {
 
     public clientes:any = [];
     public usuarios:any = [];
+    public proyectos:any = [];
     public usuario:any = {};
     public sucursales:any = [];
     public filtros:any = {};
@@ -52,6 +53,7 @@ export class PresupuestosComponent implements OnInit {
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.id_proyecto = '';
         this.filtros.orden = 'fecha_inicio';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -88,6 +90,11 @@ export class PresupuestosComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                this.proyectos = proyectos;
+            }, error => {this.alertService.error(error); });
+        }
         this.modalRef = this.modalService.show(template);
     }
 

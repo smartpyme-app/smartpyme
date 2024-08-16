@@ -23,9 +23,9 @@ class AjustesController extends Controller
         $ajustes = Ajuste::when($request->fin, function($query) use ($request){
                                 return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
-                            ->when($request->id_sucursal, function($query) use ($request){
+                            ->when($request->id_bodega, function($query) use ($request){
                                 return $query->whereHas('sucursal', function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
+                                    $q->where('id_bodega', $request->id_bodega);
                                 });
                             })
                             ->when($request->id_usuario, function($query) use ($request){
@@ -64,7 +64,7 @@ class AjustesController extends Controller
     {
         $request->validate([
             'id_producto'       => 'required|numeric',
-            'id_sucursal'       => 'required|numeric',
+            'id_bodega'       => 'required|numeric',
             'stock_actual'      => 'required|numeric',
             'stock_real'        => 'required|numeric',
             'ajuste'            => 'required|numeric',
@@ -83,7 +83,7 @@ class AjustesController extends Controller
 
         // Actualizar inventario
                         
-            $inventario = Inventario::where('id_sucursal', $request['id_sucursal'])->where('id_producto', $ajuste->id_producto)->first();
+            $inventario = Inventario::where('id_bodega', $request['id_bodega'])->where('id_producto', $ajuste->id_producto)->first();
             if ($inventario) {
                 $inventario->stock += $request->ajuste;
                 $inventario->save();
@@ -103,7 +103,7 @@ class AjustesController extends Controller
 
         // Ajustar inventario
             $inventario = Inventario::where('id_producto', $ajuste->id_producto)
-                                    ->where('id_sucursal', $ajuste->id_sucursal)
+                                    ->where('id_bodega', $ajuste->id_bodega)
                                     ->first();
             if ($inventario) {
                 $inventario->stock -= $ajuste->ajuste;

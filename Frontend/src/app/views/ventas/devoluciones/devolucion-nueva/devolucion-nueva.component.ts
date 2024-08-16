@@ -14,6 +14,7 @@ import { ApiService } from '@services/api.service';
 export class DevolucionVentaNuevaComponent implements OnInit {
 
     public venta: any= {};
+    public devolucion: any= {};
     public detalle: any = {};
     public documentos:any = [];
     public supervisor:any = {};
@@ -43,25 +44,26 @@ export class DevolucionVentaNuevaComponent implements OnInit {
             this.venta.cliente = {};
             this.apiService.read('venta/', id).subscribe(venta => {
                 this.venta = venta;
-                this.venta.id = null;
-                this.venta.fecha = this.apiService.date();
-                this.venta.id_venta = id;
-                this.venta.tipo = 'Interna';
-                this.venta.correlativo = null;
-                this.venta.id_documento = null;
-                this.venta.observaciones = '';
+                this.devolucion.detalles = venta.detalles;
+                this.devolucion.id_cliente = venta.id_cliente;
+                this.devolucion.impuestos = venta.impuestos;
+                this.devolucion.fecha = this.apiService.date();
+                this.devolucion.id_venta = id;
+                this.devolucion.tipo = 'Interna';
+                this.devolucion.cuenta_a_terceros = 0;
 
-                this.venta.percepcion = this.venta.iva_percibido > 0 ? true : false; 
-                this.venta.retencion = this.venta.iva_retenido > 0 ? true : false;
-                this.venta.cobrar_impuestos = (this.venta.iva > 0) ?true : false;
+                this.devolucion.percepcion = parseFloat(this.venta.iva_percibido) > 0 ? true : false; 
+                this.devolucion.retencion = parseFloat(this.venta.iva_retenido) > 0 ? true : false;
+                this.devolucion.cobrar_impuestos = parseFloat(this.venta.iva) > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
-                    this.venta.id_caja = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
-                    this.venta.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
+                    this.devolucion.id_caja = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
+                    this.devolucion.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
                 }
-                this.venta.id_usuario = this.apiService.auth_user().id;
-                this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
+                this.devolucion.id_usuario = this.apiService.auth_user().id;
+                this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
+                this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
                 this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
@@ -73,13 +75,13 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     cargarDocumentos(){
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
-            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
+            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.devolucion.id_sucursal);
 
             this.documentos = this.documentos.filter((x:any) => x.nombre == 'Nota de crédito');
             let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
             if(documento){
-                this.venta.id_documento = documento.id;
-                this.venta.correlativo = documento.correlativo;
+                this.devolucion.id_documento = documento.id;
+                this.devolucion.correlativo = documento.correlativo;
             }
 
         }, error => {this.alertService.error(error);});
@@ -87,76 +89,78 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
     public setDocumento(id_documento:any){
         let documento = this.documentos.find((x:any) => x.id == id_documento);
-        this.venta.id_documento = documento.id;
-        this.venta.correlativo = documento.correlativo;
+        this.devolucion.id_documento = documento.id;
+        this.devolucion.correlativo = documento.correlativo;
     }
 
     cargarDatosIniciales(){
         this.cargarDocumentos();
-        this.venta = {};
-        this.venta.fecha = this.apiService.date();
-        this.venta.tipo = 'Interna';
-        this.venta.cliente = {};
-        this.venta.detalles = [];
-        this.venta.canal = 'Tienda';
-        this.venta.descuento = 0;
+        this.devolucion = {};
+        this.devolucion.fecha = this.apiService.date();
+        this.devolucion.tipo = 'Interna';
+        this.devolucion.cliente = {};
+        this.devolucion.detalles = [];
+        this.devolucion.canal = 'Tienda';
+        this.devolucion.descuento = 0;
         this.detalle = {};
 
-        let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
+        let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
         if (corte) {
-            this.venta.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
-            this.venta.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id_caja;
-            this.venta.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
+            this.devolucion.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
+            this.devolucion.caja_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
+            this.devolucion.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
         }
 
-        this.venta.id_usuario = this.apiService.auth_user().id;
-        this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
+        this.devolucion.id_usuario = this.apiService.auth_user().id;
+        this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
+        this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
         // this.sumTotal();
         this.imprimir = true;
     }
 
     public sumTotal() {
-        this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(2);
+        this.devolucion.sub_total = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total'))).toFixed(2);
         
-        this.venta.exenta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'))).toFixed(4);
-        this.venta.no_sujeta = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'))).toFixed(4);
+        this.devolucion.exenta = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'exenta'))).toFixed(4);
+        this.devolucion.no_sujeta = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'no_sujeta'))).toFixed(4);
         
-        this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0; 
-        this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0; 
+        this.devolucion.iva_percibido = this.devolucion.percepcion ? this.devolucion.sub_total * 0.01 : 0; 
+        this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0; 
 
-        this.venta.impuestos.forEach((impuesto:any) => {
-            if(this.venta.cobrar_impuestos){
-                impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
+        this.devolucion.impuestos.forEach((impuesto:any) => {
+            if(this.devolucion.cobrar_impuestos){
+                impuesto.monto = this.devolucion.sub_total * (impuesto.porcentaje / 100);
             }else{
                 impuesto.monto = 0;
             }
         });
 
-        this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto'))).toFixed(2);
-        this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(2);
-        // this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(2);
-        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.cuenta_a_terceros) + parseFloat(this.venta.exenta) + parseFloat(this.venta.no_sujeta) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(2);
+        this.devolucion.iva = (parseFloat(this.sumPipe.transform(this.devolucion.impuestos, 'monto'))).toFixed(2);
+        this.devolucion.descuento = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'descuento'))).toFixed(2);
+        this.devolucion.total_costo = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total_costo'))).toFixed(2);
+        this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.cuenta_a_terceros) + parseFloat(this.devolucion.exenta) + parseFloat(this.devolucion.no_sujeta) + parseFloat(this.devolucion.iva_percibido) - parseFloat(this.devolucion.iva_retenido)).toFixed(2);
+        console.log(this.devolucion);
     }
 
 
-    updateVenta(venta:any) {
-        this.venta = venta;
+    updateDevolucion(devolucion:any) {
+        this.devolucion = devolucion;
         this.sumTotal();
     }
 
     // Devolución
         openModalDevolucion(template: TemplateRef<any>) {
             this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
-            this.venta.tipo = 'Cambio de producto';
+            this.devolucion.tipo = 'Cambio de producto';
         }
 
         public onDevolucion() {
 
             this.saving = true;
-            this.apiService.store('devolucion-venta', this.venta).subscribe(venta => {
+            this.apiService.store('devolucion/venta', this.devolucion).subscribe(devolucion => {
                 this.saving = false;
-                if(venta.tipo_documento == 'Factura' || venta.tipo_documento == 'Credito Fiscal' || venta.tipo_documento == 'Ticket'){
-                    this.imprimirDocDevolucion(venta);
+                if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
+                    this.imprimirDocDevolucion(devolucion);
                 }
                 this.router.navigate(['/devoluciones/ventas']);
                 this.alertService.success('Devolucion de venta creada', 'La devolución de venta fue guardado exitosamente.');
@@ -164,9 +168,9 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         }
 
 
-    public imprimirDocDevolucion(venta:any){
+    public imprimirDocDevolucion(devolucion:any){
         setTimeout(()=>{
-            window.open(this.apiService.baseUrl + '/api/reporte/devolucion/' + venta.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+            window.open(this.apiService.baseUrl + '/api/reporte/devolucion/' + devolucion.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
         }, 1000);
     }
 

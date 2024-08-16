@@ -6,8 +6,15 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="ventas?.total">
-                Mostrando {{ ventas?.to }} de {{ ventas?.total + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ ventas?.total + ' registros' }}
             </span>
         </div>
 
@@ -17,7 +24,7 @@
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.referencia">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
             </div>
@@ -52,6 +59,7 @@
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Cliente</th>
+                        <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Observaciones</th>
                         <th>Estado</th>
                         <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
@@ -72,12 +80,19 @@
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>
+                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{venta.id}}">
+                                {{venta.nombre_documento}} #{{venta.correlativo}}
+                            </a>
+                        </td>
                         <td>{{venta.observaciones}}</td>
                         <td>
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)" [(ngModel)]="venta.enable" [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
-                                <option value="1">Confirmada</option>
-                                <option value="0">Anulada</option>
-                            </select>
+                            <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
+                                {{ venta.enable ? 'Confirmada' : 'Anulada' }}
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
+                                    ✅                       
+                                </span>
+                            </span>
                         </td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -86,6 +101,12 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
                                     <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
@@ -191,11 +212,11 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="id_venta">Seleccionar venta para realizar una devolución</label>
-                <select name="id_venta" [(ngModel)]="id_venta" class="form-select">
-                    <option [value]="venta.id" *ngFor="let venta of ventasList">
+                <ng-select name="id_venta" [(ngModel)]="id_venta" class="form-select p-0">
+                    <ng-option [value]="venta.id" *ngFor="let venta of ventasList">
                         {{ venta.fecha | date:'dd/MM/yyyy' }} {{ venta.nombre_cliente }} {{ venta.total | currency:'USD':'symbol':'1.2'}} {{ venta.nombre_documento }} # {{ venta.correlativo }}
-                    </option>
-                </select>
+                    </ng-option>
+                </ng-select>
             </div>
             <div class="d-grid mt-4">
                 <button [disabled]="!id_venta" routerLink="/devolucion-venta/nueva" (click)="modalRef.hide()" [queryParams]="{ id_venta: id_venta }" class="btn btn-primary btn-block">
@@ -204,5 +225,37 @@
             </div>
         </div>
     <!-- </form> -->
+  </div>
+</ng-template>
+
+
+<ng-template #mDTE>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">DTE </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="d-grid">
+
+            <button *ngIf="venta.sello_mh" (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
+                Ver JSON
+            </button>
+
+            <button *ngIf="venta.sello_mh" (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
+                Ver PDF
+            </button>
+
+            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!sending">Enviar por correo</span>
+                <span *ngIf="sending">Enviando...</span>
+            </button>
+
+            <button *ngIf="!venta.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!saving">Emitir</span>
+                <span *ngIf="saving">Emitiendo...</span>
+            </button>
+
+        </div>
   </div>
 </ng-template>

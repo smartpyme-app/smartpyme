@@ -34,7 +34,9 @@
                         <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="proveedor.correo">
                     </div>
                     <div class="form-group col-6 col-lg-3">
-                        <label for="dui">DUI</label>
+                        <label for="dui">Documento de identidad</label>
+                        <!-- <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label> -->
+                        <!-- <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Número de Identificación</label> -->
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui">
                     </div>
                     <div class="form-group col-lg-6">
@@ -56,11 +58,13 @@
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
                     </div>
                     <div class="form-group col-6 col-lg-2">
-                        <label for="ncr">NRC:</label>
+                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
+                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
                     </div>
                     <div class="form-group col-6 col-lg-3">
-                        <label for="nit">NIT:</label>
+                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
+                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">

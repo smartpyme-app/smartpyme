@@ -8,4 +8,6 @@
     Route::post('/banco/transaccion',              [TransaccionesController::class, 'store']);
     Route::delete('/banco/transaccion/{id}',       [TransaccionesController::class, 'delete']);
 
+    Route::get('/bancos/transacciones/exportar',    [TransaccionesController::class, 'export']);
+
 ?>
