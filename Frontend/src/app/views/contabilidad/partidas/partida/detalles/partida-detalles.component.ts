@@ -17,6 +17,7 @@ export class PartidaDetallesComponent implements OnInit {
     @Input() partida: any = {};
     public detalle:any = {};
     public catalogo:any = [];
+    public detalles: any= [];
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
@@ -24,6 +25,7 @@ export class PartidaDetallesComponent implements OnInit {
 
     public buscador:string = '';
     public loading:boolean = false;
+
 
     rows = [{noQuestion : 0}];
 
@@ -109,7 +111,12 @@ export class PartidaDetallesComponent implements OnInit {
     }
 
     public addNewRow() {
-        this.rows.push({noQuestion : 0});
+        this.detalles.push({
+            cuenta: '',
+            concepto: '',
+            debe: 0,
+            haber: 0
+          });
       }
 
     public deleteRows(){

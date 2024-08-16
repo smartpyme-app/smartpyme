@@ -45,43 +45,68 @@
                     </td>
                 </tr> -->
 
-                <tr *ngFor="let row of rows; let i = index">
-
-                    <!-- select de las cuentas -->
+                <tr *ngFor="let detalle of detalles; let i = index">
+                    <!-- cuenta -->
                     <td>
-                        <ng-select  (change)="selectCuenta()" class="form-select p-0" name="detalle.cuenta" placeholder="Selecciona la cuenta">
-                            <!-- [(ngModel)]="detalle.cuenta" -->
-                            <ng-option value="" >Seleccione aquí</ng-option>
-                            <div *ngFor="let cuenta of catalogo">
-                                <ng-option  [value]="cuenta" *ngIf="cuenta.acepta_datos == 1">
-                                <div class="d-flex align-items-center" >
-                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
-                                </div>
-                                </ng-option>
-                            </div>  
-                        </ng-select>
+                      <ng-select 
+                        [(ngModel)]="detalle.cuenta"
+                        (change)="selectCuenta()"
+                        class="form-select p-0"
+                        name="detalle.cuenta-{{i}}" 
+                        placeholder="Selecciona la cuenta">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        <div *ngFor="let cuenta of catalogo">
+                          <ng-option [value]="cuenta" *ngIf="cuenta.acepta_datos === 1">
+                            <div class="d-flex align-items-center">
+                              <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                              <span class="col-8"> - {{ cuenta.nombre }}</span>
+                            </div>
+                          </ng-option>
+                        </div>
+                      </ng-select>
                     </td>
+            
                     <!-- concepto -->
                     <td>
-                        <input type="text"   class="form-control" name="concepto" placeholder="Concepto">
-                        <!-- [(ngModel)]="detalle.concepto" -->
+                      <input 
+                        type="text" 
+                        [(ngModel)]="detalle.concepto"
+                        class="form-control" 
+                        name="concepto-{{i}}" 
+                        placeholder="Concepto">
                     </td>
-                    <!-- debe    -->
+            
+                    <!-- debe -->
                     <td>
-                        <input type="number"  (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" placeholder="$00.00">
-                        <!-- [(ngModel)]="detalle.debe" -->
-                    </td>   
-                    <!-- haber      -->
-                    <td>
-                        <input type="number"  (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" placeholder="$00.00">
-                        <!-- [(ngModel)]="detalle.haber" -->
+                      <input 
+                        type="number" 
+                        [(ngModel)]="detalle.debe"
+                        (change)="updateTotal(detalle)" 
+                        (keyup)="updateTotal(detalle)" 
+                        class="form-control text-end" 
+                        name="debe-{{i}}" 
+                        placeholder="$00.00">
                     </td>
-                    <!-- borrado -->
+            
+                    <!-- haber -->
                     <td>
-                        <div class="d-flex gap-2 justify-content-center">
-                            <a  class="btn btn-light" (click)="deleteRows()"><img src="/assets/icons/trash-2.png" class="icon"></a>
-                        </div>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="detalle.haber"
+                        (change)="updateTotal(detalle)" 
+                        (keyup)="updateTotal(detalle)" 
+                        class="form-control text-end" 
+                        name="haber-{{i}}" 
+                        placeholder="$00.00">
+                    </td>
+            
+                    <!-- borrar -->
+                    <td>
+                      <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light" (click)="removeDetalle(i)">
+                          <img src="/assets/icons/trash-2.png" class="icon">
+                        </button>
+                      </div>
                     </td>
                   </tr>
             </tbody>
