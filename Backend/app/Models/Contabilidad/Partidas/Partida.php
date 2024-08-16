@@ -16,11 +16,13 @@ class Partida extends Model
         'tipo',
         'concepto',
         'estado',
+        'referencia',
+        'id_referencia',
         'id_usuario',
         'id_empresa',
     ];
 
-    protected $appends = ['nombre_usuario'];
+    protected $appends = ['nombre_usuario', 'ruta_referencia'];
     
     protected static function boot()
     {
@@ -31,6 +33,25 @@ class Partida extends Model
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function getRutaReferenciaAttribute(){
+        if ($this->referencia == 'Venta') {
+            return 'venta';
+        }
+        if ($this->referencia == 'Abono de Venta') {
+            return 'venta/abono';
+        }
+        if ($this->referencia == 'Abono de Compra') {
+            return 'compra/abono';
+        }
+        if ($this->referencia == 'Compra') {
+            return 'compra';
+        }
+        if ($this->referencia == 'Cheque') {
+            return 'bancos/cheque';
+        }
+
     }
 
     public function getNombreUsuarioAttribute()

@@ -40,6 +40,7 @@ export class PartidaComponent implements OnInit {
             this.loading = true;
             this.apiService.read('partida/', id).subscribe(partida => {
                 this.partida = partida;
+                this.sumTotal();
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{

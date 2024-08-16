@@ -109,6 +109,8 @@ CREATE TABLE partidas (
     tipo varchar(255) NOT NULL,
     concepto varchar(255) NOT NULL,
     estado varchar(255) NOT NULL,
+    referencia varchar(50) NOT NULL,
+    id_referencia int NOT NULL,
     id_usuario int NOT NULL,
     id_empresa int NOT NULL,
     created_at timestamp NULL,
@@ -179,6 +181,9 @@ ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
 
 ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
 ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
+
+ALTER TABLE partidas ADD referencia varchar(50) NOT NULL after estado;
+ALTER TABLE partidas ADD id_referencia INT NOT NULL after referencia;
 
 
 --Traslados
@@ -259,6 +264,5 @@ ALTER TABLE compras ADD dte_invalidacion LONGTEXT NULL AFTER dte;
 ALTER TABLE proveedores ADD cod_municipio varchar(10) NULL AFTER municipio;
 ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento;
 ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
-ALTER TABLE proveedores ADD correo varchar(255) NULL AFTER telefono;
 ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;
 

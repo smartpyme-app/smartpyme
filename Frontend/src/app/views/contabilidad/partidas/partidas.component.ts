@@ -45,7 +45,7 @@ export class PartidasComponent implements OnInit {
         this.filtros.tipo = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
-        this.filtros.direccion = 'asc';
+        this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
         this.filtrarCuentas();
     }

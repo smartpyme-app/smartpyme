@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Contabilidad;
 
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 
-class ContabilidadService
+class VentasService
 {
-    public function crearPartidaVenta($venta)
+    public function crearPartida($venta)
     {
         $configuracion = Configuracion::firstOrFail();
 
@@ -19,7 +19,7 @@ class ContabilidadService
 
         $partida = Partida::create([
             'fecha' => $venta->fecha,
-            'tipo' => 'Ingresos',
+            'tipo' => 'Ingreso',
             'concepto' => 'Ingresos por ventas',
             'estado' => 'Pendiente',
             'id_usuario' => $venta->id_usuario,
