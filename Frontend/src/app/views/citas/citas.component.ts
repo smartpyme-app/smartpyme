@@ -20,7 +20,17 @@ export class CitasComponent implements OnInit {
     public evento:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+
+    public clientes:any = [];
+    public usuario:any = {};
+    public usuarios:any = [];
+    public sucursales:any = [];
+    public formaPagos:any = [];
+    public documentos:any = [];
+    public canales:any = [];
     public filtros:any = {};
+    public filtrado:boolean = false;
+    // public filtros:any = {};
 
     modalRef!: BsModalRef;
 
@@ -66,6 +76,20 @@ export class CitasComponent implements OnInit {
             if(this.modalRef){
                 this.modalRef.hide();
             }
+        }, error => {this.alertService.error(error); this.loading = false;});
+
+    }
+
+    updateCalendar(){
+        this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => { 
+            this.loading = false;
+
+            this.calendario.calendarOptions!.events = eventos;
+            this.eventos=eventos;
+            this.filtrarEventos();
+
+            // console.log('siu');
+            // this.update.emit();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
@@ -184,8 +208,18 @@ export class CitasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
-    updateCalendar(){
-        this.calendario.loadAll();
+
+    public openFilter(template: TemplateRef<any>) {
+        if(!this.clientes.length){
+            this.apiService.getAll('clientes/list').subscribe(clientes => { 
+                this.clientes = clientes;
+            }, error => {this.alertService.error(error); });
+        }
+
+
+        this.modalRef = this.modalService.show(template);
     }
+
+
 
 }

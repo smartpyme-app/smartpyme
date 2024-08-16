@@ -10,6 +10,10 @@ class Compra extends Model {
 
     protected $table = 'compras';
     protected $fillable = array(
+        'tipo_dte',
+        'numero_control',
+        'codigo_generacion',
+        'sello_mh',
         'fecha',
         'estado',
         // 'tipo',
@@ -27,6 +31,7 @@ class Compra extends Model {
         'no_sujeta',
         'exenta',
         'percepcion',
+        'renta_retenida',
         // 'iva_retenido',
         'descuento',
         'recurrente',
@@ -40,6 +45,8 @@ class Compra extends Model {
         'id_usuario',
         'id_sucursal',
         'id_empresa',
+        'dte',
+        'dte_invalidacion',
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
@@ -53,6 +60,11 @@ class Compra extends Model {
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function getDteAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
     }
 
     public function getSaldoAttribute(){

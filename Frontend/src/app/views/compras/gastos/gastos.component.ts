@@ -19,6 +19,7 @@ export class GastosComponent implements OnInit {
 
     public clientes:any = [];
     public usuarios:any = [];
+    public proyectos:any = [];
     public sucursales:any = [];
     public proveedores:any = [];
     public filtros:any = {};
@@ -41,6 +42,7 @@ export class GastosComponent implements OnInit {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
         this.filtros.id_usuario = '';
+        this.filtros.id_proyecto = '';
         this.filtros.forma_pago = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
@@ -66,6 +68,9 @@ export class GastosComponent implements OnInit {
         this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); });
     }
 
@@ -141,13 +146,23 @@ export class GastosComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+        if(!this.sucursales.length){
+            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
+        }
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                this.proyectos = proyectos;
+            }, error => {this.alertService.error(error); });
+        }
 
         this.modalRef = this.modalService.show(template);
     }

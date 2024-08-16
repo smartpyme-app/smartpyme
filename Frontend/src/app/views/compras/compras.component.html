@@ -85,7 +85,12 @@
                         <td>{{compra.forma_pago}}</td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
+                                {{ compra.estado }}
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
+                                    ✅                       
+                                </span>
+                            </span>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -94,6 +99,14 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
+                                    
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.tipo_documento == 'Sujeto excluido' && compra.estado != 'Anulada' && !compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.tipo_documento == 'Sujeto excluido' && compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
+
                                     <a  *ngIf="apiService.canEdit()" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
@@ -216,6 +229,23 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                <label for="id_proyecto">Proyecto:</label>
+                <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                        {{ proyecto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
+                <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
+                    <option value="">Todos</option>
+                    <option value="0">Sin emitir</option>
+                    <option value="1">Emitidos</option>
+                </select>
+            </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
@@ -276,5 +306,37 @@
             </div>
         </div>
     </form>
+  </div>
+</ng-template>
+
+
+<ng-template #mDTE>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">DTE </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="d-grid">
+
+            <button *ngIf="compra.sello_mh" (click)="imprimirDTEJSON(compra)" class="mb-3 btn btn-primary btn-block">
+                Ver JSON
+            </button>
+
+            <button *ngIf="compra.sello_mh" (click)="imprimirDTEPDF(compra)" class="mb-3 btn btn-primary btn-block">
+                Ver PDF
+            </button>
+
+            <button *ngIf="compra.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!sending">Enviar por correo</span>
+                <span *ngIf="sending">Enviando...</span>
+            </button>
+
+            <button *ngIf="!compra.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!saving">Emitir</span>
+                <span *ngIf="saving">Emitiendo...</span>
+            </button>
+
+        </div>
   </div>
 </ng-template>

@@ -142,7 +142,8 @@ export class TiendaVentaPaquetesComponent implements OnInit {
             this.detalle.total         = (parseFloat(paquete.total) / 1.13).toFixed(4);
             // this.detalle.total         = parseFloat(paquete.total);
             this.detalle.cuenta_a_terceros        = parseFloat(paquete.cuenta_a_terceros);
-
+            this.detalle.id_vendedor = paquete.id_asesor;
+            this.venta.id_vendedor = paquete.id_asesor;
             // this.detalle.precios        = this.servicio.precios;
             // this.detalle.precios.unshift({
             //         'precio' : this.detalle.precio

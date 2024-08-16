@@ -188,6 +188,15 @@
                     </option>
                 </select>
             </div>
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                <label for="id_proyecto">Proyecto:</label>
+                <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                        {{ proyecto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">

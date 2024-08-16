@@ -10,11 +10,11 @@ use App\Models\Admin\Banco;
 
 class BancosController extends Controller
 {
-    
+
 
     public function index() {
-       
-        $listaDeBancos = Banco::get();        
+
+        $listaDeBancos = Banco::get();
 
         $bancos = collect();
 
@@ -26,15 +26,17 @@ class BancosController extends Controller
         $bancos->push(['nombre' => 'Banco Davivienda', 'activo' => $listaDeBancos->where('nombre', 'Banco Davivienda')->first() ? true : false ]);
         $bancos->push(['nombre' => 'Banco Fedecrédito', 'activo' => $listaDeBancos->where('nombre', 'Banco Fedecrédito')->first() ? true : false ]);
         $bancos->push(['nombre' => 'Banco Atlántida', 'activo' => $listaDeBancos->where('nombre', 'Banco Atlántida')->first() ? true : false ]);
+        $bancos->push(['nombre' => 'Banco Industrial', 'activo' => $listaDeBancos->where('nombre', 'Banco Industrial')->first() ? true : false ]);
+        $bancos->push(['nombre' => 'Banrural', 'activo' => $listaDeBancos->where('nombre', 'Banrural')->first() ? true : false ]);
 
         return Response()->json($bancos, 200);
 
     }
 
     public function list() {
-       
-        $bancos = Banco::get();        
-        
+
+        $bancos = Banco::get();
+
         return Response()->json($bancos, 200);
 
     }
@@ -47,13 +49,13 @@ class BancosController extends Controller
             $banco->delete();
             return Response()->json($banco, 201);
         }
-        
+
         $this->validate($request, [
             'nombre'        => 'required|string|max:150',
             'orden'         => 'numeric|nullable',
             'id_empresa'    => 'required|numeric',
         ]);
-        
+
         $banco = new Banco();
 
         $banco->fill($request->all());

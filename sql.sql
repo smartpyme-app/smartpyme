@@ -195,3 +195,70 @@ CREATE TABLE traslado_detalles (
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
+
+
+
+
+CREATE TABLE producto_composicion_opciones (
+    id int NOT NULL AUTO_INCREMENT,
+    id_composicion int  NOT NULL,
+    id_producto int NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE venta_metodos_pago (
+    id int NOT NULL AUTO_INCREMENT,
+    id_venta int  NOT NULL,
+    nombre varchar(255) NOT NULL,
+    total decimal(9,2) NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE empresas ADD vendedor_detalle_venta BOOL DEFAULT false after agrupar_detalles_venta;
+ALTER TABLE empresas ADD facturacion_electronica BOOL DEFAULT false after vendedor_detalle_venta;
+ALTER TABLE empresas ADD fe_ambiente varchar(10) DEFAULT '00' after facturacion_electronica;
+ALTER TABLE empresas ADD cotizacion_compras_terminos text NULL after fe_ambiente;
+ALTER TABLE empresas ADD enviar_dte BOOL DEFAULT false after fe_ambiente;
+
+ALTER TABLE ventas ADD id_vendedor INT(11) NULL after id_usuario;
+ALTER TABLE detalles_venta ADD id_vendedor INT(11) NULL after id_venta;
+
+ALTER TABLE egresos ADD iva_percibido decimal(9,2) NULL after iva;
+
+ALTER TABLE clientes ADD pais varchar(255) after direccion;
+
+ALTER TABLE proyectos ADD id_cliente INT NULL after enable;
+
+
+
+ALTER TABLE ventas ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE ventas ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE ventas ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE ventas ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+
+ALTER TABLE devoluciones_venta ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE devoluciones_venta ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE devoluciones_venta ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE devoluciones_venta ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+ALTER TABLE devoluciones_venta ADD dte LONGTEXT NULL AFTER id_usuario;
+ALTER TABLE devoluciones_venta ADD dte_invalidacion LONGTEXT NULL AFTER dte;
+
+ALTER TABLE compras ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE compras ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE compras ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE compras ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+
+ALTER TABLE compras ADD renta_retenida DECIMAL(10,2) NULL DEFAULT '0' AFTER iva;
+ALTER TABLE compras ADD dte LONGTEXT NULL AFTER id_usuario;
+ALTER TABLE compras ADD dte_invalidacion LONGTEXT NULL AFTER dte;
+
+ALTER TABLE proveedores ADD cod_municipio varchar(10) NULL AFTER municipio;
+ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento;
+ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
+ALTER TABLE proveedores ADD correo varchar(255) NULL AFTER telefono;
+ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;
+

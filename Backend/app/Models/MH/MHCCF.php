@@ -8,13 +8,8 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MH extends Model
+class MHCCF extends Model
 {
-    // protected $url_firmado = 'http://localhost:8113/firmardocumento/';
-    protected $url_firmado = 'https://firmador.smartpyme.site:8443/firmardocumento/';
-    protected $url_mh = 'https://apitest.dtes.mh.gob.sv/fesv/recepciondte';
-    protected $url_anular_dte = 'https://apitest.dtes.mh.gob.sv/fesv/anulardte';
-    protected $url_auth = 'https://apitest.dtes.mh.gob.sv/seguridad/auth';
 
     public $venta;
     public $caja;
@@ -30,6 +25,13 @@ class MH extends Model
         $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
+        $this->venta->tipo_dte = '03';
+
+        if (!$this->venta->codigo_generacion) {
+            $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
+            $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
+            $this->venta->save();
+        }
 
         $this->venta->ambiente = $this->empresa->fe_ambiente; // 00 Modo prueba 01 Modo producción
         $this->venta->tipoModelo = 1; // 1 Modelo Facturación previo 2 Modelo Facturación diferido
@@ -37,18 +39,8 @@ class MH extends Model
         $this->venta->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->venta->motivoContin = NULL;
         $this->venta->moneda = 'USD';
+        $this->venta->version = 3;
 
-        if ($this->venta->nombre_documento == 'Crédito fiscal') {
-            $this->venta->tipoDte = '03';
-            $this->venta->version = 3;
-        }
-        if ($this->venta->nombre_documento == 'Factura') {
-            $this->venta->tipoDte = '01';
-            $this->venta->version = 1;
-        }
-
-        $this->venta->numeroControl = 'DTE-'. $this->venta->tipoDte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
-        $this->venta->codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
 
         // Condición
             if ($this->venta->condicion == 'Crédito'){
@@ -95,123 +87,18 @@ class MH extends Model
         $centavos = $formatter->toWords($n[1]);
 
         $this->venta->total_en_letras = $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
-
-
-        // 01 Factura
-        // 03 Comprobante de crédito fiscal
-        // 04 Nota de remisión 05 Nota de crédito 06 Nota de débito
-        // 07 Comprobante de retención 08 Comprobante de liquidación 09 Documento contable de liquidación 11 Facturas de exportación 14 Factura de sujeto excluido 15 Comprobante de donación
-
-        if ($this->venta->tipoDte == '01') {
-            return $this->generarFactura();
-        }
-        if ($this->venta->tipoDte == '03') {
-            return $this->generarCCF();
-        }
+        
+        return $this->generarCCF();
 
     } 
-
-    public function generarDTEAnulado($DTE){
-        $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
-        // $this->caja = $this->venta->caja()->first();
-        $this->caja_codigo = '0001';
-
-        $identificacion = [
-            "version" => 2,
-            "ambiente" => $DTE['identificacion']['ambiente'],
-            "codigoGeneracion" => $codigoGeneracion,
-            "fecAnula" => \Carbon\Carbon::now()->format('Y-m-d'),
-            "horAnula" => \Carbon\Carbon::now()->format('H:i:s'),
-        ];
-
-        $tipo_documento = NULL;
-        $num_documento = NULL;
-
-
-        if ($DTE['identificacion']['tipoDte'] == '01') {
-            $tipo_documento = $DTE['receptor']['tipoDocumento'];
-            $num_documento = $DTE['receptor']['numDocumento'];
-        }
-
-        if ($DTE['identificacion']['tipoDte'] == '03') {
-            $tipo_documento = '36';
-            $num_documento = $DTE['receptor']['nit'];
-        }
-
-        $documento = [
-            "tipoDte" => $DTE['identificacion']['tipoDte'],
-            "codigoGeneracion" => $DTE['identificacion']['codigoGeneracion'],
-            "selloRecibido" => $DTE['sello'],
-            "numeroControl" => $DTE['identificacion']['numeroControl'],
-            "fecEmi" => $DTE['identificacion']['fecEmi'],
-            "montoIva" => isset($DTE['resumen']['totalIva']) ? $DTE['resumen']['totalIva'] : NULL,
-            "codigoGeneracionR" => NULL, // Solo si el motivo es error, hay que mandar el que sustituye
-            "tipoDocumento" => $tipo_documento,
-            "numDocumento" => $num_documento,
-            "nombre" => $DTE['receptor']['nombre'],
-            "correo" => $DTE['receptor']['correo'],
-            "telefono" => $DTE['receptor']['telefono'],
-        ];
-
-        // 1. Error en la Información del Documento Tributario Electrónico a invalidar.
-        // 2. Rescindir de la operación realizada.
-        // 3. Otro.
-
-        $motivo = [
-            "tipoAnulacion" => 2,
-            "motivoAnulacion" => 'Se rescinde la operación.',
-            "nombreResponsable" => $DTE['emisor']['nombre'],
-            "tipDocResponsable" => '36',
-            "numDocResponsable" => $DTE['emisor']['nit'],
-            "nombreSolicita" => $DTE['emisor']['nombre'],
-            "tipDocSolicita" =>  '36',
-            "numDocSolicita" => $DTE['emisor']['nit'],
-        ];
-
-        switch ($this->empresa->tipo_establecimiento) {
-            case 'Sucursal':
-                $this->empresa->tipoEstablecimiento = '01';
-                break;
-            case 'Casa matriz':
-                $this->empresa->tipoEstablecimiento = '02';
-                break;
-            case 'Bodega':
-                $this->empresa->tipoEstablecimiento = '04';
-                break;
-            default:
-                $this->empresa->tipoEstablecimiento = '02';
-                break;
-        }
-
-
-        $emisor = [
-            "nit" => str_replace('-', '', $this->empresa->nit),
-            "nombre" => $this->empresa->nombre,
-            "tipoEstablecimiento" => $this->empresa->tipoEstablecimiento,
-            "nomEstablecimiento" => $this->empresa->nombre_comercial,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
-            "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
-            "telefono" => $this->empresa->telefono,
-            "correo" => $this->empresa->correo,
-        ];
-
-        return  
-            [
-                "identificacion" => $identificacion,
-                "emisor" => $emisor,
-                "documento" => $documento,
-                "motivo" => $motivo,
-            ];
-
-    }
 
     protected function identificador(){
         return [
             "version" => $this->venta->version,
             "ambiente" => $this->venta->ambiente,
-            "tipoDte" => $this->venta->tipoDte,
-            "numeroControl" => $this->venta->numeroControl,
-            "codigoGeneracion" => $this->venta->codigoGeneracion,
+            "tipoDte" => $this->venta->tipo_dte,
+            "numeroControl" => $this->venta->numero_control,
+            "codigoGeneracion" => $this->venta->codigo_generacion,
             "tipoModelo" => $this->venta->tipoModelo,
             "tipoOperacion" => $this->venta->tipoOperacion,
             "tipoContingencia" => $this->venta->tipoContingencia,
@@ -248,38 +135,6 @@ class MH extends Model
 
     protected function receptor(){
 
-        if (!$this->venta->id_cliente) {
-            return NULL;
-        }
-
-        if ($this->venta->cliente->nit) {
-            $this->venta->cliente->tipo_documento = '36';
-            $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
-        }
-        if ($this->venta->cliente->dui) {
-            $this->venta->cliente->tipo_documento = '13';
-            $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
-        }
-
-        return [
-              "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
-              "numDocumento" => $this->venta->cliente->num_documento,
-              "nrc" => NULL,
-              "nombre" => $this->venta->nombre_cliente,
-              "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
-              "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
-              "direccion" => [
-                "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_municipio,
-                "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
-              ],
-              "telefono" => $this->venta->cliente->telefono,
-              "correo" => $this->venta->cliente->correo
-            ];
-    }
-
-    protected function receptorCCF(){
-
         return [
               "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL,
               "nombreComercial" =>  $this->venta->cliente->nombre_empresa,
@@ -301,7 +156,7 @@ class MH extends Model
 
         $tributos = NULL;
 
-        if ($this->venta->iva > 0 || $this->venta->fovial > 0 || $this->venta->cotrans > 0) {
+        if ($this->venta->iva > 0) {
             $tributos = collect();
             if ($this->venta->iva){ 
                 $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva,2))]);
@@ -315,10 +170,10 @@ class MH extends Model
                 "identificacion" => $this->identificador(),
                 "documentoRelacionado" => NULL,
                 "emisor" => $this->emisor(),
-                "receptor" => $this->receptorCCF(),
+                "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detallesCCF(),
+                "cuerpoDocumento" => $this->detalles(),
                "resumen" => [
                   "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
@@ -363,7 +218,7 @@ class MH extends Model
             ];
     }
 
-    protected function detallesCCF(){
+    protected function detalles(){
         $detalles = collect();
 
         foreach ($this->venta->detalles as $index => $detalle) {

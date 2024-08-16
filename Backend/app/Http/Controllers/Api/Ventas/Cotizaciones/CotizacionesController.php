@@ -21,13 +21,7 @@ class CotizacionesController extends Controller
     
     public function index(Request $request) {
        
-        $ordenes = Cotizacion::when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
+        $ordenes = Cotizacion::when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
@@ -48,6 +42,9 @@ class CotizacionesController extends Controller
                         ->when($request->id_documento, function($query) use ($request){
                             return $query->where('id_documento', $request->id_documento);
                         })
+                        ->when($request->id_proyecto, function($query) use ($request){
+                            return $query->where('id_proyecto', $request->id_proyecto);
+                        })
                         ->when($request->estado, function($query) use ($request){
                             return $query->where('estado', $request->estado);
                         })
@@ -56,6 +53,12 @@ class CotizacionesController extends Controller
                         })
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
+                        })
+                        ->when($request->buscador, function($query) use ($request){
+                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                     ->where('cotizacion', 1)
                     ->orderBy($request->orden, $request->direccion)

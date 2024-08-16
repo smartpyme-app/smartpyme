@@ -207,7 +207,8 @@ export class FacturacionCompraComponent implements OnInit {
     public sumTotal() {
         this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
         this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
-        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0; 
+        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
+        this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0; 
 
         if(this.compra.cobrar_impuestos){
             this.compra.iva = ( this.compra.sub_total * 0.13 ).toFixed(2);
@@ -217,7 +218,7 @@ export class FacturacionCompraComponent implements OnInit {
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
-        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido)).toFixed(2);
+        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido) - parseFloat(this.compra.renta_retenida)).toFixed(2);
     }
 
     // proveedor
@@ -262,6 +263,14 @@ export class FacturacionCompraComponent implements OnInit {
     public updatecompra(compra:any) {
         this.compra = compra;
         this.sumTotal();
+    }
+
+    public selectTipoDocumento(){
+        if(this.compra.tipo_documento == 'Sujeto excluido'){
+            let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
+            console.log(documento);
+            this.compra.referencia = documento.correlativo;
+        }
     }
 
 

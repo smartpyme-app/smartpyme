@@ -29,6 +29,9 @@ class PresupuestosController extends Controller
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);
                     })
+                    ->when($request->id_proyecto, function($query) use ($request){
+                        return $query->where('id_proyecto', $request->id_proyecto);
+                    })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);

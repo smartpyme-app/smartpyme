@@ -24,6 +24,56 @@ Route::get('/registro/{id}', [AuthJWTController::class, 'pagoFinish'])->name('pa
 Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])->name('suscripcion.ticket');
 
 
+Route::get('/asignarAsesores', function(){
+
+    $detalles = App\Models\Ventas\Detalle::with('venta')->whereHas('venta', function($q){
+        $q->where('id_empresa', 187);
+    })->get();
+
+    $i = 0;
+    foreach ($detalles as $detalle) {
+        $paquete = App\Models\Inventario\Paquete::where('id_venta_detalle', $detalle->id)->first();
+        if ($paquete) {
+            $detalle->id_vendedor = $paquete->id_asesor;
+            $detalle->save();
+
+            $venta = $detalle->venta;
+            $venta->id_vendedor = $paquete->id_asesor;
+            $venta->save();
+            $i++;
+        }
+
+    }
+
+    return 'Listos: ' . $i;
+
+
+});
+
+Route::get('/asignarDatosMH', function(){
+
+    $ventas = App\Models\Ventas\Venta::whereNotNull('dte')->get();
+
+    foreach ($ventas as $venta) {
+
+        if ($venta->dte) {
+            $venta->tipo_dte = $venta->dte['identificacion']['tipoDte'];
+            $venta->numero_control = $venta->dte['identificacion']['numeroControl'];
+            $venta->codigo_generacion = $venta->dte['identificacion']['codigoGeneracion'];
+            if (isset($venta->dte['sello'])) {
+                $venta->sello_mh = $venta->dte['sello'];
+            }
+            $venta->save();
+        }
+
+    }
+
+    return 'Listo';
+
+
+});
+
+
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 

@@ -28,7 +28,7 @@ use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 class AuthJWTController extends Controller
 {
     use SendsPasswordResetEmails;
-    
+
 
     public function login(Request $request){
 
@@ -37,17 +37,17 @@ class AuthJWTController extends Controller
 
         $token = JWTAuth::attempt($credentials);
         $user = auth()->user();
-        
+
 
         if (!$token)
             return  Response()->json(['message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.', 'code' => 401], 401);
-        
+
         if (!$user->enable)
             return  Response()->json(['message' => 'Lo sentimos, este usuario esta inactivo', 'code' => 401], 401);
-        
+
         if (!$user->empresa()->pluck('activo')->first())
             return  Response()->json(['message' => 'Lo sentimos, la cuenta no esta activa', 'code' => 401], 401);
-        
+
         $user->ultimo_login = Carbon::now();
         $user->save();
 
@@ -57,7 +57,7 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
-        
+
         return response()->json(['token' => $token, 'user' => $user], 200);
 
 
@@ -119,6 +119,66 @@ class AuthJWTController extends Controller
         $empresa->tipo_plan   = $request['empresa']['tipo_plan'];
         $empresa->industria   = $request['empresa']['industria'];
         $empresa->pais   = $request['empresa']['pais'];
+
+        $mascara_dui= "0";
+        $mascara_nit= "0";
+        $mascara_nrc= "0";
+        $mascara_telefono= "0";
+
+            switch ($request['empresa']['pais']) {
+                case 'El Salvador':
+                    $mascara_dui= "00000000-0";
+                    $mascara_nit= "0000000-000-000-0";
+                    $mascara_nrc= "0000-000000-000-00";
+                    $mascara_telefono= "0000-0000";
+                    break;
+                case 'Panama':
+                    $mascara_dui= "0-000-0000";
+                    $mascara_nit= "000-0000-000000";
+                    $mascara_nrc= "000-0000-000000";
+                    $mascara_telefono= "0000-0000";
+                    break;
+                case 'Guatemala':
+                    $mascara_dui= "0000-0000-0000";
+                    $mascara_nit= "00000000-0";
+                    $mascara_nrc= "00000000-0";
+                    $mascara_telefono= "000-0000";
+                    break;
+                case 'Belice':
+                    $mascara_dui= "00000000-0";
+                    $mascara_nit= "0000000-000-000-0";
+                    $mascara_nrc= "0000-000000-000-000";
+                    $mascara_telefono= "0000-0000";
+                    break;
+                case 'Honduras':
+                    $mascara_dui= "0000-0000-00000";
+                    $mascara_nit= "0000-0000-00000";
+                    $mascara_nrc= "0000-0000-00000";
+                    $mascara_telefono= "0000-0000";
+                    break;
+                case 'Nicaragua':
+                    $mascara_dui= "0000-0000-00000";
+                    $mascara_nit= "000-000000-000-0";
+                    $mascara_nrc= "000-000000-00000";
+                    $mascara_telefono= "0000-0000";
+                    break;
+                case 'Costa Rica':
+                    $mascara_dui= "0-0000-0000";
+                    $mascara_nit= "0-0000-0000";
+                    $mascara_nrc= "0-0000-0000";
+                    $mascara_telefono= "0000-0000";
+                    break;
+                default:
+                    $mascara_dui= "00000000-0";
+                    $mascara_nit= "0000000-000-000-0";
+                    $mascara_nrc= "0000-000000-000-00";
+                    $mascara_telefono= "0000-0000";
+            }
+
+        $empresa->validador_dui = $mascara_dui;
+        $empresa->validador_nit = $mascara_nit;
+        $empresa->validador_nrc = $mascara_nrc;
+        $empresa->validador_telefono = $mascara_telefono;
         $empresa->total   = $request['empresa']['total'];
         $empresa->moneda = $request['empresa']['moneda'];
         $empresa->save();
@@ -159,7 +219,7 @@ class AuthJWTController extends Controller
         $usuario->tipo         = 'Administrador';
         $usuario->enable       = true;
         $usuario->save();
-        
+
 
         DB::commit();
 
@@ -180,7 +240,7 @@ class AuthJWTController extends Controller
 
         // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
 
-            return response()->json($usuario, 200);       
+            return response()->json($usuario, 200);
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -272,7 +332,7 @@ class AuthJWTController extends Controller
 
         $pdf = PDF::loadView('documentos.ticket-suscription', compact('transaccion'));
         $pdf->setPaper([0, 0, 365.669, 566.929133858]);
-    
+
         return $pdf->download($transaccion->descripcion . '-' .$transaccion->id .'.pdf');
     }
 
@@ -285,7 +345,7 @@ class AuthJWTController extends Controller
 
 
         $usuario = User::findOrfail($request->id);
-        
+
         if (!Hash::check($request->password, $usuario->password)) {
             return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
         }

@@ -43,7 +43,7 @@
         .sujetas{ width: 0.8cm; text-align: center;}
         .exentas{ width: 0.8cm; text-align: center;}
         .gravadas{ width: 1cm; text-align: right;}
-        
+
 
         #letras     {top: 15cm; left: 0.2cm; width: 5cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 16cm; left: 0.2cm;; width: 9cm;}
@@ -58,7 +58,7 @@
         .no-print{position: absolute;}
 
     </style>
-    
+
     <style media="print"> .no-print{display: none; } </style>
 
 </head>
@@ -67,7 +67,7 @@
 
     @for ($i = 0; $i < 3; $i++)
         {{-- expr --}}
-    
+
     <section id="factura" style="margin-left: {{ 11 * $i  }}cm;">
         <div id="header">
             <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
@@ -85,7 +85,7 @@
                 @endif
             </p>
         </div>
-                    
+
         <table>
             @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
             @foreach($venta->detalles as $detalle)
@@ -97,19 +97,19 @@
                 <td class="exentas">    </td>
                 <td class="gravadas">  ${{ number_format($detalle->total, 2) }} </th>
             </tr>
-            @endforeach
-        </table>
+        @endforeach
+    </table>
 
-        <div id="totales">
-            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
+    <div id="totales">
+        <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+        {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
-            <p id="suma">SUMA: ${{ number_format($venta->sub_total, 2) }}</p>
-            <p id="iva">IVA: ${{ number_format($venta->iva, 2) }}</p>
-            <p id="sub_total">SUBTOTAL: ${{ number_format($venta->total, 2) }}</p>
-            <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
-        </div>
-    </section>
+        <p id="suma">SUMA: ${{ number_format($venta->sub_total, 2) }}</p>
+        <p id="iva">IVA: ${{ number_format($venta->iva, 2) }}</p>
+        <p id="sub_total">SUBTOTAL: ${{ number_format($venta->total, 2) }}</p>
+        <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
+    </div>
+</section>
 
      @endfor
 

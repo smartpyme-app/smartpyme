@@ -19,6 +19,7 @@ export class CotizacionesComponent implements OnInit {
     public clientes:any = [];
     public usuarios:any = [];
     public canales:any = [];
+    public proyectos:any = [];
     public formaPagos:any = [];
     public sucursales:any = [];
     public documentos:any = [];
@@ -56,6 +57,7 @@ export class CotizacionesComponent implements OnInit {
         this.filtros.id_cliente = '';
         this.filtros.id_usuario = '';
         this.filtros.id_canal = '';
+        this.filtros.id_proyecto = '';
         this.filtros.forma_pago = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
@@ -137,9 +139,23 @@ export class CotizacionesComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        if(!this.sucursales.length){
+            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                this.proyectos = proyectos;
+            }, error => {this.alertService.error(error); });
+        }
 
         this.modalRef = this.modalService.show(template);
     }
