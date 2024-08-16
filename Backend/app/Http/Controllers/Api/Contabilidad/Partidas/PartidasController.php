@@ -18,8 +18,17 @@ class PartidasController extends Controller
                                     return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
                                                 ->orwhere('tipo', 'like' ,'%' . $request->buscador . '%');
                                 })
+                                ->when($request->inicio, function($query) use ($request){
+                                    return $query->where('fecha', '>=', $request->inicio);
+                                })
+                                ->when($request->fin, function($query) use ($request){
+                                    return $query->where('fecha', '<=', $request->fin);
+                                })
                                 ->when($request->estado, function($query) use ($request){
                                     return $query->where('estado', $request->estado);
+                                })
+                                ->when($request->tipo, function($query) use ($request){
+                                    return $query->where('tipo', $request->tipo);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);

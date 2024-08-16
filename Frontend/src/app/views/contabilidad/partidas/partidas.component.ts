@@ -39,7 +39,7 @@ export class PartidasComponent implements OnInit {
           this.filtros.direccion = 'asc';
         }
 
-        this.filtrarCuentas();
+        this.filtrarPartidas();
     }
 
     public loadAll() {
@@ -49,10 +49,10 @@ export class PartidasComponent implements OnInit {
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
         this.filtros.estado = '';
-        this.filtrarCuentas();
+        this.filtrarPartidas();
     }
 
-    public filtrarCuentas(){
+    public filtrarPartidas(){
         this.loading = true;
         this.apiService.getAll('partidas', this.filtros).subscribe(partidas => { 
             this.partidas = partidas;

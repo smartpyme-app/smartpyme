@@ -27,7 +27,7 @@
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-partidas'"></app-importar-excel>
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCuentas()" autocomplete="off">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPartidas()" autocomplete="off">
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar concepto o tipo de partida" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
@@ -42,7 +42,7 @@
         </div>
 
         <div class="col-md-6 d-flex gap-2 mb-3 justify-content-end">
-            <select name="estado" (change)="filtrarCuentas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+            <select name="estado" (change)="filtrarPartidas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="" selected>Estado</option>
                 <option value="Aprobado">Aprobada</option>
                 <option value="Pendiente">Pendiente</option>
@@ -140,7 +140,7 @@
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="filtrarCuentas()">
+    <form autocomplete="off" (ngSubmit)="filtrarPartidas()">
         <div class="row">
 
             <div class="form-group col-sm-6">
@@ -155,46 +155,22 @@
                 <label for="filtros.estado">Estado:</label>
                 <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
                     <option value="">Todos</option>
-                    <option value="En bodega">En bodega</option>
-                    <option value="En proceso">En proceso</option>
-                    <option value="Entregado">Entregado</option>
+                    <option value="Aprobado">Aprobadas</option>
+                    <option value="Pendiente">Pendientes</option>
+                    <option value="Anulada">Anuladas</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.sucursal">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                <label for="filtros.tipo">Tipo:</label>
+                <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    <option value="Ingreso">Ingreso</option>
+                    <option value="CxC">CxC</option>
+                    <option value="CxP">CxP</option>
+                    <option value="Diario">Diario</option>
+                    <option value="Cierre">Cierre</option>
+                    <option value="Egreso">Egreso</option>
                 </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_cliente">Cliente:</label>
-                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="filtros.id_asesor">Asesor:</label>
-                <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="filtros.id_asesor">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="filtros.id_usuario">Usuario:</label>
-                <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
             </div>
         </div>
         
