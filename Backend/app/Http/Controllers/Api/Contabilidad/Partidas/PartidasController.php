@@ -70,12 +70,15 @@ class PartidasController extends Controller
             $partida->save();
 
             // Detalles
-            foreach ($request->detalles as $item) {
-                if (!isset($item['id'])) {
-                    $detalle = new Detalle;
-                    $item['id_partida'] = $partida->id;
-                    $detalle->fill($item);
-                    $detalle->save();
+
+            if($request->detalles != null){
+                foreach ($request->detalles as $item) {
+                    if (!isset($item['id'])) {
+                        $detalle = new Detalle;
+                        $item['id_partida'] = $partida->id;
+                        $detalle->fill($item);
+                        $detalle->save();
+                    }
                 }
             }
 

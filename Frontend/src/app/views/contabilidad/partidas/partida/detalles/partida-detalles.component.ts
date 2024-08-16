@@ -8,7 +8,9 @@ import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-partida-detalles',
-  templateUrl: './partida-detalles.component.html'
+  templateUrl: './partida-detalles.component.html',
+  styles: ['table {  border-radius: 10px !important; }']
+
 })
 export class PartidaDetallesComponent implements OnInit {
 

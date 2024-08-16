@@ -48,12 +48,8 @@
                 <option value="Pendiente">Pendiente</option>
                 <option value="Anulada">Anulada</option>
             </select>
-            <!-- <select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
-                <option value="">Sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                    {{sucursal.nombre}}
-                </option>
-            </select> -->
+
+
         </div>
     </div>
 
@@ -90,7 +86,13 @@
                          <td>{{ partida.id}}</td>
                         <!-- Estado -->
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aprobado'}">{{ partida.estado }}</span>
+                            <!-- <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aprobado'}">{{ partida.estado }}</span> -->
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstadoChange(partida)" [ngClass]="{'bg-light-warning' : partida?.estado == 'Pendiente', 'bg-light-success' : partida?.estado == 'Aprobado', 'bg-light-danger' : partida?.estado == 'Anulada'}" [(ngModel)]="partida.estado">
+                                <!--  [(ngModel)]="producto.enable"  -->
+                                <option value="Aprobado">Aplicada</option>
+                                <option value="Pendiente" >Pendiente</option>
+                                <option value="Anulada">Anulada</option>
+                            </select>
                         </td>
                          <!-- Tipo -->
                          <td>{{ partida.tipo }}</td>

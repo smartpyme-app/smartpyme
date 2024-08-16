@@ -87,10 +87,12 @@
                        <!--  <td>
                             <input type="checkbox" class="form-check">
                         </td> -->
+                        <!-- imagen  y nombre-->
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
                             {{ producto.nombre }}
                         </td>
+
                         <td class="d-none d-lg-table-cell">
                             <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
                                 <option value="1">Activo</option>

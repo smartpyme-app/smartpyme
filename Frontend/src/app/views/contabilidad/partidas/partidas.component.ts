@@ -94,6 +94,12 @@ export class PartidasComponent implements OnInit {
         this.onSubmit();
     }
 
+    public setEstadoChange(partida:any){
+        this.apiService.store('partida', partida).subscribe(producto => { 
+            this.alertService.success('Partida actualizada', 'El estado de la partida fue actualizado.');
+        }, error => {this.alertService.error(error); });
+    }
+
     public setPagination(event:any):void{
         this.loading = true;
         this.apiService.paginate(this.partidas.path + '?page='+ event.page, this.filtros).subscribe(partidas => { 
