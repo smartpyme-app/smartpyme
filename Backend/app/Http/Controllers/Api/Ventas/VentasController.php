@@ -26,6 +26,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 
+use App\Services\ContabilidadService;
 use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -33,6 +34,13 @@ use Auth;
 
 class VentasController extends Controller
 {
+
+    protected $contabilidadService;
+
+    public function __construct(ContabilidadService $contabilidadService)
+    {
+        $this->contabilidadService = $contabilidadService;
+    }
 
     public function index(Request $request) {
 
@@ -115,6 +123,9 @@ class VentasController extends Controller
 
         $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
+
+        $this->contabilidadService->crearPartidaVenta($venta);
+
         return Response()->json($venta, 200);
 
     }

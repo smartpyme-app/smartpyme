@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">
+    <h2 class="page-heading" (click)="loadAll()">
         <span *ngIf="!loading && venta.estado != 'Pre-venta'">Venta</span>
         <span *ngIf="!loading && venta.estado == 'Pre-venta'">Cotización</span>
     </h2>
