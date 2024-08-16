@@ -69,6 +69,9 @@ class VentasController extends Controller
                         ->when($request->id_canal, function($query) use ($request){
                             return $query->where('id_canal', $request->id_canal);
                         })
+                        ->when($request->id_proyecto, function($query) use ($request){
+                            return $query->where('id_proyecto', $request->id_proyecto);
+                        })
                         ->when($request->id_documento, function($query) use ($request){
                             return $query->where('id_documento', $request->id_documento);
                         })

@@ -26,6 +26,7 @@ export class VentasComponent implements OnInit {
     public formaPagos:any = [];
     public documentos:any = [];
     public canales:any = [];
+    public proyectos:any = [];
     public filtros:any = {};
     public filtrado:boolean = false;
 
@@ -62,6 +63,7 @@ export class VentasComponent implements OnInit {
         this.filtros.id_vendedor = '';
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
+        this.filtros.id_proyecto = '';
         this.filtros.dte = '';
         this.filtros.forma_pago = '';
         this.filtros.estado = '';
@@ -190,6 +192,12 @@ export class VentasComponent implements OnInit {
         if(!this.canales.length){
             this.apiService.getAll('canales/list').subscribe(canales => { 
                 this.canales = canales;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                this.proyectos = proyectos;
             }, error => {this.alertService.error(error); });
         }
         this.modalRef = this.modalService.show(template);

@@ -229,6 +229,15 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                <label for="id_proyecto">Proyecto:</label>
+                <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                        {{ proyecto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
             <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
                 <label for="filtro.dte">Facturación electrónica (DTE):</label>
                 <select name="dts" class="form-select" [(ngModel)]="filtros.dte">

@@ -49,6 +49,9 @@ class ComprasController extends Controller
                         ->when($request->metodo_pago, function($query) use ($request){
                             return $query->where('metodo_pago', $request->metodo_pago);
                         })
+                        ->when($request->id_proyecto, function($query) use ($request){
+                            return $query->where('id_proyecto', $request->id_proyecto);
+                        })
                         ->when($request->dte == 0, function($query) {
                                 return $query->whereNull('sello_mh');
                         })

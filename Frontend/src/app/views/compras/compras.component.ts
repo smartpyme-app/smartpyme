@@ -19,6 +19,7 @@ export class ComprasComponent implements OnInit {
     public documentos:any = [];
     public proveedores:any = [];
     public usuarios:any = [];
+    public proyectos:any = [];
     public sucursales:any = [];
     public buscador:any = '';
     public loading:boolean = false;
@@ -49,6 +50,7 @@ export class ComprasComponent implements OnInit {
         this.filtros.id_usuario = '';
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
+        this.filtros.id_proyecto = '';
         this.filtros.forma_pago = '';
         this.filtros.dte = '';
         this.filtros.estado = '';
@@ -129,13 +131,17 @@ export class ComprasComponent implements OnInit {
             this.documentos = documentos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        if(!this.formaPagos.length){
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
+        }
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
 
         this.modalRef = this.modalService.show(template);
     }
@@ -226,13 +232,34 @@ export class ComprasComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
+            this.documentos = documentos;
+        }, error => {this.alertService.error(error);});
+
+        if(!this.formaPagos.length){
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.sucursales.length){
+            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.usuarios.length){
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                this.proyectos = proyectos;
+            }, error => {this.alertService.error(error); });
+        }
 
         this.modalRef = this.modalService.show(template);
     }

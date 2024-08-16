@@ -37,6 +37,9 @@ class GastosController extends Controller
                     ->when($request->fin, function($query) use ($request){
                         return $query->where('fecha', '<=', $request->fin);
                     })
+                    ->when($request->id_proyecto, function($query) use ($request){
+                        return $query->where('id_proyecto', $request->id_proyecto);
+                    })
                     ->when($request->buscador, function($query) use ($request){
                     return $query->whereHas('proveedor', function($q) use ($request){
                                 $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
