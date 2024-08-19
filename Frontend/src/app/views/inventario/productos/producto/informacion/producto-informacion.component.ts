@@ -118,22 +118,16 @@ export class ProductoInformacionComponent implements OnInit {
 
     // creacion de sku 
 
-    public createSku(detalle:any){
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
-        if(detalle.descuento_porcentaje){
-            detalle.descuento = detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100));
-        }else{
-            detalle.descuento = 0;
-        }
 
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
-        // this.update.emit(this.venta);
-    }
+  // Método para actualizar el inputValue cuando cambia el select
+  public updateInputValue(value: string): void {
 
+    console.log(value)
+    // this.producto.codigo = value;
 
+    const selectedCategory = this.categorias.find((catego:any) => catego.id === value);
+    this.producto.codigo = selectedCategory ? selectedCategory.nombre.substring(0, 3) : '';
+  }
     
 
 }
