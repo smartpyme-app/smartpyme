@@ -52,10 +52,10 @@ class ComprasController extends Controller
                         ->when($request->id_proyecto, function($query) use ($request){
                             return $query->where('id_proyecto', $request->id_proyecto);
                         })
-                        ->when($request->dte == 0, function($query) {
+                        ->when($request->dte && $request->dte == 0, function($query) {
                                 return $query->whereNull('sello_mh');
                         })
-                        ->when($request->dte == 1, function($query) {
+                        ->when($request->dte && $request->dte == 1, function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
                         ->when($request->buscador, function($query) use ($request){
