@@ -14,18 +14,21 @@ export class ProductoInformacionComponent implements OnInit {
 
     @Input() producto: any = {};
     public categorias:any = [];
+    public proveedores:any = [];
     public usuario:any = {};
     public categoria:any = {};
     public bodegas:any = [];
     public medidas:any = [];
     public loading = false;
     public guardar = false;
+    public variants: Array<{ nombre: string, cantidad: number }> = [];
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        this.addVariant();
     }
 
     ngOnInit() {
@@ -36,6 +39,11 @@ export class ProductoInformacionComponent implements OnInit {
         }, error => {this.alertService.error(error);});
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
+        
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
 
     }
 
@@ -110,6 +118,38 @@ export class ProductoInformacionComponent implements OnInit {
         }
     }
 
+    // creacion de sku 
+private correlativo: number = 1; // Inicialmente, este sería el primer SKU
+
+ public updateInputValue(): void {
+    const categoriaSeleccionada = this.categorias.find((c:any) => c.id === this.producto.id_categoria);
+    const subcategoriaSeleccionada = this.categorias.find((s:any) => s.id === this.producto.id_subcategoria);
+
+    let nombreCategoria = '';
+    let nombreSubcategoria = '';
+
+    if (categoriaSeleccionada) {
+      nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+    }
+
+    if (subcategoriaSeleccionada) {
+      nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+    }
+
+    if (this.producto.id_categoria && this.producto.id_subcategoria) {
+      this.producto.codigo= `${nombreCategoria}${nombreSubcategoria}${this.correlativo.toString().padStart(5, '0')}`;
+    }
+  }
+
+//   variantes 
+
+addVariant(): void {
+    this.variants.push({ nombre: '', cantidad: 0 });
+  }
+
+  removeVariant(index: number): void {
+    this.variants.splice(index, 1);
+  }
     
 
 }
