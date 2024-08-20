@@ -100,5 +100,4 @@ ALTER TABLE compras ADD dte_invalidacion LONGTEXT NULL AFTER dte;
 ALTER TABLE proveedores ADD cod_municipio varchar(10) NULL AFTER municipio;
 ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento;
 ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
-ALTER TABLE proveedores ADD correo varchar(255) NULL AFTER telefono;
 ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;

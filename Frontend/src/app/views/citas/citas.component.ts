@@ -81,6 +81,7 @@ export class CitasComponent implements OnInit {
     }
 
     updateCalendar(){
+        this.loading = true;
         this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => { 
             this.loading = false;
 
@@ -210,6 +211,9 @@ export class CitasComponent implements OnInit {
 
 
     public openFilter(template: TemplateRef<any>) {
+        this.filtros.inicio = '';
+        this.filtros.fin    = '';
+
         if(!this.clientes.length){
             this.apiService.getAll('clientes/list').subscribe(clientes => { 
                 this.clientes = clientes;
