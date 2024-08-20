@@ -12,6 +12,7 @@ import { ApiService } from '@services/api.service';
 export class CrearProyectoComponent implements OnInit {
 
     public proyecto: any = {};
+    public clientes: any = [];
     @Input() id_proyecto:any = null;
     @Output() update = new EventEmitter();
     public loading = false;
@@ -28,6 +29,13 @@ export class CrearProyectoComponent implements OnInit {
     }
 
     openModal(template: TemplateRef<any>) {
+        if(!this.clientes.length){
+            this.apiService.getAll('clientes/list').subscribe(clientes => {
+                this.clientes = clientes;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+        }
+
         if(this.id_proyecto){
             this.apiService.read('proyecto/', this.id_proyecto).subscribe(proyecto => {
             this.proyecto = proyecto;

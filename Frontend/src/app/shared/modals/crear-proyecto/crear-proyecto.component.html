@@ -16,6 +16,18 @@
         <form (ngSubmit)="onSubmit()">
             <div class="row">
                 <div class="form-group col-md-12">
+                    <label for="">Cliente</label>
+                    <div class="input-group flex-nowrap">
+                        <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="proyecto.id_cliente" class="form-select p-0">
+                            <ng-option value=""> Seleccione aquí </ng-option>
+                            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                                {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                            </ng-option>
+                        </ng-select>
+                        <app-crear-cliente [id_cliente]="proyecto.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+                    </div>
+                </div>
+                <div class="form-group col-md-12">
                     <label for="nombre">Nombre:</label>
                     <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
                 </div>
