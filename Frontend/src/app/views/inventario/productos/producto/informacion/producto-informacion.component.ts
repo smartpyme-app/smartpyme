@@ -21,12 +21,14 @@ export class ProductoInformacionComponent implements OnInit {
     public medidas:any = [];
     public loading = false;
     public guardar = false;
+    public variants: Array<{ nombre: string, cantidad: number }> = [];
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        this.addVariant();
     }
 
     ngOnInit() {
@@ -117,17 +119,6 @@ export class ProductoInformacionComponent implements OnInit {
     }
 
     // creacion de sku 
-
-
-  // Método para actualizar el inputValue cuando cambia el select
-//   public updateInputValue(value: string): void {
-
-//     console.log(value)
-//     // this.producto.codigo = value;
-
-//     const selectedCategory = this.categorias.find((catego:any) => catego.id === value);
-//     this.producto.codigo = selectedCategory ? selectedCategory.nombre.substring(0, 3) : '';
-//   }
 private correlativo: number = 1; // Inicialmente, este sería el primer SKU
 
  public updateInputValue(): void {
@@ -148,6 +139,16 @@ private correlativo: number = 1; // Inicialmente, este sería el primer SKU
     if (this.producto.id_categoria && this.producto.id_subcategoria) {
       this.producto.codigo= `${nombreCategoria}${nombreSubcategoria}${this.correlativo.toString().padStart(5, '0')}`;
     }
+  }
+
+//   variantes 
+
+addVariant(): void {
+    this.variants.push({ nombre: '', cantidad: 0 });
+  }
+
+  removeVariant(index: number): void {
+    this.variants.splice(index, 1);
   }
     
 
