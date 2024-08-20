@@ -101,3 +101,14 @@ ALTER TABLE proveedores ADD cod_municipio varchar(10) NULL AFTER municipio;
 ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento;
 ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
 ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;
+
+
+CREATE TABLE detalles_compuesto_venta (
+    id int NOT NULL AUTO_INCREMENT,
+    id_producto int  NOT NULL,
+    cantidad varchar(255) NOT NULL,
+    id_detalle int  NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);

@@ -11,7 +11,7 @@ use Carbon\Carbon;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Detalle;
-use App\Models\Ventas\DetalleCombo;
+use App\Models\Ventas\DetalleCompuesto;
 use App\Models\Ventas\MetodoDePago;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
@@ -119,7 +119,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        $venta = Venta::where('id', $id)->with('detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
 
@@ -317,6 +317,18 @@ class VentasController extends Controller
                             $evento->save();
                         }
                     }
+
+                // Si es compuesto
+                if (isset($det['composiciones'])) {
+                    foreach ($det['composiciones'] as $item) {
+                        $cd = new DetalleCompuesto;
+                        $cd->id_producto = $item['id_compuesto'];
+                        $cd->cantidad   = $item['cantidad'];
+                        $cd->id_detalle = $detalle->id;
+                        $cd->save();
+
+                    }
+                }
 
 
                 // Actualizar inventario
