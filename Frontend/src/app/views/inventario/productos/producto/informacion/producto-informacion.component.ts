@@ -120,13 +120,34 @@ export class ProductoInformacionComponent implements OnInit {
 
 
   // Método para actualizar el inputValue cuando cambia el select
-  public updateInputValue(value: string): void {
+//   public updateInputValue(value: string): void {
 
-    console.log(value)
-    // this.producto.codigo = value;
+//     console.log(value)
+//     // this.producto.codigo = value;
 
-    const selectedCategory = this.categorias.find((catego:any) => catego.id === value);
-    this.producto.codigo = selectedCategory ? selectedCategory.nombre.substring(0, 3) : '';
+//     const selectedCategory = this.categorias.find((catego:any) => catego.id === value);
+//     this.producto.codigo = selectedCategory ? selectedCategory.nombre.substring(0, 3) : '';
+//   }
+private correlativo: number = 1; // Inicialmente, este sería el primer SKU
+
+ public updateInputValue(): void {
+    const categoriaSeleccionada = this.categorias.find((c:any) => c.id === this.producto.id_categoria);
+    const subcategoriaSeleccionada = this.categorias.find((s:any) => s.id === this.producto.id_subcategoria);
+
+    let nombreCategoria = '';
+    let nombreSubcategoria = '';
+
+    if (categoriaSeleccionada) {
+      nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+    }
+
+    if (subcategoriaSeleccionada) {
+      nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+    }
+
+    if (this.producto.id_categoria && this.producto.id_subcategoria) {
+      this.producto.codigo= `${nombreCategoria}${nombreSubcategoria}${this.correlativo.toString().padStart(5, '0')}`;
+    }
   }
     
 
