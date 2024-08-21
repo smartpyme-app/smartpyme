@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionDetallesController;
     Route::get('/devoluciones/ventas/corte',           [DevolucionVentasController::class, 'corte']);
     Route::post('/devoluciones/ventas/filtrar',        [DevolucionVentasController::class, 'filter']);
     Route::post('/devolucion/venta',                   [DevolucionVentasController::class, 'store']);
+    Route::post('/devolucion/venta/facturacion',             [DevolucionVentasController::class, 'facturacion']);
     Route::get('/devolucion/venta/{id}',               [DevolucionVentasController::class, 'read']);
     Route::delete('/devolucion/venta/{id}',            [DevolucionVentasController::class, 'delete']);
     Route::get('/devoluciones/ventas/exportar',    [DevolucionVentasController::class, 'export']);
