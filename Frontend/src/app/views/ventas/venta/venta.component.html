@@ -94,7 +94,7 @@
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
                                 <ul style="font-size: 14px;">
-                                    <li class="text-muted" *ngFor="let comp of detalle?.producto?.composiciones">{{ comp.nombre_compuesto }}</li>
+                                    <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
                                 </ul>
                             </div>
                         </td>

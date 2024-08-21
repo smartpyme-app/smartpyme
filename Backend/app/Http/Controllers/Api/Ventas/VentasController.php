@@ -11,7 +11,7 @@ use Carbon\Carbon;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Detalle;
-use App\Models\Ventas\DetalleCombo;
+use App\Models\Ventas\DetalleCompuesto;
 use App\Models\Ventas\MetodoDePago;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
@@ -95,10 +95,10 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->when($request->dte == 0, function($query) {
+                        ->when($request->dte && $request->dte == 0, function($query) {
                                 return $query->whereNull('sello_mh');
                         })
-                        ->when($request->dte == 1, function($query) {
+                        ->when($request->dte && $request->dte == 1, function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
                         ->when($request->buscador, function($query) use ($request){
@@ -130,7 +130,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles.producto.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        $venta = Venta::where('id', $id)->with('detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
 
         $this->contabilidadService->crearPartida($venta);
@@ -332,6 +332,18 @@ class VentasController extends Controller
                             $evento->save();
                         }
                     }
+
+                // Si es compuesto
+                if (isset($det['composiciones'])) {
+                    foreach ($det['composiciones'] as $item) {
+                        $cd = new DetalleCompuesto;
+                        $cd->id_producto = $item['id_compuesto'];
+                        $cd->cantidad   = $item['cantidad'];
+                        $cd->id_detalle = $detalle->id;
+                        $cd->save();
+
+                    }
+                }
 
 
                 // Actualizar inventario

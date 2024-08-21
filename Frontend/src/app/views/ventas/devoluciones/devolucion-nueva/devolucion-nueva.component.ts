@@ -64,6 +64,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.devolucion.id_usuario = this.apiService.auth_user().id;
                 this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
                 this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
+                this.devolucion.enable = true;
                 this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
@@ -114,6 +115,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         this.devolucion.id_usuario = this.apiService.auth_user().id;
         this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
+        this.devolucion.enable = true;
         // this.sumTotal();
         this.imprimir = true;
     }

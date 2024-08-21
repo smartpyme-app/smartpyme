@@ -62,7 +62,10 @@ class EventosController extends Controller
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                         ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('inicio', [$request->inicio, $request->fin]);
+                            return $query->where('inicio', '>=', $request->inicio);
+                        })
+                        ->when($request->fin, function($query) use ($request){
+                            return $query->where('fin', '<=', $request->fin);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);

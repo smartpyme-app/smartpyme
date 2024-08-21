@@ -61,6 +61,10 @@ class Detalle extends Model {
         return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
     }
 
+    public function composiciones(){
+        return $this->hasMany('App\Models\Ventas\DetalleCompuesto','id_detalle');
+    }
+
     public function paquete(){
         return $this->hasOne('App\Models\Inventario\Paquete','id_venta_detalle');
     }
