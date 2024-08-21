@@ -73,14 +73,20 @@ CREATE TABLE cuentas_bancarias_conciliaciones (
 
 CREATE TABLE contabilidad_configuracion (
     id int NOT NULL AUTO_INCREMENT,
-    id_cuenta_ingresos int NOT NULL,
+    id_cuenta_ventas int NOT NULL,
     id_cuenta_devoluciones_ventas int NOT NULL,
+
     id_cuenta_inventario int NOT NULL,
     id_cuenta_ajustes_inventario int NOT NULL,
+
     id_cuenta_cxc int NOT NULL,
     id_cuenta_devoluciones_clientes int NOT NULL,
     id_cuenta_cxp int NOT NULL,
     id_cuenta_devoluciones_proveedores int NOT NULL,
+
+    id_cuenta_iva_ventas int NOT NULL,
+    id_cuenta_iva_compras int NOT NULL,
+    
     id_empresa int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,

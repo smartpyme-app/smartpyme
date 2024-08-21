@@ -22,7 +22,7 @@ class ConfiguracionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id_cuenta_ingresos'   => 'required|numeric',
+            'id_cuenta_ventas'   => 'required|numeric',
             'id_cuenta_devoluciones_ventas'   => 'required|numeric',
             'id_cuenta_inventario'   => 'required|numeric',
             'id_cuenta_ajustes_inventario'   => 'required|numeric',
@@ -30,9 +30,11 @@ class ConfiguracionController extends Controller
             'id_cuenta_devoluciones_clientes'   => 'required|numeric',
             'id_cuenta_cxp'   => 'required|numeric',
             'id_cuenta_devoluciones_proveedores'   => 'required|numeric',
+            'id_cuenta_iva_ventas'   => 'required|numeric',
+            'id_cuenta_iva_compras'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
         ],[
-            'id_cuenta_ingresos.required' => 'La cuenta para ingresos es requerida',
+            'id_cuenta_ventas.required' => 'La cuenta para ingresos es requerida',
             'id_cuenta_devoluciones_ventas.required' => 'La cuenta para devoluciones ventas es requerida',
             'id_cuenta_inventario.required' => 'La cuenta para inventario es requerida',
             'id_cuenta_ajustes_inventario.required' => 'La cuenta para ajustes inventario es requerida',
@@ -40,6 +42,9 @@ class ConfiguracionController extends Controller
             'id_cuenta_devoluciones_clientes.required' => 'La cuenta para devoluciones clientes es requerida',
             'id_cuenta_cxp.required' => 'La cuenta para cxp es requerida',
             'id_cuenta_devoluciones_proveedores.required' => 'La cuenta para devoluciones proveedores es requerida',
+            'id_cuenta_devoluciones_proveedores.required' => 'La cuenta para devoluciones proveedores es requerida',
+            'id_cuenta_iva_ventas.required' => 'La cuenta para IVA de ventas es requerida',
+            'id_cuenta_iva_compras.required' => 'La cuenta para iIVA de ompras es requerida',
         ]);
 
         if($request->id)

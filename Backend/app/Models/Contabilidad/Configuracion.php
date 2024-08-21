@@ -12,7 +12,7 @@ class Configuracion extends Model
     use HasFactory;
     protected $table = 'contabilidad_configuracion';
     protected $fillable = [
-        'id_cuenta_ingresos',
+        'id_cuenta_ventas',
         'id_cuenta_devoluciones_ventas',
         'id_cuenta_inventario',
         'id_cuenta_ajustes_inventario',
@@ -20,6 +20,10 @@ class Configuracion extends Model
         'id_cuenta_devoluciones_clientes',
         'id_cuenta_cxp',
         'id_cuenta_devoluciones_proveedores',
+
+        'id_cuenta_iva_ventas',
+        'id_cuenta_iva_compras',
+
         'id_empresa',
     ];
 

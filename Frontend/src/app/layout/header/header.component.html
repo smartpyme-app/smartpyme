@@ -31,7 +31,7 @@
                     <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="30" width="30" class="img-circle">
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" style="margin-top: 54px; min-width: 210px;">
-                    <li class="dropdown-item user-header text-center">
+                    <li class="dropdown-item click user-header text-center">
                         <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
                         <p>
                           {{ usuario.name }} <br>
@@ -39,11 +39,11 @@
                           <small>{{usuario.nombre_sucursal }}</small>
                         </p>
                     </li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="dropdown-item link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="dropdown-item link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="dropdown-item link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="dropdown-item link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="dropdown-item link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión</a></li>
                 </ul>
             </li>
         </ul>
