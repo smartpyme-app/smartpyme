@@ -159,7 +159,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         public onDevolucion() {
 
             this.saving = true;
-            this.apiService.store('devolucion/venta', this.devolucion).subscribe(devolucion => {
+            this.apiService.store('devolucion/venta/facturacion', this.devolucion).subscribe(devolucion => {
                 this.saving = false;
                 if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
                     this.imprimirDocDevolucion(devolucion);
