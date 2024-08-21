@@ -30,6 +30,7 @@ import { GastoComponent } from './gastos/gasto/gasto.component';
 import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
+import { RetaceoComponent } from './retaceo/retaceo.component';
 
 const routes: Routes = [
   {
@@ -72,6 +73,8 @@ const routes: Routes = [
         { path: 'gasto/:id', component: GastoComponent, title:'Gasto' },
         { path: 'gastos/dash', component: GastosDashComponent },
         { path: 'gastos/categorias', component: GastosCategoriasComponent },
+        
+        { path: 'retaceo', component: RetaceoComponent},
 
     ]
   }

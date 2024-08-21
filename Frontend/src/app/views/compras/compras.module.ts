@@ -35,6 +35,7 @@ import { GastoComponent } from './gastos/gasto/gasto.component';
 import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
+import { RetaceoComponent } from './retaceo/retaceo.component';
 
 // import { HistorialComprasComponent } from './reportes/historial/historial-compras.component';
 // import { DetalleComprasComponent } from './reportes/detalle/detalle-compras.component';
@@ -74,6 +75,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     GastoDetallesComponent,
     GastosDashComponent,
     GastosCategoriasComponent,
+    RetaceoComponent
   ],
   exports: [
   	ComprasComponent,

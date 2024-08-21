@@ -26,6 +26,7 @@ import { AuthModule } from './auth/auth.module';
 
 import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
+import { ReactiveFormsModule } from '@angular/forms';
 
 
 // Super Admin
@@ -90,6 +91,7 @@ import { LayoutModule } from '@layout/layout.module';
     CitasModule,
     PaquetesModule,
     ProyectosModule,
+    ReactiveFormsModule ,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
                 AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService,
