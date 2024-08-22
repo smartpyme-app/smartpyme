@@ -89,8 +89,9 @@ export class PartidasComponent implements OnInit {
     }
 
 
-    public setEstado(partida:any){
+    public setEstado(partida:any, estado:any){
         this.partida = partida;
+        this.partida.estado = estado;
         this.onSubmit();
     }
 
