@@ -75,6 +75,53 @@
                 <!-- <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor> -->
             </div>
         </div>
+
+        <h6 class="my-3 font-weight-bold">Detalles</h6>
+        <!-- categoria -->
+        <div class="form-group col-md-2 col-lg-2">
+            <label for="id_categoria" class="w-100">Talla</label>
+            <div class="input-group">
+                <ng-select name="id_categoria" [(ngModel)]="producto.talla" class="form-select p-0" (change)="updateInputValue()">
+                    <ng-option value="x">x</ng-option>
+                    <ng-option value="m">m</ng-option>
+                    <ng-option value="l">l</ng-option>
+                    <ng-option value="xl">xl</ng-option>
+                </ng-select>
+            </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="id_categoria" class="w-100">Color</label>
+            <div class="input-group">
+                <ng-select name="id_categoria" [(ngModel)]="producto.color" class="form-select p-0" (change)="updateInputValue()">
+                    <ng-option value="Azul">Azul</ng-option>
+                    <ng-option value="Amarillo">Amarillo</ng-option>
+                    <ng-option value="Blanco">Blanco</ng-option>
+                    <ng-option value="Negro">Negro</ng-option>
+                </ng-select>
+            </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="id_categoria" class="w-100">Material</label>
+            <div class="input-group">
+                <ng-select name="id_categoria" [(ngModel)]="producto.material" class="form-select p-0" (change)="updateInputValue()">
+                    <ng-option value="Madera">Madera</ng-option>
+                    <ng-option value="Papel">Papel</ng-option>
+                    <ng-option value="Metal">Metal</ng-option>
+                    <ng-option value="Plastico">Plastico</ng-option>
+                    <ng-option value="Vidrio">Vidrio</ng-option>
+                </ng-select>
+            </div>
+        </div>
+
+        <!-- codigo de barra  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="dimesiones">Dimesiones</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.dimesiones" name="dimesiones" placeholder="Escribe aquí" mask='0*'>
+        </div>
+
+
         <div class="form-group col-md-12 col-lg-7">
             <label for="etiquetas">Etiquetas</label>
             <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
@@ -131,7 +178,7 @@
             </div>
         </div>
 
-        <h6 class="my-3 font-weight-bold">Variacion</h6>
+        <!-- <h6 class="my-3 font-weight-bold">Variacion</h6>
 
 
         <div class="form-group col-lg-12 mt-3">
@@ -147,18 +194,13 @@
               <label for="cantidad{{i}}">Cantidad</label>
               <input type="text" [(ngModel)]="variant.cantidad" name="cantidad{{i}}" id="cantidad{{i}}" 
               class="form-control" placeholder="Cantidad" pattern="^[0-9]+$" required>
-       
-       <!-- Mensaje de error si la validación falla -->
-       <!-- <div *ngIf="!productForm.form.controls['cantidad' + i]?.valid && productForm.form.controls['cantidad' + i]?.touched" class="text-danger">
-         La cantidad debe ser un número entero positivo.
-       </div>             -->
-    </div>
+            </div>
             <div class="col-md-2 d-flex align-items-end">
               <button type="button" class="btn btn-danger" (click)="removeVariant(i)" >
                 <i class="fas fa-trash"></i>
               </button>
             </div>
-          </div>
+        </div> -->
 
     
        
