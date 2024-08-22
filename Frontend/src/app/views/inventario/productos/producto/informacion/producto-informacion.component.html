@@ -149,9 +149,10 @@
               class="form-control" placeholder="Cantidad" pattern="^[0-9]+$" required>
        
        <!-- Mensaje de error si la validación falla -->
-       <div *ngIf="!productForm.form.controls['cantidad' + i]?.valid && productForm.form.controls['cantidad' + i]?.touched" class="text-danger">
+       <!-- <div *ngIf="!productForm.form.controls['cantidad' + i]?.valid && productForm.form.controls['cantidad' + i]?.touched" class="text-danger">
          La cantidad debe ser un número entero positivo.
-       </div>            </div>
+       </div>             -->
+    </div>
             <div class="col-md-2 d-flex align-items-end">
               <button type="button" class="btn btn-danger" (click)="removeVariant(i)" >
                 <i class="fas fa-trash"></i>
