@@ -111,8 +111,8 @@ export class PartidaDetallesComponent implements OnInit {
     }
 
     public addNewRow() {
-        this.detalles.push({
-            cuenta: '',
+        this.partida.detalles.push({
+            id_cuenta: '',
             concepto: '',
             debe: 0,
             haber: 0

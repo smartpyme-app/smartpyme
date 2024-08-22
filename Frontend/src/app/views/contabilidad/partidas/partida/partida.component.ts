@@ -70,6 +70,8 @@ export class PartidaComponent implements OnInit {
     public onSubmit(){
         this.saving = true;
 
+        console.log(this.partida.detalles);
+
         this.apiService.store('partida', this.partida).subscribe(partida => {
             if (!this.partida.id) {
                 this.alertService.success('Partida guardada', 'La partida fue guardada exitosamente.');
