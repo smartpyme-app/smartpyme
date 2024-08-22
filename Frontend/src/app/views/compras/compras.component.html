@@ -82,7 +82,7 @@
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a *ngIf="compra.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
-                        <td>{{compra.forma_pago}}</td>
+                        <td><span title="{{ compra.detalle_banco }}">{{compra.forma_pago}}</span></td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
@@ -130,6 +130,9 @@
                                     </a>
                                     <a *ngIf="apiService.canEdit()" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
+                                    </a>
+                                    <a (click)="generarPartidaContable(compra)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-edit"></i> Generar partida contable
                                     </a>
                                 </div>
                             </ng-template>
@@ -218,6 +221,16 @@
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.forma_pago">Método de pago:</label>
+                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
+                    <option value="">Todos</option>
+                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
+                        {{ formaPago.nombre }}
+                    </option>
+                    <option value="Multiple">Multiple</option>
                 </select>
             </div>
             <div class="form-group col-md-6">

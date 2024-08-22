@@ -85,25 +85,6 @@ class TransaccionesController extends Controller
             // Aprobar transaccion
                 if(($transaccion->estado == 'Pendiente') && ($request['estado'] == 'Aprobada')){
 
-                    // $partida = new Partida;
-                    // $partida->fecha = date('Y-m-d');
-                    // $partida->tipo = 'Diario';
-                    // $partida->concepto = $transaccion->concepto;
-                    // $partida->estado = 'Pendiente';
-                    // $partida->id_empresa = $cheque->id_empresa;
-                    // $partida->id_usuario = Auth::user()->id;
-                    // $partida->save();
-
-                        // $detalle->id_cuenta 
-                        // $detalle->codigo    
-                        // $detalle->nombre_cuenta 
-                        // $detalle->concepto  
-                        // $detalle->debe  
-                        // $detalle->haber 
-                        // $detalle->saldo 
-                        // $detalle->id_partida = $partida->id; 
-                        // $detalle->save(); 
-
                     //Actualizar saldo de cuanta
                         $cuenta = $transaccion->cuenta()->first();
 

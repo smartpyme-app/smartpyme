@@ -18,17 +18,11 @@ use Illuminate\Support\Facades\DB;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Services\Contabilidad\ComprasService;
+
+
 class ComprasController extends Controller
 {
     
-    protected $contabilidadService;
-
-    public function __construct(ComprasService $contabilidadService)
-    {
-        $this->contabilidadService = $contabilidadService;
-    }
-
     public function index(Request $request) {
        
         $compras = Compra::when($request->inicio, function($query) use ($request){
@@ -95,8 +89,6 @@ class ComprasController extends Controller
 
         $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos')->first();
         $compra->saldo = $compra->saldo;
-
-        $this->contabilidadService->crearPartida($compra);
 
         return Response()->json($compra, 200);
  

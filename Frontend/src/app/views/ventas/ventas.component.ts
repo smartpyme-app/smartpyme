@@ -385,5 +385,11 @@ export class VentasComponent implements OnInit {
         }
     }
 
+    generarPartidaContable(venta:any){
+        this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
+    }
+
 
 }

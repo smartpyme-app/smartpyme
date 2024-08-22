@@ -7,13 +7,11 @@
 
 </section>
 
-<div class="row">
+<!-- <div class="row">
     <div class="col-lg-12">
         <app-datos-partida [loading]="loading" ></app-datos-partida>
-        <!-- [dash]="dash" -->
     </div>
-</div>
-
+</div> -->
 
 
 <section class="bg-white p-4 rounded mb-3">
@@ -38,13 +36,13 @@
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
             <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/contabilidad/partidas">Todas</button>
-             <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos" >Por revisar</button> <!-- routerLink="/devoluciones/ventas" -->
+             <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="filtros.estado = 'Pendiente'; filtrarPartidas();" >Por revisar <span class="badge bg-warning text-dark">15</span> </button> <!-- routerLink="/devoluciones/ventas" -->
         </div>
 
         <div class="col-md-6 d-flex gap-2 mb-3 justify-content-end">
             <select name="estado" (change)="filtrarPartidas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="" selected>Estado</option>
-                <option value="Aprobado">Aprobada</option>
+                <option value="Aplicada">Aplicada</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="Anulada">Anulada</option>
             </select>
@@ -86,13 +84,12 @@
                          <td>{{ partida.id}}</td>
                         <!-- Estado -->
                         <td>
-                            <!-- <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aprobado'}">{{ partida.estado }}</span> -->
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstadoChange(partida)" [ngClass]="{'bg-light-warning' : partida?.estado == 'Pendiente', 'bg-light-success' : partida?.estado == 'Aprobado', 'bg-light-danger' : partida?.estado == 'Anulada'}" [(ngModel)]="partida.estado">
-                                <!--  [(ngModel)]="producto.enable"  -->
-                                <option value="Aprobado">Aplicada</option>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aplicada'}">{{ partida.estado }}</span>
+                           <!--  <select name="enable" class="form-select w-auto border-0" (change)="setEstadoChange(partida)" [ngClass]="{'bg-light-warning' : partida?.estado == 'Pendiente', 'bg-light-success' : partida?.estado == 'Aplicada', 'bg-light-danger' : partida?.estado == 'Anulada'}" [(ngModel)]="partida.estado">
+                                <option value="Aplicada">Aplicada</option>
                                 <option value="Pendiente" >Pendiente</option>
                                 <option value="Anulada">Anulada</option>
-                            </select>
+                            </select> -->
                         </td>
                          <!-- Tipo -->
                          <td>{{ partida.tipo }}</td>
@@ -155,7 +152,7 @@
                 <label for="filtros.estado">Estado:</label>
                 <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
                     <option value="">Todos</option>
-                    <option value="Aprobado">Aprobadas</option>
+                    <option value="Aplicada">Aplicadas</option>
                     <option value="Pendiente">Pendientes</option>
                     <option value="Anulada">Anuladas</option>
                 </select>

@@ -2,8 +2,6 @@
 
 namespace App\Services\Contabilidad;
 
-use App\Models\Admin\Impuesto;
-use App\Models\Admin\Banco;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
@@ -23,17 +21,16 @@ class ComprasService
             if ($compra->estado == 'Pendiente') {
                 $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
             }else{
-                $banco = Banco::where('nombre', $compra->detalle_banco)->first();
                 $cuenta_haber = Cuenta::where('id', $compra->id_cuenta_contable)->firstOrFail();
             }
 
         $partida = Partida::create([
             'fecha'         => $compra->fecha,
             'tipo'          => $compra->estado == 'Pendiente' ? 'CxP' : 'Egreso',
-            'concepto'      => 'Compra de mercancía',
+            'concepto'      => 'Compra de mercancía. ' . $compra->tipo_documento . ' #' . $compra->referencia,
             'estado'        => 'Pendiente',
             'referencia'    => 'Compra',
-            'id_referencia' => $compra->id, 'id_usuario' => $compra->id_usuario,
+            'id_referencia' => $compra->id,
             'id_usuario'    => $compra->id_usuario,
             'id_empresa'    => $compra->id_empresa,
         ]);

@@ -30,17 +30,9 @@ use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
-use App\Services\Contabilidad\VentasService;
 
 class VentasController extends Controller
 {
-
-    protected $contabilidadService;
-
-    public function __construct(VentasService $contabilidadService)
-    {
-        $this->contabilidadService = $contabilidadService;
-    }
 
     public function index(Request $request) {
 
@@ -132,8 +124,6 @@ class VentasController extends Controller
 
         $venta = Venta::where('id', $id)->with('detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
-
-        $this->contabilidadService->crearPartida($venta);
 
         return Response()->json($venta, 200);
 
