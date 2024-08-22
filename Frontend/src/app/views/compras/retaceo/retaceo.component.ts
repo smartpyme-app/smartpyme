@@ -20,7 +20,8 @@ interface Producto {
 
 @Component({
   selector: 'app-retaceo-ejem',
-  templateUrl: './retaceo.component.html'
+  templateUrl: './retaceo.component.html',
+  styleUrls: ['./retaceo.component.css'],
 })
 
 
