@@ -45,8 +45,7 @@ export class AlertService {
             this.router.navigate(['/login']);
         }
         else if(message.status == 400) {
-            // this.notifier.notify( 'info', message.error.error );
-            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message.error.error});
+            this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.error.titulo ? message.error.titulo : 'Lo sentimos', 'mensaje' : message.error.error});
         }
         else if(message.status == 422) {
             let alerts='';
@@ -56,11 +55,9 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
         }
         else if(message.status == 500) {
-            // this.notifier.notify( 'error', message.message );
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.statusText});
         }
         else {
-            // this.notifier.notify( 'warning', message);
             this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : message});
         }
         

@@ -164,4 +164,10 @@ export class TransaccionesComponent implements OnInit {
         );
     }
 
+    generarPartidaContable(transaccion:any){
+        this.apiService.store('contabilidad/partida/transaccion', transaccion).subscribe(transaccion => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
+    }
+
 }

@@ -13,15 +13,25 @@ class VentasService
     {
         $configuracion = Configuracion::firstOrFail();
 
-        $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_ingresos)->firstOrFail();
-        $cuenta_haber = Cuenta::where('id', 5)->firstOrFail();
-        $cuenta_inpuesto = Cuenta::where('id', 320)->firstOrFail();
+        //Debe
+            $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_ventas)->firstOrFail();
+
+        // Haber
+            if ($venta->estado == 'Pendiente') {
+                $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxc)->firstOrFail();
+            }else{
+                $cuenta_haber = Cuenta::where('id', $venta->id_cuenta_contable)->firstOrFail();
+            }
+            $cuenta_inpuesto = Cuenta::where('id', $configuracion->id_cuenta_iva_ventas)->firstOrFail();
+
 
         $partida = Partida::create([
             'fecha' => $venta->fecha,
             'tipo' => 'Ingreso',
-            'concepto' => 'Ingresos por ventas',
+            'concepto' => 'Ingresos por ventas. ' . $venta->nombre_documento . ' #' . $venta->correlativo,
             'estado' => 'Pendiente',
+            'referencia'    => 'Venta',
+            'id_referencia' => $venta->id,
             'id_usuario' => $venta->id_usuario,
             'id_empresa' => $venta->id_empresa,
         ]);
@@ -48,18 +58,16 @@ class VentasService
             'id_partida' => $partida->id
         ]);
 
-        if (isset($venta['iva']) && $venta['iva'] > 0) {
-            Detalle::create([
-                'id_cuenta' => $cuenta_inpuesto->id,
-                'codigo' => $cuenta_inpuesto->codigo,
-                'nombre_cuenta' => $cuenta_inpuesto->nombre,
-                'concepto' => 'Ingresos por ventas',
-                'debe' => NULL,
-                'haber' => $venta->iva,
-                'saldo' => 0,
-                'id_partida' => $partida->id
-            ]);
-        }
+        Detalle::create([
+            'id_cuenta' => $cuenta_inpuesto->id,
+            'codigo' => $cuenta_inpuesto->codigo,
+            'nombre_cuenta' => $cuenta_inpuesto->nombre,
+            'concepto' => 'Ingresos por ventas',
+            'debe' => NULL,
+            'haber' => $venta->iva,
+            'saldo' => 0,
+            'id_partida' => $partida->id
+        ]);
 
     }
 

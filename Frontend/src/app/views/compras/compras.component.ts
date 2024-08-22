@@ -307,6 +307,7 @@ export class ComprasComponent implements OnInit {
         },error => {this.alertService.error(error); this.sending = false; });
     }
 
+
     anularDTE(compra:any){
         this.compra = compra;
         if(compra.dte){
@@ -353,5 +354,10 @@ export class ComprasComponent implements OnInit {
         }
     }
 
+    generarPartidaContable(compra:any){
+        this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
+    }
 
 }
