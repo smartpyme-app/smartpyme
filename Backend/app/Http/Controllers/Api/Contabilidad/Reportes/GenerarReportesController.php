@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
+use App\Models\Contabilidad\Catalogo\CuentaReporte;
 use Monolog\Handler\ZendMonitorHandler;
 
 class GenerarReportesController extends Controller
@@ -62,23 +63,33 @@ class GenerarReportesController extends Controller
 
         // falta agregar totales y nombre y numero de cuenta arriba de cada table
 
-        $detalles = Detalle::get();
-        $duplica =$detalles->groupBy('codigo');
-        $det_agrup= $duplica->all();
-        //dd($det_agrup);
+        $cuentas = [];
 
-//        foreach ($det_agrup as $part_detalle){
-//            dd(key($det_agrup));
-//        }
 
-        $empresa = Empresa::findOrfail(13);
-//        dd($empresa->logo);
-//        return Response()->json($empresa, 200);
+        $empresa_id= auth()->user()->id_empresa;
+        $empresa = Empresa::findOrfail($empresa_id);
 
+        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);})
+            ->get()->groupBy('codigo')->all();
+
+        foreach ($det_agrup as $index => $collection){
+
+            $cuenta_reporte = new CuentaReporte();
+            $cuenta_reporte->cuenta= $index;
+            $cuenta_reporte->detalles= $collection;
+            $cuenta_reporte->cargo= 25;
+            $cuenta_reporte->abono= 25;
+            $cuenta_reporte->saldo_actual= 50;
+            $cuenta_reporte->saldo_anterior= 100;
+            array_push($cuentas,$cuenta_reporte);
+        }
+
+//        dd($cuentas);
         $desde= '28/03/2024';
         $hasta= '28/03/2024';
 
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('det_agrup', 'empresa','desde', 'hasta'));
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('cuentas', 'empresa','desde', 'hasta'));
         $pdf->setPaper('US Letter', 'landscape');
 
         return  $pdf->stream();
@@ -105,7 +116,6 @@ class GenerarReportesController extends Controller
 //        }
 
         foreach ($partidas as $partida){
-
             $detalle= Detalle::where('id_partida', $partida->id )->get();
         }
 
@@ -117,6 +127,7 @@ class GenerarReportesController extends Controller
 
         $desde= '28/03/2024';
         $hasta= '28/03/2024';
+
 
         $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('det_agrup', 'empresa', 'desde', 'hasta'));
         $pdf->setPaper('US Letter', 'portrait' );

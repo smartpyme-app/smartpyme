@@ -77,48 +77,46 @@
         </div>
 
         <h6 class="my-3 font-weight-bold">Detalles</h6>
-        <!-- categoria -->
         <div class="form-group col-md-2 col-lg-2">
             <label for="id_categoria" class="w-100">Talla</label>
             <div class="input-group">
-                <ng-select name="id_categoria" [(ngModel)]="producto.talla" class="form-select p-0" (change)="updateInputValue()">
-                    <ng-option value="x">x</ng-option>
-                    <ng-option value="m">m</ng-option>
-                    <ng-option value="l">l</ng-option>
-                    <ng-option value="xl">xl</ng-option>
-                </ng-select>
+                <select name="id_categoria" [(ngModel)]="producto.talla" class="form-control form-select " >
+                    <option value="x">x</option>
+                    <option value="m">m</option>
+                    <option value="l">l</option>
+                    <option value="xl">xl</option>
+                </select>
             </div>
         </div>
 
         <div class="form-group col-md-6 col-lg-3">
             <label for="id_categoria" class="w-100">Color</label>
             <div class="input-group">
-                <ng-select name="id_categoria" [(ngModel)]="producto.color" class="form-select p-0" (change)="updateInputValue()">
-                    <ng-option value="Azul">Azul</ng-option>
-                    <ng-option value="Amarillo">Amarillo</ng-option>
-                    <ng-option value="Blanco">Blanco</ng-option>
-                    <ng-option value="Negro">Negro</ng-option>
-                </ng-select>
+                <select name="id_categoria" [(ngModel)]="producto.color" class=" form-control form-select" >
+                    <option value="Azul">Azul</option>
+                    <option value="Amarillo">Amarillo</option>
+                    <option value="Blanco">Blanco</option>
+                    <option value="Negro">Negro</option>
+                </select>
             </div>
         </div>
 
         <div class="form-group col-md-6 col-lg-3">
             <label for="id_categoria" class="w-100">Material</label>
             <div class="input-group">
-                <ng-select name="id_categoria" [(ngModel)]="producto.material" class="form-select p-0" (change)="updateInputValue()">
-                    <ng-option value="Madera">Madera</ng-option>
-                    <ng-option value="Papel">Papel</ng-option>
-                    <ng-option value="Metal">Metal</ng-option>
-                    <ng-option value="Plastico">Plastico</ng-option>
-                    <ng-option value="Vidrio">Vidrio</ng-option>
-                </ng-select>
+                <select name="id_categoria"  [(ngModel)]="producto.material" class=" form-control form-select ">
+                    <option value="Madera">Madera</option>
+                    <option value="Papel">Papel</option>
+                    <option value="Metal">Metal</option>
+                    <option value="Plastico">Plastico</option>
+                    <option value="Vidrio">Vidrio</option>
+                </select>
             </div>
         </div>
 
-        <!-- codigo de barra  -->
         <div class="form-group col-md-6 col-lg-3">
             <label for="dimesiones">Dimesiones</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.dimesiones" name="dimesiones" placeholder="Escribe aquí" mask='0*'>
+            <input type="text" class="form-control" [(ngModel)]="producto.dimesiones" name="dimesiones" placeholder="Escribe aquí">
         </div>
 
 

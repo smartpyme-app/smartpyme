@@ -35,7 +35,7 @@
         #fecha_actual   {top: 0.5cm; left: 17cm; }
         #hora_reporte    {top: 1.5cm; left: 17cm; }
 
-        table   {position: absolute; top: 4.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
+        table   {position: relative; top: 4.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; margin-bottom: 10px; }
         table td{height: 0.5cm; text-align: left;}
 
         .id_partida{ width: 1.5cm; text-align: center;}
@@ -74,11 +74,11 @@
 <section id="factura">
     <div class="header">
         {{--        a la derecha del documento --}}
-        <p id="logo">{{$empresa->logo}}</p>
+{{--        <p id="logo">{{$empresa->logo}}</p>--}}
 
         {{--        al centro del documento --}}
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
-        <p id="titulo_doc">Libro Diario Mayor</p>
+        <p id="titulo_doc">Demo libro Contable</p>
         <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
 
         {{--        a la izquierda del documento--}}
@@ -114,41 +114,41 @@
 
                     {{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
 
-                    @if($loop->iteration % 40 === 0 or $loop->last == true)
+{{--                    @if($loop->iteration % 40 === 0 or $loop->last == true)--}}
 
-        </table>
-        <div class="page-break"></div>
-            <div class="header">
+{{--        </table>--}}
+{{--        <div class="page-break"></div>--}}
+{{--            <div class="header">--}}
 
-                {{--        a la derecha del documento --}}
-                <p id="logo">{{$empresa->logo}}</p>
+{{--                --}}{{--        a la derecha del documento --}}
+{{--                <p id="logo">{{$empresa->logo}}</p>--}}
 
-                {{--        al centro del documento --}}
-                <p id="empresa_nombre">{{$empresa->nombre}}</p>
-                <p id="titulo_doc">Movimiento de una cuenta</p>
-                <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
+{{--                --}}{{--        al centro del documento --}}
+{{--                <p id="empresa_nombre">{{$empresa->nombre}}</p>--}}
+{{--                <p id="titulo_doc">Movimiento de una cuenta</p>--}}
+{{--                <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>--}}
 
-                {{--        a la izquierda del documento--}}
-                <p id="fecha_actual">4/05/2024</p>
-                <p id="hora_reporte">06:15:18 a.m.</p>
+{{--                --}}{{--        a la izquierda del documento--}}
+{{--                <p id="fecha_actual">4/05/2024</p>--}}
+{{--                <p id="hora_reporte">06:15:18 a.m.</p>--}}
 
-            </div>
-        <table class="table invoice-articles-table">
+{{--            </div>--}}
+{{--        <table class="table invoice-articles-table">--}}
 
-            {{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
-            @if($loop->last == false)
-                <thead>
-                <tr>
-                    <th>Partida</th>
-                    <th>Fecha</th>
-                    <th>Concepto</th>
-                    <th>Cargo</th>
-                    <th>Abono</th>
-                    <th>Saldo</th>
-                    ...
-                </thead>
-            @endif
-            @endif
+{{--            --}}{{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
+{{--            @if($loop->last == false)--}}
+{{--                <thead>--}}
+{{--                <tr>--}}
+{{--                    <th>Partida</th>--}}
+{{--                    <th>Fecha</th>--}}
+{{--                    <th>Concepto</th>--}}
+{{--                    <th>Cargo</th>--}}
+{{--                    <th>Abono</th>--}}
+{{--                    <th>Saldo</th>--}}
+{{--                    ...--}}
+{{--                </thead>--}}
+{{--            @endif--}}
+{{--            @endif--}}
             @endforeach
             @endforeach
         </table>

@@ -27,5 +27,10 @@ class Detalle extends Model
     public function cuenta(){
         return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta');
     }
-    
+
+    public function partida()
+    {
+        return $this->belongsTo(Partida::class, 'id_partida');
+    }
+
 }
