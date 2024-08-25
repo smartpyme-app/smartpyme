@@ -272,3 +272,8 @@ ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento
 ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
 ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;
 
+
+ALTER TABLE productos ADD talla varchar(255) NULL AFTER medida;
+ALTER TABLE productos ADD color varchar(255) NULL AFTER talla;
+ALTER TABLE productos ADD material varchar(255) NULL AFTER color;
+ALTER TABLE productos ADD dimensiones decimal(9,2) NULL AFTER material;

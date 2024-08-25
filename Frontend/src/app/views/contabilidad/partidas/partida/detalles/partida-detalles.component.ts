@@ -8,16 +8,13 @@ import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-partida-detalles',
-  templateUrl: './partida-detalles.component.html',
-  styles: ['table {  border-radius: 10px !important; }']
-
+  templateUrl: './partida-detalles.component.html'
 })
 export class PartidaDetallesComponent implements OnInit {
 
     @Input() partida: any = {};
     public detalle:any = {};
     public catalogo:any = [];
-    public detalles: any= [];
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
@@ -25,9 +22,6 @@ export class PartidaDetallesComponent implements OnInit {
 
     public buscador:string = '';
     public loading:boolean = false;
-
-
-    rows = [{noQuestion : 0}];
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -40,15 +34,10 @@ export class PartidaDetallesComponent implements OnInit {
         }, error => {this.alertService.error(error);});
     }
 
-    openModalEdit(template: TemplateRef<any>, detalle:any) {
-        this.detalle = detalle;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
-    }
-
     public selectCuenta(){
-        this.detalle.id_cuenta = this.detalle.cuenta.id;
-        this.detalle.codigo = this.detalle.cuenta.codigo;
-        this.detalle.nombre_cuenta = this.detalle.cuenta.nombre;
+        let cuenta = this.catalogo.find((item:any) => item.id == this.detalle.id_cuenta);
+        this.detalle.codigo = cuenta.codigo;
+        this.detalle.nombre_cuenta = cuenta.nombre;
     }
 
     public updateTotal(detalle:any){
@@ -68,6 +57,7 @@ export class PartidaDetallesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>, detalle:any){
         this.detalle = detalle;
+        console.log(this.detalle);
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
@@ -93,11 +83,25 @@ export class PartidaDetallesComponent implements OnInit {
               cancelButtonText: 'Cancelar'
             }).then((result) => {
               if (result.isConfirmed) {
-                let indexAEliminar;
-                    indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
-                    if (indexAEliminar !== -1) {
-                      this.partida.detalles.splice(indexAEliminar, 1);
+                    if(detalle.id) {
+                        this.apiService.delete('partida/detalle/', detalle.id).subscribe(detalle => {
+                            let indexAEliminar;
+                            if (indexAEliminar !== -1) {
+                                indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
+                                this.partida.detalles.splice(indexAEliminar, 1);
+                            }
+                            this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
+                        }, error => {this.alertService.error(error); });
+                    }else{
+                        let indexAEliminar;
+                        if (indexAEliminar !== -1) {
+                            indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
+                            this.partida.detalles.splice(indexAEliminar, 1);
+                        }
+                        this.partida.detalles.splice(indexAEliminar, 1);
+                        this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
                     }
+
                 this.update.emit(this.partida);
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
@@ -108,19 +112,6 @@ export class PartidaDetallesComponent implements OnInit {
 
     public sumTotalEmit(){
         this.sumTotal.emit();
-    }
-
-    public addNewRow() {
-        this.partida.detalles.push({
-            id_cuenta: '',
-            concepto: '',
-            debe: 0,
-            haber: 0
-          });
-      }
-
-    public deleteRows(){
-        this.rows.pop();
     }
 
 

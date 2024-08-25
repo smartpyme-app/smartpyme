@@ -63,19 +63,6 @@ export class PartidasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-
-    // public filtrarVentas(){
-    //     this.loading = true;
-    //     this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
-    //         this.ventas = ventas;
-    //         this.loading = false;
-    //         if(this.modalRef){
-    //             this.modalRef.hide();
-    //         }
-    //     }, error => {this.alertService.error(error); this.loading = false;});
-    // }
-
-
     public openModal(template: TemplateRef<any>, partida:any) {
         this.partida = partida;
         this.alertService.modal = true;

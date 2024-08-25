@@ -14,7 +14,7 @@ class PartidasController extends Controller
 
     public function index(Request $request) {
 
-        $partidas = Partida::when($request->buscador, function($query) use ($request){
+        $partidas = Partida::with('detalles')->when($request->buscador, function($query) use ($request){
                                     return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
                                                 ->orwhere('tipo', 'like' ,'%' . $request->buscador . '%');
                                 })
@@ -32,6 +32,9 @@ class PartidasController extends Controller
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
                                 ->paginate($request->paginate);
+
+        $partidas = $partidas->toArray();
+        $partidas['total_pendientes'] = Partida::where('estado', 'Pendiente')->count();
 
         return Response()->json($partidas, 200);
 
@@ -61,7 +64,7 @@ class PartidasController extends Controller
             'tipo'          => 'required|max:255',
             'concepto'      => 'required|max:255',
             'estado'        => 'required|max:255',
-//            'detalles'      => 'required',
+            'detalles'      => 'required',
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
@@ -80,15 +83,15 @@ class PartidasController extends Controller
 
             // Detalles
 
-            if($request->detalles != null){
-                foreach ($request->detalles as $item) {
-                    if (!isset($item['id'])) {
-                        $detalle = new Detalle;
-                        $item['id_partida'] = $partida->id;
-                        $detalle->fill($item);
-                        $detalle->save();
-                    }
-                }
+            foreach ($request->detalles as $det) {
+                if(isset($det['id']))
+                    $detalle = Detalle::findOrFail($det['id']);
+                else
+                    $detalle = new Detalle;
+
+                $detalle['id_partida'] = $partida->id;
+                $detalle->fill($det);
+                $detalle->save();
             }
 
             DB::commit();
