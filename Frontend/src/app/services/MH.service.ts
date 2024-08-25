@@ -193,11 +193,11 @@ export class MHService {
         });
     }
 
-    emitirDTESujetoExcluido(compra:any): Promise<any> {
+    emitirDTESujetoExcluido(gasto:any): Promise<any> {
 
         return new Promise((resolve, reject) => {
-            this.apiService.store('generarDTESujetoExcluido', compra).subscribe(dte => {
-                compra.dte = dte;
+            this.apiService.store('generarDTESujetoExcluido', gasto).subscribe(dte => {
+                gasto.dte = dte;
                 
                 this.firmarDTE(dte).subscribe(dteFirmado => {
 
@@ -206,14 +206,14 @@ export class MHService {
                         // reject('No se pudo firmar el DTE, no se encontró el certificado.');
                     }
 
-                    compra.dte.firmaElectronica = dteFirmado.body;
+                    gasto.dte.firmaElectronica = dteFirmado.body;
                     
-                    this.enviarDTE(compra, dteFirmado.body).subscribe(dte => {
+                    this.enviarDTE(gasto, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                            compra.dte.sello = dte.selloRecibido;
-                            compra.sello_mh = dte.selloRecibido;
-                            // compra.estado = 'Emitido';
-                            this.apiService.store('compra', compra).subscribe(data => {
+                            gasto.dte.sello = dte.selloRecibido;
+                            gasto.sello_mh = dte.selloRecibido;
+                            // gasto.estado = 'Emitido';
+                            this.apiService.store('gasto', gasto).subscribe(data => {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }

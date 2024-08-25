@@ -8,7 +8,11 @@ use Auth;
 class Gasto extends Model {
 
     protected $table = 'egresos';
-    protected $fillable = array(
+    protected $fillable = [
+        'tipo_dte',
+        'numero_control',
+        'codigo_generacion',
+        'sello_mh',
         'fecha',
         'referencia',
         'tipo_documento',
@@ -23,8 +27,8 @@ class Gasto extends Model {
         'recurrente',
         'fecha_recurrente',
         'id_proveedor',
-        'proveedor',
         'sub_total',
+        'renta_retenida',
         'iva',
         'iva_percibido',
         'total',
@@ -33,7 +37,9 @@ class Gasto extends Model {
         'id_proyecto',
         'id_empresa',
         'id_sucursal',
-    );
+        'dte',
+        'dte_invalidacion',
+    ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];
 
@@ -46,6 +52,16 @@ class Gasto extends Model {
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function getDteAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
+    public function getDteInvalidacionAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
     }
 
     public function getNombreUsuarioAttribute(){
@@ -82,6 +98,10 @@ class Gasto extends Model {
 
     public function sucursal(){
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
 

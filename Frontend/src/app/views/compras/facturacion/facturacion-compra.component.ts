@@ -265,14 +265,6 @@ export class FacturacionCompraComponent implements OnInit {
         this.sumTotal();
     }
 
-    public selectTipoDocumento(){
-        if(this.compra.tipo_documento == 'Sujeto excluido'){
-            let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
-            console.log(documento);
-            this.compra.referencia = documento.correlativo;
-        }
-    }
-
 
     // Facturar
 

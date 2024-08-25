@@ -52,12 +52,6 @@ class ComprasController extends Controller
                         ->when($request->id_proyecto, function($query) use ($request){
                             return $query->where('id_proyecto', $request->id_proyecto);
                         })
-                        ->when($request->dte && $request->dte == 0, function($query) {
-                                return $query->whereNull('sello_mh');
-                        })
-                        ->when($request->dte && $request->dte == 1, function($query) {
-                            return $query->whereNotNull('sello_mh');
-                        })
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('proveedor', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -269,13 +263,6 @@ class ComprasController extends Controller
 
         // Incrementar el correlarivo de orden de compra
         if ($request->estado == 'Pre-compra') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
-            $documento->increment('correlativo');
-        }
-
-        
-        // Incrementar el correlarivo de Sujeto excluido
-        if ($request->tipo_documento == 'Sujeto excluido') {
             $documento = Documento::where('nombre', $compra->tipo_documento)->first();
             $documento->increment('correlativo');
         }

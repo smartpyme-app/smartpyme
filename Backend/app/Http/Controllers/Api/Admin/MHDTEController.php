@@ -21,7 +21,7 @@ use Mail;
 use JWTAuth;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
-use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
 use Barryvdh\DomPDF\Facade as PDF;
 
 class MHDTEController extends Controller
@@ -54,9 +54,9 @@ class MHDTEController extends Controller
     }
 
     public function generarDTESujetoExcluido(Request $request){
-        $compra = Compra::where('id', $request->id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
         $mh = new MHSujetoExcluido;
-        $DTE = $mh->generarDTE($compra);
+        $DTE = $mh->generarDTE($gasto);
 
         return Response()->json($DTE, 200);
     }
@@ -105,7 +105,7 @@ class MHDTEController extends Controller
     }
 
     public function generarDTEAnuladoSujetoExcluido(Request $request){
-        $copra = Compra::where('id', $request->id)->firstOrFail();
+        $copra = Gasto::where('id', $request->id)->firstOrFail();
         
         $mh = new MH;
         $DTEAnular = $mh->generarDTEAnuladoSujetoExcluido($copra, $copra->dte);
@@ -175,18 +175,18 @@ class MHDTEController extends Controller
     }
 
     public function anularDTESujetoExcluido(Request $request){
-        $compra = Compra::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($compra->dte, true);
+        $gasto = Gasto::where('id', $request->id)->firstOrFail();
+        $DTE = json_decode($gasto->dte, true);
 
         $mh = new MH;
 
-        $auth = $mh->auth($compra->empresa);
+        $auth = $mh->auth($gasto->empresa);
 
         if ($auth['status'] == "ERROR") {
             return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
         }
 
-        $mh->compra = $compra;
+        $mh->gasto = $gasto;
         
         $DTEAnular = $mh->generarDTEAnulado($DTE);
         // return $DTEAnular;
@@ -208,7 +208,7 @@ class MHDTEController extends Controller
             $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
             $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
             
-            $c = Compra::findOrFail($compra->id);
+            $c = Gasto::findOrFail($gasto->id);
             $c->estado = 'Anulada';
             $c->dte_invalidacion = $DTEAnular;
             $c->save();
@@ -232,7 +232,7 @@ class MHDTEController extends Controller
         }
 
         if ($tipo == '14') {
-            $registro = Compra::findOrFail($id);
+            $registro = Gasto::findOrFail($id);
         }
 
 
@@ -279,7 +279,7 @@ class MHDTEController extends Controller
         }
 
         if ($tipo == '14') {
-            $registro = Compra::findOrFail($id);
+            $registro = Gasto::findOrFail($id);
         }
 
         if ($registro->dte_invalidacion)
@@ -334,9 +334,9 @@ class MHDTEController extends Controller
     }
 
     public function enviarDTESujetoExcluido(Request $request){
-        $compra = Compra::findOrFail($request->id);
+        $gasto = Gasto::findOrFail($request->id);
 
-        $DTE = $compra->dte;
+        $DTE = $gasto->dte;
         $DTE['receptor']['nombre'] = $DTE['sujetoExcluido']['nombre'];
         
         // Enviar solo en produccion
@@ -344,10 +344,10 @@ class MHDTEController extends Controller
             $DTE['sujetoExcluido']['correo'] = $DTE['emisor']['correo'];
         }
 
-        $compra->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+        $gasto->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         if ($DTE['identificacion']['tipoDte'] == '14') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('compra', 'DTE'));
+           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('gasto', 'DTE'));
 
         }
 

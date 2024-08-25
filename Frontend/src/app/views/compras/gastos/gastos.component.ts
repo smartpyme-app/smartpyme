@@ -1,8 +1,8 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
-
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 @Component({
   selector: 'app-gastos',
@@ -15,6 +15,7 @@ export class GastosComponent implements OnInit {
     public gasto:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public sending:boolean = false;
     public downloading:boolean = false;
 
     public clientes:any = [];
@@ -26,7 +27,7 @@ export class GastosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
@@ -44,6 +45,7 @@ export class GastosComponent implements OnInit {
         this.filtros.id_usuario = '';
         this.filtros.id_proyecto = '';
         this.filtros.forma_pago = '';
+        this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
@@ -88,6 +90,10 @@ export class GastosComponent implements OnInit {
 
     public setEstado(gasto:any){
         this.gasto = gasto;
+        this.onSubmit();
+    }
+    
+    public onSubmit(){
         this.apiService.store('gasto', this.gasto).subscribe(gasto => { 
             this.gasto = gasto;
             this.alertService.success('Gasto guardado', 'El gasto fue cambiado a ' + this.gasto.estado.toLowerCase() + ' exitosamente.');
@@ -165,6 +171,93 @@ export class GastosComponent implements OnInit {
         }
 
         this.modalRef = this.modalService.show(template);
+    }
+
+    openDTE(template: TemplateRef<any>, gasto:any){
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
+        this.alertService.modal = true;
+        if(!this.gasto.dte){
+            this.emitirDTE();
+        }
+    }
+
+    imprimirDTEPDF(gasto:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEJSON(gasto:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    emitirDTE(){
+        this.saving = true;
+        this.mhService.emitirDTESujetoExcluido(this.gasto).then((gasto) => {
+            this.gasto = gasto;
+            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.saving = false;
+        }).catch((error) => {
+            this.saving = false;
+            this.alertService.warning('Hubo un problema', error);
+        });
+    }
+
+
+    enviarDTE(){
+        this.sending = true;
+        this.apiService.store('enviarDTE/sujetoexcluido', this.gasto).subscribe(dte => {
+            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.sending = false;
+            setTimeout(()=>{
+                this.modalRef?.hide();
+            },5000);
+        },error => {this.alertService.error(error); this.sending = false; });
+    }
+
+    anularDTE(gasto:any){
+        this.gasto = gasto;
+        if(gasto.dte){
+            if (confirm('¿Confirma anular la gasto y el DTE?')) {
+                this.gasto = gasto;
+                this.saving = true;
+                this.apiService.store('generarDTEAnuladoSujetoExcluido', this.gasto).subscribe(dte => {
+                    // this.alertService.success('DTE generado.');
+                    this.gasto.dte_invalidacion = dte;
+                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                        this.gasto.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                        // this.alertService.success('DTE firmado.');
+                        
+                        this.mhService.anularDTE(this.gasto, dteFirmado.body).subscribe(dte => {
+                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                this.gasto.dte_invalidacion.sello = dte.selloRecibido;
+                                this.gasto.estado = 'Anulada';
+                                this.apiService.store('gasto', this.gasto).subscribe(data => {
+                                    // this.alertService.success('Compra guardada.');
+                                },error => {this.alertService.error(error); this.saving = false; });
+                            }
+
+                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                        },error => {
+                            if(error.error.descripcionMsg){
+                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                            }
+                            if(error.error.observaciones.length > 0){
+                                this.alertService.warning('Hubo un problema', error.error.observaciones);
+                            }
+                            this.saving = false;
+                        });
+
+                    },error => {this.alertService.error(error);this.saving = false; });
+
+                },error => {this.alertService.error(error);this.saving = false; });
+            }
+        }
+        else{
+            if (confirm('¿Confirma anular la gasto?')){
+                gasto.estado = 'Anulada';
+                this.onSubmit();
+            }
+        }
     }
 
 
