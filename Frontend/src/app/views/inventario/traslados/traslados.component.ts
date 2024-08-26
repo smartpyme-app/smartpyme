@@ -79,14 +79,15 @@ export class TrasladosComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public setEstado(traslado:any){
+    public setEstado(traslado:any, estado:any){
         this.traslado = traslado;
+        this.traslado.estado = estado;
         if (this.traslado.estado == 'Cancelado') {
             if (confirm('¿Confirma cancelar el traslado?')) {
                 this.delete(this.traslado.id);
             }
         }else{
-            if (confirm('¿Confirma confirmar el traslado?')) {
+            if (confirm('¿Confirma aplicar el traslado?')) {
                 this.onSubmit();
             }
         }

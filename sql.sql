@@ -277,4 +277,3 @@ ALTER TABLE productos ADD talla varchar(255) NULL AFTER medida;
 ALTER TABLE productos ADD color varchar(255) NULL AFTER talla;
 ALTER TABLE productos ADD material varchar(255) NULL AFTER color;
 ALTER TABLE productos ADD dimensiones decimal(9,2) NULL AFTER material;
-

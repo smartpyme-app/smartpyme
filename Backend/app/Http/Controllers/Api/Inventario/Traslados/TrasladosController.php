@@ -81,32 +81,34 @@ class TrasladosController extends Controller
         $traslado->save();
 
         // Detalles
-        foreach ($request->detalles as $i => $value) {
-            if (!isset($value['id'])) {
+        foreach ($request->detalles as $det) {
+            if(isset($det['id']))
+                $detalle = Detalle::findOrFail($det['id']);
+            else
                 $detalle = new Detalle;
-                $value['id_traslado'] = $traslado->id;
-                $detalle->fill($value);
-                $detalle->save();
-            }
+
+            $det['id_traslado'] = $traslado->id;
+            $detalle->fill($det);
+            $detalle->save();
         }
 
         // Afectar Inventario
         if ($request->estado == 'Confirmado') {
-            foreach ($request->detalles as $i => $value) {
+            foreach ($request->detalles as $i => $detalle) {
                 // Actualizar inventario
-                    $producto = Producto::findOrFail($value['id_producto']);
+                    $producto = Producto::findOrFail($detalle['id_producto']);
 
                     // Disminuir origen
                     $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
-                    $origen->stock -= $value['cantidad'];
+                    $origen->stock -= $detalle['cantidad'];
                     $origen->save();
-                    $origen->kardex($traslado, $value['cantidad'] * -1);
+                    $origen->kardex($traslado, $detalle['cantidad'] * -1);
 
                     // Aumentar destino
                     $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
-                    $destino->stock += $value['cantidad'];
+                    $destino->stock += $detalle['cantidad'];
                     $destino->save();
-                    $destino->kardex($traslado, $value['cantidad']);
+                    $destino->kardex($traslado, $detalle['cantidad']);
 
 
             }

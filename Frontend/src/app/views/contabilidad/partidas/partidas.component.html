@@ -36,7 +36,7 @@
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
             <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/contabilidad/partidas">Todas</button>
-             <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="filtros.estado = 'Pendiente'; filtrarPartidas();" >Por revisar <span class="badge bg-warning text-dark">15</span> </button> <!-- routerLink="/devoluciones/ventas" -->
+             <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="filtros.estado = 'Pendiente'; filtrarPartidas();" >Por revisar <span class="badge bg-warning text-dark">{{ partidas.total_pendientes }}</span> </button> <!-- routerLink="/devoluciones/ventas" -->
         </div>
 
         <div class="col-md-6 d-flex gap-2 mb-3 justify-content-end">

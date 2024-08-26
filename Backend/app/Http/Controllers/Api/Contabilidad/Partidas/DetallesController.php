@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api\Contabilidad\Detalles;
+namespace App\Http\Controllers\Api\Contabilidad\Partidas;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Contabilidad\Detalles\Detalle;
+use App\Models\Contabilidad\Partidas\Detalle;
 
 class DetallesController extends Controller
 {

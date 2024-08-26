@@ -64,7 +64,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha</th>
-                        <th>Producto</th>
+                        <!-- <th>Producto</th> -->
                         <th class="d-none d-lg-table-cell">Descripción</th>
                         <th>Estado</th>
                         <th>De</th>
@@ -83,7 +83,7 @@
                     </tr>
                     <tr *ngFor=" let traslado of traslados?.data">
                         <td>{{ traslado.created_at  | date:'dd/MM/yyyy' }}</td>
-                        <td>{{ traslado.nombre_producto }}</td>
+                        <!-- <td>{{ traslado.nombre_producto }}</td> -->
                         <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20 }}</span></td>
                         <td>
                             <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)" [(ngModel)]="traslado.estado" [ngClass]="{'bg-light-warning' : traslado?.estado == 'Pendiente','bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">
