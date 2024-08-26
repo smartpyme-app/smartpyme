@@ -29,7 +29,7 @@ class GenerarReportesController extends Controller
         $detalles= Detalle::where('id_cuenta', $codigo_c)->whereBetween('created_at', [$startDate, $endDate])->get(); //colocar la fecha para el balance respectivo del mes
 
         //naturaleza de la cuenta
-        $cuenta= Cuenta::where('codigo', $codigo_c)->first();
+        $cuenta= Cuenta::where('codigo', $codigo_c)->where('id_empresa', auth()->user()->id_empresa)->first();
 
         //debe
         $debe= $detalles->sum('abono');
@@ -75,13 +75,28 @@ class GenerarReportesController extends Controller
 
         foreach ($det_agrup as $index => $collection){
 
+            $nat_cuenta= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->pluck('naturaleza');
+
+            $sum_deb=0;
+            $sum_hab=0;
+            foreach ($collection as $det_part){
+
+//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+
+                $sum_deb+=$det_part->debe;
+                $sum_hab+=$det_part->haber;
+
+            }
+
             $cuenta_reporte = new CuentaReporte();
             $cuenta_reporte->cuenta= $index;
             $cuenta_reporte->detalles= $collection;
-            $cuenta_reporte->cargo= 25;
-            $cuenta_reporte->abono= 25;
-            $cuenta_reporte->saldo_actual= 50;
-            $cuenta_reporte->saldo_anterior= 100;
+            $cuenta_reporte->naturaleza= $nat_cuenta;
+            $cuenta_reporte->cargo= $sum_deb;
+            $cuenta_reporte->abono= $sum_hab;
+            $cuenta_reporte->saldo_actual= 100;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
+            $cuenta_reporte->saldo_anterior= 100;  //este saldo debe venir de la base de datos con respecto al mes anterior al que se esta haciendo la prueba
             array_push($cuentas,$cuenta_reporte);
         }
 

@@ -39,8 +39,8 @@
         table td{height: 0.5cm; text-align: left;}
 
         .id_partida{ width: 1.5cm; text-align: center;}
-        .fecha_partida{ width: 5cm; text-align: center;}
-        .concepto{ width: 7cm; text-align: left;}
+        .fecha_partida{ width: 3.5cm; text-align: center;}
+        .concepto{ width: 9.5cm; text-align: left;}
         .cargo{ width: 3cm; text-align: center;}
         .abono{ width: 3cm; text-align: center;}
         .saldo{ width: 3cm; text-align: center;}
@@ -89,7 +89,10 @@
 {{--            <tr>Cuenta: {{ $num_cuenta }} - {{$nom_cuenta}}</tr>--}}
 
             @foreach($cuentas as $cuenta)
-
+{{--falta colocarle lo siguiente--}}
+{{--        sumatoria de detalle de cuentas--}}
+{{--        encabezado--}}
+{{--        saldo anterior--}}
             <table>
                 <tr>
                     <th>Cuenta: </th>
@@ -111,11 +114,16 @@
                 @foreach($cuenta->detalles as $detalle)
                     <tr>
                         <td class="id_partida">   {{$detalle->codigo}}    </td>
-                        <td class="fecha_partida">{{$detalle->created_at}}    </td>
+                        <td class="fecha_partida">{{$detalle->created_at->toFormattedDateString()}}    </td>
                         <td class="concepto">     {{$detalle->concepto}}    </td>
                         <td class="cargo">        {{$detalle->debe}}   </td>
                         <td class="abono">        {{$detalle->haber}}    </td>
-                        <td class="saldo">        {{$detalle->saldo}}   </td>
+                        @if($cuenta->naturaleza=="Deudor")
+                            <td class="saldo">    {{$cuenta->saldo_actual=$cuenta->saldo_actual+$detalle->debe-$detalle->haber}}   </td>
+                        @else
+                            <td class="saldo">     {{$cuenta->saldo_actual=$cuenta->saldo_actual-$detalle->debe+$detalle->haber}}   </td>
+                        @endif
+
                     </tr>
 
                         @if($loop->last == false)

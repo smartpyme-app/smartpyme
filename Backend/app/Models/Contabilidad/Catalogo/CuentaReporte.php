@@ -12,6 +12,7 @@ class CuentaReporte extends Model
     protected $fillable = [
         'cuenta',
         'detalles',
+        'naturaleza',
         'cargo',
         'abono',
         'saldo_actual',
