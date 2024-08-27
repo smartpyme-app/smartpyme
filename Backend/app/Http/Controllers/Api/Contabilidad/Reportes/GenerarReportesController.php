@@ -61,7 +61,7 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioAux(){
 
-        // falta agregar totales y nombre y numero de cuenta arriba de cada table
+        // Falta revisar que sean cuentas que si acepten datos y encabezado
 
         $cuentas = [];
 
@@ -111,6 +111,8 @@ class GenerarReportesController extends Controller
     }
 
     public function generarRepLibroDiarioMayor(){
+
+        //cuentas que no aceptan datos 
 
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();

@@ -18,12 +18,12 @@
         /*    position: relative;*/
         /*}*/
 
-        .header > *, #totales > *{
-            position: absolute;
+        header > *, #totales > *{
+            position: fixed!important;
             margin: 10px;
         }
 
-        .header{
+        header{
             border: 1px solid black;
         }
 
@@ -46,18 +46,6 @@
         .saldo{ width: 3cm; text-align: center;}
 
 
-        .no-print{position: absolute;}
-
-        /*para el brake page */
-
-        .page-break {
-            page-break-before: always;
-        }
-
-        .invoice-articles-table {
-            padding-bottom: 50px; //height of your footer
-        }
-
         th {
             border: 1px solid black;
             padding: 5px;
@@ -69,10 +57,9 @@
 
 </head>
 <body>
-<body>
 
 <section id="factura">
-    <div class="header">
+    <header>
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
         <p id="titulo_doc">Movimiento de una cuenta</p>
         <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
@@ -80,8 +67,7 @@
 {{--        a la izquierda del documento--}}
         <p id="fecha_actual">4/05/2024</p>
         <p id="hora_reporte">06:15:18 a.m.</p>
-
-    </div>
+    </header>
 
     <div style="page-break-after:auto;">
 
@@ -90,7 +76,6 @@
 
             @foreach($cuentas as $cuenta)
 {{--falta colocarle lo siguiente--}}
-{{--        sumatoria de detalle de cuentas--}}
 {{--        encabezado--}}
 {{--        saldo anterior--}}
             <table>
