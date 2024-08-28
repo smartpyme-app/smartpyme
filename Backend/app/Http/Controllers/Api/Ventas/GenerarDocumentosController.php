@@ -135,6 +135,10 @@ class GenerarDocumentosController extends Controller
             elseif(Auth::user()->id_empresa == 210 ){ //210  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 13 ){ //13  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.RefriAcTotal-Factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
             }else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
