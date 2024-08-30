@@ -14,7 +14,9 @@ class Categoria extends Model
         'img',
         'descripcion',
         'enable',
-        'id_empresa'
+        'id_empresa',
+        'subcategoria',
+        'id_cate_padre'
     );
 
     protected $casts = ['enable' => 'string'];

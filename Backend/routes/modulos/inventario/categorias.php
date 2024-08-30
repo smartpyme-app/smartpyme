@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 
 use App\Http\Controllers\Api\Inventario\Categorias\CategoriasController;
@@ -18,7 +18,7 @@ use App\Http\Controllers\Api\Inventario\Categorias\SubCategoriasController;
     Route::post('/categorias/import',          [CategoriasController::class, 'import']);
 
 
-    Route::get('subcategorias',             [SubCategoriasController::class, 'index']);
+    Route::get('subcategorias',             [CategoriasController::class, 'subcategorias']);
     Route::get('/subcategoria/{id}',           [SubCategoriasController::class, 'read']);
     Route::get('/subcategorias/buscar/{text}', [SubCategoriasController::class, 'search']);
     Route::post('/subcategoria',               [SubCategoriasController::class, 'store']);

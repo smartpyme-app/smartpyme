@@ -6,16 +6,6 @@
             <label for="nombre">Nombre</label>
             <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
         </div>
-        <!-- codigo sku  -->
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="codigo">Código</label>
-            <div class="input-group">
-                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
-                <span class="input-group-text" *ngIf="producto.codigo">
-                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                </span>
-            </div>
-        </div>
         <!-- codigo de barra  -->
         <div class="form-group col-md-6 col-lg-3">
             <label for="barcode">Código de barras</label>
@@ -50,10 +40,21 @@
             <div class="input-group">
                 <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0" (change)="updateInputValue()">
                     <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
-                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                        {{categoria.nombre}}
+                    <ng-option *ngFor="let subcategoria of subcategorias" [value]="categoria.id">
+                        {{subcategoria.nombre}}
                     </ng-option>
                 </ng-select>
+                <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+            </div>
+        </div>
+        <!-- codigo sku  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="codigo">Código</label>
+            <div class="input-group">
+                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Se genera con las categorias">
+                <span class="input-group-text" *ngIf="producto.codigo">
+                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                </span>
             </div>
         </div>
         <!-- marca -->

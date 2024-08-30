@@ -277,3 +277,7 @@ ALTER TABLE productos ADD talla varchar(255) NULL AFTER medida;
 ALTER TABLE productos ADD color varchar(255) NULL AFTER talla;
 ALTER TABLE productos ADD material varchar(255) NULL AFTER color;
 ALTER TABLE productos ADD dimensiones decimal(9,2) NULL AFTER material;
+
+
+ALTER TABLE categorias  ADD subcategoria BOOL DEFAULT false after id_empresa;
+ALTER TABLE categorias  ADD id_cate_padre INT NULL after subcategoria;

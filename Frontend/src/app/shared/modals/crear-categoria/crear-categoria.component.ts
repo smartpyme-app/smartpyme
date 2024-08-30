@@ -4,6 +4,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { truncate } from 'fs';
 
 @Component({
   selector: 'app-crear-categoria',
@@ -12,8 +13,10 @@ import { ApiService } from '../../../services/api.service';
 export class CrearCategoriaComponent implements OnInit {
 
     public categoria: any = {};
-    @Output() update = new EventEmitter();
+    public categorias:any = [];
     public loading = false;
+    @Output() update = new EventEmitter();
+    
 
     modalRef?: BsModalRef;
 
@@ -23,17 +26,25 @@ export class CrearCategoriaComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+
+        this.apiService.getAll('categorias/list').subscribe(categorias => {
+            this.categorias = categorias;
+        }, error => {this.alertService.error(error);});
     }
 
     openModal(template: TemplateRef<any>) {
+
+
         this.categoria = {};
         this.categoria.enable = true;
+        this.categoria.subcategoria= false;
         this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
         this.modalRef = this.modalService.show(template, { class: 'modal-sm', backdrop: 'static' });
     }
 
     public onSubmit() {
         this.loading = true;
+        // console.log(this.categoria);
         this.apiService.store('categoria', this.categoria).subscribe(categoria => {
             this.update.emit(categoria);
             this.modalRef?.hide();

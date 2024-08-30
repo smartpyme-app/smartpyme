@@ -13,9 +13,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CategoriasController extends Controller
 {
-    
+
     public function index() {
-       
+
         $categorias = Categoria::orderBy('enable', 'desc')
                                 ->orderBy('nombre', 'asc')
                                 ->get();
@@ -25,7 +25,7 @@ class CategoriasController extends Controller
     }
 
     public function list() {
-       
+
         $categorias = Categoria::where('enable', true)
                                 ->orderBy('nombre', 'asc')
                                 ->get();
@@ -68,7 +68,9 @@ class CategoriasController extends Controller
         else
             $categoria = new Categoria;
 
-        $categoria->fill($request->all());        
+//        dd($request);
+
+        $categoria->fill($request->all());
         $categoria->save();
 
         return Response()->json($categoria, 200);
@@ -96,7 +98,7 @@ class CategoriasController extends Controller
                         ->groupBy(function($detalle) {
                             return $detalle->producto()->pluck('categoria_id')->first();
                         });
-        
+
         $movimientos = collect();
 
         foreach ($ventas as $venta) {
@@ -125,7 +127,7 @@ class CategoriasController extends Controller
                         ->groupBy(function($detalle) {
                             return $detalle->producto()->first()->categoria_id;
                         });
-        
+
         $movimientos = collect();
 
         foreach ($compras as $compra) {
@@ -144,14 +146,14 @@ class CategoriasController extends Controller
 
 
     public function import(Request $request){
-        
+
         $request->validate([
             'file'          => 'required',
         ]);
 
         $import = new Categorias();
         Excel::import($import, $request->file);
-        
+
         return Response()->json($import->getRowCount(), 200);
 
     }
@@ -162,6 +164,16 @@ class CategoriasController extends Controller
       $categorias->filter($request);
 
       return Excel::download($categorias, 'categorias.xlsx');
+    }
+
+    public function subcategorias(){
+
+        $categorias = Categoria::where('enable', true)->where('subcategoria', 1)
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return Response()->json($categorias, 200);
+
     }
 
 

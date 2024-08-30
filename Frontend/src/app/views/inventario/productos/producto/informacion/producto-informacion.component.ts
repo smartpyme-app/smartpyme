@@ -14,6 +14,7 @@ export class ProductoInformacionComponent implements OnInit {
 
     @Input() producto: any = {};
     public categorias:any = [];
+    public subcategorias:any = [];
     public proveedores:any = [];
     public usuario:any = {};
     public categoria:any = {};
@@ -33,9 +34,14 @@ export class ProductoInformacionComponent implements OnInit {
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
+        // subcategorias
         
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
+        }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('subcategorias').subscribe(subcategorias => {
+            this.subcategorias = subcategorias;
         }, error => {this.alertService.error(error);});
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
@@ -123,17 +129,25 @@ private correlativo: number = 1; // Inicialmente, este sería el primer SKU
 
  public updateInputValue(): void {
     const categoriaSeleccionada = this.categorias.find((c:any) => c.id === this.producto.id_categoria);
-    const subcategoriaSeleccionada = this.categorias.find((s:any) => s.id === this.producto.id_subcategoria);
+    const subcategoriaSeleccionada = this.subcategorias.find((s:any) => s.id === this.producto.id_subcategoria); 
+    // console.log( this.producto.id_subcategoria);
 
     let nombreCategoria = '';
     let nombreSubcategoria = '';
 
     if (categoriaSeleccionada) {
-      nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+
+        this.subcategorias = this.subcategorias.filter((subcategoria:any) => subcategoria.id_cate_padre === categoriaSeleccionada.id);
+        nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+        console.log("Este es el action de la subcategoria");
+        console.log(categoriaSeleccionada);
+        
     }
 
     if (subcategoriaSeleccionada) {
       nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
+    //   console.log("Este es el action de la subcategoria");
+    //   console.log(nombreSubcategoria);
     }
 
     if (this.producto.id_categoria && this.producto.id_subcategoria) {
