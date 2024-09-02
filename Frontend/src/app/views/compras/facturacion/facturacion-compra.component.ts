@@ -31,6 +31,7 @@ export class FacturacionCompraComponent implements OnInit {
     public duplicarcompra = false;
     public facturarCotizacion = false;
     public imprimir:boolean = false;
+    public comprainternacional= false;
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -380,6 +381,11 @@ export class FacturacionCompraComponent implements OnInit {
                 this.supervisor = {};
             },error => {this.alertService.error(error); this.loading = false; });
         }
+
+
+        toggleDiv(): void {
+            this.comprainternacional = !this.comprainternacional; // Cambiar entre true y false
+          }
 
 
 }
