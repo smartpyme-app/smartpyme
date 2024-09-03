@@ -193,6 +193,11 @@
                     <label for="aereo">Aereo</label><br>
                     <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo">
                 </div>
+
+                <div class="form-group col-md-3 col-lg-3" >
+                    <label for="fob_tot">FOB total</label><br>
+                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot" name="fob_tot">
+                </div>
                 
 
             </div>
@@ -232,10 +237,10 @@
                                         {{ detalle.nombre_producto }}
                                     </td>
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control">
+                                        <input [(ngModel)]="detalle.cantidad" class="form-control" readonly>
                                     </td>
                                     <td style="width: 150px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="costo">
+                                        <input type="number"   class="form-control" name="costo" placeholder="$0.00">
                                     </td>
                                     <td style="width: 70px;">
                                         <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
