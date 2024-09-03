@@ -9,10 +9,18 @@ use App\Models\MH\ActividadEconomica;
 use App\Models\MH\Departamento;
 use App\Models\MH\Municipio;
 use App\Models\MH\Unidad;
+use App\Models\MH\Pais;
 
 class MHController extends Controller
 {
     
+
+    public function paises() {
+       
+        $paises = Pais::orderBy('nombre','asc')->get();
+        return Response()->json($paises, 200);
+
+    }
 
     public function municipios() {
        

@@ -13,7 +13,7 @@
 
         #factura{
             margin-left: 0cm;
-            margin-top: -2cm;
+            margin-top: -3.5cm;
             position: relative;
         }
 
@@ -22,10 +22,10 @@
             margin: 0px;
         }
 
-        #fecha          {top: 5cm; left: 14.5cm; }
-        #ncr           {top: 5.3cm; left: 14.5cm; }
-        #nit            {top: 5.6cm; left: 14.5cm; }
-        #giro            {top: 5.9cm; left: 14.5cm; }
+        #fecha          {top: 5cm; left: 14cm; }
+        #ncr           {top: 5.3cm; left: 14cm; }
+        #nit            {top: 5.6cm; left: 14cm; }
+        #giro            {top: 5.9cm; left: 14cm; }
 
         #cliente        {top: 5cm; left: 2.5cm; width: 9cm;}
         #direccion      {top: 5.3cm; left: 2.5cm; width: 9cm;}
@@ -34,12 +34,12 @@
         #departamento      {top: 6.5cm; left: 2.5cm; width: 9cm;}
 
 
-        table   {position: absolute; top: 7.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 7cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.6cm; text-align: left;}
 
         .cantidad{  width: 1.5cm; text-align: center;}
         .codigo{ width: 2.7cm; text-align: left;}
-        .producto{ width: 9.5cm; text-align: left;}
+        .producto{ width: 9.8cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
         .sujetas{ width: 1.2cm; text-align: center;}
         .exentas{ width: 1.2cm; text-align: center;}
@@ -53,8 +53,8 @@
         #iva        {top: 13.3cm; left: 18cm; width: 2cm; text-align: right;}
         #subtotal    {top: 13.6cm; left: 18cm; width: 2cm; text-align: right;}
         #no_sujeta  {top: 13.9cm; left: 18cm; width: 2cm; text-align: right;}
-        #iva_retenido     {top: 14.1cm; left: 18cm; width: 2cm; text-align: right;}
-        #no_sujetas     {top: 14.4cm; left: 18cm; width: 2cm; text-align: right;}
+        #iva_retenido     {top: 14.2cm; left: 18cm; width: 2cm; text-align: right;}
+        #no_sujetas     {top: 13.4cm; left: 18cm; width: 2cm; text-align: right;}
         #exenta     {top: 14.7cm; left: 18cm; width: 2cm; text-align: right;}
         #total      {top: 14cm; left: 18cm; width: 2cm; text-align: right;}
 

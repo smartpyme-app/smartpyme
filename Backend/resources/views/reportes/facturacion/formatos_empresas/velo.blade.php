@@ -4,7 +4,7 @@
     <title>Velo {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
-        *{ font-size: 12px; margin: 0; padding: 0;}
+        *{ font-size: 10px; margin: 0; padding: 0;}
         html, body{
             width: 23.5cm; height: 21.5cm;
             font-family: serif;
@@ -13,7 +13,7 @@
 
         #factura{
             margin-left: 0cm;
-            margin-top: 0cm;
+            margin-top: -1cm;
             position: relative;
         }
 
@@ -22,17 +22,17 @@
             margin: 0px;
         }
 
-        #fecha          {top: 4.5cm; left: 16cm; }
-        #nit            {top: 5cm; left: 16cm; }
-        #condicion      {top: 5.4cm; left: 16.5cm; }
-        #cliente        {top: 3.8cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 4.5cm; left: 2.5cm; width: 9cm;}
-        #municipio      {top: 5cm; left: 2.5cm; width: 9cm;}
+        #fecha          {top: 4.2cm; left: 16cm; }
+        #nit            {top: 4.7cm; left: 16cm; }
+        #condicion      {top: 4.9cm; left: 16.5cm; }
+        #cliente        {top: 3.5cm; left: 2.5cm; width: 9cm;}
+        #direccion      {top: 4.2cm; left: 2.5cm; width: 9cm;}
+        #municipio      {top: 4.7cm; left: 2.5cm; width: 9cm;}
         #departamento      {top: 5.5cm; left: 2.5cm; width: 9cm;}
 
 
-        table   {position: absolute; top: 7.6cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
-        table td{height: 0.6cm; text-align: left;}
+        table   {position: absolute; top: 7cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
+        table td{height: 0.4cm; text-align: left;}
 
         .cantidad{ width: 1.3cm; text-align: center;}
         .codigo{ width: 2.7cm; text-align: left;}

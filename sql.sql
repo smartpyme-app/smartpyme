@@ -111,3 +111,16 @@ CREATE TABLE detalles_compuesto_venta (
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
+
+
+CREATE TABLE paises (
+    id int NOT NULL AUTO_INCREMENT,
+    cod varchar(255) NOT NULL,
+    nombre varchar(255)  NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE proveedores ADD cod_pais varchar(255) NULL AFTER pais;
+ALTER TABLE clientes ADD cod_pais varchar(255) NULL AFTER pais;

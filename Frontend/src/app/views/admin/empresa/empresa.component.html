@@ -352,11 +352,15 @@
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_pwd_certificado">Ambiente:</label>
+                    <label for="fe_ambiente">Ambiente:</label>
                     <select name="fe_ambiente" class="form-select" [(ngModel)]="empresa.fe_ambiente">
                         <option value="00">Pruebas</option>
                         <option value="01">Producción</option>
                     </select>
+                </div>
+                <div class="form-group col-md-6 col-lg-4">
+                    <label for="cod_estable_mh">Cod. Establecimiento:</label>
+                    <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable_mh" name="cod_estable_mh" placeholder="Escribe aquí">
                 </div>
                 <div class="form-group col-md-6 col-xl-4 without-label">
                     <div class="form-switch bg-light-info rounded">

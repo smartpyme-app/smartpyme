@@ -12,14 +12,18 @@ use App\Models\MH\Unidad;
 
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHFactura;
+use App\Models\MH\MHFacturaExportacion;
 use App\Models\MH\MHNotaCredito;
+use App\Models\MH\MHNotaDebito;
 use App\Models\MH\MHAnulacion;
 use App\Models\MH\MHContingencia;
-use App\Models\MH\MHSujetoExcluido;
+use App\Models\MH\MHSujetoExcluidoGasto;
+use App\Models\MH\MHSujetoExcluidoCompra;
 
 use Mail;
 use JWTAuth;
 use App\Models\Ventas\Venta;
+use App\Models\Compras\Compra;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Gastos\Gasto;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -41,22 +45,42 @@ class MHDTEController extends Controller
             $DTE = $mh->generarDTE($venta);
         }
 
+        if ($venta->nombre_documento == 'Factura de Exportación') {
+            $mh = new MHFacturaExportacion;
+            $DTE = $mh->generarDTE($venta);
+        }
+
         return Response()->json($DTE, 200);
     }
 
     public function generarDTENotaCredito(Request $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
+        
+        if ($venta->nombre_documento == 'Nota de crédito') {
+            $mh = new MHNotaCredito;
+            $DTE = $mh->generarDTE($devolucion);
+        }
 
-        $mh = new MHNotaCredito;
-        $DTE = $mh->generarDTE($devolucion);
+        if ($venta->nombre_documento == 'Nota de débito') {
+            $mh = new MHNotaDebito;
+            $DTE = $mh->generarDTE($devolucion);
+        }
 
         return Response()->json($DTE, 200);
     }
 
-    public function generarDTESujetoExcluido(Request $request){
+    public function generarDTESujetoExcluidoGasto(Request $request){
         $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
-        $mh = new MHSujetoExcluido;
+        $mh = new MHSujetoExcluidoGasto;
         $DTE = $mh->generarDTE($gasto);
+
+        return Response()->json($DTE, 200);
+    }
+
+    public function generarDTESujetoExcluidoCompra(Request $request){
+        $compra = Compra::where('id', $request->id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $mh = new MHSujetoExcluidoCompra;
+        $DTE = $mh->generarDTE($compra);
 
         return Response()->json($DTE, 200);
     }
@@ -104,11 +128,21 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEAnuladoSujetoExcluido(Request $request){
-        $copra = Gasto::where('id', $request->id)->firstOrFail();
+    public function generarDTEAnuladoSujetoExcluidoCompra(Request $request){
+        $compra = Gasto::where('id', $request->id)->firstOrFail();
         
         $mh = new MH;
-        $DTEAnular = $mh->generarDTEAnuladoSujetoExcluido($copra, $copra->dte);
+        $DTEAnular = $mh->generarDTEAnuladoSujetoExcluido($compra, $compra->dte);
+
+        return Response()->json($DTEAnular, 200);
+
+    }
+
+    public function generarDTEAnuladoSujetoExcluido(Request $request){
+        $gasto = Gasto::where('id', $request->id)->firstOrFail();
+        
+        $mh = new MH;
+        $DTEAnular = $mh->generarDTEAnuladoSujetoExcluido($gasto, $gasto->dte);
 
         return Response()->json($DTEAnular, 200);
 
@@ -221,8 +255,8 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEPDF($id, $tipo){
-        
+    public function generarDTEPDF($id, $tipo, Request $request){
+
         if ($tipo == '01' || $tipo == '03') {
             $registro = Venta::findOrFail($id);
         }
@@ -232,7 +266,12 @@ class MHDTEController extends Controller
         }
 
         if ($tipo == '14') {
-            $registro = Gasto::findOrFail($id);
+            if ($request->tipo == 'compra') {
+                $registro = Compra::findOrFail($id);
+            }
+            if ($request->tipo == 'gasto') {
+                $registro = Gasto::findOrFail($id);
+            }
         }
 
 
@@ -268,7 +307,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEJSON($id, $tipo){
+    public function generarDTEJSON($id, $tipo, Request $request){
 
         if ($tipo == '01' || $tipo == '03') {
             $registro = Venta::findOrFail($id);
@@ -279,7 +318,12 @@ class MHDTEController extends Controller
         }
 
         if ($tipo == '14') {
-            $registro = Gasto::findOrFail($id);
+            if ($request->tipo == 'compra') {
+                $registro = Compra::findOrFail($id);
+            }
+            if ($request->tipo == 'gasto') {
+                $registro = Gasto::findOrFail($id);
+            }
         }
 
         if ($registro->dte_invalidacion)
@@ -293,70 +337,58 @@ class MHDTEController extends Controller
 
 
     public function enviarDTE(Request $request){
-        $venta = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
+        
+        if ($request->tipo_dte == '01' || $request->tipo_dte == '03') {
+            $registro = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
+            $correo = $registro->cliente ? $registro->cliente->correo : null;
+        }
 
-        $DTE = $venta->dte;
+        if ($request->tipo_dte == '05') {
+            $registro = DevolucionVenta::with('cliente')->where('id', $request->id)->firstOrFail();
+            $correo = $registro->cliente ? $registro->cliente->correo : null;
+        }
 
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+        if ($request->tipo_dte == '14') {
+            if ($request->tipo == 'compra') {
+                $registro = Compra::with('proveedor')->where('id', $request->id)->firstOrFail();
+                $correo = $registro->proveedor ? $registro->proveedor->correo : null;
+            }
+            if ($request->tipo == 'gasto') {
+                $registro = Gasto::with('proveedor')->where('id', $request->id)->firstOrFail();
+                $correo = $registro->proveedor ? $registro->proveedor->correo : null;
+            }
+        }
+
+
+        $DTE = $registro->dte;
+
+        $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('venta', 'DTE'));
+           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
         }
         elseif ($DTE['identificacion']['tipoDte'] == '14') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('venta', 'DTE'));
+           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
 
         }
         elseif ($DTE['identificacion']['tipoDte'] == '03') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('venta', 'DTE'));
+           $pdf = PDF::loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
 
         }
 
         $pdfContent = $pdf->output();
 
-        if ($venta->cliente && $venta->cliente->correo) {
-            Mail::send('mails.DTE', ['DTE' => $DTE ], function ($m) use ($pdfContent, $DTE, $venta) {
+        if($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '03'){
+            $nombre = $DTE['receptor']['nombre'];
+        }
+        if($DTE['identificacion']['tipoDte'] == '14'){
+            $nombre = $DTE['sujetoExcluido']['nombre'];
+        }
+
+        if ($correo) {
+            Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre ], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
                 $m->from(env('MAIL_FROM_ADDRESS'), $DTE['emisor']['nombre'] )
-                ->to($venta->cliente->correo, $DTE['receptor']['nombre'])
-                ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
-                    'mime' => 'application/pdf',
-                ])
-                ->attachData(json_encode($DTE), $DTE['identificacion']['codigoGeneracion'] . '.json', [
-                            'mime' => 'application/json',
-                ])
-                ->subject('Documento Tributario Electrónico');
-            });
-
-            return Response()->json($DTE, 200);
-        }else{
-            return Response()->json(['error' => 'No tienen correo'], 500);
-        }
-
-    }
-
-    public function enviarDTESujetoExcluido(Request $request){
-        $gasto = Gasto::findOrFail($request->id);
-
-        $DTE = $gasto->dte;
-        $DTE['receptor']['nombre'] = $DTE['sujetoExcluido']['nombre'];
-        
-        // Enviar solo en produccion
-        if (!JWTAuth::parseToken()->authenticate()->empresa()->pluck('enviar_dte')->first()) {
-            $DTE['sujetoExcluido']['correo'] = $DTE['emisor']['correo'];
-        }
-
-        $gasto->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
-
-        if ($DTE['identificacion']['tipoDte'] == '14') {
-           $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('gasto', 'DTE'));
-
-        }
-
-        $pdfContent = $pdf->output();
-
-        if (isset($DTE['sujetoExcluido']['correo'])) {
-            Mail::send('mails.DTE', ['DTE' => $DTE ], function ($m) use ($pdfContent, $DTE) {
-                $m->from(env('MAIL_FROM_ADDRESS'), $DTE['emisor']['nombre'] )
-                ->to($DTE['sujetoExcluido']['correo'], $DTE['sujetoExcluido']['nombre'])
+                ->to($correo, $nombre)
                 ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
                     'mime' => 'application/pdf',
                 ])

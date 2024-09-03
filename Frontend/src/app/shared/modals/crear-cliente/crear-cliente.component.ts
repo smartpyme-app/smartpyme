@@ -16,6 +16,7 @@ export class CrearClienteComponent implements OnInit {
     @Output() update = new EventEmitter();
     public loading = false;
     public saving = false;
+    public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
@@ -28,6 +29,7 @@ export class CrearClienteComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
@@ -62,6 +64,10 @@ export class CrearClienteComponent implements OnInit {
             this.alertService.modal = false;
             this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
         },error => {this.alertService.error(error); this.saving = false; });
+    }
+
+    setPais(){
+        this.cliente.pais = this.paises.find((item:any) => item.cod == this.cliente.cod_pais).nombre;
     }
 
     setGiro(){

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHCCF extends Model
+class MHFactura extends Model
 {
 
     public $venta;
@@ -25,7 +25,7 @@ class MHCCF extends Model
         // $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
-        $this->venta->tipo_dte = '03';
+        $this->venta->tipo_dte = '11';
 
         if (!$this->venta->codigo_generacion) {
             $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
@@ -39,7 +39,7 @@ class MHCCF extends Model
         $this->venta->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->venta->motivoContin = NULL;
         $this->venta->moneda = 'USD';
-        $this->venta->version = 3;
+        $this->venta->version = 1;
 
 
         // Condición
@@ -87,8 +87,8 @@ class MHCCF extends Model
         $centavos = $formatter->toWords($n[1]);
 
         $this->venta->total_en_letras = $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
-        
-        return $this->generarCCF();
+
+        return $this->generarFactura();
 
     } 
 
@@ -135,33 +135,46 @@ class MHCCF extends Model
 
     protected function receptor(){
 
+        if (!$this->venta->id_cliente) {
+            return [
+                "tipoDocumento" => NULL, //36 NIT 13 DUI
+                "numDocumento" => NULL,
+                "nrc" => NULL,
+                "nombre" => 'Consumidor Final',
+                "codActividad" => NULL,
+                "descActividad" => NULL,
+                "direccion" => NULL,
+                "telefono" => NULL,
+                "correo" => NULL
+            ];
+        }
+
+        if ($this->venta->cliente->nit) {
+            $this->venta->cliente->tipo_documento = '36';
+            $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
+        }
+        if ($this->venta->cliente->dui) {
+            $this->venta->cliente->tipo_documento = '13';
+            $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
+        }
+
         return [
-              "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL,
-              "nombreComercial" =>  $this->venta->cliente->nombre_empresa,
-              "nrc" => str_replace('-', '', $this->venta->cliente->ncr),
+              "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
+              "numDocumento" => $this->venta->cliente->num_documento,
+              "nrc" => NULL,
               "nombre" => $this->venta->nombre_cliente,
-              "codActividad" => $this->venta->cliente->cod_giro,
-              "descActividad" => $this->venta->cliente->giro,
-              "direccion" => [
-                "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_departamento,
-                "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
-              ],
+              "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
+              "codPais" => $this->venta->cliente->cod_pais,
+              "nombrePais" => $this->venta->cliente->pais,
+              "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
+              "tipoPersona" => $this->venta->cliente->tipo == 'Persona' ? 2 : 1,
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
             ];
     }
 
-    public function generarCCF(){
-
+    public function generarFactura(){
         $tributos = NULL;
-
-        if ($this->venta->iva > 0) {
-            $tributos = collect();
-            if ($this->venta->iva){ 
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva,2))]);
-            }
-        }
 
         $this->venta->gravada = $this->venta->sub_total;
 
@@ -174,27 +187,18 @@ class MHCCF extends Model
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
-               "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->venta->gravada, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
-                  "descuNoSuj" => 0,
-                  "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                "resumen" => [
+                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
+                  "descuento" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
-                  "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
-                  "reteRenta" => 0,
+                  "seguro" => floatval(number_format($this->venta->seguro, 2, '.', '')),
+                  "flete" => floatval(number_format($this->venta->flete, 2, '.', '')),
                   "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalNoGravado" => 0,
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
-                  // "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
-                  "saldoFavor" => 0,
+                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "condicionOperacion" => $this->venta->cod_condicion,
                   "pagos" => [
                     [
@@ -205,9 +209,11 @@ class MHCCF extends Model
                       "periodo" => NULL
                     ]
                   ],
-                  "numPagoElectronico" => ""
+                    "numPagoElectronico" => ""
+                    "codIncoterms" => NULL,
+                    "descIncoterms" => NULL,
+                    "observaciones" => NULL,
                 ],
-                "extension" => NULL,
                 "apendice" => [
                     [
                     "campo" => "empleado",
@@ -237,28 +243,26 @@ class MHCCF extends Model
                 $detalle->tipo_item = 1;
             }
 
+            $tributos = NULL;
 
             $detalle->codTributo = NULL;
+
+            $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
+            $detalle->iva = ($detalle->total * 0.13);
             $detalle->gravada = $detalle->total;
+            $detalle->total = $detalle->total + $detalle->iva;
 
             $detalles->push([
                 "numItem" => $index + 1,
-                "tipoItem" => $detalle->tipo_item,
-                "numeroDocumento" => NULL,
-                "cantidad" => floatval(number_format($detalle->cantidad,2)),
                 "codigo" => $detalle->codigo,
-                "codTributo" => $detalle->codTributo,
-                "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
+                "cantidad" => floatval($detalle->cantidad),
+                "uniMedida" => $detalle->cod_medida,
+                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
-                "tributos" => ['20'],
-                "psv" => 0,
+                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
+                "tributos" => $tributos,
                 "noGravado" => 0,
-                // "ivaItem" => floatval($detalle->iva)
               ]);
         }
 

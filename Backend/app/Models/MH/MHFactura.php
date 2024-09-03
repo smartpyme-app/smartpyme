@@ -22,7 +22,7 @@ class MHFactura extends Model
         $this->empresa = $this->venta->empresa()->first();
 
         $this->caja_codigo = '0001';
-        $this->empresa->cod_estable_mh = '0001';
+        // $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '01';
@@ -136,7 +136,17 @@ class MHFactura extends Model
     protected function receptor(){
 
         if (!$this->venta->id_cliente) {
-            return NULL;
+            return [
+                "tipoDocumento" => NULL, //36 NIT 13 DUI
+                "numDocumento" => NULL,
+                "nrc" => NULL,
+                "nombre" => 'Consumidor Final',
+                "codActividad" => NULL,
+                "descActividad" => NULL,
+                "direccion" => NULL,
+                "telefono" => NULL,
+                "correo" => NULL
+            ];
         }
 
         if ($this->venta->cliente->nit) {

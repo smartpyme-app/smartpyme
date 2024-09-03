@@ -183,16 +183,16 @@ export class GastosComponent implements OnInit {
     }
 
     imprimirDTEPDF(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluido(this.gasto).then((gasto) => {
+        this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto) => {
             this.gasto = gasto;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -205,7 +205,8 @@ export class GastosComponent implements OnInit {
 
     enviarDTE(){
         this.sending = true;
-        this.apiService.store('enviarDTE/sujetoexcluido', this.gasto).subscribe(dte => {
+        this.gasto.tipo = 'gasto';
+        this.apiService.store('enviarDTE', this.gasto).subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
@@ -220,7 +221,7 @@ export class GastosComponent implements OnInit {
             if (confirm('¿Confirma anular la gasto y el DTE?')) {
                 this.gasto = gasto;
                 this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluido', this.gasto).subscribe(dte => {
+                this.apiService.store('generarDTEAnuladoSujetoExcluidoGasto', this.gasto).subscribe(dte => {
                     // this.alertService.success('DTE generado.');
                     this.gasto.dte_invalidacion = dte;
                     this.mhService.firmarDTE(dte).subscribe(dteFirmado => {

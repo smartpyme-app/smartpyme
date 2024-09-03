@@ -13,6 +13,7 @@ import { ApiService } from '@services/api.service';
 export class ProveedorComponent implements OnInit {
 
     public proveedor:any = {};
+    public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
@@ -27,12 +28,17 @@ export class ProveedorComponent implements OnInit {
     ) { }
 
     ngOnInit() {
+        this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
         this.loadAll();
     }
 
+    setPais(){
+        this.proveedor.pais = this.paises.find((item:any) => item.cod == this.proveedor.cod_pais).nombre;
+    }
+    
     setGiro(){
         this.proveedor.giro = this.actividad_economicas.find((item:any) => item.cod == this.proveedor.cod_giro).nombre;
     }

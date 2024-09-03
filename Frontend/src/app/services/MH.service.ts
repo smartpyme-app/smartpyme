@@ -9,7 +9,6 @@ import { ApiService } from '@services/api.service';
 
 export class MHService {
 
-    public baseUrl: string = 'https://apitest.dtes.mh.gob.sv';
     public url_firmado: string = 'https://facturadtesv.com:8443/firmardocumento/';
     public url_recepciondte: string = '/fesv/recepciondte';
     public url_anular_dte: string = '/fesv/anulardte';
@@ -24,11 +23,11 @@ export class MHService {
         formData.append('user', user.empresa.mh_usuario.replace(/-/g, ''));
         formData.append('pwd', user.empresa.mh_contrasena);
 
-        return this.http.post<any>(`${this.baseUrl}/seguridad/auth`, formData);
+        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base')}/seguridad/auth`, formData);
     }
 
     login(){
-        this.auth().subscribe( data => {
+        this.auth().subscribe( data => {            
             localStorage.setItem('SP_token_mh', JSON.stringify(data.body))
         }, error =>{
             this.alertService.error(error);
@@ -68,7 +67,7 @@ export class MHService {
         formData.codigoGeneracion = venta.dte.codigoGeneracion;
         console.log(formData);
 
-        return this.http.post<any>(`${this.baseUrl + this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
+        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
     }
 
     enviarContingenciaDTEs(venta: any, dteFirmado: any): Observable<any> {
@@ -85,7 +84,7 @@ export class MHService {
         formData.documento = dteFirmado;
         console.log(formData);
 
-        return this.http.post<any>(`${this.baseUrl + this.url_contingencia}`, formData, { headers, params: { saltarJWT: true } });
+        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_contingencia}`, formData, { headers, params: { saltarJWT: true } });
     }
 
     anularDTE(venta: any, dteFirmado: any): Observable<any> {
@@ -103,7 +102,7 @@ export class MHService {
         formData.version = venta.dte_invalidacion.identificacion.version;
         formData.documento = dteFirmado;
 
-        return this.http.post<any>(`${this.baseUrl + this.url_anular_dte}`, formData, { headers, params: { saltarJWT: true } });
+        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_anular_dte}`, formData, { headers, params: { saltarJWT: true } });
     }
 
 
@@ -193,7 +192,7 @@ export class MHService {
         });
     }
 
-    emitirDTESujetoExcluido(gasto:any): Promise<any> {
+    emitirDTESujetoExcluidoGasto(gasto:any): Promise<any> {
 
         return new Promise((resolve, reject) => {
             this.apiService.store('generarDTESujetoExcluido', gasto).subscribe(dte => {
@@ -214,6 +213,47 @@ export class MHService {
                             gasto.sello_mh = dte.selloRecibido;
                             // gasto.estado = 'Emitido';
                             this.apiService.store('gasto', gasto).subscribe(data => {
+                                resolve(data);
+                            },error => {this.alertService.error(error);});
+                        }
+                    },error => {
+                        if(error.error && error.error.observaciones.length > 0){
+                            reject(error.error.observaciones);
+                        }
+                        else if(error.error && error.error.descripcionMsg){
+                            reject(error.error.descripcionMsg);
+                        }else{
+                            reject(error);
+                        }
+                    });
+
+                },error => {reject('No se pudo firmar el DTE');});
+
+            },error => {reject('No se pudo generar el DTE');});
+        });
+    }
+
+    emitirDTESujetoExcluidoCompra(compra:any): Promise<any> {
+
+        return new Promise((resolve, reject) => {
+            this.apiService.store('generarDTESujetoExcluidoCompra', compra).subscribe(dte => {
+                compra.dte = dte;
+                
+                this.firmarDTE(dte).subscribe(dteFirmado => {
+
+                    if(dteFirmado.status == 'ERROR'){
+                        reject(dteFirmado.body.mensaje);
+                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                    }
+
+                    compra.dte.firmaElectronica = dteFirmado.body;
+                    
+                    this.enviarDTE(compra, dteFirmado.body).subscribe(dte => {
+                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                            compra.dte.sello = dte.selloRecibido;
+                            compra.sello_mh = dte.selloRecibido;
+                            // compra.estado = 'Emitido';
+                            this.apiService.store('compra', compra).subscribe(data => {
                                 resolve(data);
                             },error => {this.alertService.error(error);});
                         }

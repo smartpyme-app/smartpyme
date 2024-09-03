@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHSujetoExcluido extends Model
+class MHSujetoExcluidoGasto extends Model
 {
 
     public $gasto;
@@ -15,7 +15,7 @@ class MHSujetoExcluido extends Model
     public function generarDTE($gasto){
         $this->gasto = $gasto;
         $this->empresa = $this->gasto->empresa()->first();
-        $this->empresa->cod_estable_mh = '0001';
+        // $this->empresa->cod_estable_mh = '0001';
         $this->gasto->tipo_dte = '14';
         $this->gasto->numero_control = 'DTE-'. $this->gasto->tipo_dte . '-' . $this->empresa->cod_estable_mh . '0001-' .str_pad($this->gasto->referencia, 15, '0', STR_PAD_LEFT);
 

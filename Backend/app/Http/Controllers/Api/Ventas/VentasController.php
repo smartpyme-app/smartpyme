@@ -90,6 +90,7 @@ class VentasController extends Controller
                         ->when($request->dte && $request->dte == 1, function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
+                    ->where('cotizacion', 0)
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -102,7 +103,6 @@ class VentasController extends Controller
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                     ->withSum('abonos', 'total')
-                    ->where('cotizacion', 0)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);

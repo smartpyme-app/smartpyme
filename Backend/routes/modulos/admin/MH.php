@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\MHController;
 use App\Http\Controllers\Api\Admin\MHDTEController;
 
+    Route::get('/paises', [MHController::class, 'paises']);
     Route::get('/municipios', [MHController::class, 'municipios']);
     Route::get('/departamentos', [MHController::class, 'departamentos']);
     Route::get('/actividades_economicas', [MHController::class, 'actividadesEconomicas']);
@@ -11,8 +12,10 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     // Generar DTE
     Route::post('/generarDTE',          [MHDTEController::class, 'generarDTE']);
     Route::post('/generarDTENotaCredito',          [MHDTEController::class, 'generarDTENotaCredito']);
-    Route::post('/generarDTESujetoExcluido', [MHDTEController::class, 'generarDTESujetoExcluido']);
-    Route::post('/generarDTEAnuladoSujetoExcluido',    [MHDTEController::class, 'generarDTEAnuladoSujetoExcluido']);
+    Route::post('/generarDTESujetoExcluidoGasto', [MHDTEController::class, 'generarDTESujetoExcluidoGasto']);
+    Route::post('/generarDTESujetoExcluidoCompra', [MHDTEController::class, 'generarDTESujetoExcluidoCompra']);
+    Route::post('/generarDTEAnuladoSujetoExcluidoGasto',    [MHDTEController::class, 'generarDTEAnuladoSujetoExcluidoGasto']);
+    Route::post('/generarDTEAnuladoSujetoExcluidoCompra',    [MHDTEController::class, 'generarDTEAnuladoSujetoExcluidoCompra']);
     Route::post('/generarContingencia',    [MHDTEController::class, 'generarContingencia']);
     Route::post('/generarDTEAnulado',    [MHDTEController::class, 'generarDTEAnulado']);
 

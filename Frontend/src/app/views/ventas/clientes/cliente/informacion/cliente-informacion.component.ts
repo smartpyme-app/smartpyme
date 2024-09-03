@@ -15,6 +15,7 @@ export class ClienteInformacionComponent implements OnInit {
     public cliente:any = {};
     public loading = false;
     public saving = false;
+    public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
@@ -28,6 +29,7 @@ export class ClienteInformacionComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
@@ -53,6 +55,10 @@ export class ClienteInformacionComponent implements OnInit {
 
     public setTipo(tipo:any){
         this.cliente.tipo = tipo;
+    }
+
+    setPais(){
+        this.cliente.pais = this.paises.find((item:any) => item.cod == this.cliente.cod_pais).nombre;
     }
 
     setGiro(){

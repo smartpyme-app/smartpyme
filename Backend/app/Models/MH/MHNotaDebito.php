@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHNotaCredito extends Model
+class MHNotaDebito extends Model
 {
 
     public $devolucion;

@@ -52,6 +52,13 @@ class ComprasController extends Controller
                         ->when($request->id_proyecto, function($query) use ($request){
                             return $query->where('id_proyecto', $request->id_proyecto);
                         })
+                        ->when($request->dte && $request->dte == 0, function($query) {
+                                return $query->whereNull('sello_mh');
+                        })
+                        ->when($request->dte && $request->dte == 1, function($query) {
+                            return $query->whereNotNull('sello_mh');
+                        })
+                        ->where('cotizacion', 0)
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('proveedor', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -63,7 +70,6 @@ class ComprasController extends Controller
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
-                        ->where('cotizacion', 0)
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
@@ -263,6 +269,13 @@ class ComprasController extends Controller
 
         // Incrementar el correlarivo de orden de compra
         if ($request->estado == 'Pre-compra') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
+            $documento->increment('correlativo');
+        }
+
+        
+        // Incrementar el correlarivo de Sujeto excluido
+        if ($request->tipo_documento == 'Sujeto excluido') {
             $documento = Documento::where('nombre', $compra->tipo_documento)->first();
             $documento->increment('correlativo');
         }

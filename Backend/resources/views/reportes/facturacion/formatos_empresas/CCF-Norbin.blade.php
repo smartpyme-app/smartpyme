@@ -57,7 +57,7 @@
         #cuenta_a_terceros {top: 17cm; left: 18cm; width: 1.5cm; text-align: right;}
         #total      {top: 26.5cm; left: 18cm; width: 1.5cm; text-align: right;}
 
-        .no-print{position: absolute;}
+        .no-print{position: absolute;} 
 
     </style>
 
@@ -67,7 +67,7 @@
 <body>
 
 {{--<section id="factura" style="border:1px solid #ffffff00;background-image: url('C:\Users\josep\Documents\smartpyme\smartpyme\Backend\public\img\CCF-norbin.jpg'); background-repeat: no-repeat; background-size: 100% 100%; height: 29cm; width: 22cm;">--}}
-{{--<section id="factura">--}}
+<section id="factura">
     <div id="header">
         <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
         <p id="cliente">{{ $venta->nombre_cliente }}</p>

@@ -13,8 +13,8 @@
         }
 
         #factura{
-            margin-left: 0cm;
-            margin-top: 0cm;
+            margin-left: 3.2cm;
+            margin-top: 0cm; 
             position: relative;
         }
 
@@ -34,7 +34,7 @@
         #condicion      {top: 5cm; left: 12.5cm; }
 
 
-        table   {position: absolute; top: 6cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 7cm; left: 0.1cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.5cm; text-align: left;}
 
         .cantidad{ width: 1cm; text-align: center;}
@@ -45,16 +45,16 @@
         .gravadas{ width: 1.5cm; text-align: right;}
         
 
-        #letras     {top: 12.3cm; left: 1.5cm; width: 7cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 13.3cm; left: 1.5cm; width: 7cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 13cm; left: 2cm;; width: 9cm;;}
 
-        #suma       {top: 12cm; left: 13cm; width: 1.5cm; text-align: right;}
-        #sub_total  {top: 12.4cm; left: 13cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 12.8cm; left: 13cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 13.1cm; left: 13cm; width: 1.5cm; text-align: right;}
+        #sub_total  {top: 13.5cm; left: 13cm; width: 1.5cm; text-align: right;}
+        #iva_retenido  {top: 13.9cm; left: 13cm; width: 1.5cm; text-align: right;}
         #no_sujeta  {top: 13.2cm; left: 13cm; width: 1.5cm; text-align: right;}
         #exenta     {top: 13.6cm; left: 13cm; width: 1.5cm; text-align: right;}
         #cuenta_a_terceros {top: 14.5cm; left: 13cm; width: 1.5cm; text-align: right;}
-        #total      {top: 16cm; left: 13cm; width: 1.5cm; text-align: right;}
+        #total      {top: 15cm; left: 13cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;}
 
@@ -95,7 +95,7 @@
                 <td class="precio">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                 <td class="sujetas"> </td>
                 <td class="exentas"> </td>
-                <td class="gravadas">${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
+                <td class="gravadas">${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </td>
             </tr>
             @endforeach
         </table>
