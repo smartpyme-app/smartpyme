@@ -40,11 +40,11 @@ class MHSujetoExcluidoGasto extends Model
             }
 
         // Metodo de pago
-            switch ($this->gasto->metodo_pago) {
+            switch ($this->gasto->forma_pago) {
                 case 'Efectivo': //Billetes y monedas
                     $this->gasto->cod_metodo_pago = '01';
                     break;
-                case 'Tarjeta': //Tarjeta Débito y Credito
+                case 'Tarjeta de crédito/débito': //Tarjeta Débito y Credito
                     $this->gasto->cod_metodo_pago = '02';
                     break;
                 case 'Cheque': //Tarjeta Débito

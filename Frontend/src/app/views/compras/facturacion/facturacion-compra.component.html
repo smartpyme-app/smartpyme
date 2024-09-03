@@ -29,7 +29,7 @@
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label for="tipo_documento">Documento</label>
-            <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
+            <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="compra.tipo_documento" class="form-select">
                 <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
             </select>
         </div>

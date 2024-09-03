@@ -26,9 +26,9 @@ class MHFactura extends Model
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '11';
+        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
-            $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
             $this->venta->save();
         }

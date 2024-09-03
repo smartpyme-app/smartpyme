@@ -41,6 +41,9 @@ class GastosController extends Controller
                     ->when($request->id_proyecto, function($query) use ($request){
                         return $query->where('id_proyecto', $request->id_proyecto);
                     })
+                    ->when($request->tipo, function($query) use ($request){
+                        return $query->where('tipo', $request->tipo);
+                    })
                     ->when($request->dte && $request->dte == 0, function($query) {
                             return $query->whereNull('sello_mh');
                     })

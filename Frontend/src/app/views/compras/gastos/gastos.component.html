@@ -190,6 +190,27 @@
                 </select>
             </div>
             <div class="form-group col-lg-6">
+                <label for="tipo" class="w-100">Categoria:</label>
+                <select name="tipo" [(ngModel)]="filtros.tipo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Alquiler">Alquiler</option>
+                    <option value="Combustible">Combustible</option>
+                    <option value="Costo de venta">Costo de venta</option>
+                    <option value="Gastos varios">Gastos varios</option>
+                    <option value="Insumos">Insumos</option>
+                    <option value="Impuestos">Impuestos</option>
+                    <option value="Gastos Administrativos">Gastos Administrativos</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Materia Prima">Materia Prima</option>
+                    <option value="Servicios">Servicios</option>
+                    <option value="Pago comisión">Pago comisión</option>
+                    <option value="Planilla">Planilla</option>
+                    <option value="Préstamos">Préstamos</option>
+                    <option value="Publicidad">Publicidad</option>
+                </select>
+            </div>
+            <div class="form-group col-lg-6">
                 <label for="filtros.id_usuario">Empleado:</label>
                 <select [(ngModel)]="filtros.id_usuario" class="form-select" name="filtros.id_usuario">
                     <option value="">Todos</option>

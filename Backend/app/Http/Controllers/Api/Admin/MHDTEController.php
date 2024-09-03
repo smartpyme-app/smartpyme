@@ -56,12 +56,12 @@ class MHDTEController extends Controller
     public function generarDTENotaCredito(Request $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
         
-        if ($venta->nombre_documento == 'Nota de crédito') {
+        if ($devolucion->nombre_documento == 'Nota de crédito') {
             $mh = new MHNotaCredito;
             $DTE = $mh->generarDTE($devolucion);
         }
 
-        if ($venta->nombre_documento == 'Nota de débito') {
+        if ($devolucion->nombre_documento == 'Nota de débito') {
             $mh = new MHNotaDebito;
             $DTE = $mh->generarDTE($devolucion);
         }
@@ -261,7 +261,7 @@ class MHDTEController extends Controller
             $registro = Venta::findOrFail($id);
         }
 
-        if ($tipo == '05') {
+        if ($tipo == '05' || $tipo == '06') {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -298,6 +298,12 @@ class MHDTEController extends Controller
         }
         if ($DTE['identificacion']['tipoDte'] == '05') {
             $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+            // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
+
+        }
+        if ($DTE['identificacion']['tipoDte'] == '06') {
+            $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 

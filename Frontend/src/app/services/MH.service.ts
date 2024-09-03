@@ -129,6 +129,8 @@ export class MHService {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
+                            venta.tipo_dte = dte.tipo_dte;
+                            venta.numero_control = dte.numero_control;
                             // venta.estado = 'Emitido';
                             this.apiService.store('venta', venta).subscribe(data => {
                                 resolve(data);
@@ -170,6 +172,8 @@ export class MHService {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
+                            venta.tipo_dte = dte.tipo_dte;
+                            venta.numero_control = dte.numero_control;
                             // venta.estado = 'Emitido';
                             this.apiService.store('devolucion/venta', venta).subscribe(data => {
                                 resolve(data);
@@ -195,7 +199,7 @@ export class MHService {
     emitirDTESujetoExcluidoGasto(gasto:any): Promise<any> {
 
         return new Promise((resolve, reject) => {
-            this.apiService.store('generarDTESujetoExcluido', gasto).subscribe(dte => {
+            this.apiService.store('generarDTESujetoExcluidoGasto', gasto).subscribe(dte => {
                 gasto.dte = dte;
                 
                 this.firmarDTE(dte).subscribe(dteFirmado => {
@@ -211,6 +215,8 @@ export class MHService {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             gasto.dte.sello = dte.selloRecibido;
                             gasto.sello_mh = dte.selloRecibido;
+                            gasto.tipo_dte = dte.tipo_dte;
+                            gasto.numero_control = dte.numero_control;
                             // gasto.estado = 'Emitido';
                             this.apiService.store('gasto', gasto).subscribe(data => {
                                 resolve(data);
@@ -252,6 +258,8 @@ export class MHService {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             compra.dte.sello = dte.selloRecibido;
                             compra.sello_mh = dte.selloRecibido;
+                            compra.tipo_dte = dte.tipo_dte;
+                            compra.numero_control = dte.numero_control;
                             // compra.estado = 'Emitido';
                             this.apiService.store('compra', compra).subscribe(data => {
                                 resolve(data);

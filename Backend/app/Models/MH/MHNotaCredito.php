@@ -26,9 +26,9 @@ class MHNotaCredito extends Model
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
         $this->devolucion->tipo_dte = '05';
+        $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->devolucion->codigo_generacion) {
-            $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
             $this->devolucion->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
             $this->devolucion->save();
         }
@@ -50,11 +50,11 @@ class MHNotaCredito extends Model
             }
 
         // Metodo de pago
-            switch ($this->devolucion->metodo_pago) {
+            switch ($this->devolucion->forma_pago) {
                 case 'Efectivo': //Billetes y monedas
                     $this->devolucion->cod_metodo_pago = '01';
                     break;
-                case 'Tarjeta': //Tarjeta Débito y Credito
+                case 'Tarjeta de crédito/débito': //Tarjeta Débito y Credito
                     $this->devolucion->cod_metodo_pago = '02';
                     break;
                 case 'Cheque': //Tarjeta Débito

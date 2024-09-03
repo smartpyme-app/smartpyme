@@ -47,6 +47,7 @@ export class GastosComponent implements OnInit {
         this.filtros.forma_pago = '';
         this.filtros.dte = '';
         this.filtros.estado = '';
+        this.filtros.tipo = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';

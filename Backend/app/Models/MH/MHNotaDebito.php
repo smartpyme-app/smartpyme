@@ -25,13 +25,13 @@ class MHNotaDebito extends Model
         // $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
-        $this->devolucion->tipo_dte = '05';
+        $this->devolucion->tipo_dte = '06';
+        $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->devolucion->codigo_generacion) {
-            $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
             $this->devolucion->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
-            $this->devolucion->save();
         }
+        $this->devolucion->save();
 
         $this->devolucion->ambiente = $this->empresa->fe_ambiente; // 00 Modo prueba 01 Modo producción
         $this->devolucion->tipoModelo = 1; // 1 Modelo Facturación previo 2 Modelo Facturación diferido
@@ -50,11 +50,11 @@ class MHNotaDebito extends Model
             }
 
         // Metodo de pago
-            switch ($this->devolucion->metodo_pago) {
+            switch ($this->devolucion->forma_pago) {
                 case 'Efectivo': //Billetes y monedas
                     $this->devolucion->cod_metodo_pago = '01';
                     break;
-                case 'Tarjeta': //Tarjeta Débito y Credito
+                case 'Tarjeta de crédito/débito': //Tarjeta Débito y Credito
                     $this->devolucion->cod_metodo_pago = '02';
                     break;
                 case 'Cheque': //Tarjeta Débito
@@ -197,6 +197,7 @@ class MHNotaDebito extends Model
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
+                  "numPagoElectronico" => '',
                 ],
                 "extension" => NULL,
                 "apendice" => [

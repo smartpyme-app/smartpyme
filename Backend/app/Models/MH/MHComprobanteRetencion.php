@@ -26,9 +26,9 @@ class MHComprobanteRetencion extends Model
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '07';
+        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
-            $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
             $this->venta->save();
         }
@@ -54,7 +54,7 @@ class MHComprobanteRetencion extends Model
                 case 'Efectivo': //Billetes y monedas
                     $this->venta->cod_metodo_pago = '01';
                     break;
-                case 'Tarjeta': //Tarjeta Débito y Credito
+                case 'Tarjeta de crédito/débito': //Tarjeta Débito y Credito
                     $this->venta->cod_metodo_pago = '02';
                     break;
                 case 'Cheque': //Tarjeta Débito

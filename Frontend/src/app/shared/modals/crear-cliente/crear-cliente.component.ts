@@ -29,13 +29,14 @@ export class CrearClienteComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+    }
+
+    openModal(template: TemplateRef<any>) {
         this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
-    }
-
-    openModal(template: TemplateRef<any>) {
+        
         if(this.id_cliente){
             this.apiService.read('cliente/', this.id_cliente).subscribe(cliente => {
             this.cliente = cliente;
