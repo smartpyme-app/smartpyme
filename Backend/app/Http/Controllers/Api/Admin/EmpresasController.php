@@ -187,15 +187,20 @@ class EmpresasController extends Controller
 
         if ($request->m_ventas) {
             DB::table('ventas')->where('id_empresa', $empresa->id)->delete();
+            DB::table('abonos_ventas')->where('id_empresa', $empresa->id)->delete();
             DB::table('devoluciones_venta')->where('id_empresa', $empresa->id)->delete();
         }
+
         if ($request->m_compras) {
             DB::table('compras')->where('id_empresa', $empresa->id)->delete();
+            DB::table('abonos_compras')->where('id_empresa', $empresa->id)->delete();
             DB::table('devoluciones_compra')->where('id_empresa', $empresa->id)->delete();
         }
+
         if ($request->m_gastos) {
             DB::table('egresos')->where('id_empresa', $empresa->id)->delete();
         }
+        
         if ($request->m_presupuestos) {
             DB::table('presupuestos')->where('id_empresa', $empresa->id)->delete();
         }
