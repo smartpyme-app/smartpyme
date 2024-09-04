@@ -43,7 +43,7 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            {{-- <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> --}}
+                            <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
@@ -121,10 +121,13 @@
                             <p><b>Tipo de Documento:</b> {{ $DTE['receptor']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
                             <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
                             <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
-                            <p><b>Dirección:</b> {{ $DTE['receptor']['direccion']['complemento'] }}
-                                {{ $registro->cliente()->pluck('municipio')->first(); }}
-                                {{ $registro->cliente()->pluck('departamento')->first(); }}
-                            </p>
+                                <p><b>Dirección:</b> 
+                                    @if ($registro->cliente_id)
+                                        {{ $DTE['receptor']['direccion']['complemento'] }}
+                                        {{ $registro->cliente()->pluck('municipio')->first(); }}
+                                        {{ $registro->cliente()->pluck('departamento')->first(); }}
+                                    @endif
+                                </p>
                             <p><b>Teléfono: </b>{{ $DTE['receptor']['telefono'] }}</p>
                             <p><b>Correo: </b>{{ $DTE['receptor']['correo'] }}</p>
                         @endif
