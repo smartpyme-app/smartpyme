@@ -171,7 +171,7 @@
 
                 <div class="form-group col-md-3 col-lg-3" >
                     <label for="dai_tot">Total de DAI:</label><br>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.dai_tot" name="dai_tot">
+                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.dai_tot" name="dai_tot" (input)="updateDaiForDetails()">
                 </div>
 
                 <div class="form-group col-md-3 col-lg-3" >
@@ -181,24 +181,23 @@
 
                 <div class="form-group col-md-3 col-lg-3" >
                     <label for="inland">Inland</label><br>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.inland" name="inland">
+                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.inland" name="inland" (input)="updateInlandForDetails()">
                 </div>
 
                 <div class="form-group col-md-3 col-lg-3" >
                     <label for="insurance">Insurance</label><br>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.insurance" name="insurance">
+                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.insurance" name="insurance" (input)="updateInsuranceForDetails()">
                 </div>
 
                 <div class="form-group col-md-3 col-lg-3" >
                     <label for="aereo">Aereo</label><br>
-                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo">
+                    <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo" (input)="updateAereoForDetails()">
                 </div>
 
                 <div class="form-group col-md-3 col-lg-3" >
                     <label for="fob_tot">FOB total</label><br>
                     <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot" name="fob_tot">
                 </div>
-                
 
             </div>
 
@@ -233,41 +232,56 @@
                                     </td>
                                 </tr>
                                 <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                                    <!-- nombre producto -->
                                     <td style="width: 150px;">
                                         {{ detalle.nombre_producto }}
                                     </td>
+                                    <!-- cantidad -->
                                     <td style="width: 70px;">
-                                        <input [(ngModel)]="detalle.cantidad" class="form-control" readonly>
+                                        <input [(ngModel)]="detalle.cantidad" class="form-control" (input)="updateFOBTotal(detalle)">
                                     </td>
+                                    <!-- FOB ANTES DEL IMPUESTO  -->
                                     <td style="width: 150px;">
-                                        <input type="number"   class="form-control" name="costo" placeholder="$0.00">
+                                        <input type="number" [(ngModel)]="detalle.fob"   class="form-control" name="costo" placeholder="$0.00" (input)="updateFOBTotal(detalle)">
                                     </td>
+                                    <!-- fob total -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="number"  [(ngModel)]="detalle.fobTotal" class="form-control" name="fobTotal" readonly>
                                     </td>
+                                     <!-- distribucion  -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="number"  [(ngModel)]="detalle.distribucion" class="form-control" name="distribucion">
                                     </td>
+                                    <!-- inland -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="text" [(ngModel)]="detalle.inland"  class="form-control" name="inland" readonly>
                                     </td>
+                                    <!-- insurance  -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="text" [(ngModel)]="detalle.insurance"   class="form-control" name="insurance" readonly >
                                     </td>
+                                    <!-- aereo -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="text"  [(ngModel)]="detalle.aereo"   class="form-control" name="aereo" readonly >
                                     </td>
+                                    <!-- CIF  -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="text" [(ngModel)]="detalle.cif" class="form-control" name="cif" readonly>
                                     </td>
+                                    <!-- DAI  -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="text" [(ngModel)]="detalle.dai"  class="form-control" name="dai" readonly>
                                     </td>
+                                    <!-- gastos  -->
                                     <td style="width: 70px;">
-                                        <input type="number"  (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                                        <input type="text" [(ngModel)]="detalle.gastos"  class="form-control" name="descuento" readonly>
                                     </td>
-                                    <td style="width: 70px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
-                                    <td style="width: 70px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                                    <!-- landed  -->
+                                    <td style="width: 70px;">
+                                        <input type="text" [(ngModel)]="detalle.landed"  class="form-control" name="landed">
+                                    </td>
+                                    <!-- COSTO UNITARIO  -->
+                                    <td style="width: 70px;" class="text-right">{{ detalle.costo | currency:'USD':'symbol':'1.2'}}</td>
 
                                 </tr>
                             </tbody>

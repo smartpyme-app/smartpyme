@@ -6,6 +6,8 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
+import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
+import { log } from 'console';
 
 @Component({
   selector: 'app-facturacion-compra',
@@ -127,6 +129,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.iva = 0;
         this.compra.total_costo = 0;
         this.compra.total = 0;
+        this.compra.fob_tot = 0;
         this.detalle = {};
         this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
         this.compra.cobrar_percepcion = false;
@@ -386,6 +389,106 @@ export class FacturacionCompraComponent implements OnInit {
         toggleDiv(): void {
             this.comprainternacional = !this.comprainternacional; // Cambiar entre true y false
           }
+        //   RETACEO 
 
+        public updateFOBTotal(detalle: any): void {
+            detalle.fobTotal = detalle.cantidad * detalle.fob;
+            detalle.fobTotal = parseFloat(detalle.fobTotal.toFixed(2));
+
+            // Actualiza la sumatoria total de FOB
+            this.updateDistribucion(detalle);
+
+          }
+
+        public updateDistribucion(detalle: any): void {
+            this.compra.fob_tot += detalle.fobTotal;
+        
+          // Calcular distribución en porcentaje
+          const distribucion = (detalle.fobTotal / this.compra.fob_tot) * 100;
+          detalle.distribucion = parseFloat(distribucion.toFixed(2)); // Mantener dos decimales
+          console.log(this.compra.fob_tot);
+          this.updateInlandForDetails();
+          this.updateInsuranceForDetails();
+          this.updateAereoForDetails();
+          this.updateDaiForDetails();
+          this.updateGastosForDetails();
+          this.updateCIF(detalle);
+          this.updateLanded(detalle);
+        //   this.updateGastosProducto();
+        }
+
+    public updateInlandForDetails(): void {
+    // Verificamos si `compra.inland` tiene un valor numérico
+            if (this.compra && this.compra.inland != null && this.compra.detalles) {
+                this.compra.detalles.forEach((detalle:any) => {
+        // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+                if (detalle.distribucion != null) {
+                    detalle.inland = parseFloat((this.compra.inland * (detalle.distribucion/100)).toFixed(2));
+                }
+            });
+        }
+    }
+
+    public updateInsuranceForDetails(): void {
+        // Verificamos si `compra.insurance` tiene un valor numérico
+                if (this.compra && this.compra.insurance != null && this.compra.detalles) {
+                    this.compra.detalles.forEach((detalle:any) => {
+            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+                    if (detalle.distribucion != null) {
+                        detalle.insurance =   parseFloat((this.compra.insurance * (detalle.distribucion/100)).toFixed(2)) ;
+                    }
+                });
+            }
+    }
+
+    public updateAereoForDetails(): void {
+        // Verificamos si `compra.aereo` tiene un valor numérico
+                if (this.compra && this.compra.aereo != null && this.compra.detalles) {
+                    this.compra.detalles.forEach((detalle:any) => {
+            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+                    if (detalle.distribucion != null) {
+                        detalle.aereo =   parseFloat((this.compra.aereo * (detalle.distribucion/100)).toFixed(2)) ;
+                    }
+                });
+            } 
+    }
+
+    public updateDaiForDetails(): void {
+        // Verificamos si `compra.dai_tot` tiene un valor numérico
+                if (this.compra && this.compra.dai_tot != null && this.compra.detalles) {
+                    this.compra.detalles.forEach((detalle:any) => {
+            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+                    if (detalle.distribucion != null) {
+                        detalle.dai =   parseFloat((this.compra.dai_tot * (detalle.distribucion/100)).toFixed(2)) ;
+                        console.log(detalle.aereo);
+                    }
+                });
+            } 
+    }
+
+    public updateGastosForDetails(): void {
+        // Verificamos si `compra.dai_tot` tiene un valor numérico
+                if (this.compra && this.compra.otro_gastos != null && this.compra.detalles) {
+                    this.compra.detalles.forEach((detalle:any) => {
+            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+                    if (detalle.distribucion != null) {
+                        detalle.gastos =   parseFloat((this.compra.otro_gastos * (detalle.distribucion/100)).toFixed(2)) ;
+                    }
+                });
+            } 
+    }
+
+    public updateCIF(detalle: any): void {
+        // Calcula la suma de inland, insurance, aereo y fobTotal
+        detalle.cif = (detalle.inland || 0) + (detalle.insurance || 0) + (detalle.aereo || 0) + (detalle.fobTotal || 0);
+    }
+
+    public updateLanded(detalle: any): void {
+        // Calcula la suma de gastos, DAI, CIF
+        detalle.landed = (detalle.cif || 0) + (detalle.dai || 0) + (detalle.gastos || 0);
+        detalle.costo =  detalle.landed/detalle.cantidad;
+    }
+          
+          
 
 }
