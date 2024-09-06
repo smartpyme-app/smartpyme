@@ -40,7 +40,7 @@
             <div class="input-group">
                 <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0" (change)="updateInputValue()">
                     <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
-                    <ng-option *ngFor="let subcategoria of subcategorias" [value]="categoria.id">
+                    <ng-option *ngFor="let subcategoria of subcategRes" [value]="categoria.id">
                         {{subcategoria.nombre}}
                     </ng-option>
                 </ng-select>

@@ -15,6 +15,7 @@ export class ProductoInformacionComponent implements OnInit {
     @Input() producto: any = {};
     public categorias:any = [];
     public subcategorias:any = [];
+    public subcategRes:any = [];
     public proveedores:any = [];
     public usuario:any = {};
     public categoria:any = {};
@@ -137,17 +138,17 @@ private correlativo: number = 1; // Inicialmente, este sería el primer SKU
 
     if (categoriaSeleccionada) {
 
-        this.subcategorias = this.subcategorias.filter((subcategoria:any) => subcategoria.id_cate_padre === categoriaSeleccionada.id);
+        this.subcategRes = this.subcategorias.filter((subcategoria:any) => subcategoria.id_cate_padre === categoriaSeleccionada.id);
         nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
-        console.log("Este es el action de la subcategoria");
-        console.log(categoriaSeleccionada);
+        console.log("Este es el action de la categoria");
+        console.log(this.subcategRes);
         
     }
 
     if (subcategoriaSeleccionada) {
       nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
-    //   console.log("Este es el action de la subcategoria");
-    //   console.log(nombreSubcategoria);
+      console.log("Este es el action de la subcategoria");
+      console.log(nombreSubcategoria);
     }
 
     if (this.producto.id_categoria && this.producto.id_subcategoria) {
