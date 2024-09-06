@@ -33,7 +33,7 @@
                 <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 0">
+        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 0"> 
             <label for="referencia">Num. Referencia</label>
             <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
         </div>
@@ -144,13 +144,13 @@
                 </div>
     
                 <div class="form-group col-md-3 col-lg-3 " >
-                    <label for="dai_Taza">Taza del Dai:</label><br>
+                    <label for="dai_Taza">Taza del DAI:</label><br>
                     <input type="text" class="form-control" placeholder="%" [(ngModel)]="compra.dai_Taza" name="dai_Taza">
                 </div>
     
-                <div class="form-group col-md-3 col-lg-3" >
+                <div class="form-group col-md-3 col-lg-3">
                     <label for="factura">N° de factura</label><br>
-                    <input type="text" class="form-control" placeholder="#" [(ngModel)]="compra.factura" name="factura">
+                    <input type="text" class="form-control" placeholder="#" [(ngModel)]="compra.referencia" name="factura" readonly>
                 </div>
             </div>
             
@@ -220,7 +220,7 @@
                     <label for="fob_tot">FOB total</label><br>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot" name="fob_tot">
+                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot" name="fob_tot" readonly>
                     </div>
                 </div>
 
@@ -278,7 +278,7 @@
                                     </td>
                                      <!-- distribucion  -->
                                     <td style="width: 70px;">
-                                        <input type="text"  [(ngModel)]="detalle.distribucion" class="form-control" name="distribucion">
+                                        <input type="text"  [(ngModel)]="detalle.distribucion" class="form-control" name="distribucion" readonly>
                                     </td>
                                     <!-- inland -->
                                     <td style="width: 70px;">
