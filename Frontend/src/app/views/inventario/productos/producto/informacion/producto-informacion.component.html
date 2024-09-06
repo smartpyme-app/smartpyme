@@ -6,11 +6,7 @@
             <label for="nombre">Nombre</label>
             <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
         </div>
-        <!-- codigo de barra  -->
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="barcode">Código de barras</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
-        </div>
+
         <!-- unidad de medida -->
         <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
@@ -34,29 +30,23 @@
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
         </div>
+
+        
         <!-- subcategoria -->
-        <div class="form-group col-md-6 col-lg-3">
+        <div class="form-group col-md-6 col-lg-3">  
             <label for="id_subcategoria" class="w-100">Subcategoria</label>
             <div class="input-group">
                 <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0" (change)="updateInputValue()">
-                    <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
-                    <ng-option *ngFor="let subcategoria of subcategRes" [value]="categoria.id">
+                    <ng-option *ngFor="let subcategoria of subcategRes" [value]="subcategoria.id">
                         {{subcategoria.nombre}}
                     </ng-option>
                 </ng-select>
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
         </div>
-        <!-- codigo sku  -->
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="codigo">Código</label>
-            <div class="input-group">
-                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Se genera con las categorias">
-                <span class="input-group-text" *ngIf="producto.codigo">
-                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                </span>
-            </div>
-        </div>
+                    <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
+
+
         <!-- marca -->
         <div class="form-group col-md-6 col-lg-2">
             <label for="marca">Marca</label>
@@ -77,11 +67,39 @@
             </div>
         </div>
 
+        <!-- Codigos -->
+
+        
+        <h6 class="my-3 font-weight-bold">Codigos</h6>
+
+        <!-- codigo sku  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="codigo">Código</label>
+            <div class="input-group">
+                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Se genera con las categorias">
+                <span class="input-group-text" *ngIf="producto.codigo">
+                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                </span>
+            </div>
+        </div>
+
+        <!-- codigo de barra  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="barcode">Código de barras</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
+        </div>
+
+        <!-- codigo de proveedor  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="cod_proveed_prod">Código de proveedor</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.cod_proveed_prod" name="cod_proveed_prod" placeholder="Escribe aquí" mask='0*'>
+        </div>
+
         <h6 class="my-3 font-weight-bold">Detalles</h6>
         <div class="form-group col-md-2 col-lg-2">
-            <label for="id_categoria" class="w-100">Talla</label>
+            <label for="talla" class="w-100">Talla</label>
             <div class="input-group">
-                <select name="id_categoria" [(ngModel)]="producto.talla" class="form-control form-select " >
+                <select name="talla" [(ngModel)]="producto.talla" class="form-control form-select " >
                     <option value="x">x</option>
                     <option value="m">m</option>
                     <option value="l">l</option>
@@ -91,9 +109,9 @@
         </div>
 
         <div class="form-group col-md-6 col-lg-3">
-            <label for="id_categoria" class="w-100">Color</label>
+            <label for="color" class="w-100">Color</label>
             <div class="input-group">
-                <select name="id_categoria" [(ngModel)]="producto.color" class=" form-control form-select" >
+                <select name="color" [(ngModel)]="producto.color" class=" form-control form-select" >
                     <option value="Azul">Azul</option>
                     <option value="Amarillo">Amarillo</option>
                     <option value="Blanco">Blanco</option>

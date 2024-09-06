@@ -55,8 +55,15 @@ export class ProductoInformacionComponent implements OnInit {
     }
 
     public setCategoria(categoria:any){
-        this.categorias.push(categoria);
-        this.producto.id_categoria = categoria.id;
+        if(categoria.subcategoria){
+            this.subcategRes.push(categoria);
+            this.producto.id_subcategoria= categoria.id;
+
+        }else{
+            this.categorias.push(categoria);
+            this.producto.id_categoria = categoria.id;
+        }
+
     }
 
     public setCompuesto(){

@@ -281,3 +281,6 @@ ALTER TABLE productos ADD dimensiones decimal(9,2) NULL AFTER material;
 
 ALTER TABLE categorias  ADD subcategoria BOOL DEFAULT false after id_empresa;
 ALTER TABLE categorias  ADD id_cate_padre INT NULL after subcategoria;
+
+ALTER TABLE productos  ADD cod_proveed_prod varchar(255) NULL after id_categoria;
+ALTER TABLE productos  ADD id_subcategoria INT(11) NULL after id_categoria;
