@@ -33,6 +33,13 @@ export class LoginComponent implements OnInit {
         .subscribe(
             data => {
                 this.user = this.apiService.auth_user();
+
+                if(this.user.empresa.fe_ambiente == '01'){
+                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+                }else{
+                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+                }
+
                 if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
                     this.mhService.login();
                 }

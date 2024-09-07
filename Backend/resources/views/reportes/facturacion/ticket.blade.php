@@ -42,9 +42,9 @@
             <br><br>
         </p>
         <br>
-        @if ($empresa->logo)
-            <img src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">
-        @endif
+{{--        @if ($empresa->logo)--}}
+{{--            <img src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">--}}
+{{--        @endif--}}
         @if ($venta->sucursal()->first())
             <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
         @else
@@ -243,7 +243,7 @@
         <p class="text-center">{!! str_replace(chr(10),"<br>",$documento->nota) !!}</p>
     @endif
 
-    <br><br><br><br>
+    <br>
     <p style="color: #fff;">.</p>
 
 </body>

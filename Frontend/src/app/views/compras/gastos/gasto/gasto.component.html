@@ -19,8 +19,8 @@
                 </select>
             </div>
             <div class="form-group col-md-4 col-lg-3">
-                <label for="tipo_documento">Documento:</label>
-                <select class="form-select" name="tipo_documento" [(ngModel)]="gasto.tipo_documento">
+                <label for="tipo_documento">Documento</label>
+                <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="gasto.tipo_documento" class="form-select">
                     <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
                 </select>
             </div>
@@ -99,11 +99,11 @@
     <div class="bg-white rounded p-3 mb-3">
         <h6>Detalle de facturación</h6>
         <div class="row">
-            <div class="form-group col-md-12 col-lg-4">
+            <div class="form-group col-md-12">
                 <label for="">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="gasto.concepto" placeholder="Escriba aquí" />
             </div>
-            <div class="form-group col-md-4 col-lg-2">
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="">Sub total:</label>
                 <input type='number' class="form-control" name="sub_total" (change)="setTotal()" [(ngModel)]="gasto.sub_total"/>
             </div>
@@ -116,6 +116,10 @@
                 <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
+                <label for="">Renta:</label>
+                <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="" class="fw-medium">Total:</label>
                 <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
             </div>
@@ -150,8 +154,14 @@
             </div>
             <div class="form-group col-md-4 col-lg-3 without-label ">
                 <div class="form-switch bg-light-info rounded">
-                  <label for="impuesto">IVA</label>
+                  <label for="impuesto">IVA (13%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.impuesto" name="impuesto">
+                </div>
+            </div>
+            <div class="form-group col-md-4 col-lg-3 without-label ">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="impuesto">Renta (10%)</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.renta" name="renta">
                 </div>
             </div>
             <div class="form-group col-md-6 col-lg-3 without-label">

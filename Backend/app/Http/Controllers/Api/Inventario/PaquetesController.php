@@ -20,9 +20,7 @@ class PaquetesController extends Controller
 
         $paquetes = Paquete::with('cliente', 'proveedor')
                                 ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->whereHas('inventarios', function($q) use ($request){
-                                        return $q->where('id_sucursal', $request->id_sucursal);
-                                    });
+                                    return $q->where('id_sucursal', $request->id_sucursal);
                                 })
                                 ->when($request->wr, function($q) use ($request){
                                     $q->where('wr', $request->wr);

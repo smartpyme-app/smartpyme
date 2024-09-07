@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
+    {{-- <script language="javascript">setTimeout("self.close();",500)</script> --}}
     <title>TecnoGadget {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 12px; margin: 0; padding: 0;}
         html, body{
-/*            width: 11cm; height: 21.5cm;*/
+            width: 100%; height: 21.5cm;
             font-family: serif;
-/*            border: 1px solid red;*/
-                margin-left: 1cm;
+            margin-left: 1cm;
         }
 
         #factura{
+            width: 11cm; height: 21.5cm;
             margin-left: 0cm;
             margin-top: 0cm;
-            position: relative;
+            position: absolute;
         }
 
         #header > *, #totales > *{
@@ -25,10 +26,10 @@
 
         #fecha          {top: 4cm; left: 6cm; }
         #cliente        {top: 4.5cm; left: 0.3cm; width: 8cm; white-space:nowrap;}
-        #direccion      {top: 5cm; left: 0.3cm; width: 8cm; white-space:nowrap;}
-        #condicion      {top: 5.5cm; left: 5.7cm; }
-        #dui            {top: 5.5cm; left: 3.1cm; }
-        #nit            {top: 5.5cm; left: 0.3cm; }
+        #direccion      {top: 5cm; left: 0.3cm; width: 8cm;}
+        #condicion      {top: 5.8cm; left: 5.7cm; }
+        #dui            {top: 5.8cm; left: 3.1cm; }
+        #nit            {top: 5.8cm; left: 0.3cm; }
 
 
         table   {position: absolute; top: 6.5cm; left: 0cm; text-align: left; border-collapse: collapse; }
@@ -62,13 +63,13 @@
 
     @for ($i = 0; $i < 3; $i++)
         {{-- expr --}}
-
+    
     <section id="factura" style="margin-left: {{ 11 * $i  }}cm;">
         <div id="header">
             <p id="fecha"><b>Fecha: </b>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p id="cliente"><b>Cliente: </b>{{ $venta->nombre_cliente }}</p>
             @if ($venta->id_cliente)
-            <p id="direccion"><b>Dirección: </b>{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
+            <p id="direccion"><b>Dirección: </b>{{ $cliente->empresa_direccion ? $cliente->empresa_direccion : $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
             <p id="nit"><b>NIT: </b>{{ $cliente->nit }}</p>
             <p id="dui"><b>DUI: </b>{{ $cliente->dui }}</p>
             @endif
@@ -76,28 +77,28 @@
         </div>
 
         <table>
-            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)
+            @php($iva = $venta->empresa()->pluck('iva')->first() / 100)   
             @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
-                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
+                <td class="producto">   {{ \Illuminate\Support\Str::limit($detalle->nombre_producto, 30, $end = '...') }}  </td>
                 <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
                 <td class="gravadas">  ${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
-        @endforeach
-    </table>
+            @endforeach
+        </table>
 
-    <div id="totales">
-        <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-        {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
+        <div id="totales">
+            <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}} 
 
-        <p id="suma">SUMAS: ${{ number_format($venta->total, 2) }}</p>
-        {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
-        <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
-    </div>
-</section>
+            <p id="suma">SUMAS: ${{ number_format($venta->total, 2) }}</p>
+            {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
+            <p id="total"> <b>TOTAL: ${{ number_format($venta->total, 2) }}</b></p>
+        </div>
+    </section>
 
     @endfor
 

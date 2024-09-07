@@ -16,12 +16,10 @@
         <article style="width: 95%; text-align: justify; margin: auto;">
 
             <p>Estimado(a): <br>
-                <b>{{ $DTE['receptor']['nombre'] }}</b>
+                {{ $nombre }}
             </p>
 
             <p>Adjuntamos el Documento Tributario Electrónico con el siguiente detalle:</p>
-
-
 
             <p><b>Tipo de documento:</b> <br>
                 @if($DTE['identificacion']['tipoDte'] == '01')
@@ -29,6 +27,9 @@
                 @endif
                 @if($DTE['identificacion']['tipoDte'] == '03')
                     Crédito Fiscal
+                @endif
+                @if($DTE['identificacion']['tipoDte'] == '14')
+                    Factura Sujeto Excluido
                 @endif
             </p>
             <p><b>Código de Generación:</b><br> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>

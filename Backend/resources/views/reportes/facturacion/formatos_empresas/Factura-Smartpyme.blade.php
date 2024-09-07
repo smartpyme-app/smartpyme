@@ -31,7 +31,7 @@
         #departamento      {top: 5.5cm; left: 2.5cm; width: 9cm;}
 
 
-        table   {position: absolute; top: 5.2cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 6.5cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.6cm; text-align: left;}
 
         .cantidad{ width: 1.3cm; text-align: center;}

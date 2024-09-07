@@ -36,10 +36,10 @@ class WompiController extends Controller
                 $request->nombre = $empresa->nombre . ' #' . $venta->id;
                 $request->descripcion = $venta->detalleText();
                 $request->monto = $venta->total;
-                $request->img = 'https://login.smartpyme.site/img/88564184a70b76f56ad43ca6f64b05f7.jpg';
+                $request->img = 'https://api.smartpyme.site/img/logotipo.jpg';
                 // $request->img = asset('/img'.$empresa->logo);
-                // return $request;
                 $transaccion = $wompi->link($request);
+                // return $transaccion;
                 if (isset($transaccion['idEnlace'])) {
                     $venta->id_wompi_link = $transaccion['idEnlace'];
                     $venta->save();

@@ -73,7 +73,7 @@
         <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
         <p id="cliente">{{ $venta->nombre_cliente }}</p>
         @if ($venta->id_cliente)
-            <p id="direccion">{{ $cliente->direccion }}</p>
+            <p id="direccion">{{ $cliente->empresa_direccion ? $cliente->empresa_direccion : $cliente->direccion }}</p>
             <p id="municipio">{{ $cliente->municipio }}</p>
             {{-- <p id="departamento">{{ $cliente->departamento }}</p> --}}
         @endif

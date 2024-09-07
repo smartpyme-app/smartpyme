@@ -22,16 +22,16 @@ class MHCCF extends Model
         $this->empresa = $this->venta->empresa()->first();
 
         $this->caja_codigo = '0001';
-        $this->empresa->cod_estable_mh = '0001';
+        // $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '03';
+        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
-            $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
-            $this->venta->save();
         }
+        $this->venta->save();
 
         $this->venta->ambiente = $this->empresa->fe_ambiente; // 00 Modo prueba 01 Modo producción
         $this->venta->tipoModelo = 1; // 1 Modelo Facturación previo 2 Modelo Facturación diferido
@@ -50,11 +50,11 @@ class MHCCF extends Model
             }
 
         // Metodo de pago
-            switch ($this->venta->metodo_pago) {
+            switch ($this->venta->forma_pago) {
                 case 'Efectivo': //Billetes y monedas
                     $this->venta->cod_metodo_pago = '01';
                     break;
-                case 'Tarjeta': //Tarjeta Débito y Credito
+                case 'Tarjeta de crédito/débito': //Tarjeta Débito y Credito
                     $this->venta->cod_metodo_pago = '02';
                     break;
                 case 'Cheque': //Tarjeta Débito
@@ -139,7 +139,7 @@ class MHCCF extends Model
               "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL,
               "nombreComercial" =>  $this->venta->cliente->nombre_empresa,
               "nrc" => str_replace('-', '', $this->venta->cliente->ncr),
-              "nombre" => $this->venta->cliente->nombre_completo,
+              "nombre" => $this->venta->nombre_cliente,
               "codActividad" => $this->venta->cliente->cod_giro,
               "descActividad" => $this->venta->cliente->giro,
               "direccion" => [

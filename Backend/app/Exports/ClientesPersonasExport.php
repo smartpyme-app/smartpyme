@@ -41,7 +41,7 @@ class ClientesPersonasExport implements FromCollection, WithHeadings, WithMappin
     {
         $request = $this->request;
 
-        return Cliente::where('id','!=', 1)->withSum('ventas', 'total')
+        return Cliente::where('id','!=', 1)//->withSum('ventas', 'total')
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                     ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')

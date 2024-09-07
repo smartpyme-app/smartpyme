@@ -25,13 +25,13 @@
                         {{ detalle.nombre_producto }}
                     </td>
                     <td style="width: 150px;">
-                        <input type="number" [min]="1" [max]="detalle.cantidad" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="cantidad">
+                        <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="cantidad">
                     </td>
                     <td style="width: 150px;">
-                        {{ detalle.precio | currency:'USD':'symbol':'1.2'}}
+                        <input type="number" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="precio">
                     </td>
                     <td style="width: 150px;">
-                        {{ detalle.descuento | currency:'USD':'symbol':'1.2'}}
+                        <input type="number" [(ngModel)]="detalle.descuento" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="descuento">
                     </td>
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
                     <td style="width: 50px;" class="text-center">

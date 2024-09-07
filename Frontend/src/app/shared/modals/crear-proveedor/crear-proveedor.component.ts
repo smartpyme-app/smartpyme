@@ -14,6 +14,7 @@ export class CrearProveedorComponent implements OnInit {
     public proveedor: any = {};
     @Input() id_proveedor:any = null;
     @Output() update = new EventEmitter();
+    public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
@@ -28,12 +29,15 @@ export class CrearProveedorComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
-        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
-        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        
     }
 
     openModal(template: TemplateRef<any>) {
+        this.paises = JSON.parse(localStorage.getItem('paises')!);
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        
         if(this.id_proveedor){
             this.apiService.read('proveedor/', this.id_proveedor).subscribe(proveedor => {
             this.proveedor = proveedor;
@@ -51,6 +55,10 @@ export class CrearProveedorComponent implements OnInit {
 
     setGiro(){
         this.proveedor.giro = this.actividad_economicas.find((item:any) => item.cod == this.proveedor.cod_giro).nombre;
+    }
+
+    setPais(){
+        this.proveedor.pais = this.paises.find((item:any) => item.cod == this.proveedor.cod_pais).nombre;
     }
 
     setMunicipio(){

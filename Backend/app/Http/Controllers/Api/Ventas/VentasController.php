@@ -93,6 +93,7 @@ class VentasController extends Controller
                         ->when($request->dte && $request->dte == 1, function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
+                    ->where('cotizacion', 0)
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -105,7 +106,6 @@ class VentasController extends Controller
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
                     ->withSum('abonos', 'total')
-                    ->where('cotizacion', 0)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
@@ -122,7 +122,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
 
         return Response()->json($venta, 200);
@@ -347,7 +347,7 @@ class VentasController extends Controller
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
                         $inventario->save();
-                        $inventario->kardex($venta, $det['cantidad']);
+                        $inventario->kardex($venta, $det['cantidad'], $det['precio']);
                     }
 
                     // Inventario compuestos

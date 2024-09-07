@@ -61,6 +61,7 @@ class ComprasController extends Controller
                         ->when($request->dte && $request->dte == 1, function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
+                        ->where('cotizacion', 0)
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('proveedor', function($q) use ($request){
                                     $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
@@ -72,7 +73,6 @@ class ComprasController extends Controller
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
-                        ->where('cotizacion', 0)
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);

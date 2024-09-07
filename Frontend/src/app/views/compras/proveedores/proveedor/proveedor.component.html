@@ -20,30 +20,63 @@
         <div class="row">
             <div class="col-12" [ngClass]="{ 'order-1' :  proveedor.tipo == 'Persona', 'order-2' :  proveedor.tipo == 'Empresa' }">
                 <div class="row">
-                    <h6 class="col-12 pb-2 mb-4">Información de contacto</h6>
-                    <div class="form-group col-lg-3">
+                    <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+                    <div class="form-group col-lg-4">
                         <label for="nombre">Nombre</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="proveedor.nombre">
                     </div>
-                    <div class="form-group col-lg-3">
+                    <div class="form-group col-lg-4">
                         <label for="apellido">Apellido</label>
-                        <input type="text" class="form-control" (change)="verificarSiExiste()"   placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
+                        <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
                     </div>
-                    <div class="form-group col-6 col-lg-3">
+                    <div class="form-group col-6 col-lg-4">
+                        <label for="dui">DUI</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui" [dropSpecialCharacters]="false" mask='00000000-0'>
+                    </div>
+                    <div class="form-group col-6 col-lg-6">
                         <label for="correo">Correo</label>
                         <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="proveedor.correo">
                     </div>
                     <div class="form-group col-6 col-lg-3">
-                        <label for="dui">Documento de identidad</label>
-                        <!-- <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label> -->
-                        <!-- <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Número de Identificación</label> -->
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="proveedor.dui">
+                        <label for="telefono">Teléfono:</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Persona'">
+                        <label for="pais">Pais:</label>
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="proveedor.pais">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
+                            <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                                {{ pais.nombre }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Persona'">
+                        <label for="departamento">Departamento:</label>
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
+                            <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                                {{ departamento.nombre }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Persona'">
+                        <label for="municipio">Municipio:</label>
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                            <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':proveedor.departamento" [value]="municipio.cod">
+                                {{ municipio.nombre }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-12 col-md-6" *ngIf="proveedor.tipo == 'Persona'">
+                        <label for="direccion">Dirección:</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="proveedor.direccion">
                     </div>
                     <div class="form-group col-lg-6">
                         <label for="etiquetas">Etiquetas:</label>
                         <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="proveedor.etiquetas" name="etiquetas"></tag-input>
                     </div>
-                    <div class="form-group col-lg-9">
+                    <div class="form-group col-lg-6">
                         <label for="nota">Observaciones</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nota" [(ngModel)]="proveedor.nota">
                     </div>
@@ -51,21 +84,19 @@
             </div>
             <div class="col-12" *ngIf="proveedor.tipo == 'Empresa'" [ngClass]="{ 'order-1' :  proveedor.tipo == 'Empresa', 'order-2' :  proveedor.tipo == 'Persona' }">
                 <div class="row">
-                    <h6 class="col-12 pb-2 mb-4">Información de la empresa</h6>
-                    
-                    <div class="form-group col-6 col-lg-4">
+                    <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
+
+                    <div class="form-group col-6 col-lg-6">
                         <label for="nombre_empresa">Empresa:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
                     </div>
-                    <div class="form-group col-6 col-lg-2">
-                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
-                        <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
+                    <div class="form-group col-6 col-lg-3">
+                        <label for="nit">NIT:</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit">
                     </div>
                     <div class="form-group col-6 col-lg-3">
-                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
-                        <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit">
+                        <label for="ncr">NRC:</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
                     </div>
                     <div class="form-group col-md-6 col-lg-3">
                         <label for="tipo_contribuyente">Tipo de contribuyente:</label>
@@ -76,27 +107,51 @@
                             <option value="Grande">Grande</option>
                         </select>
                     </div>
-                    <div class="form-group col-6 col-lg-6">
+                    <div class="form-group col-6 col-lg-9">
                         <label for="giro">Giro:</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="proveedor.cod_giro">
+                            <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
+                                {{ actividad_economica.nombre }}
+                            </ng-option>
+                        </ng-select>
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="telefono">Teléfono:</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="proveedor.empresa_telefono">
                     </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label for="municipio">Municipio:</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
+                        <label for="pais">Pais:</label>
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="proveedor.pais">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
+                            <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                                {{ pais.nombre }}
+                            </ng-option>
+                        </ng-select>
                     </div>
-                    <div class="form-group col-6 col-lg-3">
+                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
                         <label for="departamento">Departamento:</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
+                            <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                                {{ departamento.nombre }}
+                            </ng-option>
+                        </ng-select>
                     </div>
-                    <div class="form-group col-12 col-md-9">
+                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
+                        <label for="municipio">Municipio:</label>
+                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                            <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':proveedor.departamento" [value]="municipio.cod">
+                                {{ municipio.nombre }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-12 col-md-12" *ngIf="proveedor.tipo == 'Empresa'">
                         <label for="direccion">Dirección:</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="proveedor.direccion">
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_direccion" [(ngModel)]="proveedor.empresa_direccion">
                     </div>
-                </div>   
+                </div>
             </div>
         </div>
         <div class="row">

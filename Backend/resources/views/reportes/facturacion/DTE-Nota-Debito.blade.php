@@ -43,12 +43,12 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                            <!-- <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo"> -->
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
                         <h2>DOCUMENTO TRIBUTARIO ELECTRÓNICO</h2>
-                        <h2>FACTURA</h2>
+                        <h2>NOTA DE DÉBITO</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">
                         {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
@@ -116,25 +116,40 @@
                         <br>
                     </td>
                     <td style="width: 50%; vertical-align: top;">
-                        @if ($DTE['receptor'])
-                            <p><b>Nombre o razón social: </b>{{ $DTE['receptor']['nombre'] }}</p>
-                            <p><b>Tipo de Documento:</b> {{ $DTE['receptor']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
-                            <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
-                            <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
-                                <p><b>Dirección:</b> 
-                                    @if ($registro->cliente_id)
-                                        {{ $DTE['receptor']['direccion']['complemento'] }}
-                                        {{ $registro->cliente()->pluck('municipio')->first(); }}
-                                        {{ $registro->cliente()->pluck('departamento')->first(); }}
-                                    @endif
-                                </p>
-                            <p><b>Teléfono: </b>{{ $DTE['receptor']['telefono'] }}</p>
-                            <p><b>Correo: </b>{{ $DTE['receptor']['correo'] }}</p>
-                        @endif
+                        <p><b>Nombre o razón social: </b>{{ $DTE['receptor']['nombre'] }}</p>
+                        <p><b>NIT:</b> {{ $DTE['receptor']['nit'] }}</p>
+                        <p><b>NRC:</b> {{ $DTE['receptor']['nrc'] }}</p>
+                        <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
+                        <p><b>Dirección:</b> {{ $DTE['receptor']['direccion']['complemento'] }}
+                            {{ $registro->cliente()->pluck('municipio')->first(); }}
+                            {{ $registro->cliente()->pluck('departamento')->first(); }}
+                        </p>
+                        <p><b>Teléfono: </b>{{ $DTE['receptor']['telefono'] }}</p>
+                        <p><b>Correo: </b>{{ $DTE['receptor']['correo'] }}</p>
                     </td>
                 </tr>
             </tbody>
         </table> 
+
+        <br>
+
+        <table class="table bordered">
+            <thead>
+                <tr>
+                    <th>Tipo Documento</th>
+                    <th>N° Documento</th>
+                    <th>Fecha Documento</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $DTE['documentoRelacionado'][0]['tipoDocumento'] }}</td>
+                    <td>{{ $DTE['documentoRelacionado'][0]['numeroDocumento'] }}</td>
+                    <td>{{ $DTE['documentoRelacionado'][0]['fechaEmision'] }}</td>
+                    
+                </tr>
+            </tbody>
+        </table>
 
         <br>
 
@@ -227,8 +242,8 @@
                 </tr>
                 <tr>
                     <td colspan="4"></td>
-                    <td class="bg-light" colspan="4"><b>Total a pagar:</b></td>
-                    <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['totalPagar'], 2) }}</b></td>
+                    <td class="bg-light" colspan="4"><b>Monto Total de Operación:</b></td>
+                    <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['montoTotalOperacion'], 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>
