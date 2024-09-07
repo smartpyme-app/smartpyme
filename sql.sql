@@ -101,6 +101,10 @@ ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento
 ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
 ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;
 
+ALTER TABLE detalles_devolucion_compra ADD no_sujeta varchar(255) NULL AFTER descuento;
+ALTER TABLE detalles_devolucion_compra ADD exenta varchar(255) NULL AFTER no_sujeta;
+ALTER TABLE detalles_devolucion_compra ADD gravada varchar(255) NULL AFTER exenta;
+
 
 CREATE TABLE detalles_compuesto_venta (
     id int NOT NULL AUTO_INCREMENT,
