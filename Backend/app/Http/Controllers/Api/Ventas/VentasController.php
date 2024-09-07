@@ -119,7 +119,7 @@ class VentasController extends Controller
 
     public function read($id) {
 
-        $venta = Venta::where('id', $id)->with('detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto','abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
 
@@ -342,7 +342,7 @@ class VentasController extends Controller
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
                         $inventario->save();
-                        $inventario->kardex($venta, $det['cantidad']);
+                        $inventario->kardex($venta, $det['cantidad'], $det['precio']);
                     }
 
                     // Inventario compuestos
