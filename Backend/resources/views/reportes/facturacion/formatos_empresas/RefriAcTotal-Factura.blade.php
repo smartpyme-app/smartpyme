@@ -23,13 +23,13 @@
             margin: 0px;
         }
 
-        #cliente        {top: 4.3cm; left: 4.6cm; width: 8cm; overflow: hidden;}
-        #fecha          {top: 4.3cm; left: 15cm; }
-        #direccion      {top: 5.3cm; left: 4.6cm; width: 8cm; overflow: hidden;}
+        #cliente        {top: 3.8cm; left: 4.6cm; width: 8cm; overflow: hidden;}
+        #fecha          {top: 3.8cm; left: 15cm; }
+        #direccion      {top: 4.8cm; left: 4.6cm; width: 8cm; overflow: hidden;}
         #municipio      {top: 3.5cm; left: 3cm; width: 5cm;}
         #departamento   {top: 4cm; left: 3cm; width: 5cm;}
         #nrc            {top: 3cm; left: 10cm; }
-        #nit            {top: 6.3cm; left: 4.6cm; }
+        #nit            {top: 5.8cm; left: 4.6cm; }
         #giro            {top: 4cm; left: 10cm; width: 3cm;}
         #condicion      {top: 5cm; left: 12.5cm; }
 
@@ -45,14 +45,14 @@
         .gravadas{ width: 1.7cm; text-align: right;}
 
 
-        #letras     {top: 23.4cm; left: 3cm; width: 8.5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 22.4cm; left: 3cm; width: 8.5cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 13cm; left: 2cm; width: 9cm;}
 
-        #suma       {top: 23cm; left: 19cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 22.4cm; left: 19cm; width: 1.5cm; text-align: right;}
         #no_sujeta  {top: 23.9cm; left: 19cm; width: 1.5cm; text-align: right;}
         #iva_retenido  {top: 24.3cm; left: 19cm; width: 1.5cm; text-align: right;}
         #exenta     {top: 24.7cm; left: 19cm; width: 1.5cm; text-align: right;}
-        #total      {top: 26cm; left: 19cm; width: 1.5cm; text-align: right;}
+        #total      {top: 25.6cm; left: 19cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;}
 
