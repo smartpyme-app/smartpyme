@@ -15,7 +15,7 @@ import * as moment from 'moment';
 export class CuentaComponent implements OnInit {
 
     public cuenta:any = {};
-    public bancos:any = [];
+    // public bancos:any = [];
     public catalogo:any = [];
     public loading = false;
     public saving = false;
@@ -29,9 +29,9 @@ export class CuentaComponent implements OnInit {
 	ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        // this.apiService.getAll('bancos/list').subscribe(bancos => {
+        //     this.bancos = bancos;
+        // }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('catalogo/list').subscribe(catalogo => {
             this.catalogo = catalogo;

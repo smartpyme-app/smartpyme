@@ -52,9 +52,9 @@ class ApiController extends Controller
 
         $partida = Partida::where('referencia', 'Compra')->where('id_referencia', $compra->id)->first();
 
-        if ($partida) {
-            return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
-        }
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
+        // }
 
         $this->comprasService->crearPartida($compra);
 
@@ -65,9 +65,9 @@ class ApiController extends Controller
 
         $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $gasto->id)->first();
 
-        if ($partida) {
-            return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para el gasto.', 'code' => 400], 400);
-        }
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para el gasto.', 'code' => 400], 400);
+        // }
 
         $this->gastosService->crearPartida($gasto);
 

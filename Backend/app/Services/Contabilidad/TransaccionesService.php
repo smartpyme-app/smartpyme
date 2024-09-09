@@ -6,6 +6,7 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
+use Exception;
 
 class TransaccionesService
 {

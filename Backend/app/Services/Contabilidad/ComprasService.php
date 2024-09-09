@@ -2,28 +2,19 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 class ComprasService
 {
     public function crearPartida($compra)
     {
         $configuracion = Configuracion::firstOrFail();
-
-        //Debe
-            $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_inventario)->firstOrFail();
-            $cuenta_impuesto = Cuenta::where('id', $configuracion->id_cuenta_iva_compras)->firstOrFail();
-
-        // Haber
-            if ($compra->estado == 'Pendiente') {
-                $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
-            }else{
-                $cuenta_haber = Cuenta::where('id', $compra->id_cuenta_contable)->firstOrFail();
-            }
 
         DB::beginTransaction();
 
@@ -40,37 +31,47 @@ class ComprasService
                 'id_empresa'    => $compra->id_empresa,
             ]);
 
-            //Debe
-                Detalle::create([
-                    'id_cuenta'         => $cuenta_debe->id,
-                    'codigo'            => $cuenta_debe->codigo,
-                    'nombre_cuenta'     => $cuenta_debe->nombre,
-                    'concepto'          => 'Compra de mercancía',
-                    'debe'              => $compra->total,
-                    'haber'             => NULL,
-                    'saldo'             => 0,
-                    'id_partida'        => $partida->id
-                ]);
             // Haber
+                if ($compra->estado == 'Pendiente') {
+                    $cuenta = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
+                }else{
+                    $formapago = FormaDePago::with('banco')->where('nombre', $compra->forma_pago)->firstOrFail();
+                    $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->firstOrFail();
+                }
                 Detalle::create([
-                    'id_cuenta'         => $cuenta_haber->id,
-                    'codigo'            => $cuenta_haber->codigo,
-                    'nombre_cuenta'     => $cuenta_haber->nombre,
+                    'id_cuenta'         => $cuenta->id,
+                    'codigo'            => $cuenta->codigo,
+                    'nombre_cuenta'     => $cuenta->nombre,
                     'concepto'          => 'Compra de mercancía',
                     'debe'              => NULL,
-                    'haber'             => $compra->sub_total,
+                    'haber'             => $compra->total,
                     'saldo'             => 0,
                     'id_partida'        => $partida->id
                 ]);
 
+            //Debe
+                $cuenta = Cuenta::where('id', $configuracion->id_cuenta_inventario)->firstOrFail();
+                Detalle::create([
+                    'id_cuenta'         => $cuenta->id,
+                    'codigo'            => $cuenta->codigo,
+                    'nombre_cuenta'     => $cuenta->nombre,
+                    'concepto'          => 'Compra de mercancía',
+                    'debe'              => $compra->sub_total,
+                    'haber'             => NULL,
+                    'saldo'             => 0,
+                    'id_partida'        => $partida->id
+                ]);
+
+
                 if ($compra->iva > 0) {
+                    $cuenta = Cuenta::where('id', $configuracion->id_cuenta_iva_compras)->firstOrFail();
                     Detalle::create([
-                        'id_cuenta'         => $cuenta_impuesto->id,
-                        'codigo'            => $cuenta_impuesto->codigo,
-                        'nombre_cuenta'     => $cuenta_impuesto->nombre,
+                        'id_cuenta'         => $cuenta->id,
+                        'codigo'            => $cuenta->codigo,
+                        'nombre_cuenta'     => $cuenta->nombre,
                         'concepto'          => 'Compra de mercancía',
-                        'debe'              => NULL,
-                        'haber'             => $compra->iva,
+                        'debe'              => $compra->iva,
+                        'haber'             => NULL,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
@@ -83,8 +84,8 @@ class ComprasService
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
                         'concepto'          => 'Compra de mercancía',
-                        'debe'              => NULL,
-                        'haber'             => $compra->percepcion,
+                        'debe'             => $compra->percepcion,
+                        'haber'              => NULL,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
@@ -97,8 +98,8 @@ class ComprasService
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
                         'concepto'          => 'Compra de mercancía',
-                        'debe'              => NULL,
-                        'haber'             => $compra->renta_retenida,
+                        'debe'              => $compra->renta_retenida,
+                        'haber'             => NULL,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);

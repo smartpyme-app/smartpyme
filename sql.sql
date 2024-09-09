@@ -320,3 +320,7 @@ ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_compras INT 
 ALTER TABLE contabilidad_configuracion ADD id_cuenta_costo_venta INT NULL AFTER id_cuenta_ventas;
 
 ALTER TABLE formas_pago ADD id_banco INT NULL AFTER nombre;
+
+
+ALTER TABLE cuentas_bancarias CHANGE numero numero VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;
+ALTER TABLE cuentas_bancarias CHANGE saldo saldo DECIMAL(10,2) NOT NULL DEFAULT 0;

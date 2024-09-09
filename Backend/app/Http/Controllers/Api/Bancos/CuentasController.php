@@ -44,9 +44,9 @@ class CuentasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'numero' => 'required|numeric',
+            'numero'        => 'required_unless:tipo,"Efectivo"',
             'nombre_banco'  => 'required|max:255',
-            'tipo'   => 'required|max:255',
+            'tipo'          => 'required|max:255',
             'saldo'         => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);

@@ -2,12 +2,14 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Compras\Gastos\Gasto;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 class GastosService
 {
@@ -15,16 +17,6 @@ class GastosService
     {
         $configuracion = Configuracion::firstOrFail();
         $gasto->categoria = Gasto::with('categoria')->where('id', $gasto['id'])->firstOrFail()->categoria;
-
-        //Debe
-            $cuenta_debe = Cuenta::where('id', $gasto->categoria->id_cuenta_contable)->firstOrFail();
-
-        // Haber
-            if ($gasto->estado == 'Pendiente') {
-                $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
-            }else{
-                $cuenta_haber = Cuenta::where('id', $gasto->id_cuenta_contable)->firstOrFail();
-            }
 
         DB::beginTransaction();
 
@@ -41,25 +33,35 @@ class GastosService
                 'id_empresa'    => $gasto->id_empresa,
             ]);
 
-            //Debe
+            // Haber
+                // Haber
+                    if ($gasto->estado == 'Pendiente') {
+                        $cuenta = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
+                    }else{
+                        $formapago = FormaDePago::with('banco')->where('nombre', $gasto->forma_pago)->firstOrFail();
+                        $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->firstOrFail();
+                    }
+
                 Detalle::create([
-                    'id_cuenta'         => $cuenta_debe->id,
-                    'codigo'            => $cuenta_debe->codigo,
-                    'nombre_cuenta'     => $cuenta_debe->nombre,
+                    'id_cuenta'         => $cuenta->id,
+                    'codigo'            => $cuenta->codigo,
+                    'nombre_cuenta'     => $cuenta->nombre,
                     'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
-                    'debe'              => $gasto->total,
-                    'haber'             => NULL,
+                    'debe'              => NULL,
+                    'haber'             => $gasto->total,
                     'saldo'             => 0,
                     'id_partida'        => $partida->id
                 ]);
-            // Haber
+
+            //Debe
+                $cuenta = Cuenta::where('id', $gasto->categoria->id_cuenta_contable)->firstOrFail();
                 Detalle::create([
-                    'id_cuenta'         => $cuenta_haber->id,
-                    'codigo'            => $cuenta_haber->codigo,
-                    'nombre_cuenta'     => $cuenta_haber->nombre,
+                    'id_cuenta'         => $cuenta->id,
+                    'codigo'            => $cuenta->codigo,
+                    'nombre_cuenta'     => $cuenta->nombre,
                     'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
-                    'debe'              => NULL,
-                    'haber'             => $gasto->total - $gasto->iva - $gasto->iva_percibido - $gasto->renta_retenida,
+                    'debe'              => $gasto->sub_total,
+                    'haber'             => NULL,
                     'saldo'             => 0,
                     'id_partida'        => $partida->id
                 ]);
@@ -71,8 +73,8 @@ class GastosService
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
                         'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
-                        'debe'              => NULL,
-                        'haber'             => $gasto->iva,
+                        'debe'             => $gasto->iva,
+                        'haber'              => NULL,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
@@ -85,8 +87,8 @@ class GastosService
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
                         'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
-                        'debe'              => NULL,
-                        'haber'             => $gasto->iva_percibido,
+                        'debe'             => $gasto->iva_percibido,
+                        'haber'              => NULL,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
@@ -99,8 +101,8 @@ class GastosService
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
                         'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
-                        'debe'              => NULL,
-                        'haber'             => $gasto->renta_retenida,
+                        'debe'             => NULL,
+                        'haber'              => $gasto->renta_retenida,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
