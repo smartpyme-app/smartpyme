@@ -14,6 +14,8 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
@@ -23,6 +25,15 @@ use Maatwebsite\Excel\Facades\Excel;
 class ComprasController extends Controller
 {
     
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
+
     public function index(Request $request) {
        
         $compras = Compra::when($request->inicio, function($query) use ($request){
@@ -271,6 +282,17 @@ class ComprasController extends Controller
 
                 $detalle->save();
             }
+
+        // Crear transaccion bancaria
+            if(!$request->id && $compra->cotizacion == 0 && $compra->forma_pago != 'Efectivo' && $compra->forma_pago != 'Cheque'){                
+                $this->transaccionesService->crear($compra, 'Cargo', 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
+            }
+
+        // Crear cheque
+            if(!$request->id && $compra->cotizacion == 0 && $compra->forma_pago == 'Cheque'){                
+                $this->chequesService->crear($compra, $compra->nombre_proveedor, 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
+            }
+
 
         // Incrementar el correlarivo de orden de compra
         if ($request->estado == 'Pre-compra') {

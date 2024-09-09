@@ -25,7 +25,8 @@ use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
-
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -33,6 +34,15 @@ use Auth;
 
 class VentasController extends Controller
 {
+
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
 
     public function index(Request $request) {
 
@@ -414,6 +424,16 @@ class VentasController extends Controller
 
             }
         }
+
+        // Crear transaccion bancaria
+            if(!$request->id && $venta->cotizacion == 0 && $venta->forma_pago != 'Efectivo' && $venta->forma_pago != 'Cheque'){                
+                $this->transaccionesService->crear($venta, 'Abono', 'Venta: ' . $venta->nombre_documento . ' #' . $venta->correlativo, 'Venta');
+            }
+
+        // Crear cheque
+            if(!$request->id && $venta->cotizacion == 0 && $venta->forma_pago == 'Cheque'){                
+                $this->chequesService->crear($venta, $venta->nombre_cliente, 'Venta: ' . $venta->nombre_documento . ' #' . $venta->correlativo, 'Venta');
+            }
 
 
         // Incrementar el correlarivo

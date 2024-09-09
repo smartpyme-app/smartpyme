@@ -26,7 +26,7 @@ export class FacturacionCompraComponent implements OnInit {
     public formaPagos:any = [];
     public sucursales:any = [];
     public impuestos:any = [];
-    public bancos:any = [];
+    // public bancos:any = [];
     public supervisor:any = {};
     public loading = false;
     public saving = false;
@@ -65,9 +65,9 @@ export class FacturacionCompraComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+        //     this.bancos = bancos;
+        // }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
             this.formaPagos = formaPagos;
@@ -320,49 +320,6 @@ export class FacturacionCompraComponent implements OnInit {
                         },error => {this.alertService.error(error); this.saving = false; });
                     },error => {this.alertService.error(error); this.saving = false; });
 
-                }
-
-                if(this.compra.cotizacion != 1){
-                    // Generar Transaccion
-                        if(this.compra.detalle_banco && this.compra.forma_pago != 'Cheque'){
-                            let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.compra.detalle_banco);
-                            let transaccion:any = {};
-                            transaccion.estado = 'Pendiente';
-                            transaccion.tipo = 'Cargo';
-                            transaccion.tipo_operacion = 'Transferencia';
-                            transaccion.concepto = 'Compra: ' + this.compra.tipo_documento + ' #' + (this.compra.referencia ? this.compra.referencia : '');
-                            transaccion.id_cuenta = cuenta.id;
-                            transaccion.referencia = 'Compra'
-                            transaccion.id_referencia = compra.id;
-                            transaccion.total = this.compra.total;
-                            transaccion.fecha = this.apiService.date();
-                            transaccion.id_empresa = this.apiService.auth_user().id_empresa;
-                            transaccion.id_usuario = this.apiService.auth_user().id;
-
-                            this.apiService.store('banco/transaccion', transaccion).subscribe(transaccion => {
-
-                            }, error => {this.alertService.error(error); this.saving = false; });
-                        }
-                    // Generar cheque
-                    if(this.compra.forma_pago == 'Cheque'){
-                        let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.compra.detalle_banco);
-                        let cheque:any = {};
-                        cheque.estado = 'Pendiente';
-                        cheque.concepto = 'Compra: ' + this.compra.tipo_documento + ' #' + this.compra.referencia;
-                        cheque.id_cuenta = cuenta.id;
-                        cheque.correlativo = cuenta.correlativo_cheques;
-                        cheque.referencia = 'Compra'
-                        cheque.id_referencia = compra.id;
-                        cheque.anombrede = this.compra.nombre_cliente ? this.compra.nombre_cliente : 'Sin nombre';
-                        cheque.total = this.compra.total;
-                        cheque.fecha = this.apiService.date();
-                        cheque.id_empresa = this.apiService.auth_user().id_empresa;
-                        cheque.id_usuario = this.apiService.auth_user().id;
-
-                        this.apiService.store('banco/cheque', cheque).subscribe(cheque => {
-
-                        }, error => {this.alertService.error(error); this.saving = false; });
-                    }
                 }
 
             },error => {this.alertService.error(error); this.saving = false; });

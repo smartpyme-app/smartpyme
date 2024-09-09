@@ -10,6 +10,7 @@ use App\Models\Contabilidad\Partidas\Detalle;
 use Illuminate\Support\Facades\DB;
 
 use App\Services\Contabilidad\ComprasService;
+use App\Services\Contabilidad\GastosService;
 use App\Services\Contabilidad\VentasService;
 use App\Services\Contabilidad\TransaccionesService;
 
@@ -19,12 +20,17 @@ class ApiController extends Controller
 {
 
     protected $comprasService;
+    protected $gastosService;
     protected $ventasService;
     protected $transaccionesService;
 
-    public function __construct(VentasService $ventasService, ComprasService $comprasService, TransaccionesService $transaccionesService)
+    public function __construct(VentasService $ventasService,
+                                ComprasService $comprasService, 
+                                GastosService $gastosService, 
+                                TransaccionesService $transaccionesService)
     {
         $this->ventasService = $ventasService;
+        $this->gastosService = $gastosService;
         $this->comprasService = $comprasService;
         $this->transaccionesService = $transaccionesService;
     }
@@ -33,16 +39,9 @@ class ApiController extends Controller
 
         $partida = Partida::where('referencia', 'Venta')->where('id_referencia', $venta->id)->first();
 
-        if ($partida) {
-            return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la venta.', 'code' => 400], 400);
-        }
-
-        if ($venta->forma_pago == 'Efectivo') {
-            $venta->id_cuenta_contable = 24;
-        }else{
-            $banco = Cuenta::where('nombre_banco', $venta->detalle_banco)->first();
-            $venta->id_cuenta_contable = $banco->id_cuenta_contable;            
-        }
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la venta.', 'code' => 400], 400);
+        // }
 
         $this->ventasService->crearPartida($venta);
 
@@ -57,16 +56,22 @@ class ApiController extends Controller
             return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
         }
 
-        if ($compra->forma_pago == 'Efectivo') {
-            $compra->id_cuenta_contable = 24;
-        }else{
-            $banco = Cuenta::where('nombre_banco', $compra->detalle_banco)->first();
-            $compra->id_cuenta_contable = $banco->id_cuenta_contable;            
-        }
-
         $this->comprasService->crearPartida($compra);
 
         return Response()->json($compra, 200);
+    }
+
+    public function gasto(Request $gasto) {
+
+        $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $gasto->id)->first();
+
+        if ($partida) {
+            return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para el gasto.', 'code' => 400], 400);
+        }
+
+        $this->gastosService->crearPartida($gasto);
+
+        return Response()->json($gasto, 200);
     }
 
     public function transaccion(Request $request) {

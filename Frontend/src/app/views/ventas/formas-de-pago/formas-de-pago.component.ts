@@ -14,6 +14,7 @@ export class FormasDePagoComponent implements OnInit {
     public formas_pago:any = [];
     public forma_pago:any = {};
     public empresa:any = {};
+    public bancos:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
     public wompiActivo:boolean = false;
@@ -27,6 +28,12 @@ export class FormasDePagoComponent implements OnInit {
     ngOnInit() {
         this.empresa = this.apiService.auth_user().empresa;
         this.loadAll();
+
+        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => { 
+            this.bancos = bancos;
+            this.loading = false;
+        }, error => {this.alertService.error(error); });
+
     }
 
     public loadAll() {        
@@ -38,19 +45,21 @@ export class FormasDePagoComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public onSubmit(nombre:any){
+    public onSubmit(){
         this.saving = true;
 
-        this.forma_pago.nombre = nombre;
         this.forma_pago.id_empresa = this.apiService.auth_user().id_empresa;
 
         this.apiService.store('forma-de-pago', this.forma_pago).subscribe(forma_pago => {
             this.alertService.success('Formas de pago actualizadas', 'Las formas de pago fueron actualizadas exitosamente.');
             this.saving = false;
+            this.modalRef.hide();
+            this.loadAll();
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
-    public openModal(template: TemplateRef<any>){
+    public openModal(template: TemplateRef<any>, forma_pago:any){
+        this.forma_pago = forma_pago;
         this.modalRef = this.modalService.show(template);
     }
 

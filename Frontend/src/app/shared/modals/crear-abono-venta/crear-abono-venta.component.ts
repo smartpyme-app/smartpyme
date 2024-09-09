@@ -14,7 +14,7 @@ export class CrearAbonoVentaComponent implements OnInit {
 	@Input() venta: any = {};
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
-    public bancos: any = [];
+    // public bancos: any = [];
     public abono: any = {};
  	public loading = false;
     public saving = false;
@@ -43,9 +43,9 @@ export class CrearAbonoVentaComponent implements OnInit {
         }, error => {this.alertService.error(error); });
 
         // this.apiService.getAll('bancos/list').subscribe(bancos => {
-        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+        //     this.bancos = bancos;
+        // }, error => {this.alertService.error(error);});
 	}
 
     public setTotal(total:any){
@@ -64,47 +64,6 @@ export class CrearAbonoVentaComponent implements OnInit {
 
         this.apiService.store('venta/abono', this.abono).subscribe(abono => {
             
-            // Generar Transaccion
-                if(this.abono.detalle_banco && this.abono.forma_pago != 'Cheque'){
-                    let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
-                    let transaccion:any = {};
-                    transaccion.estado = 'Pendiente';
-                    transaccion.tipo = 'Abono';
-                    transaccion.tipo_operacion = 'Transferencia';
-                    transaccion.concepto = 'Abono de venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
-                    transaccion.id_cuenta = cuenta.id;
-                    transaccion.referencia = 'Abono de Venta'
-                    transaccion.id_referencia = abono.id;
-                    transaccion.total = this.abono.total;
-                    transaccion.fecha = this.apiService.date();
-                    transaccion.id_empresa = this.apiService.auth_user().id_empresa;
-                    transaccion.id_usuario = this.apiService.auth_user().id;
-
-                    this.apiService.store('banco/transaccion', transaccion).subscribe(transaccion => {
-
-                    }, error => {this.alertService.error(error); this.saving = false; });
-                }
-            // Generar cheque
-                if(this.abono.forma_pago == 'Cheque'){
-                    let cuenta = this.bancos.find((item:any) => item.nombre_banco == this.abono.detalle_banco);
-                    let cheque:any = {};
-                    cheque.estado = 'Pendiente';
-                    cheque.concepto = 'Abono por venta: ' + this.venta.nombre_documento + ' #' + this.venta.correlativo;
-                    cheque.id_cuenta = cuenta.id;
-                    cheque.correlativo = cuenta.correlativo_cheques;
-                    cheque.referencia = 'Abono por Venta'
-                    cheque.id_referencia = this.venta.id;
-                    cheque.anombrede = this.venta.nombre_cliente ? this.venta.nombre_cliente : 'Sin nombre';
-                    cheque.total = this.abono.total;
-                    cheque.fecha = this.apiService.date();
-                    cheque.id_empresa = this.apiService.auth_user().id_empresa;
-                    cheque.id_usuario = this.apiService.auth_user().id;
-
-                    this.apiService.store('banco/cheque', cheque).subscribe(cheque => {
-
-                    }, error => {this.alertService.error(error); this.saving = false; });
-                }
-
             this.update.emit();
             this.router.navigate(['/ventas/abonos']);
             this.alertService.modal = false;

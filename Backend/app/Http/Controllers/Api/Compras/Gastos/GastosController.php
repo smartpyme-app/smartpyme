@@ -7,12 +7,23 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Documento;
 use App\Models\Compras\Gastos\Gasto;
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 
 use App\Exports\GastosExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class GastosController extends Controller
 {
+
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
     
 
     public function index(Request $request) {
@@ -114,17 +125,18 @@ class GastosController extends Controller
             'concepto'      => 'sometimes|max:255',
             'tipo_documento'     => 'required|max:255',
             'concepto'     => 'required|max:255',
-            'tipo'     => 'required|max:255',
+            // 'tipo'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
             // 'fecha_pago'         => 'required|date',
             'total'         => 'required|numeric',
+            'id_categoria'    => 'required|numeric',
             'id_proveedor'    => 'required|numeric',
             'id_usuario'    => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
         ],[
-            'tipo.required' => 'El campo categoria es obligatorio.',
+            'id_categoria.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'id_usuario.required' => 'El campo usuario es obligatorio.',
             'id_empresa.required' => 'El campo empresa es obligatorio.'
@@ -143,6 +155,16 @@ class GastosController extends Controller
             $documento = Documento::where('nombre', $gasto->tipo_documento)->first();
             $documento->increment('correlativo');
         }
+
+        // Crear transaccion bancaria
+            if(!$request->id && $gasto->forma_pago != 'Efectivo' && $gasto->forma_pago != 'Cheque'){                
+                $this->transaccionesService->crear($gasto, 'Cargo', 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
+            }
+
+        // Crear cheque
+            if(!$request->id && $gasto->forma_pago == 'Cheque'){                
+                $this->chequesService->crear($gasto, $gasto->nombre_proveedor, 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
+            }
 
         return Response()->json($gasto, 200);
 

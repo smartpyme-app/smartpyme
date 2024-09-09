@@ -15,6 +15,7 @@ class Configuracion extends Model
         'id_cuenta_ventas',
         'id_cuenta_devoluciones_ventas',
         'id_cuenta_inventario',
+        'id_cuenta_costo_venta',
         'id_cuenta_ajustes_inventario',
         'id_cuenta_cxc',
         'id_cuenta_devoluciones_clientes',
@@ -22,7 +23,11 @@ class Configuracion extends Model
         'id_cuenta_devoluciones_proveedores',
 
         'id_cuenta_iva_ventas',
+        'id_cuenta_iva_retenido_ventas',
+        'id_cuenta_renta_retenida_ventas',
         'id_cuenta_iva_compras',
+        'id_cuenta_iva_retenido_compras',
+        'id_cuenta_renta_retenida_compras',
 
         'id_empresa',
     ];

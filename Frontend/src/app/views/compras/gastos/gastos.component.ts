@@ -262,5 +262,11 @@ export class GastosComponent implements OnInit {
         }
     }
 
+    generarPartidaContable(gasto:any){
+        this.apiService.store('contabilidad/partida/gasto', gasto).subscribe(gasto => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
+    }
+
 
 }
