@@ -7,13 +7,23 @@ use Illuminate\Http\Request;
 use App\Models\Compras\Abono;
 use App\Models\Compras\Compra;
 use Barryvdh\DomPDF\Facade as PDF;
-use JWTAuth;
-
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 use App\Exports\AbonosComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use JWTAuth;
 
 class AbonosController extends Controller
 {
+
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
     
 
     public function index(Request $request) {
@@ -74,7 +84,7 @@ class AbonosController extends Controller
             'nombre_de'    => 'required|max:255',
             'estado'      => 'required|max:255',
             'forma_pago' => 'required|max:255',
-            'detalle_banco' => 'required_unless:forma_pago,"Efectivo"',
+            // 'detalle_banco' => 'required_unless:forma_pago,"Efectivo"',
             'total'       => 'required|numeric',
             'id_compra'    => 'required|numeric',
             'id_usuario'    => 'required|numeric',
@@ -99,6 +109,16 @@ class AbonosController extends Controller
             $compra->estado = 'Pendiente';
             $compra->save();
         }
+
+        // Crear transaccion bancaria
+            if(!$request->id && $abono->forma_pago != 'Efectivo' && $abono->forma_pago != 'Cheque'){                
+                $this->transaccionesService->crear($abono, 'Abono', 'Abono de compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Abono de Compra');
+            }
+
+        // Crear cheque
+            if(!$request->id && $abono->forma_pago == 'Cheque'){                
+                $this->chequesService->crear($abono, $compra->nombre_proveedor, 'Abono de compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Abono de Compra');
+            }
 
         return Response()->json($abono, 200);
 

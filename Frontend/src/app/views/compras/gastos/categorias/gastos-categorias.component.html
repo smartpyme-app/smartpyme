@@ -1,39 +1,16 @@
-<div class="row page-titles mx-0 px-0 pb-2">
-    <div class="col-sm-6 p-md-0">
-        <h2 class="page-heading">Categorias de gastos <small class="text-muted p-2"> Listado</small></h2>
-    </div>
-    <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a routerLink="/">Dash</a></li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)">Categorias de gastos</a></li>
-        </ol>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Categorias de gastos</h2>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear categoria (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir categoria</button>
+</section>
 
 <div class="card">
-    <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="categorias?.length > 0"> {{ categorias?.length + ' registros' }} </span>
-
-        <!-- <form name="form" (ngSubmit)="search()" autocomplete="off"> -->
-        <div class="input-group float-end w-50">
-            <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador" focus="true">
-            <div class="input-group-btn">
-                <!-- <button tooltip="Buscar" (click)="search()" class="btn btn-default"><i class="fa fa-search"></i></button> -->
-                <button tooltip="Actualizar (F5)" (click)="loadAll()" class="btn btn-default tcla-F5"><i class="fa fa-sync-alt"></i></button>
-                <button tooltip="Filtrar (F6)" (click)="loadAll()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button>
-                <button routerLink="/categoria/nuevo" tooltip="Crear (F7)" class="btn btn-primary tcla-F7" tabindex="0"><i class="fa fa-plus"></i></button>
-            </div>
-        </div>
-        <!-- </form> -->
-
-    </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nombre</th>
+                        <th>Cuenta contable</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -47,16 +24,16 @@
                         </td>
                     </tr>
 
-                    <tr class="animated fadeIn" *ngFor=" let categoria of categorias | filter:['nombre']:buscador">
+                    <tr class="animated fadeIn" *ngFor=" let categoria of categorias">
                         
-                        <td>{{categoria.id }} </td>
                         <td>{{categoria.nombre }} </td>
+                        <td>{{categoria.cuenta?.nombre }} </td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default" (click)="delete(categoria.id)" tooltip="Eliminar">
                                     <i class="fa fa-trash"></i>
                                 </a>
-                                <a class="btn btn-default" (click)="openModal(mcategoria, categoria)" tooltip="Editar">
+                                <a class="btn btn-default" (click)="openModal(mdetalle, categoria)" tooltip="Editar">
                                     <i class="fa fa-pencil-alt"></i>
                                 </a>
                             </div>  
@@ -68,3 +45,42 @@
         </div>
     </div>
 </div>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title">
+        <h2>Categoria</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-lg-12">
+                <label for="categoria.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="categoria.nombre">
+            </div>
+            <div class="form-group col-md-12">
+                <label for="categoria.id_cuenta_contable">Cuenta contable:</label>
+                <ng-select [(ngModel)]="categoria.id_cuenta_contable" class="form-select p-0" name="categoria.id_cuenta_contable">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

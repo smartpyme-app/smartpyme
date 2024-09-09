@@ -128,11 +128,11 @@ export class ApiService {
 
         this.getAll('actividades_economicas').subscribe(actividad_economicas => { 
             localStorage.setItem('actividad_economicas', JSON.stringify(actividad_economicas));
-        }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); });
 
-        this.getAll('unidades').subscribe(medidas => {
-            localStorage.setItem('unidades_medidas', JSON.stringify(medidas));
-        }, error => {this.alertService.error(error);});
+            this.getAll('unidades').subscribe(medidas => {
+                localStorage.setItem('unidades_medidas', JSON.stringify(medidas));
+            }, error => {this.alertService.error(error);});
     }
 
     isAdmin(){

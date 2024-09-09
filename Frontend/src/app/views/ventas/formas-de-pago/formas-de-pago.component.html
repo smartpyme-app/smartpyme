@@ -1,4 +1,87 @@
-<div class="row">
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Formas de pago</h2>
+    <button (click)="openModal(mdetalle, {})"  tooltip="Crear forma de pago (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir forma de pago</button>
+</section>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Banco</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center" *ngIf="formas_pago?.length < 1 && !loading">
+                            <span class="badge badge-info">No tiene formas de pago registradas</span>
+                        </td>
+                        <td colspan="10" class="text-center" *ngIf="loading">
+                            <span class="badge badge-info">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr class="animated fadeIn" *ngFor=" let forma_pago of formas_pago">
+                        
+                        <td>{{forma_pago.nombre }} </td>
+                        <td>{{forma_pago.banco?.nombre_banco }} </td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-default" (click)="delete(forma_pago.id)" tooltip="Eliminar">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a class="btn btn-default" (click)="openModal(mdetalle, forma_pago)" tooltip="Editar">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                            </div>  
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title">
+        <h2>Formas de pago</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-lg-12">
+                <label for="forma_pago.nombre">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="forma_pago.nombre" name="forma_pago.nombre">
+            </div>
+            <div class="form-group col-md-12">
+                <label for="forma_pago.id_banco">Banco:</label>
+                <ng-select [(ngModel)]="forma_pago.id_banco" class="form-select p-0" name="forma_pago.id_banco">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let banco of bancos" [value]="banco.id">{{ banco.nombre_banco }}</ng-option>
+                </ng-select>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+
+<!-- <div class="row">
     <div class="col-md-6">
         <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
             <h2 class="page-heading">Métodos de pago</h2>
@@ -27,7 +110,6 @@
                     <div class="form-switch">
                       <input class="form-check-input ms-0" type="checkbox" role="switch" (click)="onSubmit(forma.nombre)" name="activo" [(ngModel)]="forma.activo">
                     </div>
-                    <!-- <button *ngIf="forma.nombre == 'Wompi'" (click)="openModal(mWompi)" class="btn btn-default">Configurar</button> -->
                   </td>
                 </tr>
               </tbody>
@@ -70,3 +152,4 @@
     </div>
 </div>
 
+ -->

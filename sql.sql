@@ -85,7 +85,11 @@ CREATE TABLE contabilidad_configuracion (
     id_cuenta_devoluciones_proveedores int NOT NULL,
 
     id_cuenta_iva_ventas int NOT NULL,
+    id_cuenta_iva_retenido_ventas int NOT NULL,
+    id_cuenta_renta_retenida_ventas int NOT NULL,
     id_cuenta_iva_compras int NOT NULL,
+    id_cuenta_iva_retenido_compras int NOT NULL,
+    id_cuenta_renta_retenida_compras int NOT NULL,
     
     id_empresa int NOT NULL,
     created_at timestamp NULL,
@@ -306,3 +310,13 @@ CREATE TABLE paises (
 
 ALTER TABLE proveedores ADD cod_pais varchar(255) NULL AFTER pais;
 ALTER TABLE clientes ADD cod_pais varchar(255) NULL AFTER pais;
+
+ALTER TABLE gastos_categorias ADD id_cuenta_contable INT NULL AFTER nombre;
+
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_iva_retenido_ventas INT NULL AFTER id_cuenta_ventas;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_ventas INT NULL AFTER id_cuenta_ventas;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_iva_retenido_compras INT NULL AFTER id_cuenta_ventas;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_compras INT NULL AFTER id_cuenta_ventas;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_costo_venta INT NULL AFTER id_cuenta_ventas;
+
+ALTER TABLE formas_pago ADD id_banco INT NULL AFTER nombre;

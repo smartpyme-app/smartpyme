@@ -6,23 +6,24 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
+use App\Models\Compras\Gastos\Gasto;
 use Illuminate\Support\Facades\DB;
 
-class ComprasService
+class GastosService
 {
-    public function crearPartida($compra)
+    public function crearPartida($gasto)
     {
         $configuracion = Configuracion::firstOrFail();
+        $gasto->categoria = Gasto::with('categoria')->where('id', $gasto['id'])->firstOrFail()->categoria;
 
         //Debe
-            $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_inventario)->firstOrFail();
-            $cuenta_impuesto = Cuenta::where('id', $configuracion->id_cuenta_iva_compras)->firstOrFail();
+            $cuenta_debe = Cuenta::where('id', $gasto->categoria->id_cuenta_contable)->firstOrFail();
 
         // Haber
-            if ($compra->estado == 'Pendiente') {
+            if ($gasto->estado == 'Pendiente') {
                 $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
             }else{
-                $cuenta_haber = Cuenta::where('id', $compra->id_cuenta_contable)->firstOrFail();
+                $cuenta_haber = Cuenta::where('id', $gasto->id_cuenta_contable)->firstOrFail();
             }
 
         DB::beginTransaction();
@@ -30,14 +31,14 @@ class ComprasService
         try {
 
             $partida = Partida::create([
-                'fecha'         => $compra->fecha,
-                'tipo'          => $compra->estado == 'Pendiente' ? 'CxP' : 'Egreso',
-                'concepto'      => 'Compra de mercancía. ' . $compra->tipo_documento . ' #' . $compra->referencia,
+                'fecha'         => $gasto->fecha,
+                'tipo'          => $gasto->estado == 'Pendiente' ? 'CxP' : 'Egreso',
+                'concepto'      => 'Gasto de ' . $gasto->categoria->nombre . '. ' . $gasto->tipo_documento . ' #' . $gasto->referencia,
                 'estado'        => 'Pendiente',
-                'referencia'    => 'Compra',
-                'id_referencia' => $compra->id,
-                'id_usuario'    => $compra->id_usuario,
-                'id_empresa'    => $compra->id_empresa,
+                'referencia'    => 'Gasto',
+                'id_referencia' => $gasto->id,
+                'id_usuario'    => $gasto->id_usuario,
+                'id_empresa'    => $gasto->id_empresa,
             ]);
 
             //Debe
@@ -45,8 +46,8 @@ class ComprasService
                     'id_cuenta'         => $cuenta_debe->id,
                     'codigo'            => $cuenta_debe->codigo,
                     'nombre_cuenta'     => $cuenta_debe->nombre,
-                    'concepto'          => 'Compra de mercancía',
-                    'debe'              => $compra->total,
+                    'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
+                    'debe'              => $gasto->total,
                     'haber'             => NULL,
                     'saldo'             => 0,
                     'id_partida'        => $partida->id
@@ -56,49 +57,50 @@ class ComprasService
                     'id_cuenta'         => $cuenta_haber->id,
                     'codigo'            => $cuenta_haber->codigo,
                     'nombre_cuenta'     => $cuenta_haber->nombre,
-                    'concepto'          => 'Compra de mercancía',
+                    'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
                     'debe'              => NULL,
-                    'haber'             => $compra->sub_total,
+                    'haber'             => $gasto->total - $gasto->iva - $gasto->iva_percibido - $gasto->renta_retenida,
                     'saldo'             => 0,
                     'id_partida'        => $partida->id
                 ]);
 
-                if ($compra->iva > 0) {
+                if ($gasto->iva > 0) {
+                    $cuenta = Cuenta::where('id', $configuracion->id_cuenta_iva_compras)->firstOrFail();
                     Detalle::create([
-                        'id_cuenta'         => $cuenta_impuesto->id,
-                        'codigo'            => $cuenta_impuesto->codigo,
-                        'nombre_cuenta'     => $cuenta_impuesto->nombre,
-                        'concepto'          => 'Compra de mercancía',
+                        'id_cuenta'         => $cuenta->id,
+                        'codigo'            => $cuenta->codigo,
+                        'nombre_cuenta'     => $cuenta->nombre,
+                        'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
                         'debe'              => NULL,
-                        'haber'             => $compra->iva,
+                        'haber'             => $gasto->iva,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
                 }
 
-                if ($compra->percepcion > 0) {
+                if ($gasto->iva_percibido > 0) {
                     $cuenta = Cuenta::where('id', $configuracion->id_cuenta_iva_retenido_compras)->firstOrFail();
                     Detalle::create([
                         'id_cuenta'         => $cuenta->id,
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
-                        'concepto'          => 'Compra de mercancía',
+                        'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
                         'debe'              => NULL,
-                        'haber'             => $compra->percepcion,
+                        'haber'             => $gasto->iva_percibido,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
                 }
 
-                if ($compra->renta_retenida > 0) {
+                if ($gasto->renta_retenida > 0) {
                     $cuenta = Cuenta::where('id', $configuracion->id_cuenta_renta_retenida_compras)->firstOrFail();
                     Detalle::create([
                         'id_cuenta'         => $cuenta->id,
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
-                        'concepto'          => 'Compra de mercancía',
+                        'concepto'          => 'Gasto de ' . $gasto->categoria->nombre,
                         'debe'              => NULL,
-                        'haber'             => $compra->renta_retenida,
+                        'haber'             => $gasto->renta_retenida,
                         'saldo'             => 0,
                         'id_partida'        => $partida->id
                     ]);
@@ -113,8 +115,6 @@ class ComprasService
             DB::rollback();
             throw new Exception($e->getMessage(), 400);
         }
-
-
 
     }
 

@@ -50,7 +50,7 @@ export class GastoComponent implements OnInit {
             this.formaspago = formaspago;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('gastos/categorias').subscribe(categorias => {
+        this.apiService.getAll('gastos/categorias/list').subscribe(categorias => {
             this.categorias = categorias;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

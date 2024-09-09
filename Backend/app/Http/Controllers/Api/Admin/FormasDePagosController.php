@@ -16,40 +16,34 @@ class FormasDePagosController extends Controller
 
     public function index() {
        
-        $formasDePago = FormaDePago::get();        
-        $formas = collect();
+        $formasDePago = FormaDePago::with('banco')->get();        
+        // $formas = collect();
 
-        $formas->push(['nombre' => 'Efectivo', 'activo' => $formasDePago->where('nombre', 'Efectivo')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Transferencia', 'activo' => $formasDePago->where('nombre', 'Transferencia')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Tarjeta de crédito/débito', 'activo' => $formasDePago->where('nombre', 'Tarjeta de crédito/débito')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Cheque', 'activo' => $formasDePago->where('nombre', 'Cheque')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Wompi', 'activo' => $formasDePago->where('nombre', 'Wompi')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Paypal', 'activo' => $formasDePago->where('nombre', 'Paypal')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Bitcoin', 'activo' => $formasDePago->where('nombre', 'Bitcoin')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Compra click', 'activo' => $formasDePago->where('nombre', 'Compra click')->first() ? true : false ]);
-        $formas->push(['nombre' => 'N1co', 'activo' => $formasDePago->where('nombre', 'N1co')->first() ? true : false ]);
-        $formas->push(['nombre' => 'Otro', 'activo' => $formasDePago->where('nombre', 'Otro')->first() ? true : false ]);
-        
-        return Response()->json($formas, 200);
-
-    }
-
-    public function list() {
-       
-        $formasDePago = FormaDePago::get();        
+        // $formas->push(['nombre' => 'Efectivo', 'activo' => $formasDePago->where('nombre', 'Efectivo')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Transferencia', 'activo' => $formasDePago->where('nombre', 'Transferencia')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Tarjeta de crédito/débito', 'activo' => $formasDePago->where('nombre', 'Tarjeta de crédito/débito')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Cheque', 'activo' => $formasDePago->where('nombre', 'Cheque')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Wompi', 'activo' => $formasDePago->where('nombre', 'Wompi')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Paypal', 'activo' => $formasDePago->where('nombre', 'Paypal')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Bitcoin', 'activo' => $formasDePago->where('nombre', 'Bitcoin')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Compra click', 'activo' => $formasDePago->where('nombre', 'Compra click')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'N1co', 'activo' => $formasDePago->where('nombre', 'N1co')->first() ? true : false ]);
+        // $formas->push(['nombre' => 'Otro', 'activo' => $formasDePago->where('nombre', 'Otro')->first() ? true : false ]);
         
         return Response()->json($formasDePago, 200);
 
     }
 
-    public function storeOrDelete(Request $request)
-    {
+    public function list() {
+       
+        $formasDePago = FormaDePago::with('banco')->get();      
+        
+        return Response()->json($formasDePago, 200);
 
-        if (FormaDePago::where('nombre', $request->nombre)->first()) {
-            $formasDePago = FormaDePago::where('nombre', $request->nombre)->first();
-            $formasDePago->delete();
-            return Response()->json($formasDePago, 201);
-        }
+    }
+
+    public function store(Request $request)
+    {
         
         $this->validate($request, [
             'nombre'        => 'required|string|max:150',
@@ -57,11 +51,25 @@ class FormasDePagosController extends Controller
             'id_empresa'    => 'required|numeric',
         ]);
         
-        $formasDePago = new FormaDePago();
+        if($request->id)
+            $formasDePago = FormaDePago::findOrFail($request->id);
+        else
+            $formasDePago = new FormaDePago;
+
         $formasDePago->fill($request->all());
         $formasDePago->save();
 
         return Response()->json($formasDePago, 200);
+
+    }
+
+    public function delete($id)
+    {
+        
+        $formasDePago = FormaDePago::findOrfail($id);
+        $formasDePago->delete();
+
+        return Response()->json($formasDePago, 201);
 
     }
 

@@ -12,7 +12,8 @@ class FormaDePago extends Model {
     protected $fillable = array(
         'nombre',
         'orden',
-        'id_empresa'
+        'id_empresa',
+        'id_banco',
 
     );
 
@@ -25,6 +26,10 @@ class FormaDePago extends Model {
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function banco(){
+        return $this->belongsTo('App\Models\Bancos\Cuenta', 'id_banco');
     }
 
     public function empresa(){
