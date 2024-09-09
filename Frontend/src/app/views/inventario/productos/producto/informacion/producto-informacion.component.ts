@@ -24,6 +24,9 @@ export class ProductoInformacionComponent implements OnInit {
     public loading = false;
     public guardar = false;
     public variants: Array<{ nombre: string, cantidad: number }> = [];
+    public tallas = ['x', 'm', 'l', 'xl'];
+    public colores = ['azul', 'Amarillo', 'Blanco', 'Negro'];
+    public materiales = ['Madera', 'Papel', 'Metal', 'Plastico', 'Vidrio'];
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -55,8 +58,15 @@ export class ProductoInformacionComponent implements OnInit {
     }
 
     public setCategoria(categoria:any){
-        this.categorias.push(categoria);
-        this.producto.id_categoria = categoria.id;
+        if(categoria.subcategoria){
+            this.subcategRes.push(categoria);
+            this.producto.id_subcategoria= categoria.id;
+
+        }else{
+            this.categorias.push(categoria);
+            this.producto.id_categoria = categoria.id;
+        }
+
     }
 
     public setCompuesto(){
@@ -166,5 +176,26 @@ addVariant(): void {
     this.variants.splice(index, 1);
   }
     
+  
+public agregarNuevaTalla(nombre: string) {
+    if (nombre && !this.tallas.includes(nombre)) {
+      this.tallas.push(nombre); // Agregar la nueva talla a la lista
+    }
+    this.producto.talla = nombre; // Establecer la talla seleccionada
+  }
+
+public agregarNuevoColor(nombre: string) {
+    if (nombre && !this.colores.includes(nombre)) {
+      this.colores.push(nombre); // Agregar la nueva talla a la lista
+    }
+    this.producto.colores = nombre; // Establecer la talla seleccionada
+  }
+
+public agregarNuevoMaterial(nombre: string) {
+  if (nombre && !this.materiales.includes(nombre)) {
+    this.materiales.push(nombre); // Agregar la nueva talla a la lista
+  }
+  this.producto.material = nombre; // Establecer la talla seleccionada
+}
 
 }

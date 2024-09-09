@@ -6,11 +6,7 @@
             <label for="nombre">Nombre</label>
             <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
         </div>
-        <!-- codigo de barra  -->
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="barcode">Código de barras</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
-        </div>
+
         <!-- unidad de medida -->
         <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
@@ -34,19 +30,47 @@
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
         </div>
+
+        
         <!-- subcategoria -->
-        <div class="form-group col-md-6 col-lg-3">
+        <div class="form-group col-md-6 col-lg-3">  
             <label for="id_subcategoria" class="w-100">Subcategoria</label>
             <div class="input-group">
                 <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0" (change)="updateInputValue()">
-                    <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
-                    <ng-option *ngFor="let subcategoria of subcategRes" [value]="categoria.id">
+                    <ng-option *ngFor="let subcategoria of subcategRes" [value]="subcategoria.id">
                         {{subcategoria.nombre}}
                     </ng-option>
                 </ng-select>
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
         </div>
+                    <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
+
+
+        <!-- marca -->
+        <div class="form-group col-md-6 col-lg-2">
+            <label for="marca">Marca</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+        </div>
+        <!-- proveedor  -->
+        <!-- <div class="form-group col-md-6 col-lg-4">
+            <label for="">Proveedor</label>
+            <div class="input-group flex-nowrap">
+                <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="producto.id_proveedor" class="form-select p-0">
+                    <ng-option value=""> Seleccione aquí </ng-option>
+                    <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
+                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div> -->
+
+        <!-- Codigos -->
+
+        
+        <h6 class="my-3 font-weight-bold">Codigos</h6>
+
         <!-- codigo sku  -->
         <div class="form-group col-md-6 col-lg-3">
             <label for="codigo">Código</label>
@@ -57,55 +81,59 @@
                 </span>
             </div>
         </div>
-        <!-- marca -->
-        <div class="form-group col-md-6 col-lg-2">
-            <label for="marca">Marca</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+
+        <!-- codigo de barra  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="barcode">Código de barras</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
         </div>
-        <!-- proveedor  -->
-        <div class="form-group col-md-6 col-lg-4">
-            <label for="">Proveedor</label>
-            <div class="input-group flex-nowrap">
-                <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="producto.id_proveedor" class="form-select p-0">
-                    <ng-option value=""> Seleccione aquí </ng-option>
-                    <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
-                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
-                    </ng-option>
-                </ng-select>
-                <!-- <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor> -->
-            </div>
+
+        <!-- codigo de proveedor  -->
+        <div class="form-group col-md-6 col-lg-3">
+            <label for="cod_proveed_prod">Código de proveedor</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.cod_proveed_prod" name="cod_proveed_prod" placeholder="Escribe aquí" mask='0*'>
         </div>
 
         <h6 class="my-3 font-weight-bold">Detalles</h6>
         <div class="form-group col-md-2 col-lg-2">
-            <label for="id_categoria" class="w-100">Talla</label>
+            <label for="talla" class="w-100">Talla</label>
             <div class="input-group">
-                <select name="id_categoria" [(ngModel)]="producto.talla" class="form-control form-select " >
-                    <option value="x">x</option>
-                    <option value="m">m</option>
-                    <option value="l">l</option>
-                    <option value="xl">xl</option>
-                </select>
+              <ng-select
+                [(ngModel)]="producto.talla"
+                [items]="tallas"
+                bindLabel="talla"
+                [addTag]="true" 
+                (add)="agregarNuevaTalla($event)" 
+                class="form-control form-select"
+                placeholder="Selecciona o agrega una talla"
+                style="padding-top: 0px; padding-bottom: 0px;"
+              >
+              </ng-select>
             </div>
         </div>
 
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="id_categoria" class="w-100">Color</label>
+   
+        <div class="form-group col-md-2 col-lg-2">
+            <label for="color" class="w-100">Color</label>
             <div class="input-group">
-                <select name="id_categoria" [(ngModel)]="producto.color" class=" form-control form-select" >
-                    <option value="Azul">Azul</option>
-                    <option value="Amarillo">Amarillo</option>
-                    <option value="Blanco">Blanco</option>
-                    <option value="Negro">Negro</option>
-                </select>
+              <ng-select
+                [(ngModel)]="producto.color"
+                [items]="colores"
+                bindLabel="color"
+                [addTag]="true" 
+                (add)="agregarNuevoColor($event)" 
+                class="form-control form-select"
+                placeholder="Selecciona o agrega una talla"
+                style="padding-top: 0px; padding-bottom: 0px;"
+              >
+              </ng-select>
             </div>
         </div>
-
+<!-- 
         <div class="form-group col-md-6 col-lg-3">
-            <label for="id_categoria" class="w-100">Material</label>
+            <label for="material" class="w-100">Material</label>
             <div class="input-group">
-                <select name="id_categoria"  [(ngModel)]="producto.material" class=" form-control form-select ">
+                <select name="material"  [(ngModel)]="producto.material" class=" form-control form-select ">
                     <option value="Madera">Madera</option>
                     <option value="Papel">Papel</option>
                     <option value="Metal">Metal</option>
@@ -113,11 +141,28 @@
                     <option value="Vidrio">Vidrio</option>
                 </select>
             </div>
+        </div> -->
+
+        <div class="form-group col-md-2 col-lg-2">
+            <label for="material" class="w-100">Material</label>
+            <div class="input-group">
+              <ng-select
+                [(ngModel)]="producto.material"
+                [items]="materiales"
+                bindLabel="material"
+                [addTag]="true" 
+                (add)="agregarNuevoMaterial($event)" 
+                class="form-control form-select"
+                placeholder="Selecciona o agrega una talla"
+                style="padding-top: 0px; padding-bottom: 0px;"
+              >
+              </ng-select>
+            </div>
         </div>
 
         <div class="form-group col-md-6 col-lg-3">
-            <label for="dimesiones">Dimesiones</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.dimesiones" name="dimesiones" placeholder="Escribe aquí">
+            <label for="dimensiones">Dimensiones</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.dimensiones" name="dimensiones" placeholder="Escribe aquí">
         </div>
 
 

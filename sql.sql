@@ -90,7 +90,7 @@ CREATE TABLE contabilidad_configuracion (
     id_cuenta_iva_compras int NOT NULL,
     id_cuenta_iva_retenido_compras int NOT NULL,
     id_cuenta_renta_retenida_compras int NOT NULL,
-    
+
     id_empresa int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
@@ -324,3 +324,5 @@ ALTER TABLE formas_pago ADD id_banco INT NULL AFTER nombre;
 
 ALTER TABLE cuentas_bancarias CHANGE numero numero VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;
 ALTER TABLE cuentas_bancarias CHANGE saldo saldo DECIMAL(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE productos  ADD cod_proveed_prod varchar(255) NULL after id_categoria;
+ALTER TABLE productos  ADD id_subcategoria INT(11) NULL after id_categoria;
