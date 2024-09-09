@@ -53,7 +53,7 @@
             <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
         </div>
         <!-- proveedor  -->
-        <div class="form-group col-md-6 col-lg-4">
+        <!-- <div class="form-group col-md-6 col-lg-4">
             <label for="">Proveedor</label>
             <div class="input-group flex-nowrap">
                 <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="producto.id_proveedor" class="form-select p-0">
@@ -63,9 +63,8 @@
                         {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
                     </ng-option>
                 </ng-select>
-                <!-- <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor> -->
             </div>
-        </div>
+        </div> -->
 
         <!-- Codigos -->
 
@@ -99,31 +98,42 @@
         <div class="form-group col-md-2 col-lg-2">
             <label for="talla" class="w-100">Talla</label>
             <div class="input-group">
-                <select name="talla" [(ngModel)]="producto.talla" class="form-control form-select " >
-                    <option value="x">x</option>
-                    <option value="m">m</option>
-                    <option value="l">l</option>
-                    <option value="xl">xl</option>
-                </select>
+              <ng-select
+                [(ngModel)]="producto.talla"
+                [items]="tallas"
+                bindLabel="talla"
+                [addTag]="true" 
+                (add)="agregarNuevaTalla($event)" 
+                class="form-control form-select"
+                placeholder="Selecciona o agrega una talla"
+                style="padding-top: 0px; padding-bottom: 0px;"
+              >
+              </ng-select>
             </div>
         </div>
 
-        <div class="form-group col-md-6 col-lg-3">
+   
+        <div class="form-group col-md-2 col-lg-2">
             <label for="color" class="w-100">Color</label>
             <div class="input-group">
-                <select name="color" [(ngModel)]="producto.color" class=" form-control form-select" >
-                    <option value="Azul">Azul</option>
-                    <option value="Amarillo">Amarillo</option>
-                    <option value="Blanco">Blanco</option>
-                    <option value="Negro">Negro</option>
-                </select>
+              <ng-select
+                [(ngModel)]="producto.color"
+                [items]="colores"
+                bindLabel="color"
+                [addTag]="true" 
+                (add)="agregarNuevoColor($event)" 
+                class="form-control form-select"
+                placeholder="Selecciona o agrega una talla"
+                style="padding-top: 0px; padding-bottom: 0px;"
+              >
+              </ng-select>
             </div>
         </div>
-
+<!-- 
         <div class="form-group col-md-6 col-lg-3">
-            <label for="id_categoria" class="w-100">Material</label>
+            <label for="material" class="w-100">Material</label>
             <div class="input-group">
-                <select name="id_categoria"  [(ngModel)]="producto.material" class=" form-control form-select ">
+                <select name="material"  [(ngModel)]="producto.material" class=" form-control form-select ">
                     <option value="Madera">Madera</option>
                     <option value="Papel">Papel</option>
                     <option value="Metal">Metal</option>
@@ -131,11 +141,28 @@
                     <option value="Vidrio">Vidrio</option>
                 </select>
             </div>
+        </div> -->
+
+        <div class="form-group col-md-2 col-lg-2">
+            <label for="material" class="w-100">Material</label>
+            <div class="input-group">
+              <ng-select
+                [(ngModel)]="producto.material"
+                [items]="materiales"
+                bindLabel="material"
+                [addTag]="true" 
+                (add)="agregarNuevoMaterial($event)" 
+                class="form-control form-select"
+                placeholder="Selecciona o agrega una talla"
+                style="padding-top: 0px; padding-bottom: 0px;"
+              >
+              </ng-select>
+            </div>
         </div>
 
         <div class="form-group col-md-6 col-lg-3">
-            <label for="dimesiones">Dimesiones</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.dimesiones" name="dimesiones" placeholder="Escribe aquí">
+            <label for="dimensiones">Dimensiones</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.dimensiones" name="dimensiones" placeholder="Escribe aquí">
         </div>
 
 
