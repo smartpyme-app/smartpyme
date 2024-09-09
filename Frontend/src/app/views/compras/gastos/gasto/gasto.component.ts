@@ -18,7 +18,7 @@ export class GastoComponent implements OnInit {
     public proveedores:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
-    public bancos:any = [];
+    // public bancos:any = [];
     public formaspago:any = [];
     public duplicargasto = false;
     public loading = false;
@@ -42,9 +42,9 @@ export class GastoComponent implements OnInit {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        // this.apiService.getAll('bancos/list').subscribe(bancos => {
+        //     this.bancos = bancos;
+        // }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('formas-de-pago/list').subscribe(formaspago => {
             this.formaspago = formaspago;

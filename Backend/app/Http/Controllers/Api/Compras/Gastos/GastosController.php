@@ -7,12 +7,23 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Documento;
 use App\Models\Compras\Gastos\Gasto;
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 
 use App\Exports\GastosExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class GastosController extends Controller
 {
+
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
     
 
     public function index(Request $request) {
@@ -144,6 +155,16 @@ class GastosController extends Controller
             $documento = Documento::where('nombre', $gasto->tipo_documento)->first();
             $documento->increment('correlativo');
         }
+
+        // Crear transaccion bancaria
+            if(!$request->id && $gasto->forma_pago != 'Efectivo' && $gasto->forma_pago != 'Cheque'){                
+                $this->transaccionesService->crear($gasto, 'Cargo', 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
+            }
+
+        // Crear cheque
+            if(!$request->id && $gasto->forma_pago == 'Cheque'){                
+                $this->chequesService->crear($gasto, $gasto->nombre_proveedor, 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
+            }
 
         return Response()->json($gasto, 200);
 

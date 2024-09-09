@@ -111,13 +111,13 @@
                     <option value="{{ forma.nombre }}" *ngFor="let forma of formaspago">{{ forma.nombre }}</option>
                 </select>
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi'">
+            <!-- <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi'">
                 <label for="detalle_banco">Bancos:</label>
                 <select name="detalle_banco" [(ngModel)]="gasto.detalle_banco" class="form-select">
                     <option value="">Seleccione aquí</option>
                     <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
                 </select>
-            </div>
+            </div> -->
             <div class="form-group col-md-4 col-lg-3 without-label">
                 <div class="form-switch border rounded">
                   <label for="credito">Pendiente</label>
