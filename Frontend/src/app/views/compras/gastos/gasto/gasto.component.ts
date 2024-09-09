@@ -72,6 +72,14 @@ export class GastoComponent implements OnInit {
             this.loading = true;
             this.apiService.read('gasto/', id).subscribe(gasto => {
                 this.gasto = gasto;
+                if(this.gasto.iva > 0)
+                    this.gasto.impuesto = true;
+
+                if(this.gasto.iva_percibido > 0)
+                    this.gasto.percepcion = true;
+
+                if(this.gasto.renta_retenida > 0)
+                    this.gasto.renta = true;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
@@ -115,7 +123,8 @@ export class GastoComponent implements OnInit {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.gasto.id_sucursal);
             this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra'  && x.nombre!= 'Nota de crédito');
-            this.gasto.tipo_documento = 'Factura';
+            if(!this.gasto.tipo_documento)
+                this.gasto.tipo_documento = 'Factura';
         }, error => {this.alertService.error(error);});
     }
 
@@ -164,8 +173,9 @@ export class GastoComponent implements OnInit {
             this.gasto.iva = 0;
             this.gasto.total = this.gasto.sub_total;
         }
+        this.gasto.renta_retenida = this.gasto.renta ? this.gasto.sub_total * 0.10 : 0;
         this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
-        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido)).toFixed(2);
+        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido) - parseFloat(this.gasto.renta_retenida)).toFixed(2);
     }
 
     public setSubTotal(){
@@ -181,6 +191,13 @@ export class GastoComponent implements OnInit {
         this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido)).toFixed(2);
     }
 
+    public selectTipoDocumento(){
+        if(this.gasto.tipo_documento == 'Sujeto excluido'){
+            let documento = this.documentos.find((x:any) => x.nombre == this.gasto.tipo_documento);
+            console.log(documento);
+            this.gasto.referencia = documento.correlativo;
+        }
+    }
 
     public onSubmit(){
         this.saving = true;

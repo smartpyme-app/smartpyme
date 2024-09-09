@@ -72,7 +72,7 @@
 
 
 {{--            <p id="municipio">{{ $cliente->municipio }}</p>--}}
-            <p id="departamento">{{ $cliente->departamento }}</p>
+            <p id="departamento">{{ $cliente->departamento }}</p>  
             <p id="nit">{{ $cliente->nit }}</p>
             <p id="nrc">{{ $cliente->ncr }}</p>
             <p id="giro">{{ \Illuminate\Support\Str::limit($cliente->giro, 20, $end = '...') }}</p>

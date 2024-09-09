@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHNotaCredito extends Model
+class MHNotaDebito extends Model
 {
 
     public $devolucion;
@@ -25,13 +25,13 @@ class MHNotaCredito extends Model
         // $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
-        $this->devolucion->tipo_dte = '05';
+        $this->devolucion->tipo_dte = '06';
         $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->devolucion->codigo_generacion) {
             $this->devolucion->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
-            $this->devolucion->save();
         }
+        $this->devolucion->save();
 
         $this->devolucion->ambiente = $this->empresa->fe_ambiente; // 00 Modo prueba 01 Modo producción
         $this->devolucion->tipoModelo = 1; // 1 Modelo Facturación previo 2 Modelo Facturación diferido
@@ -197,6 +197,7 @@ class MHNotaCredito extends Model
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
+                  "numPagoElectronico" => '',
                 ],
                 "extension" => NULL,
                 "apendice" => [

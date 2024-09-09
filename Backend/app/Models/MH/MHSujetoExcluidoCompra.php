@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHSujetoExcluido extends Model
+class MHSujetoExcluidoCompra extends Model
 {
 
     public $compra;
@@ -15,11 +15,11 @@ class MHSujetoExcluido extends Model
     public function generarDTE($compra){
         $this->compra = $compra;
         $this->empresa = $this->compra->empresa()->first();
-        $this->empresa->cod_estable_mh = '0001';
+        // $this->empresa->cod_estable_mh = '0001';
         $this->compra->tipo_dte = '14';
+        $this->compra->numero_control = 'DTE-'. $this->compra->tipo_dte . '-' . $this->empresa->cod_estable_mh . '0001-' .str_pad($this->compra->referencia, 15, '0', STR_PAD_LEFT);
 
         if (!$this->compra->codigo_generacion) {
-            $this->compra->numero_control = 'DTE-'. $this->compra->tipo_dte . '-' . $this->empresa->cod_estable_mh . '0001-' .str_pad($this->compra->referencia, 15, '0', STR_PAD_LEFT);
             $this->compra->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
             $this->compra->save();
         }
@@ -40,11 +40,11 @@ class MHSujetoExcluido extends Model
             }
 
         // Metodo de pago
-            switch ($this->compra->metodo_pago) {
+            switch ($this->compra->forma_pago) {
                 case 'Efectivo': //Billetes y monedas
                     $this->compra->cod_metodo_pago = '01';
                     break;
-                case 'Tarjeta': //Tarjeta Débito y Credito
+                case 'Tarjeta de crédito/débito': //Tarjeta Débito y Credito
                     $this->compra->cod_metodo_pago = '02';
                     break;
                 case 'Cheque': //Tarjeta Débito

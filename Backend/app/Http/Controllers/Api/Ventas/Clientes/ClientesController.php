@@ -81,27 +81,27 @@ class ClientesController extends Controller
     public function store(Request $request)
     {
 
-        if (Auth::user()->empresa()->pluck('facturacion_electronica')->firstOrFail()) {
-            $request->validate([
-                'nombre'         => 'required_if:tipo,"Persona"',
-                'apellido'       => 'required_if:tipo,"Persona"',
-                'nombre_empresa' => 'required_if:tipo,"Empresa"',
-                'ncr'            => 'required_if:tipo,"Empresa"',
-                'nit'            => 'required_if:tipo,"Empresa"',
-                'id_usuario'     => 'required|numeric',
-                'id_empresa'     => 'required|numeric|exists:empresas,id',
-                'dui'            => 'required_if:tipo,"Persona"',
-                'correo'         => 'nullable|max:255|email:rfc,dns',
-                'municipio'     => 'required|max:255',
-                'departamento'  => 'required|max:255',
-                'direccion'       => 'required_if:tipo,"Persona"',
-                'empresa_direccion' => 'required_if:tipo,"Empresa"',
-                'giro'      => 'required_if:tipo,"Empresa"|max:255',
-            ],[
-                // 'nombre.required_if' => 'El campo nombre es obligatorio.',
-                // 'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
-            ]);
-        }{
+        // if (Auth::user()->empresa()->pluck('facturacion_electronica')->firstOrFail()) {
+        //     $request->validate([
+        //         'nombre'         => 'required_if:tipo,"Persona"',
+        //         'apellido'       => 'required_if:tipo,"Persona"',
+        //         'nombre_empresa' => 'required_if:tipo,"Empresa"',
+        //         'ncr'            => 'required_if:tipo,"Empresa"',
+        //         'nit'            => 'required_if:tipo,"Empresa"',
+        //         'id_usuario'     => 'required|numeric',
+        //         'id_empresa'     => 'required|numeric|exists:empresas,id',
+        //         'dui'            => 'required_if:tipo,"Persona"',
+        //         'correo'         => 'nullable|max:255|email:rfc,dns',
+        //         'municipio'     => 'required|max:255',
+        //         'departamento'  => 'required|max:255',
+        //         'direccion'       => 'required_if:tipo,"Persona"',
+        //         'empresa_direccion' => 'required_if:tipo,"Empresa"',
+        //         'giro'      => 'required_if:tipo,"Empresa"|max:255',
+        //     ],[
+        //         // 'nombre.required_if' => 'El campo nombre es obligatorio.',
+        //         // 'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
+        //     ]);
+        // }{
             $request->validate([
                 'nombre'         => 'required_if:tipo,"Persona"',
                 'apellido'       => 'required_if:tipo,"Persona"',
@@ -115,7 +115,7 @@ class ClientesController extends Controller
                 'nombre.required_if' => 'El campo nombre es obligatorio.',
                 'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
             ]);
-        }
+        // }
 
 
         if($request->id)

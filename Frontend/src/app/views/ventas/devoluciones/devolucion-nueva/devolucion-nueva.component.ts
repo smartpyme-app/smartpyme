@@ -35,7 +35,6 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 	ngOnInit() {
 
         const id = +this.route.snapshot.queryParamMap.get('id_venta')!;
-        console.log(id);
         if(id == 0){
             this.cargarDatosIniciales();
         }
@@ -78,11 +77,21 @@ export class DevolucionVentaNuevaComponent implements OnInit {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.devolucion.id_sucursal);
 
-            this.documentos = this.documentos.filter((x:any) => x.nombre == 'Nota de crédito');
-            let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
-            if(documento){
-                this.devolucion.id_documento = documento.id;
-                this.devolucion.correlativo = documento.correlativo;
+            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
+                let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
+                console.log(documento);
+                if(documento){
+                    this.devolucion.id_documento = documento.id;
+                    this.devolucion.correlativo = documento.correlativo;
+                }
+            }
+            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_credito') {
+                let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
+                console.log(documento);
+                if(documento){
+                    this.devolucion.id_documento = documento.id;
+                    this.devolucion.correlativo = documento.correlativo;
+                }
             }
 
         }, error => {this.alertService.error(error);});

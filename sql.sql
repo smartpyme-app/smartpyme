@@ -86,7 +86,7 @@ CREATE TABLE contabilidad_configuracion (
 
     id_cuenta_iva_ventas int NOT NULL,
     id_cuenta_iva_compras int NOT NULL,
-    
+
     id_empresa int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
@@ -258,19 +258,22 @@ ALTER TABLE devoluciones_venta ADD sello_mh varchar(255) NULL AFTER codigo_gener
 ALTER TABLE devoluciones_venta ADD dte LONGTEXT NULL AFTER id_usuario;
 ALTER TABLE devoluciones_venta ADD dte_invalidacion LONGTEXT NULL AFTER dte;
 
-ALTER TABLE compras ADD tipo_dte varchar(255) NULL AFTER id;
-ALTER TABLE compras ADD numero_control varchar(255) NULL AFTER id;
-ALTER TABLE compras ADD codigo_generacion varchar(255) NULL AFTER id;
-ALTER TABLE compras ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
-
-ALTER TABLE compras ADD renta_retenida DECIMAL(10,2) NULL DEFAULT '0' AFTER iva;
-ALTER TABLE compras ADD dte LONGTEXT NULL AFTER id_usuario;
-ALTER TABLE compras ADD dte_invalidacion LONGTEXT NULL AFTER dte;
+ALTER TABLE egresos ADD tipo_dte varchar(255) NULL AFTER id;
+ALTER TABLE egresos ADD numero_control varchar(255) NULL AFTER id;
+ALTER TABLE egresos ADD codigo_generacion varchar(255) NULL AFTER id;
+ALTER TABLE egresos ADD sello_mh varchar(255) NULL AFTER codigo_generacion;
+ALTER TABLE egresos ADD renta_retenida DECIMAL(10,2) NULL DEFAULT '0' AFTER iva;
+ALTER TABLE egresos ADD dte LONGTEXT NULL AFTER id_usuario;
+ALTER TABLE egresos ADD dte_invalidacion LONGTEXT NULL AFTER dte;
 
 ALTER TABLE proveedores ADD cod_municipio varchar(10) NULL AFTER municipio;
 ALTER TABLE proveedores ADD cod_departamento varchar(10) NULL AFTER departamento;
 ALTER TABLE proveedores ADD cod_giro varchar(10) NULL AFTER giro;
 ALTER TABLE proveedores ADD pais varchar(255) NULL AFTER municipio;
+
+ALTER TABLE detalles_devolucion_compra ADD no_sujeta varchar(255) NULL AFTER descuento;
+ALTER TABLE detalles_devolucion_compra ADD exenta varchar(255) NULL AFTER no_sujeta;
+ALTER TABLE detalles_devolucion_compra ADD gravada varchar(255) NULL AFTER exenta;
 
 
 ALTER TABLE productos ADD talla varchar(255) NULL AFTER medida;
@@ -281,6 +284,28 @@ ALTER TABLE productos ADD dimensiones decimal(9,2) NULL AFTER material;
 
 ALTER TABLE categorias  ADD subcategoria BOOL DEFAULT false after id_empresa;
 ALTER TABLE categorias  ADD id_cate_padre INT NULL after subcategoria;
+CREATE TABLE detalles_compuesto_venta (
+    id int NOT NULL AUTO_INCREMENT,
+    id_producto int  NOT NULL,
+    cantidad varchar(255) NOT NULL,
+    id_detalle int  NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+
+CREATE TABLE paises (
+    id int NOT NULL AUTO_INCREMENT,
+    cod varchar(255) NOT NULL,
+    nombre varchar(255)  NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE proveedores ADD cod_pais varchar(255) NULL AFTER pais;
+ALTER TABLE clientes ADD cod_pais varchar(255) NULL AFTER pais;
 
 ALTER TABLE productos  ADD cod_proveed_prod varchar(255) NULL after id_categoria;
 ALTER TABLE productos  ADD id_subcategoria INT(11) NULL after id_categoria;

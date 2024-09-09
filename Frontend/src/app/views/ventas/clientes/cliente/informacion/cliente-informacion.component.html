@@ -37,35 +37,34 @@
                 </div>
                 <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
                     <label for="pais">Pais:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
+                        <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                            {{ pais.nombre }}
+                        </ng-option>
+                    </ng-select>
                 </div>
                 <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
                     <label for="departamento">Departamento:</label>
-                <!-- cuando la PERSONA sea local EL SALVADOR  -->
                     <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
                     <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
                         <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
                             {{ departamento.nombre }}
                         </ng-option>
                     </ng-select>
-
-                <!-- cuando la PERSONA No sea local EXTRANJERO  -->
                     <input  *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
 
                 </div>
                 <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
                     <label for="municipio">Municipio:</label>
-                    <!-- cuando la PERSONA sea local EL SALVADOR  -->
                     <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
                     <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
                         <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':cliente.departamento" [value]="municipio.cod">
                             {{ municipio.nombre }}
                         </ng-option>
                     </ng-select>
-
-                    <!-- cuando la PERSONA sea local EL SALVADOR  -->
                     <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
-
                 </div>
                 <div class="form-group col-12 col-md-6" *ngIf="cliente.tipo == 'Persona'">
                     <label for="direccion">Dirección:</label>
@@ -133,7 +132,13 @@
                 </div>
                 <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
                     <label for="pais">Pais:</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
+                        <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                            {{ pais.nombre }}
+                        </ng-option>
+                    </ng-select>
                 </div>
                 <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
                     <label for="departamento">Departamento:</label>

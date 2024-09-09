@@ -16,7 +16,6 @@ use JWTAuth;
 class AbonosController extends Controller
 {
     
-
     public function index(Request $request) {
        
         $abonos = Abono::with('venta')->when($request->buscador, function($query) use ($request){

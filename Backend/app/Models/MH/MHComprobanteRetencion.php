@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHFactura extends Model
+class MHComprobanteRetencion extends Model
 {
 
     public $venta;
@@ -25,13 +25,13 @@ class MHFactura extends Model
         // $this->empresa->cod_estable_mh = '0001';
         $this->empresa->tipoEstablecimiento = 'Casa matriz';
         $this->empresa->tipo_establecimiento = '02';
-        $this->venta->tipo_dte = '01';
+        $this->venta->tipo_dte = '07';
         $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
+            $this->venta->save();
         }
-        $this->venta->save();
 
         $this->venta->ambiente = $this->empresa->fe_ambiente; // 00 Modo prueba 01 Modo producción
         $this->venta->tipoModelo = 1; // 1 Modelo Facturación previo 2 Modelo Facturación diferido
@@ -50,7 +50,7 @@ class MHFactura extends Model
             }
 
         // Metodo de pago
-            switch ($this->venta->forma_pago) {
+            switch ($this->venta->metodo_pago) {
                 case 'Efectivo': //Billetes y monedas
                     $this->venta->cod_metodo_pago = '01';
                     break;
@@ -78,7 +78,7 @@ class MHFactura extends Model
             }
 
         // Total en letras
-        $partes = explode('.', strval( number_format($this->venta->total, 2) ));
+        $partes = explode('.', strval( number_format($this->venta->iva_retenido, 2) ));
 
         $formatter = new NumeroALetras();
         $n = explode(".", number_format($venta->total,2));
@@ -161,10 +161,11 @@ class MHFactura extends Model
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->num_documento,
-              "nrc" => NULL,
+              "nrc" => str_replace('-', '', $this->venta->cliente->ncr),
               "nombre" => $this->venta->nombre_cliente,
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
+              "nombreComercial" =>  $this->venta->cliente->nombre_empresa,
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
                 "municipio" => $this->venta->cliente->cod_municipio,
@@ -190,36 +191,9 @@ class MHFactura extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
-                  "descuNoSuj" => 0,
-                  "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
-                  "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
-                  "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
-                  "totalLetras" => $this->venta->total_en_letras,
-                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
-                  "saldoFavor" => 0,
-                  "condicionOperacion" => $this->venta->cod_condicion,
-                  "pagos" => [
-                    [
-                      "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
-                      "referencia" => NULL,
-                      "plazo" => NULL,
-                      "periodo" => NULL
-                    ]
-                  ],
-                  "numPagoElectronico" => ""
+                  "totalSujetoRetencion" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "totalIVAretenido" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
+                  "totalIVAretenidoLetras" => floatval(number_format($this->venta->total_en_letras, 2, '.', '')),
                 ],
                 "extension" => NULL,
                 "apendice" => [
@@ -235,51 +209,25 @@ class MHFactura extends Model
     protected function detalles(){
         $detalles = collect();
 
-        foreach ($this->venta->detalles as $index => $detalle) {
+        // foreach ($this->venta->detalles as $index => $detalle) {
 
-            $cod = Unidad::where('nombre', ucfirst($detalle->unidad))->pluck('cod')->first();
-            if ($cod){
-                $detalle->cod_medida = $cod;
-            }else{
-                $detalle->cod_medida = 59;
-            }
-
-            // Tipo Item
-            if ($detalle->producto()->pluck('tipo')->first() == 'Servicio'){
-                $detalle->tipo_item = 2;
-            }else{
-                $detalle->tipo_item = 1;
-            }
-
-            $tributos = NULL;
-
-            $detalle->codTributo = NULL;
-
-            $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-            $detalle->iva = ($detalle->total * 0.13);
-            $detalle->gravada = $detalle->total;
-            $detalle->total = $detalle->total + $detalle->iva;
+        // Codigo RetencionMH
+        // 22 Retención IVA 1%
+        // C4 Retención IVA 13%
+        // C9 Otras retenciones IVA casos especiales 
 
             $detalles->push([
                 "numItem" => $index + 1,
-                "tipoItem" => $detalle->tipo_item,
-                "numeroDocumento" => NULL,
-                "cantidad" => floatval($detalle->cantidad),
-                "codigo" => $detalle->codigo,
-                "codTributo" => $detalle->codTributo,
-                "uniMedida" => $detalle->cod_medida,
-                "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
-                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
-                "tributos" => $tributos,
-                "psv" => 0,
-                "noGravado" => 0,
-                "ivaItem" => floatval(number_format($detalle->iva,2))
+                "tipoDte" => $DTE['identificacion']['tipoDte'],
+                "tipoDoc" => $DTE['identificacion']['tipoModelo'],
+                "numDocumento" => $DTE['identificacion']['codigoGeneracion'],
+                "fechaEmision" => $DTE['identificacion']['fechaEmision'],
+                "montoSujetoGrav" => $venta->total,
+                "codigoRetencionMH" => 22,
+                "ivaRetenido" => $venta->iva_retenido,
+                "descripcion" => '',
               ]);
-        }
+        // }
 
         return $detalles;
     }

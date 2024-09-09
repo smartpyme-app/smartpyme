@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Compras\Gastos;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
+use App\Models\Admin\Documento;
 use App\Models\Compras\Gastos\Gasto;
 
 use App\Exports\GastosExport;
@@ -39,6 +40,15 @@ class GastosController extends Controller
                     })
                     ->when($request->id_proyecto, function($query) use ($request){
                         return $query->where('id_proyecto', $request->id_proyecto);
+                    })
+                    ->when($request->tipo, function($query) use ($request){
+                        return $query->where('tipo', $request->tipo);
+                    })
+                    ->when($request->dte && $request->dte == 0, function($query) {
+                            return $query->whereNull('sello_mh');
+                    })
+                    ->when($request->dte && $request->dte == 1, function($query) {
+                        return $query->whereNotNull('sello_mh');
                     })
                     ->when($request->buscador, function($query) use ($request){
                     return $query->whereHas('proveedor', function($q) use ($request){
@@ -102,6 +112,8 @@ class GastosController extends Controller
         $request->validate([
             'fecha'         => 'required|date',
             'concepto'      => 'sometimes|max:255',
+            'tipo_documento'     => 'required|max:255',
+            'concepto'     => 'required|max:255',
             'tipo'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
@@ -125,6 +137,12 @@ class GastosController extends Controller
         
         $gasto->fill($request->all());
         $gasto->save();
+
+        // Incrementar el correlarivo de Sujeto excluido
+        if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
+            $documento = Documento::where('nombre', $gasto->tipo_documento)->first();
+            $documento->increment('correlativo');
+        }
 
         return Response()->json($gasto, 200);
 

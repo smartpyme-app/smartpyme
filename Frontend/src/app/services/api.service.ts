@@ -114,6 +114,10 @@ export class ApiService {
             localStorage.setItem('metodospago', JSON.stringify(metodospago));
         }, error => {this.alertService.error(error);});
         
+        this.getAll('paises').subscribe(paises => { 
+            localStorage.setItem('paises', JSON.stringify(paises));
+        }, error => {this.alertService.error(error); });
+        
         this.getAll('municipios').subscribe(municipios => { 
             localStorage.setItem('municipios', JSON.stringify(municipios));
         }, error => {this.alertService.error(error); });

@@ -60,6 +60,7 @@
                         <!-- <th>Usuario</th> -->
                         <th>Proveedor</th>
                         <th>Concepto</th>
+                        <th>Documento</th>
                         <th>Método de pago</th>
                         <th>Estado</th>
                         <!-- <th>Descripción</th> -->
@@ -83,13 +84,15 @@
                         <!-- <td>{{gasto.nombre_usuario }}</td> -->
                         <td>{{gasto.nombre_proveedor | truncate:30 }}<a *ngIf="gasto.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{gasto.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{gasto.concepto}}</td>
+                        <td>{{gasto.tipo_documento}} #{{gasto.referencia}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <select name="estado" [(ngModel)]="gasto.estado" class="form-select w-auto border-0" (change)="setEstado(gasto)" [ngClass]="{'bg-light-danger' : gasto.estado == 'Cancelado', 'bg-light-warning' : gasto.estado == 'Pendiente', 'bg-light-success' : gasto.estado == 'Confirmado'}">
-                                <option value="Confirmado">Confirmado</option>
-                                <option value="Cancelado">Cancelado</option>
-                                <option value="Pendiente">Pendiente</option>
-                            </select>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
+                                {{ gasto.estado }}
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh">
+                                    ✅                       
+                                </span>
+                            </span>
                         </td>
                         <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -98,6 +101,13 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.tipo_documento == 'Sujeto excluido' && gasto.estado != 'Anulada' && !gasto.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.tipo_documento == 'Sujeto excluido' && gasto.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, gasto)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
+
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
@@ -180,6 +190,27 @@
                 </select>
             </div>
             <div class="form-group col-lg-6">
+                <label for="tipo" class="w-100">Categoria:</label>
+                <select name="tipo" [(ngModel)]="filtros.tipo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Alquiler">Alquiler</option>
+                    <option value="Combustible">Combustible</option>
+                    <option value="Costo de venta">Costo de venta</option>
+                    <option value="Gastos varios">Gastos varios</option>
+                    <option value="Insumos">Insumos</option>
+                    <option value="Impuestos">Impuestos</option>
+                    <option value="Gastos Administrativos">Gastos Administrativos</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Materia Prima">Materia Prima</option>
+                    <option value="Servicios">Servicios</option>
+                    <option value="Pago comisión">Pago comisión</option>
+                    <option value="Planilla">Planilla</option>
+                    <option value="Préstamos">Préstamos</option>
+                    <option value="Publicidad">Publicidad</option>
+                </select>
+            </div>
+            <div class="form-group col-lg-6">
                 <label for="filtros.id_usuario">Empleado:</label>
                 <select [(ngModel)]="filtros.id_usuario" class="form-select" name="filtros.id_usuario">
                     <option value="">Todos</option>
@@ -197,6 +228,14 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div class="form-group col-sm-6" *ngIf="apiService.auth_user().empresa.facturacion_electronica">
+                <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
+                    <option value="">Todos</option>
+                    <option value="0">Sin emitir</option>
+                    <option value="1">Emitidos</option>
+                </select>
+            </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
@@ -205,5 +244,37 @@
             </button>
         </div>
     </form>
+  </div>
+</ng-template>
+
+
+<ng-template #mDTE>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">DTE </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="d-grid">
+
+            <button *ngIf="gasto.sello_mh" (click)="imprimirDTEJSON(gasto)" class="mb-3 btn btn-primary btn-block">
+                Ver JSON
+            </button>
+
+            <button *ngIf="gasto.sello_mh" (click)="imprimirDTEPDF(gasto)" class="mb-3 btn btn-primary btn-block">
+                Ver PDF
+            </button>
+
+            <button *ngIf="gasto.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!sending">Enviar por correo</span>
+                <span *ngIf="sending">Enviando...</span>
+            </button>
+
+            <button *ngIf="!gasto.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!saving">Emitir</span>
+                <span *ngIf="saving">Emitiendo...</span>
+            </button>
+
+        </div>
   </div>
 </ng-template>

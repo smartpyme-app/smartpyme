@@ -19,7 +19,7 @@
             background-image: url('/img/factura.jpg'); background-size: 100%; 
             width: 100%; height: 100%;
         }
-
+  
         #header, #totales{
             position: relative;
         }
@@ -30,13 +30,13 @@
 /*            overflow: hidden; white-space: pre;*/
         }
 
-        #cliente        {top: 3.5cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 4cm; left: 2.5cm; }
+        #cliente        {top: 4.8cm; left: 2.5cm; width: 9cm;}
+        #direccion      {top: 5cm; left: 2.5cm; }
 
-        #fecha          {top: 3.5cm; left: 16.5cm; }
-        #nit            {top: 5cm; left: 2.5cm; }
+        #fecha          {top: 4.8cm; left: 16.5cm; }
+        #nit            {top: 6cm; left: 2.5cm; }
 
-        table   {position: absolute; top: 6.1cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 7.1cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.5cm;}
 
         .cantidad{ width: 2cm; text-align: center;}
@@ -47,14 +47,14 @@
         .gravadas{ width: 1.8cm; text-align: right;}
         
 
-        #letras     {top: 10cm; left: 2.5cm; width: 9cm; word-break: break-all; white-space: normal;}
-        #correlativo{top: 10.5cm; left: 2cm;; width: 9cm;;}
-        #info       {top: 9.2cm; left: 3cm; width: 9cm;;}
+        #letras     {top: 11cm; left: 2.5cm; width: 9cm; word-break: break-all; white-space: normal;}
+        #correlativo{top: 10.5cm; left: 2cm; width: 9cm;}
+        #info       {top: 9.2cm; left: 3cm; width: 9cm;}
 
-        #suma       {top: 10cm; left: 18.5cm; width: 2cm; text-align: right;}
+        #suma       {top: 11cm; left: 18.5cm; width: 2cm; text-align: right;}
         #no_sujeta  {top: 11cm; left: 18.5cm; width: 2cm; text-align: right;}
         #exenta     {top: 11.5cm; left: 18.5cm; width: 2cm; text-align: right;}
-        #total      {top: 12.5cm; left: 18.5cm; width: 2cm; text-align: right;}
+        #total      {top: 13cm; left: 18.5cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 

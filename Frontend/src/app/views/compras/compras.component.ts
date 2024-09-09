@@ -265,7 +265,6 @@ export class ComprasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
-
     openDTE(template: TemplateRef<any>, compra:any){
         this.compra = compra;
         this.modalRef = this.modalService.show(template);
@@ -276,16 +275,16 @@ export class ComprasComponent implements OnInit {
     }
 
     imprimirDTEPDF(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + compra.id + '/14/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(compra:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/14/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + compra.id + '/14/' + '?tipo=compra&token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluido(this.compra).then((compra) => {
+        this.mhService.emitirDTESujetoExcluidoCompra(this.compra).then((compra) => {
             this.compra = compra;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
@@ -298,7 +297,8 @@ export class ComprasComponent implements OnInit {
 
     enviarDTE(){
         this.sending = true;
-        this.apiService.store('enviarDTE/sujetoexcluido', this.compra).subscribe(dte => {
+        this.compra.tipo = 'compra';
+        this.apiService.store('enviarDTE', this.compra).subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
@@ -314,7 +314,7 @@ export class ComprasComponent implements OnInit {
             if (confirm('¿Confirma anular la compra y el DTE?')) {
                 this.compra = compra;
                 this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluido', this.compra).subscribe(dte => {
+                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
                     // this.alertService.success('DTE generado.');
                     this.compra.dte_invalidacion = dte;
                     this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
