@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 
-class MHFactura extends Model
+class MHFacturaExportacion extends Model
 {
 
     public $venta;
@@ -102,7 +102,7 @@ class MHFactura extends Model
             "tipoModelo" => $this->venta->tipoModelo,
             "tipoOperacion" => $this->venta->tipoOperacion,
             "tipoContingencia" => $this->venta->tipoContingencia,
-            "motivoContin" => $this->venta->motivoContin,
+            "motivoContigencia" => NULL,
             "fecEmi" => \Carbon\Carbon::parse($this->venta->fecha)->format('Y-m-d'),
             "horEmi" => \Carbon\Carbon::parse($this->venta->created_at)->format('H:i:s'),
             "tipoMoneda" => $this->venta->moneda,
@@ -110,6 +110,13 @@ class MHFactura extends Model
     }
 
     protected function emisor(){
+
+        // Tipo Item
+        if ($this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio'){
+            $tipo_item = 2;
+        }else{
+            $tipo_item = 1;
+        }
         
         return [
             "nit" => str_replace('-', '', $this->empresa->nit),
@@ -130,6 +137,9 @@ class MHFactura extends Model
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,
+            "tipoItemExpor" => $tipo_item,
+            "recintoFiscal" => NULL, //Punto de Aduana
+            "regimen" => NULL,
         ];
     }
 
@@ -161,8 +171,8 @@ class MHFactura extends Model
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->num_documento,
-              "nrc" => NULL,
               "nombre" => $this->venta->nombre_cliente,
+              "nombreComercial" => $this->venta->cliente->nombre_empresa,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
               "codPais" => $this->venta->cliente->cod_pais,
               "nombrePais" => $this->venta->cliente->pais,
@@ -181,7 +191,6 @@ class MHFactura extends Model
         return 
             [
                 "identificacion" => $this->identificador(),
-                "documentoRelacionado" => NULL,
                 "emisor" => $this->emisor(),
                 "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
@@ -198,7 +207,6 @@ class MHFactura extends Model
                   "totalNoGravado" => 0,
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
-                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "condicionOperacion" => $this->venta->cod_condicion,
                   "pagos" => [
                     [
@@ -209,7 +217,7 @@ class MHFactura extends Model
                       "periodo" => NULL
                     ]
                   ],
-                    "numPagoElectronico" => ""
+                    "numPagoElectronico" => "",
                     "codIncoterms" => NULL,
                     "descIncoterms" => NULL,
                     "observaciones" => NULL,

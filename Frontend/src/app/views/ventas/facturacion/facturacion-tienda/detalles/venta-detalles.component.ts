@@ -55,6 +55,7 @@ export class VentaDetallesComponent implements OnInit {
 
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
+        detalle.gravada = detalle.total;
         this.update.emit(this.venta);
     }
 
