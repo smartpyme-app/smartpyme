@@ -1,14 +1,20 @@
 <form name="form" (ngSubmit)="onSubmit()">
     <div class="row">
-        <h6 class="mb-3 font-weight-bold">Detalles</h6>
+        <h5 class="mb-3 font-weight-bold">Detalles</h5>
         <!-- nombre  -->
-        <div class="form-group col-md-12 col-lg-4">
+        <div class="form-group col-md-12 col-lg-3">
             <label for="nombre">Nombre</label>
             <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
         </div>
 
+        <!-- marca -->
+        <div class="form-group col-md-12 col-lg-3">
+            <label for="marca">Marca</label>
+            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+        </div>
+
         <!-- unidad de medida -->
-        <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
+        <div class="form-group col-md-12 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
             <label for="medida">U. de Medida</label>
             <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
                 <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
@@ -17,10 +23,13 @@
             </ng-select>
         </div>
 
-        <h6 class="my-3 font-weight-bold">Organización</h6>
+        <!-- <h6 class="my-3 font-weight-bold">Organización</h6> -->
+        <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
+
+
         <!-- categoria -->
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="id_categoria" class="w-100">Categoria</label>
+        <div class="form-group col-md-12 col-lg-3">
+            <label for="id_categoria" class="w-100">Categoría</label>
             <div class="input-group">
                 <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0" (change)="updateInputValue()">
                     <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
@@ -33,8 +42,8 @@
 
         
         <!-- subcategoria -->
-        <div class="form-group col-md-6 col-lg-3">  
-            <label for="id_subcategoria" class="w-100">Subcategoria</label>
+        <div class="form-group col-md-12 col-lg-3">  
+            <label for="id_subcategoria" class="w-100">Subcategoría</label>
             <div class="input-group">
                 <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0" (change)="updateInputValue()">
                     <ng-option *ngFor="let subcategoria of subcategRes" [value]="subcategoria.id">
@@ -44,32 +53,21 @@
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>
         </div>
-                    <!-- <ng-option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.id"> -->
 
-
-        <!-- marca -->
-        <div class="form-group col-md-6 col-lg-2">
-            <label for="marca">Marca</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+        <!-- unidad de medida -->
+        <div class="form-group col-md-12 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
+            <label for="medida">U. de Medida</label>
+            <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+                <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+                    {{ medida.nombre }}
+                </ng-option>
+            </ng-select>
         </div>
-        <!-- proveedor  -->
-        <!-- <div class="form-group col-md-6 col-lg-4">
-            <label for="">Proveedor</label>
-            <div class="input-group flex-nowrap">
-                <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="producto.id_proveedor" class="form-select p-0">
-                    <ng-option value=""> Seleccione aquí </ng-option>
-                    <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
-                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
-                    </ng-option>
-                </ng-select>
-            </div>
-        </div> -->
 
         <!-- Codigos -->
 
-        
-        <h6 class="my-3 font-weight-bold">Codigos</h6>
+        <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
+         
 
         <!-- codigo sku  -->
         <div class="form-group col-md-6 col-lg-3">
@@ -94,8 +92,10 @@
             <input type="text" class="form-control" [(ngModel)]="producto.cod_proveed_prod" name="cod_proveed_prod" placeholder="Escribe aquí" mask='0*'>
         </div>
 
-        <h6 class="my-3 font-weight-bold">Detalles</h6>
-        <div class="form-group col-md-2 col-lg-2">
+        <h5 class="my-3 font-weight-bold">Organización</h5>
+
+        <!-- talla -->
+        <div class="form-group col-md-12 col-lg-3">
             <label for="talla" class="w-100">Talla</label>
             <div class="input-group">
               <ng-select
@@ -112,8 +112,8 @@
             </div>
         </div>
 
-   
-        <div class="form-group col-md-2 col-lg-2">
+   <!-- color -->
+        <div class="form-group col-md-12 col-lg-3">
             <label for="color" class="w-100">Color</label>
             <div class="input-group">
               <ng-select
@@ -129,21 +129,8 @@
               </ng-select>
             </div>
         </div>
-<!-- 
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="material" class="w-100">Material</label>
-            <div class="input-group">
-                <select name="material"  [(ngModel)]="producto.material" class=" form-control form-select ">
-                    <option value="Madera">Madera</option>
-                    <option value="Papel">Papel</option>
-                    <option value="Metal">Metal</option>
-                    <option value="Plastico">Plastico</option>
-                    <option value="Vidrio">Vidrio</option>
-                </select>
-            </div>
-        </div> -->
-
-        <div class="form-group col-md-2 col-lg-2">
+<!-- material -->
+        <div class="form-group col-md-12 col-lg-3">
             <label for="material" class="w-100">Material</label>
             <div class="input-group">
               <ng-select
@@ -160,18 +147,27 @@
             </div>
         </div>
 
-        <div class="form-group col-md-6 col-lg-3">
+<!-- dimensiones -->
+        <div class="form-group col-md-12 col-lg-3">
             <label for="dimensiones">Dimensiones</label>
             <input type="text" class="form-control" [(ngModel)]="producto.dimensiones" name="dimensiones" placeholder="Escribe aquí">
         </div>
 
+        <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
 
-        <div class="form-group col-md-12 col-lg-7">
+<!-- etiquetas   -->
+
+        <div class="form-group col-md-12 col-lg-6">
             <label for="etiquetas">Etiquetas</label>
             <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
         </div>
+<!-- Descripcion  -->
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="descripcion">Descripción</label>
+            <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Escribe aquí" cols="30" rows="1"></textarea>
+        </div>
 
-        <h6 class="my-3 font-weight-bold">Precio</h6>
+        <h5 class="my-3 font-weight-bold">Precio</h5>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="precio">Precio sin IVA</label>
             <div class="input-group">
@@ -207,46 +203,20 @@
                 <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
             </div>
         </div>
-
+<!-- 
         <h6 class="my-3 font-weight-bold w-100">Descripción</h6>
 
         <div class="form-group col-lg-12">
             <label for="descripcion">Agrega alguna información adicional</label>
             <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Escribe aquí" cols="30" rows="2"></textarea>
-        </div>
+        </div> -->
 
-        <div class="form-group col-md-6 col-lg-5 without-label " *ngIf="producto.tipo != 'Servicio'">
+        <!-- <div class="form-group col-md-6 col-lg-5 without-label " *ngIf="producto.tipo != 'Servicio'">
             <div class="form-switch bg-light-info rounded">
               <label>¿Es producto compuesto?</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCompuesto()" [checked]="producto.tipo == 'Compuesto'" name="compuesto">
             </div>
-        </div>
-
-        <!-- <h6 class="my-3 font-weight-bold">Variacion</h6>
-
-
-        <div class="form-group col-lg-12 mt-3">
-            <button type="button" class="btn btn-primary" (click)="addVariant()" >Agregar Variación</button>
-        </div>
-
-        <div *ngFor="let variant of variants; let i = index" class="row mb-3">
-            <div class="col-md-5">
-              <label for="nombre{{i}}">Nombre de la Variación</label>
-              <input type="text" [(ngModel)]="variant.nombre" name="nombre{{i}}" id="nombre{{i}}" class="form-control" placeholder="Nombre de la variación">
-            </div>
-            <div class="col-md-4">
-              <label for="cantidad{{i}}">Cantidad</label>
-              <input type="text" [(ngModel)]="variant.cantidad" name="cantidad{{i}}" id="cantidad{{i}}" 
-              class="form-control" placeholder="Cantidad" pattern="^[0-9]+$" required>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-              <button type="button" class="btn btn-danger" (click)="removeVariant(i)" >
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-        </div> -->
-
-    
+        </div>    -->
        
 
         <div class="form-group col-lg-12 mt-3">
