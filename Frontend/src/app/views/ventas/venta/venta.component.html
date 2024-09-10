@@ -55,6 +55,10 @@
                 <label class="fw-medium">Vendedor</label>
                 <p>{{ venta.nombre_vendedor }}</p>
             </div>
+            <div class="form-group col-lg-4" *ngIf="venta.id_proyecto">
+                <label class="fw-medium">Proyecto</label>
+                <p>{{ proyecto.nombre }}</p>
+            </div>
         </div>
     </div>
 

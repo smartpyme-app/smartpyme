@@ -14,6 +14,7 @@ import { ApiService } from '@services/api.service';
 export class VentaComponent implements OnInit {
 
     public venta:any = {};
+    public proyecto:any ={};
     public usuario:any = {};
     public loading = false;
     public saving = false;
@@ -29,7 +30,6 @@ export class VentaComponent implements OnInit {
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
         this.loadAll();
-
     }
 
     public loadAll(){
@@ -39,8 +39,18 @@ export class VentaComponent implements OnInit {
         
         this.venta.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
+
         this.apiService.read('venta/', this.venta.id).subscribe(venta => {
         this.venta = venta;
+
+        if(this.venta.id_proyecto){
+            this.apiService.read('proyecto/',this.venta.id_proyecto).subscribe(proyecto => {
+                this.proyecto = proyecto;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
+
+        }
+
         this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
