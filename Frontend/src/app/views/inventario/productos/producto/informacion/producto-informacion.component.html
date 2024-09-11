@@ -13,16 +13,6 @@
             <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
         </div>
 
-        <!-- unidad de medida -->
-        <div class="form-group col-md-12 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
-            <label for="medida">U. de Medida</label>
-            <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
-                <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
-                    {{ medida.nombre }}
-                </ng-option>
-            </ng-select>
-        </div>
-
         <!-- <h6 class="my-3 font-weight-bold">Organización</h6> -->
         <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
 

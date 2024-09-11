@@ -1,0 +1,73 @@
+<!-- <app-compra-producto [compra]="compra" (productoSelect)="productoSelect($event)"></app-compra-producto> -->
+
+<div class="row">
+    <div class="col-md-12 table-responsive">
+        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th style="width: 150px;">Cantidad</th>
+                    <th style="width: 150px;">Costo</th>
+                    <th style="width: 150px;">Descuento</th>
+                    <th style="width: 100px;" class="text-right">Total</th>
+                    <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="compra?.detalles?.length < 1">
+                    <td colspan="7" class="text-center">
+                        <p class="text-muted my-3">
+                            Agregue productos y servicios
+                        </p>
+                    </td>
+                </tr>
+                <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                    <td>
+                        <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                        {{ detalle.nombre_producto }}
+                    </td>
+                    <td style="width: 150px;">
+                        <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control">
+                    </td>
+                    <td style="width: 150px;">
+                        <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="costo">
+                    </td>
+                    <td style="width: 150px;">
+                        <input type="number" [(ngModel)]="detalle.descuento" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
+                    </td>
+                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 50px;" class="text-center">
+                        <div class="btn-group">
+                            <button class="btn btn-link" (click)="delete(detalle)">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+        <form name="form" (ngSubmit)="supervisorCheck()">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" focus="true">
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Autorizar</span>
+                    <span *ngIf="loading">Autorizando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  </div>
+</ng-template>

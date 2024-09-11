@@ -7,6 +7,7 @@ import { AdminGuard } from '@guards/admin.guard';
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { ProductoComponent } from '@views/inventario/productos/producto/producto.component';
 import { PromocionesComponent } from '@views/inventario/promociones/promociones.component';
+import { ProductoComboComponent } from './productos/producto/combo/producto-combo.component';
 
 import { ProductosConsignasComponent } from '@views/inventario/consignas/productos-consignas.component';
 
@@ -33,6 +34,7 @@ const routes: Routes = [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
         { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
+        { path: 'producto/combo/crear', component: ProductoComboComponent, title: 'Producto combo' },
 
         { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
         

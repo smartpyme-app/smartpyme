@@ -31,6 +31,8 @@ import { ProductoComprasComponent } from './productos/producto/historial/compras
 import { ProductoAjustesComponent } from './productos/producto/historial/ajustes/producto-ajustes.component';
 import { ProductoVentasComponent } from './productos/producto/historial/ventas/producto-ventas.component';
 import { PromocionesComponent } from './promociones/promociones.component';
+import { ProductoComboComponent } from './productos/producto/combo/producto-combo.component';
+import { ComboDetallesComponent } from './productos/producto/combo/detalles/combo-detalles.component';
 
 import { ProductosConsignasComponent } from './consignas/productos-consignas.component';
 
@@ -99,7 +101,9 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     CategoriasComponent,
     SubCategoriasComponent,
     BodegaComponent,
-    BodegasComponent
+    BodegasComponent,
+    ProductoComboComponent,
+    ComboDetallesComponent
   ],
   exports: [
   	ProductosComponent,
@@ -129,7 +133,9 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     CategoriasComponent,
     SubCategoriasComponent,
     BodegaComponent,
-    BodegasComponent
+    BodegasComponent,
+    ProductoComboComponent,
+    ComboDetallesComponent
   ]
 })
 export class InventarioModule { }
