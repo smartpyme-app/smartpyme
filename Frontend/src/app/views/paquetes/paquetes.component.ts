@@ -59,6 +59,11 @@ export class PaquetesComponent implements OnInit {
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
+
+        if(this.apiService.auth_user().tipo != 'Administrador'){
+            this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+        }
+        
         this.filtrarPaquetes();
     }
 
