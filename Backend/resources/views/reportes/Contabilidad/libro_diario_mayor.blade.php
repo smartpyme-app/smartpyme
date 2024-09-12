@@ -2,7 +2,7 @@
 <html>
 <head>
     {{-- revisar--}}
-    <title>Libro diario auxiliar </title>
+    <title>Libro Diario Mayor </title>
     <style>
 
         *{ font-size: 13px; margin: 0; padding: 0;}

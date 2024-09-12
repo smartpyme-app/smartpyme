@@ -112,16 +112,37 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioMayor(){
 
-        //cuentas que no aceptan datos 
+        //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
+        $nivel_datos=2;
 
+        //cuentas que no aceptan datos
+        $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
+//        dd($cuentas_padre->pluck('codigo'));
+
+        //cuentas que aceptan datos
+        $cuentas_hijas= Cuenta::where('acepta_datos', 1)->where('id_empresa', auth()->user()->id_empresa)->get();
+
+//      detalles de partidas
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();
 
         $partidas= Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
-//        partidas ya recogidas segun la fecha qued se ha creado, solo falta detallarlas
+//        dd($partidas);
+
+        //elegir entre los detalles de las partidas cuales tienen cuentas eque empiezan con los cuatros digitos de las partidas padre
+        foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
+        {
+            //ahora a la coleccion de partidas hay que preguntarle a chat como puedo seleccionar de detalles solo los detalles con cuenta que empiece con $cod_padre
+            //luego armar segun el modelo de CuentaReporte usando $cod_padre cmo codigo y guardando cada detalle en el atributo detalle como una colección
+            //se hara un array de estas cuentas reporte y eso se enviara al reporte
+        }
 
 
+
+//      partidas ya recogidas segun la fecha qued se ha creado, solo falta detallarlas
         $detalles_cnts= $partidas->pluck('codigo');
+
+
 //        $cuents_rstl= array_unique($detalles_cnts);
 //        dd($detalles_cnts->unique());
 
