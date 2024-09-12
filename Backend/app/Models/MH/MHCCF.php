@@ -189,7 +189,7 @@ class MHCCF extends Model
                   "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total + $this->venta->iva_retenido, 2, '.', '')),
                   "totalNoGravado" => 0,
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
