@@ -19,7 +19,8 @@ import * as moment from 'moment';
 
 @Component({
   selector: 'app-calendario',
-  templateUrl: './calendario.component.html'
+  templateUrl: './calendario.component.html',
+  styleUrls: ['./calendario.component.css']
 })
 export class CalendarioComponent implements OnInit {
 
@@ -53,24 +54,30 @@ export class CalendarioComponent implements OnInit {
             navLinks: true,
             firstDay: 0,
             timeZone: 'America/El_Salvador',
-            locale: esLocale,
+            locale: 'es',
             themeSystem: 'bootstrap',
-            businessHours: [ // specify an array instead
-              {
-                daysOfWeek: [ 1, 2, 3, 4, 5 ], // Monday, Tuesday, Wednesday
-                startTime: '08:00', // 8am
-                endTime: '17:00' // 5pm
+            initialView: 'timeGridWeek',
+            titleFormat: { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric'
               },
-              {
-                daysOfWeek: [ 6 ], // Thursday, Friday
-                startTime: '08:00', // 10am
-                endTime: '12:00' // 4pm
-              }
-            ],
+            // businessHours: [ // specify an array instead
+            //   {
+            //     daysOfWeek: [ 1, 2, 3, 4, 5 ], // Monday, Tuesday, Wednesday
+            //     startTime: '08:00', // 8am
+            //     endTime: '17:00' // 5pm
+            //   },
+            //   {
+            //     daysOfWeek: [ 6 ], // Thursday, Friday
+            //     startTime: '08:00', // 10am
+            //     endTime: '12:00' // 4pm
+            //   }
+            // ],
             headerToolbar: {
-              left: 'prev,next today',
+              left: 'timeGridDay,timeGridWeek,dayGridMonth,multiMonthYear',
               center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay,multiMonthYear,listWeek'
+              right:''
             },
             customButtons: {
               myCustomButton: {
@@ -78,6 +85,11 @@ export class CalendarioComponent implements OnInit {
                 click: this.handleDateClick.bind(this)
               }
             },
+            slotLabelFormat: {
+                hour: 'numeric', // Muestra la hora en formato numérico
+                minute: '2-digit', // Muestra los minutos en formato de dos dígitos
+                meridiem: false // Elimina el AM/PM
+              },
             dateClick: this.handleDateClick.bind(this),
             eventClick: this.handleEventClick.bind(this),
             eventChange: this.handleEventChange.bind(this),
@@ -100,7 +112,7 @@ export class CalendarioComponent implements OnInit {
             if(this.modalRef){
                 this.modalRef.hide();
             }
-            console.log('siu');
+            // console.log('siu');
             this.update.emit();
         }, error => {this.alertService.error(error); this.loading = false;});
     }

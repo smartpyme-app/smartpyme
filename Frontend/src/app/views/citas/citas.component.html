@@ -1,10 +1,10 @@
 <div class="row">
-    <div class="col-xl-4 mb-5">
+    <!-- <div class="col-xl-4 mb-5">
         <div class="bg-white p-3">
             <h3>Próximas Citas 
                 <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
                 <button tooltip="Filtrar" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
-                <!--  -->
+                
             </h3>
             
             <div class="table-responsive">
@@ -18,7 +18,7 @@
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <!-- eventos traidos del componente -->
+                        
                         <tr *ngFor=" let evento of eventos?.data">
                             <td>
                                 <p class="m-0 d-flex justify-content-between">
@@ -69,9 +69,10 @@
                 </table>
             </div>
         </div>
-    </div>
-    <div class="col-xl-8 mb-5">
+    </div> -->
+    <div class="col-xl-12 mb-5">
         <div class="bg-white p-3">
+            <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Añadir cita</button>
             <app-calendario #calendario (update)="loadAll()"></app-calendario>
         </div>
     </div>
