@@ -143,7 +143,11 @@ class MHFactura extends Model
                 "nombre" => 'Consumidor Final',
                 "codActividad" => NULL,
                 "descActividad" => NULL,
-                "direccion" => NULL,
+                "direccion" => [
+                    "departamento" => $this->empresa->cod_departamento,
+                    "municipio" => $this->empresa->cod_municipio,
+                    "complemento" => $this->empresa->direccion,
+                ],
                 "telefono" => NULL,
                 "correo" => NULL
             ];
@@ -203,7 +207,7 @@ class MHFactura extends Model
                   "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total + $this->venta->iva_retenido, 2, '.', '')),
                   "totalNoGravado" => 0,
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
@@ -255,10 +259,9 @@ class MHFactura extends Model
 
             $detalle->codTributo = NULL;
 
-            $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-            $detalle->iva = ($detalle->total * 0.13);
-            $detalle->gravada = $detalle->total;
-            $detalle->total = $detalle->total + $detalle->iva;
+            $precioConIva = round($detalle->precio + ($detalle->precio * 0.13), 2);
+            $IVA = ($detalle->total * 0.13);
+            $gravada = $detalle->cantidad * $precioConIva;
 
             $detalles->push([
                 "numItem" => $index + 1,
@@ -269,15 +272,15 @@ class MHFactura extends Model
                 "codTributo" => $detalle->codTributo,
                 "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
+                "precioUni" => floatval(number_format($precioConIva,2, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
                 "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                 "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
+                "ventaGravada" => floatval(number_format($gravada,2, '.', '')),
                 "tributos" => $tributos,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($detalle->iva,2))
+                "ivaItem" => floatval(number_format($IVA,2))
               ]);
         }
 

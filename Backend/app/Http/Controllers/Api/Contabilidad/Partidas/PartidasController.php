@@ -78,8 +78,6 @@ class PartidasController extends Controller
             else
                 $partida = new Partida;
 
-            $partida->fill($request->all());
-            $partida->save();
 
             // Detalles
 
@@ -92,7 +90,37 @@ class PartidasController extends Controller
                 $detalle['id_partida'] = $partida->id;
                 $detalle->fill($det);
                 $detalle->save();
+
+                $debe = $detalle->debe ? $detalle->debe : 0;
+                $haber = $detalle->haber ? $detalle->haber : 0;
+
+                // Aplicar partida
+                if(($request['estado'] == 'Aplicada') && ($partida->estado != 'Aplicada')){
+                    $detalle->cuenta->increment('cargo', $debe);
+                    $detalle->cuenta->increment('abono', $haber);
+
+                    if($detalle->cuenta->naturaleza == 'Deudor'){
+                        $detalle->cuenta->increment('saldo', $debe - $haber);
+                    }else{
+                        $detalle->cuenta->increment('saldo', $haber - $debe);
+                    }
+
+                }
+
+                // Anular aplicacion
+                if(($request['estado'] != 'Aplicada') && ($partida->estado == 'Aplicada')){
+                    $detalle->cuenta->decrement('cargo', $debe);
+                    $detalle->cuenta->decrement('abono', $haber);
+                    if($detalle->cuenta->naturaleza == 'Deudor'){
+                        $detalle->cuenta->decrement('saldo', $debe - $haber);
+                    }else{
+                        $detalle->cuenta->decrement('saldo', $haber - $debe);
+                    }
+                }
             }
+            
+            $partida->fill($request->all());
+            $partida->save();
 
             DB::commit();
             return Response()->json($partida, 200);

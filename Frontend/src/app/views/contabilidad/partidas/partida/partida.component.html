@@ -6,7 +6,6 @@
 <form autocomplete="off" (ngSubmit)="onSubmit()">
     <div class="bg-white rounded p-3 mb-3">
         <div class="row">
-
             <div class="form-group col-md-6 col-lg-2">
                 <label for="fecha">Fecha:</label>
                 <input type="date" class="form-control" name="fecha" [(ngModel)]="partida.fecha"/>
@@ -34,11 +33,9 @@
                 <label for="concepto">Concepto:</label>
                 <input type="text" class="form-control" name="concepto" [(ngModel)]="partida.concepto"/>
             </div>
-
         </div>
-        
-
     </div>
+
     <div class="bg-white rounded p-3">
         <app-partida-detalles [partida]="partida" (update)="updatePartida($event)" (sumTotal)="sumTotal()"></app-partida-detalles>
     </div>

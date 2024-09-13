@@ -10,10 +10,10 @@ use JWTAuth;
 
 class ProyectosController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $proyectos = Proyecto::when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like', '%'. $request->buscador . '%');
                     })
@@ -28,6 +28,9 @@ class ProyectosController extends Controller
                     })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
+                    })
+                    ->when($request->estado, function($query) use ($request){
+                        return $query->where('estado', $request->estado);
                     })
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);
@@ -46,13 +49,13 @@ class ProyectosController extends Controller
         $proyectos = Proyecto::orderBy('nombre','asc')
                             ->where('enable', true)
                             ->get();
-        
+
         return Response()->json($proyectos, 200);
 
     }
 
     public function read($id) {
-        
+
         $proyecto = Proyecto::where('id', $id)->with('compras', 'ventas.abonos', 'cotizaciones', 'gastos', 'presupuestos')->firstOrFail();
         return Response()->json($proyecto, 200);
 
@@ -78,7 +81,7 @@ class ProyectosController extends Controller
             $proyecto = Proyecto::findOrFail($request->id);
         else
             $proyecto = new Proyecto;
-        
+
         $proyecto->fill($request->all());
         $proyecto->save();
 
@@ -88,7 +91,7 @@ class ProyectosController extends Controller
 
     public function delete($id)
     {
-       
+
         $proyecto = Proyecto::findOrFail($id);
         $proyecto->delete();
 

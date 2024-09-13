@@ -103,14 +103,11 @@
                         <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                   <!--  <tr *ngIf="compra.tipo_documento == 'Sujeto excluido'">
-                        <td class="text-right">
-                            <input type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.renta" name="compra.renta">
-                            <b> Ret. Renta (10%): </b>
-                        </td>
+                    <tr *ngIf="compra.tipo_documento == 'Sujeto excluido'">
+                        <td class="text-right"> <b>Ret. Renta (10%)</b></td>
                         <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
-                    </tr> -->
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -376,6 +373,12 @@
             <div class="form-switch bg-light-info rounded">
               <label for="percepcion">Percepción</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion">
+            </div>
+        </div>
+        <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="renta">Renta</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.renta" name="compra.renta">
             </div>
         </div>
     </div>

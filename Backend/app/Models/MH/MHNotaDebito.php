@@ -193,7 +193,7 @@ class MHNotaDebito extends Model
                   "ivaPerci1" => floatval(number_format($this->devolucion->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->devolucion->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total + $this->devolucion->iva_retenido, 2, '.', '')),
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
