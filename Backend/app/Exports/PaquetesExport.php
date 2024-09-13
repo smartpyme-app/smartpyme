@@ -67,9 +67,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
         $request = $this->request;
         return Paquete::with('cliente', 'proveedor')
                                 ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->whereHas('inventarios', function($q) use ($request){
-                                        return $q->where('id_sucursal', $request->id_sucursal);
-                                    });
+                                    return $q->where('id_sucursal', $request->id_sucursal);
                                 })
                                 ->when($request->buscador, function($query) use ($request){
                                     return $query->whereHas('cliente', function($q) use ($request){
