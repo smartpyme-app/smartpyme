@@ -24,16 +24,17 @@
     border: none !important; /* Elimina el borde del encabezado de la columna de las horas */
   }
 
-
-  .fc-timegrid-slot.fc-timegrid-slot-lane {
-    border-right: 1px solid #ddd !important; /* Añade un borde derecho */
-}
+/*
+.fc-timegrid-slot-lane {
+    border-bottom: 1px solid #060505 !important;  Añade un borde derecho
+} */
  /*
 .fc-timegrid-slot.fc-timegrid-slot-lane:last-child {
     border-right: none !important; Remueve el borde de la última columna 
 }*/
 
 
-/*background del calendario vista de dia*/
-  .fc-timegrid-slot  { background-color: #ffffff !important; }
+/*background del calendario vista de dia */
+  /* .fc-timegrid-slot  { background-color: #ffffff !important; } */
 
+ 

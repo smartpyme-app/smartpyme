@@ -49,7 +49,7 @@ export class CalendarioComponent implements OnInit {
 
         this.calendarOptions = {
             // plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin, multiMonthPlugin],
-            plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin, rrulePlugin],
+            plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin],
             editable: true,
             navLinks: true,
             firstDay: 0,
@@ -64,15 +64,10 @@ export class CalendarioComponent implements OnInit {
               },
             // businessHours: [ // specify an array instead
             //   {
-            //     daysOfWeek: [ 1, 2, 3, 4, 5 ], // Monday, Tuesday, Wednesday
+            //     daysOfWeek: [ 1, 2, 3, 4, 5, 6 ], // Monday, Tuesday, Wednesday
             //     startTime: '08:00', // 8am
-            //     endTime: '17:00' // 5pm
+            //     endTime: '8:00' // 8pm
             //   },
-            //   {
-            //     daysOfWeek: [ 6 ], // Thursday, Friday
-            //     startTime: '08:00', // 10am
-            //     endTime: '12:00' // 4pm
-            //   }
             // ],
             headerToolbar: {
               left: 'timeGridDay,timeGridWeek,dayGridMonth,multiMonthYear',
