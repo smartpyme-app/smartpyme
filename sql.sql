@@ -106,6 +106,9 @@ CREATE TABLE catalogo_cuentas (
     id_cuenta_padre int NULL,
     rubro varchar(255) NOT NULL,
     nivel int NOT NULL,
+    cargo decimal(9,2) DEFAULT 0,
+    abono decimal(9,2) DEFAULT 0,
+    saldo decimal(9,2) DEFAULT 0,
     id_empresa int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
@@ -326,3 +329,8 @@ ALTER TABLE cuentas_bancarias CHANGE numero numero VARCHAR(255) CHARACTER SET ut
 ALTER TABLE cuentas_bancarias CHANGE saldo saldo DECIMAL(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE productos  ADD cod_proveed_prod varchar(255) NULL after id_categoria;
 ALTER TABLE productos  ADD id_subcategoria INT(11) NULL after id_categoria;
+
+
+ALTER TABLE catalogo_cuentas ADD cargo decimal(9,2) DEFAULT 0 after nivel;
+ALTER TABLE catalogo_cuentas ADD abono decimal(9,2) DEFAULT 0 after cargo;
+ALTER TABLE catalogo_cuentas ADD saldo decimal(9,2) DEFAULT 0 after abono;

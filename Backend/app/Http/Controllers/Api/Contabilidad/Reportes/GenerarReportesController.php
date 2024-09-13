@@ -41,7 +41,7 @@ class GenerarReportesController extends Controller
         if($cuenta->naturaleza == 'Deudor'){
             $saldo_calc = $debe - $haber;
         }else{
-            $saldo_calc =$haber - $debe ;
+            $saldo_calc = $haber - $debe ;
         }
 
         //si la cuenta de es de una naturaleza se suma el debe y se resta el haber
