@@ -69,7 +69,6 @@
 
 </head>
 <body>
-<body>
 
 <section id="factura">
     <div class="header">
@@ -88,11 +87,22 @@
     </div>
 
     <div style="page-break-after:auto;">
-        <table>
+
             {{--            titulo de la cuenta--}}
             {{--            <tr>Cuenta: {{ $num_cuenta }} - {{$nom_cuenta}}</tr>--}}
 
-            @foreach($det_agrup as $cuentas)
+            @foreach($cuentas as $cuenta)
+
+{{--                @if($cuenta->detalles != null)--}}
+            <table>
+                <tr>
+                    <th>Cuenta: </th>
+                    <th>{{$cuenta->cuenta}}</th>
+                    <th></th>
+                    <th></th>
+                    <th>Saldo anterior: </th>
+                    <th>{{$cuenta->saldo_anterior}}</th>
+                </tr>
                 <tr>
                     <th>Partida</th>
                     <th>Fecha</th>
@@ -102,56 +112,38 @@
                     <th>Saldo</th>
                 </tr>
 
-                @foreach($cuentas as $detalle_par)
+
+                @foreach($cuenta->detalles as $detalle)
                     <tr>
-                        <td class="id_partida">     {{$detalle_par->codigo}}    </td>
-                        <td class="fecha_partida">  {{$detalle_par->created_at}}    </td>
-                        <td class="concepto">       {{$detalle_par->concepto}}    </td>
-                        <td class="cargo">          {{$detalle_par->debe}}   </td>
-                        <td class="abono">          {{$detalle_par->haber}}    </td>
-                        <td class="saldo">          {{$detalle_par->saldo}}   </td>
+                        <td class="id_partida">     {{$detalle->codigo}}    </td>
+                        <td class="fecha_partida">  {{$detalle->created_at}}    </td>
+                        <td class="concepto">       {{$detalle->concepto}}    </td>
+                        <td class="cargo">          {{$detalle->debe}}   </td>
+                        <td class="abono">          {{$detalle->haber}}    </td>
+                        <td class="saldo">          {{$detalle->saldo}}   </td>
+                        @if($cuenta->naturaleza=="Deudor")
+                            <td class="saldo">    {{$cuenta->saldo_actual=$cuenta->saldo_actual+$detalle->debe-$detalle->haber}}   </td>
+                        @else
+                            <td class="saldo">     {{$cuenta->saldo_actual=$cuenta->saldo_actual-$detalle->debe+$detalle->haber}}   </td>
+                        @endif
                     </tr>
+                    @if($loop->last == false)
 
-                    {{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
+                    @endif
 
-{{--                    @if($loop->iteration % 40 === 0 or $loop->last == true)--}}
-
-{{--        </table>--}}
-{{--        <div class="page-break"></div>--}}
-{{--            <div class="header">--}}
-
-{{--                --}}{{--        a la derecha del documento --}}
-{{--                <p id="logo">{{$empresa->logo}}</p>--}}
-
-{{--                --}}{{--        al centro del documento --}}
-{{--                <p id="empresa_nombre">{{$empresa->nombre}}</p>--}}
-{{--                <p id="titulo_doc">Movimiento de una cuenta</p>--}}
-{{--                <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>--}}
-
-{{--                --}}{{--        a la izquierda del documento--}}
-{{--                <p id="fecha_actual">4/05/2024</p>--}}
-{{--                <p id="hora_reporte">06:15:18 a.m.</p>--}}
-
-{{--            </div>--}}
-{{--        <table class="table invoice-articles-table">--}}
-
-{{--            --}}{{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
-{{--            @if($loop->last == false)--}}
-{{--                <thead>--}}
-{{--                <tr>--}}
-{{--                    <th>Partida</th>--}}
-{{--                    <th>Fecha</th>--}}
-{{--                    <th>Concepto</th>--}}
-{{--                    <th>Cargo</th>--}}
-{{--                    <th>Abono</th>--}}
-{{--                    <th>Saldo</th>--}}
-{{--                    ...--}}
-{{--                </thead>--}}
-{{--            @endif--}}
-{{--            @endif--}}
             @endforeach
+{{--                @endif--}}
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Total por cuenta:</th>
+                    <th>{{$cuenta->cargo}}</th>
+                    <th> {{$cuenta->abono}}</th>
+                    <th>{{$cuenta->saldo_actual}}</th>
+                </tr>
+            </table>
             @endforeach
-        </table>
+
 
 </section>
 

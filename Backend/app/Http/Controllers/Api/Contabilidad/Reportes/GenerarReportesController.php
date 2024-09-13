@@ -112,54 +112,54 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioMayor(){
 
+        $cuentas = [];
+
         //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
         $nivel_datos=2;
 
-        //cuentas que no aceptan datos
+        //cuentas que no aceptan datos segun nivel
         $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
-//        dd($cuentas_padre->pluck('codigo'));
-
-        //cuentas que aceptan datos
-        $cuentas_hijas= Cuenta::where('acepta_datos', 1)->where('id_empresa', auth()->user()->id_empresa)->get();
 
 //      detalles de partidas
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();
 
         $partidas= Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
-//        dd($partidas);
+
 
         //elegir entre los detalles de las partidas cuales tienen cuentas eque empiezan con los cuatros digitos de las partidas padre
         foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
         {
-            //ahora a la coleccion de partidas hay que preguntarle a chat como puedo seleccionar de detalles solo los detalles con cuenta que empiece con $cod_padre
-            //luego armar segun el modelo de CuentaReporte usando $cod_padre cmo codigo y guardando cada detalle en el atributo detalle como una colección
-            //se hara un array de estas cuentas reporte y eso se enviara al reporte
+            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre){
+                return strpos($detalle->codigo, (string)$cod_padre) === 0;
+            });
+
+            // Convertir el resultado a una colección nuevamente (opcional)
+            $partidasFiltradas = $partidasFiltradas->values();
+
+            if (count($partidasFiltradas)!=0){
+
+                $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
+
+
+                $cuenta_reporte= new CuentaReporte();
+                $cuenta_reporte->cuenta= $cod_padre;
+                $cuenta_reporte->detalles = $partidasFiltradas;
+                $cuenta_reporte->naturaleza = $cnt->naturaleza;
+                $cuenta_reporte->cargo = 0;
+                $cuenta_reporte->abono = 0;
+                $cuenta_reporte->saldo_actual = 0;
+                $cuenta_reporte->saldo_anterior = 0;
+
+//            dd($cuenta_reporte);
+
+                array_push($cuentas,$cuenta_reporte);
+
+            }
+
         }
 
-
-
-//      partidas ya recogidas segun la fecha qued se ha creado, solo falta detallarlas
-        $detalles_cnts= $partidas->pluck('codigo');
-
-
-//        $cuents_rstl= array_unique($detalles_cnts);
-//        dd($detalles_cnts->unique());
-
-//        foreach ($detalles_cnts->unique() as $cuenta){
-//
-//            Cuenta::where()
-//
-//
-//        }
-
-        foreach ($partidas as $partida){
-            $detalle= Detalle::where('id_partida', $partida->id )->get();
-        }
-
-        $detalles = Detalle::get();
-        $duplica =$detalles->groupBy('codigo');
-        $det_agrup= $duplica->all();
+//        dd($cuentas);
 
         $empresa = Empresa::findOrfail(13);
 
@@ -167,7 +167,7 @@ class GenerarReportesController extends Controller
         $hasta= '28/03/2024';
 
 
-        $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('det_agrup', 'empresa', 'desde', 'hasta'));
+        $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'desde', 'hasta'));
         $pdf->setPaper('US Letter', 'portrait' );
 
         return $pdf->stream();

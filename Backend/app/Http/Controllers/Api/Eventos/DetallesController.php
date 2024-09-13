@@ -9,7 +9,7 @@ use App\Models\Eventos\Detalle;
 
 class DetallesController extends Controller
 {
-    
+
     public function store(Request $request)
     {
         $request->validate([
@@ -17,17 +17,18 @@ class DetallesController extends Controller
             'cantidad'    => 'required',
             'id_evento'    => 'required'
         ]);
-        
+
         if($request->id){
             $detalle = Detalle::findOrFail($request->id);
         }
-        else{
+        else {
             $detalle = new Detalle;
 
-        $detalle->fill($request->all());
-        $detalle->save();
+            $detalle->fill($request->all());
+            $detalle->save();
 
-        return Response()->json($detalle, 200);
+            return Response()->json($detalle, 200);
+        }
 
     }
 
