@@ -25,6 +25,7 @@ export class FacturacionCompraComponent implements OnInit {
     public documentos:any = [];
     public formaPagos:any = [];
     public sucursales:any = [];
+    public bodegas:any = [];
     public impuestos:any = [];
     // public bancos:any = [];
     public supervisor:any = {};
@@ -59,6 +60,10 @@ export class FacturacionCompraComponent implements OnInit {
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
+        }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('usuarios/list').subscribe(usuarios => {
