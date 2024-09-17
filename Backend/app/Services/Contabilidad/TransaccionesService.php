@@ -15,12 +15,12 @@ class TransaccionesService
         $configuracion = Configuracion::firstOrFail();
 
         if ($transaccion->tipo == 'Cargo') {
-            $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
-            $cuenta_haber = Cuenta::where('id', $transaccion->cuenta->id_cuenta_contable)->firstOrFail();
+            $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
+            $cuenta_debe = Cuenta::where('id', $transaccion->cuenta->id_cuenta_contable)->firstOrFail();
         }
         if ($transaccion->tipo == 'Abono') {
-            $cuenta_debe = Cuenta::where('id', $transaccion->cuenta->id_cuenta_contable)->firstOrFail();
-            $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
+            $cuenta_haber = Cuenta::where('id', $transaccion->cuenta->id_cuenta_contable)->firstOrFail();
+            $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
         }
 
         $tipo = 'Diario';
