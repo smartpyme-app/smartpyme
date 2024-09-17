@@ -114,7 +114,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
                 'precio' : this.detalle.precio
             });
         this.detalle.costo          = parseFloat(producto.costo);
-        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+        producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
         if(producto.inventarios.length > 0){
             this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         }else{
@@ -141,7 +141,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
                     'precio' : this.detalle.precio
                 });
             this.detalle.costo          = parseFloat(producto.costo);
-            producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+            producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
             if(producto.inventarios.length > 0){
                 this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
             }else{
