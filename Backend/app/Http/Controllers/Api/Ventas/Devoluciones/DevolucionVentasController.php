@@ -117,7 +117,7 @@ class DevolucionVentasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'tipo'              => 'required|max:255',
-            'id_documento'      => 'required|max:255',
+            // 'id_documento'      => 'required|max:255',
             // 'id_cliente'        => 'required',
             'detalles'          => 'required',
             'iva'               => 'required|numeric',
@@ -173,7 +173,9 @@ class DevolucionVentasController extends Controller
             }
             
         // Incrementar el correlarivo
+        if ($devolucion->id_documento) {
             Documento::where('id', $devolucion->id_documento)->increment('correlativo');
+        }
         
         DB::commit();
         return Response()->json($devolucion, 200);
