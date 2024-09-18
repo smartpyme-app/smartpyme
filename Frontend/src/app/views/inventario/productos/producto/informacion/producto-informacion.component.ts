@@ -40,7 +40,7 @@ export class ProductoInformacionComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
         // subcategorias
         
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
+        this.apiService.getAll('categorias/padre').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
@@ -61,10 +61,14 @@ export class ProductoInformacionComponent implements OnInit {
         if(categoria.subcategoria){
             this.subcategRes.push(categoria);
             this.producto.id_subcategoria= categoria.id;
+            this.subcategorias.push(categoria);
+            console.log("aqui se coloca la subcategoria en el input");
 
         }else{
             this.categorias.push(categoria);
             this.producto.id_categoria = categoria.id;
+            console.log("aqui se coloca la CATEGORIA PADRE en el input");
+
         }
 
     }
@@ -119,7 +123,7 @@ export class ProductoInformacionComponent implements OnInit {
     }
 
     public barcode(){
-        var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+        var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.barcode + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
     }
 
     public verificarSiExiste(){
@@ -151,14 +155,14 @@ private correlativo: number = 1; // Inicialmente, este sería el primer SKU
         this.subcategRes = this.subcategorias.filter((subcategoria:any) => subcategoria.id_cate_padre === categoriaSeleccionada.id);
         nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
         console.log("Este es el action de la categoria");
-        console.log(this.subcategRes);
+        // console.log(this.subcategRes);
         
     }
 
     if (subcategoriaSeleccionada) {
       nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
       console.log("Este es el action de la subcategoria");
-      console.log(nombreSubcategoria);
+    //   console.log(nombreSubcategoria);
     }
 
     if (this.producto.id_categoria && this.producto.id_subcategoria) {

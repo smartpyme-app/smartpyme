@@ -176,5 +176,15 @@ class CategoriasController extends Controller
 
     }
 
+    public function categoriasPadre(){
+
+        $categorias = Categoria::where('enable', true)->where('subcategoria', 0)
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return Response()->json($categorias, 200);
+
+    }
+
 
 }

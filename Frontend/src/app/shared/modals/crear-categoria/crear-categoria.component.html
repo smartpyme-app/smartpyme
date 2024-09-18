@@ -31,9 +31,15 @@
           <!-- Select para elegir la categoría padre (se muestra solo si Subcategoria está activado) -->
           <div class="form-group col-12" *ngIf="categoria.subcategoria" >
             <label for="categoria.id_cate_padre">Seleccionar Categoría Padre</label>
-            <select class="form-control" [(ngModel)]="categoria.id_cate_padre" name="categoria.id_cate_padre" >
+            <!-- <select class="form-control" [(ngModel)]="categoria.id_cate_padre" name="categoria.id_cate_padre" >
               <option *ngFor="let cat of categorias" [value]="cat.id">{{ cat.nombre }}</option>
-            </select>
+            </select> -->
+
+            <ng-select [(ngModel)]="categoria.id_cate_padre" class="form-select p-0" name="categoria.id_cate_padre">
+              <ng-option *ngFor="let cat of categorias" [value]="cat.id">
+                {{ cat.nombre }}
+              </ng-option>
+          </ng-select>
 
           </div>
   

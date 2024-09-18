@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Inventario\Categorias\CategoriasController;
 use App\Http\Controllers\Api\Inventario\Categorias\SubCategoriasController;
 
     Route::get('/categorias',               [CategoriasController::class, 'index']);
+    Route::get('/categorias/padre',         [CategoriasController::class, 'categoriasPadre']);
     Route::get('/categorias/list',          [CategoriasController::class, 'list']);
     Route::get('/categoria/{id}',           [CategoriasController::class, 'read']);
     Route::get('/categorias/buscar/{text}', [CategoriasController::class, 'search']);
