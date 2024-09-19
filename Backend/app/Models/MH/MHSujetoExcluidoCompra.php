@@ -197,9 +197,9 @@ class MHSujetoExcluidoCompra extends Model
                 "codigo" => $detalle->codigo,
                 "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->costo + ($detalle->costo * 0.13) ,4, '.', '')),
+                "precioUni" => floatval(number_format($detalle->costo + ($this->compra->iva ? ($detalle->costo * 0.13) : 0) ,4, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "compra" => floatval(number_format($detalle->total + ($detalle->total * 0.13),2, '.', '')),
+                "compra" => floatval(number_format($detalle->total + ($this->compra->iva ? ($detalle->costo * 0.13) : 0),2, '.', '')),
               ]);
         }
 
