@@ -279,6 +279,9 @@ class MHDTEController extends Controller
 
 
         $DTE = $registro->dte;
+        if (!$DTE) {
+            return 'No se encontró el DTE';
+        }
         // return $DTE;
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
