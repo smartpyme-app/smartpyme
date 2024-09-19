@@ -13,6 +13,7 @@ import * as moment from 'moment';
 export class ConsumidorFinalComponent implements OnInit {
 
 	public ivas:any[] = [];
+    public years:any[] = [];
     public sucursales:any[] = [];
     public loading:boolean = false;
     public filtros:any = {};
@@ -24,11 +25,21 @@ export class ConsumidorFinalComponent implements OnInit {
     ) { }
 
 	ngOnInit() {   
-        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
-        this.filtros.tipo_documento = 'Factura';
+        const currentYear = new Date().getFullYear(); // Obtener el año actual
+        const currentMonth = new Date().getMonth() + 1;
+        // Crear un array con el año actual y los 10 años anteriores
+        for (let i = 0; i <= 10; i++) {
+          this.years.push(currentYear - i);
+        }
+
+
+        this.filtros.id_sucursal = '';
+        this.filtros.tipo_documento = 'Crédito fiscal';
+        this.filtros.anio = currentYear;
+        this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
-        this.filtros.inicio = moment().startOf(this.filtros.time).format('YYYY-MM-DD');
-        this.filtros.fin = moment().endOf(this.filtros.time).format('YYYY-MM-DD');
+        
+        this.setTime();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
@@ -39,16 +50,16 @@ export class ConsumidorFinalComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva', this.filtros).subscribe(ivas => { 
+        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(ivas => { 
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    public setTime($time:any){
-        this.filtros.time = $time;
-        this.filtros.inicio = moment().startOf(this.filtros.time).format('YYYY-MM-DD');
-        this.filtros.fin = moment().endOf(this.filtros.time).format('YYYY-MM-DD');
+    public setTime() {
+        // this.filtros.time = { this.filtros.anio, this.filtros.mes }; // Guardamos el mes y año en el filtro
+        this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
+        this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
         this.loadAll();
     }
 

@@ -63,6 +63,7 @@
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/promociones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li> -->
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                     <li *ngIf="usuario.empresa.modulo_proyectos" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                   </ul>
     
@@ -81,10 +82,18 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/gastos']" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+            <li class="mb-1">
+                <button (click)="toggleGastos()" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
-                </a>
+                </button>
+                <div [collapse]="gastosIsCollapsed" [isAnimated]="true">
+                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorias</a></li>
+                  </ul>
+                </div>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
             </li>
             <li *ngIf="usuario.empresa.modulo_citas"  class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
@@ -100,7 +109,6 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Reportería</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li> -->
-                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li> -->
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li> -->
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
