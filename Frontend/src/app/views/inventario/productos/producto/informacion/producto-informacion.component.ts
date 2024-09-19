@@ -62,12 +62,10 @@ export class ProductoInformacionComponent implements OnInit {
             this.subcategRes.push(categoria);
             this.producto.id_subcategoria= categoria.id;
             this.subcategorias.push(categoria);
-            console.log("aqui se coloca la subcategoria en el input");
 
         }else{
             this.categorias.push(categoria);
             this.producto.id_categoria = categoria.id;
-            console.log("aqui se coloca la CATEGORIA PADRE en el input");
 
         }
 
@@ -165,7 +163,7 @@ private correlativo: number = 1; // Inicialmente, este sería el primer SKU
     //   console.log(nombreSubcategoria);
     }
 
-    if (this.producto.id_categoria && this.producto.id_subcategoria) {
+    if (this.producto.id_categoria || this.producto.id_subcategoria) {
       this.producto.codigo= `${nombreCategoria}${nombreSubcategoria}${this.correlativo.toString().padStart(5, '0')}`;
     }
   }

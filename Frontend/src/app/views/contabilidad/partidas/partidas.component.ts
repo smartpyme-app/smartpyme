@@ -19,6 +19,7 @@ export class PartidasComponent implements OnInit {
     public loading:boolean = false;
     public saving:boolean = false;
     public filtros:any = {};
+    public reporte = { desde: '', hasta: '' };
 
     modalRef!: BsModalRef;
 
@@ -50,6 +51,10 @@ export class PartidasComponent implements OnInit {
         this.filtros.paginate = 10;
         this.filtros.estado = '';
         this.filtrarPartidas();
+
+        this.reporte.desde='';
+        this.reporte.hasta='';
+        
     }
 
     public filtrarPartidas(){
@@ -138,11 +143,20 @@ export class PartidasComponent implements OnInit {
     }
 
     public imprimirDiarioAux(){
-        window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar' + '?token=' + this.apiService.auth_token());
+        
+        window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' +'?token=' + this.apiService.auth_token());
     }
 
-    public imprimirDiarioMayor(){
-        window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor' + '?token=' + this.apiService.auth_token());
-    }
+    public imprimirDiarioMayor() {
+        if (this.reporte.desde && this.reporte.hasta) {
+          // Asegúrate de que las fechas existan
+          const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
+          const hastaFormatted = this.reporte.hasta;
+    
+          window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
+        } else {
+          console.error('Las fechas no están definidas.');
+        }
+      }
 
 }

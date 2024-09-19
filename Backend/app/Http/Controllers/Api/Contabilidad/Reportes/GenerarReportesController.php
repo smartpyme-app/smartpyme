@@ -110,7 +110,7 @@ class GenerarReportesController extends Controller
         return  $pdf->stream();
     }
 
-    public function generarRepLibroDiarioMayor(){
+    public function generarRepLibroDiarioMayor($startDate, $endDate){
 
         $cuentas = [];
 
@@ -121,8 +121,8 @@ class GenerarReportesController extends Controller
         $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
 //      detalles de partidas
-        $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
-        $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();
+//        $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
+//        $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();
 
         $partidas= Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
 
@@ -137,6 +137,20 @@ class GenerarReportesController extends Controller
             // Convertir el resultado a una colección nuevamente (opcional)
             $partidasFiltradas = $partidasFiltradas->values();
 
+//            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
+
+            $sum_deb=0;
+            $sum_hab=0;
+            foreach ($partidasFiltradas as $det_part){
+
+//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+
+                $sum_deb+=$det_part->debe;
+                $sum_hab+=$det_part->haber;
+
+            }
+
             if (count($partidasFiltradas)!=0){
 
                 $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
@@ -144,18 +158,19 @@ class GenerarReportesController extends Controller
 
                 $cuenta_reporte= new CuentaReporte();
                 $cuenta_reporte->cuenta= $cod_padre;
+                $cuenta_reporte->nombre= $cnt->nombre;
                 $cuenta_reporte->detalles = $partidasFiltradas;
                 $cuenta_reporte->naturaleza = $cnt->naturaleza;
-                $cuenta_reporte->cargo = 0;
-                $cuenta_reporte->abono = 0;
+                $cuenta_reporte->cargo = $sum_deb;
+                $cuenta_reporte->abono = $sum_hab;
                 $cuenta_reporte->saldo_actual = 0;
                 $cuenta_reporte->saldo_anterior = 0;
 
-//            dd($cuenta_reporte);
 
                 array_push($cuentas,$cuenta_reporte);
 
             }
+
 
         }
 
@@ -163,8 +178,8 @@ class GenerarReportesController extends Controller
 
         $empresa = Empresa::findOrfail(13);
 
-        $desde= '28/03/2024';
-        $hasta= '28/03/2024';
+        $desde= $startDate;
+        $hasta= $endDate;
 
 
         $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'desde', 'hasta'));

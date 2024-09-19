@@ -30,17 +30,19 @@
 
         #logo          {top: 0.5cm; left: 0.5cm }
         #empresa_nombre  { top: 0.5cm; left: 9.5cm;}
-        #titulo_doc      {top: 1.5cm; left: 9cm; font-weight: bold;}
-        #fechas_filtro  {top: 2.5cm; left: 8.5cm;}
-        #fecha_actual   {top: 0.5cm; left: 17cm; }
-        #hora_reporte    {top: 1.5cm; left: 17cm; }
+        #titulo_doc      {top: 1cm; left: 9.5cm; font-weight: bold;}
+        #fechas_filtro  {top: 1.5cm; left: 8.5cm;}
+        #centro_costos  {top: 2cm; left: 9.2cm;}
+        #val_dolares  {top: 2.5cm; left: 8cm;}
+        #fecha_actual   {top: 0.5cm; left: 17cm;}
+        #hora_reporte    {top: 1.5cm; left: 17cm;}
 
-        table   {position: relative; top: 4.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; margin-bottom: 10px; }
+        table   {position: relative; top: 4cm; left: 0.5cm; text-align: left; border-collapse: collapse; margin-bottom: 10px; }
         table td{height: 0.5cm; text-align: left;}
 
-        .id_partida{ width: 1.5cm; text-align: center;}
-        .fecha_partida{ width: 4cm; text-align: center;}
-        .concepto{ width: 9cm; text-align: left;}
+        .id_partida{ width: 3.5cm; text-align: center;}
+        .fecha_partida{ width: 3.5cm; text-align: center;}
+        .concepto{ width: 7.5cm; text-align: left;}
         .cargo{ width: 2cm; text-align: center;}
         .abono{ width: 2cm; text-align: center;}
         .saldo{ width: 2cm; text-align: center;}
@@ -77,12 +79,14 @@
 
         {{--        al centro del documento --}}
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
-        <p id="titulo_doc">Demo libro Contable</p>
+        <p id="titulo_doc">Libro Diario Mayor</p>
         <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
+        <p id="centro_costos">Centro de Costos: NA-NA</p>
+        <p id="val_dolares">VALORES ESPRESADOS EN US DOLARES</p>
 
-        {{--        a la izquierda del documento--}}
-        <p id="fecha_actual">4/05/2024</p>
-        <p id="hora_reporte">06:15:18 a.m.</p>
+        {{--a la izquierda del documento--}}
+{{--        <p id="fecha_actual">4/05/2024</p>--}}
+{{--        <p id="hora_reporte">06:15:18 a.m.</p>--}}
 
     </div>
 
@@ -96,12 +100,12 @@
 {{--                @if($cuenta->detalles != null)--}}
             <table>
                 <tr>
-                    <th>Cuenta: </th>
-                    <th>{{$cuenta->cuenta}}</th>
-                    <th></th>
-                    <th></th>
-                    <th>Saldo anterior: </th>
-                    <th>{{$cuenta->saldo_anterior}}</th>
+                    <th style="border: none; ">Cuenta: </th>
+                    <th style="border: none; ">{{$cuenta->cuenta}}</th>
+                    <th style="border: none; ">{{$cuenta->nombre}}</th>
+                    <th style="border: none; "></th>
+                    <th style="border: none; "></th>
+                    <th style="border: none; "></th>
                 </tr>
                 <tr>
                     <th>Partida</th>
@@ -112,19 +116,29 @@
                     <th>Saldo</th>
                 </tr>
 
+                <tr>
+                    <td style="border: none;"></td>
+                    <td style="border: none;"></td>
+                    <td style="border: none;">Saldo inicial:</td>
+                    <td style="border: none; text-align: center;">0.00</td>
+                    <td style="border: none; text-align: center;">0.00</td>
+                    <td style="border: none; text-align: center;">{{$cuenta->saldo_anterior}}</td>
+                </tr>
+
+
 
                 @foreach($cuenta->detalles as $detalle)
                     <tr>
-                        <td class="id_partida">     {{$detalle->codigo}}    </td>
+                        <td class="id_partida">     PART - {{$detalle->id_partida}}    </td>
                         <td class="fecha_partida">  {{$detalle->created_at}}    </td>
                         <td class="concepto">       {{$detalle->concepto}}    </td>
                         <td class="cargo">          {{$detalle->debe}}   </td>
                         <td class="abono">          {{$detalle->haber}}    </td>
-                        <td class="saldo">          {{$detalle->saldo}}   </td>
+{{--                        <td class="saldo">          {{$detalle->saldo}}   </td>--}}
                         @if($cuenta->naturaleza=="Deudor")
-                            <td class="saldo">    {{$cuenta->saldo_actual=$cuenta->saldo_actual+$detalle->debe-$detalle->haber}}   </td>
+                            <td class="saldo">    {{$cuenta->saldo_actual = number_format((float)$cuenta->saldo_actual + (float)$detalle->debe - (float)$detalle->haber, 2) }}</td>
                         @else
-                            <td class="saldo">     {{$cuenta->saldo_actual=$cuenta->saldo_actual-$detalle->debe+$detalle->haber}}   </td>
+                            <td class="saldo">     {{$cuenta->saldo_actual=number_format((float)$cuenta->saldo_actual-(float)$detalle->debe+(float)$detalle->haber, 2)}}</td>
                         @endif
                     </tr>
                     @if($loop->last == false)

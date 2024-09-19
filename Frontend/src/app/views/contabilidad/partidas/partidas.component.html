@@ -213,19 +213,19 @@
                     <div class="row">
                         <div class="form-group col-md-8">
                             <label for="nombre">Titulo del reporte:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-9">
                             <label for="">Titulo de partida a imprimir</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-4">
                             <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_inicio"/>
+                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_inicio"/>
                         </div>
                         <div class="form-group col-md-4">
                             <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_fin"/>
+                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_fin"/>
                         </div>
                         <div class="form-group col-md-8">
                                 <!-- toggle de activación salto de página despues de cada partida-->
@@ -255,23 +255,23 @@
                     <div class="row">
                         <div class="form-group col-md-9">
                             <label for="nombre">Concepto:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-4">
                             <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_inicio"/>
+                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_inicio"/>
                         </div>
                         <div class="form-group col-md-4">
                             <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_fin"/>
+                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_fin"/>
                         </div>
                         <div class="form-group col-md-5">
                             <label for="nombre">Centro de costo:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-4">
                             <label for="nombre"> </label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-8">
                             <!-- toggle incluir # numero de página -->
@@ -291,33 +291,37 @@
               </div>
               <!-- tab 3 formulario LIBRO DIARIO MAYOR -->
               <div class="tab-pane fade" id="v-pills-messages" role="tabpanel" aria-labelledby="v-pills-messages-tab">
-                <form (ngSubmit)="imprimirDiarioMayor()">
+                <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor(reporteForm)" novalidate>
                     <div class="row">
-
-                        <div class="form-group col-md-6">
-                            <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="proyecto.fecha_inicio"/>
+                      <div class="form-group col-md-6">
+                        <label for="desde">Desde:</label>
+                        <input type="date" class="form-control" name="desde" required [(ngModel)]="reporte.desde" #desde="ngModel"/>
+                        <!-- Mostrar un mensaje de error si el campo es inválido -->
+                        <div *ngIf="desde.invalid && (desde.dirty || desde.touched)" class="text-danger">
+                          El campo "Desde" es requerido.
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="proyecto.fecha_fin"/>
+                      </div>
+                  
+                      <div class="form-group col-md-6">
+                        <label for="hasta">Hasta:</label>
+                        <input type="date" class="form-control" name="hasta" required [(ngModel)]="reporte.hasta" #hasta="ngModel"/>
+                        <!-- Mostrar un mensaje de error si el campo es inválido -->
+                        <div *ngIf="hasta.invalid && (hasta.dirty || hasta.touched)" class="text-danger">
+                          El campo "Hasta" es requerido.
                         </div>
-
-                        <div class="form-group col-md-12">
-                            <!-- toggle incluir # numero de página -->
-                        </div>
-        
+                      </div>
                     </div>
-                    <div class="row">          
-                        <div class="form-group col-md-12 mt-3">
-                            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                                <span *ngIf="saving">Guardando...</span>
-                            </button>
-                        </div>
+                  
+                    <div class="row">
+                      <div class="form-group col-md-12 mt-3">
+                        <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
+                          <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                          <span *ngIf="saving">Guardando...</span>
+                        </button>
+                      </div>
                     </div>
-              </form>
-              </div>
+                  </form>
+            </div>
               <!-- tab 4 formulario LIBRO MAYOR -->
               <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
 
@@ -325,27 +329,27 @@
                     <div class="row">
                         <div class="form-group col-md-6">
                             <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_inicio"/>
+                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_inicio"/>
                         </div>
                         <div class="form-group col-md-6">
                             <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="proyecto.fecha_fin"/>
+                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_fin"/>
                         </div>
                         <div class="form-group col-md-6">
                             <label for="nombre">Cuenta desde:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-6">
                             <label for="">Cuenta hasta:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-6">
                             <label for="nombre">Centro de costo:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
                         <div class="form-group col-md-6">
                             <label for="nombre"> </label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="proyecto.nombre">
+                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
 
                         <div class="form-group col-md-8">
