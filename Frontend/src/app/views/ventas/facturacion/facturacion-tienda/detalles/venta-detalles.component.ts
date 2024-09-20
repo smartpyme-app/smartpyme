@@ -208,13 +208,14 @@ export class VentaDetallesComponent implements OnInit {
                         if(detalle.id) {
                             this.apiService.delete('venta/detalle/', detalle.id).subscribe(detalle => {
                                 this.venta.detalles.splice(indexAEliminar, 1);
+                                this.update.emit(this.venta);
                             },error => {this.alertService.error(error); this.loading = false; });
                         }else{
                             this.venta.detalles.splice(indexAEliminar, 1);
+                            this.update.emit(this.venta);
                         }
 
                     }
-                this.update.emit(this.venta);
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
               }

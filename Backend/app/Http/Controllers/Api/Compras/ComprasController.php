@@ -412,52 +412,6 @@ class ComprasController extends Controller
             }
     }
 
-    public function libroCompras(Request $request) {
-        $star = $request->inicio;
-        $end = $request->fin;
-
-        $compras = Compra::with('proveedor')->where('estado', '!=', 'Anulada')
-                            ->when($request->tipo_documento, function($query) use ($request){
-                                return $query->whereHas('documento', function($q) use ($request) {
-                                        $q->where('nombre', $request->tipo_documento);
-                                    });
-                            })
-                            ->when($request->id_sucursal, function($q) use ($request){
-                                $q->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->whereBetween('fecha', [$request->inicio, $request->fin])
-                            ->where('cotizacion', 0)
-                            ->orderBy('id', 'desc')->get();
-
-        $ivas = collect();
-
-        foreach ($compras as $compra) {
-                $ivas->push([
-                    'fecha'                 => $compra->fecha,
-                    'clase_documento'       => 1,
-                    'tipo_documento'        => $compra->tipo_documento,
-                    'num_documento'         => $compra->referencia,
-                    'nit_nrc'               => $compra->proveedor()->pluck('nit')->first() ? $compra->proveedor()->pluck('nit')->first() : $compra->proveedor()->pluck('ncr')->first(),
-                    'nombre_proveedor'        => $compra->nombre_proveedor,
-                    'compras_exentas'        => $compra->exenta,
-                    'compras_no_sujetas'     => $compra->no_sujeta,
-                    'compras_gravadas'       => $compra->sub_total,
-                    'debito_fiscal'         => $compra->iva,
-                    'compras_cuenta_terceros'=> 0,
-                    'debito_cuenta_terceros'=> 0,
-                    'total'                 => $compra->total,
-                    'dui'                   => $compra->proveedor()->pluck('dui')->first(),
-                    'num_anexto'            => 1,
-                ]);
-        }
-
-        // $ivas = $ivas->sortByDesc('correlativo')->values()->all();
-
-        return Response()->json($ivas, 200);
-
-    }
-
-
     public function detalles($id)
     {
         $compra = Compra::findOrFail($id);

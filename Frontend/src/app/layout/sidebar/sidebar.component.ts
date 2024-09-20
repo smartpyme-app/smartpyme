@@ -16,6 +16,7 @@ export class SidebarComponent implements OnInit {
     public productosIsCollapsed:boolean = true;
     public ventasIsCollapsed:boolean = true;
     public comprasIsCollapsed:boolean = true;
+    public gastosIsCollapsed:boolean = true;
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public contabilidadIsCollapsed:boolean = true;
@@ -51,6 +52,11 @@ export class SidebarComponent implements OnInit {
             localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
         }else{
             this.comprasIsCollapsed = JSON.parse(localStorage.getItem('comprasIsCollapsed')!);
+        }
+        if (!localStorage.getItem('gastosIsCollapsed')) {
+            localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        }else{
+            this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
         }
         if (!localStorage.getItem('preferenciasIsCollapsed')) {
             localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
@@ -142,6 +148,15 @@ export class SidebarComponent implements OnInit {
         }
         this.comprasIsCollapsed = !this.comprasIsCollapsed;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleGastos() {
+        if(this.gastosIsCollapsed){
+            this.closeAll();
+        }
+        this.gastosIsCollapsed = !this.gastosIsCollapsed;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 

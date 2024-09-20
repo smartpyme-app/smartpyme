@@ -62,7 +62,7 @@
                             {{categoria.nombre}}
                         </ng-option>
                     </ng-select>
-                    <!-- <app-crear-categoria-gasto (update)="setCategoria($event)"></app-crear-categoria-gasto> -->
+                    <!-- <a routerLink="/gastos/categorias" class="btn btn-default"><i class="fa fa-cog"></i></a> -->
                 </div>
             </div>
             <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
