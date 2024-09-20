@@ -142,9 +142,14 @@ export class PartidasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
-    public imprimirDiarioAux(){
-        
-        window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' +'?token=' + this.apiService.auth_token());
+    public imprimirDiarioAux() {
+        if (this.reporte.desde && this.reporte.hasta) {
+            const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
+            const hastaFormatted = this.reporte.hasta;
+            window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
+        } else {
+            alert('Por favor, llene las fechas requeridas.');
+        }
     }
 
     public imprimirDiarioMayor() {

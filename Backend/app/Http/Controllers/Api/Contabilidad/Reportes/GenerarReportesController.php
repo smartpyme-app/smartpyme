@@ -59,9 +59,9 @@ class GenerarReportesController extends Controller
 
     }
 
-    public function generarRepLibroDiarioAux(){
+    public function generarRepLibroDiarioAux($desde,$hasta){
 
-        // Falta revisar que sean cuentas que si acepten datos y encabezado
+        // Falta revisar porque lo enviua desordenado
 
         $cuentas = [];
 
@@ -70,27 +70,30 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrfail($empresa_id);
 
         $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
-            $query->where('id_empresa', $empresa_id);})
+            $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$desde, $hasta])->orderBy('codigo', 'asc')
             ->get()->groupBy('codigo')->all();
+
+//        dd($det_agrup)
 
         foreach ($det_agrup as $index => $collection){
 
-            $nat_cuenta= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->pluck('naturaleza');
+            $cuent= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->first();
+            $nombre_cuent= $cuent->nombre;
+            $nat_cuenta= $cuent->naturaleza;
 
             $sum_deb=0;
             $sum_hab=0;
             foreach ($collection as $det_part){
-
 //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
 //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
 
                 $sum_deb+=$det_part->debe;
                 $sum_hab+=$det_part->haber;
-
             }
 
             $cuenta_reporte = new CuentaReporte();
             $cuenta_reporte->cuenta= $index;
+            $cuenta_reporte->nombre= $nombre_cuent;
             $cuenta_reporte->detalles= $collection;
             $cuenta_reporte->naturaleza= $nat_cuenta;
             $cuenta_reporte->cargo= $sum_deb;
@@ -101,10 +104,13 @@ class GenerarReportesController extends Controller
         }
 
 //        dd($cuentas);
-        $desde= '28/03/2024';
-        $hasta= '28/03/2024';
+// Fecha en formato dd/mm/yyyy
+        $fecha = date('d/m/Y');
 
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('cuentas', 'empresa','desde', 'hasta'));
+// Hora en formato 12 horas con a.m./p.m.
+        $hora = date('h:i:s a');
+
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('cuentas', 'empresa','desde', 'hasta', 'hora', 'fecha'));
         $pdf->setPaper('US Letter', 'landscape');
 
         return  $pdf->stream();
