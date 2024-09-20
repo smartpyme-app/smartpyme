@@ -207,7 +207,7 @@
               <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>
             </div>
             <div class="tab-content" id="v-pills-tabContent">
-              <!-- tab 1 formulario LIBRO DIARIO -->
+              <!-- tab 1 formulario LIBRO DIARIO AUXILIAR-->
               <div class="tab-pane fade show active" id="v-pills-home" role="tabpanel" aria-labelledby="v-pills-home-tab">
                 <form (ngSubmit)="imprimirDiarioAux()" #auxForm="ngForm">
                     <div class="row">
@@ -240,36 +240,29 @@
               <!-- tab 2 formulario LIBRO MAYOR -->
               <div class="tab-pane fade" id="v-pills-profile" role="tabpanel" aria-labelledby="v-pills-profile-tab">        
 
-              <form (ngSubmit)="imprimirDiarioMayor()">
+              <form (ngSubmit)="imprimirMayor()" #mayorForm="ngForm">
                     <div class="row">
                         <div class="form-group col-md-9">
                             <label for="nombre">Concepto:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
+                            <input type="text" class="form-control" name="nombre" required [(ngModel)]="reporte.concepto">
                         </div>
                         <div class="form-group col-md-4">
-                            <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_inicio"/>
+                            <label for="reporte.desde">Desde:</label>
+                            <input type='date' class="form-control" name="reporte.desde" required [(ngModel)]="reporte.desde"/>
                         </div>
                         <div class="form-group col-md-4">
-                            <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_fin"/>
+                            <label for="reporte.hasta">Hasta:</label>
+                            <input type='date' class="form-control" name="reporte.hasta" required [(ngModel)]="reporte.hasta"/>
                         </div>
                         <div class="form-group col-md-5">
                             <label for="nombre">Centro de costo:</label>
                             <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
-                        <div class="form-group col-md-4">
-                            <label for="nombre"> </label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                        </div>
-                        <div class="form-group col-md-8">
-                            <!-- toggle incluir # numero de página -->
-                        </div>
         
                     </div>
                     <div class="row">          
                         <div class="form-group col-md-12 mt-3">
-                            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                            <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                                 <span >Generar documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                                 <span *ngIf="saving">Guardando...</span>
                             </button>

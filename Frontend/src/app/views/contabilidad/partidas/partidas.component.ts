@@ -19,7 +19,7 @@ export class PartidasComponent implements OnInit {
     public loading:boolean = false;
     public saving:boolean = false;
     public filtros:any = {};
-    public reporte = { desde: '', hasta: '' };
+    public reporte = { desde: '', hasta: '', concepto: '' };
 
     modalRef!: BsModalRef;
 
@@ -54,6 +54,7 @@ export class PartidasComponent implements OnInit {
 
         this.reporte.desde='';
         this.reporte.hasta='';
+        this.reporte.concepto='';
         
     }
 
@@ -147,6 +148,17 @@ export class PartidasComponent implements OnInit {
             const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
             const hastaFormatted = this.reporte.hasta;
             window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
+        } else {
+            alert('Por favor, llene las fechas requeridas.');
+        }
+    }
+
+    public imprimirMayor() {
+        if (this.reporte.desde && this.reporte.hasta && this.reporte.concepto) {
+            const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
+            const hastaFormatted = this.reporte.hasta;
+            const conceptoFormatted = this.reporte.concepto;
+            window.open(this.apiService.baseUrl + '/api/reportes/libro/mayor/' + desdeFormatted + '/' + hastaFormatted + '/'+conceptoFormatted +'?token=' + this.apiService.auth_token());
         } else {
             alert('Por favor, llene las fechas requeridas.');
         }

@@ -73,8 +73,6 @@ class GenerarReportesController extends Controller
             $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$desde, $hasta])->orderBy('codigo', 'asc')
             ->get()->groupBy('codigo')->all();
 
-//        dd($det_agrup)
-
         foreach ($det_agrup as $index => $collection){
 
             $cuent= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->first();
@@ -116,22 +114,20 @@ class GenerarReportesController extends Controller
         return  $pdf->stream();
     }
 
-    public function generarRepLibroDiarioMayor($startDate, $endDate){
+    public function generarRepLibroDiarioMayor($startDate, $endDate, $concepto = null){
 
         $cuentas = [];
 
         //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
         $nivel_datos=2;
 
+        $empresa_id= auth()->user()->id_empresa;
+
         //cuentas que no aceptan datos segun nivel
         $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-//      detalles de partidas
-//        $startDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->startOfDay();
-//        $endDate = Carbon::createFromFormat('Y-m-d', '2024-07-11')->endOfDay();
-
-        $partidas= Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
-
+        $partidas= Detalle::whereHas('partida', function($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$startDate, $endDate])->get();
 
         //elegir entre los detalles de las partidas cuales tienen cuentas eque empiezan con los cuatros digitos de las partidas padre
         foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
@@ -182,13 +178,18 @@ class GenerarReportesController extends Controller
 
 //        dd($cuentas);
 
-        $empresa = Empresa::findOrfail(13);
+        $empresa = Empresa::findOrfail($empresa_id);
 
         $desde= $startDate;
         $hasta= $endDate;
 
+        if ($concepto!=null){
+            $pdf= PDF::loadView('reportes.contabilidad.libro_mayor', compact('cuentas', 'empresa', 'desde', 'hasta', 'concepto'));
+        }else{
+            $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'desde', 'hasta'));
 
-        $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'desde', 'hasta'));
+        }
+
         $pdf->setPaper('US Letter', 'portrait' );
 
         return $pdf->stream();
