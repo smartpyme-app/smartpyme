@@ -196,6 +196,60 @@ class GenerarReportesController extends Controller
 
     }
 
+    public function generarRepMovCuenta($startDate, $endDate, $cuenta_cod){
+
+        $empresa_id= auth()->user()->id_empresa;
+
+        $cuenta= Cuenta::where('codigo', $cuenta_cod)->where('id_empresa', auth()->user()->id_empresa)->first();
+
+//        dd($cuenta_cod);
+
+        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);})
+            ->whereBetween('created_at', [$startDate, $endDate])->where('codigo', $cuenta_cod)
+            ->get();
+
+        $empresa = Empresa::findOrfail($empresa_id);
+
+        $desde= $startDate;
+        $hasta= $endDate;
+
+        // Fecha en formato dd/mm/yyyy
+        $fecha = date('d/m/Y');
+
+// Hora en formato 12 horas con a.m./p.m.
+        $hora = date('h:i:s a');
+
+        $sum_deb=0;
+        $sum_hab=0;
+        foreach ($det_agrup as $detalle){
+//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+
+            $sum_deb+=$detalle->debe;
+            $sum_hab+=$detalle->haber;
+        }
+
+//        dd($cuenta);
+
+        $cuenta_reporte = new CuentaReporte();
+        $cuenta_reporte->cuenta= $cuenta_cod;
+        $cuenta_reporte->nombre= $cuenta->nombre;
+        $cuenta_reporte->detalles= $det_agrup;
+        $cuenta_reporte->naturaleza= $cuenta->naturaleza;
+        $cuenta_reporte->cargo= $sum_deb;
+        $cuenta_reporte->abono= $sum_hab;
+        $cuenta_reporte->saldo_actual= 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
+        $cuenta_reporte->saldo_anterior= 0;
+
+        $pdf= PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
+
+        $pdf->setPaper('US Letter', 'landscape' );
+
+        return $pdf->stream();
+
+
+    }
     public function generarBalanceComprobacion(){
 
         //dd($cuentas);

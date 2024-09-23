@@ -307,41 +307,37 @@
               <!-- tab 4 formulario LIBRO MAYOR -->
               <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
 
-                <form (ngSubmit)="onSubmit()">
+                <form (ngSubmit)="imprimirMovCuenta()">
                     <div class="row">
                         <div class="form-group col-md-6">
                             <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_inicio"/>
+                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.desde"/>
                         </div>
                         <div class="form-group col-md-6">
                             <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" [(ngModel)]="reporte.fecha_fin"/>
+                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
                         </div>
-                        <div class="form-group col-md-6">
+                        <div class="form-group col-md-8">
                             <label for="nombre">Cuenta desde:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
+                            <ng-select [(ngModel)]="reporte.cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta">
+                                <ng-option value="">Seleccione aquí</ng-option>
+                                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.codigo">
+                                    <div class="d-flex align-items-center">
+                                        <span class="col-4">{{ cuenta.codigo }} </span>
+                                        <span class="col-8"> - {{ cuenta.nombre | truncate:20}}</span>
+                                    </div>
+                                </ng-option>
+                            </ng-select>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="">Cuenta hasta:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                        </div>
-                        <div class="form-group col-md-6">
+                        <div class="form-group col-md-8">
                             <label for="nombre">Centro de costo:</label>
                             <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="nombre"> </label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                        </div>
-
-                        <div class="form-group col-md-8">
-                            <!-- toggle incluir # numero de página -->
                         </div>
         
                     </div>
                     <div class="row">          
                         <div class="form-group col-md-12 mt-3">
-                            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                            <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end" >
                                 <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                                 <span *ngIf="saving">Guardando...</span>
                             </button>

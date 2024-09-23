@@ -19,7 +19,8 @@ export class PartidasComponent implements OnInit {
     public loading:boolean = false;
     public saving:boolean = false;
     public filtros:any = {};
-    public reporte = { desde: '', hasta: '', concepto: '' };
+    public reporte = { desde: '', hasta: '', concepto: '', cuenta: '' };
+    public catalogo:any = [];
 
     modalRef!: BsModalRef;
 
@@ -28,6 +29,9 @@ export class PartidasComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
 
         this.loadAll();
     }
@@ -149,7 +153,7 @@ export class PartidasComponent implements OnInit {
             const hastaFormatted = this.reporte.hasta;
             window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
         } else {
-            alert('Por favor, llene las fechas requeridas.');
+            alert('Por favor, llenar los campos requeridos.');
         }
     }
 
@@ -160,7 +164,7 @@ export class PartidasComponent implements OnInit {
             const conceptoFormatted = this.reporte.concepto;
             window.open(this.apiService.baseUrl + '/api/reportes/libro/mayor/' + desdeFormatted + '/' + hastaFormatted + '/'+conceptoFormatted +'?token=' + this.apiService.auth_token());
         } else {
-            alert('Por favor, llene las fechas requeridas.');
+            alert('Por favor, llenar los campos requeridos.');
         }
     }
 
@@ -172,8 +176,19 @@ export class PartidasComponent implements OnInit {
     
           window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
         } else {
-          console.error('Las fechas no están definidas.');
+          console.error('Por favor, llenar los campos requeridos.');
         }
       }
+
+    public imprimirMovCuenta() {
+        if (this.reporte.desde && this.reporte.hasta && this.reporte.cuenta) {
+            const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
+            const hastaFormatted = this.reporte.hasta;
+            const cuentaFormatted = this.reporte.cuenta;
+            window.open(this.apiService.baseUrl + '/api/reportes/movimiento/cuenta/' + desdeFormatted + '/' + hastaFormatted +'/' + cuentaFormatted + '?token=' + this.apiService.auth_token());
+        } else {
+            alert('Por favor, llenar los campos requeridos.');
+        }
+    }
 
 }
