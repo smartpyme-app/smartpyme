@@ -2,19 +2,20 @@
 
 namespace App\Exports\Contabilidad;
 
-use App\Models\Ventas\Venta;
+use App\Models\Compras\Compra;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 
-class LibroComprasExport implements FromCollection, WithMapping
+class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
     */
     public $request;
+    private $index = 1;
 
     public function filter(Request $request)
     {
@@ -23,24 +24,19 @@ class LibroComprasExport implements FromCollection, WithMapping
 
     public function headings():array{
         return[
-            'Fecha',
-            'Clase',
-            'Tipo',
-            'Resolucion',
-            'Serie',
-            'Numero',
-            'Numero Interno',
-            'NIT/NRC',
-            'Nombre',
-            'Exentas',
-            'No Sujetas',
-            'Gravadas', 
-            'Debito', 
-            'Ventas a terceros',
-            'Debito ventas a terceros',
-            'Total',
-            'DUI',
-            'Anexo',
+            'N°',
+            'FECHA',
+            'NÚMERO DE DOCUMENTO',
+            'NÚMERO DE REGISTRO DEL CONTRIBUYENTE',
+            'NOMBRE DEL PROVEEDOR',
+            'COMPRAS EXENTAS INTERNAS',
+            'IMPORTACIONES E INTERNACIONES EXENTAS',
+            'COMPRAS INTERNAS GRAVADAS',
+            'IMPORTACIONES E INTERNACIONES GRAVADAS',
+            'CRÉDITO FISCAL',
+            'ANTICIPO A CUENTA IVA PERCIBIDO',
+            'TOTAL',
+            'COMPRAS A SUJETOS EXCLUIDOS',
         ];
     }
 
@@ -60,40 +56,25 @@ class LibroComprasExport implements FromCollection, WithMapping
         
     }
 
-    public function map($row): array{
+    public function map($compra): array{
 
-            $nombre = $row->dte['receptor']['nombre'] ?? '';
-            $dui = $row->dte['receptor']['numDocumento'] ?? '';
-            $nit_nrc = '';
+        $proveedor = optional($compra->proveedor);
 
-            if ($row->dte && $row->tipo_documento == 'Credito Fiscal' && $row->dte['receptor']) {
-                $nit_nrc = $row->dte['receptor']['nrc'] ? $row->dte['receptor']['nrc'] : $row->dte['receptor']['nit'];
-            }
+        return [
+            $this->index++,
+            $compra->fecha,
+            $compra->referencia,
+            $proveedor->nit ?? $proveedor->ncr,
+            $compra->nombre_proveedor,
+            $compra->exenta,
+            0,
+            $compra->sub_total,
+            0,
+            $compra->iva,
+            $compra->iva_percibido,
+            $compra->total,
+            0,
+        ];
 
-           $fields = [
-              \Carbon\Carbon::parse($row->fecha)->format('d/m/Y'), //'Fecha',
-              '4', //'Clase',
-              '01', //'Tipo',
-              $row->dte['identificacion']['numeroControl'] ?? '', //'Resolucion',
-              $row->dte['sello'] ?? '', //'Serie',
-              $row->dte['identificacion']['codigoGeneracion'] ?? '', //'Numero',
-              $row->dte['identificacion']['codigoGeneracion'] ?? '', //'Numero',
-              trim($row->correlativo), //'Numero Interno',
-              trim($row->correlativo), //'Numero Interno',
-              NULL, //'Caja registradora',
-              $row->exenta ? $row->exenta : '0.00', //'Exentas',
-              '0.00', //'No Exentas no sujetas a proporcionalidad',
-              $row->no_sujeta ? $row->no_sujeta : '0.00', //'No Sujetas',
-              $row->total ? $row->total : '0.00', //'Gravadas', 
-              '0.00', //'Exportacion interna', 
-              '0.00', //'Exportacion externa', 
-              '0.00', //'Exportacion servicios', 
-              '0.00', //'Ventas zonas francas', 
-              '0.00', //'Ventas a terceros',
-              $row->total ? $row->total : '0.00', //'Total',
-              2, //'Anexo',
-
-         ];
-        return $fields;
     }
 }

@@ -16,6 +16,7 @@ export class ContribuyentesComponent implements OnInit {
     public years:any[] = [];
     public sucursales:any[] = [];
     public loading:boolean = false;
+    public downloading:boolean = false;
     public filtros:any = {};
     modalRef!: BsModalRef;
 
@@ -66,5 +67,41 @@ export class ContribuyentesComponent implements OnInit {
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
     } 
+
+
+    public descargarLibro(){
+        this.downloading = true;
+        this.apiService.export('libro-iva/contribuyentes/descargar-libro', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Libro-contribuyentes.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
+    }
+
+    public descargarAnexo(){
+        this.downloading = true;
+        this.apiService.export('libro-iva/contribuyentes/descargar-anexo', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Anexo-contribuyentes.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
+    }
+
 
 }

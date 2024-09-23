@@ -153,5 +153,11 @@ export class AbonosVentasComponent implements OnInit {
         );
     }
 
+    generarPartidaContable(abono:any){
+        this.apiService.store('contabilidad/partida/cxc', abono).subscribe(abono => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
+    }
+
 
 }

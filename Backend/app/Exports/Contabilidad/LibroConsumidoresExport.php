@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 
-class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings
+class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -27,18 +27,11 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             'N°',
             'Fecha',
             'Correlativo',
-            'Número de control interno',
-            'Cliente',
-            'NIT/NRC',
             'Ventas Exentas',
-            'Ventas No Sujetas',
             'Ventas Gravadas',
-            'Débito Fiscal',
-            'Ventas Exentas a Cuenta de Terceros',
-            'Ventas Gravadas a Cuenta de Terceros',
-            'Débito Fiscal por Cuenta de Terceros',
-            'IVA Percibido',
+            'Exportaciones',
             'Total',
+            'Venta a Cuenta de Terceros',
         ];
     }
 
@@ -50,7 +43,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                         ->where('estado', '!=', 'Pendiente')
                         ->when($request->tipo_documento, function($query) {
                             return $query->whereHas('documento', function($q) {
-                                $q->where('nombre', 'Crédito fiscal');
+                                $q->where('nombre', 'Factura');
                             });
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
@@ -63,26 +56,19 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
 
     public function map($venta): array{
 
-            $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
+        $documento = $venta->documento;
+        $cliente = optional($venta->cliente);
 
-            return [
-                $this->index++,
-                $venta->fecha ?? 'N/A',
-                $venta->correlativo ?? 'N/A',
-                $venta->correlativo ?? 'N/A',
-                $venta->nombre_cliente ?? 'N/A',
-                $cliente->nit ?? $cliente->ncr ?? 'N/A',
-                $venta->exenta ?? 0,
-                $venta->no_sujeta ?? 0,
-                $venta->sub_total ?? 0,
-                $venta->iva ?? 0,
-                0,
-                $venta->cuenta_a_terceros ?? 0,
-                0,
-                $venta->iva_percibido ?? 0,
-                $venta->total ?? 0,
-            ];
-
+        return [
+            $this->index++,
+            $venta->fecha,
+            $venta->correlativo,
+            $venta->correlativo,
+            $venta->exenta,
+            $venta->sub_total,
+            0,
+            $venta->total,
+            $venta->cuenta_a_terceros,
+        ];
     }
 }

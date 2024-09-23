@@ -3,6 +3,7 @@
 namespace App\Services\Contabilidad;
 
 use App\Models\Contabilidad\Configuracion;
+use App\Models\Bancos\Cuenta as CuentaBanco;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
@@ -14,12 +15,14 @@ class TransaccionesService
     {
         $configuracion = Configuracion::firstOrFail();
 
+        $cuenta = CuentaBanco::where('id', $transaccion->id_cuenta)->firstOrFail();
+
         if ($transaccion->tipo == 'Cargo') {
             $cuenta_haber = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
-            $cuenta_debe = Cuenta::where('id', $transaccion->cuenta->id_cuenta_contable)->firstOrFail();
+            $cuenta_debe = Cuenta::where('id', $cuenta->id_cuenta_contable)->firstOrFail();
         }
         if ($transaccion->tipo == 'Abono') {
-            $cuenta_haber = Cuenta::where('id', $transaccion->cuenta->id_cuenta_contable)->firstOrFail();
+            $cuenta_haber = Cuenta::where('id', $cuenta->id_cuenta_contable)->firstOrFail();
             $cuenta_debe = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
         }
 

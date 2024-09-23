@@ -9,8 +9,10 @@ use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
 use App\Exports\Contabilidad\LibroContribuyentesExport;
 use App\Exports\Contabilidad\AnexoContribuyentesExport;
-use App\Exports\Contabilidad\LibroConsumidorFinalExport;
-use App\Exports\Contabilidad\AnexoConsumidorFinalExport;
+use App\Exports\Contabilidad\LibroConsumidoresExport;
+use App\Exports\Contabilidad\AnexoConsumidoresExport;
+use App\Exports\Contabilidad\LibroComprasExport;
+use App\Exports\Contabilidad\AnexoComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LibrosIVAController extends Controller
@@ -18,17 +20,13 @@ class LibrosIVAController extends Controller
 
     public function consumidores(Request $request) 
     {
-        $star = $request->inicio;
-        $end = $request->fin;
 
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Pendiente')
-                        ->when($request->tipo_documento, function($query) {
-                            return $query->whereHas('documento', function($q) {
-                                $q->where('nombre', 'Factura');
-                            });
+                        ->whereHas('documento', function($q) {
+                            $q->where('nombre', 'Factura');
                         })
-                        ->whereBetween('fecha', [$star, $end])
+                        ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
                         ->get();
@@ -55,19 +53,29 @@ class LibrosIVAController extends Controller
         return response()->json($ivas, 200);
     }
 
+    public function consumidoresLibroExport(Request $request){
+        $consumidores = new LibroConsumidoresExport();
+        $consumidores->filter($request);
+
+        return Excel::download($consumidores, 'LibroConsumidoresExport.xlsx');
+    }
+
+    public function consumidoresAnexoExport(Request $request){
+        $consumidores = new AnexoConsumidoresExport();
+        $consumidores->filter($request);
+
+        return Excel::download($consumidores, 'AnexoConsumidoresExport.xlsx');
+    }
+
     public function contribuyentes(Request $request) 
     {
-        $star = $request->inicio;
-        $end = $request->fin;
 
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Pendiente')
-                        ->when($request->tipo_documento, function($query) {
-                            return $query->whereHas('documento', function($q) {
-                                $q->where('nombre', 'Factura');
-                            });
+                        ->whereHas('documento', function($q) {
+                            $q->where('nombre', 'Crédito fiscal');
                         })
-                        ->whereBetween('fecha', [$star, $end])
+                        ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
                         ->get();
@@ -102,9 +110,21 @@ class LibrosIVAController extends Controller
         return response()->json($ivas, 200);
     }
 
+    public function contribuyentesLibroExport(Request $request){
+        $contribuyentes = new LibroContribuyentesExport();
+        $contribuyentes->filter($request);
+
+        return Excel::download($contribuyentes, 'LibroContribuyentesExport.xlsx');
+    }
+
+    public function contribuyentesAnexoExport(Request $request){
+        $contribuyentes = new AnexoContribuyentesExport();
+        $contribuyentes->filter($request);
+
+        return Excel::download($contribuyentes, 'AnexoContribuyentesExport.xlsx');
+    }
+
     public function compras(Request $request) {
-        $star = $request->inicio;
-        $end = $request->fin;
 
         $compras = Compra::with(['proveedor'])
                             ->where('estado', '!=', 'Anulada')
@@ -116,7 +136,7 @@ class LibrosIVAController extends Controller
                             ->orderBy('id', 'desc')->get();
 
         $ivas = $compras->map(function ($compra) {
-            $proveedor = $compra->proveedor;
+            $proveedor = optional($compra->proveedor);
 
             return [
                 'fecha'                 => $compra->fecha,
@@ -153,7 +173,7 @@ class LibrosIVAController extends Controller
     }
 
     public function comprasAnexoExport(Request $request){
-        $compras = new LibroComprasExport();
+        $compras = new AnexoComprasExport();
         $compras->filter($request);
 
         return Excel::download($compras, 'LibroComprasExport.xlsx');
