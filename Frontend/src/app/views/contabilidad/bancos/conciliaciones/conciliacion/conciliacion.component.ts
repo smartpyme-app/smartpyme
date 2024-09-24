@@ -73,11 +73,14 @@ export class ConciliacionComponent implements OnInit {
     public filtrarTransacciones(){
         this.loading = true;
         this.filtros.id_cuenta = this.conciliacion.id_cuenta;
+        this.filtros.inicio = this.conciliacion.desde;
+        this.filtros.fin = this.conciliacion.hasta;
 
         this.apiService.store('banco/ultima/conciliacion', this.filtros).subscribe(conciliacion => {
             this.conciliacion_anterior = conciliacion;
-            
-            this.conciliacion.desde = this.conciliacion_anterior.hasta;
+            if(this.conciliacion_anterior.hasta){
+                this.conciliacion.desde = this.conciliacion_anterior.hasta;
+            }
             this.conciliacion.saldo_anterior = this.conciliacion_anterior.saldo_actual;
 
             this.apiService.getAll('bancos/transacciones', this.filtros).subscribe(transacciones => { 
@@ -102,7 +105,7 @@ export class ConciliacionComponent implements OnInit {
 
     public verificar(){
         this.total();
-        this.conciliacion.diferencia = parseFloat(this.conciliacion.saldo_actual) - parseFloat(this.conciliacion.saldo_final)
+        this.conciliacion.diferencia = (parseFloat(this.conciliacion.saldo_actual) - parseFloat(this.conciliacion.saldo_final)).toFixed(2)
     }
 
     public total(){

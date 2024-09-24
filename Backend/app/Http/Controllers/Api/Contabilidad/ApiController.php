@@ -9,9 +9,11 @@ use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use Illuminate\Support\Facades\DB;
 
-use App\Services\Contabilidad\ComprasService;
-use App\Services\Contabilidad\GastosService;
 use App\Services\Contabilidad\VentasService;
+use App\Services\Contabilidad\CXCService;
+use App\Services\Contabilidad\ComprasService;
+use App\Services\Contabilidad\CXPService;
+use App\Services\Contabilidad\GastosService;
 use App\Services\Contabilidad\TransaccionesService;
 
 use App\Models\Bancos\Cuenta;
@@ -19,19 +21,25 @@ use App\Models\Bancos\Cuenta;
 class ApiController extends Controller
 {
 
-    protected $comprasService;
-    protected $gastosService;
     protected $ventasService;
+    protected $cxcService;
+    protected $comprasService;
+    protected $cxpService;
+    protected $gastosService;
     protected $transaccionesService;
 
     public function __construct(VentasService $ventasService,
+                                CXCService $cxcService, 
                                 ComprasService $comprasService, 
+                                CXPService $cxpService, 
                                 GastosService $gastosService, 
                                 TransaccionesService $transaccionesService)
     {
         $this->ventasService = $ventasService;
+        $this->cxcService = $cxcService;
         $this->gastosService = $gastosService;
         $this->comprasService = $comprasService;
+        $this->cxpService = $cxpService;
         $this->transaccionesService = $transaccionesService;
     }
 
@@ -74,15 +82,39 @@ class ApiController extends Controller
         return Response()->json($gasto, 200);
     }
 
-    public function transaccion(Request $request) {
+    public function cxp(Request $cxp) {
 
-        $partida = Partida::where('referencia', 'Transacción')->where('id_referencia', $request->id)->first();
+        $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $cxp->id)->first();
 
-        if ($partida) {
-            return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
-        }
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para el cxp.', 'code' => 400], 400);
+        // }
 
-        $transaccion = Transaccion::with('cuenta')->where('id', $request->id)->firstOrFail();
+        $this->cxpService->crearPartida($cxp);
+
+        return Response()->json($cxp, 200);
+    }
+
+    public function cxc(Request $cxc) {
+
+        $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $cxc->id)->first();
+
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para el cxc.', 'code' => 400], 400);
+        // }
+
+        $this->cxcService->crearPartida($cxc);
+
+        return Response()->json($cxc, 200);
+    }
+
+    public function transaccion(Request $transaccion) {
+
+        $partida = Partida::where('referencia', 'Transacción')->where('id_referencia', $transaccion->id)->first();
+
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
+        // }
 
         $this->transaccionesService->crearPartida($transaccion);
         

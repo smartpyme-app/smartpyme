@@ -5,11 +5,10 @@ namespace App\Exports\Contabilidad;
 use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 
-class AnexoConsumidorFinalExport implements FromCollection, WithMapping
+class AnexoComprasExport implements FromCollection, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -21,40 +20,20 @@ class AnexoConsumidorFinalExport implements FromCollection, WithMapping
         $this->request = $request;
     }
 
-    // public function headings():array{
-    //     return[
-    //         'Fecha',
-    //         'Clase',
-    //         'Tipo',
-    //         'Resolucion',
-    //         'Serie',
-    //         'Numero',
-    //         'Numero Interno',
-    //         'NIT/NRC',
-    //         'Nombre',
-    //         'Exentas',
-    //         'No Sujetas',
-    //         'Gravadas', 
-    //         'Debito', 
-    //         'Ventas a terceros',
-    //         'Debito ventas a terceros',
-    //         'Total',
-    //         'DUI',
-    //         'Anexo',
-    //     ];
-    // }
 
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $ventas = Venta::where('tipo_documento', $request->tipo_documento)
-                                ->with('cliente')
-                                ->where('estado', 'Cobrada')
-                                ->whereBetween('fecha', [$request->inicio, $request->fin])
-                                ->orderBy('fecha','asc')
-                                ->get();
-        return $ventas;
+        $compras = Compra::with(['proveedor'])
+                            ->where('estado', '!=', 'Anulada')
+                            ->when($request->id_sucursal, function($q) use ($request){
+                                $q->where('id_sucursal', $request->id_sucursal);
+                            })
+                            ->whereBetween('fecha', [$request->inicio, $request->fin])
+                            ->where('cotizacion', 0)
+                            ->orderBy('id', 'desc')->get();
+        return $compras;
         
     }
 

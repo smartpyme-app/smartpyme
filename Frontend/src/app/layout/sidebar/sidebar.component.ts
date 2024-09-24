@@ -211,6 +211,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
         this.comprasIsCollapsed = true;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.gastosIsCollapsed = true;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
         this.preferenciasIsCollapsed = true;
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
