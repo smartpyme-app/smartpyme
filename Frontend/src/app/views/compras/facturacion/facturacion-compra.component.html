@@ -232,7 +232,7 @@
                                 <tr>
                                     <th style="width: 150px;">Producto</th>
                                     <th style="width: 70px;">Cantidad</th>
-                                    <th style="width: 150px;">FOB antes de dist</th>
+                                    <th style="width: 150px;">Costo antes de dist</th>
                                     <th style="width: 70px;">FOB</th>
                                     <th style="width: 70px;">Distrib</th>
                                     <th style="width: 70px;">Inland</th>
@@ -260,13 +260,13 @@
                                     </td>
                                     <!-- cantidad -->
                                     <td style="width: 70px;">
-                                        <input [(ngModel)]="detalle.cantidad" class="form-control" (input)="updateFOBTotal(detalle)">
+                                        <input [(ngModel)]="detalle.cantidad" class="form-control" readonly>
                                     </td>
                                     <!-- FOB ANTES DEL IMPUESTO  -->
                                     <td style="width: 150px;">
                                         <div class="input-group">
                                             <span class="input-group-text">$</span>
-                                            <input type="text" [(ngModel)]="detalle.fob"   class="form-control" name="costo" placeholder="$0.00" (blur)="updateFOBTotal(detalle)" >
+                                            <input type="text" [(ngModel)]="detalle.costo"   class="form-control" name="costo" placeholder="$0.00" readonly>
                                         </div>
                                     </td>
                                     <!-- fob total -->
@@ -306,11 +306,15 @@
                                         <input type="text" [(ngModel)]="detalle.landed"  class="form-control" name="landed">
                                     </td>
                                     <!-- COSTO UNITARIO  -->
-                                    <td style="width: 70px;" class="text-right">{{ detalle.costo | currency:'USD':'symbol':'1.2'}}</td>
+                                    <td style="width: 70px;" class="text-right">{{ detalle.costo_calc | currency:'USD':'symbol':'1.2'}}</td>
 
                                 </tr>
                             </tbody>
                         </table>
+                        
+                    </div>
+                    <div class="col-md-12 justify-content-between">
+                        <button (click)="calcularFOBParaTodos()" class="ml-3 btn btn-primary float-end">Calcular</button>
                     </div>
                 </div>
 

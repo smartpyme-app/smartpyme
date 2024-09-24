@@ -354,21 +354,30 @@ export class FacturacionCompraComponent implements OnInit {
         //   RETACEO 
 
         public updateFOBTotal(detalle: any): void {
-            detalle.fobTotal = detalle.cantidad * detalle.fob;
-            detalle.fobTotal = parseFloat(detalle.fobTotal.toFixed(2));
 
             // Actualiza la sumatoria total de FOB
             this.updateDistribucion(detalle);
 
-          }
+        }
+
+          // Esta función será llamada cuando el botón sea clicado
+        public calcularFOBParaTodos(): void {
+
+            this.compra.fob_tot=0;
+            this.compra.detalles.forEach((detalle:any) => {
+                this.compra.fob_tot += parseFloat(detalle.fobTotal);
+              });
+
+          this.compra.detalles.forEach((detalle:any) => {
+            this.updateFOBTotal(detalle);
+          });
+        }
 
         public updateDistribucion(detalle: any): void {
-            this.compra.fob_tot += detalle.fobTotal;
         
-          // Calcular distribución en porcentaje
+          // Calcular distribución en porcentajecls
           const distribucion = (detalle.fobTotal / this.compra.fob_tot) * 100;
           detalle.distribucion = parseFloat(distribucion.toFixed(2)); // Mantener dos decimales
-          console.log(this.compra.fob_tot);
           this.updateInlandForDetails();
           this.updateInsuranceForDetails();
           this.updateAereoForDetails();
@@ -376,7 +385,6 @@ export class FacturacionCompraComponent implements OnInit {
           this.updateGastosForDetails();
           this.updateCIF(detalle);
           this.updateLanded(detalle);
-        //   this.updateGastosProducto();
         }
 
     public updateInlandForDetails(): void {
@@ -442,13 +450,19 @@ export class FacturacionCompraComponent implements OnInit {
 
     public updateCIF(detalle: any): void {
         // Calcula la suma de inland, insurance, aereo y fobTotal
-        detalle.cif = (detalle.inland || 0) + (detalle.insurance || 0) + (detalle.aereo || 0) + (detalle.fobTotal || 0);
+        console.log("Este es el FOB de la iteracion del detalle");
+        parseFloat(detalle.fobTotal).toFixed(2);
+        console.log(detalle.fobTotal);
+        detalle.cif =parseFloat(parseFloat(detalle.inland || 0) + parseFloat(detalle.insurance || 0) + parseFloat(detalle.aereo || 0) +(detalle.fobTotal || 0));
+        parseFloat(detalle.cif).toFixed(2);
+        console.log("Este es el CIF de la iteracion del detalle");
+        console.log(detalle.cif);
     }
 
     public updateLanded(detalle: any): void {
         // Calcula la suma de gastos, DAI, CIF
-        detalle.landed = (detalle.cif || 0) + (detalle.dai || 0) + (detalle.gastos || 0);
-        detalle.costo =  detalle.landed/detalle.cantidad;
+        detalle.landed = parseFloat((detalle.cif || 0) + (detalle.dai || 0) + (detalle.gastos || 0));
+        detalle.costo_calc =  detalle.landed/detalle.cantidad;
     }
           
           

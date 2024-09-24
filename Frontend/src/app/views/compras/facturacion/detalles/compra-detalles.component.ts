@@ -46,6 +46,7 @@ export class CompraDetallesComponent implements OnInit {
             detalle.cantidad = 0;
         }
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
+        detalle.fobTotal=(parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
         this.update.emit(this.compra);
     }
 
@@ -78,6 +79,7 @@ export class CompraDetallesComponent implements OnInit {
             }
             this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
             this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
+            this.detalle.fobTotal = (this.detalle.costo * this.detalle.cantidad);
             
             
             if(!detalle)
