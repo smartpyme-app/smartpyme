@@ -42,6 +42,8 @@ export class ProductoInventariosComponent implements OnInit {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
+        console.log(this.bodegas);
+
         
         if(!this.inventario.id) {
             this.inventario.stock = 0;

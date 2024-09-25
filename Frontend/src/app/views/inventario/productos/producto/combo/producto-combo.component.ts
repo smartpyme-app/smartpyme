@@ -12,7 +12,7 @@ import { ApiService } from '@services/api.service';
 })
 export class ProductoComboComponent implements OnInit {
 
-    @Input() producto: any = {};
+    public producto: any = {};
     public categorias:any = [];
     public subcategorias:any = [];
     public subcategRes:any = [];
@@ -28,6 +28,7 @@ export class ProductoComboComponent implements OnInit {
     public colores = ['azul', 'Amarillo', 'Blanco', 'Negro'];
     public materiales = ['Madera', 'Papel', 'Metal', 'Plastico', 'Vidrio'];
 
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
@@ -37,6 +38,8 @@ export class ProductoComboComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.producto.nombre="";
+        this.producto.detalles=[];
         this.usuario = this.apiService.auth_user();
         // subcategorias
         
@@ -54,6 +57,10 @@ export class ProductoComboComponent implements OnInit {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
+        }, error => {this.alertService.error(error);});
 
     }
 

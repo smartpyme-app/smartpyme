@@ -1,4 +1,4 @@
-<!-- <app-compra-producto [compra]="compra" (productoSelect)="productoSelect($event)"></app-compra-producto> -->
+<app-buscar-producto [producto]="producto" (productoSelect)="productoSelect($event)"></app-buscar-producto>
 
 <div class="row">
     <div class="col-md-12 table-responsive">
@@ -14,14 +14,14 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngIf="compra?.detalles?.length < 1">
+                <tr *ngIf="producto?.detalles?.length < 1">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios
                         </p>
                     </td>
                 </tr>
-                <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                <tr *ngFor="let detalle of producto?.detalles; let i = index">
                     <td>
                         <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.nombre_producto }}

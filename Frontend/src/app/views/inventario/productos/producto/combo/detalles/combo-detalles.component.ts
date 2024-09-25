@@ -13,9 +13,10 @@ import Swal from 'sweetalert2';
 })
 export class ComboDetallesComponent implements OnInit {
 
-    @Input() compra: any = {};
+    @Input() producto: any = {};
     public detalle:any = {};
     public supervisor:any = {};
+
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
@@ -33,7 +34,6 @@ export class ComboDetallesComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-
     }
 
     openModalEdit(template: TemplateRef<any>, detalle:any) {
@@ -46,7 +46,7 @@ export class ComboDetallesComponent implements OnInit {
             detalle.cantidad = 0;
         }
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
-        this.update.emit(this.compra);
+        this.update.emit(this.producto);
     }
 
     public modalSupervisor(detalle:any){
@@ -66,11 +66,12 @@ export class ComboDetallesComponent implements OnInit {
 
     // Agregar detalle
         productoSelect(producto:any):void{
+            console.log(this.producto);
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
             
             // Verifica si el producto ya fue ingresado
-            let detalle = this.compra.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
+            let detalle = this.producto.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
             
             if(detalle) {
                 this.detalle = detalle;
@@ -81,10 +82,10 @@ export class ComboDetallesComponent implements OnInit {
             
             
             if(!detalle)
-                this.compra.detalles.push(this.detalle);
+                this.producto.detalles.push(this.detalle);
 
-            this.update.emit(this.compra);
-            console.log(this.compra);
+            this.update.emit(this.producto);
+            console.log(this.producto);
             this.detalle = {};
             if (this.modalRef) { this.modalRef.hide() }
 
@@ -102,9 +103,9 @@ export class ComboDetallesComponent implements OnInit {
               cancelButtonText: 'Cancelar'
             }).then((result) => {
               if (result.isConfirmed) {
-                    const indexAEliminar = this.compra.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                    const indexAEliminar = this.producto.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
                     if (indexAEliminar !== -1) {
-                      this.compra.detalles.splice(indexAEliminar, 1);
+                      this.producto.detalles.splice(indexAEliminar, 1);
                     }
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');

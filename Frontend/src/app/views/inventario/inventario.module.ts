@@ -14,6 +14,7 @@ import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
+import { ReactiveFormsModule } from '@angular/forms';
 
 import { InventarioRoutingModule } from './inventario.routing.module';
 
@@ -33,6 +34,7 @@ import { ProductoVentasComponent } from './productos/producto/historial/ventas/p
 import { PromocionesComponent } from './promociones/promociones.component';
 import { ProductoComboComponent } from './productos/producto/combo/producto-combo.component';
 import { ComboDetallesComponent } from './productos/producto/combo/detalles/combo-detalles.component';
+import { BuscadorProductoComponent } from './productos/producto/combo/buscador-producto/buscador-producto.component';
 
 import { ProductosConsignasComponent } from './consignas/productos-consignas.component';
 
@@ -67,6 +69,7 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     TourNgxBootstrapModule,
     NgxMaskDirective, NgxMaskPipe,
     InventarioRoutingModule,
+    ReactiveFormsModule,
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
@@ -103,7 +106,8 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     BodegaComponent,
     BodegasComponent,
     ProductoComboComponent,
-    ComboDetallesComponent
+    ComboDetallesComponent,
+    BuscadorProductoComponent
   ],
   exports: [
   	ProductosComponent,
@@ -135,7 +139,8 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     BodegaComponent,
     BodegasComponent,
     ProductoComboComponent,
-    ComboDetallesComponent
+    ComboDetallesComponent,
+    BuscadorProductoComponent
   ]
 })
 export class InventarioModule { }
