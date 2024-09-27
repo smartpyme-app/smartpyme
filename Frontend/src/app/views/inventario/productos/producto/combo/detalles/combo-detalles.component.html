@@ -8,6 +8,7 @@
                     <th>Producto</th>
                     <th style="width: 150px;">Cantidad</th>
                     <th style="width: 150px;">Costo</th>
+                    <th style="width: 150px;">En combo</th>
                     <th style="width: 100px;" class="text-right">Total</th>
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
                 </tr>
@@ -31,7 +32,10 @@
                     <td style="width: 150px;">
                         <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="costo">
                     </td>
-                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                    <td style="width: 150px;">
+                        <input type="number" [(ngModel)]="detalle.cantidad_combo"  class="form-control" name="cantidad_combo" disabled>
+                    </td>
+                    <td style="width: 100px;" class="text-right" ngModel="">{{ detalle.total  | currency:'USD':'symbol':'1.2'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
                             <span class="btn btn-link" (click)="delete(detalle)">

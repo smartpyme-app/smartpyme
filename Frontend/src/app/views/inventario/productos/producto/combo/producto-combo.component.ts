@@ -93,7 +93,7 @@ export class ProductoComboComponent implements OnInit {
     public calCantidadenCombo(){
         if(this.producto.stock > 0){
             this.producto.detalles.forEach((detalle: any) => {
-                detalle.cantidad= detalle.cantidad * this.producto.stock;
+                detalle.cantidad_combo= detalle.cantidad * this.producto.stock;
               });
         }
     }
