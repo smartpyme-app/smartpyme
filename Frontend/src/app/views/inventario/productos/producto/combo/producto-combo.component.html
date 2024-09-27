@@ -1,5 +1,4 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <!-- <h3 (click)="loadAll()">{{ producto.id ? 'Editar ' : 'Crear ' }} {{ producto.tipo == 'Servicio' ? 'Servicio' : 'Producto' }}</h3> -->
     <h3 >Crear Combo de productos</h3>
     <button class="btn btn-light text-danger" routerLink="/productos"><i class="fa fa-arrow-left"></i> Regresar</button>
 </div>
@@ -18,13 +17,15 @@
             <!-- marca -->
             <div class="form-group col-md-12 col-lg-3">
                 <label for="marca">Codigo Interno</label>
-                <input type="text" class="form-control"  name="marca" placeholder="Escribe aquí" [(ngModel)]="producto.codigo">
+                <div class="input-group">
+                    <span class="input-group-text">CMPKIT</span>
+                    <input type="text" class="form-control"  name="marca" placeholder="Escribe aquí" [(ngModel)]="producto.codigo">
+                </div>
             </div>
-            <!-- [(ngModel)]="producto.marca" -->
 
             <!-- Descripcion  -->
             <div class="form-group col-md-12 col-lg-6">
-                <label for="descripcion">Descripción</label>
+                <label for="descripcion">Descrip</label>
                 <textarea class="form-control"  name="Descripcion" placeholder="Escribe aquí" cols="30" rows="1" [(ngModel)]="producto.descripcion"></textarea>
             </div>
         </div>
@@ -33,7 +34,20 @@
             
             <h5 class="mb-3 font-weight-bold">Busqueda de productos</h5>
 
-            <app-producto-combo-detalles [producto]="producto"></app-producto-combo-detalles>
+            <app-producto-combo-detalles [producto]="producto" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-producto-combo-detalles>
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table table-sm table-borderless table-condensed mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-right"> <b>Total</b> </td>
+                                <td style="width: 150px;" class="text-right"><b> {{ producto.costo | currency:'USD':'symbol':'1.2'}}</b> </td>
+                                <td style="width: 50px;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
         </div>
 
@@ -84,7 +98,7 @@
 
                 <div class="form-group col-md-12 col-lg-3">
                     <label for="nombre">Cantidad de combos</label>
-                    <input type="text" class="form-control"  name="nombre" placeholder="Escribe aquí" >
+                    <input type="text" class="form-control"  name="nombre" placeholder="Escribe aquí" [(ngModel)]="producto.stock" (ngModelChange)="calCantidadenCombo()">
                 </div>
 
                 <div class="form-group col-md-12 col-lg-3">
