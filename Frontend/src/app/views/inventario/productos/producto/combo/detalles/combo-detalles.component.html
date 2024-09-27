@@ -31,15 +31,12 @@
                     <td style="width: 150px;">
                         <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="costo">
                     </td>
-                    <!-- <td style="width: 150px;">
-                        <input type="number" [(ngModel)]="detalle.descuento" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="descuento">
-                    </td> -->
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
-                            <button class="btn btn-link" (click)="delete(detalle)">
+                            <span class="btn btn-link" (click)="delete(detalle)">
                               <i class="fa fa-trash"></i>
-                            </button>
+                            </span>
                         </div>
                     </td>
                 </tr>
