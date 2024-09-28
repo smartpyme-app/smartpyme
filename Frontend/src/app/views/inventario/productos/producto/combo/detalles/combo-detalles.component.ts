@@ -20,6 +20,7 @@ export class ComboDetallesComponent implements OnInit {
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
+    
     modalRef!: BsModalRef;
 
     @ViewChild('msupervisor')
@@ -85,7 +86,6 @@ export class ComboDetallesComponent implements OnInit {
                 this.producto.detalles.push(this.detalle);
 
             this.update.emit(this.producto);
-            console.log(this.producto);
             this.detalle = {};
             if (this.modalRef) { this.modalRef.hide() }
 
@@ -106,6 +106,8 @@ export class ComboDetallesComponent implements OnInit {
                     const indexAEliminar = this.producto.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
                     if (indexAEliminar !== -1) {
                       this.producto.detalles.splice(indexAEliminar, 1);
+                                // Ejecutar la función pasada por el padre
+                                this.sumTotal.emit();
                     }
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');

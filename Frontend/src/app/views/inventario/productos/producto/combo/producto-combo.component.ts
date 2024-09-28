@@ -2,13 +2,15 @@ import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { SumPipe }     from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-producto-combo',
-  templateUrl: './producto-combo.component.html'
+  templateUrl: './producto-combo.component.html',
+  providers: [ SumPipe ]
 })
 export class ProductoComboComponent implements OnInit {
 
@@ -31,7 +33,7 @@ export class ProductoComboComponent implements OnInit {
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router,
+        private route: ActivatedRoute, private router: Router, private sumPipe:SumPipe,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
         this.addVariant();
@@ -40,6 +42,9 @@ export class ProductoComboComponent implements OnInit {
     ngOnInit() {
         this.producto.nombre="";
         this.producto.detalles=[];
+        this.producto.id_empresa = this.apiService.auth_user().id_empresa;
+        this.producto.id_categoria = 3154;
+        this.producto.tipo ='Compuesto';
         this.usuario = this.apiService.auth_user();
         // subcategorias
         
@@ -84,10 +89,12 @@ export class ProductoComboComponent implements OnInit {
         }
     }
 
-    public calPrecioBase(){
-        if(this.usuario.empresa.iva > 0){
-            this.producto.impuesto = this.usuario.empresa.iva / 100;
-            this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
+    // CALCULO DEL STOCK MULTIPLICADO
+    public calCantidadenCombo(){
+        if(this.producto.stock > 0){
+            this.producto.detalles.forEach((detalle: any) => {
+                detalle.cantidad_combo= detalle.cantidad * this.producto.stock;
+              });
         }
     }
 
@@ -101,6 +108,7 @@ export class ProductoComboComponent implements OnInit {
 
     public onSubmit() {
         this.guardar = true;
+        this.producto.codigo="CMPKIT"+this.producto.codigo;
         this.apiService.store('producto', this.producto).subscribe(producto => {
             this.guardar = false;
             if(!this.producto.id) {
@@ -140,6 +148,15 @@ export class ProductoComboComponent implements OnInit {
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }
+    }
+
+    public sumTotal() {
+        this.producto.costo = (parseFloat(this.sumPipe.transform(this.producto.detalles, 'total'))).toFixed(2);
+    }
+
+    public updatecompra(producto:any) {
+        this.producto = producto;
+        this.sumTotal();
     }
 
     // creacion de sku 
