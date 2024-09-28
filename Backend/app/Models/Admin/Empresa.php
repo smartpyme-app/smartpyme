@@ -82,7 +82,7 @@ class Empresa extends Model {
         'facturacion_electronica' => 'boolean',
     ];
 
-    protected $appends = ['estado_plan'];
+    protected $appends = ['estado_plan', 'generar_partidas'];
 
     public function limiteUsuarios(){
         if($this->usuarios->where('enable', true)->count() < $this->user_limit)
@@ -111,6 +111,14 @@ class Empresa extends Model {
         return $this->pagos->count();
     }
 
+    public function getGenerarPartidasAttribute(){
+        return $this->contabilidad()->pluck('generar_partidas')->first();
+    }
+
+
+    public function contabilidad(){
+        return $this->hasOne('App\Models\Contabilidad\Configuracion', 'id_empresa');
+    }
 
     public function usuarios(){
         return $this->hasMany('App\Models\User', 'id_empresa');

@@ -91,6 +91,7 @@ CREATE TABLE contabilidad_configuracion (
     id_cuenta_iva_retenido_compras int NOT NULL,
     id_cuenta_renta_retenida_compras int NOT NULL,
 
+    generar_partidas varchar(100) DEFAULT 'Manual',
     id_empresa int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
@@ -321,6 +322,7 @@ ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_ventas INT N
 ALTER TABLE contabilidad_configuracion ADD id_cuenta_iva_retenido_compras INT NULL AFTER id_cuenta_ventas;
 ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_compras INT NULL AFTER id_cuenta_ventas;
 ALTER TABLE contabilidad_configuracion ADD id_cuenta_costo_venta INT NULL AFTER id_cuenta_ventas;
+ALTER TABLE contabilidad_configuracion ADD generar_partidas varchar(100) DEFAULT 'Manual' AFTER id_cuenta_costo_venta;
 
 ALTER TABLE formas_pago ADD id_banco INT NULL AFTER nombre;
 

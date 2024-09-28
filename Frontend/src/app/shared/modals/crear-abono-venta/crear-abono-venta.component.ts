@@ -68,6 +68,12 @@ export class CrearAbonoVentaComponent implements OnInit {
             this.router.navigate(['/ventas/abonos']);
             this.alertService.modal = false;
             this.saving = false;
+
+            //Generar partida contable
+            if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                this.apiService.store('contabilidad/partida/cxc', abono).subscribe(abono => {
+                },error => {this.alertService.error(error);});
+            }
         }, error => {this.alertService.error(error); this.saving = false; });
 
 	}

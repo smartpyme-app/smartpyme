@@ -81,6 +81,13 @@ export class TransaccionComponent implements OnInit {
             this.transaccion.url_referencia = transaccion.url_referencia;
             this.loading = false;
             this.alertService.success('Documento guardado', 'La transaccion fue actualizada exitosamente.');
+        
+            //Generar partida contable
+            if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                this.apiService.store('contabilidad/partida/transaccion', transaccion).subscribe(transaccion => {
+                },error => {this.alertService.error(error);});
+            }
+
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

@@ -457,7 +457,14 @@ export class FacturacionComponent implements OnInit {
                         this.alertService.success('Cotización creada', 'La cotizacion fue añadida exitosamente.');
                     }else{
                         this.router.navigate(['/ventas']);
-                        this.alertService.success('Venta creado', 'La venta fue añadida exitosamente.');
+                        this.alertService.success('Venta creada', 'La venta fue añadida exitosamente.');
+
+                        //Generar partida contable
+                        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                            this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
+                            },error => {this.alertService.error(error);});
+                        }
+
                     }
                 }
 
