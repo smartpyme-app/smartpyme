@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
+    Route::post('/producto/compuesto',        [ProductosController::class, 'storeCompuesto']);
     Route::delete('/producto/composicion/{id}', [ComposicionesController::class, 'delete']);
 
     Route::post('/producto/composicion/opcion',        [OpcionesController::class, 'store']);
@@ -55,7 +56,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
-    
+
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);
     Route::post('promocion',          [PromocionesController::class, 'store']);

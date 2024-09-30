@@ -22,13 +22,10 @@ export class ProductoComboComponent implements OnInit {
     public usuario:any = {};
     public categoria:any = {};
     public bodegas:any = [];
-    public medidas:any = [];
     public loading = false;
     public guardar = false;
     public variants: Array<{ nombre: string, cantidad: number }> = [];
-    public tallas = ['x', 'm', 'l', 'xl'];
-    public colores = ['azul', 'Amarillo', 'Blanco', 'Negro'];
-    public materiales = ['Madera', 'Papel', 'Metal', 'Plastico', 'Vidrio'];
+
 
 
     constructor( 
@@ -55,8 +52,6 @@ export class ProductoComboComponent implements OnInit {
         this.apiService.getAll('subcategorias').subscribe(subcategorias => {
             this.subcategorias = subcategorias;
         }, error => {this.alertService.error(error);});
-
-        this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
         
         this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
@@ -109,28 +104,16 @@ export class ProductoComboComponent implements OnInit {
     public onSubmit() {
         this.guardar = true;
         this.producto.codigo="CMPKIT"+this.producto.codigo;
-        this.apiService.store('producto', this.producto).subscribe(producto => {
+        this.apiService.store('producto/compuesto', this.producto).subscribe(producto => {
             this.guardar = false;
             if(!this.producto.id) {
                 this.producto = producto;
             }
-            if(this.producto.tipo == 'Producto'){
-                this.router.navigate(['/producto/editar/' + producto.id]);
-                this.alertService.success("Producto guardado", 'El producto fue guardado exitosamente.');
-            }
-            if(this.producto.tipo == 'Servicio'){
-                this.router.navigate(['/servicio/editar/' + producto.id]);
-                this.alertService.success("Servicio guardado", 'El servicio fue guardado exitosamente.');
-            }
-            if(this.producto.tipo == 'Compuesto'){
-                this.router.navigate(['/producto/editar/' + producto.id]);
-                this.alertService.success("Producto compuesto guardado", 'El producto compuesto fue guardado exitosamente.');
-            }
-            if(this.producto.tipo == 'Materia Prima'){
-                this.router.navigate(['/materias-prima/editar/' + producto.id]);
-                this.alertService.success("Materia prima guardada", 'La materia prima fue guardada exitosamente.');
-            }
+            this.router.navigate(['/productos']);
+
         },error => {this.alertService.error(error); this.guardar = false; });
+
+
     }
 
     public barcode(){
@@ -200,26 +183,5 @@ addVariant(): void {
     this.variants.splice(index, 1);
   }
     
-  
-public agregarNuevaTalla(nombre: string) {
-    if (nombre && !this.tallas.includes(nombre)) {
-      this.tallas.push(nombre); // Agregar la nueva talla a la lista
-    }
-    this.producto.talla = nombre; // Establecer la talla seleccionada
-  }
-
-public agregarNuevoColor(nombre: string) {
-    if (nombre && !this.colores.includes(nombre)) {
-      this.colores.push(nombre); // Agregar la nueva talla a la lista
-    }
-    this.producto.colores = nombre; // Establecer la talla seleccionada
-  }
-
-public agregarNuevoMaterial(nombre: string) {
-  if (nombre && !this.materiales.includes(nombre)) {
-    this.materiales.push(nombre); // Agregar la nueva talla a la lista
-  }
-  this.producto.material = nombre; // Establecer la talla seleccionada
-}
 
 }
