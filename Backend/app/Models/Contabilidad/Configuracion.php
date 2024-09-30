@@ -29,6 +29,7 @@ class Configuracion extends Model
         'id_cuenta_iva_retenido_compras',
         'id_cuenta_renta_retenida_compras',
 
+        'generar_partidas', // Manual, Auto
         'id_empresa',
     ];
 

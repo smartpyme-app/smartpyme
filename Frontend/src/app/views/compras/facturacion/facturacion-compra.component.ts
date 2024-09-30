@@ -315,6 +315,11 @@ export class FacturacionCompraComponent implements OnInit {
                 }else{
                     this.router.navigate(['/compras']);
                     this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                    //Generar partida contable
+                    if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                        this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
+                        },error => {this.alertService.error(error);});
+                    }
                 }
 
                 // Si es cotización

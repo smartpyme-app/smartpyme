@@ -67,6 +67,13 @@ export class CrearAbonoCompraComponent implements OnInit {
             this.update.emit();
             this.router.navigate(['/compras/abonos']);
             this.saving = false;
+
+            //Generar partida contable
+            if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                this.apiService.store('contabilidad/partida/cxp', abono).subscribe(abono => {
+                },error => {this.alertService.error(error);});
+            }
+
         }, error => {this.alertService.error(error); this.saving = false; });
 
 	}
