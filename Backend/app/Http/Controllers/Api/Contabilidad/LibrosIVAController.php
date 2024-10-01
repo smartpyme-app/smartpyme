@@ -40,7 +40,7 @@ class LibrosIVAController extends Controller
                 'correlativo'           => $venta->correlativo,
                 'num_control_interno'   => $venta->correlativo,
                 'ventas_exentas'        => $venta->exenta,
-                'ventas_gravadas'       => $venta->sub_total,
+                'ventas_gravadas'       => $venta->total,
                 'exportaciones'         => 0,
                 'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
@@ -64,7 +64,7 @@ class LibrosIVAController extends Controller
         $consumidores = new AnexoConsumidoresExport();
         $consumidores->filter($request);
 
-        return Excel::download($consumidores, 'AnexoConsumidoresExport.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download($consumidores, 'AnexoConsumidoresExport.xlsx');
     }
 
     public function contribuyentes(Request $request) 
@@ -121,7 +121,7 @@ class LibrosIVAController extends Controller
         $contribuyentes = new AnexoContribuyentesExport();
         $contribuyentes->filter($request);
 
-        return Excel::download($contribuyentes, 'AnexoContribuyentesExport.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download($contribuyentes, 'AnexoContribuyentesExport.xlsx');
 
     }
 
@@ -177,7 +177,7 @@ class LibrosIVAController extends Controller
         $compras = new AnexoComprasExport();
         $compras->filter($request);
 
-        return Excel::download($compras, 'LibroComprasExport.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download($compras, 'LibroComprasExport.xlsx');
     }
 
 }

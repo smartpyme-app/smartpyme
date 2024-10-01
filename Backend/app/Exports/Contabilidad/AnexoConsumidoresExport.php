@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
-class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
+class AnexoConsumidoresExport implements FromCollection, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -75,13 +75,13 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
         return $fields;
     }
 
-    public function getCsvSettings(): array
-    {
-        return [
-            'delimiter' => ';',  // Delimitador ;
-            'use_bom' => true,
-            'enclosure' => '',
-        ];
-    }
+    // public function getCsvSettings(): array
+    // {
+    //     return [
+    //         'delimiter' => ';',
+    //         'use_bom' => true,
+    //         'enclosure' => '',
+    //     ];
+    // }
 
 }
