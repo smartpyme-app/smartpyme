@@ -40,7 +40,7 @@ class LibrosIVAController extends Controller
                 'correlativo'           => $venta->correlativo,
                 'num_control_interno'   => $venta->correlativo,
                 'ventas_exentas'        => $venta->exenta,
-                'ventas_gravadas'       => $venta->sub_total,
+                'ventas_gravadas'       => $venta->total,
                 'exportaciones'         => 0,
                 'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
@@ -122,6 +122,7 @@ class LibrosIVAController extends Controller
         $contribuyentes->filter($request);
 
         return Excel::download($contribuyentes, 'AnexoContribuyentesExport.xlsx');
+
     }
 
     public function compras(Request $request) {

@@ -6,6 +6,7 @@ use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
 class AnexoContribuyentesExport implements FromCollection, WithMapping
@@ -74,4 +75,14 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
          ];
         return $fields;
     }
+
+    // public function getCsvSettings(): array
+    // {
+    //     return [
+    //         'delimiter' => ';',
+    //         'use_bom' => true,
+    //         'enclosure' => '',
+    //     ];
+    // }
+
 }

@@ -85,7 +85,7 @@
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>{{iva.correlativo}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{((iva.ventas_gravadas * 1) + (iva.debito_fiscal * 1)) | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.exportaciones | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
@@ -94,7 +94,7 @@
                         <tr>
                             <td colspan="3" class="text-center"><b>Total</b></td>                                
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ( ((ivas | sum:'ventas_gravadas') * 1) + ((ivas | sum:'debito_fiscal') * 1)) | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'exportaciones' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
