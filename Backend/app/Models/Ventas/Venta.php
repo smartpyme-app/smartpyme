@@ -17,6 +17,7 @@ class Venta extends Model {
         'fecha',
         'correlativo',
         'estado',
+        'detalle_banco',
         // 'tipo',
         'id_canal',
         'id_documento',
