@@ -1,3 +1,12 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading" style="text-transform: capitalize;">
+    <ng-container *ngIf="selectedPeriodType=='day'">
+      {{currentDate|date:'MMMM d, yyyy': 'es-ES'}}
+    </ng-container>
+  </h2>
+  <!-- <div>
+  </div> -->
+</section>
 <section>
   <div class="d-flex flex-wrap justify-content-between gap-10">
     <div class="d-flex flex-wrap gap-10">

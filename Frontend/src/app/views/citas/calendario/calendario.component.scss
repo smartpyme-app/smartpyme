@@ -12,6 +12,7 @@
   --fc-today-bg-color: white !important;
   --fc-non-business-color: white !important;
   --border-slot-color: #C4C6D0;
+  --fc-event-padding: 5px;
 
   .fc-scrollgrid-sync-table {
     display: none;
@@ -27,6 +28,19 @@
 
   .event-body {}
 
+  .fc-timegrid-slot {
+    height: 40px !important;
+  }
+
+  .fc-col-header {
+    display: none;
+  }
+
+}
+
+::ng-deep .fc-timeGridDay-view:has(.smallversion) {
+  --fc-event-padding: 0px;
+  --fc-small-font-size: 0.74em;
 }
 
 ::ng-deep .fc-timeGridDay-view td,
@@ -42,6 +56,11 @@
   border-bottom: 1px solid var(--border-slot-color) !important;
 }
 
+::ng-deep .fc-timegrid-slots tbody td:nth-of-type(even) {
+  border-right: 1px solid var(--border-slot-color) !important;
+  border-left: 1px solid var(--border-slot-color) !important;
+}
+
 
 ::ng-deep .fc-timegrid-event-harness {
   --bg-color: var(--color-1);
@@ -50,11 +69,15 @@
 
   .fc-event {
     background-color: var(--bg-color) !important;
-    --fc-event-text-color: var(--fg-color) !important;
+    --fc-event-text-color: var(--fg-color);
     border: none !important;
     border-radius: 3px !important;
-    padding: 5px !important;
+    padding: var(--fc-event-padding) !important;
     // padding-right: 5px !important;
+  }
+
+  .fc-v-event .fc-event-main {
+    color: var(--fc-event-text-color) !important;
   }
 }
 
