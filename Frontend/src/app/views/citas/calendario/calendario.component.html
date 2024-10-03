@@ -14,13 +14,13 @@
         [ngClass]="selectedPeriodType=='day'?'btn-primary':'btn-default'">
         Hoy
       </button>
-      <button class="btn " (click)="setMonthSelection()"
-        [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
-        Mes
-      </button>
       <button class="btn " (click)="setWeekSelection()"
         [ngClass]="selectedPeriodType=='week'?'btn-primary':'btn-default'">
         Semana
+      </button>
+      <button class="btn " (click)="setMonthSelection()"
+        [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
+        Mes
       </button>
       <button class="btn " (click)="setYearSelection()"
         [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
