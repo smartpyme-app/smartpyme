@@ -122,6 +122,10 @@ export class ApiService {
             localStorage.setItem('municipios', JSON.stringify(municipios));
         }, error => {this.alertService.error(error); });
 
+        this.getAll('distritos').subscribe(distritos => { 
+            localStorage.setItem('distritos', JSON.stringify(distritos));
+        }, error => {this.alertService.error(error); });
+        
         this.getAll('departamentos').subscribe(departamentos => { 
             localStorage.setItem('departamentos', JSON.stringify(departamentos));
         }, error => {this.alertService.error(error); });

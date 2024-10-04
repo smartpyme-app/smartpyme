@@ -72,6 +72,16 @@
                             </ng-option>
                         </ng-select>
                     </div>
+
+                    <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+                        <label for="distrito">Distrito:</label>
+                        <ng-select  [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="empresa.cod_distrito">
+                            <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':empresa.cod_departamento" [value]="distrito.cod">
+                                {{ distrito.nombre }}
+                            </ng-option>
+                        </ng-select>
+                    </div>
+
                     <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
                         <label for="municipio">Municipio:</label>
                         <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
@@ -102,12 +112,12 @@
                         <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'>
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-md-6 col-lg-3">
                         <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
                         <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                     </div>
-                    <div class="form-group col-md-6 col-lg-4">
+                    <div class="form-group col-md-6 col-lg-3">
                         <label for="tipo_contribuyente">Tamaño</label>
                         <select class="form-select" [(ngModel)]="empresa.tipo_contribuyente" name="tipo_contribuyente">
                             <option value="">Seleccione aquí</option>
@@ -133,7 +143,7 @@
                         <label for="cod_estable">Cod Establecimiento:</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable" name="cod_estable" placeholder="xxxx">
                     </div> -->
-                    <div class="form-group col-md-8">
+                    <div class="form-group col-md-6">
                         <label for="actividad_economica">Actividad económica:</label>
                         <ng-select *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
                             <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">

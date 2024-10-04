@@ -17,6 +17,7 @@ export class EmpresaComponent implements OnInit {
     public saving = false;
     public cheking = false;
     public departamentos:any = [];
+    public distritos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
 
@@ -33,6 +34,7 @@ export class EmpresaComponent implements OnInit {
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
     }
@@ -69,14 +71,39 @@ export class EmpresaComponent implements OnInit {
         this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;
     }
 
+    setDistrito(){
+        let distrito = this.distritos.find((item:any) => item.cod == this.empresa.cod_distrito && item.cod_departamento == this.empresa.cod_departamento);
+        console.log(distrito);
+        if(distrito){
+            this.empresa.cod_municipio = distrito.cod_municipio;
+            this.setMunicipio();
+            this.empresa.distrito = distrito.nombre; 
+            this.empresa.cod_distrito = distrito.cod;
+        }
+    }
+
     setMunicipio(){
-        this.empresa.municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento).nombre;
+        let municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento);
+        if(municipio){
+            this.empresa.municipio = municipio.nombre; 
+            this.empresa.cod_municipio = municipio.cod;
+
+            this.empresa.distrito = ''; 
+            this.empresa.cod_distrito = '';
+        }
     }
 
     setDepartamento(){
-        this.empresa.departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento).nombre;
-        this.empresa.cod_municipio = null;
-        this.empresa.municipio = null;
+        let departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento);
+        if(departamento){
+            this.empresa.departamento = departamento.nombre; 
+            this.empresa.cod_departamento = departamento.cod;
+
+        }
+        this.empresa.municipio = ''; 
+        this.empresa.cod_municipio = '';
+        this.empresa.distrito = ''; 
+        this.empresa.cod_distrito = '';
     }
 
     setPais(){

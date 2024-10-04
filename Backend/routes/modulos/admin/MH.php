@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
 
     Route::get('/paises', [MHController::class, 'paises']);
     Route::get('/municipios', [MHController::class, 'municipios']);
+    Route::get('/distritos', [MHController::class, 'distritos']);
     Route::get('/departamentos', [MHController::class, 'departamentos']);
     Route::get('/actividades_economicas', [MHController::class, 'actividadesEconomicas']);
     Route::get('/unidades', [MHController::class, 'unidades']);

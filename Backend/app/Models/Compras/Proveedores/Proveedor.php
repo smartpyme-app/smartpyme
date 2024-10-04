@@ -29,6 +29,8 @@ class Proveedor extends Model {
         'cod_municipio',
         'departamento',
         'cod_departamento',
+        'distrito',
+        'cod_distrito',
         'telefono',
         'correo',
         'nota',

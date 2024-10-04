@@ -19,6 +19,7 @@ export class CrearClienteComponent implements OnInit {
     public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
+    public distritos:any = [];
     public actividad_economicas:any = [];
 
     modalRef?: BsModalRef;
@@ -34,6 +35,7 @@ export class CrearClienteComponent implements OnInit {
     openModal(template: TemplateRef<any>) {
         this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
         
@@ -75,14 +77,39 @@ export class CrearClienteComponent implements OnInit {
         this.cliente.giro = this.actividad_economicas.find((item:any) => item.cod == this.cliente.cod_giro).nombre;
     }
 
+    setDistrito(){
+        let distrito = this.distritos.find((item:any) => item.cod == this.cliente.cod_distrito && item.cod_departamento == this.cliente.cod_departamento);
+        console.log(distrito);
+        if(distrito){
+            this.cliente.cod_municipio = distrito.cod_municipio;
+            this.setMunicipio();
+            this.cliente.distrito = distrito.nombre; 
+            this.cliente.cod_distrito = distrito.cod;
+        }
+    }
+
     setMunicipio(){
-        this.cliente.municipio = this.municipios.find((item:any) => item.cod == this.cliente.cod_municipio && item.cod_departamento == this.cliente.cod_departamento).nombre;
+        let municipio = this.municipios.find((item:any) => item.cod == this.cliente.cod_municipio && item.cod_departamento == this.cliente.cod_departamento);
+        if(municipio){
+            this.cliente.municipio = municipio.nombre; 
+            this.cliente.cod_municipio = municipio.cod;
+
+            this.cliente.distrito = ''; 
+            this.cliente.cod_distrito = '';
+        }
     }
 
     setDepartamento(){
-        this.cliente.departamento = this.departamentos.find((item:any) => item.cod == this.cliente.cod_departamento).nombre;
-        this.cliente.cod_municipio = null;
-        this.cliente.municipio = null;
+        let departamento = this.departamentos.find((item:any) => item.cod == this.cliente.cod_departamento);
+        if(departamento){
+            this.cliente.departamento = departamento.nombre; 
+            this.cliente.cod_departamento = departamento.cod;
+
+        }
+        this.cliente.municipio = ''; 
+        this.cliente.cod_municipio = '';
+        this.cliente.distrito = ''; 
+        this.cliente.cod_distrito = '';
     }
 
     public verificarSiExiste(){

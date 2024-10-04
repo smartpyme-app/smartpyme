@@ -16,6 +16,7 @@ export class ProveedorComponent implements OnInit {
     public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
+    public distritos:any = [];
     public actividad_economicas:any = [];
     public loading = false;
     public saving = false;
@@ -31,6 +32,7 @@ export class ProveedorComponent implements OnInit {
         this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
         this.loadAll();
     }
@@ -39,18 +41,39 @@ export class ProveedorComponent implements OnInit {
         this.proveedor.pais = this.paises.find((item:any) => item.cod == this.proveedor.cod_pais).nombre;
     }
     
-    setGiro(){
-        this.proveedor.giro = this.actividad_economicas.find((item:any) => item.cod == this.proveedor.cod_giro).nombre;
+    setDistrito(){
+        let distrito = this.distritos.find((item:any) => item.cod == this.proveedor.cod_distrito && item.cod_departamento == this.proveedor.cod_departamento);
+        console.log(distrito);
+        if(distrito){
+            this.proveedor.cod_municipio = distrito.cod_municipio;
+            this.setMunicipio();
+            this.proveedor.distrito = distrito.nombre; 
+            this.proveedor.cod_distrito = distrito.cod;
+        }
     }
 
     setMunicipio(){
-        this.proveedor.municipio = this.municipios.find((item:any) => item.cod == this.proveedor.cod_municipio && item.cod_departamento == this.proveedor.cod_departamento).nombre;
+        let municipio = this.municipios.find((item:any) => item.cod == this.proveedor.cod_municipio && item.cod_departamento == this.proveedor.cod_departamento);
+        if(municipio){
+            this.proveedor.municipio = municipio.nombre; 
+            this.proveedor.cod_municipio = municipio.cod;
+
+            this.proveedor.distrito = ''; 
+            this.proveedor.cod_distrito = '';
+        }
     }
 
     setDepartamento(){
-        this.proveedor.departamento = this.departamentos.find((item:any) => item.cod == this.proveedor.cod_departamento).nombre;
-        this.proveedor.cod_municipio = null;
-        this.proveedor.municipio = null;
+        let departamento = this.departamentos.find((item:any) => item.cod == this.proveedor.cod_departamento);
+        if(departamento){
+            this.proveedor.departamento = departamento.nombre; 
+            this.proveedor.cod_departamento = departamento.cod;
+
+        }
+        this.proveedor.municipio = ''; 
+        this.proveedor.cod_municipio = '';
+        this.proveedor.distrito = ''; 
+        this.proveedor.cod_distrito = '';
     }
 
     public loadAll(){

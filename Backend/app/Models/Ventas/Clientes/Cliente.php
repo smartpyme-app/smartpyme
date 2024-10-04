@@ -27,6 +27,7 @@ class Cliente extends Model {
        'pais',
        'cod_pais',
        'municipio',
+       'distrito',
        'departamento',
        'fecha_cumpleanos',
        'telefono',
@@ -40,6 +41,7 @@ class Cliente extends Model {
 
        'cod_giro',
        'cod_municipio',
+       'cod_distrito',
        'cod_departamento',
        
     ];
