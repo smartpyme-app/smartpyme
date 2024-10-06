@@ -5,20 +5,28 @@
   --fullcalendar-color-2: #FFDAD6;
   --fullcalendar-color-contrast-2: #410002;
 
-  --fullcalendar-color-3: #C4C6D0;
+  --fullcalendar-color-3: #D7E2FF;
   --fullcalendar-color-contrast-3: #001B3F;
 
   --fullcalendar-base-grey-color: #44474E;
 
 }
 
+::ng-deep app-calendario {
+  --fc-today-bg-color: transparent !important;
+  --fc-non-business-color: transparent !important;
+
+  .fc .fc-cell-shaded,
+  .fc .fc-day-disabled {
+    background-color: transparent !important;
+  }
+}
+
 ::ng-deep .fc-timeGridDay-view {
 
 
   --fc-event-text-color: black;
-  --fc-today-bg-color: white !important;
-  --fc-non-business-color: white !important;
-  --border-slot-color: #C4C6D0;
+  --border-slot-color: var(--fullcalendar-color-3);
   --fc-event-padding: 5px;
 
   .fc-scrollgrid-sync-table {
@@ -102,12 +110,21 @@
   --fc-event-padding: 2.5px;
   --fc-small-font-size: 0.7em;
 
+  .fc-day {
+    text-transform: capitalize;
+  }
+
   .fc-timegrid-slot {
     height: 40px !important;
   }
 
   .fc-event {
     padding: var(--fc-event-padding) !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: var(--fullcalendar-base-grey-color) !important;
   }
 }
 
@@ -159,6 +176,7 @@
   .fc-daygrid-day-events {
     margin-top: auto;
     width: 100% !important;
+    overflow: hidden;
 
   }
 
@@ -201,11 +219,70 @@
 }
 
 ::ng-deep .fc-multiMonthYear-view {
+  .fc-multimonth-title {
+    text-transform: capitalize !important;
+  }
+
+  --fc-event-border-color: transparent;
+
   a {
     text-decoration: none !important;
     color: var(--fullcalendar-base-grey-color) !important;
   }
 
+  .event-dot {
+    color: #16A34A;
+  }
+
+  .event-dot:nth-child(2n) {
+    color: #005CBB;
+  }
+
+  .event-dot:nth-child(3n) {
+    color: #BA1A1A;
+  }
+
+  .fc-daygrid-event-harness {
+    color: #16A34A;
+  }
+
+  .fc-daygrid-event-harness:nth-of-type(2n) .event-dot {
+    color: #005CBB;
+  }
+
+  .fc-daygrid-event-harness:nth-of-type(3n) .event-dot {
+    color: #BA1A1A;
+  }
+
+  .fc-daygrid-day-events {
+    margin-top: 15px;
+    width: 100% !important;
+    display: flex;
+    // overflow: hidden;
+
+  }
+
+  .event-dot-desc {
+    display: none;
+  }
+
+  .fc-popover-body .event-dot-desc {
+    display: block;
+  }
+
+
+}
+
+::ng-deep .fc-multiMonthYear-view .fc-popover-body .fc-daygrid-event-harness:nth-of-type(1n) {
+  --bs-link-color-rgb: #16A34A;
+}
+
+::ng-deep .fc-multiMonthYear-view .fc-popover-body .fc-daygrid-event-harness:nth-of-type(2n) {
+  --bs-link-color-rgb: #005CBB;
+}
+
+::ng-deep .fc-multiMonthYear-view .fc-popover-body .fc-daygrid-event-harness:nth-of-type(3n) {
+  --bs-link-color-rgb: #BA1A1A;
 }
 
 ::ng-deep .fc-multimonth-daygrid-table td {

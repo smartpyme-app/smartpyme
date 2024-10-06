@@ -45,20 +45,20 @@
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-edit"></i> Editar
                     </a>
-                    <a (click)="openModal(meventoDetalle, evento)"
+                    <!-- <a (click)="openModal(meventoDetalle, evento)"
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
                     </a>
                     <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }"
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-money-bill"></i> Generar venta
-                    </a>
+                    </a> -->
                     <a *ngIf="evento.tipo != 'Cancelado' && evento.tipo != 'Pagado'"
                       (click)="setEstado(evento, 'Cancelado')"
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-ban"></i> Cancelar
                     </a>
-                    <a *ngIf="evento.tipo != 'Pagado'" (click)="agregarEventoAlCalendario(evento)"
+                    <!-- <a *ngIf="evento.tipo != 'Pagado'" (click)="agregarEventoAlCalendario(evento)"
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-calendar"></i> Agregar a Google Calendar
                     </a>
@@ -71,7 +71,7 @@
                       (click)="setEstado(evento, 'Sin confirmar')"
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-xmark"></i> Sin confirmar
-                    </a>
+                    </a> -->
                     <a *ngIf="evento.tipo != 'Pagado'" (click)="delete(evento)"
                       class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-trash"></i> Eliminar

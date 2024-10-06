@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -46,6 +46,7 @@ export class CalendarioComponent implements OnInit {
   ) { }
 
   @ViewChild('fullcalendar') fullcalendar?: FullCalendarComponent;
+  @ViewChild("fullCalendarContainer") fullCalendarContainer?: any;
   get calendar(): Calendar | undefined {
     return this.fullcalendar?.getApi();
   }
@@ -60,7 +61,7 @@ export class CalendarioComponent implements OnInit {
       plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin, rrulePlugin],
       editable: true,
       navLinks: true,
-      firstDay: 0,
+      firstDay: 1,
       timeZone: 'America/El_Salvador',
       locale: esLocale,
       // themeSystem: 'bootstrap5',
@@ -98,6 +99,8 @@ export class CalendarioComponent implements OnInit {
             omitZeroMinute: false,
             meridiem: 'short'
           },
+          slotMinTime: '08:00:00',
+          slotMaxTime: '17:30:00',
           headerToolbar: false,
         },
         timeGridWeek: {
@@ -107,8 +110,14 @@ export class CalendarioComponent implements OnInit {
             omitZeroMinute: false,
             meridiem: 'short'
           },
+          titleFormat: {
+            day: '2-digit',
+            weekday: 'long',
+
+          },
           headerToolbar: false,
         },
+
         dayGridMonth: {
           slotLabelFormat: {
             hour: 'numeric',
@@ -123,9 +132,10 @@ export class CalendarioComponent implements OnInit {
             italicEl.classList.add('w-100');
             let event = renderProps.event.extendedProps['data'];
 
-            let smallVersion = event.duracion == "15 minutos"
-              || event.duracion == "30 minutos";
+            let smallVersion = event?.duracion == "15 minutos"
+              || event?.duracion == "30 minutos";
             let extraStyle = smallVersion ? 'smallversion' : '';
+            //24 hour format
             let startTime = moment(renderProps.event.start).format('HH:mm');
             italicEl.innerHTML = `
             <span class="d-flex justify-content-between w-100 event-title ${extraStyle}" title="${renderProps.event.title}">
@@ -135,6 +145,9 @@ export class CalendarioComponent implements OnInit {
             let arrayOfDomNodes = [italicEl]
             return { domNodes: arrayOfDomNodes }
           },
+          events: [
+
+          ]
         },
         multiMonthYear: {
           slotLabelFormat: {
@@ -142,15 +155,26 @@ export class CalendarioComponent implements OnInit {
             year: 'numeric'
           },
           headerToolbar: false,
+          moreLinkContent(renderProps, createElement) {
+            let italicEl = document.createElement('span')
+            italicEl.classList.add('event-container', 'd-flex');
+            italicEl.classList.add('w-100');
+            for (let index = 0; index < renderProps.num; index++) {
+              italicEl.innerHTML += `<i class="fa-solid fa-circle event-dot"></i>`;
+            }
+            let arrayOfDomNodes = [italicEl]
+            return { domNodes: arrayOfDomNodes }
+          },
           eventContent: (renderProps, createElement) => {
             let italicEl = document.createElement('span')
             italicEl.classList.add('event-container');
             italicEl.classList.add('w-100');
             let event = renderProps.event.extendedProps['data'];
-            italicEl.innerHTML = `<i class="fa-solid fa-circle" title="${renderProps.event.title}"></i>`;
+            italicEl.innerHTML = `<i class="fa-solid fa-circle event-dot" title="${renderProps.event.title}"></i> <span class="event-dot-desc">${renderProps.event.title.slice(0, 18)}<span>`;
             let arrayOfDomNodes = [italicEl]
             return { domNodes: arrayOfDomNodes }
           },
+
         }
       },
       eventContent: function (arg) {
@@ -158,19 +182,19 @@ export class CalendarioComponent implements OnInit {
         italicEl.classList.add('event-container');
         let event = arg.event.extendedProps['data'];
 
-        let smallVersion = event.duracion == "15 minutos"
-          || event.duracion == "30 minutos";
+        let smallVersion = event?.duracion == "15 minutos"
+          || event?.duracion == "30 minutos";
         let extraStyle = smallVersion ? 'smallversion' : '';
 
         italicEl.innerHTML = `
         <span class="d-flex justify-content-between event-title ${extraStyle}" title="${arg.event.title}">
-            <span><strong><i class="fa fa-bell"></i> ${arg.event.title.slice(0, 18)}<strong></span>
+            <span><strong><i class="fa-regular fa-bell" style="font-size:1.1em"></i> ${arg.event.title.slice(0, 18)}<strong></span>
             <span> ${arg.timeText.split("-")[0]}</span>
         </span>`;
         if (!smallVersion)
           italicEl.innerHTML +=
             `<span class="w-100 event-body" >
-                ${event.descripcion.slice(0, 50)}...
+                ${event?.descripcion?.slice(0, 50)}...
             </span>`;
 
         let arrayOfDomNodes = [italicEl]
@@ -193,7 +217,7 @@ export class CalendarioComponent implements OnInit {
     this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => {
       this.loading = false;
       if (this.calendarOptions) {
-        this.calendarOptions.events = eventos;
+        this.calendarOptions.events = [...eventos];
       }
       if (this.modalRef) {
         this.modalRef.hide();
@@ -292,3 +316,4 @@ export class CalendarioComponent implements OnInit {
   }
 
 }
+
