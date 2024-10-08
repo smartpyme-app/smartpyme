@@ -42,11 +42,6 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping
 
             $nombre = $row->dte['receptor']['nombre'] ?? '';
             $dui = $row->dte['receptor']['numDocumento'] ?? '';
-            $nit_nrc = '';
-
-            if ($row->dte && $row->tipo_documento == 'Credito Fiscal' && $row->dte['receptor']) {
-                $nit_nrc = $row->dte['receptor']['nrc'] ? $row->dte['receptor']['nrc'] : $row->dte['receptor']['nit'];
-            }
 
            $fields = [
               \Carbon\Carbon::parse($row->fecha)->format('d/m/Y'), //'Fecha',

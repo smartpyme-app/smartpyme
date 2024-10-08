@@ -48,8 +48,8 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
             $dui = $row->dte['receptor']['numDocumento'] ?? '';
             $nit_nrc = '';
 
-            if ($row->dte && $documento->nombre == 'Crédito fiscal' && $row->dte['receptor']) {
-                $nit_nrc = $row->dte['receptor']['nrc'] ? $row->dte['receptor']['nrc'] : $row->dte['receptor']['nit'];
+            if ($row->dte && $documento->nombre == 'Crédito fiscal' && isset($row->dte['receptor'])) {
+                $nit_nrc = !empty($row->dte['receptor']['nrc']) ? $row->dte['receptor']['nrc'] : (!empty($row->dte['receptor']['nit']) ? $row->dte['receptor']['nit'] : '');
             }
 
            $fields = [
