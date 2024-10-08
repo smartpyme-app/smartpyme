@@ -40,6 +40,10 @@ export class CalendarioComponent implements OnInit {
   public meventoTemplate!: TemplateRef<any>;
   modalRef!: BsModalRef;
   selectedPeriodType: "day" | "week" | "month" | "year" = "day";
+  usuarios: any = [];
+  clientes: any = [];
+  userFilter?: number;
+  clientFilter?: number;
   constructor(private apiService: ApiService, public alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
     private modalService: BsModalService
@@ -53,7 +57,19 @@ export class CalendarioComponent implements OnInit {
   get currentDate(): Date {
     return this.calendar?.getDate() || new Date();
   }
+  timeGridMinTime = '08:00:00';
+  timeGridMaxTime = '17:30:00';
   ngOnInit() {
+    this.userFilter = this.apiService.auth_user().id;
+    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+      this.usuarios = usuarios;
+    }, error => { this.alertService.error(error); });
+
+
+    this.apiService.getAll('clientes/list').subscribe(clientes => {
+      this.clientes = clientes;
+    }, error => { this.alertService.error(error); });
+
     forwardRef(() => Calendar);
 
     this.calendarOptions = {
@@ -99,8 +115,8 @@ export class CalendarioComponent implements OnInit {
             omitZeroMinute: false,
             meridiem: 'short'
           },
-          slotMinTime: '08:00:00',
-          slotMaxTime: '17:30:00',
+          slotMinTime: this.timeGridMinTime,
+          slotMaxTime: this.timeGridMaxTime,
           headerToolbar: false,
         },
         timeGridWeek: {
@@ -136,7 +152,7 @@ export class CalendarioComponent implements OnInit {
               || event?.duracion == "30 minutos";
             let extraStyle = smallVersion ? 'smallversion' : '';
             //24 hour format
-            let startTime = moment(renderProps.event.start).format('HH:mm');
+            let startTime = moment(renderProps.event.startStr).format('HH:mm');
             italicEl.innerHTML = `
             <span class="d-flex justify-content-between w-100 event-title ${extraStyle}" title="${renderProps.event.title}">
                 <span><strong><i class="fa-solid fa-circle"></i> ${renderProps.event.title.slice(0, 18)}<strong></span>
@@ -213,11 +229,18 @@ export class CalendarioComponent implements OnInit {
     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.filtros.orden = 'inicio';
     this.filtros.direccion = 'desc';
+    if (this.userFilter)
+      this.filtros.id_usuario = this.userFilter;
+    if (this.clientFilter)
+      this.filtros.id_cliente = this.clientFilter;
     this.loading = true;
     this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => {
       this.loading = false;
       if (this.calendarOptions) {
         this.calendarOptions.events = [...eventos];
+        this.updateMinMaxTime(eventos);
+
+
       }
       if (this.modalRef) {
         this.modalRef.hide();
@@ -225,7 +248,34 @@ export class CalendarioComponent implements OnInit {
       this.update.emit();
     }, error => { this.alertService.error(error); this.loading = false; });
   }
+  updateMinMaxTime(events: any[]) {
+    // if (events.length == 0) return;
+    let minTime = moment().set('hour', 8).set('minute', 0).set('second', 0).format('HH:mm:ss');
+    let maxTime = moment().set('hour', 17).set('minute', 30).set('second', 0).format('HH:mm:ss');
+    for (let index = 0; index < events.length; index++) {
+      const event = events[index];
+      let start = moment(event.start).format('HH:mm:ss');
+      let end = moment(event.end).format('HH:mm:ss');
+      if (start < minTime) {
+        minTime = start;
+      }
+      if (end > maxTime) {
+        maxTime = end;
+      }
+    }
+    this.timeGridMinTime = minTime;
+    this.timeGridMaxTime = maxTime;
 
+    console.log(this.timeGridMinTime, this.timeGridMaxTime);
+
+    //set slotMinTime and slotMaxTime on HH:00:00 format of minTime and maxTime
+    // this.calendar?.setOption('slotMinTime', moment(this.timeGridMinTime).format('HH:00:00'));
+    // this.calendar?.setOption('slotMaxTime', moment(this.timeGridMaxTime).format('HH:00:00'));
+
+    this.calendar?.setOption('slotMinTime', this.timeGridMinTime);
+    this.calendar?.setOption('slotMaxTime', this.timeGridMaxTime);
+
+  }
   handleDateClick(arg: any) {
     this.evento = {};
     this.evento.frecuencia = '';
@@ -248,7 +298,7 @@ export class CalendarioComponent implements OnInit {
   handleEventClick(arg: any) {
     this.evento = arg.event.extendedProps.data;
     this.alertService.modal = true;
-    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg' });
+    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg p-2' });
   }
 
   setTime() {

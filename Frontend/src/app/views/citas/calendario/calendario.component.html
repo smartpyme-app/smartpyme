@@ -8,32 +8,55 @@
   </div> -->
 </section>
 <section>
-  <div class="d-flex flex-wrap justify-content-between gap-10">
-    <div class="d-flex flex-wrap gap-10">
-      <button class="btn " (click)="setNowSelection()"
-        [ngClass]="selectedPeriodType=='day'?'btn-primary':'btn-default'">
-        Hoy
-      </button>
-      <button class="btn " (click)="setWeekSelection()"
-        [ngClass]="selectedPeriodType=='week'?'btn-primary':'btn-default'">
-        Semana
-      </button>
-      <button class="btn " (click)="setMonthSelection()"
-        [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
-        Mes
-      </button>
-      <button class="btn " (click)="setYearSelection()"
-        [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
-        Año
-      </button>
+  <div class="row">
+    <div class="col-8 d-flex flex-wrap gap-10">
+      <div> <button class="btn " (click)="setNowSelection()"
+          [ngClass]="selectedPeriodType=='day'?'btn-primary':'btn-default'">
+          Hoy
+        </button></div>
+      <div><button class="btn " (click)="setWeekSelection()"
+          [ngClass]="selectedPeriodType=='week'?'btn-primary':'btn-default'">
+          Semana
+        </button></div>
+      <div><button class="btn " (click)="setMonthSelection()"
+          [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
+          Mes
+        </button></div>
+      <div> <button class="btn " (click)="setYearSelection()"
+          [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
+          Año
+        </button></div>
     </div>
-    <div class="d-flex gap-10">
-      <ng-select name="encargado" class="form-select p-0 border-0 bg-default w-auto" placeholder="Encargado ">
-        <ng-option value="">Proveedor</ng-option>
-      </ng-select>
-      <ng-select name="usuario" class="form-select p-0 border-0 bg-default w-auto" placeholder="Usuario ">
-        <ng-option value="">Usuario</ng-option>
-      </ng-select>
+    <div class="row col-4">
+      <div class="form-group col-12 col-md-6">
+        <!-- <label for="id_usuario">
+          Encargado
+          <i class="fa-regular fa-user"></i>
+
+        </label> -->
+        <ng-select name="id_usuario" [(ngModel)]="userFilter" class="form-select p-0" placeholder="Encargado"
+          (change)="loadAll()">
+          <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
+            {{ usuario.name }}
+          </ng-option>
+        </ng-select>
+      </div>
+
+      <div class="form-group col-12 col-md-6">
+        <!-- <label for="">Cliente
+          <i class="fa-regular fa-user"></i>
+        </label> -->
+        <div class="input-group flex-nowrap">
+          <ng-select name="id_cliente" [(ngModel)]="clientFilter" class="form-select p-0" placeholder="Cliente"
+            (change)="loadAll()">
+            <ng-option value=""> Seleccione aquí </ng-option>
+            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+              {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
+            </ng-option>
+          </ng-select>
+
+        </div>
+      </div>
     </div>
   </div>
   <div #fullCalendarContainer>
