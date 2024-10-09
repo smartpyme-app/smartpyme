@@ -2,7 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
-use App\Models\Ventas\Venta;
+use App\Models\Compras\Compra;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
