@@ -140,14 +140,10 @@ class MHFactura extends Model
                 "tipoDocumento" => NULL, //36 NIT 13 DUI
                 "numDocumento" => NULL,
                 "nrc" => NULL,
-                "nombre" => 'Consumidor Final',
+                "nombre" => 'Clientes Varios',
                 "codActividad" => NULL,
                 "descActividad" => NULL,
-                "direccion" => [
-                    "departamento" => $this->empresa->cod_departamento,
-                    "municipio" => $this->empresa->cod_municipio,
-                    "complemento" => $this->empresa->direccion,
-                ],
+                "direccion" => NULL,
                 "telefono" => NULL,
                 "correo" => NULL
             ];
@@ -261,7 +257,8 @@ class MHFactura extends Model
 
             $detalle->codTributo = NULL;
 
-            $precioConIva = round($detalle->precio + ($detalle->precio * 0.13), 2);
+            $precioConIva = round($detalle->precio * 1.13, 2);
+            $descuentoConIVA = round($detalle->descuento * 1.13, 2);
             $IVA = ($detalle->total * 0.13);
             $gravada = $detalle->cantidad * $precioConIva;
 
@@ -275,10 +272,10 @@ class MHFactura extends Model
                 "uniMedida" => $detalle->cod_medida,
                 "descripcion" => $detalle->nombre_producto,
                 "precioUni" => floatval(number_format($precioConIva,2, '.', '')),
-                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
+                "montoDescu" => floatval(number_format($descuentoConIVA,2, '.', '')),
                 "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                 "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($gravada,2, '.', '')),
+                "ventaGravada" => floatval(number_format($gravada - $descuentoConIVA,2, '.', '')),
                 "tributos" => $tributos,
                 "psv" => 0,
                 "noGravado" => 0,
