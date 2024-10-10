@@ -1,481 +1,504 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { SumPipe }     from '@pipes/sum.pipe';
+import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
 import { log } from 'console';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-facturacion-compra',
   templateUrl: './facturacion-compra.component.html',
-  providers: [ SumPipe ]
+  providers: [SumPipe]
 })
 
 export class FacturacionCompraComponent implements OnInit {
 
-    public compra: any= {};
-    public detalle: any = {};
-    public proveedores:any = [];
-    public proyectos:any = [];
-    public usuarios:any = [];
-    public documentos:any = [];
-    public formaPagos:any = [];
-    public sucursales:any = [];
-    public bodegas:any = [];
-    public impuestos:any = [];
-    // public bancos:any = [];
-    public supervisor:any = {};
-    public loading = false;
-    public saving = false;
-    public duplicarcompra = false;
-    public facturarCotizacion = false;
-    public imprimir:boolean = false;
-    public comprainternacional= false;
-    
-    modalRef!: BsModalRef;
-    modalCredito!: BsModalRef;
+  public compra: any = {};
+  public detalle: any = {};
+  public proveedores: any = [];
+  public proyectos: any = [];
+  public usuarios: any = [];
+  public documentos: any = [];
+  public formaPagos: any = [];
+  public sucursales: any = [];
+  public bodegas: any = [];
+  public impuestos: any = [];
+  // public bancos:any = [];
+  public supervisor: any = {};
+  public loading = false;
+  public saving = false;
+  public duplicarcompra = false;
+  public facturarCotizacion = false;
+  public imprimir: boolean = false;
+  public comprainternacional = false;
+  cotizacion: any = {};
+  modalRef!: BsModalRef;
+  modalCredito!: BsModalRef;
 
-    @ViewChild('msupervisor')
-    public supervisorTemplate!: TemplateRef<any>;
+  @ViewChild('msupervisor')
+  public supervisorTemplate!: TemplateRef<any>;
 
-    @ViewChild('mcredito')
-    public creditoTemplate!: TemplateRef<any>;
+  @ViewChild('mcredito')
+  public creditoTemplate!: TemplateRef<any>;
 
-    
-    constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router,
-    ) {
-        // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+
+  constructor(
+    public apiService: ApiService, private alertService: AlertService,
+    private modalService: BsModalService, private sumPipe: SumPipe,
+    private route: ActivatedRoute, private router: Router,
+  ) {
+    // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+  }
+
+  ngOnInit() {
+
+    this.cargarDatosIniciales();
+
+    this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+      this.sucursales = sucursales;
+    }, error => { this.alertService.error(error); });
+
+    this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+      this.bodegas = bodegas;
+    }, error => { this.alertService.error(error); });
+
+    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+      this.usuarios = usuarios;
+    }, error => { this.alertService.error(error); });
+
+    // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+    //     this.bancos = bancos;
+    // }, error => {this.alertService.error(error);});
+
+    this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
+      this.formaPagos = formaPagos;
+    }, error => { this.alertService.error(error); });
+
+    this.apiService.getAll('impuestos').subscribe(impuestos => {
+      this.impuestos = impuestos;
+      this.compra.impuestos = this.impuestos;
+      this.sumTotal();
+
+    }, error => { this.alertService.error(error); });
+
+    this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+      this.proveedores = proveedores;
+      this.loading = false;
+    }, error => { this.alertService.error(error); this.loading = false; });
+
+    this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+      this.proyectos = proyectos;
+      this.loading = false;
+    }, error => { this.alertService.error(error); this.loading = false; });
+  }
+
+
+  public cargarDocumentos() {
+    this.apiService.getAll('documentos/list').subscribe(documentos => {
+      this.documentos = documentos;
+      this.documentos = this.documentos.filter((x: any) => x.id_sucursal == this.compra.id_sucursal);
+      if (this.compra.cotizacion == 1) {
+        this.documentos = this.documentos.filter((x: any) => x.nombre == 'Orden de compra');
+        let documento = this.documentos.find((x: any) => x.nombre == 'Orden de compra');
+        if (documento) {
+          this.compra.tipo_documento = documento.nombre;
+          this.compra.referencia = documento.correlativo;
+        }
+      } else {
+        this.documentos = this.documentos.filter((x: any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
+      }
+    }, error => { this.alertService.error(error); });
+  }
+
+  public cargarDatosIniciales() {
+    this.compra = {};
+    this.compra.fecha = this.apiService.date();
+    this.compra.fecha_pago = this.apiService.date();
+    this.compra.forma_pago = 'Efectivo';
+    this.compra.tipo = 'Interna';
+    this.compra.estado = 'Pagada';
+    this.compra.condicion = 'Contado';
+    this.compra.tipo_documento = 'Factura';
+    this.compra.detalle_banco = '';
+    this.compra.id_proveedor = '';
+    this.compra.detalles = [];
+    this.compra.descuento = 0;
+    this.compra.sub_total = 0;
+    this.compra.percepcion = 0;
+    this.compra.cotizacion = 0;
+    this.compra.iva_retenido = 0;
+    this.compra.iva = 0;
+    this.compra.total_costo = 0;
+    this.compra.total = 0;
+    this.compra.fob_tot = 0;
+    this.detalle = {};
+    this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
+    this.compra.cobrar_percepcion = false;
+    this.compra.id_bodega = this.apiService.auth_user().id_sucursal;
+    this.compra.id_usuario = this.apiService.auth_user().id;
+    this.compra.id_vendedor = this.apiService.auth_user().id;
+    this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
+    this.compra.id_empresa = this.apiService.auth_user().id_empresa;
+    this.compra.incoterms = "FOB";
+    let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
+    if (corte) {
+      this.compra.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
+      this.compra.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id_caja;
+      this.compra.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
     }
 
-    ngOnInit() {
-
-        this.cargarDatosIniciales();
-
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-        }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
-
-        // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-        //     this.bancos = bancos;
-        // }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('impuestos').subscribe(impuestos => {
-            this.impuestos = impuestos;
-            this.compra.impuestos = this.impuestos;
-            this.sumTotal();
-
-        }, error => {this.alertService.error(error);});
-
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-            this.proveedores = proveedores;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-
-        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
-            this.proyectos = proyectos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+    if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+      this.compra.cotizacion = 1;
+      this.compra.estado = 'Pendiente';
     }
 
+    this.route.params.subscribe((params: any) => {
+      if (params.id) {
+        this.loading = true;
+        this.apiService.read('compra/', params.id).subscribe(compra => {
+          this.compra = compra;
+          this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
+          this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+          this.loading = false;
+        }, error => { this.alertService.error(error); this.loading = false; });
+      }
+    });
 
-    public cargarDocumentos(){
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
-            this.documentos = documentos;
-            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
-            if(this.compra.cotizacion == 1){
-                this.documentos = this.documentos.filter((x:any) => x.nombre == 'Orden de compra');
-                let documento = this.documentos.find((x:any) => x.nombre == 'Orden de compra');
-                if(documento){
-                    this.compra.tipo_documento = documento.nombre;
-                    this.compra.referencia = documento.correlativo;
-                }
-            }else{
-                this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
-            }
-        }, error => {this.alertService.error(error);});
-    }
+    // Duplicar compra
 
-    public cargarDatosIniciales(){
-        this.compra = {};
+    if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
+      this.duplicarcompra = true;
+      this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+        this.compra = compra;
         this.compra.fecha = this.apiService.date();
         this.compra.fecha_pago = this.apiService.date();
-        this.compra.forma_pago = 'Efectivo';
-        this.compra.tipo = 'Interna';
-        this.compra.estado = 'Pagada';
-        this.compra.condicion = 'Contado';
-        this.compra.tipo_documento = 'Factura';
-        this.compra.detalle_banco = '';
-        this.compra.id_proveedor = '';
-        this.compra.detalles = [];
-        this.compra.descuento = 0;
-        this.compra.sub_total = 0;
-        this.compra.percepcion = 0;
-        this.compra.cotizacion = 0;
-        this.compra.iva_retenido = 0;
-        this.compra.iva = 0;
-        this.compra.total_costo = 0;
-        this.compra.total = 0;
-        this.compra.fob_tot = 0;
-        this.detalle = {};
-        this.compra.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
-        this.compra.cobrar_percepcion = false;
-        this.compra.id_bodega = this.apiService.auth_user().id_sucursal;
-        this.compra.id_usuario = this.apiService.auth_user().id;
-        this.compra.id_vendedor = this.apiService.auth_user().id;
-        this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
-        this.compra.id_empresa = this.apiService.auth_user().id_empresa;
-        this.compra.incoterms="FOB";
-        let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
-        if (corte) {
-            this.compra.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
-            this.compra.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id_caja;
-            this.compra.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
-        }
-
-        if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-            this.compra.cotizacion = 1;
-            this.compra.estado = 'Pendiente';
-        }
-
-        this.route.params.subscribe((params:any) => {
-            if (params.id) {
-                this.loading = true;
-                this.apiService.read('compra/', params.id).subscribe(compra => {
-                    this.compra = compra;
-                    this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
-                    this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
-                    this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }
+        this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
+        this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
+        this.compra.id = null;
+        this.compra.tipo_documento = null;
+        this.compra.referencia = null;
+        this.compra.detalles.forEach((detalle: any) => {
+          detalle.id = null;
         });
-
-        // Duplicar compra
-
-        if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
-            this.duplicarcompra = true;
-            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
-                this.compra = compra;
-                this.compra.fecha = this.apiService.date();
-                this.compra.fecha_pago = this.apiService.date();
-                this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
-                this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
-                this.compra.id = null;
-                this.compra.tipo_documento = null;
-                this.compra.referencia = null;
-                this.compra.detalles.forEach((detalle:any) => {
-                    detalle.id = null;
-                });
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }
-
-        if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-            this.compra.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
-        }
-
-         // Facturar cotizacion
-        if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
-            this.facturarCotizacion = true;
-            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
-                this.compra = compra;
-                this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
-                this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
-                this.compra.fecha = this.apiService.date();
-                this.compra.fecha_pago = this.apiService.date();
-                this.compra.tipo_documento = null;
-                this.compra.referencia = null;
-                this.compra.estado = 'Pagada';
-                this.compra.cotizacion = 0;
-                this.compra.num_orden_compra = this.compra.id;
-                this.compra.id = null;
-                this.compra.detalles.forEach((detalle:any) => {
-                    detalle.id = null;
-                });
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }
-
-        this.cargarDocumentos();
+      }, error => { this.alertService.error(error); this.loading = false; });
     }
 
-    public sumTotal() {
-        this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0; 
-        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
-        this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0; 
-
-        if(this.compra.cobrar_impuestos){
-            this.compra.iva = ( this.compra.sub_total * 0.13 ).toFixed(2);
-        }else{
-            this.compra.iva = 0;
-        }
-
-        this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
-        this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
-        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido) - parseFloat(this.compra.renta_retenida)).toFixed(2);
+    if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+      this.compra.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
     }
 
-    // proveedor
-    public setProveedor(proveedor:any){
-        if(!this.compra.id_proveedor){
-            this.proveedores.push(proveedor);
-        }
-        this.compra.id_proveedor = proveedor.id;
-        if(proveedor.tipo_contribuyente == "Grande") {
-            this.compra.retencion = 1;
-            this.sumTotal();
-        }
-    }
-
-    // Proyecto
-    public setProyecto(proyecto:any){
-        if(!this.compra.id_proyecto){
-            this.proyectos.push(proyecto);
-        }
-        this.compra.id_proyecto = proyecto.id;
-    }
-
-    public setCredito(){
-        if(this.compra.credito){
-            this.compra.estado = 'Pendiente';
-            this.compra.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
-        }else{
-            this.compra.estado = 'Pagada';
-            this.compra.fecha_pago = moment().format('YYYY-MM-DD');
-        }
-    }
-
-    public setConsigna(){
-        if(this.compra.consigna){
-            this.compra.estado = 'Consigna';
-        }else{
-            this.setCredito();
-        }
-    }
-
-
-    public updatecompra(compra:any) {
+    // Facturar cotizacion
+    if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
+      this.facturarCotizacion = true;
+      this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+        this.cotizacion = Object.assign({}, {
+          ...compra, cotizacion: 1,
+          detalles: compra.detalles.map((_d: any) => {
+            return {
+              cantidad: _d.cantidad,
+              costo: _d.costo,
+              descuento: _d.descuento,
+              id_producto: _d.id_producto,
+              producto: _d.producto,
+              total: _d.total,
+              img: _d.img,
+              cantidad_procesada: _d.cantidad_procesada,
+              nombre_producto: _d.nombre_producto,
+            }
+          })
+        });
         this.compra = compra;
-        this.sumTotal();
+        this.compra.fecha = this.apiService.date();
+        this.compra.fecha_pago = this.apiService.date();
+        this.compra.tipo_documento = null;
+        this.compra.referencia = null;
+        this.compra.estado = 'Pagada';
+        this.compra.cotizacion = 0;
+        this.compra.num_orden_compra = this.compra.id;
+        this.compra.id = null;
+        this.compra.detalles.forEach((detalle: any) => {
+          detalle.id = null;
+        });
+      }, error => { this.alertService.error(error); this.loading = false; });
     }
 
-    public selectTipoDocumento(){
-        if(this.compra.tipo_documento == 'Sujeto excluido'){
-            let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
-            console.log(documento);
-            this.compra.referencia = documento.correlativo;
-        }
+    this.cargarDocumentos();
+  }
+
+  public sumTotal() {
+    this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
+    this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0;
+    this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
+    this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0;
+
+    if (this.compra.cobrar_impuestos) {
+      this.compra.iva = (this.compra.sub_total * 0.13).toFixed(2);
+    } else {
+      this.compra.iva = 0;
     }
 
+    this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
+    this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
+    this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido) - parseFloat(this.compra.renta_retenida)).toFixed(2);
+  }
 
-    // Facturar
+  // proveedor
+  public setProveedor(proveedor: any) {
+    if (!this.compra.id_proveedor) {
+      this.proveedores.push(proveedor);
+    }
+    this.compra.id_proveedor = proveedor.id;
+    if (proveedor.tipo_contribuyente == "Grande") {
+      this.compra.retencion = 1;
+      this.sumTotal();
+    }
+  }
 
-        public openModalFacturar(template: TemplateRef<any>) {
-            this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop:'static'});
+  // Proyecto
+  public setProyecto(proyecto: any) {
+    if (!this.compra.id_proyecto) {
+      this.proyectos.push(proyecto);
+    }
+    this.compra.id_proyecto = proyecto.id;
+  }
+
+  public setCredito() {
+    if (this.compra.credito) {
+      this.compra.estado = 'Pendiente';
+      this.compra.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+    } else {
+      this.compra.estado = 'Pagada';
+      this.compra.fecha_pago = moment().format('YYYY-MM-DD');
+    }
+  }
+
+  public setConsigna() {
+    if (this.compra.consigna) {
+      this.compra.estado = 'Consigna';
+    } else {
+      this.setCredito();
+    }
+  }
+
+
+  public updatecompra(compra: any) {
+    this.compra = compra;
+    this.sumTotal();
+  }
+
+  public selectTipoDocumento() {
+    if (this.compra.tipo_documento == 'Sujeto excluido') {
+      let documento = this.documentos.find((x: any) => x.nombre == this.compra.tipo_documento);
+      console.log(documento);
+      this.compra.referencia = documento.correlativo;
+    }
+  }
+
+
+  // Facturar
+
+  public openModalFacturar(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+  }
+
+  async onFacturar() {
+    let confirm = await Swal.fire({
+      title: '¿Estás seguro de procesar la compra?',
+      text: 'Se procesara la compra',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, procesar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirm.isConfirmed) return;
+    if (!this.compra.recibido)
+      this.compra.recibido = this.compra.total;
+    this.onSubmit();
+  }
+
+  // Guardar compra
+  public onSubmit() {
+
+    this.saving = true;
+    if (this.duplicarcompra) {
+      this.compra.recurrente = false;
+    }
+    this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
+      this.saving = false;
+
+      if (this.compra.cotizacion == 1) {
+        this.router.navigate(['/ordenes-de-compras']);
+        this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+      } else {
+        this.router.navigate(['/compras']);
+        this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+        //Generar partida contable
+        if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
+          this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
+          }, error => { this.alertService.error(error); });
         }
+      }
 
-        public onFacturar(){
-            if (confirm('¿Confirma procesar la ' + (this.compra.cotizacion == 1 ? ' orden de compra.' : 'compra.') )) {
-                if(!this.compra.recibido)
-                    this.compra.recibido = this.compra.total;
-                this.onSubmit();
-            }
-        }
+      // // Si es cotización
+      // if (this.facturarCotizacion) {
+      //   this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+      //     // compra.estado = 'Aceptada';
+      //     // this.apiService.store('compra', compra).subscribe(compra => {
 
-    // Guardar compra
-        public onSubmit() {
+      //     // }, error => { this.alertService.error(error); this.saving = false; });
+      //   }, error => { this.alertService.error(error); this.saving = false; });
 
-            this.saving = true;
-            if(this.duplicarcompra){
-                this.compra.recurrente = false;
-            }         
-            this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
-                this.saving = false;
-                
-                if(this.compra.cotizacion == 1){
-                    this.router.navigate(['/ordenes-de-compras']);
-                    this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
-                }else{
-                    this.router.navigate(['/compras']);
-                    this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
-                    //Generar partida contable
-                    if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
-                        this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
-                        },error => {this.alertService.error(error);});
-                    }
-                }
+      // }
 
-                // Si es cotización
-                if(this.facturarCotizacion){
-                    this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
-                        compra.estado = 'Aceptada';
-                        this.apiService.store('compra', compra).subscribe(compra => {
+    }, error => { this.alertService.error(error); this.saving = false; });
 
-                        },error => {this.alertService.error(error); this.saving = false; });
-                    },error => {this.alertService.error(error); this.saving = false; });
+  }
 
-                }
+  //Limpiar
 
-            },error => {this.alertService.error(error); this.saving = false; });
+  public limpiar() {
+    this.modalRef = this.modalService.show(this.supervisorTemplate, { class: 'modal-xs' });
+  }
 
-        }
-
-    //Limpiar
-
-        public limpiar(){
-            this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
-        }
-
-        public supervisorCheck(){
-            this.loading = true;
-            this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
-                this.modalRef.hide();
-                this.cargarDatosIniciales();
-                this.loading = false;
-                this.supervisor = {};
-            },error => {this.alertService.error(error); this.loading = false; });
-        }
+  public supervisorCheck() {
+    this.loading = true;
+    this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
+      this.modalRef.hide();
+      this.cargarDatosIniciales();
+      this.loading = false;
+      this.supervisor = {};
+    }, error => { this.alertService.error(error); this.loading = false; });
+  }
 
 
-        toggleDiv(): void {
-            this.comprainternacional = !this.comprainternacional; // Cambiar entre true y false
-          }
-        //   RETACEO 
+  toggleDiv(): void {
+    this.comprainternacional = !this.comprainternacional; // Cambiar entre true y false
+  }
+  //   RETACEO
 
-        public updateFOBTotal(detalle: any): void {
+  public updateFOBTotal(detalle: any): void {
 
-            // Actualiza la sumatoria total de FOB
-            this.updateDistribucion(detalle);
+    // Actualiza la sumatoria total de FOB
+    this.updateDistribucion(detalle);
 
-        }
+  }
 
-          // Esta función será llamada cuando el botón sea clicado
-        public calcularFOBParaTodos(): void {
+  // Esta función será llamada cuando el botón sea clicado
+  public calcularFOBParaTodos(): void {
 
-            this.compra.fob_tot=0;
-            this.compra.detalles.forEach((detalle:any) => {
-                this.compra.fob_tot += parseFloat(detalle.fobTotal);
-              });
-            
-          this.compra.detalles.forEach((detalle:any) => {
-            this.updateFOBTotal(detalle);
-          });
-        }
+    this.compra.fob_tot = 0;
+    this.compra.detalles.forEach((detalle: any) => {
+      this.compra.fob_tot += parseFloat(detalle.fobTotal);
+    });
 
-        public updateDistribucion(detalle: any): void {
-        
-          // Calcular distribución en porcentajecls
-          const distribucion = (detalle.fobTotal / this.compra.fob_tot) * 100;
-          detalle.distribucion = parseFloat(distribucion.toFixed(2)); // Mantener dos decimales
-          this.updateInlandForDetails();
-          this.updateInsuranceForDetails();
-          this.updateAereoForDetails();
-          this.updateDaiForDetails();
-          this.updateGastosForDetails();
-          this.updateCIF(detalle);
-          this.updateLanded(detalle);
-        }
+    this.compra.detalles.forEach((detalle: any) => {
+      this.updateFOBTotal(detalle);
+    });
+  }
 
-    public updateInlandForDetails(): void {
+  public updateDistribucion(detalle: any): void {
+
+    // Calcular distribución en porcentajecls
+    const distribucion = (detalle.fobTotal / this.compra.fob_tot) * 100;
+    detalle.distribucion = parseFloat(distribucion.toFixed(2)); // Mantener dos decimales
+    this.updateInlandForDetails();
+    this.updateInsuranceForDetails();
+    this.updateAereoForDetails();
+    this.updateDaiForDetails();
+    this.updateGastosForDetails();
+    this.updateCIF(detalle);
+    this.updateLanded(detalle);
+  }
+
+  public updateInlandForDetails(): void {
     // Verificamos si `compra.inland` tiene un valor numérico
-            if (this.compra && this.compra.inland != null && this.compra.detalles) {
-                this.compra.detalles.forEach((detalle:any) => {
+    if (this.compra && this.compra.inland != null && this.compra.detalles) {
+      this.compra.detalles.forEach((detalle: any) => {
         // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
-                if (detalle.distribucion != null) {
-                    detalle.inland = parseFloat((this.compra.inland * (detalle.distribucion/100)).toFixed(2));
-                }
-            });
+        if (detalle.distribucion != null) {
+          detalle.inland = parseFloat((this.compra.inland * (detalle.distribucion / 100)).toFixed(2));
         }
+      });
     }
+  }
 
-    public updateInsuranceForDetails(): void {
-        // Verificamos si `compra.insurance` tiene un valor numérico
-                if (this.compra && this.compra.insurance != null && this.compra.detalles) {
-                    this.compra.detalles.forEach((detalle:any) => {
-            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
-                    if (detalle.distribucion != null) {
-                        detalle.insurance =   parseFloat((this.compra.insurance * (detalle.distribucion/100)).toFixed(2)) ;
-                    }
-                });
-            }
+  public updateInsuranceForDetails(): void {
+    // Verificamos si `compra.insurance` tiene un valor numérico
+    if (this.compra && this.compra.insurance != null && this.compra.detalles) {
+      this.compra.detalles.forEach((detalle: any) => {
+        // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+        if (detalle.distribucion != null) {
+          detalle.insurance = parseFloat((this.compra.insurance * (detalle.distribucion / 100)).toFixed(2));
+        }
+      });
     }
+  }
 
-    public updateAereoForDetails(): void {
-        // Verificamos si `compra.aereo` tiene un valor numérico
-                if (this.compra && this.compra.aereo != null && this.compra.detalles) {
-                    this.compra.detalles.forEach((detalle:any) => {
-            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
-                    if (detalle.distribucion != null) {
-                        detalle.aereo =   parseFloat((this.compra.aereo * (detalle.distribucion/100)).toFixed(2)) ;
-                    }
-                });
-            } 
+  public updateAereoForDetails(): void {
+    // Verificamos si `compra.aereo` tiene un valor numérico
+    if (this.compra && this.compra.aereo != null && this.compra.detalles) {
+      this.compra.detalles.forEach((detalle: any) => {
+        // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+        if (detalle.distribucion != null) {
+          detalle.aereo = parseFloat((this.compra.aereo * (detalle.distribucion / 100)).toFixed(2));
+        }
+      });
     }
+  }
 
-    public updateDaiForDetails(): void {
-        // Verificamos si `compra.dai_tot` tiene un valor numérico
-                if (this.compra && this.compra.dai_tot != null && this.compra.detalles) {
-                    this.compra.detalles.forEach((detalle:any) => {
-            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
-                    if (detalle.distribucion != null) {
-                        detalle.dai =   parseFloat((this.compra.dai_tot * (detalle.distribucion/100)).toFixed(2)) ;
-                    }
-                });
-            } 
+  public updateDaiForDetails(): void {
+    // Verificamos si `compra.dai_tot` tiene un valor numérico
+    if (this.compra && this.compra.dai_tot != null && this.compra.detalles) {
+      this.compra.detalles.forEach((detalle: any) => {
+        // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+        if (detalle.distribucion != null) {
+          detalle.dai = parseFloat((this.compra.dai_tot * (detalle.distribucion / 100)).toFixed(2));
+        }
+      });
     }
+  }
 
-    public updateGastosForDetails(): void {
-        // Verificamos si `compra.dai_tot` tiene un valor numérico
-                if (this.compra && this.compra.otro_gastos != null && this.compra.detalles) {
-                    this.compra.detalles.forEach((detalle:any) => {
-            // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
-                    if (detalle.distribucion != null) {
-                        detalle.gastos =   parseFloat((this.compra.otro_gastos * (detalle.distribucion/100)).toFixed(2)) ;
-                    }
-                });
-            } 
+  public updateGastosForDetails(): void {
+    // Verificamos si `compra.dai_tot` tiene un valor numérico
+    if (this.compra && this.compra.otro_gastos != null && this.compra.detalles) {
+      this.compra.detalles.forEach((detalle: any) => {
+        // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
+        if (detalle.distribucion != null) {
+          detalle.gastos = parseFloat((this.compra.otro_gastos * (detalle.distribucion / 100)).toFixed(2));
+        }
+      });
     }
+  }
 
-    public updateCIF(detalle: any): void {
-        // Calcula la suma de inland, insurance, aereo y fobTotal
-        detalle.fobTotal = parseFloat(detalle.fobTotal);
-        detalle.cif= detalle.fobTotal + detalle.inland + detalle.insurance + detalle.aereo;
-        detalle.cif=parseFloat(detalle.cif).toFixed(2);
-    }
+  public updateCIF(detalle: any): void {
+    // Calcula la suma de inland, insurance, aereo y fobTotal
+    detalle.fobTotal = parseFloat(detalle.fobTotal);
+    detalle.cif = detalle.fobTotal + detalle.inland + detalle.insurance + detalle.aereo;
+    detalle.cif = parseFloat(detalle.cif).toFixed(2);
+  }
 
-    public updateLanded(detalle: any): void {
-        // Calcula la suma de gastos, DAI, CIF
-        detalle.cif=parseFloat(detalle.cif);
-        // detalle.landed = parseFloat((detalle.cif || 0) + (detalle.dai || 0) + (detalle.gastos || 0));
-        console.log("este es el detalle de CIF");
-        console.log(typeof detalle.cif);
-        console.log("este es el detalle de dai");
-        console.log( detalle.dai);
-        console.log("este es el detalle de GASTOS");
-        console.log( detalle.gastos);
-        
-        detalle.landed = detalle.dai + detalle.gastos + detalle.cif;
-        detalle.landed=parseFloat(detalle.landed).toFixed(2);
-        detalle.costo_calc =  detalle.landed/detalle.cantidad;
-    }
-          
-          
+  public updateLanded(detalle: any): void {
+    // Calcula la suma de gastos, DAI, CIF
+    detalle.cif = parseFloat(detalle.cif);
+    // detalle.landed = parseFloat((detalle.cif || 0) + (detalle.dai || 0) + (detalle.gastos || 0));
+    console.log("este es el detalle de CIF");
+    console.log(typeof detalle.cif);
+    console.log("este es el detalle de dai");
+    console.log(detalle.dai);
+    console.log("este es el detalle de GASTOS");
+    console.log(detalle.gastos);
+
+    detalle.landed = detalle.dai + detalle.gastos + detalle.cif;
+    detalle.landed = parseFloat(detalle.landed).toFixed(2);
+    detalle.costo_calc = detalle.landed / detalle.cantidad;
+  }
+
+
 
 }

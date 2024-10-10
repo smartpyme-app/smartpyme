@@ -5,7 +5,9 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use Illuminate\Database\Eloquent\SoftDeletes;
-class Inventario extends Model {
+
+class Inventario extends Model
+{
 
     use SoftDeletes;
     protected $table = 'inventario';
@@ -20,15 +22,18 @@ class Inventario extends Model {
 
     protected $appends = ['nombre_bodega', 'nombre_sucursal'];
 
-    public function getNombreBodegaAttribute(){
+    public function getNombreBodegaAttribute()
+    {
         return $this->bodega()->pluck('nombre')->first();
     }
 
-    public function getNombreSucursalAttribute(){
+    public function getNombreSucursalAttribute()
+    {
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL){
+    public function kardex($modelo, $cantidad, $precio = NULL)
+    {
 
         $clase = get_class($modelo);
 
@@ -39,7 +44,7 @@ class Inventario extends Model {
             if ($cantidad > 0) {
                 $salidaCantidad =  $cantidad;
                 $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : 'Venta';
-            }else{
+            } else {
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Venta Anulada';
             }
@@ -47,73 +52,68 @@ class Inventario extends Model {
         if ($clase == 'App\Models\Transporte\Mantenimientos\Mantenimiento') { //Mantenimiento
             $salidaCantidad =  $cantidad;
             $clase = 'Mantenimiento';
-        }
-        else if ($clase == 'App\Models\Compras\Compra') {
+        } else if ($clase == 'App\Models\Compras\Compra') {
             if ($cantidad > 0) {
                 $entradaCantidad =  $cantidad;
                 $clase = $modelo->estado == 'Consigna' ? 'Compra a consigna' : 'Compra';
-            }else{
+            } else {
                 $salidaCantidad =  abs($cantidad);
                 $clase = 'Compra Anulada';
             }
-        }
-        else if ($clase == 'App\Models\Inventario\Ajuste') {
+        } else if ($clase == 'App\Models\Inventario\Ajuste') {
             if ($cantidad > 0) {
                 if ($modelo->estado == 'Cancelado') {
                     $clase = 'Ajuste cancelado';
                     $salidaCantidad =  $cantidad;
-                }else{
+                } else {
                     $entradaCantidad =  $cantidad;
                     $clase = 'Ajuste';
                 }
-            }else{
+            } else {
                 if ($modelo->estado == 'Cancelado') {
                     $clase = 'Ajuste cancelado';
                     $salidaCantidad =  $cantidad;
-                }else{
+                } else {
                     $entradaCantidad =  $cantidad;
                     $clase = 'Ajuste';
                 }
                 $salidaCantidad =  abs($cantidad);
             }
-        }
-        else if ($clase == 'App\Models\Inventario\Traslados\Traslado') {
+        } else if ($clase == 'App\Models\Inventario\Traslados\Traslado') {
             if ($cantidad > 0) {
                 if ($modelo->estado == 'Cancelado') {
                     $clase = 'Traslado de ' . $modelo->destino()->pluck('nombre')->first() . ' cancelado';
                     $salidaCantidad =  $cantidad;
-                }else{
+                } else {
                     $entradaCantidad =  $cantidad;
                     $clase = 'Traslado de ' . $modelo->origen()->pluck('nombre')->first();
                 }
-            }else{
+            } else {
                 if ($modelo->estado == 'Cancelado') {
                     $clase = 'Traslado a ' . $modelo->origen()->pluck('nombre')->first() . ' cancelado';
                     $entradaCantidad =  abs($cantidad);
-                }else{
+                } else {
                     $salidaCantidad =  abs($cantidad);
                     $clase = 'Traslado a ' . $modelo->destino()->pluck('nombre')->first();
                 }
             }
-        }
-        else if ($clase == 'App\Models\Ventas\Devoluciones\Devolucion') {
+        } else if ($clase == 'App\Models\Ventas\Devoluciones\Devolucion') {
             if ($cantidad > 0) {
                 $entradaCantidad =  $cantidad;
                 $clase = 'Devolución Venta';
-            }else{
+            } else {
                 $salidaCantidad =  abs($cantidad);
                 $clase = 'Devolución Venta Anulada';
             }
-        }
-        else if ($clase == 'App\Models\Compras\Devoluciones\Devolucion') {
+        } else if ($clase == 'App\Models\Compras\Devoluciones\Devolucion') {
             if ($cantidad > 0) {
                 $salidaCantidad =  $cantidad;
                 $clase = 'Devolución Compra';
-            }else{
+            } else {
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Devolución Compra Anulada';
             }
-        }else{
+        } else {
             // return null;
         }
 
@@ -140,15 +140,13 @@ class Inventario extends Model {
         ]);
     }
 
-    public function producto(){
+    public function producto()
+    {
         return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
-    public function bodega(){
+    public function bodega()
+    {
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
     }
-
 }
-
-
-

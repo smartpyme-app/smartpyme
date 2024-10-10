@@ -36,6 +36,7 @@ import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.c
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { RetaceoComponent } from './retaceo/retaceo.component';
+import { OrdenCompraFormComponent } from './cotizaciones/components/orden-compra-form/orden-compra-form.component';
 
 // import { HistorialComprasComponent } from './reportes/historial/historial-compras.component';
 // import { DetalleComprasComponent } from './reportes/detalle/detalle-compras.component';
@@ -56,7 +57,7 @@ import { RetaceoComponent } from './retaceo/retaceo.component';
     FocusModule.forRoot()
   ],
   declarations: [
-  	ComprasComponent,
+    ComprasComponent,
     CompraComponent,
     ComprasRecurrentesComponent,
     AbonosComprasComponent,
@@ -75,10 +76,11 @@ import { RetaceoComponent } from './retaceo/retaceo.component';
     GastoDetallesComponent,
     GastosDashComponent,
     GastosCategoriasComponent,
-    RetaceoComponent
+    RetaceoComponent,
+    OrdenCompraFormComponent
   ],
   exports: [
-  	ComprasComponent,
+    ComprasComponent,
     CompraComponent,
     ComprasRecurrentesComponent,
     AbonosComprasComponent,

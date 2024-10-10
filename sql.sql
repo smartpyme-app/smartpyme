@@ -336,3 +336,41 @@ ALTER TABLE productos  ADD id_subcategoria INT(11) NULL after id_categoria;
 ALTER TABLE catalogo_cuentas ADD cargo decimal(9,2) DEFAULT 0 after nivel;
 ALTER TABLE catalogo_cuentas ADD abono decimal(9,2) DEFAULT 0 after cargo;
 ALTER TABLE catalogo_cuentas ADD saldo decimal(9,2) DEFAULT 0 after abono;
+
+
+--refactor de ordenes de compra y compras
+
+CREATE TABLE orden_compras (
+    id int NOT NULL AUTO_INCREMENT,
+    fecha date NOT NULL,
+    id_usuario int NOT NULL,
+    id_bodega int NOT NULL,
+    tipo_documento varchar(255) DEFAULT NULL,
+    id_proveedor int DEFAULT NULL,
+    id_proyecto int DEFAULT NULL,
+    observaciones text,
+    referencia varchar(255) DEFAULT NULL,
+    estado varchar(255) NOT NULL,
+    id_empresa int NOT NULL,
+    id_sucursal int DEFAULT NULL,
+    created_at timestamp NULL DEFAULT NULL,
+    updated_at timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE detalles_orden_compra (
+    id int NOT NULL AUTO_INCREMENT,
+    id_orden_compra int NOT NULL,
+    id_producto int NOT NULL,
+    cantidad decimal(10,2) NOT NULL,
+    costo double NOT NULL,
+    descuento double NOT NULL DEFAULT '0',
+    total decimal(10,2) NOT NULL,
+    created_at timestamp NULL DEFAULT NULL,
+    updated_at timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE orden_compras ADD cobrar_impuestos BOOL DEFAULT false AFTER estado;
+ALTER TABLE orden_compras ADD cobrar_percepcion BOOL DEFAULT false AFTER cobrar_impuestos;
+
+ALTER TABLE detalles_orden_compra ADD cantidad_procesada decimal(10,2) NOT NULL DEFAULT '0' AFTER cantidad;
