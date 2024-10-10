@@ -76,7 +76,12 @@
                         <td>{{venta.forma_pago}}</td>
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
+                                {{ venta.estado }}
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
+                                    ✅                       
+                                </span>
+                            </span>
                         </td>
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -85,6 +90,12 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a>
                                     <a *ngIf="venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                     </a>
@@ -207,5 +218,36 @@
             </button>
         </div>
     </form>
+  </div>
+</ng-template>
+
+<ng-template #mDTE>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">DTE </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="d-grid">
+
+            <button *ngIf="venta.sello_mh" (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
+                Ver JSON
+            </button>
+
+            <button *ngIf="venta.sello_mh" (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
+                Ver PDF
+            </button>
+
+            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!sending">Enviar por correo</span>
+                <span *ngIf="sending">Enviando...</span>
+            </button>
+
+            <button *ngIf="!venta.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
+                <span *ngIf="!saving">Emitir</span>
+                <span *ngIf="saving">Emitiendo...</span>
+            </button>
+
+        </div>
   </div>
 </ng-template>

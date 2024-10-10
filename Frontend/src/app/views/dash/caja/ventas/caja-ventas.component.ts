@@ -2,7 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-
+import { MHService } from '@services/MH.service';
 
 @Component({
   selector: 'app-caja-ventas',
@@ -15,6 +15,7 @@ export class CajaVentasComponent implements OnInit {
     public venta:any = {};
     public loading:boolean = false;
     public saving:boolean = false;
+    public sending:boolean = false;
 
     public clientes:any = [];
     public usuario:any = {};
@@ -28,7 +29,7 @@ export class CajaVentasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
@@ -220,5 +221,108 @@ export class CajaVentasComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    // DTE
 
+    openDTE(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template);
+        if(!this.venta.dte){
+            this.emitirDTE();
+        }
+    }
+
+    imprimirDTEPDF(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id  + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    imprimirDTEJSON(venta:any){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
+
+    emitirDTE(){
+        this.saving = true;
+        this.mhService.emitirDTE(this.venta).then((venta) => {
+            this.venta = venta;
+            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.saving = false;
+        }).catch((error) => {
+            this.saving = false;
+            this.alertService.warning('Hubo un problema', error);
+        });
+    }
+
+    enviarDTE(){
+        this.sending = true;
+        this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
+            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.sending = false;
+            setTimeout(()=>{
+                this.modalRef?.hide();
+            },5000);
+        },error => {this.alertService.error(error); this.sending = false; });
+    }
+
+    emitirEnContingencia(venta:any){
+        this.venta = venta;
+        this.saving = true;
+        this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
+            this.venta = venta;
+            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.saving = false;
+        }).catch((error) => {
+            this.saving = false;
+            this.alertService.warning('Hubo un problema', error);
+        });
+    }
+
+    anularDTE(venta:any){
+        this.venta = venta;
+        if(venta.dte){
+            if (confirm('¿Confirma anular la venta y el DTE?')) {
+                this.venta = venta;
+                this.saving = true;
+                this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
+                    // this.alertService.success('DTE generado.');
+                    this.venta.dte_invalidacion = dte;
+                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                        
+                        if(dteFirmado.status == 'ERROR'){
+                            this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
+                        }
+                        
+                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                this.venta.dte_invalidacion.sello = dte.selloRecibido;
+                                this.venta.sello_mh = dte.selloRecibido;
+                                this.venta.estado = 'Anulada';
+                                this.apiService.store('venta', this.venta).subscribe(data => {
+                                    // this.alertService.success('Venta guardada.');
+                                },error => {this.alertService.error(error); this.saving = false; });
+                            }
+
+                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                        },error => {
+                            if(error.error.descripcionMsg){
+                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                            }
+                            if(error.error.observaciones.length > 0){
+                                this.alertService.warning('Hubo un problema', error.error.observaciones);
+                            }
+                            this.saving = false;
+                        });
+
+                    },error => {this.alertService.error(error);this.saving = false; });
+
+                },error => {this.alertService.error(error);this.saving = false; });
+            }
+        }
+        else{
+            if (confirm('¿Confirma anular la venta?')){
+                this.venta.estado = 'Anulada';
+                this.onSubmit();
+            }
+        }
+    }
 }
