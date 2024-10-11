@@ -1,0 +1,252 @@
+<div [formGroup]="ordenCompraForm">
+  <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>Orden de compra</h3>
+    <button class="btn btn-light text-danger" routerLink="/ordenes-de-compras"><i class="fa fa-arrow-left"></i>
+      Regresar</button>
+  </div>
+  <!-- {{ordenCompraForm?ng.value|json}} -->
+  <section class="card border-0 p-3 mb-3">
+    <div class="row">
+      <div class="form-group col-md-4 col-lg-2">
+        <label for="fecha">Fecha</label><br>
+        <input type="date" class="form-control" formControlName="fecha">
+      </div>
+      <div class="form-group col-md-4 col-lg-3">
+        <label for="id_usuario">Usuario</label>
+        <select formControlName="id_usuario" class="form-select">
+          <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+            {{ usuario.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-md-4 col-lg-3">
+        <label for="id_bodega">Bodega</label>
+        <select name="id_bodega" formControlName="id_bodega" class="form-select">
+          <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+            {{ bodega.nombre }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-md-4 col-lg-2">
+        <label for="tipo_documento">Documento</label>
+        <!-- (change)="selectTipoDocumento()" -->
+        <select name="tipo_documento" formControlName="tipo_documento" class="form-select">
+          <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="form-group col-md-4 col-lg-2">
+        <label for="referencia">Correlativo</label>
+        <input type="number" class="form-control" formControlName="referencia" name="referencia"
+          placeholder="Escribe aquí">
+      </div>
+    </div>
+    <div class="row">
+      <h6 class="mt-3">Detalles de la compra</h6>
+      <div class="form-group col-md-6 col-lg-4">
+        <label for="">Proveedor</label>
+        <div class="input-group flex-nowrap">
+          <ng-select name="id_proveedor" placeholder="Consumidor Final" formControlName="id_proveedor"
+            class="form-select p-0">
+            <ng-option value=""> Seleccione aquí </ng-option>
+            <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+              {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
+            </ng-option>
+          </ng-select>
+          <app-crear-proveedor [id_proveedor]="ordenCompraForm?.get('id_proveedor').value"
+            (update)="ordenCompraForm?.get('id_proveedor').setValue($event)"></app-crear-proveedor>
+        </div>
+      </div>
+      <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-4">
+        <label for="">Proyecto</label>
+        <div class="input-group flex-nowrap">
+          <ng-select name="id_proyecto" placeholder="Seleccione aquí" formControlName="id_proyecto"
+            class="form-select p-0">
+            <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+              {{ proyecto.nombre }}
+            </ng-option>
+          </ng-select>
+          <app-crear-proyecto [id_proyecto]="ordenCompraForm.get('id_proyecto').value"
+            (update)="setProyectoFromCreate($event)"></app-crear-proyecto>
+        </div>
+      </div>
+      <div class="form-group col-md-12 col-lg-4">
+        <label for="observaciones">Observaciones:</label><br>
+        <input type="text" class="form-control" placeholder="Escribe aquí" formControlName="observaciones"
+          name="observaciones">
+      </div>
+    </div>
+  </section>
+  <!-- <section class="card border-0 p-3 mb-3">
+    <h6 class="mt-3">Detalles de la Orden de compra</h6>
+    <div class="row">
+      <div class="col-md-12 table-responsive">
+        <table class="table table-sm table-borderless table-condensed mb-0 align-middle">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th style="width: 150px;">Cantidad</th>
+              <th style="width: 150px;">Cantidad pendiente</th>
+              <th style="width: 150px;">Costo</th>
+              <th style="width: 150px;">Descuento</th>
+              <th style="width: 100px;" class="text-right">Total</th>
+              <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="detalles?.length < 1">
+              <td colspan="9" class="text-center">
+                <p class="text-muted my-3">
+                  Agregue productos y servicios
+                </p>
+              </td>
+            </tr>
+            <tr *ngFor="let detalle of detalles; let i = index">
+              <td>
+                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px"
+                  width="50px">
+                {{ detalle.nombre_producto }}
+              </td>
+              <td style="width: 150px;">
+                <input type="number" value="{{detalle.cantidad}}" class="form-control" disabled>
+              </td>
+              <td>10</td>
+              <td style="width: 150px;">
+                <input type="number" value="{{detalle.costo}}" class="form-control" name="costo" disabled>
+              </td>
+              <td style="width: 150px;">
+                <input type="number" value="{{detalle.descuento}}" class="form-control" name="descuento" disabled>
+              </td>
+              <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+              <td style="width: 50px;" class="text-center">
+                <div class="btn-group">
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section> -->
+
+
+  <section class="card border-0 p-3 mb-3">
+    <h6 class="mt-3">Productos y servicios</h6>
+
+    <app-compra-detalles [compra]="compraDTO" (update)="updateDetalle($event)" (sumTotal)="sumTotal()"
+      (OndeletedItem)="updateDetalle($event)" [isOrdenCompra]="true"></app-compra-detalles>
+
+    <div class="row">
+      <div class="col-md-12">
+        <table class="table table-sm table-borderless table-condensed mb-0">
+          <tbody>
+            <tr>
+              <td class="text-right"><b>Sub Total</b> </td>
+              <td style="width: 150px;" class="text-right"> {{ impuestos.sub_total | currency:'USD':'symbol':'1.2'}}
+              </td>
+              <td style="width: 50px;"></td>
+            </tr>
+            <tr>
+              <td class="text-right"><b>Descuentos</b> </td>
+              <td style="width: 150px;" class="text-right"> {{ impuestos.descuento | currency:'USD':'symbol':'1.2'}}
+              </td>
+              <td style="width: 50px;"></td>
+            </tr>
+            <tr>
+              <td class="text-right"> <b>Impuestos</b></td>
+              <td style="width: 150px;" class="text-right"> {{ impuestos.iva | currency:'USD':'symbol':'1.2'}} </td>
+              <td style="width: 50px;"></td>
+            </tr>
+            <tr>
+              <td class="text-right"> <b>Persepción (1%)</b></td>
+              <td style="width: 150px;" class="text-right"> {{ impuestos.percepcion | currency:'USD':'symbol':'1.2'}}
+              </td>
+              <td style="width: 50px;"></td>
+            </tr>
+            <tr *ngIf="impuestos.tipo_documento == 'Sujeto excluido'">
+              <td class="text-right"> <b>Ret. Renta (10%)</b></td>
+              <td style="width: 150px;" class="text-right"> {{ impuestos.renta_retenida |
+                currency:'USD':'symbol':'1.2'}}
+              </td>
+              <td style="width: 50px;"></td>
+            </tr>
+            <tr>
+              <td class="text-right"> <b>Total</b> </td>
+              <td style="width: 150px;" class="text-right"><b> {{ impuestos.total | currency:'USD':'symbol':'1.2'}}</b>
+              </td>
+              <td style="width: 50px;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="card border-0 p-3 mb-3">
+    <div class="row">
+      <h6 class="mt-3">Detalles de facturación</h6>
+
+      <div class="form-group col-md-6 col-lg-3 without-label">
+        <div class="form-switch bg-light-info rounded">
+          <label for="cobrar_impuestos">Con IVA</label>
+          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+            formControlName="cobrar_impuestos" name="compra.cobrar_impuestos">
+        </div>
+      </div>
+      <div class="form-group col-md-6 col-lg-3 without-label">
+        <div class="form-switch bg-light-info rounded">
+          <label for="percepcion">Percepción</label>
+          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+            formControlName="cobrar_percepcion" name="compra.cobrar_percepcion">
+        </div>
+      </div>
+      <div *ngIf="tipoDocumento?.value == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
+        <div class="form-switch bg-light-info rounded">
+          <label for="renta">Renta</label>
+          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+            [(ngModel)]="impuestos.renta" name="compra.renta">
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="card border-0 p-3 mb-3">
+    <div class="row">
+      <div class="col-md-12">
+        <button type="submit" (click)="onSubmit()" [disabled]="saving || !canSubmit"
+          class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
+          <span *ngIf="!saving">Procesar orden de compra</span>
+          <span *ngIf="saving">Procesando...</span>
+          <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+        </button>
+        <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
+                Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+            </button> -->
+        <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">.</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+
+<ng-template #msupervisor>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Autorización</h4>
+  </div>
+  <div class="modal-body">
+    <div class="row text-center">
+      <form name="form" (ngSubmit)="supervisorCheck()">
+        <div class="form-group col-md-12">
+          <label for="codigo">Ingrese el código de supervisor:</label>
+          <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
+        </div>
+        <div class="col-md-12">
+          <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+            <span *ngIf="!loading">Guardar</span>
+            <span *ngIf="loading">Guardando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</ng-template>

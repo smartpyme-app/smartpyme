@@ -1,433 +1,519 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <h3 *ngIf="compra.cotizacion == 1">Orden de compra</h3>
-    <h3 *ngIf="compra.cotizacion == 0">Compra</h3>
-    <button *ngIf="compra.cotizacion == 1" class="btn btn-light text-danger" routerLink="/ordenes-de-compras"><i class="fa fa-arrow-left"></i> Regresar</button>
-    <button *ngIf="compra.cotizacion == 0" class="btn btn-light text-danger" routerLink="/compras"><i class="fa fa-arrow-left"></i> Regresar</button>
+  <h3 *ngIf="compra.cotizacion == 1">Orden de compra</h3>
+  <h3 *ngIf="compra.cotizacion == 0">Compra</h3>
+  <button *ngIf="compra.cotizacion == 1" class="btn btn-light text-danger" routerLink="/ordenes-de-compras"><i
+      class="fa fa-arrow-left"></i> Regresar</button>
+  <button *ngIf="compra.cotizacion == 0" class="btn btn-light text-danger" routerLink="/compras"><i
+      class="fa fa-arrow-left"></i> Regresar</button>
 </div>
 
 <section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <div class="form-group col-md-4 col-lg-2">
-            <label for="fecha">Fecha</label><br>
-            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
-        </div>
-        <div class="form-group col-md-4 col-lg-3">
-            <label for="id_usuario">Usuario</label>
-            <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
-                <option [value]="usuario.id" *ngFor="let usuario of usuarios">
-                    {{ usuario.name }}
-                </option>
-            </select>
-        </div>
-        <div class="form-group col-md-4 col-lg-3">
-            <label for="id_bodega">Bodega</label>
-            <select name="id_bodega" [(ngModel)]="compra.id_bodega" class="form-select">
-                <option [value]="bodega.id" *ngFor="let bodega of bodegas">
-                    {{ bodega.nombre }}
-                </option>
-            </select>
-        </div>
-        <div class="form-group col-md-4 col-lg-2">
-            <label for="tipo_documento">Documento</label>
-            <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="compra.tipo_documento" class="form-select">
-                <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
-            </select>
-        </div>
-        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 0"> 
-            <label for="referencia">Num. Referencia</label>
-            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
-        </div>
-        <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 1">
-            <label for="referencia">Correlativo</label>
-            <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia" placeholder="Escribe aquí">
-        </div>
+  <div class="row">
+    <div class="form-group col-md-4 col-lg-2">
+      <label for="fecha">Fecha</label><br>
+      <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
     </div>
-    <div class="row">
-        <h6 class="mt-3">Detalles de la compra</h6>
-        <div class="form-group col-md-6 col-lg-4">
-            <label for="">Proveedor</label>
-            <div class="input-group flex-nowrap">
-                <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor" class="form-select p-0">
-                    <ng-option value=""> Seleccione aquí </ng-option>
-                    <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
-                    <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
-                    </ng-option>
-                </ng-select>
-                <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
-            </div>
-        </div>
-        <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-4">
-            <label for="">Proyecto</label>
-            <div class="input-group flex-nowrap">
-                <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="compra.id_proyecto" class="form-select p-0">
-                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                        {{ proyecto.nombre }}
-                    </ng-option>
-                </ng-select>
-                <app-crear-proyecto [id_proyecto]="compra.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
-            </div>
-        </div>
-        <div class="form-group col-md-12 col-lg-4">
-            <label for="observaciones">Observaciones:</label><br>
-            <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.observaciones" name="observaciones">
-        </div>
+    <div class="form-group col-md-4 col-lg-3">
+      <label for="id_usuario">Usuario</label>
+      <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
+        <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+          {{ usuario.name }}
+        </option>
+      </select>
     </div>
+    <div class="form-group col-md-4 col-lg-3">
+      <label for="id_bodega">Bodega</label>
+      <select name="id_bodega" [(ngModel)]="compra.id_bodega" class="form-select">
+        <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+          {{ bodega.nombre }}
+        </option>
+      </select>
+    </div>
+    <div class="form-group col-md-4 col-lg-2">
+      <label for="tipo_documento">Documento</label>
+      <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="compra.tipo_documento"
+        class="form-select">
+        <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+      </select>
+    </div>
+    <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 0">
+      <label for="referencia">Num. Referencia</label>
+      <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia"
+        placeholder="Escribe aquí">
+    </div>
+    <div class="form-group col-md-4 col-lg-2" *ngIf="compra.cotizacion == 1">
+      <label for="referencia">Correlativo</label>
+      <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia"
+        placeholder="Escribe aquí">
+    </div>
+  </div>
+  <div class="row">
+    <h6 class="mt-3">Detalles de la compra</h6>
+    <div class="form-group col-md-6 col-lg-4">
+      <label for="">Proveedor</label>
+      <div class="input-group flex-nowrap">
+        <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor"
+          class="form-select p-0">
+          <ng-option value=""> Seleccione aquí </ng-option>
+          <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
+          <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
+          </ng-option>
+        </ng-select>
+        <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
+      </div>
+    </div>
+    <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-4">
+      <label for="">Proyecto</label>
+      <div class="input-group flex-nowrap">
+        <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="compra.id_proyecto"
+          class="form-select p-0">
+          <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+            {{ proyecto.nombre }}
+          </ng-option>
+        </ng-select>
+        <app-crear-proyecto [id_proyecto]="compra.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+      </div>
+    </div>
+    <div class="form-group col-md-12 col-lg-4">
+      <label for="observaciones">Observaciones:</label><br>
+      <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.observaciones"
+        name="observaciones">
+    </div>
+  </div>
 </section>
-<section class="card border-0 p-3 mb-3">
-    <h6 class="mt-3">Productos y servicios</h6>
-
-    <app-compra-detalles [compra]="compra" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
-    
-    <div class="row">
-        <div class="col-md-12">
-            <table class="table table-sm table-borderless table-condensed mb-0">
-                <tbody>
-                    <tr>
-                        <td class="text-right"><b>Sub Total</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr>
-                        <td class="text-right"><b>Descuentos</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr>
-                        <td class="text-right"> <b>Impuestos</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr>
-                        <td class="text-right"> <b>Persepción (1%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr *ngIf="compra.tipo_documento == 'Sujeto excluido'">
-                        <td class="text-right"> <b>Ret. Renta (10%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr>
-                        <td class="text-right"> <b>Total</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+<section class="card border-0 p-3 mb-3" *ngIf="cotizacion.detalles?.length>0">
+  <h6 class="mt-3">Detalles de la Orden de compra</h6>
+  <!-- {{cotizacion|json}} -->
+  <div class="row">
+    <div class="col-md-12 table-responsive">
+      <table class="table table-sm table-borderless table-condensed mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="width: 150px;">Cantidad</th>
+            <th style="width: 150px;">Cantidad pendiente</th>
+            <th style="width: 150px;">Costo</th>
+            <th style="width: 150px;">Descuento</th>
+            <th style="width: 100px;" class="text-right">Total</th>
+            <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cotizacion?.detalles?.length < 1">
+            <td colspan="9" class="text-center">
+              <p class="text-muted my-3">
+                Agregue productos y servicios
+              </p>
+            </td>
+          </tr>
+          <tr *ngFor="let detalle of cotizacion?.detalles; let i = index">
+            <!-- <td>{{detalle|json}}</td> -->
+            <td>
+              <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px"
+                width="50px">
+              {{ detalle.nombre_producto }}
+            </td>
+            <td style="width: 150px;">
+              <input type="number" value="{{detalle.cantidad}}" class="form-control" disabled>
+            </td>
+            <td>{{detalle.cantidad - (detalle.cantidad_procesada||0)}}</td>
+            <td style="width: 150px;">
+              <input type="number" value="{{detalle.costo}}" class="form-control" name="costo" disabled>
+            </td>
+            <td style="width: 150px;">
+              <input type="number" value="{{detalle.descuento}}" class="form-control" name="descuento" disabled>
+            </td>
+            <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+            <td style="width: 50px;" class="text-center">
+              <div class="btn-group">
+                <!-- <button class="btn btn-link" (click)="delete(detalle)">
+                  <i class="fa fa-trash"></i>
+                </button> -->
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+  </div>
 </section>
 
+
 <section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <h6 class="mt-3">Compras internacionales</h6>
-          <!-- componente.html -->
-            <!-- <button >Toggle Contenido</button>  [(ngModel)]="compra.credito" name="compra.credito" -->
-            <div class="form-group col-lg-3 without-label">
-                <div class="form-switch border rounded">
-                    <label for="credito">Compra Internacional</label>
-                    <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"  [(ngModel)]="comprainternacional" name="compra.credito">
-                </div>
-            </div>
+  <h6 class="mt-3">Productos y servicios</h6>
 
-            <div class="row" *ngIf="comprainternacional">
-                <!-- GENERALIDADES DE LA COMPRA-->
-                
-                <!-- #N de Duca -->
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="duca">N° de Duca:</label><br>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.duca" name="duca">
-                </div>
-    
-                <div class="form-group col-md-3 col-lg-3 " >
-                    <label for="dai_Taza">Taza del DAI:</label><br>
-                    <input type="text" class="form-control" placeholder="%" [(ngModel)]="compra.dai_Taza" name="dai_Taza">
-                </div>
-    
-                <div class="form-group col-md-3 col-lg-3">
-                    <label for="factura">N° de factura</label><br>
-                    <input type="text" class="form-control" placeholder="#" [(ngModel)]="compra.referencia" name="factura" readonly>
-                </div>
+  <app-compra-detalles [compra]="compra" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
 
-                <div class="form-group col-md-2 col-lg-2">
-                    <label for="compra.incoterms">Incoterms</label><br>
-                    <select class="form-select" name="compra.incoterms" [(ngModel)]="compra.incoterms">
-                        <option value="">Selecciona aquí</option>
-                        <option value="EXW">EXW</option>
-                        <option value="FAS">FAS</option>
-                        <option value="FOB">FOB</option>
-                        <option value="FCA">FCA</option>
-                        <option value="CFR">CFR</option>
-                        <option value="CIF">CIF</option>
-                        <option value="CPT">CPT</option>
-                        <option value="CIP">CIP</option>
-                        <option value="DAP">DAP</option>
-                        <option value="DPU">DPU</option>
-                        <option value="DDP">DDP</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="row" *ngIf="comprainternacional">
-                <!-- GASTOS O IMPUESTOS -->
-                <h6 class="mt-3">Gastos e Impuestos</h6>
-                
-                
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="transporte">Transporte:</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.transporte" name="transporte">
-                    </div>
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="otro_gastos">Otros gastos</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.otro_gastos" name="otro_gastos">
-                    </div>
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="dai_tot">Total de DAI:</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.dai_tot" name="dai_tot" (input)="updateDaiForDetails()">
-                    </div>
-
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="seguro">Seguro</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.seguro" name="seguro">
-                    </div>
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="inland">Inland</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.inland" name="inland" (input)="updateInlandForDetails()">
-                    </div>
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="insurance">Insurance</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.insurance" name="insurance" (input)="updateInsuranceForDetails()">
-                    </div>
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="aereo">Aereo</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo" (input)="updateAereoForDetails()">
-                    </div>
-                </div>
-
-                <div class="form-group col-md-3 col-lg-3" >
-                    <label for="fob_tot">FOB total</label><br>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot" name="fob_tot" readonly>
-                    </div>
-                </div>
-
-            </div>
-
-            <div>
-
-                <div class="row" *ngIf="comprainternacional">
-                    <div class="col-md-12 table-responsive">
-                        <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
-                            <thead>
-                                <tr>
-                                    <th style="width: 150px;">Producto</th>
-                                    <th style="width: 70px;">Cantidad</th>
-                                    <th style="width: 150px;">Costo antes de dist</th>
-                                    <th style="width: 70px;">{{compra.incoterms}}</th>
-                                    <th style="width: 70px;">Distrib</th>
-                                    <th style="width: 70px;">Inland</th>
-                                    <th style="width: 70px;">Insurance</th>
-                                    <th style="width: 70px;">Aereo</th>
-                                    <th style="width: 70px;">CIF</th>
-                                    <th style="width: 70px;">DAI</th>
-                                    <th style="width: 70px;">Gastos</th>
-                                    <th style="width: 70px;">Landed</th>
-                                    <th  class="text-left">Costo Unitario</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngIf="compra?.detalles?.length < 1">
-                                    <td colspan="13" class="text-center">
-                                        <p class="text-muted my-3">
-                                            Agregue productos
-                                        </p>
-                                    </td>
-                                </tr>
-                                <tr *ngFor="let detalle of compra?.detalles; let i = index">
-                                    <!-- nombre producto -->
-                                    <td style="width: 150px;">
-                                        {{ detalle.nombre_producto }}
-                                    </td>
-                                    <!-- cantidad -->
-                                    <td style="width: 70px;">
-                                        <input [(ngModel)]="detalle.cantidad" class="form-control" readonly>
-                                    </td>
-                                    <!-- FOB ANTES DEL IMPUESTO  -->
-                                    <td style="width: 150px;">
-                                        <div class="input-group">
-                                            <span class="input-group-text">$</span>
-                                            <input type="text" [(ngModel)]="detalle.costo"   class="form-control" name="costo" placeholder="$0.00" readonly>
-                                        </div>
-                                    </td>
-                                    <!-- fob total -->
-                                    <td style="width: 70px;">
-                                        <input type="text"  [(ngModel)]="detalle.fobTotal" class="form-control" name="fobTotal" readonly>
-                                    </td>
-                                     <!-- distribucion  -->
-                                    <td style="width: 70px;">
-                                        <input type="text"  [(ngModel)]="detalle.distribucion" class="form-control" name="distribucion" readonly>
-                                    </td>
-                                    <!-- inland -->
-                                    <td style="width: 70px;">
-                                        <input type="text" [(ngModel)]="detalle.inland"  class="form-control" name="inland" readonly>
-                                    </td>
-                                    <!-- insurance  -->
-                                    <td style="width: 70px;">
-                                        <input type="text" [(ngModel)]="detalle.insurance"   class="form-control" name="insurance" readonly >
-                                    </td>
-                                    <!-- aereo -->
-                                    <td style="width: 70px;">
-                                        <input type="text"  [(ngModel)]="detalle.aereo"   class="form-control" name="aereo" readonly >
-                                    </td>
-                                    <!-- CIF  -->
-                                    <td style="width: 70px;">
-                                        <input type="text" [(ngModel)]="detalle.cif" class="form-control" name="cif" readonly>
-                                    </td>
-                                    <!-- DAI  -->
-                                    <td style="width: 70px;">
-                                        <input type="text" [(ngModel)]="detalle.dai"  class="form-control" name="dai" readonly>
-                                    </td>
-                                    <!-- gastos  -->
-                                    <td style="width: 70px;">
-                                        <input type="text" [(ngModel)]="detalle.gastos"  class="form-control" name="descuento" readonly>
-                                    </td>
-                                    <!-- landed  -->
-                                    <td style="width: 70px;">
-                                        <input type="text" [(ngModel)]="detalle.landed"  class="form-control" name="landed">
-                                    </td>
-                                    <!-- COSTO UNITARIO  -->
-                                    <td style="width: 70px;" class="text-right">{{ detalle.costo_calc | currency:'USD':'symbol':'1.2'}}</td>
-
-                                </tr>
-                            </tbody>
-                        </table>
-                        
-                    </div>
-                    <div class="col-md-12 justify-content-between">
-                        <button (click)="calcularFOBParaTodos()" class="ml-3 btn btn-primary float-end">Calcular</button>
-                    </div>
-                </div>
-
-            </div>
+  <div class="row">
+    <div class="col-md-12">
+      <table class="table table-sm table-borderless table-condensed mb-0">
+        <tbody>
+          <tr>
+            <td class="text-right"><b>Sub Total</b> </td>
+            <td style="width: 150px;" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 50px;"></td>
+          </tr>
+          <tr>
+            <td class="text-right"><b>Descuentos</b> </td>
+            <td style="width: 150px;" class="text-right"> {{ compra.descuento | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 50px;"></td>
+          </tr>
+          <tr>
+            <td class="text-right"> <b>Impuestos</b></td>
+            <td style="width: 150px;" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 50px;"></td>
+          </tr>
+          <tr>
+            <td class="text-right"> <b>Persepción (1%)</b></td>
+            <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>
+            <td style="width: 50px;"></td>
+          </tr>
+          <tr *ngIf="compra.tipo_documento == 'Sujeto excluido'">
+            <td class="text-right"> <b>Ret. Renta (10%)</b></td>
+            <td style="width: 150px;" class="text-right"> {{ compra.renta_retenida | currency:'USD':'symbol':'1.2'}}
+            </td>
+            <td style="width: 50px;"></td>
+          </tr>
+          <tr>
+            <td class="text-right"> <b>Total</b> </td>
+            <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+            <td style="width: 50px;"></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-
+  </div>
 </section>
 
 <section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <h6 class="mt-3">Detalles de facturación</h6>
-        <!-- Estado: {{ compra.estado }} -->
-        <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
-            <div class="form-switch border rounded">
-              <label for="credito">Compra al crédito</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="compra.credito" name="compra.credito">
-            </div>
+  <div class="row">
+    <h6 class="mt-3">Compras internacionales</h6>
+    <!-- componente.html -->
+    <!-- <button >Toggle Contenido</button>  [(ngModel)]="compra.credito" name="compra.credito" -->
+    <div class="form-group col-lg-3 without-label">
+      <div class="form-switch border rounded">
+        <label for="credito">Compra Internacional</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"
+          [(ngModel)]="comprainternacional" name="compra.credito">
+      </div>
+    </div>
+
+    <div class="row" *ngIf="comprainternacional">
+      <!-- GENERALIDADES DE LA COMPRA-->
+
+      <!-- #N de Duca -->
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="duca">N° de Duca:</label><br>
+        <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.duca" name="duca">
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3 ">
+        <label for="dai_Taza">Taza del DAI:</label><br>
+        <input type="text" class="form-control" placeholder="%" [(ngModel)]="compra.dai_Taza" name="dai_Taza">
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="factura">N° de factura</label><br>
+        <input type="text" class="form-control" placeholder="#" [(ngModel)]="compra.referencia" name="factura" readonly>
+      </div>
+
+      <div class="form-group col-md-2 col-lg-2">
+        <label for="compra.incoterms">Incoterms</label><br>
+        <select class="form-select" name="compra.incoterms" [(ngModel)]="compra.incoterms">
+          <option value="">Selecciona aquí</option>
+          <option value="EXW">EXW</option>
+          <option value="FAS">FAS</option>
+          <option value="FOB">FOB</option>
+          <option value="FCA">FCA</option>
+          <option value="CFR">CFR</option>
+          <option value="CIF">CIF</option>
+          <option value="CPT">CPT</option>
+          <option value="CIP">CIP</option>
+          <option value="DAP">DAP</option>
+          <option value="DPU">DPU</option>
+          <option value="DDP">DDP</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" *ngIf="comprainternacional">
+      <!-- GASTOS O IMPUESTOS -->
+      <h6 class="mt-3">Gastos e Impuestos</h6>
+
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="transporte">Transporte:</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.transporte"
+            name="transporte">
         </div>
-        <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
-            <div class="form-switch border rounded">
-              <label for="consigna">Consigna</label>
-              <input [disabled]="!compra.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="compra.consigna" name="compra.credito">
-            </div>
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="otro_gastos">Otros gastos</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.otro_gastos"
+            name="otro_gastos">
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!duplicarcompra && compra.cotizacion == 0">
-            <div class="form-switch bg-light-info rounded">
-              <label for="recurrente">Compra recurrente</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="compra.recurrente" name="compra.recurrente">
-            </div>
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="dai_tot">Total de DAI:</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.dai_tot"
+            name="dai_tot" (input)="updateDaiForDetails()">
         </div>
-        <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
-            <label for="fecha_pago">Fecha de pago:</label><br>
-            <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
+
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="seguro">Seguro</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.seguro"
+            name="seguro">
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="compra.cotizacion == 0">
-            <label for="forma_pago">Forma de pago</label>
-            <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
-                <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
-            </select>
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="inland">Inland</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.inland" name="inland"
+            (input)="updateInlandForDetails()">
         </div>
-        <!-- <div class="form-group col-md-6 col-lg-3" *ngIf="compra.forma_pago != 'Efectivo'">
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="insurance">Insurance</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.insurance"
+            name="insurance" (input)="updateInsuranceForDetails()">
+        </div>
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="aereo">Aereo</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo"
+            (input)="updateAereoForDetails()">
+        </div>
+      </div>
+
+      <div class="form-group col-md-3 col-lg-3">
+        <label for="fob_tot">FOB total</label><br>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot"
+            name="fob_tot" readonly>
+        </div>
+      </div>
+
+    </div>
+
+    <div>
+
+      <div class="row" *ngIf="comprainternacional">
+        <div class="col-md-12 table-responsive">
+          <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+            <thead>
+              <tr>
+                <th style="width: 150px;">Producto</th>
+                <th style="width: 70px;">Cantidad</th>
+                <th style="width: 150px;">Costo antes de dist</th>
+                <th style="width: 70px;">{{compra.incoterms}}</th>
+                <th style="width: 70px;">Distrib</th>
+                <th style="width: 70px;">Inland</th>
+                <th style="width: 70px;">Insurance</th>
+                <th style="width: 70px;">Aereo</th>
+                <th style="width: 70px;">CIF</th>
+                <th style="width: 70px;">DAI</th>
+                <th style="width: 70px;">Gastos</th>
+                <th style="width: 70px;">Landed</th>
+                <th class="text-left">Costo Unitario</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="compra?.detalles?.length < 1">
+                <td colspan="13" class="text-center">
+                  <p class="text-muted my-3">
+                    Agregue productos
+                  </p>
+                </td>
+              </tr>
+              <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                <!-- nombre producto -->
+                <td style="width: 150px;">
+                  {{ detalle.nombre_producto }}
+                </td>
+                <!-- cantidad -->
+                <td style="width: 70px;">
+                  <input [(ngModel)]="detalle.cantidad" class="form-control" readonly>
+                </td>
+                <!-- FOB ANTES DEL IMPUESTO  -->
+                <td style="width: 150px;">
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="text" [(ngModel)]="detalle.costo" class="form-control" name="costo" placeholder="$0.00"
+                      readonly>
+                  </div>
+                </td>
+                <!-- fob total -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.fobTotal" class="form-control" name="fobTotal" readonly>
+                </td>
+                <!-- distribucion  -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.distribucion" class="form-control" name="distribucion"
+                    readonly>
+                </td>
+                <!-- inland -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.inland" class="form-control" name="inland" readonly>
+                </td>
+                <!-- insurance  -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.insurance" class="form-control" name="insurance" readonly>
+                </td>
+                <!-- aereo -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.aereo" class="form-control" name="aereo" readonly>
+                </td>
+                <!-- CIF  -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.cif" class="form-control" name="cif" readonly>
+                </td>
+                <!-- DAI  -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.dai" class="form-control" name="dai" readonly>
+                </td>
+                <!-- gastos  -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.gastos" class="form-control" name="descuento" readonly>
+                </td>
+                <!-- landed  -->
+                <td style="width: 70px;">
+                  <input type="text" [(ngModel)]="detalle.landed" class="form-control" name="landed">
+                </td>
+                <!-- COSTO UNITARIO  -->
+                <td style="width: 70px;" class="text-right">{{ detalle.costo_calc | currency:'USD':'symbol':'1.2'}}</td>
+
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+        <div class="col-md-12 justify-content-between">
+          <button (click)="calcularFOBParaTodos()" class="ml-3 btn btn-primary float-end">Calcular</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+</section>
+
+<section class="card border-0 p-3 mb-3">
+  <div class="row">
+    <h6 class="mt-3">Detalles de facturación</h6>
+    <!-- Estado: {{ compra.estado }} -->
+    <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
+      <div class="form-switch border rounded">
+        <label for="credito">Compra al crédito</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()"
+          [(ngModel)]="compra.credito" name="compra.credito">
+      </div>
+    </div>
+    <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
+      <div class="form-switch border rounded">
+        <label for="consigna">Consigna</label>
+        <input [disabled]="!compra.credito" class="form-check-input float-end" type="checkbox" role="switch"
+          (change)="setConsigna()" [(ngModel)]="compra.consigna" name="compra.credito">
+      </div>
+    </div>
+    <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!duplicarcompra && compra.cotizacion == 0">
+      <div class="form-switch bg-light-info rounded">
+        <label for="recurrente">Compra recurrente</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="compra.recurrente"
+          name="compra.recurrente">
+      </div>
+    </div>
+    <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
+      <label for="fecha_pago">Fecha de pago:</label><br>
+      <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
+    </div>
+    <div class="form-group col-md-6 col-lg-3" *ngIf="compra.cotizacion == 0">
+      <label for="forma_pago">Forma de pago</label>
+      <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
+        <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+      </select>
+    </div>
+    <!-- <div class="form-group col-md-6 col-lg-3" *ngIf="compra.forma_pago != 'Efectivo'">
             <label for="detalle_banco">Bancos</label>
             <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
                 <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }}</option>
             </select>
         </div> -->
-        <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
-            <label for="num_serie">Num. Serie</label>
-            <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie" placeholder="Escribe aquí">
-        </div>
-        <div class="form-group col-md-6 col-lg-3 without-label">
-            <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
-            </div>
-        </div>
-        <div class="form-group col-md-6 col-lg-3 without-label">
-            <div class="form-switch bg-light-info rounded">
-              <label for="percepcion">Percepción</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion">
-            </div>
-        </div>
-        <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
-            <div class="form-switch bg-light-info rounded">
-              <label for="renta">Renta</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.renta" name="compra.renta">
-            </div>
-        </div>
+    <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
+      <label for="num_serie">Num. Serie</label>
+      <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie"
+        placeholder="Escribe aquí">
     </div>
+    <div class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="cobrar_impuestos">Con IVA</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+          [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
+      </div>
+    </div>
+    <div class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="percepcion">Percepción</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+          [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion">
+      </div>
+    </div>
+    <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="renta">Renta</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+          [(ngModel)]="compra.renta" name="compra.renta">
+      </div>
+    </div>
+  </div>
 </section>
 <section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <div class="col-md-12">
-            <button type="submit" (click)="onFacturar()" [disabled]="saving" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
-                <span *ngIf="compra.cotizacion == 1 && !saving">Procesar orden de compra</span>
-                <span *ngIf="compra.cotizacion == 0 && !saving">Procesar compra</span>
-                <span *ngIf="saving">Procesando...</span> 
-                <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-            </button>
-            <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
+  <div class="row">
+    <div class="col-md-12">
+      <button type="submit" (click)="onFacturar()" [disabled]="saving" class="ml-3 btn btn-primary float-end tcla-F10"
+        title="Procesar compra (F10)">
+        <span *ngIf="compra.cotizacion == 1 && !saving">Procesar orden de compra</span>
+        <span *ngIf="compra.cotizacion == 0 && !saving">Procesar compra</span>
+        <span *ngIf="saving">Procesando...</span>
+        <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+      </button>
+      <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
                 Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
             </button> -->
-            <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">.</button>
-        </div>
+      <button (click)="limpiar()" class="tcla-Delete" style="opacity: 0;">.</button>
     </div>
+  </div>
 </section>
 
 
 <ng-template #mfacturar>
   <div class="modal-header">
     <div class="modal-title text-center w-100">
-        <p class="my-0">{{compra.tipo_documento}}</p>
-        <h3>{{compra.correlativo}}</h3>
+      <p class="my-0">{{compra.tipo_documento}}</p>
+      <h3>{{compra.correlativo}}</h3>
     </div>
     <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">
       <span aria-hidden="true">&times;</span>
@@ -435,30 +521,35 @@
   </div>
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
-        <div class="row text-center">
-            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency:'USD':'symbol':'1.2' }}</span></h4>
-            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="compra.recibido">{{ compra.recibido - compra.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info" *ngIf="!compra.recibido">$0.00</span></h4>
-            <div class="form-group text-center col-md-12 my-3">
-                <label for="recibido">Recibido:</label>
-                <input type="number" name="recibido" [(ngModel)]="compra.recibido" placeholder="{{ compra.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
-            </div>
-
-            <div class="form-group col-md-12 mb-3" *ngIf="!compra.nota">
-                <label for="nota">Nota:</label><br>
-                <input type="text" class="form-control" [(ngModel)]="compra.nota" name="nota" id="nota">
-            </div>
-
-            <label class="mt-4" style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
-
+      <div class="row text-center">
+        <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ compra.total | currency:'USD':'symbol':'1.2'
+            }}</span></h4>
+        <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="compra.recibido">{{ compra.recibido -
+            compra.total | currency:'USD':'symbol':'1.2' }}</span> <span class="badge badge-info"
+            *ngIf="!compra.recibido">$0.00</span></h4>
+        <div class="form-group text-center col-md-12 my-3">
+          <label for="recibido">Recibido:</label>
+          <input type="number" name="recibido" [(ngModel)]="compra.recibido"
+            placeholder="{{ compra.total | currency:'USD':'symbol':'1.2' }}" class="form-control text-center">
         </div>
-        <div class="row text-center">
-            <div class="col-md-12 mt-4">
-                <button type="submit" class="btn btn-primary btn-block tcla-F12" id="submit" [disabled]="loading">
-                    <span *ngIf="!loading">Cobrar <small>(F12)</small></span>
-                    <span *ngIf="loading">Cobrando...</span>
-                </button>
-            </div>
+
+        <div class="form-group col-md-12 mb-3" *ngIf="!compra.nota">
+          <label for="nota">Nota:</label><br>
+          <input type="text" class="form-control" [(ngModel)]="compra.nota" name="nota" id="nota">
         </div>
+
+        <label class="mt-4" style="font-size: 16px;"><input style="width: 15px; height: 15px;" type="checkbox"
+            [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
+
+      </div>
+      <div class="row text-center">
+        <div class="col-md-12 mt-4">
+          <button type="submit" class="btn btn-primary btn-block tcla-F12" id="submit" [disabled]="loading">
+            <span *ngIf="!loading">Cobrar <small>(F12)</small></span>
+            <span *ngIf="loading">Cobrando...</span>
+          </button>
+        </div>
+      </div>
     </form>
   </div>
 </ng-template>
@@ -469,18 +560,18 @@
   </div>
   <div class="modal-body">
     <div class="row text-center">
-        <form name="form" (ngSubmit)="supervisorCheck()">
-            <div class="form-group col-md-12">
-                <label for="codigo">Ingrese el código de supervisor:</label>
-                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
-            </div>
-            <div class="col-md-12">
-                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
-                </button>
-            </div>
-        </form>
+      <form name="form" (ngSubmit)="supervisorCheck()">
+        <div class="form-group col-md-12">
+          <label for="codigo">Ingrese el código de supervisor:</label>
+          <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
+        </div>
+        <div class="col-md-12">
+          <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+            <span *ngIf="!loading">Guardar</span>
+            <span *ngIf="loading">Guardando...</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </ng-template>
