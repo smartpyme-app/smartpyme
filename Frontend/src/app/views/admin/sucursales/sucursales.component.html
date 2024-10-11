@@ -135,6 +135,18 @@
                 <label for="">Dirección:</label>
                 <input type="text" class="form-control" name="sucursal.direccion" [(ngModel)]="sucursal.direccion"/>
             </div>
+            <div class="form-group col-md-6">
+                <label for="tipo_establecimiento ">Tipo establecimiento:</label>
+                <select class="form-select" [(ngModel)]="sucursal.tipo_establecimiento" name="tipo_establecimiento ">
+                    <option value="01">Sucursal</option>
+                    <option value="02">Casa matriz</option>
+                    <option value="04">Bodega</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="cod_estable_mh">Cod Establecimiento MH:</label>
+                <input type="text" class="form-control" [(ngModel)]="sucursal.cod_estable_mh" name="cod_estable_mh" placeholder="xxxx">
+            </div>
             <div class="form-group col-md-12">
                 <div class="form-switch bg-light-info rounded">
                   <label for="enable">Activa</label>

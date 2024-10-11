@@ -128,3 +128,7 @@ CREATE TABLE paises (
 
 ALTER TABLE proveedores ADD cod_pais varchar(255) NULL AFTER pais;
 ALTER TABLE clientes ADD cod_pais varchar(255) NULL AFTER pais;
+
+
+ALTER TABLE sucursales ADD tipo_establecimiento varchar(255) NULL AFTER direccion;
+ALTER TABLE sucursales ADD cod_estable_mh varchar(255) NULL AFTER tipo_establecimiento;
