@@ -35,6 +35,8 @@ import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/d
 import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.component';
 import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
 
+import { ComprasModule } from '@views/compras/compras.module';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -44,6 +46,7 @@ import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configur
     SharedModule,
     NgChartsModule,
     NgSelectModule,
+    ComprasModule,
     ContabilidadRoutingModule,
     PopoverModule.forRoot(),
     FocusModule.forRoot(),

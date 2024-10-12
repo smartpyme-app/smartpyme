@@ -2,9 +2,8 @@ import { Component, OnInit, TemplateRef, Output, EventEmitter  } from '@angular/
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
-import { truncate } from 'fs';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-crear-categoria',

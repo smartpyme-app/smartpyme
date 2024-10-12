@@ -7,7 +7,6 @@ import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
-import { log } from 'console';
 import Swal from 'sweetalert2';
 
 @Component({
