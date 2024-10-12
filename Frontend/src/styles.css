@@ -9,3 +9,32 @@
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {background: #555; }
+
+
+/* Ocultar los bordes de la columna de horas en la vista de día de FullCalendar */
+.fc-timegrid-axis {
+    border: none !important; /* Elimina el borde de las celdas de la columna de las horas */
+  }
+  
+  .fc-timegrid-axis-frame {
+    border: none !important; /* Elimina el borde del marco de la columna de las horas */
+  }
+  
+  .fc-col-header-cell.fc-timegrid-axis {
+    border: none !important; /* Elimina el borde del encabezado de la columna de las horas */
+  }
+
+/*
+.fc-timegrid-slot-lane {
+    border-bottom: 1px solid #060505 !important;  Añade un borde derecho
+} */
+ /*
+.fc-timegrid-slot.fc-timegrid-slot-lane:last-child {
+    border-right: none !important; Remueve el borde de la última columna 
+}*/
+
+
+/*background del calendario vista de dia */
+  /* .fc-timegrid-slot  { background-color: #ffffff !important; } */
+
+ 

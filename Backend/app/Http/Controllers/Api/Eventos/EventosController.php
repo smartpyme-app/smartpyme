@@ -15,7 +15,7 @@ class EventosController extends Controller
 {
 
     public function index(Request $request) {
-       
+
         $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
@@ -54,7 +54,7 @@ class EventosController extends Controller
     }
 
     public function list(Request $request) {
-       
+
         $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
@@ -91,7 +91,7 @@ class EventosController extends Controller
             $color = '';
             $textColor = '';
             if($evento->tipo == 'Pagado'){
-                $color = '#367837';
+                $color = '#dcfce7';
             }
             elseif($evento->tipo == 'Sin confirmar'){
                 $color = 'lightgray';
@@ -153,9 +153,9 @@ class EventosController extends Controller
             'id_servicio.required' => 'El campo servicio es obligatorio.',
             'frecuencia_fin.required_with' => 'El campo terminar de repetir es obligatorio.'
         ]);
-        
+
         DB::beginTransaction();
-         
+
         try {
 
             if($request->id)
@@ -176,7 +176,7 @@ class EventosController extends Controller
                 $evento->fill($request->all());
                 $evento->save();
             }
-            
+
         // Guardar detalles
             foreach ($request->productos as $det) {
                 if(isset($det['id']))
@@ -188,7 +188,7 @@ class EventosController extends Controller
                 $detalle->fill($det);
                 $detalle->save();
             }
-            
+
             $evento->notificar();
 
         DB::commit();
@@ -209,7 +209,7 @@ class EventosController extends Controller
 
         $evento = Evento::findOrfail($id);
         $evento->delete();
-        
+
         return Response()->json($evento, 201);
     }
 
