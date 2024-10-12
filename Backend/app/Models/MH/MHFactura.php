@@ -15,18 +15,17 @@ class MHFactura extends Model
     public $caja;
     public $caja_codigo;
     public $empresa;
+    public $sucursal;
     
 
     public function generarDTE($venta){
         $this->venta = $venta;
         $this->empresa = $this->venta->empresa()->first();
+        $this->sucursal = $this->venta->sucursal()->first();
 
         $this->caja_codigo = '0001';
-        // $this->empresa->cod_estable_mh = '0001';
-        $this->empresa->tipoEstablecimiento = 'Casa matriz';
-        $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '01';
-        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
+        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
@@ -118,7 +117,7 @@ class MHFactura extends Model
             "codActividad" => $this->empresa->cod_actividad_economica,
             "descActividad" => $this->empresa->giro,
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->empresa->tipo_establecimiento,
+            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
@@ -140,7 +139,7 @@ class MHFactura extends Model
                 "tipoDocumento" => NULL, //36 NIT 13 DUI
                 "numDocumento" => NULL,
                 "nrc" => NULL,
-                "nombre" => 'Consumidor Final',
+                "nombre" => 'Clientes Varios',
                 "codActividad" => NULL,
                 "descActividad" => NULL,
                 "direccion" => NULL,
@@ -178,7 +177,12 @@ class MHFactura extends Model
     public function generarFactura(){
         $tributos = NULL;
 
-        $this->venta->gravada = $this->venta->sub_total;
+        if ($this->venta->iva > 0) {
+            $this->venta->gravada = $this->venta->sub_total;
+        }else{
+            $this->venta->gravada = 0;
+            $this->venta->exenta = $this->venta->sub_total;
+        }
 
         return 
             [
@@ -196,9 +200,11 @@ class MHFactura extends Model
                   "subTotalVentas" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "descuGravada" => floatval(number_format(0 , 2, '.', '')),
                   "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "totalDescu" => floatval(number_format(0 , 2, '.', '')),
                   "tributos" => $tributos,
                   "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
@@ -255,10 +261,18 @@ class MHFactura extends Model
 
             $detalle->codTributo = NULL;
 
-            $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-            $detalle->iva = ($detalle->total * 0.13);
-            $detalle->gravada = $detalle->total;
-            $detalle->total = $detalle->total + $detalle->iva;
+            if ($this->venta->iva > 0) {
+                // Agregar IVA
+                    $detalle->precio = round($detalle->precio * 1.13, 2);
+                    $detalle->descuento = round($detalle->descuento * 1.13, 2);
+                    $detalle->iva = ($detalle->total * 0.13);
+                    $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
+            }else{
+                // Sin IVA
+                    $detalle->gravada = 0;
+                    $detalle->exenta = $detalle->total;
+                    $detalle->iva = 0;
+            }
 
             $detalles->push([
                 "numItem" => $index + 1,
@@ -273,7 +287,7 @@ class MHFactura extends Model
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
                 "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                 "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
                 "tributos" => $tributos,
                 "psv" => 0,
                 "noGravado" => 0,

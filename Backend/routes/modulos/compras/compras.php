@@ -13,7 +13,6 @@ use App\Http\Controllers\Api\Compras\SalidasController;
     Route::post('/compra/facturacion',      [ComprasController::class, 'facturacion']);
     Route::post('/compra/facturacion/consigna',  [ComprasController::class, 'facturacionConsigna']);
 
-    Route::get('/libro-compras',           [ComprasController::class, 'libroCompras']);
     Route::get('/compras/sin-devolucion',       [ComprasController::class, 'sinDevolucion']);
 
     Route::post('/compras/historial',       [ComprasController::class, 'historial']);

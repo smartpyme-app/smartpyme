@@ -4,27 +4,53 @@
         <h2>Libro Consumidor Final</h2>
     </div>
     <div>
-        <app-descargar-excel *ngIf="ivas?.length > 0" [nombre]="'Libro de Consumidor Final'"></app-descargar-excel>
+        <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
+            Libro <img src="/assets/icons/download.png" class="icon">
+        </button>
+        <button [disabled]="downloading" tooltip="Descargar Anexo" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
+            Anexo <img src="/assets/icons/download.png" class="icon">
+        </button>
     </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
     <div class="d-flex">
         <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
-            <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
+            <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
+            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select class="form-control form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+                <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
             </select>
-            <div class="btn-group">
-                <button class="btn tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtros.time == 'day', 'btn-default': filtros.time != 'day' }" (click)="setTime('day')">Hoy</button>
-                <button class="btn tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtros.time == 'week', 'btn-default': filtros.time != 'week' }" (click)="setTime('week')">Semana</button>
-                <button class="btn tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</button>
-                <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button>
-            </div>
+            <select class="form-select" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+            <select class="form-select" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
+              <option *ngFor="let year of years" [value]="year">
+                  {{ year }}
+                </option>
+            </select>
+            <!-- <div class="btn-group"> -->
+
+                <!-- <button class="btn tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtros.time == 'day', 'btn-default': filtros.time != 'day' }" (click)="setTime('day')">Hoy</button> -->
+                <!-- <button class="btn tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtros.time == 'week', 'btn-default': filtros.time != 'week' }" (click)="setTime('week')">Semana</button> -->
+                <!-- <button class="btn tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</button> -->
+                <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
+            <!-- </div> -->
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
         </div>
     </div>
@@ -35,63 +61,45 @@
                 <table class="table table-bordered table-hover mr-top" id="tablaReporte">
                     <thead>
                         <tr>
+                            <th>N°</th>
                             <th>Fecha</th>
                             <th>Correlativo</th>
-                            <th>Cliente</th>
-                            <th>NIT/NRC</th>
-                            <th>DUI</th>
                             <th class="text-end">Ventas Exentas</th>
-                            <th class="text-end">Ventas No Sujetas</th>
                             <th class="text-end">Ventas Gravadas</th>
-                            <th class="text-end">Cuenta a terceros</th>
+                            <th class="text-end">Exportaciones</th>
                             <th class="text-end">Total</th>
+                            <th class="text-end">Venta a Cuenta de Terceros</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="10" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="8" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="10" class="text-center" *ngIf="loading">
+                            <td colspan="8" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <tr class="animated fadeIn" *ngFor=" let iva of ivas">
+                        <tr class="animated fadeIn" *ngFor=" let iva of ivas; let i = index">
+                            <td>{{ i+1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.num_documento}}</td>
-                            <td>{{iva.nombre_cliente}}</td>
-                            <td>{{iva.nit_nrc}}</td>
-                            <td>{{iva.dui}}</td>
+                            <td>{{iva.correlativo}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.ventas_no_sujetas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{((iva.ventas_gravadas * 1) + (iva.debito_fiscal * 1)) | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.exportaciones | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
 
                         </tr>
                         <tr>
-                            <td colspan="5" class="text-center"><b>Total</b></td>                                
+                            <td colspan="3" class="text-center"><b>Total</b></td>                                
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_no_sujetas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ( ((ivas | sum:'ventas_gravadas') * 1) + ((ivas | sum:'debito_fiscal') * 1)) | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'exportaciones' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     </tbody>
-                    <tfoot *ngIf="ivas?.length > 10">
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Correlativo</th>
-                            <th>Cliente</th>
-                            <th>NIT/NRC</th>
-                            <th>DUI</th>
-                            <th class="text-end">Ventas Exentas</th>
-                            <th class="text-end">Ventas No Sujetas</th>
-                            <th class="text-end">Ventas Gravadas</th>
-                            <th class="text-end">Total</th>
-                        </tr>
-                    </tfoot>
-
                 </table>
             </div>
         </div>

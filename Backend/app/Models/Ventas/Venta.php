@@ -17,6 +17,7 @@ class Venta extends Model {
         'fecha',
         'correlativo',
         'estado',
+        'detalle_banco',
         // 'tipo',
         'id_canal',
         'id_documento',
@@ -118,10 +119,10 @@ class Venta extends Model {
         $text = '';
 
         foreach ($this->detalles as $detalle) {
-            $text .= $detalle->nombre_producto . ' X ' . $detalle->cantidad . '. <br>';
+            $text .= $detalle->nombre_producto . ' X ' . $detalle->cantidad . '. ';
             if ($detalle->producto()->first()->promocion()->first()){
               foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det){
-                $text .= ' - ' . $det->nombre_producto . ' X ' . $det->cantidad . '. <br>';
+                $text .= ' - ' . $det->nombre_producto . ' X ' . $det->cantidad . '. ';
               }
             }
         }

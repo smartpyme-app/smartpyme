@@ -40,14 +40,17 @@ class MHDTEController extends Controller
             $DTE = $mh->generarDTE($venta);
         }
 
-        if ($venta->nombre_documento == 'Factura') {
+        elseif ($venta->nombre_documento == 'Factura') {
             $mh = new MHFactura;
             $DTE = $mh->generarDTE($venta);
         }
 
-        if ($venta->nombre_documento == 'Factura de Exportación') {
+        elseif ($venta->nombre_documento == 'Factura de Exportación') {
             $mh = new MHFacturaExportacion;
             $DTE = $mh->generarDTE($venta);
+        }
+        else{
+            return Response()->json(['error' => 'El tipo de documento no puede emitirse, debe ser uno de los permitidos.'], 400);
         }
 
         return Response()->json($DTE, 200);
@@ -276,6 +279,9 @@ class MHDTEController extends Controller
 
 
         $DTE = $registro->dte;
+        if (!$DTE) {
+            return 'No se encontró el DTE';
+        }
         // return $DTE;
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];

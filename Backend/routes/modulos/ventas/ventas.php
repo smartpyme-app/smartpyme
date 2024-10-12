@@ -18,9 +18,6 @@ use App\Http\Controllers\Api\WompiController;
 
     Route::post('/propinas',             [VentasController::class, 'propinas']);
 
-    Route::get('/libro-iva',           [VentasController::class, 'libroIva']);
-    Route::post('/galonaje',            [VentasController::class, 'galonaje']);
-
     Route::post('/ventas/historial',    [VentasController::class, 'historial']);
 
     Route::get('/ventas/exportar',    [VentasController::class, 'export']);
