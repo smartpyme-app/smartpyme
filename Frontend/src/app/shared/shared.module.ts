@@ -40,6 +40,7 @@ import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 
 @NgModule({
   imports: [
@@ -51,7 +52,8 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    PopoverModule.forRoot()
   ],
   declarations: [
     BusquedaClienteComponent,
