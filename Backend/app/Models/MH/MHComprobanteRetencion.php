@@ -15,18 +15,17 @@ class MHComprobanteRetencion extends Model
     public $caja;
     public $caja_codigo;
     public $empresa;
+    public $sucursal;
     
 
     public function generarDTE($venta){
         $this->venta = $venta;
         $this->empresa = $this->venta->empresa()->first();
+        $this->sucursal = $this->venta->sucursal()->first();
 
         $this->caja_codigo = '0001';
-        // $this->empresa->cod_estable_mh = '0001';
-        $this->empresa->tipoEstablecimiento = 'Casa matriz';
-        $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '07';
-        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
+        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
@@ -125,8 +124,8 @@ class MHComprobanteRetencion extends Model
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->empresa->cod_estable_mh ? $this->empresa->cod_estable_mh : NULL,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
+            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,

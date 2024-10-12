@@ -21,14 +21,14 @@ class DetallesController extends Controller
         if($request->id){
             $detalle = Detalle::findOrFail($request->id);
         }
-        else {
+        else{
             $detalle = new Detalle;
 
-            $detalle->fill($request->all());
-            $detalle->save();
+        $detalle->fill($request->all());
+        $detalle->save();
 
-            return Response()->json($detalle, 200);
-        }
+        return Response()->json($detalle, 200);
+                }
 
     }
 

@@ -1,0 +1,294 @@
+::ng-deep :root {
+  --fullcalendar-color-1: #DCFCE7;
+  --fullcalendar-color-contrast-1: #14532D;
+
+  --fullcalendar-color-2: #FFDAD6;
+  --fullcalendar-color-contrast-2: #410002;
+
+  --fullcalendar-color-3: #D7E2FF;
+  --fullcalendar-color-contrast-3: #001B3F;
+
+  --fullcalendar-base-grey-color: #44474E;
+
+}
+
+::ng-deep app-calendario {
+  --fc-today-bg-color: transparent !important;
+  --fc-non-business-color: transparent !important;
+
+  .fc .fc-cell-shaded,
+  .fc .fc-day-disabled {
+    background-color: transparent !important;
+  }
+}
+
+::ng-deep .fc-timeGridDay-view {
+
+
+  --fc-event-text-color: black;
+  --border-slot-color: var(--fullcalendar-color-3);
+  --fc-event-padding: 5px;
+
+  .fc-scrollgrid-sync-table {
+    display: none;
+  }
+
+  .fc-scrollgrid {
+    border: none;
+  }
+
+  .event-title {
+    font-weight: bold !important;
+  }
+
+  .event-body {}
+
+  .fc-timegrid-slot {
+    height: 40px !important;
+  }
+
+  .fc-col-header {
+    display: none;
+  }
+
+}
+
+::ng-deep .fc-timeGridDay-view:has(.smallversion) {
+  --fc-event-padding: 0px;
+  --fc-small-font-size: 0.74em;
+}
+
+::ng-deep .fc-timeGridDay-view td,
+::ng-deep .fc-timeGridDay-view th {
+  border: none !important;
+}
+
+::ng-deep .fc-timegrid-slots tbody tr:nth-of-type(odd) td:nth-of-type(even) {
+  border-top: 1px solid var(--border-slot-color) !important;
+}
+
+::ng-deep .fc-timegrid-slots tbody tr:nth-of-type(even) td:nth-of-type(even) {
+  border-bottom: 1px solid var(--border-slot-color) !important;
+}
+
+::ng-deep .fc-timegrid-slots tbody td:nth-of-type(even) {
+  border-right: 1px solid var(--border-slot-color) !important;
+  border-left: 1px solid var(--border-slot-color) !important;
+}
+
+
+::ng-deep .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-1);
+  --fg-color: var(--fullcalendar-color-contrast-1);
+  border-radius: 3px !important;
+
+  .fc-event {
+    background-color: var(--bg-color) !important;
+    --fc-event-text-color: var(--fg-color);
+    border: none !important;
+    border-radius: 3px !important;
+    padding: var(--fc-event-padding) !important;
+    // padding-right: 5px !important;
+  }
+
+  .fc-v-event .fc-event-main {
+    color: var(--fc-event-text-color) !important;
+  }
+}
+
+::ng-deep .fc-timeGridDay-view .fc-timegrid-event-harness:nth-child(2n) {
+  --bg-color: var(--fullcalendar-color-2);
+  --fg-color: var(--fullcalendar-color-contrast-2);
+}
+
+::ng-deep .fc-timeGridDay-view .fc-timegrid-event-harness:nth-child(3n) {
+  --bg-color: var(--fullcalendar-color-3);
+  --fg-color: var(--fullcalendar-color-contrast-3);
+}
+
+::ng-deep .fc-timeGridWeek-view {
+  --fc-event-padding: 2.5px;
+  --fc-small-font-size: 0.7em;
+
+  .fc-day {
+    text-transform: capitalize;
+  }
+
+  .fc-timegrid-slot {
+    height: 40px !important;
+  }
+
+  .fc-event {
+    padding: var(--fc-event-padding) !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: var(--fullcalendar-base-grey-color) !important;
+  }
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-sun .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-2);
+  --fg-color: var(--fullcalendar-color-contrast-2);
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-mon .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-3);
+  --fg-color: var(--fullcalendar-color-contrast-3);
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-tue .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-1);
+  --fg-color: var(--fullcalendar-color-contrast-1);
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-wed .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-2);
+  --fg-color: var(--fullcalendar-color-contrast-2);
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-thu .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-3);
+  --fg-color: var(--fullcalendar-color-contrast-3);
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-fri .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-1);
+  --fg-color: var(--fullcalendar-color-contrast-1);
+}
+
+::ng-deep .fc-timeGridWeek-view .fc-day-sat .fc-timegrid-event-harness {
+  --bg-color: var(--fullcalendar-color-1);
+  --fg-color: var(--fullcalendar-color-contrast-1);
+}
+
+::ng-deep .fc-dayGridMonth-view {
+  --fc-small-font-size: 0.7em;
+
+
+  .fc-daygrid-day-frame {
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fc-daygrid-day-events {
+    margin-top: auto;
+    width: 100% !important;
+    overflow: hidden;
+
+  }
+
+  .fc-daygrid-event-harness {
+    --bg-color: var(--fullcalendar-color-1);
+    --fg-color: var(--fullcalendar-color-contrast-1);
+    width: 100% !important;
+
+    .fc-event {
+      color: var(--fg-color) !important;
+    }
+  }
+
+  a {
+    text-decoration: none !important;
+    --bs-link-color-rgb: var(--fullcalendar-base-grey-color);
+  }
+
+  .fc-col-header-cell-cushion {
+    text-transform: capitalize;
+  }
+
+
+}
+
+// ::ng-deep .fc-daygrid-day-events:nth-child(n) {
+//   --bg-color: var(--fullcalendar-color-1);
+//   --fg-color: var(--fullcalendar-color-contrast-1);
+
+// }
+
+::ng-deep .fc-daygrid-event-harness:nth-of-type(2n) {
+  --bg-color: var(--fullcalendar-color-2);
+  --fg-color: var(--fullcalendar-color-contrast-2);
+}
+
+::ng-deep .fc-daygrid-event-harness:nth-of-type(3n) {
+  --bg-color: var(--fullcalendar-color-3);
+  --fg-color: var(--fullcalendar-color-contrast-3);
+}
+
+::ng-deep .fc-multiMonthYear-view {
+  .fc-multimonth-title {
+    text-transform: capitalize !important;
+  }
+
+  --fc-event-border-color: transparent;
+
+  a {
+    text-decoration: none !important;
+    color: var(--fullcalendar-base-grey-color) !important;
+  }
+
+  .event-dot {
+    color: #16A34A;
+  }
+
+  .event-dot:nth-child(2n) {
+    color: #005CBB;
+  }
+
+  .event-dot:nth-child(3n) {
+    color: #BA1A1A;
+  }
+
+  .fc-daygrid-event-harness {
+    color: #16A34A;
+  }
+
+  .fc-daygrid-event-harness:nth-of-type(2n) .event-dot {
+    color: #005CBB;
+  }
+
+  .fc-daygrid-event-harness:nth-of-type(3n) .event-dot {
+    color: #BA1A1A;
+  }
+
+  .fc-daygrid-day-events {
+    margin-top: 15px;
+    width: 100% !important;
+    display: flex;
+    // overflow: hidden;
+
+  }
+
+  .event-dot-desc {
+    display: none;
+  }
+
+  .fc-popover-body .event-dot-desc {
+    display: block;
+  }
+
+
+}
+
+::ng-deep .fc-multiMonthYear-view .fc-popover-body .fc-daygrid-event-harness:nth-of-type(1n) {
+  --bs-link-color-rgb: #16A34A;
+}
+
+::ng-deep .fc-multiMonthYear-view .fc-popover-body .fc-daygrid-event-harness:nth-of-type(2n) {
+  --bs-link-color-rgb: #005CBB;
+}
+
+::ng-deep .fc-multiMonthYear-view .fc-popover-body .fc-daygrid-event-harness:nth-of-type(3n) {
+  --bs-link-color-rgb: #BA1A1A;
+}
+
+::ng-deep .fc-multimonth-daygrid-table td {
+  border: none !important;
+}
+
+::ng-deep .fc-multimonth-header-table th {
+  border: none !important;
+}

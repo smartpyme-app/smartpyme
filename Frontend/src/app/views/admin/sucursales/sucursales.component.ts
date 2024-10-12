@@ -14,6 +14,7 @@ export class SucursalesComponent implements OnInit {
     public sucursales:any = [];
     public sucursal:any = {};
     public loading = false;
+    public saving = false;
     public sucursales_activas:any = 0;
     public filtros:any = {};
 
@@ -90,7 +91,7 @@ export class SucursalesComponent implements OnInit {
 
     
     public onSubmit() {
-          this.loading = true;
+          this.saving = true;
           this.apiService.store('sucursal', this.sucursal).subscribe(sucursal => {
               if (!this.sucursal.id) {
                     this.sucursales.data.push(sucursal);
@@ -98,10 +99,10 @@ export class SucursalesComponent implements OnInit {
               }
               this.contarActivos();
               this.sucursal = {};
-              this.loading = false;
+              this.saving = false;
             this.modalRef.hide();
             this.alertService.modal = false;
-          },error => {this.alertService.error(error); this.loading = false; });
+          },error => {this.alertService.error(error); this.saving = false; });
       }
 
 }

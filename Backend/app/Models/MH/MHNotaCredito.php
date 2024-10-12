@@ -15,18 +15,17 @@ class MHNotaCredito extends Model
     public $caja;
     public $caja_codigo;
     public $empresa;
+    public $sucursal;
     
 
     public function generarDTE($devolucion){
         $this->devolucion = $devolucion;
         $this->empresa = $this->devolucion->empresa()->first();
+        $this->sucursal = $this->devolucion->usuario()->first()->sucursal()->first();
 
         $this->caja_codigo = '0001';
-        // $this->empresa->cod_estable_mh = '0001';
-        $this->empresa->tipoEstablecimiento = 'Casa matriz';
-        $this->empresa->tipo_establecimiento = '02';
         $this->devolucion->tipo_dte = '05';
-        $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
+        $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->devolucion->codigo_generacion) {
             $this->devolucion->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
@@ -118,7 +117,7 @@ class MHNotaCredito extends Model
             "codActividad" => $this->empresa->cod_actividad_economica,
             "descActividad" => $this->empresa->giro,
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->empresa->tipo_establecimiento,
+            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,

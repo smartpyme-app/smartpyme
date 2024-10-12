@@ -278,7 +278,7 @@ export class CajaVentasComponent implements OnInit {
 
     anularDTE(venta:any){
         this.venta = venta;
-        if(venta.dte){
+        if(venta.sello_mh){
             if (confirm('¿Confirma anular la venta y el DTE?')) {
                 this.venta = venta;
                 this.saving = true;
