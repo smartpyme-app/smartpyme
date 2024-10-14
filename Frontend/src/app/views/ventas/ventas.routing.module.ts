@@ -30,6 +30,7 @@ import { ClientesDashComponent } from '@views/ventas/clientes/dash/clientes-dash
 import { HistorialVentasComponent } from '@views/reportes/ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-ventas.component';
 import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/categorias-ventas.component';
+import { CotizacionFormComponent } from './facturacion/facturacion-tienda/cotizacion-form/cotizacion-form.component';
 
 
 const routes: Routes = [
@@ -39,39 +40,40 @@ const routes: Routes = [
     title: 'Ventas',
     children: [
 
-        { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
-        { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
-        { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna'},
-        { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
+      { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas' },
+      { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación' },
+      { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna' },
+      { path: 'venta/:id', component: VentaComponent, title: 'Venta' },
 
-        { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas'},
-        { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas'},
-        
-        { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
-        { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
-        { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
-    // 
-        { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta'},
-        { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago'},
-        { path: 'impuestos', canActivate: [AdminGuard], component: ImpuestosComponent, title: 'Impuestos'},
-        { path: 'documentos', canActivate: [AdminGuard], component: DocumentosComponent, title: 'Documentos'},
+      { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas' },
+      { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas' },
 
-        { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas'},
-        { path: 'devolucion/venta/:id', component: DevolucionVentaComponent, title: 'Devolución de venta'},
-        { path: 'devolucion-venta/nueva', component: DevolucionVentaNuevaComponent, title: 'Devolución de venta'},
-    
-    // Clientes
-        { path: 'clientes', component: ClientesComponent, title: 'Clientes'},
-        { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente'},
-        { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
-        { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
-        { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },
-        { path: 'clientes/crm', component: ClientesDashComponent },
+      { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
+      { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
+      { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
+      { path: 'cotizacion/ver/:id', component: CotizacionFormComponent, title: 'Cotización' },
+      //
+      { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta' },
+      { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago' },
+      { path: 'impuestos', canActivate: [AdminGuard], component: ImpuestosComponent, title: 'Impuestos' },
+      { path: 'documentos', canActivate: [AdminGuard], component: DocumentosComponent, title: 'Documentos' },
 
-    // Reportes 
-        { path: 'reporte/ventas/historial', canActivate: [AdminGuard], component: HistorialVentasComponent },
-        { path: 'reporte/ventas/detalle', canActivate: [AdminGuard], component: DetalleVentasComponent },
-        { path: 'reporte/ventas/categorias', canActivate: [AdminGuard], component: CategoriasVentasComponent },
+      { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas' },
+      { path: 'devolucion/venta/:id', component: DevolucionVentaComponent, title: 'Devolución de venta' },
+      { path: 'devolucion-venta/nueva', component: DevolucionVentaNuevaComponent, title: 'Devolución de venta' },
+
+      // Clientes
+      { path: 'clientes', component: ClientesComponent, title: 'Clientes' },
+      { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente' },
+      { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente' },
+      { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente' },
+      { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },
+      { path: 'clientes/crm', component: ClientesDashComponent },
+
+      // Reportes
+      { path: 'reporte/ventas/historial', canActivate: [AdminGuard], component: HistorialVentasComponent },
+      { path: 'reporte/ventas/detalle', canActivate: [AdminGuard], component: DetalleVentasComponent },
+      { path: 'reporte/ventas/categorias', canActivate: [AdminGuard], component: CategoriasVentasComponent },
 
     ]
   }
