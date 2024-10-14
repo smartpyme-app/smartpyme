@@ -26,7 +26,7 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
 
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Pendiente')
+                        ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
                             $q->where('nombre', 'Crédito fiscal');
                         })

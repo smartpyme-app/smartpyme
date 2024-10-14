@@ -40,7 +40,7 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Pendiente')
+                        ->where('estado', '!=', 'Anulada')
                         ->when($request->tipo_documento, function($query) {
                             return $query->whereHas('documento', function($q) {
                                 $q->where('nombre', 'Factura');
