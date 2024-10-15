@@ -64,7 +64,7 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
               $nombre, //'Nombre',
               $row->exenta ? $row->exenta : '0.00', //'Exentas',
               $row->no_sujeta ? $row->no_sujeta : '0.00', //'No Sujetas',
-              $row->subtotal ? $row->subtotal : '0.00', //'Gravadas', 
+              $row->sub_total ? $row->sub_total : '0.00', //'Gravadas', 
               $row->iva ? $row->iva : '0.00', //'Debito', 
               '0.00', //'Ventas a terceros',
               '0.00', //'Debito ventas a terceros',
