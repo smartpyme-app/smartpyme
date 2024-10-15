@@ -164,11 +164,15 @@ class MHFactura extends Model
               "nombre" => $this->venta->nombre_cliente,
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
-              "direccion" => [
-                "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_municipio,
-                "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
-              ],
+              "direccion" => (
+                  $this->venta->cliente->cod_departamento &&
+                  $this->venta->cliente->cod_municipio &&
+                  ($this->venta->cliente->direccion || $this->venta->cliente->empresa_direccion)
+              ) ? [
+                  "departamento" => $this->venta->cliente->cod_departamento,
+                  "municipio" => $this->venta->cliente->cod_municipio,
+                  "complemento" => $this->venta->cliente->direccion ?: $this->venta->cliente->empresa_direccion,
+              ] : null,
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
             ];
