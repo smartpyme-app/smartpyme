@@ -127,7 +127,7 @@
           <tr>
             <th class="border-bottom">Nombre</th>
             <th class="border-bottom" style="max-width: 70px;">Cantidad</th>
-            <th class="border-bottom">Costo Individual</th>
+            <!-- <th class="border-bottom">Costo Individual</th> -->
             <th class="border-bottom">Precio Individual</th>
             <th class="border-bottom">Total</th>
             <th class="border-bottom"></th>
@@ -140,9 +140,9 @@
               <input type="number" min="0" [(ngModel)]="det.cantidad" name="cantidad{{det.id}}" style="max-width: 70px;"
                 class="form-control">
             </td>
-            <td class="text-end">
+            <!-- <td class="text-end">
               {{ det.costo | currency:'USD':'symbol':'1.2'}}
-            </td>
+            </td> -->
             <td class="text-end">
               {{ det.precio | currency:'USD':'symbol':'1.2'}}
             </td>

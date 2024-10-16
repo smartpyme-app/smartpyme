@@ -143,10 +143,22 @@ export class CalendarioComponent implements OnInit {
           },
           headerToolbar: false,
           eventContent: (renderProps, createElement) => {
+
+            let event = renderProps.event.extendedProps['data'];
+            let stateClass = "event-pending";
+            if (event.tipo == "Confirmado") {
+              stateClass = "event-confirmed";
+            }
+            if (event.tipo == "Cancelado") {
+              stateClass = "event-canceled";
+            }
+            if (event.tipo == "Sin confirmar") {
+              stateClass = "event-unconfirmed";
+            }
             let italicEl = document.createElement('span')
             italicEl.classList.add('event-container');
             italicEl.classList.add('w-100');
-            let event = renderProps.event.extendedProps['data'];
+            italicEl.classList.add(stateClass);
 
             let smallVersion = event?.duracion == "15 minutos"
               || event?.duracion == "30 minutos";
@@ -194,9 +206,23 @@ export class CalendarioComponent implements OnInit {
         }
       },
       eventContent: function (arg) {
+
+        let stateClass = "event-pending";
+        let event = arg.event.extendedProps['data'];
+        if (event.tipo == "Confirmado") {
+          stateClass = "event-confirmed";
+        }
+        if (event.tipo == "Cancelado") {
+          stateClass = "event-canceled";
+        }
+        if (event.tipo == "Sin confirmar") {
+          stateClass = "event-unconfirmed";
+        }
+
+
         let italicEl = document.createElement('span')
         italicEl.classList.add('event-container');
-        let event = arg.event.extendedProps['data'];
+        italicEl.classList.add(stateClass);
 
         let smallVersion = event?.duracion == "15 minutos"
           || event?.duracion == "30 minutos";
@@ -254,6 +280,8 @@ export class CalendarioComponent implements OnInit {
     let maxTime = moment().set('hour', 17).set('minute', 30).set('second', 0).format('HH:mm:ss');
     for (let index = 0; index < events.length; index++) {
       const event = events[index];
+      console.log(event);
+
       let start = moment(event.start).format('HH:mm:ss');
       let end = moment(event.end).format('HH:mm:ss');
       if (start < minTime) {
@@ -363,6 +391,13 @@ export class CalendarioComponent implements OnInit {
   setYearSelection() {
     this.selectedPeriodType = "year";
     this.calendar?.changeView('multiMonthYear');
+  }
+
+  nextDay() {
+    this.calendar?.next();
+  }
+  prevDay() {
+    this.calendar?.prev();
   }
 
 }
