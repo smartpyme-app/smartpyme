@@ -26,7 +26,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
     
     public function model(array $row)
     {
-        ++$this->numRows;
+
         $usuario = JWTAuth::parseToken()->authenticate();
 
         $id_categoria = Categoria::where('nombre', $row['categoria'])
@@ -61,7 +61,15 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             }
         }
 
-        $producto = new Producto();
+        $producto = Producto::where('nombre', $row['nombre'])
+                                ->where('id_empresa', $usuario->id_empresa)
+                                ->first();
+
+        if(!$producto){
+            $producto = new Producto();
+            ++$this->numRows;
+        }
+
         $producto->nombre = $row['nombre'];
         $producto->precio = $row['precio'];
         $producto->costo = $row['costo'];
@@ -82,10 +90,17 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             ]);
         }
 
+
         $sucursales = Sucursal::all();
 
         if (isset($sucursales[0]) && isset($row['sucursal_1_stock'])) {
-            $inventario = new Inventario();
+            
+            $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[0]->id)->first();
+
+            if (!$inventario) {
+                $inventario = new Inventario();
+            }
+
             $inventario->id_producto = $producto->id;
             $inventario->id_sucursal = $sucursales[0]->id;
             $inventario->stock = isset($row['sucursal_1_stock']) ? $row['sucursal_1_stock'] : 0;
@@ -104,14 +119,20 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
                 'id_usuario' => $usuario->id,
             ]);
             
-            if ($inventario) {
+            if (!$inventario) {
                 $inventario->kardex($ajuste, $ajuste->ajuste);
             }
 
         }
 
         if (isset($sucursales[1]) && isset($row['sucursal_2_stock'])) {
-            $inventario = new Inventario();
+            
+            $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[1]->id)->first();
+
+            if (!$inventario) {
+                $inventario = new Inventario();
+            }
+
             $inventario->id_producto = $producto->id;
             $inventario->id_sucursal = $sucursales[1]->id;
             $inventario->stock = isset($row['sucursal_2_stock']) ? $row['sucursal_2_stock'] : 0;
@@ -137,7 +158,13 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
         if ($sucursales->count() > 2) {
            for ($i=2; $i < $sucursales->count(); $i++) { 
-               $inventario = new Inventario();
+               
+               $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[$i]->id)->first();
+
+               if (!$inventario) {
+                    $inventario = new Inventario();
+               }
+
                $inventario->id_producto = $producto->id;
                $inventario->id_sucursal = $sucursales[$i]->id;
                $inventario->stock = 0;
