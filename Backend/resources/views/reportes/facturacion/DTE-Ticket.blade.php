@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <!-- <script language="javascript">setTimeout("self.close();",500)</script> -->
-  <title>Ticket</title>
+  <title>Factura</title>
   <style>
     h1, h2, h3{
         margin: 3pt;
