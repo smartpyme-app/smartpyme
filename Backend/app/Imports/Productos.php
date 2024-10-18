@@ -62,6 +62,9 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         }
 
         $producto = Producto::where('nombre', $row['nombre'])
+                                ->when(isset($row['codigo']) && !empty($row['codigo']), function ($query) use ($row) {
+                                    return $query->where('codigo', $row['codigo']);
+                                })
                                 ->where('id_empresa', $usuario->id_empresa)
                                 ->first();
 
@@ -78,6 +81,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $producto->codigo = $row['codigo'];
         $producto->descripcion = $row['descripcion'];
         $producto->marca = $row['marca'];
+        $producto->medida = $row['unidad_medida'];
         $producto->barcode = $row['codigo_de_barra'];
         $producto->enable  = true;
         $producto->id_empresa =  $usuario->id_empresa;
