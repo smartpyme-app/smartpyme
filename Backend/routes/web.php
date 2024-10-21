@@ -12,9 +12,7 @@
 */
 
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Auth\AuthJWTController;
-use Illuminate\Support\Facades\DB;
 
 Route::get('/pago-wompi', [App\Http\Controllers\WompiController::class, 'pagoWompi'])->name('pagoWompi');
 
@@ -23,92 +21,11 @@ Route::get('/registro/{id}', [AuthJWTController::class, 'pagoFinish'])->name('pa
 
 Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])->name('suscripcion.ticket');
 
-
-Route::get('/actualizarMH', function(){
-
-    $clientes = Cliente::all();
-
-    foreach ($clientes as $cliente) {
-        if (($cliente->cod_municipio && $cliente->cod_departamento) || $cliente->municipio) {
-            
-            $distrito = Distrito::where('cod', $cliente->cod_municipio)
-                                ->where('cod_departamento', $cliente->cod_departamento)
-                                ->orwhereRaw('LOWER(nombre) = ?', [strtolower($cliente->municipio)])
-                                ->first();
-
-            if ($distrito) {
-                $municipio = $distrito->municipio;
-
-                $cliente->cod_municipio = $municipio->cod;
-                $cliente->municipio = $municipio->nombre;
-                $cliente->cod_departamento = $distrito->cod_departamento;
-                $cliente->departamento = $distrito->nombre_departamento;
-                $cliente->distrito = $distrito->nombre;
-                $cliente->cod_distrito = $distrito->cod;
-
-                $cliente->save();
-
-            }
-        }
-    }
-
-    $proveedores = Proveedor::all();
-
-    foreach ($proveedores as $proveedor) {
-        if (($proveedor->cod_municipio && $proveedor->cod_departamento) || $proveedor->municipio) {
-            
-            $distrito = Distrito::where('cod', $proveedor->cod_municipio)
-                                ->where('cod_departamento', $proveedor->cod_departamento)
-                                ->orwhereRaw('LOWER(nombre) = ?', [strtolower($proveedor->municipio)])
-                                ->first();
-
-            if ($distrito) {
-                $municipio = $distrito->municipio;
-
-                $proveedor->cod_municipio = $municipio->cod;
-                $proveedor->municipio = $municipio->nombre;
-                $proveedor->cod_departamento = $distrito->cod_departamento;
-                $proveedor->departamento = $distrito->nombre_departamento;
-                $proveedor->distrito = $distrito->nombre;
-                $proveedor->cod_distrito = $distrito->cod;
-
-                $proveedor->save();
-
-            }
-        }
-    }
-
-    // $empresas = Empresa::all();
-
-    // foreach ($empresas as $empresa) {
-    //  if (($empresa->cod_municipio && $empresa->cod_departamento) || $empresa->municipio) {
-            
-    //      $distrito = Distrito::where('cod', $empresa->cod_municipio)
-    //                          ->where('cod_departamento', $empresa->cod_departamento)
-    //                          ->orwhereRaw('LOWER(nombre) = ?', [strtolower($empresa->municipio)])
-    //                          ->first();
-
-    //      if ($distrito) {
-    //          $municipio = $distrito->municipio;
-
-    //          $empresa->cod_municipio = $municipio->cod;
-    //          $empresa->municipio = $municipio->nombre;
-    //          $empresa->cod_departamento = $distrito->cod_departamento;
-    //          $empresa->departamento = $distrito->nombre_departamento;
-    //          $empresa->distrito = $distrito->nombre;
-    //          $empresa->cod_distrito = $distrito->cod;
-
-    //          $empresa->save();
-
-    //      }
-    //  }
-    // }
-
-    return 'Listo';
-});
-
 use App\Models\MH\Pais;
 use App\Models\MH\Unidad;
+use App\Models\MH\Recinto;
+use App\Models\MH\Regimen;
+use App\Models\MH\Incoterm;
 use App\Models\MH\ActividadEconomica;
 use App\Models\MH\Municipio;
 use App\Models\MH\Departamento;
@@ -116,6 +33,7 @@ use App\Models\MH\Distrito;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Compras\Proveedores\Proveedor;
+
 
 Route::get('/cargarmh', function(){
 
@@ -125,6 +43,77 @@ Route::get('/cargarmh', function(){
     Departamento::truncate();
     Municipio::truncate();
     Distrito::truncate();
+    Recinto::truncate();
+    Incoterm::truncate();
+    Regimen::truncate();
+
+    // Incoterm
+        Incoterm::create(['cod' => '01', 'nombre' => 'EXW-En fabrica']);
+        Incoterm::create(['cod' => '02', 'nombre' => 'FCA-Libre transportista']);
+        Incoterm::create(['cod' => '03', 'nombre' => 'C PT-Transporte pagado hasta']);
+        Incoterm::create(['cod' => '04', 'nombre' => 'CIP-Transporte y seguro pagado hasta']);
+        Incoterm::create(['cod' => '05', 'nombre' => 'DAP-Entre a en el lu ar']);
+        Incoterm::create(['cod' => '06', 'nombre' => 'DPU-Entre ado en el lu ar descar ado']);
+        Incoterm::create(['cod' => '07', 'nombre' => 'DDP-Entre acon impuestos pa ados']);
+        Incoterm::create(['cod' => '08', 'nombre' => 'FAS-Libre al costado del buque']);
+        Incoterm::create(['cod' => '09', 'nombre' => 'FOB-Libre a bordo']);
+        Incoterm::create(['cod' => '10', 'nombre' => 'CFR-Costo y flete']);
+        Incoterm::create(['cod' => '11', 'nombre' => 'CIF- Costo se uro flete']);
+
+    //Regimen
+        Regimen::create(['cod' => 'EX1.1000.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva, Régimen Común EX1.1040.000 Exportación Definitiva, Exportación Definitiva Sustitución de Mercancías, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1041.020', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Provisional, Franq. Presidenciales exento de DAI']);
+        Regimen::create(['cod' => 'EX1.1041.021', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Provisional, Franq. Presidenciales exento de DAI e IVA']);
+        Regimen::create(['cod' => 'EX1.1048.025', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Maquinaria y Equipo LZF. DPA']);
+        Regimen::create(['cod' => 'EX1.1048.031', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Distribución Internacional']);
+        Regimen::create(['cod' => 'EX1.1048.032', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente. de Franquicia Definitiva, Operaciones Internacionales de Logística']);
+        Regimen::create(['cod' => 'EX1.1048.033', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Centro Internacional de llamadas (Call Center)']);
+        Regimen::create(['cod' => 'EX1.1048.034', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Tecnologías de Información LSI']);
+        Regimen::create(['cod' => 'EX1.1048.035', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Investigación y Desarrollo LSI']);
+        Regimen::create(['cod' => 'EX1.1048.036', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Reparación y Mantenimiento de Embarcaciones Marítimas LSI']);
+        Regimen::create(['cod' => 'EX1.1048.037', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Reparación y Mantenimiento de Aeronaves LSI']);
+        Regimen::create(['cod' => 'EX1.1048.038', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Procesos Empresariales LSI']);
+        Regimen::create(['cod' => 'EX1.1048.039', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Servicios Medico-Hospitalarios LSI']);
+        Regimen::create(['cod' => 'EX1.1048.040', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Servicios Financieros Internacionales LSI']);
+        Regimen::create(['cod' => 'EX1.1048.043', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Reparación y Mantenimiento de Contenedores LSI']);
+        Regimen::create(['cod' => 'EX1.1048.044', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Reparación de Equipos Tecnológicos LSI']);
+        Regimen::create(['cod' => 'EX1.1048.054', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Atención Ancianos y Convalecientes LSI']);
+        Regimen::create(['cod' => 'EX1.1048.055', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Telemedicina LSI']);
+        Regimen::create(['cod' => 'EX1.1048.056', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Proveniente de Franquicia Definitiva, Cinematografía LSI']);
+        Regimen::create(['cod' => 'EX1.1052.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva de DPA con origen en Compras Locales, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1054.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva de Zona Franca con origen en Compras Locales, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1100.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva de Envíos de Socorro, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1200.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva de Envíos Postales, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1300.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Envíos que requieren despacho urgente, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1400.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Courier, Régimen Común']);
+        Regimen::create(['cod' => 'EX1.1400.011', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Courier, Muestras Sin Valor Comercial']);
+        Regimen::create(['cod' => 'EX1.1400.012', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Courier, Material Publicitario']);
+        Regimen::create(['cod' => 'EX1.1400.017', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Courier, Declaración de Documentos']);
+        Regimen::create(['cod' => 'EX1.1500.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva Menaje de casa, Régimen Común']);
+        Regimen::create(['cod' => 'EX2.2100.000', 'nombre' => 'Exportación Temporal, Exportación Temporal para Perfeccionamiento Pasivo, Régimen Común']);
+        Regimen::create(['cod' => 'EX2.2200.000', 'nombre' => 'Exportación Temporal, Exportación Temporal con Reimportación en el mismo estado, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3050.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Importación Temporal, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3051.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Tiendas Libres, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3052.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal para Perfeccionamiento Activo, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3053.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3054.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Régimen de Zona Franca, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3055.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal para Perfeccionamiento Activo con Garantía, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3056.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Distribución Internacional Parque de Servicios, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3056.057', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Distribución Internacional Parque de Servicios, Remisión entre Usuarios Directos del Mismo Parque de Servicios']);
+        Regimen::create(['cod' => 'EX3.3056.058', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Distribución Internacional Parque de Servicios, Remisión entre Usuarios Directos de Diferente Parque de Servicios']);
+        Regimen::create(['cod' => 'EX3.3056.072', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Distribución Internacional Parque de Servicios, Decreto 738 Eléctricos e Híbridos']);
+        Regimen::create(['cod' => 'EX3.3057.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Operaciones Internacional de Logística Parque de Servicios, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3057.057', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Operaciones Internacional de Logística Parque de Servicios, Remisión entre Usuarios Directos del Mismo Parque de Servicios']);
+        Regimen::create(['cod' => 'EX3.3057.058', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Operaciones Internacional de Logística Parque de Servicios, Remisión entre Usuarios Directos de Diferente Parque de Servicios']);
+        Regimen::create(['cod' => 'EX3.3058.033', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Centro Servicio LSI, Centro Internacional de llamadas (Call Center)']);
+        Regimen::create(['cod' => 'EX3.3058.036', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Centro Servicio LSI, Reparación y Mantenimiento de Embarcaciones Marítimas LSI']);
+        Regimen::create(['cod' => 'EX3.3058.037', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Centro Servicio LSI, Reparación y Mantenimiento de Aeronaves LSI']);
+        Regimen::create(['cod' => 'EX3.3058.043', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Centro Servicio LSI, Reparación y Mantenimiento de Contenedores LSI']);
+        Regimen::create(['cod' => 'EX3.3059.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Reparación de Equipo Tecnológico Parque de Servicios, Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3059.057', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Reparación de Equipo Tecnológico Parque de Servicios, Remisión entre Usuarios Directos del Mismo Parque de Servicios']);
+        Regimen::create(['cod' => 'EX3.3059.058', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Admisión Temporal Reparación de Equipo Tecnológico Parque de Servicios, Remisión entre Usuarios Directos de Diferente Parque de Servicios']);
+        Regimen::create(['cod' => 'EX3.3070.000', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Depósito., Régimen Común']);
+        Regimen::create(['cod' => 'EX3.3070.072', 'nombre' => 'Re-Exportación, Reexportación Proveniente de Depósito., Decreto 738 Eléctricos e Híbridos']);
 
     // Actividades economicas
         ActividadEconomica::create(['cod' => '01111', 'nombre' => 'Cultivo de cereales excepto arroz y para forrajes']);
@@ -943,6 +932,51 @@ Route::get('/cargarmh', function(){
         Unidad::create(['cod' => '59', 'nombre' => 'Unidad']);
         Unidad::create(['cod' => '99', 'nombre' => 'Otra ']);
 
+        Recinto::create(['cod' => '01', 'nombre' => 'Terrestre San Bartolo']);
+        Recinto::create(['cod' => '02', 'nombre' => 'Marítima de Acajutla']);
+        Recinto::create(['cod' => '03', 'nombre' => 'Aérea De Comalapa']);
+        Recinto::create(['cod' => '04', 'nombre' => 'Terrestre Las Chinamas']);
+        Recinto::create(['cod' => '05', 'nombre' => 'Terrestre La Hachadura']);
+        Recinto::create(['cod' => '06', 'nombre' => 'Terrestre Santa Ana']);
+        Recinto::create(['cod' => '07', 'nombre' => 'Terrestre San Cristóbal']);
+        Recinto::create(['cod' => '08', 'nombre' => 'Terrestre Anguiatú']);
+        Recinto::create(['cod' => '09', 'nombre' => 'Terrestre EI Amatillo']);
+        Recinto::create(['cod' => '10', 'nombre' => 'Marítima La Unión']);
+        Recinto::create(['cod' => '11', 'nombre' => 'Terrestre El Poy']);
+        Recinto::create(['cod' => '12', 'nombre' => 'Terrestre Metalío']);
+        Recinto::create(['cod' => '15', 'nombre' => 'Fardos Postales']);
+        Recinto::create(['cod' => '16', 'nombre' => 'Z.F. San Marcos']);
+        Recinto::create(['cod' => '17', 'nombre' => 'Z.F. EI Pedregal']);
+        Recinto::create(['cod' => '18', 'nombre' => 'Z.F. San Bartolo']);
+        Recinto::create(['cod' => '20', 'nombre' => 'Z.F. Exportsalva']);
+        Recinto::create(['cod' => '21', 'nombre' => 'Z.F. American Park']);
+        Recinto::create(['cod' => '23', 'nombre' => 'Z.F. Internacional']);
+        Recinto::create(['cod' => '24', 'nombre' => 'Z.F. Diez']);
+        Recinto::create(['cod' => '26', 'nombre' => 'Z.F. Miramar']);
+        Recinto::create(['cod' => '27', 'nombre' => 'Z.F. Santo Tomas']);
+        Recinto::create(['cod' => '28', 'nombre' => 'Z.F. Santa Tecla']);
+        Recinto::create(['cod' => '29', 'nombre' => 'Z.F. Santa Ana']);
+        Recinto::create(['cod' => '30', 'nombre' => 'Z.F. La Concordia']);
+        Recinto::create(['cod' => '31', 'nombre' => 'Aérea Ilopango']);
+        Recinto::create(['cod' => '32', 'nombre' => 'Z.F. Pipil']);
+        Recinto::create(['cod' => '33', 'nombre' => 'Puerto Barillas']);
+        Recinto::create(['cod' => '34', 'nombre' => 'Z.F. Calvo Conservas']);
+        Recinto::create(['cod' => '35', 'nombre' => 'Feria Internacional']);
+        Recinto::create(['cod' => '36', 'nombre' => 'Aduana EI Papalón']);
+        Recinto::create(['cod' => '37', 'nombre' => 'Z.F. Sam-Li']);
+        Recinto::create(['cod' => '38', 'nombre' => 'Z.F. San José']);
+        Recinto::create(['cod' => '39', 'nombre' => 'Z.F. Las Mercedes']);
+        Recinto::create(['cod' => '71', 'nombre' => 'Aldesa']);
+        Recinto::create(['cod' => '72', 'nombre' => 'A dosa Merliot']);
+        Recinto::create(['cod' => '73', 'nombre' => 'Bodesa']);
+        Recinto::create(['cod' => '76', 'nombre' => 'Delegacion DHL']);
+        Recinto::create(['cod' => '77', 'nombre' => 'Transauto']);
+        Recinto::create(['cod' => '80', 'nombre' => 'Nejapa']);
+        Recinto::create(['cod' => '81', 'nombre' => 'Almaconsa']);
+        Recinto::create(['cod' => '83', 'nombre' => 'A dosa Apopa']);
+        Recinto::create(['cod' => '85', 'nombre' => 'Gutiérrez Courier Y Car o']);
+        Recinto::create(['cod' => '99', 'nombre' => 'San Bartolo Envío Hn/Gt']);
+
     // Paises
         Pais::create(['cod' => 'AF', 'nombre' => 'AFGANISTÁN']);
         Pais::create(['cod' => 'AL', 'nombre' => 'ALBANIA']);
@@ -1529,6 +1563,7 @@ Route::get('/actualizarMH', function(){
     $clientes = Cliente::all();
 
     foreach ($clientes as $cliente) {
+        // Si al cliente ya se le emitio DTE 
         if (($cliente->cod_municipio && $cliente->cod_departamento) || $cliente->municipio) {
             
             $distrito = Distrito::where('cod', $cliente->cod_municipio)
@@ -1537,6 +1572,7 @@ Route::get('/actualizarMH', function(){
                                 ->first();
 
             if ($distrito) {
+                            // Ilobasco -> Cabañas Oeste
                 $municipio = $distrito->municipio;
 
                 $cliente->cod_municipio = $municipio->cod;
@@ -1581,33 +1617,31 @@ Route::get('/actualizarMH', function(){
     $empresas = Empresa::all();
 
     foreach ($empresas as $empresa) {
-        if (($empresa->cod_municipio && $empresa->cod_departamento) || $empresa->municipio) {
+     if (($empresa->cod_municipio && $empresa->cod_departamento) || $empresa->municipio) {
             
-            $distrito = Distrito::where('cod', $empresa->cod_municipio)
-                                ->where('cod_departamento', $empresa->cod_departamento)
-                                ->orwhereRaw('LOWER(nombre) = ?', [strtolower($empresa->municipio)])
-                                ->first();
+         $distrito = Distrito::where('cod', $empresa->cod_municipio)
+                             ->where('cod_departamento', $empresa->cod_departamento)
+                             ->orwhereRaw('LOWER(nombre) = ?', [strtolower($empresa->municipio)])
+                             ->first();
 
-            if ($distrito) {
-                $municipio = $distrito->municipio;
+         if ($distrito) {
+             $municipio = $distrito->municipio;
 
-                $empresa->cod_municipio = $municipio->cod;
-                $empresa->municipio = $municipio->nombre;
-                $empresa->cod_departamento = $distrito->cod_departamento;
-                $empresa->departamento = $distrito->nombre_departamento;
-                $empresa->distrito = $distrito->nombre;
-                $empresa->cod_distrito = $distrito->cod;
+             $empresa->cod_municipio = $municipio->cod;
+             $empresa->municipio = $municipio->nombre;
+             $empresa->cod_departamento = $distrito->cod_departamento;
+             $empresa->departamento = $distrito->nombre_departamento;
+             $empresa->distrito = $distrito->nombre;
+             $empresa->cod_distrito = $distrito->cod;
 
-                $empresa->save();
+             $empresa->save();
 
-            }
-        }
+         }
+     }
     }
 
     return 'Listo';
 });
-
-
 
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
