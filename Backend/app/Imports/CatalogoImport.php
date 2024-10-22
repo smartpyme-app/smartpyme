@@ -77,7 +77,7 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
             'naturaleza'   => 'required|string',
             'rubro'        => 'required|int',
             'nivel'        => 'required|int',
-            'saldo'        => 'required|number'
+            'saldo'        => 'required|numeric'
         ];
     }
 
