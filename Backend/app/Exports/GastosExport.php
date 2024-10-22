@@ -82,7 +82,7 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
               $row->tipo,
               $row->estado == 'Confirmado' ? 'Pagado' : $row->estado,
               $row->forma_pago,
-              $row->factura,
+              $row->referencia,
               $row->detalle_banco,
               $row->vencimiento,
               $row->nombre_proveedor,

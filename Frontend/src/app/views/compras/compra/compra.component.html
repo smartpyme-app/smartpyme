@@ -105,7 +105,12 @@
                         <td colspan="2" class="text-end"><b>IVA</b></td>
                         <td class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
-                    <tr *ngIf="compra.renta_retenida">
+                    <tr *ngIf="compra?.percepcion > 0">
+                        <td colspan="2" class="text-end"></td>
+                        <td colspan="2" class="text-end"><b>Percepción (1%)</b></td>
+                        <td class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="compra?.renta_retenida > 0">
                         <td colspan="2" class="text-end"></td>
                         <td colspan="2" class="text-end"><b>Renta retenida</b></td>
                         <td class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
