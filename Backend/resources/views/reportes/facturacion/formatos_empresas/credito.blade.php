@@ -106,7 +106,7 @@
 
             <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>
             <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>
-            <p id="sub_total"> $ {{ number_format($venta->total, 2) }}</p>
+            <p id="sub_total"> $ {{ number_format($venta->total + $venta->iva_retenido, 2) }}</p>
             @if($venta->iva_retenido > 0)
             <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
             @endif
