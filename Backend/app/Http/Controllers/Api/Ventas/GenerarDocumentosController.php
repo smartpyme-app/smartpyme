@@ -23,6 +23,24 @@ class GenerarDocumentosController extends Controller
 
     public function generarDoc($id){
 
+        $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
+
+        if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
+            $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+
+            $DTE = $venta->dte;
+
+            if ($DTE) {
+
+                $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+
+                return view('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE'));
+            }else{
+                return "El documento no ha sido Emitido";
+            }
+
+        }
+
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
