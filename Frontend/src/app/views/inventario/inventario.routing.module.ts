@@ -23,6 +23,7 @@ import { CategoriasComponent } from '@views/inventario/categorias/categorias.com
 import { ServiciosComponent } from '@views/inventario/servicios/servicios.component';
 import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
 import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
+import { ComboIndexComponent } from './productos/producto/combo/combo-index/combo-index.component';
 
 
 const routes: Routes = [
@@ -31,36 +32,39 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Inventario',
     children: [
-        { path: 'productos', component: ProductosComponent, title: 'Productos' },
-        { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
-        { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
-        { path: 'producto/combo/crear', component: ProductoComboComponent, title: 'Producto combo' },
+      { path: 'productos', component: ProductosComponent, title: 'Productos' },
+      { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
+      { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
+      { path: 'producto/combo/crear', component: ProductoComboComponent, title: 'Producto combo' },
+      { path: 'producto/combo/editar/:edit_id', component: ProductoComboComponent, title: 'Producto combo' },
+      { path: 'producto/combo/ver/:detail_id', component: ProductoComboComponent, title: 'Producto combo' },
+      { path: 'producto/combos', component: ComboIndexComponent, title: 'Combos' },
 
-        { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
-        
-        { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
-        { path: 'materia-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
-        { path: 'materia-prima/crear', component: ProductoComponent, title: 'Materia prima' },
-        { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima'  },
+      { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
 
-        { path: 'producto/:id', component: ProductoComponent },
-        { path: 'kardex/:id', component: KardexComponent },
-        { path: 'promociones', component: PromocionesComponent},
-        
-        { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
-        { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado'  },
+      { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
+      { path: 'materia-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
+      { path: 'materia-prima/crear', component: ProductoComponent, title: 'Materia prima' },
+      { path: 'materia-prima/editar/:id', component: ProductoComponent, title: 'Materia prima' },
 
-        { path: 'categorias', component: CategoriasComponent, title: 'Categorias' },
-        
-        { path: 'ajustes', component: AjustesComponent, title: 'Ajustes'  },
-        { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste'  },
-        
-        { path: 'servicios', canActivate: [CitasGuard], component: ServiciosComponent, title: 'Servicios'},
-        { path: 'servicio/crear', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
-        { path: 'servicio/editar/:id', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
+      { path: 'producto/:id', component: ProductoComponent },
+      { path: 'kardex/:id', component: KardexComponent },
+      { path: 'promociones', component: PromocionesComponent },
 
-        { path: 'bodegas', component: BodegasComponent },
-        { path: 'bodega/:id', component: BodegaComponent },
+      { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
+      { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado' },
+
+      { path: 'categorias', component: CategoriasComponent, title: 'Categorias' },
+
+      { path: 'ajustes', component: AjustesComponent, title: 'Ajustes' },
+      { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste' },
+
+      { path: 'servicios', canActivate: [CitasGuard], component: ServiciosComponent, title: 'Servicios' },
+      { path: 'servicio/crear', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
+      { path: 'servicio/editar/:id', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
+
+      { path: 'bodegas', component: BodegasComponent },
+      { path: 'bodega/:id', component: BodegaComponent },
 
 
     ]

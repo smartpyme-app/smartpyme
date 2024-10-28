@@ -374,3 +374,31 @@ ALTER TABLE orden_compras ADD cobrar_impuestos BOOL DEFAULT false AFTER estado;
 ALTER TABLE orden_compras ADD cobrar_percepcion BOOL DEFAULT false AFTER cobrar_impuestos;
 
 ALTER TABLE detalles_orden_compra ADD cantidad_procesada decimal(10,2) NOT NULL DEFAULT '0' AFTER cantidad;
+
+--refactor combos
+CREATE TABLE combos_productos (
+    id int NOT NULL AUTO_INCREMENT,
+    codigo_combo varchar(255) NOT NULL,
+    descripcion text NOT NULL,
+    nombre varchar(255) NOT NULL,
+    id_empresa int NOT NULL,
+    precio decimal(10,2) NOT NULL, --precio sin iva
+    precio_total decimal(10,2) NOT NULL,
+    costo_total decimal(10,2) NOT NULL,
+    estado enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo',
+    created_at timestamp NULL DEFAULT NULL,
+    updated_at timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE detalles_combo_producto (
+    id int NOT NULL AUTO_INCREMENT,
+    id_combo int NOT NULL,
+    id_producto int NOT NULL,
+    cantidad int NOT NULL,
+    costo decimal(10,2) NOT NULL,
+    precio decimal(10,2) NOT NULL,
+    created_at timestamp NULL DEFAULT NULL,
+    updated_at timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

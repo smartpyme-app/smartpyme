@@ -1,121 +1,135 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-    <h3 >Crear Combo de productos</h3>
-    <button class="btn btn-light text-danger" routerLink="/productos"><i class="fa fa-arrow-left"></i> Regresar</button>
+  <h3>{{ mode=="show"?"Detalle": (formValue.id?"Editar" :"Crear")}} combo de productos</h3>
+  <button class="btn btn-light text-danger" routerLink="/producto/combos"><i class="fa fa-arrow-left"></i>
+    Regresar</button>
 </div>
 
 <div>
-    <form name="form" (ngSubmit)="onSubmit()">
-        <div class="row bg-white rounded p-3 mb-3">
-            <h5 class="mb-3 font-weight-bold">Detalles</h5>
-            <!-- nombre  -->
-            <div class="form-group col-md-12 col-lg-3">
-                <label for="nombre">Nombre del combo</label>
-                <input type="text" class="form-control"  name="nombre" placeholder="Escribe aquí" [(ngModel)]="producto.nombre" required>
-            </div>
-            <!-- (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" -->
+  <form name="form" (submit)="onSubmit()" [formGroup]="producto">
+    <!-- {{producto.value | json}} -->
+    <div class="row bg-white rounded p-3 mb-3">
+      <h5 class="mb-3 font-weight-bold">Detalles</h5>
+      <!-- nombre  -->
+      <div class="form-group col-md-12 col-lg-3">
+        <label for="nombre">Nombre del combo</label>
+        <input type="text" class="form-control" name="nombre" placeholder="Escribe aquí" formControlName="nombre"
+          required>
+      </div>
+      <!-- (change)="verificarSiExiste()" formControlName="nombre" -->
 
-            <!-- marca -->
-            <div class="form-group col-md-12 col-lg-3">
-                <label for="marca">Codigo Interno</label>
-                <div class="input-group">
-                    <span class="input-group-text">CMPKIT</span>
-                    <input type="text" class="form-control"  name="marca" placeholder="Escribe aquí" [(ngModel)]="producto.codigo">
-                </div>
-            </div>
-
-            <!-- Descripcion  -->
-            <div class="form-group col-md-12 col-lg-6">
-                <label for="descripcion">Descripción</label>
-                <textarea class="form-control"  name="Descripcion" placeholder="Escribe aquí" cols="30" rows="1" [(ngModel)]="producto.descripcion"></textarea>
-            </div>
+      <!-- marca -->
+      <div class="form-group col-md-12 col-lg-3">
+        <label for="marca">Codigo Interno</label>
+        <div class="input-group">
+          <span class="input-group-text">CMPKIT</span>
+          <input type="text" class="form-control" name="marca" placeholder="Escribe aquí"
+            formControlName="codigo_combo">
         </div>
+      </div>
 
-        <div class="row bg-white rounded p-3 mb-3">
-            
-            <h5 class="mb-3 font-weight-bold">Busqueda de productos</h5>
+      <!-- Descripcion  -->
+      <div class="form-group col-md-12 col-lg-6">
+        <label for="descripcion">Descripción</label>
+        <textarea class="form-control" name="Descripcion" placeholder="Escribe aquí" cols="30" rows="1"
+          formControlName="descripcion"></textarea>
+      </div>
+    </div>
 
-            <app-producto-combo-detalles [producto]="producto" (update)="updatecompra($event)" (sumTotal)="sumTotal()" ></app-producto-combo-detalles>
-            <div class="row">
-                <div class="col-md-12">
-                    <table class="table table-sm table-borderless table-condensed mb-0">
-                        <tbody>
-                            <tr>
-                                <td class="text-right"> <b>Total</b> </td>
-                                <td style="width: 150px;" class="text-right"><b> {{ producto.costo | currency:'USD':'symbol':'1.2'}}</b> </td>
-                                <td style="width: 50px;"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="row bg-white rounded p-3 mb-3">
 
+      <h5 class="mb-3 font-weight-bold">Busqueda de productos</h5>
+
+      <app-producto-combo-detalles [mode]="mode" [producto]="producto.getRawValue()" (update)="updatecompra($event)"
+        (sumTotal)="sumTotal()"></app-producto-combo-detalles>
+      <div class="row">
+        <div class="col-md-12">
+          <table class="table table-sm table-borderless table-condensed mb-0">
+            <tbody>
+              <tr>
+                <td class="text-right"> <b>Total</b> </td>
+                <td style="width: 150px;" class="text-right"><b> {{ formValue.costo |
+                    currency:'USD':'symbol':'1.2'}}</b>
+                </td>
+                <td style="width: 50px;"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </div>
+
+    </div>
 
 
-        <div class="row bg-white rounded p-3 mb-3">
-            <h5 class="my-3 font-weight-bold">Precio</h5>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-                <label for="precio">Precio sin IVA</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
-                </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-2">
-                <label for="costo">Costo</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="Escribe aquí" required>
-                </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-                <label for="tipo_impuesto">Ganancia</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo).toFixed(2)}}">
-                </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-                <label for="impuesto">Margen</label>
-                <div class="input-group">
-                    <input type="number" class="form-control" disabled value="{{ ((producto.precio - producto.costo) / producto.precio * 100).toFixed(2) }}">
-                    <span class="input-group-text">%</span>
-                </div>
-            </div>
-            <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-2">
-                <label class="fw-bold" for="precio_final">Precio con IVA:</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
-                </div>
-            </div>
+    <div class="row bg-white rounded p-3 mb-3">
+      <h5 class="my-3 font-weight-bold">Precio</h5>
+      <div class="form-group col-md-4 col-lg-2" *ngIf="!loading">
+        <label for="precio">Precio sin IVA</label>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"
+            formControlName="precio" name="precio" placeholder="$0.00" required>
         </div>
-
-
-        <div class="row bg-white rounded p-3 mb-3">
-
-                <h5 class="my-3 font-weight-bold">Inventario</h5>
-
-                <div class="form-group col-md-12 col-lg-3">
-                    <label for="nombre">Cantidad de combos</label>
-                    <input type="text" class="form-control"  name="nombre" placeholder="Escribe aquí" [(ngModel)]="producto.stock" (ngModelChange)="calCantidadenCombo()">
-                </div>
-
-                <div class="form-group col-md-12 col-lg-3">
-                    <label for="nombre">Bodegas</label>
-                    <select [(ngModel)]="producto.id_bodega" class="form-select" name="id_bodega">
-                        <option value="">Seleccione aquí</option>
-                        <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
-                    </select>
-                </div>
-
-            <div class="form-group col-lg-12 mt-3">
-                <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                    <span *ngIf="!guardar">Guardar</span>
-                    <span *ngIf="guardar">Guardando...</span>
-                </button>
-            </div>
+      </div>
+      <div class="form-group col-md-4 col-lg-2">
+        <label for="costo">Costo</label>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" formControlName="costo">
         </div>
-        
-    </form>
+      </div>
+      <div class="form-group col-md-4 col-lg-2" *ngIf="!loading">
+        <label for="tipo_impuesto">Ganancia</label>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" disabled
+            value="{{ (formValue.precio - formValue.costo).toFixed(2)}}">
+        </div>
+      </div>
+      <div class="form-group col-md-4 col-lg-2" *ngIf="!loading">
+        <label for="impuesto">Margen</label>
+        <div class="input-group">
+          <input type="number" class="form-control" disabled
+            value="{{ ((formValue.precio - formValue.costo) / formValue.precio * 100).toFixed(2) }}">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-2">
+        <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" placeholder="Escribe aquí" class="form-control" formControlName="precio_final"
+            name="precio_final">
+        </div>
+      </div>
+    </div>
+
+
+    <div class="row bg-white rounded p-3 mb-3">
+
+      <!-- <h5 class="my-3 font-weight-bold">Inventario</h5> -->
+
+      <!-- <div class="form-group col-md-12 col-lg-3">
+        <label for="nombre">Cantidad de combos</label>
+        <input type="text" class="form-control" name="nombre" placeholder="Escribe aquí" [(ngModel)]="producto.stock"
+          (ngModelChange)="calCantidadenCombo()">
+      </div>
+
+      <div class="form-group col-md-12 col-lg-3">
+        <label for="nombre">Bodegas</label>
+        <select [(ngModel)]="formValue.id_bodega" class="form-select" name="id_bodega">
+          <option value="">Seleccione aquí</option>
+          <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+        </select>
+      </div> -->
+
+      <div class="form-group col-lg-12 mt-3" *ngIf="mode!='show'">
+        <button [disabled]="guardar || producto.invalid" class="btn btn-primary float-end tcla-F10"
+          tooltip="Guardar (F10)">
+          <span *ngIf="!guardar">Guardar</span>
+          <span *ngIf="guardar">Guardando...</span>
+        </button>
+      </div>
+    </div>
+
+  </form>
 </div>
