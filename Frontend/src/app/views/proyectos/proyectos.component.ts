@@ -94,8 +94,14 @@ export class ProyectosComponent implements OnInit {
     }
 
 
-    public setEstado(proyecto:any){
+    public setEstado(proyecto:any, estado:any){
         this.proyecto = proyecto;
+        this.proyecto.estado = estado;
+        if(estado == 'Anulado'){
+            this.proyecto.enable = 0;
+        }else{
+            this.proyecto.enable = 1;
+        }
         this.onSubmit();
     }
 
@@ -136,14 +142,15 @@ export class ProyectosComponent implements OnInit {
         this.apiService.store('proyecto', this.proyecto).subscribe(proyecto => {
             if (!this.proyecto.id) {
                 this.loadAll();
-                this.alertService.success('Paquete creada', 'El proyecto fue añadida exitosamente.');
+                this.alertService.success('proyecto creada', 'El proyecto fue añadido exitosamente.');
             }else{
-                this.alertService.success('Paquete guardada', 'El proyecto fue guardada exitosamente.');
+                this.alertService.success('proyecto guardado', 'El proyecto fue guardado exitosamente.');
             }
             this.saving = false;
             if(this.modalRef){
                 this.modalRef.hide();
             }
+            this.proyecto = {};
             this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
