@@ -33,7 +33,7 @@ class Inventario extends Model
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL)
+    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL, $detalle = null)
     {
 
         $clase = get_class($modelo);
@@ -138,7 +138,7 @@ class Inventario extends Model
             'fecha'             => date('Y-m-d'),
             'id_producto'       => $this->id_producto,
             'id_inventario'     => $this->id_bodega,
-            'detalle'           => $clase,
+            'detalle'           => $detalle ?? $clase,
             'referencia'        => $modelo->id,
             'precio_unitario'   => $salidaCantidad ? $precio : null,
             'costo_unitario'    => $entradaCantidad ? $costo : null,

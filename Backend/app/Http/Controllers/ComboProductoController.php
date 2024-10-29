@@ -95,7 +95,16 @@ class ComboProductoController extends Controller
             $inventario->save();
 
             //actualizacion de kardex
-            $inventario->kardex($newcombo, $cantidad_articulos);
+            $inventario->kardex(
+                modelo: $newcombo,
+                cantidad: $cantidad_articulos,
+                detalle: "Entrada por creacion de combo"
+            );
+            $inventario->kardex(
+                modelo: $newcombo,
+                cantidad: $cantidad_articulos * -1,
+                detalle: "Salida por creacion de combo"
+            );
         }
         DB::commit();
         $newcombo->load("detalles");
@@ -115,6 +124,8 @@ class ComboProductoController extends Controller
         ]);
 
         $combo = ComboProducto::find($request->id);
+        $cantidadActualCombo = $combo->cantidad;
+        $cantidadNuevaCombo = $request->cantidad;
 
         if (!$combo) {
             return response()->json(["error" => "Combo no encontrado"], 404);
@@ -131,37 +142,72 @@ class ComboProductoController extends Controller
             "costo_total" => $detalles->sum('costo'),
         ]);
 
-        $combo->detalles()->delete();
-
-        $combo
-            ->detalles()
-            ->createMany(
-                $detalles->map(fn($detalle) => [
-                    "id_producto" => $detalle["id_producto"],
-                    "id_combo" => $combo->id,
-                    "cantidad" => $detalle["cantidad"],
-                    "precio" => $detalle["precio"],
-                    "costo" => $detalle["costo"],
-                ])->toArray()
-            );
+        //actualizar los detalles
+        $cantidadDiff = $cantidadNuevaCombo - $cantidadActualCombo;
         foreach ($detalles as $detalle) {
+
             $id_producto = $detalle["id_producto"];
             $id_bodega = $request->id_bodega;
-            $cantidad_articulos = $detalle["cantidad"] * $request->cantidad;
             $inventario = Inventario::where('id_producto', $id_producto)
                 ->where('id_bodega', $id_bodega)->first();
 
             if (!$inventario)
                 return response()->json(["error" => "No se encontró el inventario del producto"], 400);
 
-            if ($inventario->stock < $cantidad_articulos)
-                return response()->json(["error" => "No hay suficientes existencias del producto $id_producto"], 400);
+            //el usuario va deshacer el combo
+            if ($cantidadNuevaCombo === 0) {
+                $cantidad_articulos = $detalle["cantidad"] * $cantidadActualCombo;
+                $inventario->stock += $cantidad_articulos;
+                $inventario->save();
 
-            $inventario->stock -= $cantidad_articulos;
-            $inventario->save();
+                $inventario->kardex(
+                    modelo: $combo,
+                    cantidad: $cantidad_articulos,
+                    detalle: "Entrada por disolucion de combo"
+                );
+                $inventario->kardex(
+                    modelo: $combo,
+                    cantidad: $cantidad_articulos * -1,
+                    detalle: "Salida por disolucion de combo"
+                );
+            }
+            //si la diferencia es positiva se crean mas combos
+            else if ($cantidadDiff > 0) {
+                $cantidad_articulos = $detalle["cantidad"] * $cantidadDiff;
+                if ($inventario->stock < $cantidad_articulos)
+                    return response()->json(["error" => "No hay suficientes existencias del producto $id_producto"], 400);
 
-            //actualizacion de kardex
-            $inventario->kardex($newcombo, $cantidad_articulos);
+                $inventario->stock -= $cantidad_articulos;
+                $inventario->save();
+
+                $inventario->kardex(
+                    modelo: $combo,
+                    cantidad: $cantidad_articulos,
+                    detalle: "Entrada por creacion de combo"
+                );
+                $inventario->kardex(
+                    modelo: $combo,
+                    cantidad: $cantidad_articulos * -1,
+                    detalle: "Salida por creacion de combo"
+                );
+            }
+            //si la diferencia es negativa se deshacen los combos de diferencia
+            else if ($cantidadDiff < 0) {
+                $cantidad_articulos = $detalle["cantidad"] * abs($cantidadDiff);
+                $inventario->stock += $cantidad_articulos;
+                $inventario->save();
+
+                $inventario->kardex(
+                    modelo: $combo,
+                    cantidad: $cantidad_articulos,
+                    detalle: "Entrada por disolucion de combo"
+                );
+                $inventario->kardex(
+                    modelo: $combo,
+                    cantidad: $cantidad_articulos * -1,
+                    detalle: "Salida por disolucion de combo"
+                );
+            }
         }
 
 
