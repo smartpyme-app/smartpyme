@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ComboProducto;
+use App\Models\Inventario\Inventario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -40,7 +41,8 @@ class ComboProductoController extends Controller
             'nombre' => 'required',
             'detalles' => 'required|array',
             "precio" => "required",
-            "precio_total" => "required",
+            "cantidad" => "required",
+            "id_bodega" => "required",
         ]);
 
         if (ComboProducto::where('codigo_combo', $request->codigo_combo)->exists()) {
@@ -60,8 +62,10 @@ class ComboProductoController extends Controller
             "precio_total" => $request->precio_final,
             "precio" => $request->precio,
             "costo_total" => $detalles->sum('costo'),
+            "id_bodega" => $request->id_bodega,
+            "cantidad" => $request->cantidad,
         ]);
-
+        $newcombo->id_usuario = auth()->user()->id;
         $newcombo
             ->detalles()
             ->createMany(
@@ -73,10 +77,29 @@ class ComboProductoController extends Controller
                     "costo" => $detalle["costo"],
                 ])->toArray()
             );
+        // actualizar las existencias de los productos
+        foreach ($detalles as $detalle) {
+            $id_producto = $detalle["id_producto"];
+            $id_bodega = $request->id_bodega;
+            $cantidad_articulos = $detalle["cantidad"] * $request->cantidad;
+            $inventario = Inventario::where('id_producto', $id_producto)
+                ->where('id_bodega', $id_bodega)->first();
 
+            if (!$inventario)
+                return response()->json(["error" => "No se encontró el inventario del producto"], 400);
+
+            if ($inventario->stock < $cantidad_articulos)
+                return response()->json(["error" => "No hay suficientes existencias del producto $id_producto"], 400);
+
+            $inventario->stock -= $cantidad_articulos;
+            $inventario->save();
+
+            //actualizacion de kardex
+            $inventario->kardex($newcombo, $cantidad_articulos);
+        }
         DB::commit();
-
-        return response()->json(["message" => "Combo creado con éxito", "combo" => $newcombo->load("detalles")], 201);
+        $newcombo->load("detalles");
+        return response()->json(["message" => "Combo creado con éxito", "data" => compact("newcombo")], 201);
     }
 
     public function update(Request $request)
@@ -87,6 +110,8 @@ class ComboProductoController extends Controller
             "descripcion" => "required",
             'nombre' => 'required',
             'detalles' => 'required|array',
+            "id_bodega" => "required",
+            "cantidad" => "required",
         ]);
 
         $combo = ComboProducto::find($request->id);
@@ -119,6 +144,27 @@ class ComboProductoController extends Controller
                     "costo" => $detalle["costo"],
                 ])->toArray()
             );
+        foreach ($detalles as $detalle) {
+            $id_producto = $detalle["id_producto"];
+            $id_bodega = $request->id_bodega;
+            $cantidad_articulos = $detalle["cantidad"] * $request->cantidad;
+            $inventario = Inventario::where('id_producto', $id_producto)
+                ->where('id_bodega', $id_bodega)->first();
+
+            if (!$inventario)
+                return response()->json(["error" => "No se encontró el inventario del producto"], 400);
+
+            if ($inventario->stock < $cantidad_articulos)
+                return response()->json(["error" => "No hay suficientes existencias del producto $id_producto"], 400);
+
+            $inventario->stock -= $cantidad_articulos;
+            $inventario->save();
+
+            //actualizacion de kardex
+            $inventario->kardex($newcombo, $cantidad_articulos);
+        }
+
+
 
         DB::commit();
 

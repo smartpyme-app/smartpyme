@@ -6,7 +6,8 @@ import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-producto-combo',
@@ -22,6 +23,8 @@ export class ProductoComboComponent implements OnInit {
   loading = false;
   guardar = false;
   variants: Array<{ nombre: string, cantidad: number }> = [];
+  updateStockFormControl: FormControl<boolean | null> = new FormControl<boolean | null>(false);
+  cantidadOriginal: number = 0;
   get formValue() {
     return this.producto?.getRawValue();
   }
@@ -51,7 +54,9 @@ export class ProductoComboComponent implements OnInit {
       impuesto: [null],
       precio: [null],
       costo: [{ value: null, disabled: true }],
-      precio_final: [null],
+      precio_final: [{ value: null, disabled: true }],
+      id_bodega: [null, Validators.required],
+      cantidad: [null, Validators.required],
       detalles: [[], [Validators.required, Validators.minLength(1)]],
     });
     this.usuario = this.apiService.auth_user();
@@ -75,6 +80,8 @@ export class ProductoComboComponent implements OnInit {
           costo: producto.costo,
           precio_final: producto.precio_total,
           precio: producto.precio,
+          id_bodega: producto.id_bodega,
+          cantidad: producto.cantidad,
           detalles: producto.detalles.map((detalle: any) => {
             return {
               id: detalle.id,
@@ -82,20 +89,25 @@ export class ProductoComboComponent implements OnInit {
               nombre_producto: detalle.producto.nombre,
               descripcion: detalle.producto.descripcion,
               id_producto: detalle.id_producto,
-              cantidad_combo: detalle.cantidad_combo,
+              cantidad_combo: detalle.cantidad * producto.cantidad,
               precio: detalle.precio,
               costo: detalle.costo,
               total: detalle.costo * detalle.cantidad,
               img: detalle.producto.img,
+
             }
           }),
         }
+        this.cantidadOriginal = +data.cantidad;
         this.producto.patchValue(data);
         this.sumTotal();
         this.loading = false;
 
         if (params.edit_id) {
           this.mode = "edit";
+          this.producto.get("id_bodega")?.disable();
+          this.producto.get("codigo_combo")?.disable();
+          this.producto.get("cantidad")?.disable();
         }
         if (params.detail_id) {
           this.mode = "show";
@@ -105,15 +117,41 @@ export class ProductoComboComponent implements OnInit {
 
 
     });
+
+    this.updateStockFormControl.valueChanges.subscribe(async (value) => {
+      if (value) {
+        let confirm = await Swal.fire({
+          title: 'Edicion de combo',
+          text: '¿Seguro que quieres modificar la cantidad del combo?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí',
+          cancelButtonText: 'No'
+        });
+
+        if (!confirm.isConfirmed) {
+          this.updateStockFormControl.setValue(false, { emitEvent: false });
+          return;
+        }
+
+        this.producto.get("cantidad")?.enable();
+      }
+      else {
+        this.producto.get("cantidad")?.setValue(this.cantidadOriginal);
+        this.producto.get("cantidad")?.disable();
+      }
+
+
+    });
   }
 
   // CALCULO DEL STOCK MULTIPLICADO
   public calCantidadenCombo() {
-    if (this.formValue.stock > 0) {
+    if (this.formValue.cantidad > 0) {
 
 
       this.producto.get("detalles")?.setValue(this.detalles.map((detalle: any) => {
-        detalle.cantidad_combo = detalle.cantidad * this.formValue.stock;
+        detalle.cantidad_combo = detalle.cantidad * this.formValue.cantidad;
         return detalle;
       }));
     }

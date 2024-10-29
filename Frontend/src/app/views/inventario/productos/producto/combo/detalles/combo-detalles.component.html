@@ -9,7 +9,7 @@
           <th>Producto</th>
           <th style="width: 150px;">Cantidad</th>
           <th style="width: 150px;">Costo</th>
-          <!-- <th style="width: 150px;">En combo</th> -->
+          <th style="width: 150px;">En combo</th>
           <th style="width: 100px;" class="text-right">Total</th>
           <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
         </tr>
@@ -29,20 +29,20 @@
           </td>
           <td style="width: 150px;">
             <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control" [disabled]="mode=='show'">
+              (keyup)="updateTotal(detalle)" class="form-control" [disabled]="mode!='create'">
           </td>
           <td style="width: 150px;">
             <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control" name="costo" [disabled]="mode=='show'">
+              (keyup)="updateTotal(detalle)" class="form-control" name="costo" [disabled]="true">
           </td>
-          <!-- <td style="width: 150px;">
+          <td style="width: 150px;">
             <input type="number" [(ngModel)]="detalle.cantidad_combo" class="form-control" name="cantidad_combo"
               disabled>
-          </td> -->
+          </td>
           <td style="width: 100px;" class="text-right" ngModel="">{{ detalle.total | currency:'USD':'symbol':'1.2'}}
           </td>
           <td style="width: 50px;" class="text-center">
-            <div class="btn-group" *ngIf="mode!='show'">
+            <div class="btn-group" *ngIf="mode=='create'">
               <span class="btn btn-link" (click)="delete(detalle)">
                 <i class="fa fa-trash"></i>
               </span>

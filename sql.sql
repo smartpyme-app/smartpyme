@@ -382,6 +382,8 @@ CREATE TABLE combos_productos (
     descripcion text NOT NULL,
     nombre varchar(255) NOT NULL,
     id_empresa int NOT NULL,
+    id_bodega int NOT NULL,
+    cantidad int NOT NULL,
     precio decimal(10,2) NOT NULL, --precio sin iva
     precio_total decimal(10,2) NOT NULL,
     costo_total decimal(10,2) NOT NULL,

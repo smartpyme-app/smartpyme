@@ -2,6 +2,7 @@
 
 namespace App\Models\Inventario;
 
+use App\Models\ComboProducto;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -112,6 +113,14 @@ class Inventario extends Model
             } else {
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Devolución Compra Anulada';
+            }
+        } else if ($clase == ComboProducto::class) {
+            if ($cantidad > 0) {
+                $entradaCantidad =  $cantidad;
+                $clase = 'Combo';
+            } else {
+                $salidaCantidad =  abs($cantidad);
+                $clase = 'Combo Anulado';
             }
         } else {
             // return null;

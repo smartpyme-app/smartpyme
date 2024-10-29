@@ -106,21 +106,28 @@
 
     <div class="row bg-white rounded p-3 mb-3">
 
-      <!-- <h5 class="my-3 font-weight-bold">Inventario</h5> -->
+      <h5 class="my-3 font-weight-bold">Existencia en Inventario</h5>
 
-      <!-- <div class="form-group col-md-12 col-lg-3">
-        <label for="nombre">Cantidad de combos</label>
-        <input type="text" class="form-control" name="nombre" placeholder="Escribe aquí" [(ngModel)]="producto.stock"
+      <div class="form-group col-md-12 col-lg-4">
+        <div class="form-switch bg-light-info rounded" *ngIf="mode=='edit'">
+          <label for="modulo_citas">Actualizar existencia</label>
+          <input class="form-check-input float-end" type="checkbox" role="switch"
+            [formControl]="updateStockFormControl">
+        </div> <br>
+        <label for="nombre">{{mode=="create"?'Cantidad de combos a ingresar al inventario *':
+          'Cantidad actual en inventario'}}</label>
+        <input type="text" class="form-control" name="nombre" placeholder="Escribe aquí" formControlName="cantidad"
           (ngModelChange)="calCantidadenCombo()">
       </div>
 
-      <div class="form-group col-md-12 col-lg-3">
-        <label for="nombre">Bodegas</label>
-        <select [(ngModel)]="formValue.id_bodega" class="form-select" name="id_bodega">
+      <div class="form-group col-md-12 col-lg-4">
+
+        <label for="nombre">{{mode=="create"?'Bodega destino del inventario *':'Bodega del inventario'}}</label>
+        <select formControlName="id_bodega" class="form-select" name="id_bodega">
           <option value="">Seleccione aquí</option>
           <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
         </select>
-      </div> -->
+      </div>
 
       <div class="form-group col-lg-12 mt-3" *ngIf="mode!='show'">
         <button [disabled]="guardar || producto.invalid" class="btn btn-primary float-end tcla-F10"

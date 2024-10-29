@@ -19,7 +19,9 @@ class ComboProducto extends Model
         "precio",
         "precio_total",
         "costo_total",
-        "estado"
+        "estado",
+        "cantidad",
+        "id_bodega",
     ];
 
     public function detalles()
