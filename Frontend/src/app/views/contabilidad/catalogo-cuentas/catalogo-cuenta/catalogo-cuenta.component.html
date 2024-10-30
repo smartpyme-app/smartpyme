@@ -36,6 +36,12 @@
                 <label for="nivel">Nivel:</label>
                 <input type="number" class="form-control" name="nivel" [(ngModel)]="cuenta.nivel"/>
             </div>
+            <div class="form-group col-md-6 col-lg-4 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="acepta_datos">Acepta datos</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="cuenta.acepta_datos" name="venta.acepta_datos">
+                </div>
+            </div>
             <div class="form-group col-md-6 col-lg-4">
                 <label for="rubro">Rubro:</label>
                 <select class="form-select" name="rubro" [(ngModel)]="cuenta.rubro">
