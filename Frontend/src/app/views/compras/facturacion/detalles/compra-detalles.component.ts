@@ -108,7 +108,16 @@ export class CompraDetallesComponent implements OnInit {
       if (result.isConfirmed) {
         const indexAEliminar = this.compra.detalles.findIndex((item: any) => item.id_producto === detalle.id_producto);
         if (indexAEliminar !== -1) {
-          this.compra.detalles.splice(indexAEliminar, 1);
+            if(detalle.id) {
+                this.apiService.delete('compra/detalle/', detalle.id).subscribe(detalle => {
+                    this.compra.detalles.splice(indexAEliminar, 1);
+                    this.update.emit(this.compra);
+                },error => {this.alertService.error(error); this.loading = false; });
+            }else{
+                this.compra.detalles.splice(indexAEliminar, 1);
+                this.update.emit(this.compra);
+            }
+
         }
         this.OndeletedItem.emit({ detalles: this.compra.detalles });
       } else if (result.dismiss === Swal.DismissReason.cancel) {

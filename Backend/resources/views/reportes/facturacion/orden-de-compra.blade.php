@@ -135,6 +135,13 @@
                     <td class="text-right">Subtotal</td>
                     <td class="text-right">${{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
                 </tr>
+                @if ($compra->percepcion)
+                <tr>
+                    <td colspan="2"></td>
+                    <td class="text-right">Percepción (1%)</td>
+                    <td class="text-right">${{ number_format($compra->percepcion, 2) }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right"><b>Total</b></td>

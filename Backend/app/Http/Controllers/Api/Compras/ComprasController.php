@@ -288,7 +288,7 @@ class ComprasController extends Controller
                     if ($inventario) {
                         $inventario->stock += $det['cantidad'];
                         $inventario->save();
-                        $inventario->kardex($compra, $det['cantidad']);
+                        $inventario->kardex($compra, $det['cantidad'], null, $det['costo']);
                     }
                 }
 

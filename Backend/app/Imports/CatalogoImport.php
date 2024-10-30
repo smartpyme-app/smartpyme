@@ -17,10 +17,10 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         ++$this->numRows;
         $cuenta = new Cuenta();
 
-       if($row['acepta_datos'] == 'Si'){
+       if(strtoupper($row['acepta_datos']) == 'SI'){
            $row['acepta_datos'] = 1;
        }
-       elseif ($row['rubro'] == 'No'){
+       else{
            $row['acepta_datos'] = 0;
        }
 
@@ -56,14 +56,14 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         $cuenta->codigo = $row['codigo'];
         $cuenta->nombre = $row['nombre'];
         $cuenta->naturaleza = $row['naturaleza'];
-        $cuenta->id_cuenta_padre = $row['id_cuenta_padre'];
+        $cuenta->id_cuenta_padre = $row['id_cuenta_padre'] ? $row['id_cuenta_padre'] : NULL;
         $cuenta->rubro = $row['rubro'];
         $cuenta->nivel = $row['nivel'];
         $cuenta->id_empresa = Auth::user()->id_empresa;
         $cuenta->acepta_datos= $row['acepta_datos'];
-        $cuenta->abono= $row['abono'];
-        $cuenta->cargo= $row['cargo'];
-        $cuenta->saldo= $row['saldo'];
+        $cuenta->abono= isset($row['abono']) ? $row['abono'] : 0;
+        $cuenta->cargo= isset($row['cargo']) ? $row['cargo'] : 0;
+        $cuenta->saldo= isset($row['saldo']) ? $row['saldo'] : 0;
         $cuenta ->save();
 
 
@@ -77,7 +77,7 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
             'naturaleza'   => 'required|string',
             'rubro'        => 'required|int',
             'nivel'        => 'required|int',
-            'saldo'        => 'required|number'
+            'saldo'        => 'required|numeric'
         ];
     }
 
