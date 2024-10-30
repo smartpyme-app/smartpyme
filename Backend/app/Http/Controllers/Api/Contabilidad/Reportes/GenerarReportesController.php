@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Contabilidad\Reportes;
 
+use App\Exports\Contabilidad\BalanceComprobacionExport;
+use App\Exports\Contabilidad\DiarioAuxiliarExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Catalogo\Cuenta;
@@ -12,6 +14,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
 use App\Models\Contabilidad\Catalogo\CuentaReporte;
+use Maatwebsite\Excel\Facades\Excel;
 use Monolog\Handler\ZendMonitorHandler;
 
 class GenerarReportesController extends Controller
@@ -59,12 +62,19 @@ class GenerarReportesController extends Controller
 
     }
 
-    public function generarRepLibroDiarioAux($desde,$hasta){
+    public function generarRepLibroDiarioAux($desde,$hasta, $type){
+        if($type === 'pdf'){
+            return $this->generarRepLibroDiarioAuxPDF($desde, $hasta);
+        }else{
+            return $this->generarRepLibroDiarioAuxExcel($desde, $hasta);
+        }
+    }
+
+    public function generarRepLibroDiarioAuxPDF($desde,$hasta){
 
         // Falta revisar porque lo enviua desordenado
 
         $cuentas = [];
-
 
         $empresa_id= auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
@@ -112,6 +122,67 @@ class GenerarReportesController extends Controller
         $pdf->setPaper('US Letter', 'landscape');
 
         return  $pdf->stream();
+    }
+
+    public function generarRepLibroDiarioAuxExcel($desde,$hasta){
+
+        // Falta revisar porque lo enviua desordenado
+
+        $cuentas = [];
+
+        $empresa_id= auth()->user()->id_empresa;
+        $empresa = Empresa::findOrfail($empresa_id);
+
+        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$desde, $hasta])->orderBy('codigo', 'asc')
+            ->get()->groupBy('codigo')->all();
+
+        foreach ($det_agrup as $index => $collection){
+
+            $cuent= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->first();
+            $nombre_cuent= $cuent->nombre;
+            $nat_cuenta= $cuent->naturaleza;
+
+            $sum_deb=0;
+            $sum_hab=0;
+            foreach ($collection as $det_part){
+//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+
+                $sum_deb+=$det_part->debe;
+                $sum_hab+=$det_part->haber;
+            }
+
+            $cuenta_reporte = new CuentaReporte();
+            $cuenta_reporte->cuenta= $index;
+            $cuenta_reporte->nombre= $nombre_cuent;
+            $cuenta_reporte->detalles= $collection;
+            $cuenta_reporte->naturaleza= $nat_cuenta;
+            $cuenta_reporte->cargo= $sum_deb;
+            $cuenta_reporte->abono= $sum_hab;
+            $cuenta_reporte->saldo_actual= 100;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
+            $cuenta_reporte->saldo_anterior= 100;  //este saldo debe venir de la base de datos con respecto al mes anterior al que se esta haciendo la prueba
+            array_push($cuentas,$cuenta_reporte);
+        }
+
+//        dd($cuentas);
+// Fecha en formato dd/mm/yyyy
+        $fecha = date('d/m/Y');
+
+// Hora en formato 12 horas con a.m./p.m.
+        $hora = date('h:i:s a');
+
+        $data = [
+            'empresa' => $empresa,
+            'desde' => $desde,
+            'hasta' => $hasta,
+            'cuentas' => $cuentas,
+            'hora' => $hora,
+            'fecha' => $fecha,
+        ];
+
+        // Exportar a Excel
+        return Excel::download(new DiarioAuxiliarExport($data), 'diario_auxiliar.xlsx');
     }
 
     public function generarRepLibroDiarioMayor($startDate, $endDate, $concepto = null){
@@ -250,53 +321,109 @@ class GenerarReportesController extends Controller
 
 
     }
-    public function generarBalanceComprobacion(){
 
-        //dd($cuentas);
-        $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
-        $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
+    public function generarRepBalanceComprobacion($startDate, $endDate, $type){
+        if($type === 'pdf'){
+            return $this->generarRepBalanceComprobacionPDF($startDate, $endDate);
+        }else{
+            return $this->generarRepBalanceComprobacionExcel($startDate, $endDate);
+        }
+    }
 
-        $detalles = Detalle::whereBetween('created_at', [$startDate, $endDate])->get();
+    public function generarRepBalanceComprobacionPDF($startDate, $endDate){
 
-        //separacion de activos y gastos
+        $empresa_id= auth()->user()->id_empresa;
+        $empresa = Empresa::findOrfail($empresa_id);
 
-        $cuentas_deudoras = Cuenta::where('naturaleza','Deudor')->get();
-        $codigos_deudores = $cuentas_deudoras->pluck('codigo');
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
 
-        //separacion de pasivos y productos
-        $cuentas_acreedoras = Cuenta::where('naturaleza','Acreedor')->get();
-        $codigos_acreedoras = $cuentas_acreedoras->pluck('codigo');
+        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
+            ->where('partidas.id_empresa', $empresa_id)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
+            ->select(
+                'partida_detalles.id_cuenta',
+                \DB::raw('SUM(partida_detalles.debe) as total_debe'),
+                \DB::raw('SUM(partida_detalles.haber) as total_haber')
+            )
+            ->groupBy('partida_detalles.id_cuenta')
+            ->get();
 
-        //variable para las cuentas mayorizadas deudoras
-        $mayorizadas_deudoras= [];
-        foreach ($codigos_deudores as $c_deudo){
+        $balance = [];
 
-            //dd($this->mayorizacion($c_deudo));
+        foreach ($cuentas as $cuenta) {
+            $detalle = $partida_detalles->firstWhere('id_cuenta', $cuenta->id);
 
-            array_push($mayorizadas_deudoras, $this->mayorizacion($c_deudo));
+            $debe = $detalle ? $detalle->total_debe : 0;
+            $haber = $detalle ? $detalle->total_haber : 0;
 
+            $saldoInicial = $cuenta->saldo_inicial; // Saldo inicial de la cuenta
+            $saldoFinal = $saldoInicial + $debe - $haber;
+
+            $balance[] = [
+                'codigo' => $cuenta->codigo,
+                'nombre' => $cuenta->nombre,
+                'saldo_inicial' => $saldoInicial,
+                'debe' => $debe,
+                'haber' => $haber,
+                'saldo_final' => $saldoFinal,
+            ];
         }
 
-         //dd($mayorizadas_deudoras);
-
-        //variable para las cuentas mayorizadas acreedoras
-        $mayorizadas_acreedoras= [];
-        foreach ($codigos_acreedoras as $c_acree){
-
-            //dd($this->mayorizacion($c_deudo));
-
-            array_push($mayorizadas_acreedoras, $this->mayorizacion($c_acree));
-
-        }
-
-        //creacion de reporte con las cuentas
-
-        $empresa = Empresa::findOrfail(13);
-
-        $pdf = PDF::loadView('reportes.contabilidad.balance_comprobacion', compact('mayorizadas_deudoras', 'mayorizadas_acreedoras', 'empresa'));
+        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa'));
         $pdf->setPaper('US Letter', 'portrait' );
 
         return $pdf->stream();
+
+    }
+
+    public function generarRepBalanceComprobacionExcel($startDate, $endDate){
+
+        $empresa_id= auth()->user()->id_empresa;
+        $empresa = Empresa::findOrfail($empresa_id);
+
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
+
+        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
+            ->where('partidas.id_empresa', $empresa_id)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
+            ->select(
+                'partida_detalles.id_cuenta',
+                \DB::raw('SUM(partida_detalles.debe) as total_debe'),
+                \DB::raw('SUM(partida_detalles.haber) as total_haber')
+            )
+            ->groupBy('partida_detalles.id_cuenta')
+            ->get();
+
+        $balance = [];
+
+        foreach ($cuentas as $cuenta) {
+            $detalle = $partida_detalles->firstWhere('id_cuenta', $cuenta->id);
+
+            $debe = $detalle ? $detalle->total_debe : 0;
+            $haber = $detalle ? $detalle->total_haber : 0;
+
+            $saldoInicial = $cuenta->saldo_inicial; // Saldo inicial de la cuenta
+            $saldoFinal = $saldoInicial + $debe - $haber;
+
+            $balance[] = [
+                'codigo' => $cuenta->codigo,
+                'nombre' => $cuenta->nombre,
+                'saldo_inicial' => $saldoInicial,
+                'debe' => $debe,
+                'haber' => $haber,
+                'saldo_final' => $saldoFinal,
+            ];
+        }
+
+        $data = [
+            'empresa' => $empresa,
+            'fechaInicio' => $startDate,
+            'fechaFin' => $endDate,
+            'balanceComprobacion' => $balance,
+        ];
+
+        // Exportar a Excel
+        return Excel::download(new BalanceComprobacionExport($data), 'balance_comprobacion.xlsx');
 
     }
 

@@ -18,11 +18,10 @@ class Cuenta extends Model
         'id_cuenta_padre',
         'rubro',
         'nivel',
-
+        'saldo_inicial',
         'cargo',
         'abono',
         'saldo',
-        
         'id_empresa',
         'acepta_datos',
     ];
