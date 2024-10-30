@@ -170,7 +170,7 @@
                 </select>
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 <span *ngIf="!loading">Filtrar</span>
@@ -197,18 +197,18 @@
       <div>
         <div class="d-flex align-items-start">
             <div class="nav flex-column nav-pills me-3 px-2 py-2 border rounded" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-              <button class="nav-link text-nowrap text-start text-dark active" id="v-pills-home-tab" data-bs-toggle="pill" data-bs-target="#v-pills-home" type="button" role="tab" aria-controls="v-pills-home" aria-selected="true">Libro diario auxiliar</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button" role="tab" aria-controls="v-pills-profile" aria-selected="false">Libro mayor</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#v-pills-messages" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Libro diario mayor</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Libro auxiliar</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Estado de resultados</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Balance de comprobación</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Balance general</button>
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>
+              <button class="nav-link text-nowrap text-start text-dark active" id="v-pills-libro-diario-auxiliar-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario-auxiliar" type="button" role="tab" aria-controls="v-pills-home" aria-selected="true">Libro diario auxiliar</button>
+<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-mayor-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-mayor" type="button" role="tab" aria-controls="v-pills-libro-mayor" aria-selected="false">Libro mayor</button>-->
+              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-diario-mayor-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario-mayor" type="button" role="tab" aria-controls="v-pills-libro-diario-mayor" aria-selected="false">Libro diario mayor</button>
+<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Libro auxiliar</button>-->
+<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Estado de resultados</button>-->
+              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-balance-comprobacion-tab" data-bs-toggle="pill" data-bs-target="#v-pills-balance-comprobacion" type="button" role="tab" aria-controls="v-pills-balance-comprobacion" aria-selected="false">Balance de comprobación</button>
+<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Balance general</button>-->
+<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>-->
             </div>
             <div class="tab-content" id="v-pills-tabContent">
               <!-- tab 1 formulario LIBRO DIARIO AUXILIAR-->
-              <div class="tab-pane fade show active" id="v-pills-home" role="tabpanel" aria-labelledby="v-pills-home-tab">
+              <div class="tab-pane fade show active" id="v-pills-libro-diario-auxiliar" role="tabpanel" aria-labelledby="v-pills-libro-diario-auxiliar-tab">
                 <form (ngSubmit)="imprimirDiarioAux()" #auxForm="ngForm">
                     <div class="row">
                         <div class="form-group col-md-10">
@@ -226,8 +226,15 @@
                             <label for="">Hasta:</label>
                             <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
                         </div>
+                      <div class="form-group col-md-6">
+                        <label for="">Tipo de reporte:</label>
+                        <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
+                          <option value="pdf" selected>PDF</option>
+                          <option value="excel">Excel</option>
+                        </select>
+                      </div>
                     </div>
-                    <div class="row">          
+                    <div class="row">
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                                 <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
@@ -238,7 +245,7 @@
                 </form>
               </div>
               <!-- tab 2 formulario LIBRO MAYOR -->
-              <div class="tab-pane fade" id="v-pills-profile" role="tabpanel" aria-labelledby="v-pills-profile-tab">        
+              <div class="tab-pane fade" id="v-pills-libro-mayor" role="tabpanel" aria-labelledby="v-pills-libro-mayor-tab">
 
               <form (ngSubmit)="imprimirMayor()" #mayorForm="ngForm">
                     <div class="row">
@@ -258,9 +265,9 @@
                             <label for="nombre">Centro de costo:</label>
                             <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
-        
+
                     </div>
-                    <div class="row">          
+                    <div class="row">
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                                 <span >Generar documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
@@ -272,7 +279,7 @@
 
               </div>
               <!-- tab 3 formulario LIBRO DIARIO MAYOR -->
-              <div class="tab-pane fade" id="v-pills-messages" role="tabpanel" aria-labelledby="v-pills-messages-tab">
+              <div class="tab-pane fade" id="v-pills-libro-diario-mayor" role="tabpanel" aria-labelledby="v-pills-libro-diario-mayor-tab">
                 <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor(reporteForm)" novalidate>
                     <div class="row">
                       <div class="form-group col-md-6">
@@ -283,7 +290,7 @@
                           El campo "Desde" es requerido.
                         </div>
                       </div>
-                  
+
                       <div class="form-group col-md-6">
                         <label for="hasta">Hasta:</label>
                         <input type="date" class="form-control" name="hasta" required [(ngModel)]="reporte.hasta" #hasta="ngModel"/>
@@ -293,7 +300,7 @@
                         </div>
                       </div>
                     </div>
-                  
+
                     <div class="row">
                       <div class="form-group col-md-12 mt-3">
                         <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
@@ -304,7 +311,37 @@
                     </div>
                   </form>
             </div>
-              <!-- tab 4 formulario LIBRO MAYOR -->
+              <!-- tab 4 formulario BALANCE COMPROBACION-->
+              <div class="tab-pane fade" id="v-pills-balance-comprobacion" role="tabpanel" aria-labelledby="v-pills-balance-comprobacion-tab">
+                <form (ngSubmit)="imprimirBalanceComprobacion()" #auxForm="ngForm">
+                  <div class="row">
+                    <div class="form-group col-md-6">
+                      <label for="">Desde:</label>
+                      <input type='date' class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.desde"/>
+                    </div>
+                    <div class="form-group col-md-6">
+                      <label for="">Hasta:</label>
+                      <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
+                    </div>
+                    <div class="form-group col-md-6">
+                      <label for="">Tipo de reporte:</label>
+                      <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
+                        <option value="pdf" selected>PDF</option>
+                        <option value="excel">Excel</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="form-group col-md-12 mt-3">
+                      <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                        <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        <span *ngIf="saving">Guardando...</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <!-- tab 5 formulario LIBRO MAYOR -->
               <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
 
                 <form (ngSubmit)="imprimirMovCuenta()">
@@ -333,9 +370,9 @@
                             <label for="nombre">Centro de costo:</label>
                             <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
                         </div>
-        
+
                     </div>
-                    <div class="row">          
+                    <div class="row">
                         <div class="form-group col-md-12 mt-3">
                             <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end" >
                                 <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
@@ -348,7 +385,7 @@
               </div>
             </div>
           </div>
-          
+
       </div>
     </div>
   </ng-template>

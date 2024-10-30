@@ -35,6 +35,7 @@
                         <th>Codigo</th>
                         <th>Nombre</th>
                         <th>Nivel</th>
+                        <th>Saldo inicial</th>
                         <th>Naturaleza</th>
                         <th>Rubro</th>
                         <th class="text-center">Más</th>
@@ -54,6 +55,7 @@
                         <td>{{cuenta.codigo}}</td>
                         <td>{{cuenta.nombre}}</td>
                         <td>{{cuenta.nivel}}</td>
+                        <td>{{cuenta.saldo_inicial}}</td>
                         <td>{{cuenta.naturaleza}}</td>
                         <td>{{cuenta.rubro}}</td>
                         <td *ngIf="apiService.canEdit()" class="text-center">
@@ -138,7 +140,7 @@
                 </ng-select>
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 <span *ngIf="!loading">Filtrar</span>

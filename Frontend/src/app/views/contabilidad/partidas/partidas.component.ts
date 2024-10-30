@@ -19,7 +19,7 @@ export class PartidasComponent implements OnInit {
     public loading:boolean = false;
     public saving:boolean = false;
     public filtros:any = {};
-    public reporte = { desde: '', hasta: '', concepto: '', cuenta: '' };
+    public reporte = { desde: '', hasta: '', concepto: '', cuenta: '', tipo_descarga: '' };
     public catalogo:any = [];
 
     modalRef!: BsModalRef;
@@ -58,13 +58,14 @@ export class PartidasComponent implements OnInit {
 
         this.reporte.desde='';
         this.reporte.hasta='';
+        this.reporte.tipo_descarga='';
         this.reporte.concepto='';
-        
+
     }
 
     public filtrarPartidas(){
         this.loading = true;
-        this.apiService.getAll('partidas', this.filtros).subscribe(partidas => { 
+        this.apiService.getAll('partidas', this.filtros).subscribe(partidas => {
             this.partidas = partidas;
             this.loading = false;
             if(this.modalRef){
@@ -93,14 +94,14 @@ export class PartidasComponent implements OnInit {
     }
 
     public setEstadoChange(partida:any){
-        this.apiService.store('partida', partida).subscribe(producto => { 
+        this.apiService.store('partida', partida).subscribe(producto => {
             this.alertService.success('Partida actualizada', 'El estado de la partida fue actualizado.');
         }, error => {this.alertService.error(error); });
     }
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.partidas.path + '?page='+ event.page, this.filtros).subscribe(partidas => { 
+        this.apiService.paginate(this.partidas.path + '?page='+ event.page, this.filtros).subscribe(partidas => {
             this.partidas = partidas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -118,7 +119,7 @@ export class PartidasComponent implements OnInit {
         }).then((result) => {
           if (result.isConfirmed) {
                 this.apiService.delete('partida/', partida.id) .subscribe(data => {
-                    for (let i = 0; i < this.partidas.data.length; i++) { 
+                    for (let i = 0; i < this.partidas.data.length; i++) {
                         if (this.partidas.data[i].id == data.id )
                             this.partidas.data.splice(i, 1);
                     }
@@ -148,10 +149,11 @@ export class PartidasComponent implements OnInit {
     }
 
     public imprimirDiarioAux() {
-        if (this.reporte.desde && this.reporte.hasta) {
+        if (this.reporte.desde && this.reporte.hasta && this.reporte.tipo_descarga) {
             const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
             const hastaFormatted = this.reporte.hasta;
-            window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
+            const tipo_descargaFormatted = this.reporte.tipo_descarga;
+            window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' + desdeFormatted + '/' + hastaFormatted + '/' + tipo_descargaFormatted + '?token=' + this.apiService.auth_token());
         } else {
             alert('Por favor, llenar los campos requeridos.');
         }
@@ -173,7 +175,7 @@ export class PartidasComponent implements OnInit {
           // Asegúrate de que las fechas existan
           const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
           const hastaFormatted = this.reporte.hasta;
-    
+
           window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
         } else {
           console.error('Por favor, llenar los campos requeridos.');
@@ -190,5 +192,16 @@ export class PartidasComponent implements OnInit {
             alert('Por favor, llenar los campos requeridos.');
         }
     }
+
+  public imprimirBalanceComprobacion() {
+    if (this.reporte.desde && this.reporte.hasta && this.reporte.tipo_descarga) {
+      const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
+      const hastaFormatted = this.reporte.hasta;
+      const tipo_descargaFormatted = this.reporte.tipo_descarga;
+      window.open(this.apiService.baseUrl + '/api/reportes/balance/comprobacion/' + desdeFormatted + '/' + hastaFormatted + '/' + tipo_descargaFormatted + '?token=' + this.apiService.auth_token());
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
 
 }
