@@ -116,7 +116,7 @@
         </div> <br>
         <label for="nombre">{{mode=="create"?'Cantidad de combos a ingresar al inventario *':
           'Cantidad actual en inventario'}}</label>
-        <input type="text" class="form-control" name="nombre" placeholder="Escribe aquí" formControlName="cantidad"
+        <input type="number" class="form-control" name="cantidad" placeholder="Escribe aquí" formControlName="cantidad"
           (ngModelChange)="calCantidadenCombo()">
       </div>
 

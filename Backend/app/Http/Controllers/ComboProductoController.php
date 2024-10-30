@@ -248,17 +248,50 @@ class ComboProductoController extends Controller
             "id" => "required",
             "estado" => "required",
         ]);
-
         $combo = ComboProducto::find($request->id);
-
+        $cantidadActualCombo = $combo->cantidad;
+        $combo->update([
+            "estado" => $request->estado,
+            "cantidad" => 0
+        ]);
+        $combo->id_usuario = auth()->user()->id;
         if (!$combo) {
             return response()->json(["error" => "Combo no encontrado"], 404);
         }
+        $combo->load("detalles");
+        if ($request->estado == "Inactivo") {
+            foreach ($combo->detalles as $detalle) {
 
-        $combo->update([
-            "estado" => $request->estado,
-        ]);
+                $id_producto = $detalle["id_producto"];
+                $id_bodega = $request->id_bodega;
+                $inventario = Inventario::where('id_producto', $id_producto)
+                    ->where('id_bodega', $id_bodega)->first();
 
+                if (!$inventario)
+                    return response()->json(["error" => "No se encontró el inventario del producto"], 400);
+
+                //el usuario va deshacer el combo
+                $cantidad_articulos = $detalle["cantidad"] * $cantidadActualCombo;
+                $inventario->stock += $cantidad_articulos;
+                $inventario->save();
+
+                $inventario->kardex(
+                    $combo,
+                    $cantidad_articulos,
+                    null,
+                    null,
+                    "Entrada por disolucion de combo"
+                );
+                $inventario->kardex(
+                    $combo,
+                    $cantidad_articulos * -1,
+                    null,
+                    null,
+                    "Salida por disolucion de combo"
+                );
+            }
+            return response()->json(["message" => "Estado actualizado con éxito: Se ha puesto la existencia del combo a 0 y se han restaurado las existencias de los articulos compuestos al inventario", "combo" => $combo], 200);
+        }
         return response()->json(["message" => "Estado actualizado con éxito", "combo" => $combo], 200);
     }
 }

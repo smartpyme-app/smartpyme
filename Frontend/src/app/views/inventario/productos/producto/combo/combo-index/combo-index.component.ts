@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BsModalService } from 'ngx-bootstrap/modal';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-combo-index',
@@ -73,7 +74,24 @@ export class ComboIndexComponent implements OnInit {
   async setComboState(combo: any) {
     //await 1 tick
     setTimeout(() => { }, 0);
-    this.apiService.store('combos/changeState', combo).subscribe(() => {
+
+
+    let res = await Swal.fire({
+      title: 'Cambiar estado',
+      text: '¿Está seguro de cambiar el estado del combo?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí',
+      cancelButtonText: 'No'
+    });
+    if (!res.isConfirmed) {
+      combo.estado = combo.estado == "Activo" ? "Inactivo" : "Activo";
+      return;
+    };
+
+    this.apiService.store('combos/changeState', combo).subscribe((res: any) => {
+      this.alertService.success("Cambio de estado exitoso", res.message);
+      this.loadAll();
     }, error => { this.alertService.error(error); });
   }
 
