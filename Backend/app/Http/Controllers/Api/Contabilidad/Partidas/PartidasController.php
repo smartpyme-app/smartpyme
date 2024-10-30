@@ -79,7 +79,8 @@ class PartidasController extends Controller
                 $partida = new Partida;
 
 
-            // Detalles
+        $partida->fill($request->all());
+        $partida->save();
 
             foreach ($request->detalles as $det) {
                 if(isset($det['id']))
@@ -119,8 +120,6 @@ class PartidasController extends Controller
                 }
             }
             
-            $partida->fill($request->all());
-            $partida->save();
 
             DB::commit();
             return Response()->json($partida, 200);
