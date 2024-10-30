@@ -96,14 +96,18 @@ class ComboProductoController extends Controller
 
             //actualizacion de kardex
             $inventario->kardex(
-                modelo: $newcombo,
-                cantidad: $cantidad_articulos,
-                detalle: "Entrada por creacion de combo"
+                $newcombo,
+                $cantidad_articulos,
+                null,
+                null,
+                "Entrada por creacion de combo"
             );
             $inventario->kardex(
-                modelo: $newcombo,
-                cantidad: $cantidad_articulos * -1,
-                detalle: "Salida por creacion de combo"
+                $newcombo,
+                $cantidad_articulos * -1,
+                null,
+                null,
+                "Salida por creacion de combo"
             );
         }
         DB::commit();
@@ -140,7 +144,10 @@ class ComboProductoController extends Controller
             'nombre' => $request->nombre,
             "precio_total" => $request->precio_final,
             "costo_total" => $detalles->sum('costo'),
+            "cantidad" => $request->cantidad
         ]);
+
+        $combo->id_usuario = auth()->user()->id;
 
         //actualizar los detalles
         $cantidadDiff = $cantidadNuevaCombo - $cantidadActualCombo;
@@ -161,14 +168,18 @@ class ComboProductoController extends Controller
                 $inventario->save();
 
                 $inventario->kardex(
-                    modelo: $combo,
-                    cantidad: $cantidad_articulos,
-                    detalle: "Entrada por disolucion de combo"
+                    $combo,
+                    $cantidad_articulos,
+                    null,
+                    null,
+                    "Entrada por disolucion de combo"
                 );
                 $inventario->kardex(
-                    modelo: $combo,
-                    cantidad: $cantidad_articulos * -1,
-                    detalle: "Salida por disolucion de combo"
+                    $combo,
+                    $cantidad_articulos * -1,
+                    null,
+                    null,
+                    "Salida por disolucion de combo"
                 );
             }
             //si la diferencia es positiva se crean mas combos
@@ -181,14 +192,18 @@ class ComboProductoController extends Controller
                 $inventario->save();
 
                 $inventario->kardex(
-                    modelo: $combo,
-                    cantidad: $cantidad_articulos,
-                    detalle: "Entrada por creacion de combo"
+                    $combo,
+                    $cantidad_articulos,
+                    null,
+                    null,
+                    "Entrada por creacion de combo"
                 );
                 $inventario->kardex(
-                    modelo: $combo,
-                    cantidad: $cantidad_articulos * -1,
-                    detalle: "Salida por creacion de combo"
+                    $combo,
+                    $cantidad_articulos * -1,
+                    null,
+                    null,
+                    "Salida por creacion de combo"
                 );
             }
             //si la diferencia es negativa se deshacen los combos de diferencia
@@ -198,14 +213,18 @@ class ComboProductoController extends Controller
                 $inventario->save();
 
                 $inventario->kardex(
-                    modelo: $combo,
-                    cantidad: $cantidad_articulos,
-                    detalle: "Entrada por disolucion de combo"
+                    $combo,
+                    $cantidad_articulos,
+                    null,
+                    null,
+                    "Entrada por disolucion de combo"
                 );
                 $inventario->kardex(
-                    modelo: $combo,
-                    cantidad: $cantidad_articulos * -1,
-                    detalle: "Salida por disolucion de combo"
+                    $combo,
+                    $cantidad_articulos * -1,
+                    null,
+                    null,
+                    "Salida por disolucion de combo"
                 );
             }
         }
