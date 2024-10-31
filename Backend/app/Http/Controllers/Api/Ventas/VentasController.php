@@ -154,7 +154,7 @@ class VentasController extends Controller
                     }
 
                     // Inventario compuestos
-                    foreach ($producto->composiciones as $comp) {
+                    foreach ($detalle->composiciones()->get() as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_compuesto)
                                     ->where('id_sucursal', $venta->id_sucursal)->first();
@@ -183,7 +183,7 @@ class VentasController extends Controller
                     }
 
                     // Inventario compuestos
-                    foreach ($producto->composiciones as $comp) {
+                    foreach ($detalle->composiciones()->get() as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_compuesto)
                                     ->where('id_sucursal', $venta->id_sucursal)->first();

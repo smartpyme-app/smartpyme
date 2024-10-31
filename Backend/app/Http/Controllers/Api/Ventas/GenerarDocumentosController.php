@@ -23,6 +23,25 @@ class GenerarDocumentosController extends Controller
 
     public function generarDoc($id){
 
+        // Si tiene FE en producción
+            $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
+
+            if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
+                $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+
+                $DTE = $venta->dte;
+
+                if ($DTE) {
+
+                    $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
+
+                    return view('reportes.facturacion.DTE-Ticket', compact('venta', 'DTE'));
+                }else{
+                    return "El documento no ha sido Emitido";
+                }
+
+            }
+            
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
@@ -93,7 +112,7 @@ class GenerarDocumentosController extends Controller
                 // return View('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper([0, 0, 609.45, 467.72]);
-            }
+            } 
             elseif(Auth::user()->id_empresa == 136){ //136 OK V2
                 return View('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -235,8 +254,8 @@ class GenerarDocumentosController extends Controller
             }
             elseif(Auth::user()->id_empresa == 187){//187  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
-            }
+                $pdf->setPaper('US Letter', 'portrait'); 
+            } 
             elseif(Auth::user()->id_empresa == 130){//130  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('Legal', 'landscape');
@@ -261,15 +280,19 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Norbin', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 243){ //243
+            elseif(Auth::user()->id_empresa == 315){ //315
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Sistema-Impresiones', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 313 ){ //313  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-American-Laundry', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             else{
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-
+  
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
 

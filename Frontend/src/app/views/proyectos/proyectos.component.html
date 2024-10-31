@@ -40,6 +40,7 @@
                 <option value="Pendiente">Pendiente</option>
                 <option value="En proceso">En proceso</option>
                 <option value="Facturado">Facturado</option>
+                <option value="Anulado">Anulado</option>
             </select>
             <ng-select name="id_cliente" (change)="filtrarProyectos()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
                 <ng-option value="">Cliente</ng-option>
@@ -82,7 +83,7 @@
                         <td>{{proyecto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
                         <td>{{proyecto.fecha_fin | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : proyecto?.estado == 'En proceso', 'bg-warning' : proyecto?.estado == 'Pendiente', 'bg-success' : proyecto?.estado == 'Facturado'}">
+                            <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : proyecto?.estado == 'En proceso', 'bg-warning' : proyecto?.estado == 'Pendiente', 'bg-success' : proyecto?.estado == 'Facturado', 'bg-danger' : proyecto?.estado == 'Anulado'}">
                                 {{ proyecto.estado }}
                             </span>
                         </td>
@@ -105,7 +106,7 @@
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
                                     <a routerLink="/proyecto/editar/{{proyecto.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <span class="fa fa-magnifying-glass icon me-2"></span> Ver detalles
+                                        <img src="/assets/icons/search.png" class="icon me-2"> Ver detalles
                                     </a>
                                 </div>
                                 <div class="list-group border-0">
@@ -136,6 +137,16 @@
                                 <div *ngIf="proyecto?.cotizacion?.id && proyecto.estado != 'Facturado'" class="list-group border-0">
                                     <a routerLink="/venta/crear" [queryParams]="{ id_proyecto:proyecto.id, facturar_cotizacion: 1, id_venta: proyecto.cotizacion.id }" class="list-group-item list-group-item-action border-0 click">
                                         <img src="/assets/icons/trending-up.png" class="icon me-2"> Facturar
+                                    </a>
+                                </div>
+                                <div *ngIf="proyecto.estado != 'Anulado' && proyecto.estado != 'Facturado' && apiService.canEdit()" class="list-group border-0">
+                                    <a (click)="setEstado(proyecto, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/stop-circle.png" class="icon me-2"> Anular proyecto
+                                    </a>
+                                </div>
+                                <div *ngIf="proyecto.estado == 'Anulado' && apiService.canEdit()" class="list-group border-0">
+                                    <a (click)="setEstado(proyecto, 'En proceso')" class="list-group-item list-group-item-action border-0 click">
+                                        <img src="/assets/icons/check.png" class="icon me-2"> Revertir anulación
                                     </a>
                                 </div>
                             </ng-template>

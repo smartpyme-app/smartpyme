@@ -12,11 +12,14 @@ class MHAnulacion extends Model
     public $caja;
     public $caja_codigo;
     public $empresa;
+    public $sucursal;
     
 
     public function generarDTE($venta, $DTE){
         $this->venta = $venta;
         $this->empresa = $this->venta->empresa()->first();
+        $this->sucursal = $this->venta->sucursal()->first();
+
         $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
         $this->caja_codigo = '0001';
 
@@ -91,9 +94,9 @@ class MHAnulacion extends Model
         $emisor = [
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nombre" => $this->empresa->nombre,
-            "tipoEstablecimiento" => $this->empresa->tipoEstablecimiento,
+            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "nomEstablecimiento" => $this->empresa->nombre,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "telefono" => $this->empresa->telefono,
             "correo" => $this->empresa->correo,

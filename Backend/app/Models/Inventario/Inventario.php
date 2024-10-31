@@ -24,7 +24,7 @@ class Inventario extends Model {
         return $this->sucursal()->pluck('nombre')->first();
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL){
+    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL){
 
         $clase = get_class($modelo);
 
@@ -116,7 +116,10 @@ class Inventario extends Model {
         if (!$precio) {
             $precio = $this->producto()->pluck('precio')->first();
         }
-        $costo = $this->producto()->pluck('costo')->first();
+
+        if (!$costo) {
+            $costo = $this->producto()->pluck('costo')->first();
+        }
 
         Kardex::create([
             'fecha'             => date('Y-m-d'),

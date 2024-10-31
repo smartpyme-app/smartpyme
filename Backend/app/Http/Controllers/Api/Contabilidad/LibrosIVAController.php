@@ -22,7 +22,7 @@ class LibrosIVAController extends Controller
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Pendiente')
+                        ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
                             $q->where('nombre', 'Factura');
                         })
@@ -71,7 +71,7 @@ class LibrosIVAController extends Controller
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Pendiente')
+                        ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
                             $q->where('nombre', 'Crédito fiscal');
                         })
@@ -151,7 +151,7 @@ class LibrosIVAController extends Controller
                 'compras_gravadas'      => $compra->sub_total,
                 'importaciones_gravadas' => 0,
                 'credito_fiscal'         => $compra->iva,
-                'anticipo_iva_percibido'=> $compra->iva_percibido,
+                'anticipo_iva_percibido'=> $compra->percepcion,
                 'compras_cuenta_terceros'=> 0,
                 'credito_cuenta_terceros'=> 0,
                 'total'                 => $compra->total,

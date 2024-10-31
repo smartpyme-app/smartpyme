@@ -15,18 +15,17 @@ class MHCCF extends Model
     public $caja;
     public $caja_codigo;
     public $empresa;
+    public $sucursal;
     
 
     public function generarDTE($venta){
         $this->venta = $venta;
         $this->empresa = $this->venta->empresa()->first();
+        $this->sucursal = $this->venta->sucursal()->first();
 
         $this->caja_codigo = '0001';
-        // $this->empresa->cod_estable_mh = '0001';
-        $this->empresa->tipoEstablecimiento = 'Casa matriz';
-        $this->empresa->tipo_establecimiento = '02';
         $this->venta->tipo_dte = '03';
-        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->empresa->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
+        $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
 
         if (!$this->venta->codigo_generacion) {
             $this->venta->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
@@ -118,7 +117,7 @@ class MHCCF extends Model
             "codActividad" => $this->empresa->cod_actividad_economica,
             "descActividad" => $this->empresa->giro,
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->empresa->tipo_establecimiento,
+            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
@@ -181,9 +180,11 @@ class MHCCF extends Model
                   "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "descuGravada" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "totalDescu" => floatval(number_format(0, 2, '.', '')),
                   "tributos" => $tributos,
                   "subTotal" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
                   "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),

@@ -11,13 +11,15 @@ class MHSujetoExcluidoCompra extends Model
 
     public $compra;
     public $empresa;
+    public $sucursal;
 
     public function generarDTE($compra){
         $this->compra = $compra;
         $this->empresa = $this->compra->empresa()->first();
-        // $this->empresa->cod_estable_mh = '0001';
+        $this->sucursal = $this->compra->sucursal()->first();
+        
         $this->compra->tipo_dte = '14';
-        $this->compra->numero_control = 'DTE-'. $this->compra->tipo_dte . '-' . $this->empresa->cod_estable_mh . '0001-' .str_pad($this->compra->referencia, 15, '0', STR_PAD_LEFT);
+        $this->compra->numero_control = 'DTE-'. $this->compra->tipo_dte . '-' . $this->sucursal->cod_estable_mh . '0001-' .str_pad($this->compra->referencia, 15, '0', STR_PAD_LEFT);
 
         if (!$this->compra->codigo_generacion) {
             $this->compra->codigo_generacion = strtoupper(Uuid::uuid4()->toString());
@@ -113,8 +115,8 @@ class MHSujetoExcluidoCompra extends Model
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->empresa->cod_estable_mh ? $this->empresa->cod_estable_mh : NULL,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
+            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
             "codPuntoVentaMH" => NULL,
             "codPuntoVenta" => NULL,
             "correo" => $this->empresa->correo,

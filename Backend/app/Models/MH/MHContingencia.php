@@ -52,29 +52,13 @@ class MHContingencia extends Model
             "motivoContingencia" => 'No se pudieron emitir los DTEs.',
         ];
 
-        switch ($this->empresa->tipo_establecimiento) {
-            case 'Sucursal':
-                $this->empresa->tipoEstablecimiento = '01';
-                break;
-            case 'Casa matriz':
-                $this->empresa->tipoEstablecimiento = '02';
-                break;
-            case 'Bodega':
-                $this->empresa->tipoEstablecimiento = '04';
-                break;
-            default:
-                $this->empresa->tipoEstablecimiento = '20';
-                break;
-        }
-
-
         $emisor = [
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nombre" => $this->empresa->nombre,
             "nombreResponsable" => $this->empresa->nombre,
             "tipoDocResponsable" => '13',
             "numeroDocResponsable" => $this->empresa->nit,
-            "tipoEstablecimiento" => $this->empresa->tipoEstablecimiento,
+            "tipoEstablecimiento" => '02',
             "telefono" => $this->empresa->telefono,
             "correo" => $this->empresa->correo,
         ];
