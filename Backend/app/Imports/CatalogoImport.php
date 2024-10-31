@@ -64,6 +64,7 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         $cuenta->abono= isset($row['abono']) ? $row['abono'] : 0;
         $cuenta->cargo= isset($row['cargo']) ? $row['cargo'] : 0;
         $cuenta->saldo= isset($row['saldo']) ? $row['saldo'] : 0;
+        $cuenta->saldo_inicial= isset($row['saldo']) ? $row['saldo'] : 0;
         $cuenta ->save();
 
 
