@@ -92,7 +92,7 @@ export class LibroComprasComponent implements OnInit {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Libro de compras.xlsx';
+            a.download = 'Anexo de compras.xlsx';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

@@ -3,6 +3,7 @@
 namespace App\Exports\Contabilidad;
 
 use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -26,6 +27,7 @@ class AnexoComprasExport implements FromCollection, WithMapping
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
+        // Obtener las compras
         $compras = Compra::with(['proveedor'])
                             ->where('estado', '!=', 'Anulada')
                             ->when($request->id_sucursal, function($q) use ($request){
@@ -33,8 +35,21 @@ class AnexoComprasExport implements FromCollection, WithMapping
                             })
                             ->whereBetween('fecha', [$request->inicio, $request->fin])
                             ->where('cotizacion', 0)
-                            ->orderBy('id', 'desc')->get();
-        return $compras;
+                            ->get();
+
+        // Obtener los gastos
+        $gastos = Gasto::with(['proveedor'])
+                            ->where('estado', '!=', 'Anulada')
+                            ->when($request->id_sucursal, function($q) use ($request) {
+                                $q->where('id_sucursal', $request->id_sucursal);
+                            })
+                            ->whereBetween('fecha', [$request->inicio, $request->fin])
+                            ->get();
+
+        // Unir y ordenar ambas colecciones por fecha
+        $libroCompras = $compras->merge($gastos)->sortBy('fecha');
+
+        return $libroCompras;
         
     }
 
@@ -54,10 +69,10 @@ class AnexoComprasExport implements FromCollection, WithMapping
               '01', //'Tipo',
               $row->dte['identificacion']['numeroControl'] ?? '', //'Resolucion',
               $row->dte['sello'] ?? '', //'Serie',
-              $row->dte['identificacion']['codigoGeneracion'] ?? '', //'Numero',
-              $row->dte['identificacion']['codigoGeneracion'] ?? '', //'Numero',
-              trim($row->correlativo), //'Numero Interno',
-              trim($row->correlativo), //'Numero Interno',
+              $row->dte['identificacion']['codigoGeneracion'] ?? $row->referencia, //'Numero',
+              $row->dte['identificacion']['codigoGeneracion'] ?? $row->referencia, //'Numero',
+              trim($row->referencia), //'Numero Interno',
+              trim($row->referencia), //'Numero Interno',
               NULL, //'Caja registradora',
               $row->exenta ? $row->exenta : '0.00', //'Exentas',
               '0.00', //'No Exentas no sujetas a proporcionalidad',

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
 use App\Exports\Contabilidad\LibroContribuyentesExport;
 use App\Exports\Contabilidad\AnexoContribuyentesExport;
 use App\Exports\Contabilidad\LibroConsumidoresExport;
@@ -125,8 +126,10 @@ class LibrosIVAController extends Controller
 
     }
 
-    public function compras(Request $request) {
+    public function compras(Request $request)
+    {
 
+        // Obtener las compras
         $compras = Compra::with(['proveedor'])
                             ->where('estado', '!=', 'Anulada')
                             ->when($request->id_sucursal, function($q) use ($request){
@@ -134,9 +137,10 @@ class LibrosIVAController extends Controller
                             })
                             ->whereBetween('fecha', [$request->inicio, $request->fin])
                             ->where('cotizacion', 0)
-                            ->orderBy('id', 'desc')->get();
+                            ->get();
 
-        $ivas = $compras->map(function ($compra) {
+        // Transformar compras
+        $comprasData = $compras->map(function ($compra) {
             $proveedor = optional($compra->proveedor);
 
             return [
@@ -146,11 +150,11 @@ class LibrosIVAController extends Controller
                 'num_documento'         => $compra->referencia,
                 'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
                 'nombre_proveedor'      => $compra->nombre_proveedor,
-                'compras_exentas' => $compra->exenta,
+                'compras_exentas'       => $compra->exenta,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => $compra->sub_total,
-                'importaciones_gravadas' => 0,
-                'credito_fiscal'         => $compra->iva,
+                'importaciones_gravadas'=> 0,
+                'credito_fiscal'        => $compra->iva,
                 'anticipo_iva_percibido'=> $compra->percepcion,
                 'compras_cuenta_terceros'=> 0,
                 'credito_cuenta_terceros'=> 0,
@@ -159,12 +163,45 @@ class LibrosIVAController extends Controller
             ];
         });
 
+        // Obtener los gastos
+        $gastos = Gasto::with(['proveedor'])
+                            ->where('estado', '!=', 'Anulada')
+                            ->when($request->id_sucursal, function($q) use ($request) {
+                                $q->where('id_sucursal', $request->id_sucursal);
+                            })
+                            ->whereBetween('fecha', [$request->inicio, $request->fin])
+                            ->get();
 
-        $ivas = $ivas->sortByDesc('correlativo')->values()->all();
+        // Transformar gastos
+        $gastosData = $gastos->map(function ($gasto) {
+            $proveedor = optional($gasto->proveedor);
 
-        return Response()->json($ivas, 200);
+            return [
+                'fecha'                 => $gasto->fecha,
+                'clase_documento'       => 1, // Por ejemplo, otro tipo de documento para gastos
+                'tipo_documento'        => $gasto->tipo_documento,
+                'num_documento'         => $gasto->referencia,
+                'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
+                'nombre_proveedor'      => $gasto->nombre_proveedor,
+                'compras_exentas'       => 0,
+                'importaciones_exentas' => 0,
+                'compras_gravadas'      => $gasto->sub_total,
+                'importaciones_gravadas'=> 0,
+                'credito_fiscal'        => $gasto->iva,
+                'anticipo_iva_percibido'=> $gasto->percepcion,
+                'compras_cuenta_terceros'=> 0,
+                'credito_cuenta_terceros'=> 0,
+                'total'                 => $gasto->total,
+                'sujeto_excluido'       => 0,
+            ];
+        });
 
+        // Unir y ordenar ambas colecciones por fecha
+        $libroCompras = $comprasData->merge($gastosData)->sortBy('fecha')->values()->all();
+
+        return response()->json($libroCompras, 200);
     }
+
 
     public function comprasLibroExport(Request $request){
         $compras = new LibroComprasExport();
@@ -177,7 +214,7 @@ class LibrosIVAController extends Controller
         $compras = new AnexoComprasExport();
         $compras->filter($request);
 
-        return Excel::download($compras, 'LibroComprasExport.xlsx');
+        return Excel::download($compras, 'AnexoComprasExport.xlsx');
     }
 
 }
