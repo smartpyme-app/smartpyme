@@ -24,10 +24,15 @@ class CotizacionVentaDetalle extends Model
         "iva",
         "descripcion",
         "id_producto",
+        "codigo_combo",
         "id_cotizacion_venta",
     ];
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'id_producto');
+    }
+    public function combo()
+    {
+        return $this->belongsTo(ComboProducto::class, 'codigo_combo', 'codigo_combo');
     }
 }

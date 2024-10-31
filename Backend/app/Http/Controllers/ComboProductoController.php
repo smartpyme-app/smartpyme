@@ -55,7 +55,7 @@ class ComboProductoController extends Controller
 
         $detalles = collect($request->detalles);
         $newcombo = ComboProducto::create([
-            'codigo_combo' => $request->codigo_combo,
+            'codigo_combo' => $this->GetNewCorrelativo(false),
             'descripcion' => $request->descripcion,
             'nombre' => $request->nombre,
             "id_empresa" => $empresa_id,
@@ -64,6 +64,7 @@ class ComboProductoController extends Controller
             "costo_total" => $detalles->sum('costo'),
             "id_bodega" => $request->id_bodega,
             "cantidad" => $request->cantidad,
+            "correlativo" => ComboProducto::max('correlativo') + 1
         ]);
         $newcombo->id_usuario = auth()->user()->id;
         $newcombo
@@ -293,5 +294,14 @@ class ComboProductoController extends Controller
             return response()->json(["message" => "Estado actualizado con éxito: Se ha puesto la existencia del combo a 0 y se han restaurado las existencias de los articulos compuestos al inventario", "combo" => $combo], 200);
         }
         return response()->json(["message" => "Estado actualizado con éxito", "combo" => $combo], 200);
+    }
+
+    public function GetNewCorrelativo($toResponse = true)
+    {
+        $correlativo = ComboProducto::max('correlativo');
+        $correlativo = "COMB" . str_pad(($correlativo ? $correlativo + 1 : 1), 4, "0", STR_PAD_LEFT);
+        if ($toResponse)
+            return response()->json(["correlativo" => $correlativo], 200);
+        return $correlativo;
     }
 }

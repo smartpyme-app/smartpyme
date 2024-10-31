@@ -1,24 +1,31 @@
 <form class="w-100 d-flex input-group buscador" name="form" autocomplete="off">
-    <div class="input-group">
-        <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
-        <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
-    </div>
-    <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
-      <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
-        <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
-        <span id="producto_nombre" class="col-7 ps-1">
-            <!-- <small>Nombre:</small> <br> -->
-            {{ producto.nombre }} <br>
-            <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
-        </span>
-        <span class="col-2 text-center" id="stock">
-            <!-- <small>Stock:</small> <br> -->
-            <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small></span>
-        </span>
-        <span class="col-2 text-end">
-            <!-- <small>Precio:</small> <br> -->
-            <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
-        </span>
-      </a>
-    </ul>
+  <div class="input-group">
+    <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
+    <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control"
+      placeholder="Buscar por nombre o código">
+  </div>
+  <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
+    <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)"
+      *ngFor=" let producto of productos">
+      <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}"
+        class="rounded-circle img-fluid col-1">
+      <span id="producto_nombre" class="col-7 ps-1">
+        <!-- <small>Nombre:</small> <br> -->
+        {{ producto.nombre }} <br>
+        <small *ngIf="!producto.codigo_combo"><span class="badge bg-light text-muted">{{ producto.nombre_categoria
+            }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
+        <small *ngIf="producto.codigo_combo"><span class="badge bg-light text-muted">Combo</span></small>
+      </span>
+      <span class="col-2 text-center" id="stock">
+        <!-- <small>Stock:</small> <br> -->
+        <span *ngIf="producto.tipo != 'Servicio' && !producto.codigo_combo">{{ producto.inventarios |
+          filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small></span>
+        <span *ngIf="producto.codigo_combo">{{ producto.cantidad }} <small>en stock</small></span>
+      </span>
+      <span class="col-2 text-end">
+        <!-- <small>Precio:</small> <br> -->
+        <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
+      </span>
+    </a>
+  </ul>
 </form>

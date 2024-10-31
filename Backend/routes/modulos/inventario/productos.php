@@ -84,4 +84,5 @@ Route::group(['prefix' => 'combos'], function () {
     Route::post('actualizar', [ComboProductoController::class, 'update']);
     Route::get("get/{id}", [ComboProductoController::class, 'show']);
     Route::post("changeState", [ComboProductoController::class, 'changeState']);
+    Route::get("GetNewCorrelativo", [ComboProductoController::class, 'GetNewCorrelativo']);
 });

@@ -102,7 +102,7 @@
                   </a>
                   <a *ngIf="compra.estado == 'Pendiente'" routerLink="/compra/crear"
                     [queryParams]="{ facturar_cotizacion: 1, id_compra: compra.id }" class="btn">
-                    <i class="fa fa-fw fa-money-bill"></i> Facturar
+                    <i class="fa fa-fw fa-money-bill"></i> Generar compra
                   </a>
                   <a (click)="imprimir(compra)" class="btn">
                     <i class="fa fa-fw fa-print"></i> Imprimir

@@ -1,203 +1,236 @@
-
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Inventario</h2>
-    <div class="d-flex gap-2">
-        <!-- <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button> -->
-        <button *ngIf="apiService.canCreate()" [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
-    </div>
+  <h2 class="page-heading">Inventario</h2>
+  <div class="d-flex gap-2">
+    <!-- <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button> -->
+    <button *ngIf="apiService.canCreate()" [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)"
+      class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+  </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
-    <div class="row mb-3">
-        <div class="col">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="traslados?.total">
-                Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarTraslados()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ traslados?.total + ' registros' }}
-            </span>
-        </div>
-
-        <div class="col">
-            <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar traslados" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
-                </button>
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTraslados()" autocomplete="off">
-                    <div class="input-group">
-                        <div class="input-group-text bg-white border-end-0">
-                            <i class="fa fa-search text-muted"></i>
-                        </div>
-                        <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.search">
-                    </div>
-                </form>
-                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
-            </div>
-        </div>
+  <div class="row mb-3">
+    <div class="col">
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="traslados?.total">
+        Mostrando
+        <select name="paginate" class="form-select w-auto" (change)="filtrarTraslados()" [(ngModel)]="filtros.paginate">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        de {{ traslados?.total + ' registros' }}
+      </span>
     </div>
-    <div class="d-flex mb-3">
-        <div class="col-md-6 d-flex gap-2">
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/productos">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/traslados">Traslados</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
-        </div>
-        <div class="col-md-6 d-flex justify-content-end gap-2">
-            <select name="estado" (change)="filtrarTraslados()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
-                <option value="">Estado</option>
+
+    <div class="col">
+      <div class="d-flex gap-2">
+        <button [disabled]="downloading" tooltip="Descargar traslados" (click)="descargar()"
+          class="btn btn-default tcla-F6">
+          <img src="/assets/icons/download.png" class="icon">
+        </button>
+        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTraslados()" autocomplete="off">
+          <div class="input-group">
+            <div class="input-group-text bg-white border-end-0">
+              <i class="fa fa-search text-muted"></i>
+            </div>
+            <input type="search" name="search" class="form-control pull-right border-start-0" placeholder="Buscar"
+              [(ngModel)]="filtros.search">
+          </div>
+        </form>
+        <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"><img
+            src="/assets/icons/filter.png" class="icon"></button>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex mb-3">
+    <div class="col-md-6 d-flex gap-2">
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/productos">Todos</button>
+      <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
+        [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/producto/combos">Combos</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/ajustes">Ajustes</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"
+        routerLink="/traslados">Traslados</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/consignas">Consignas</button>
+    </div>
+    <div class="col-md-6 d-flex justify-content-end gap-2">
+      <select name="estado" (change)="filtrarTraslados()" [(ngModel)]="filtros.estado"
+        class="form-select bg-default w-auto">
+        <option value="">Estado</option>
+        <option value="Confirmado">Confirmado</option>
+        <option value="Cancelado">Cancelado</option>
+      </select>
+      <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de"
+        class="form-select bg-default w-auto">
+        <option value="">Sucursal</option>
+        <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12 table-responsive">
+      <table class="table table-borderless table-hover align-middle">
+        <thead>
+          <tr>
+            <th (click)="setOrden('created_at')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}"
+              class="click">Fecha</th>
+            <!-- <th>Producto</th> -->
+            <th class="d-none d-lg-table-cell">Descripción</th>
+            <th>Estado</th>
+            <th>De</th>
+            <th>Para</th>
+            <th (click)="setOrden('cantidad')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'cantidad' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'cantidad' && filtros.direccion == 'desc'}"
+              class="click text-center">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="8" class="text-center" *ngIf="traslados?.total < 1 && !loading">
+              <span class="badge bg-primary">No tiene traslados registrados</span>
+            </td>
+            <td colspan="8" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr *ngFor=" let traslado of traslados?.data">
+            <td>{{ traslado.created_at | date:'dd/MM/yyyy' }}</td>
+            <!-- <td>{{ traslado.nombre_producto }}</td> -->
+            <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20
+                }}</span></td>
+            <td>
+              <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)"
+                [(ngModel)]="traslado.estado"
+                [ngClass]="{'bg-light-warning' : traslado?.estado == 'Pendiente','bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">
+                <option value="Pendiente">Pendiente</option>
                 <option value="Confirmado">Confirmado</option>
                 <option value="Cancelado">Cancelado</option>
-            </select>
-            <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de" class="form-select bg-default w-auto">
-                <option value="">Sucursal</option>
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
-            </select>
-        </div>
+              </select>
+            </td>
+            <td>{{ traslado.nombre_origen }}</td>
+            <td>{{ traslado.nombre_destino }}</td>
+            <td class="text-center"> {{ traslado.cantidad | number:'1.0' }} </td>
+            <td class="text-center">
+              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="list-group border-0">
+                  <a routerLink="/traslado/{{traslado.id}}"
+                    class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                  </a>
+                  <a *ngIf="traslado.estado == 'Pendiente' && apiService.canEdit()"
+                    (click)="setEstado(traslado, 'Confirmado')"
+                    class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-check"></i> Aprobar
+                  </a>
+                  <a *ngIf="traslado.url_referencia" (click)="verDocumento(traslado)"
+                    class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa-regular fa-fw fa-file"></i> Ver comprobante
+                  </a>
+                  <a *ngIf="traslado.id_referencia"
+                    routerLink="/{{traslado.ruta_referencia}}/{{traslado.id_referencia}}"
+                    class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                  </a>
+                  <a *ngIf="traslado.estado != 'Anulada' && apiService.canEdit()"
+                    (click)="setEstado(traslado, 'Cancelado')"
+                    class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-ban"></i> Cancelar
+                  </a>
+                  <a *ngIf="traslado.estado == 'Anulada' && apiService.canEdit()"
+                    (click)="setEstado(traslado, 'Pagada')"
+                    class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-check"></i> Revertir anulación
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-borderless table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha</th>
-                        <!-- <th>Producto</th> -->
-                        <th class="d-none d-lg-table-cell">Descripción</th>
-                        <th>Estado</th>
-                        <th>De</th>
-                        <th>Para</th>
-                        <th (click)="setOrden('cantidad')" [ngClass]="{'sorted-asc': filtros.orden == 'cantidad' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'cantidad' && filtros.direccion == 'desc'}" class="click text-center">Cantidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="traslados?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene traslados registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let traslado of traslados?.data">
-                        <td>{{ traslado.created_at  | date:'dd/MM/yyyy' }}</td>
-                        <!-- <td>{{ traslado.nombre_producto }}</td> -->
-                        <td class="d-none d-lg-table-cell"><span tooltip="{{ traslado.concepto}}">{{ traslado.concepto | truncate:20 }}</span></td>
-                        <td>
-                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(traslado)" [(ngModel)]="traslado.estado" [ngClass]="{'bg-light-warning' : traslado?.estado == 'Pendiente','bg-light-danger' : traslado?.estado == 'Cancelado', 'bg-light-success' : traslado?.estado == 'Confirmado'}">
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Confirmado">Confirmado</option>
-                                <option value="Cancelado">Cancelado</option>
-                            </select>
-                        </td>
-                        <td>{{ traslado.nombre_origen }}</td>
-                        <td>{{ traslado.nombre_destino }}</td>
-                        <td class="text-center"> {{ traslado.cantidad | number:'1.0' }} </td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/traslado/{{traslado.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                                    </a>
-                                    <a *ngIf="traslado.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(traslado, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Aprobar
-                                    </a>
-                                    <a *ngIf="traslado.url_referencia" (click)="verDocumento(traslado)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa-regular fa-fw fa-file"></i> Ver comprobante
-                                    </a>
-                                    <a *ngIf="traslado.id_referencia" routerLink="/{{traslado.ruta_referencia}}/{{traslado.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
-                                    </a>
-                                    <a *ngIf="traslado.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(traslado, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Cancelar
-                                    </a>
-                                    <a *ngIf="traslado.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(traslado, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
 
-        <div class="col-12" *ngIf="traslados?.last_page > 1">
-            <app-pagination [items]="traslados" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+    <div class="col-12" *ngIf="traslados?.last_page > 1">
+      <app-pagination [items]="traslados" (setPagination)="setPagination($event)"></app-pagination>
     </div>
+  </div>
 </section>
 
 <ng-template #mtraslado>
   <div class="modal-header justify-content-between">
     <h5 class="modal-title mb-0">Nuevo traslado </h5>
-    <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
+    <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i
+        class="fa fa-close"></i></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
     <form (ngSubmit)="onSubmit()" autocomplete="off">
-        <div class="row">
-            <div class="form-group col-md-12">
-                <label for="">Producto</label>
-                <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="traslado.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar producto</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{producto.nombre}}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="">De</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar bodega</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
-                        {{inventario.nombre_bodega}}
-                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="">Para</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar bodega</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
-                        {{inventario.nombre_bodega}}
-                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-12">
-                <label for="stock_real">Cantidad a trasladar:</label>
-                <input type="number" [disabled]="!traslado.id_bodega_de && !traslado.id_bodega" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
-            </div>
-            
-            <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">
-                <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ (bodegaDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
-            </div>
-            
-            <div class="form-group col-md-6" *ngIf="traslado.id_bodega">
-                <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ (bodegaPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
-            </div>
-
-            <div class="form-group col-md-12">
-                <label for="concepto">Concepto:</label>
-                <input type="text" class="form-control" [(ngModel)]="traslado.concepto" name="concepto">
-            </div>
-
+      <div class="row">
+        <div class="form-group col-md-12">
+          <label for="">Producto</label>
+          <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="traslado.id_producto"
+            class="form-select p-0">
+            <ng-option value="" selected>Seleccionar producto</ng-option>
+            <ng-option *ngFor="let producto of productos" [value]="producto.id">
+              {{producto.nombre}}
+            </ng-option>
+          </ng-select>
         </div>
-        <div class="d-grid mt-3">
-            <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
-            </button>
+        <div class="form-group col-md-6">
+          <label for="">De</label>
+          <ng-select [disabled]="!traslado.id_producto" name="id_bodega_de" (change)="setSucursalDe()"
+            [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
+            <ng-option value="" selected>Seleccionar bodega</ng-option>
+            <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+              {{inventario.nombre_bodega}}
+              <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
+            </ng-option>
+          </ng-select>
         </div>
+        <div class="form-group col-md-6">
+          <label for="">Para</label>
+          <ng-select [disabled]="!traslado.id_producto" name="id_bodega" (change)="setSucursalPara()"
+            [(ngModel)]="traslado.id_bodega" class="form-select p-0">
+            <ng-option value="" selected>Seleccionar bodega</ng-option>
+            <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+              {{inventario.nombre_bodega}}
+              <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
+            </ng-option>
+          </ng-select>
+        </div>
+        <div class="form-group col-md-12">
+          <label for="stock_real">Cantidad a trasladar:</label>
+          <input type="number" [disabled]="!traslado.id_bodega_de && !traslado.id_bodega"
+            class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
+        </div>
+
+        <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">
+          <label for="traslado">Stock luego del traslado:</label>
+          <p>{{ (bodegaDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+        </div>
+
+        <div class="form-group col-md-6" *ngIf="traslado.id_bodega">
+          <label for="traslado">Stock luego del traslado:</label>
+          <p>{{ (bodegaPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+        </div>
+
+        <div class="form-group col-md-12">
+          <label for="concepto">Concepto:</label>
+          <input type="text" class="form-control" [(ngModel)]="traslado.concepto" name="concepto">
+        </div>
+
+      </div>
+      <div class="d-grid mt-3">
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
+          <span *ngIf="!saving">Guardar</span>
+          <span *ngIf="saving">Guardando...</span>
+        </button>
+      </div>
 
     </form>
   </div>
@@ -206,64 +239,63 @@
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h2 class="text-center no-margin">Filtros</h2>
+      <h2 class="text-center no-margin">Filtros</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="filtrarTraslados()">
-        <div class="row mb-3">
-            <div class="form-group col-md-6">
-                <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
-            </div>
-            <div class="form-group col-md-12">
-                <label for="">Producto</label>
-                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Todos</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{producto.nombre}}
-                    </ng-option>
-                </ng-select>
-            </div>
-            <div class="form-group col-md-12">
-                <label for="">Estado:</label>
-                <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="Confirmado">Confirmado</option>
-                    <option value="Cancelado">Cancelado</option>
-                </select>
-            </div>
-            <div class="form-group col-lg-6">
-                <label for="">Sucursal de:</label>
-                <select [(ngModel)]="filtros.id_bodega_de" class="form-select" name="filtros.id_bodega_de">
-                    <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
-                </select>
-            </div>
-            <div class="form-group col-lg-6">
-                <label for="">Sucursal para:</label>
-                <select [(ngModel)]="filtros.id_bodega_para" class="form-select" name="filtros.id_bodega_para">
-                    <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
-                </select>
-            </div>
+      <div class="row mb-3">
+        <div class="form-group col-md-6">
+          <label for="">Del:</label>
+          <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio" />
         </div>
-        <div class="d-grid">
-            <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
-            </button>
+        <div class="form-group col-md-6">
+          <label for="">Al:</label>
+          <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin" />
         </div>
+        <div class="form-group col-md-12">
+          <label for="">Producto</label>
+          <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
+            <ng-option value="" selected>Todos</ng-option>
+            <ng-option *ngFor="let producto of productos" [value]="producto.id">
+              {{producto.nombre}}
+            </ng-option>
+          </ng-select>
+        </div>
+        <div class="form-group col-md-12">
+          <label for="">Estado:</label>
+          <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
+            <option value="">Todos</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group col-lg-6">
+          <label for="">Sucursal de:</label>
+          <select [(ngModel)]="filtros.id_bodega_de" class="form-select" name="filtros.id_bodega_de">
+            <option value="">Todos</option>
+            <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+              {{ sucursal.nombre }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-lg-6">
+          <label for="">Sucursal para:</label>
+          <select [(ngModel)]="filtros.id_bodega_para" class="form-select" name="filtros.id_bodega_para">
+            <option value="">Todos</option>
+            <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+              {{ sucursal.nombre }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="d-grid">
+        <button type="submit" [disabled]="loading" class="btn btn-primary">
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
+        </button>
+      </div>
     </form>
   </div>
 </ng-template>
-

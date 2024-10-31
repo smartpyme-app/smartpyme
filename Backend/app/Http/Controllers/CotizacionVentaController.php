@@ -17,13 +17,11 @@ class CotizacionVentaController extends Controller
             "fecha" => "required",
             "total" => "required",
             "id_cliente" => "required",
-            "id_proyecto" => "required",
             "id_usuario" => "required",
             "id_vendedor" => "required",
             "id_empresa" => "required",
             "id_sucursal" => "required",
             "cobrar_impuestos" => "required|boolean",
-            "retencion" => "required|boolean",
             "detalles" => "required|array",
             "detalles.*.cantidad" => "required",
             "detalles.*.precio" => "required",
@@ -36,9 +34,8 @@ class CotizacionVentaController extends Controller
             "detalles.*.gravada" => "required",
             "detalles.*.iva" => "required",
             "detalles.*.descripcion" => "required",
-            "detalles.*.id_producto" => "required",
         ], [
-            "observaciones.required" => "Las observaciones son requeridas",
+            "observaciones.required" => "Estás generando una cotización sin terminos!",
             "fecha_expiracion.required" => "La fecha de expiración es requerida",
             "fecha.required" => "La fecha es requerida",
             "total.required" => "El total es requerido",
@@ -62,7 +59,8 @@ class CotizacionVentaController extends Controller
             foreach ($request->detalles as $detalle) {
                 $newDetalle = CotizacionVentaDetalle::create(
                     [
-                        "id_producto" => $detalle["id_producto"],
+                        "id_producto" => $detalle["id_producto"] ?? null,
+                        "codigo_combo" => $detalle["codigo_combo"] ?? null,
                         "cantidad" => $detalle["cantidad"],
                         "precio" => $detalle["precio"],
                         "descuento" => $detalle["descuento"],
@@ -81,6 +79,76 @@ class CotizacionVentaController extends Controller
         }
     }
 
+    public function update(Request $request)
+    {
+        $request->validate([
+            "observaciones" => "required",
+            "fecha_expiracion" => "required",
+            "fecha" => "required",
+            "total" => "required",
+            "id_cliente" => "required",
+            "id_usuario" => "required",
+            "id_vendedor" => "required",
+            "id_empresa" => "required",
+            "id_sucursal" => "required",
+            "cobrar_impuestos" => "required|boolean",
+            "detalles" => "required|array",
+            "detalles.*.cantidad" => "required",
+            "detalles.*.precio" => "required",
+            "detalles.*.total" => "required",
+            "detalles.*.total_costo" => "required",
+            "detalles.*.descuento" => "required",
+            "detalles.*.no_sujeta" => "required",
+            "detalles.*.exenta" => "required",
+            "detalles.*.cuenta_a_terceros" => "required",
+            "detalles.*.gravada" => "required",
+            "detalles.*.iva" => "required",
+            "detalles.*.descripcion" => "required",
+        ], [
+            "observaciones.required" => "Estás generando una cotización sin terminos!",
+            "fecha_expiracion.required" => "La fecha de expiración es requerida",
+            "fecha.required" => "La fecha es requerida",
+            "total.required" => "El total es requerido",
+            "correlativo.required" => "El correlativo es requerido",
+            "id_documento.required" => "El documento es requerido",
+            "id_cliente.required" => "El cliente es requerido",
+            "id_proyecto.required" => "El proyecto es requerido",
+            "id_usuario.required" => "El usuario es requerido",
+            "id_vendedor.required" => "El vendedor es requerido",
+            "id_empresa.required" => "La empresa es requerida",
+            "id_sucursal.required" => "La sucursal es requerida",
+            "detalles.required" => "Ingresa por lo menos 1 detalle",
+
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $cotizacion = CotizacionVenta::findOrFail($request->id);
+            $cotizacion->fill($request->merge(["aplicar_retencion" => $request->retencion])->all());
+            $cotizacion->save();
+
+            $cotizacion->detalles()->delete();
+            foreach ($request->detalles as $detalle) {
+                $newDetalle = CotizacionVentaDetalle::create(
+                    [
+                        "id_producto" => $detalle["id_producto"] ?? null,
+                        "codigo_combo" => $detalle["codigo_combo"] ?? null,
+                        "cantidad" => $detalle["cantidad"],
+                        "precio" => $detalle["precio"],
+                        "descuento" => $detalle["descuento"],
+                        "total" => $detalle["total"],
+                        "id_cotizacion_venta" => $cotizacion->id
+                    ]
+                );
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Cotización actualizada correctamente', "cotizacion" => $cotizacion], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
     public function index(Request $request)
     {
 
@@ -129,8 +197,22 @@ class CotizacionVentaController extends Controller
         $cotizacion = CotizacionVenta::with(
             "cliente",
             "usuario",
-            "detalles.producto"
+            "detalles.producto",
+            'detalles.combo.detalles.producto'
         )->where('id', $id)->firstOrFail();
         return response()->json($cotizacion, 200);
+    }
+
+    public function updateState(Request $request)
+    {
+        $request->validate([
+            "estado" => "required",
+            "id" => "required"
+        ]);
+
+        $cotizacion = CotizacionVenta::findOrFail($request->id);
+        $cotizacion->estado = $request->estado;
+        $cotizacion->save();
+        return response()->json(['message' => 'Estado actualizado correctamente', "cotizacion" => $cotizacion], 200);
     }
 }

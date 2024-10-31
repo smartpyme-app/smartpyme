@@ -91,9 +91,9 @@
               <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)"
                 [(ngModel)]="venta.estado"
                 [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-success' : venta?.estado == 'Facturada'}">
-                <option value="Pendiente">Pendiente</option>
-                <option value="Facturada">Facturada</option>
-                <option value="Anulada">Anulada</option>
+                <option value="Pendiente" [disabled]="venta.estado=='Facturada'">Pendiente</option>
+                <option value="Facturada" disabled>Facturada</option>
+                <option value="Anulada" [disabled]="venta.estado=='Facturada'">Anulada</option>
               </select>
             </td>
             <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>

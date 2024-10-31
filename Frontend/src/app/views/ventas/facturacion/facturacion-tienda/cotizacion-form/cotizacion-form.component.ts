@@ -26,7 +26,7 @@ export class CotizacionFormComponent implements OnInit {
 
   @ViewChild('msupervisor') supervisorTemplate!: TemplateRef<any>;
   modalRefInstance!: any;
-
+  mode: "create" | "edit" | "show" = "create";
   constructor(
     public apiService: ApiService,
     private modalService: BsModalService,
@@ -76,17 +76,33 @@ export class CotizacionFormComponent implements OnInit {
     ]);
 
     this._activeRoute.paramMap.subscribe(params => {
-      if (params.has('id')) {
-        this.apiService.read('cotizacionVentas/', +params.get('id')!).subscribe((venta: any) => {
-          venta.retencion = venta.aplicar_retencion;
-          venta.detalles = venta.detalles.map((_detalle: any) => {
+      let cotizacion_id = params.get('show_id') || params.get('edit_id') || null;
+      if (!cotizacion_id) return;
+
+      if (params.get('edit_id'))
+        this.mode = 'edit';
+      else if (params.get('show_id'))
+        this.mode = 'show';
+
+
+      this.apiService.read('cotizacionVentas/', +cotizacion_id).subscribe((venta: any) => {
+        venta.retencion = venta.aplicar_retencion;
+        venta.detalles = venta.detalles.map((_detalle: any) => {
+          if (_detalle.codigo_combo) {
+            _detalle.descripcion = _detalle.combo.nombre;
+            _detalle.detalles = _detalle.combo.detalles;
+
+          } else {
 
             _detalle.descripcion = _detalle.producto.nombre;
-            return _detalle;
-          })
-          this.updateVenta(venta);
-        });
-      }
+          }
+          return _detalle;
+        })
+        this.updateVenta(venta);
+      });
+
+
+
     });
 
   }
@@ -117,7 +133,7 @@ export class CotizacionFormComponent implements OnInit {
     this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0;
     this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0;
 
-    this.venta.impuestos.forEach((impuesto: any) => {
+    this.venta.impuestos?.forEach((impuesto: any) => {
       impuesto.monto = 0;
       if (this.venta.cobrar_impuestos)
         impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
@@ -175,7 +191,17 @@ export class CotizacionFormComponent implements OnInit {
   onSubmit() {
 
     this.saving = true;
-
+    if (this.mode == 'edit') {
+      this.apiService.store('updateCotizacionVentas', this.venta).subscribe(venta => {
+        this.saving = false;
+        this.router.navigate(['/cotizaciones']);
+        this.alertService.success('Cotización actualizada', 'La cotizacion fue actualizada exitosamente.');
+      }, error => {
+        this.alertService.error(error);
+        this.saving = false;
+      });
+      return;
+    }
     this.apiService.store('cotizacionVentas', this.venta).subscribe(venta => {
       this.saving = false;
       this.router.navigate(['/cotizaciones']);

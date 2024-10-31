@@ -31,7 +31,6 @@ export class ProductoComboComponent implements OnInit {
   get detalles() {
     return this.producto?.get('detalles')?.value;
   }
-  private correlativo: number = 1; // Inicialmente, este sería el primer SKU
   mode: "create" | "edit" | "show" = "create";
   constructor(
     private apiService: ApiService,
@@ -49,7 +48,7 @@ export class ProductoComboComponent implements OnInit {
     this.producto = this._fb.group({
       id: [null],
       nombre: ['', Validators.required],
-      codigo_combo: ['', Validators.required],
+      codigo_combo: [{ value: null, disabled: true }, Validators.required],
       descripcion: ['', Validators.required],
       impuesto: [null],
       precio: [null],
@@ -66,7 +65,10 @@ export class ProductoComboComponent implements OnInit {
     }, error => { this.alertService.error(error); });
 
     this.route.params.subscribe((params: any) => {
-      if (!params.edit_id && !params.detail_id) return;
+      if (!params.edit_id && !params.detail_id) {
+        this.getNewCorrelativo();
+        return;
+      };
 
       let id = params.edit_id || params.detail_id;
       this.loading = true;
@@ -144,7 +146,11 @@ export class ProductoComboComponent implements OnInit {
 
     });
   }
-
+  getNewCorrelativo() {
+    this.apiService.getToUrl(this.apiService.apiUrl + 'combos/GetNewCorrelativo').subscribe((data) => {
+      this.producto.get("codigo_combo")?.setValue(data.correlativo);
+    });
+  }
   // CALCULO DEL STOCK MULTIPLICADO
   public calCantidadenCombo() {
     if (this.formValue.cantidad > 0) {

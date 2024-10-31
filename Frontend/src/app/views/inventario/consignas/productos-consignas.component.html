@@ -1,136 +1,145 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Inventario</h2>
-    <!-- <button routerLink="/producto/crear" tooltip="Crear producto (F7)" class="btn btn-default tcla-F7 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
+  <h2 class="page-heading">Inventario</h2>
+  <!-- <button routerLink="/producto/crear" tooltip="Crear producto (F7)" class="btn btn-default tcla-F7 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
-    <div class="row mb-3">
-        <div class="col">
-            <span class="text-muted" *ngIf="productos?.length">
-                Mostrando {{ productos?.length + ' registros' }}
-            </span>
-        </div>
+  <div class="row mb-3">
+    <div class="col">
+      <span class="text-muted" *ngIf="productos?.length">
+        Mostrando {{ productos?.length + ' registros' }}
+      </span>
+    </div>
 
-        <div class="col">
-            <div class="d-flex gap-2">
-                <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
-                <button [disabled]="downloading" tooltip="Descargar consignas" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
-                </button>
-                <!-- <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off"> -->
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador">
-                <!-- </form> -->
-                <!-- <button tooltip="Filtrar (F6)" (click)="search()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button> -->
-            </div>
-        </div>
+    <div class="col">
+      <div class="d-flex gap-2">
+        <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
+        <button [disabled]="downloading" tooltip="Descargar consignas" (click)="descargar()"
+          class="btn btn-default tcla-F6">
+          <img src="/assets/icons/download.png" class="icon">
+        </button>
+        <!-- <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off"> -->
+        <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador">
+        <!-- </form> -->
+        <!-- <button tooltip="Filtrar (F6)" (click)="search()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button> -->
+      </div>
     </div>
-    <div class="row">
-        <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/productos">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/consignas">Consignas</button>
-        </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
-            <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default  w-auto">
-                <ng-option value="">Categoria</ng-option>
-                <ng-option *ngFor="let categoria of categorias" [value]="categoria.nombre">
-                    {{categoria.nombre}}
-                </ng-option>
-            </ng-select>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-borderless table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th class="d-none d-md-table-cell">Categoria</th>
-                        <th class="d-none d-md-table-cell">Código</th>
-                        <th class="d-none d-md-table-cell text-right">Precio</th>
-                        <th class="text-center">Stock</th>
-                        <th class="text-center">Más</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="productos?.length < 1 && !loading">
-                            <span class="badge bg-primary">No tiene productos en consigna</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
-                        <td>
-                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
-                            {{ producto.nombre }}
-                        </td>
-                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
-                        <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                        <td class="d-none d-md-table-cell text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center"> {{ producto.stock }} </td>
-                        <td class="text-center">
-                            <a (click)="openModal(mdetalles, producto)" class="btn" tooltip="Ver detalles">
-                                <img  src="/assets/icons/search.png" class="icon me-2">
-                            </a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6 d-flex gap-2 mb-3">
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/productos">Todos</button>
+      <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
+        [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/producto/combos">Combos</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/ajustes">Ajustes</button>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/traslados">Traslados</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"
+        routerLink="/consignas">Consignas</button>
     </div>
+    <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+      <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default  w-auto">
+        <ng-option value="">Categoria</ng-option>
+        <ng-option *ngFor="let categoria of categorias" [value]="categoria.nombre">
+          {{categoria.nombre}}
+        </ng-option>
+      </ng-select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12 table-responsive">
+      <table class="table table-borderless table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="d-none d-md-table-cell">Categoria</th>
+            <th class="d-none d-md-table-cell">Código</th>
+            <th class="d-none d-md-table-cell text-right">Precio</th>
+            <th class="text-center">Stock</th>
+            <th class="text-center">Más</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="8" class="text-center" *ngIf="productos?.length < 1 && !loading">
+              <span class="badge bg-primary">No tiene productos en consigna</span>
+            </td>
+            <td colspan="8" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr
+            *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
+            <td>
+              <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px">
+              {{ producto.nombre }}
+            </td>
+            <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
+            <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
+            <td class="d-none d-md-table-cell text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-center"> {{ producto.stock }} </td>
+            <td class="text-center">
+              <a (click)="openModal(mdetalles, producto)" class="btn" tooltip="Ver detalles">
+                <img src="/assets/icons/search.png" class="icon me-2">
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-12" *ngIf="productos?.last_page > 1">
+      <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+  </div>
 </section>
 
 <ng-template #mdetalles>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h5>{{ producto.nombre }} <span class="badge bg-default text-dark">{{ producto?.ventas | sum:'cantidad' }} en consigna</span></h5>
+      <h5>{{ producto.nombre }} <span class="badge bg-default text-dark">{{ producto?.ventas | sum:'cantidad' }} en
+          consigna</span></h5>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <div class="table-responsive" style="max-height: 200px: overflow: auto;">
-        <table class="table table-borderless table-hover">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Cliente</th>
-                    <th>Vencimiento</th>
-                    <th>Venta</th>
-                    <th class="text-right">Stock</th>
-                    <th class="text-right">Más</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let venta of producto?.ventas">
-                    <td>{{ venta.fecha | date:'dd/MM/yyy'}}</td>
-                    <td>{{ venta.cliente}}</td>
-                    <td>{{ venta.fecha_pago | date:'dd/MM/yyy' }}</td>
-                    <td>
-                        {{ venta.nombre_documento }} # {{ venta.correlativo }}
-                    </td>
-                    <td class="text-end">{{ venta.cantidad }}</td>
-                    <td class="text-end">
-                        <a class="btn btn-default"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
-                            <img  src="/assets/icons/search.png" class="icon">
-                        </a>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td colspan="4" class="text-end"><b>Total</b></td>
-                    <td class="text-end"><b>{{ producto.ventas | sum:'cantidad' }}</b></td>
-                </tr>
-            </tbody>
-        </table>
+      <table class="table table-borderless table-hover">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Vencimiento</th>
+            <th>Venta</th>
+            <th class="text-right">Stock</th>
+            <th class="text-right">Más</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let venta of producto?.ventas">
+            <td>{{ venta.fecha | date:'dd/MM/yyy'}}</td>
+            <td>{{ venta.cliente}}</td>
+            <td>{{ venta.fecha_pago | date:'dd/MM/yyy' }}</td>
+            <td>
+              {{ venta.nombre_documento }} # {{ venta.correlativo }}
+            </td>
+            <td class="text-end">{{ venta.cantidad }}</td>
+            <td class="text-end">
+              <a class="btn btn-default" tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
+                <img src="/assets/icons/search.png" class="icon">
+              </a>
+            </td>
+          </tr>
+        </tbody>
+        <tbody>
+          <tr>
+            <td colspan="4" class="text-end"><b>Total</b></td>
+            <td class="text-end"><b>{{ producto.ventas | sum:'cantidad' }}</b></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </ng-template>
-

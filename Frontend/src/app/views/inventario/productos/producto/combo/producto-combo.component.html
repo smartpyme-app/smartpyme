@@ -21,7 +21,6 @@
       <div class="form-group col-md-12 col-lg-3">
         <label for="marca">Codigo Interno</label>
         <div class="input-group">
-          <span class="input-group-text">CMPKIT</span>
           <input type="text" class="form-control" name="marca" placeholder="Escribe aquí"
             formControlName="codigo_combo">
         </div>
@@ -109,11 +108,11 @@
       <h5 class="my-3 font-weight-bold">Existencia en Inventario</h5>
 
       <div class="form-group col-md-12 col-lg-4">
-        <div class="form-switch bg-light-info rounded" *ngIf="mode=='edit'">
+        <!-- <div class="form-switch bg-light-info rounded" *ngIf="mode=='edit'">
           <label for="modulo_citas">Actualizar existencia</label>
           <input class="form-check-input float-end" type="checkbox" role="switch"
             [formControl]="updateStockFormControl">
-        </div> <br>
+        </div> <br> -->
         <label for="nombre">{{mode=="create"?'Cantidad de combos a ingresar al inventario *':
           'Cantidad actual en inventario'}}</label>
         <input type="number" class="form-control" name="cantidad" placeholder="Escribe aquí" formControlName="cantidad"

@@ -1,6 +1,5 @@
-<p>cotizacion-form works!</p>
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-  <h3>Nueva Cotización</h3>
+  <h3>{{this.mode == 'show'?"Detalle":this.mode=="create"?"Nueva":"Editar"}} Cotización</h3>
   <button class="btn btn-light text-danger" routerLink="/cotizaciones"><i class="fa fa-arrow-left"></i>
     Regresar</button>
 </div>
@@ -9,11 +8,12 @@
   <div class="row">
     <div class="form-group col-md-4 col-lg-2">
       <label for="fecha">Fecha</label><br>
-      <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+      <input type="date" class="form-control" [disabled]="this.mode=='show'" [(ngModel)]="venta.fecha" name="fecha"
+        id="fecha">
     </div>
     <div class="form-group col-md-4 col-lg-3">
       <label for="id_usuario">Usuario</label>
-      <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
+      <select name="id_usuario" [disabled]="this.mode=='show'" [(ngModel)]="venta.id_usuario" class="form-select">
         <option [value]="usuario.id" *ngFor="let usuario of usuarios">
           {{ usuario.name }}
         </option>
@@ -21,7 +21,7 @@
     </div>
     <div class="form-group col-md-4 col-lg-3">
       <label for="id_sucursal">Sucursal</label>
-      <select name="id_sucursal" [(ngModel)]="venta.id_sucursal" class="form-select">
+      <select name="id_sucursal" [disabled]="this.mode=='show'" [(ngModel)]="venta.id_sucursal" class="form-select">
         <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
           {{ sucursal.nombre }}
         </option>
@@ -29,14 +29,15 @@
     </div>
     <div class="form-group col-md-4 col-lg-2">
       <label for="id_documento">Documento</label>
-      <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)"
-        class="form-select">
+      <select name="id_documento" [disabled]="this.mode=='show'" [(ngModel)]="venta.id_documento"
+        (change)="setDocumento($event.target.value)" class="form-select">
         <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
       </select>
     </div>
     <div class="form-group col-md-4 col-lg-2">
       <label for="correlativo">Correlativo</label>
-      <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+      <input type="number" class="form-control" [disabled]="this.mode=='show'" [(ngModel)]="venta.correlativo"
+        name="correlativo" id="correlativo">
     </div>
   </div>
   <div class="row">
@@ -44,28 +45,30 @@
     <div class="form-group col-md-12 col-lg-4">
       <label for="">Cliente</label>
       <div class="input-group flex-nowrap">
-        <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="venta.id_cliente"
-          class="form-select p-0">
+        <ng-select name="id_cliente" placeholder="Consumidor Final" [disabled]="this.mode=='show'"
+          [(ngModel)]="venta.id_cliente" class="form-select p-0">
           <ng-option value=""> Consumidor final </ng-option>
           <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
           <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
             {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
           </ng-option>
         </ng-select>
-        <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+        <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"
+          *ngIf="this.mode!='show'"></app-crear-cliente>
       </div>
     </div>
 
     <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
       <label for="">Proyecto</label>
       <div class="input-group flex-nowrap">
-        <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="venta.id_proyecto"
-          class="form-select p-0">
+        <ng-select name="id_proyecto" placeholder="Seleccione aquí" [disabled]="this.mode=='show'"
+          [(ngModel)]="venta.id_proyecto" class="form-select p-0">
           <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
             {{ proyecto.nombre }}
           </ng-option>
         </ng-select>
-        <app-crear-proyecto [id_proyecto]="venta.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+        <app-crear-proyecto [id_proyecto]="venta.id_proyecto" (update)="setProyecto($event)"
+          *ngIf="this.mode!='show'"></app-crear-proyecto>
       </div>
     </div>
   </div>
@@ -74,7 +77,7 @@
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Productos y servicios</h6>
 
-  <app-venta-detalles [venta]="venta" [usuarios]="usuarios" (update)="updateVenta($event)"
+  <app-venta-detalles [venta]="venta" [usuarios]="usuarios" (update)="updateVenta($event)" [mode]="mode"
     (sumTotal)="sumTotal()"></app-venta-detalles>
 
   <div class="row">

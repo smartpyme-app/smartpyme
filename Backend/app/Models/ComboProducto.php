@@ -22,6 +22,7 @@ class ComboProducto extends Model
         "estado",
         "cantidad",
         "id_bodega",
+        "correlativo"
     ];
 
     public function detalles()
