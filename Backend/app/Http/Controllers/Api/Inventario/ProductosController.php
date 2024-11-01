@@ -169,6 +169,7 @@ class ProductosController extends Controller
         // Configurar inventarios para las bodegas
         if (!$request->id && $producto->tipo != 'Servicio') {
             $bodegas = Bodega::all();
+            $producto->inventarios()->delete();
             foreach ($bodegas as $bodega) {
                 $inventario = new Inventario;
                 $inventario->id_producto    = $producto->id;
