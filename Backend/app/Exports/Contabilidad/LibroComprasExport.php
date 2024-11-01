@@ -3,6 +3,7 @@
 namespace App\Exports\Contabilidad;
 
 use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -44,6 +45,7 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
+        // Obtener las compras
         $compras = Compra::with(['proveedor'])
                             ->where('estado', '!=', 'Anulada')
                             ->when($request->id_sucursal, function($q) use ($request){
@@ -51,8 +53,21 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
                             })
                             ->whereBetween('fecha', [$request->inicio, $request->fin])
                             ->where('cotizacion', 0)
-                            ->orderBy('id', 'desc')->get();
-        return $compras;
+                            ->get();
+
+        // Obtener los gastos
+        $gastos = Gasto::with(['proveedor'])
+                            ->where('estado', '!=', 'Anulada')
+                            ->when($request->id_sucursal, function($q) use ($request) {
+                                $q->where('id_sucursal', $request->id_sucursal);
+                            })
+                            ->whereBetween('fecha', [$request->inicio, $request->fin])
+                            ->get();
+
+        // Unir y ordenar ambas colecciones por fecha
+        $libroCompras = $compras->merge($gastos)->sortBy('fecha');
+
+        return $libroCompras;
         
     }
 

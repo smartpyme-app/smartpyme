@@ -22,8 +22,8 @@
             margin: 0px;
         }
 
-        #cliente        {top: 4cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 4.5cm; left: 2.7cm; width: 9cm;}
+        #cliente        {top: 4cm; left: 2.5cm; width: 10cm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+        #direccion      {top: 4.5cm; left: 2.7cm; width: 10cm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
         #departamento   {top: 5cm; left: 3.3cm; width: 5cm;}
         #fecha          {top: 4cm; left: 14.5cm; }
 /*        #municipio      {top: 6.5cm; left: 2.2cm; width: 5cm;}*/
@@ -106,7 +106,7 @@
 
             <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>
             <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>
-            <p id="sub_total"> $ {{ number_format($venta->total, 2) }}</p>
+            <p id="sub_total"> $ {{ number_format($venta->total + $venta->iva_retenido, 2) }}</p>
             @if($venta->iva_retenido > 0)
             <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
             @endif

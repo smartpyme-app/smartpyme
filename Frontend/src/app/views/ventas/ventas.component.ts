@@ -341,7 +341,7 @@ export class VentasComponent implements OnInit {
 
     anularDTE(venta:any){
         this.venta = venta;
-        if(venta.sello_mh){
+        if(venta.sello_mh && !venta.dte_invalidacion){
             if (confirm('¿Confirma anular la venta y el DTE?')) {
                 this.venta = venta;
                 this.saving = true;
@@ -360,9 +360,7 @@ export class VentasComponent implements OnInit {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
                                 this.venta.sello_mh = dte.selloRecibido;
                                 this.venta.estado = 'Anulada';
-                                this.apiService.store('venta', this.venta).subscribe(data => {
-                                    // this.alertService.success('Venta guardada.');
-                                },error => {this.alertService.error(error); this.saving = false; });
+                                this.onSubmit();
                             }
 
                             this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
