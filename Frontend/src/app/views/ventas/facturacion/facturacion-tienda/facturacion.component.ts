@@ -200,6 +200,12 @@ export class FacturacionComponent implements OnInit {
                 this.venta.fecha_pago = this.apiService.date();
                 this.venta.id_documento = null;
                 this.venta.correlativo = null;
+                this.venta.tipo_dte = null;
+                this.venta.numero_control = null;
+                this.venta.codigo_generacion = null;
+                this.venta.sello_mh = null;
+                this.venta.dte = null;
+                this.venta.dte_invalidacion = null;
                 this.venta.id = null;
                 this.venta.detalles.forEach((detalle:any) => {
                     detalle.id = null;
