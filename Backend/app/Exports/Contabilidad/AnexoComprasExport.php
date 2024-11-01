@@ -3,7 +3,6 @@
 namespace App\Exports\Contabilidad;
 
 use App\Models\Compras\Compra;
-use App\Models\Compras\Gastos\Gasto;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -27,7 +26,6 @@ class AnexoComprasExport implements FromCollection, WithMapping
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        // Obtener las compras
         $compras = Compra::with(['proveedor'])
                             ->where('estado', '!=', 'Anulada')
                             ->when($request->id_sucursal, function($q) use ($request){
@@ -35,21 +33,8 @@ class AnexoComprasExport implements FromCollection, WithMapping
                             })
                             ->whereBetween('fecha', [$request->inicio, $request->fin])
                             ->where('cotizacion', 0)
-                            ->get();
-
-        // Obtener los gastos
-        $gastos = Gasto::with(['proveedor'])
-                            ->where('estado', '!=', 'Anulada')
-                            ->when($request->id_sucursal, function($q) use ($request) {
-                                $q->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->whereBetween('fecha', [$request->inicio, $request->fin])
-                            ->get();
-
-        // Unir y ordenar ambas colecciones por fecha
-        $libroCompras = $compras->merge($gastos)->sortBy('fecha');
-
-        return $libroCompras;
+                            ->orderBy('id', 'desc')->get();
+        return $compras;
         
     }
 
@@ -66,24 +51,24 @@ class AnexoComprasExport implements FromCollection, WithMapping
            $fields = [
               \Carbon\Carbon::parse($row->fecha)->format('d/m/Y'), //'Fecha',
               '4', //'Clase',
-              '01', //'Tipo',
-              $row->dte['identificacion']['numeroControl'] ?? '', //'Resolucion',
-              $row->dte['sello'] ?? '', //'Serie',
-              $row->dte['identificacion']['codigoGeneracion'] ?? $row->referencia, //'Numero',
-              $row->dte['identificacion']['codigoGeneracion'] ?? $row->referencia, //'Numero',
-              trim($row->referencia), //'Numero Interno',
-              trim($row->referencia), //'Numero Interno',
-              NULL, //'Caja registradora',
-              $row->exenta ? $row->exenta : '0.00', //'Exentas',
-              '0.00', //'No Exentas no sujetas a proporcionalidad',
-              $row->no_sujeta ? $row->no_sujeta : '0.00', //'No Sujetas',
+              '03', //'Tipo',
+              trim($row->correlativo), //'Numero Interno',
+              $nit_nrc, //'NIT o NRC',
+              $nombre, //'NIT o NRC',
+              $row->exenta + $row->no_sujeta, //'Exentas y no sujetas',
+              '0.00', //'Internaciones Exentas y no sujetas',
+              '0.00', //'Importaciones Exentas y no sujetas',
               $row->total ? $row->total : '0.00', //'Gravadas', 
-              '0.00', //'Exportacion interna', 
-              '0.00', //'Exportacion externa', 
-              '0.00', //'Exportacion servicios', 
-              '0.00', //'Ventas zonas francas', 
-              '0.00', //'Ventas a terceros',
+              '0.00', //'Internaciones Gravadas', 
+              '0.00', //'Importaciones Gravadas', 
+              '0.00', //'Importaciones Gravadas Servicios', 
+              $row->iva ? $row->iva : '0.00', //'Credito fiscal', 
               $row->total ? $row->total : '0.00', //'Total',
+              '', //'DUI', 
+              '0', //'Tipo de operacion', 
+              '0', //'Clasificación', 
+              '0', //'Sector', 
+              '0', //'Tipo de costo/gasto', 
               2, //'Anexo',
 
          ];
