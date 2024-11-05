@@ -235,14 +235,15 @@
     </div>
     <div class="row mt-5">
         <div class="col-md-12">
-            <button type="submit" (click)="onFacturar()" [disabled]="saving" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
-                <span *ngIf="!saving">
+            <button type="submit" (click)="onFacturar()" [disabled]="saving || emiting" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
+                <span *ngIf="!saving && !emiting">
                     Procesar
                     <span *ngIf="venta.cotizacion == 1">cotización</span>
                     <span *ngIf="venta.cotizacion != 1">venta</span>
                     <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
                 </span>
-                <span *ngIf="saving">Procesando...</span>
+                <span *ngIf="saving && !emiting">Procesando...</span>
+                <span *ngIf="emiting">Emitiendo...</span>
             </button>
             <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar venta (F10)">
                 Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
