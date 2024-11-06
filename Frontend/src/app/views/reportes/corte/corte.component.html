@@ -14,7 +14,7 @@
                 </ng-option>
             </ng-select>
             <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                <option value="" *ngIf="usuario.tipo == 'Administrador'">Todas las sucursal</option>
+                <option value="" *ngIf="usuario.tipo != 'Ventas'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
                 </option>
