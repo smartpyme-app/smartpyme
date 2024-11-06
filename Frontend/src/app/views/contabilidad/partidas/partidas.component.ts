@@ -153,7 +153,7 @@ export class PartidasComponent implements OnInit {
             const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
             const hastaFormatted = this.reporte.hasta;
             const tipo_descargaFormatted = this.reporte.tipo_descarga;
-            window.open(this.apiService.baseUrl + '/api/reportes/diario/auxiliar/' + desdeFormatted + '/' + hastaFormatted + '/' + tipo_descargaFormatted + '?token=' + this.apiService.auth_token());
+            window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/' + desdeFormatted + '/' + hastaFormatted + '/' + tipo_descargaFormatted + '?token=' + this.apiService.auth_token());
         } else {
             alert('Por favor, llenar los campos requeridos.');
         }
@@ -164,19 +164,20 @@ export class PartidasComponent implements OnInit {
             const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
             const hastaFormatted = this.reporte.hasta;
             const conceptoFormatted = this.reporte.concepto;
-            window.open(this.apiService.baseUrl + '/api/reportes/libro/mayor/' + desdeFormatted + '/' + hastaFormatted + '/'+conceptoFormatted +'?token=' + this.apiService.auth_token());
+            window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + desdeFormatted + '/' + hastaFormatted + '/'+conceptoFormatted +'?token=' + this.apiService.auth_token());
         } else {
             alert('Por favor, llenar los campos requeridos.');
         }
     }
 
     public imprimirDiarioMayor() {
-        if (this.reporte.desde && this.reporte.hasta) {
+        if (this.reporte.desde && this.reporte.hasta && this.reporte.tipo_descarga) {
           // Asegúrate de que las fechas existan
-          const desdeFormatted = this.reporte.desde; // Puedes formatear si lo necesitas
+          const desdeFormatted = this.reporte.desde;
           const hastaFormatted = this.reporte.hasta;
+          const tipo_descargaFormatted = this.reporte.tipo_descarga;
 
-          window.open(this.apiService.baseUrl + '/api/reportes/diario/mayor/' + desdeFormatted + '/' + hastaFormatted + '?token=' + this.apiService.auth_token());
+          window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + desdeFormatted + '/' + hastaFormatted + '/' + tipo_descargaFormatted + '?token=' + this.apiService.auth_token());
         } else {
           console.error('Por favor, llenar los campos requeridos.');
         }

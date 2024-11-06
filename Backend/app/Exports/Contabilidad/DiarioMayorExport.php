@@ -8,7 +8,7 @@ use Maatwebsite\Excel\Concerns\FromView;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithStyles;
 
-class DiarioAuxiliarExport implements FromView, WithStyles
+class DiarioMayorExport implements FromView, WithStyles
 {
     protected $data;
 
@@ -23,11 +23,11 @@ class DiarioAuxiliarExport implements FromView, WithStyles
      */
     public function view(): View
     {
-        return view('reportes.contabilidad.excel.libro_diario_excel', [
+        return view('reportes.contabilidad.excel.libro_diario_mayor_excel', [
             'empresa' => $this->data['empresa'],
-            'fechaInicio' => $this->data['fechaInicio'],
-            'fechaFin' => $this->data['fechaFin'],
-            'reporteLibroDiario' => $this->data['reporteLibroDiario'],
+            'desde' => $this->data['desde'],
+            'hasta' => $this->data['hasta'],
+            'cuentas' => $this->data['cuentas'],
         ]);
     }
 
@@ -50,16 +50,12 @@ class DiarioAuxiliarExport implements FromView, WithStyles
         $sheet->getRowDimension('2')->setRowHeight(35);
         $sheet->getRowDimension('3')->setRowHeight(35);
         $sheet->getRowDimension('4')->setRowHeight(35);
-        $sheet->getRowDimension('5')->setRowHeight(35);
-        $sheet->getRowDimension('6')->setRowHeight(35);
-        $sheet->getRowDimension('7')->setRowHeight(35);
 
         return [
-            'A1:G1' => ['font' => ['bold' => true, 'size' => 16]],
-            'A2:G2' => ['font' => ['bold' => true, 'size' => 16]],
-            'A3:G3' => ['font' => ['bold' => true, 'size' => 16]],
-            'A4:G4' => ['font' => ['bold' => true, 'size' => 16]],
-            'A5:G5' => ['font' => ['bold' => true, 'size' => 14]],
+            'A1:G1' => ['font' => ['bold' => true, 'size' => 14]],
+            'A2:G2' => ['font' => ['bold' => true, 'size' => 14]],
+            'A3:G3' => ['font' => ['bold' => true, 'size' => 14]],
+            'A4:G4' => ['font' => ['bold' => true, 'size' => 14]],
         ];
     }
 }
