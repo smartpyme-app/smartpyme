@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 
 import * as moment from 'moment';
 
@@ -31,6 +32,8 @@ export class FacturacionComponent implements OnInit {
   public supervisor: any = {};
   public loading = false;
   public saving = false;
+  public sending = false;
+  public emiting = false;
   public duplicarventa = false;
   public facturarCotizacion = false;
   public api: boolean = false;
@@ -45,13 +48,14 @@ export class FacturacionComponent implements OnInit {
   public creditoTemplate!: TemplateRef<any>;
 
 
-  constructor(
-    public apiService: ApiService, private alertService: AlertService,
-    private modalService: BsModalService, private sumPipe: SumPipe,
-    private route: ActivatedRoute, private router: Router,
-  ) {
-    this.router.routeReuseStrategy.shouldReuseRoute = function () { return false; };
-  }
+  constructor( 
+        public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
+        private modalService: BsModalService, private sumPipe:SumPipe,
+        private route: ActivatedRoute, private router: Router,
+    ) {
+        this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+    }
+
 
   ngOnInit() {
 
@@ -212,6 +216,12 @@ export class FacturacionComponent implements OnInit {
         this.venta.fecha_pago = this.apiService.date();
         this.venta.id_documento = null;
         this.venta.correlativo = null;
+        this.venta.tipo_dte = null;
+        this.venta.numero_control = null;
+        this.venta.codigo_generacion = null;
+        this.venta.sello_mh = null;
+        this.venta.dte = null;
+        this.venta.dte_invalidacion = null;
         this.venta.id = null;
         this.venta.detalles.forEach((detalle: any) => {
           detalle.id = null;
@@ -454,9 +464,15 @@ export class FacturacionComponent implements OnInit {
       // }
 
       if (this.venta.cotizacion != 1 && this.apiService.auth_user().empresa.impresion_en_facturacion) {
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-        this.cargarDatosIniciales();
-        this.router.navigate(['/venta/crear']);
+        if(this.apiService.auth_user().empresa.facturacion_electronica){
+            this.venta.id = venta.id;
+            this.emitirDTE();
+        }else{
+            window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+            this.cargarDatosIniciales();
+            this.router.navigate(['/venta/crear']);
+        }
+
       } else {
 
         if (this.venta.cotizacion == 1) {
@@ -499,6 +515,40 @@ export class FacturacionComponent implements OnInit {
       this.supervisor = {};
     }, error => { this.alertService.error(error); this.loading = false; });
   }
+
+
+  // DTE
+
+          emitirDTE(){
+              this.emiting = true;
+              this.mhService.emitirDTE(this.venta).then((venta) => {
+                  this.venta = venta;
+                  this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                  this.enviarDTE();
+                  this.emiting = false;
+
+                  window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+                  this.cargarDatosIniciales();
+                  this.router.navigate(['/venta/crear']);
+
+              }).catch((error) => {
+
+                  this.cargarDatosIniciales();
+                  this.router.navigate(['/venta/crear']);
+                  
+                  this.emiting = false;
+                  this.alertService.warning('El documento no fue emitido.', error);
+              });
+          }
+
+          enviarDTE(){
+              this.sending = true;
+              this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
+                  this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+                  this.sending = false;
+              },error => {this.alertService.error('DTE no pudo ser enviado por correo.'); this.sending = false; });
+          }
+
 
 
 }
