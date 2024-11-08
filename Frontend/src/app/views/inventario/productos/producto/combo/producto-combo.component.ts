@@ -2,186 +2,241 @@ import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
-import { SumPipe }     from '@pipes/sum.pipe';
+import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-producto-combo',
   templateUrl: './producto-combo.component.html',
-  providers: [ SumPipe ]
+  providers: [SumPipe]
 })
 export class ProductoComboComponent implements OnInit {
 
-    public producto: any = {};
-    public categorias:any = [];
-    public subcategorias:any = [];
-    public subcategRes:any = [];
-    public proveedores:any = [];
-    public usuario:any = {};
-    public categoria:any = {};
-    public bodegas:any = [];
-    public loading = false;
-    public guardar = false;
-    public variants: Array<{ nombre: string, cantidad: number }> = [];
+  producto!: FormGroup;
+  categorias: any = [];
+  usuario: any = {};
+  bodegas: any = [];
+  loading = false;
+  guardar = false;
+  variants: Array<{ nombre: string, cantidad: number }> = [];
+  updateStockFormControl: FormControl<boolean | null> = new FormControl<boolean | null>(false);
+  cantidadOriginal: number = 0;
+  get formValue() {
+    return this.producto?.getRawValue();
+  }
+  get detalles() {
+    return this.producto?.get('detalles')?.value;
+  }
+  mode: "create" | "edit" | "show" = "create";
+  constructor(
+    private apiService: ApiService,
+    private alertService: AlertService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private sumPipe: SumPipe,
+    private _fb: FormBuilder
+  ) {
+    this.addVariant();
+  }
 
+  ngOnInit() {
 
+    this.producto = this._fb.group({
+      id: [null],
+      nombre: ['', Validators.required],
+      codigo_combo: [{ value: null, disabled: true }, Validators.required],
+      descripcion: ['', Validators.required],
+      impuesto: [null],
+      precio: [null],
+      costo: [{ value: null, disabled: true }],
+      precio_final: [{ value: null, disabled: true }],
+      id_bodega: [null, Validators.required],
+      cantidad: [null, Validators.required],
+      detalles: [[], [Validators.required, Validators.minLength(1)]],
+    });
+    this.usuario = this.apiService.auth_user();
 
-    constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private sumPipe:SumPipe,
-    ) {
-        // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
-        this.addVariant();
-    }
+    this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+      this.bodegas = bodegas;
+    }, error => { this.alertService.error(error); });
 
-    ngOnInit() {
-        this.producto.nombre="";
-        this.producto.detalles=[];
-        this.producto.id_empresa = this.apiService.auth_user().id_empresa;
-        this.producto.id_categoria = 3154;
-        this.producto.tipo ='Compuesto';
-        this.usuario = this.apiService.auth_user();
-        // subcategorias
-        
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
-            this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+    this.route.params.subscribe((params: any) => {
+      if (!params.edit_id && !params.detail_id) {
+        this.getNewCorrelativo();
+        return;
+      };
 
-        this.apiService.getAll('subcategorias').subscribe(subcategorias => {
-            this.subcategorias = subcategorias;
-        }, error => {this.alertService.error(error);});
-        
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-            this.proveedores = proveedores;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+      let id = params.edit_id || params.detail_id;
+      this.loading = true;
+      this.apiService.read('combos/get/', id).subscribe(producto => {
+        let data = {
+          id: producto.id,
+          nombre: producto.nombre,
+          codigo_combo: producto.codigo_combo,
+          descripcion: producto.descripcion,
+          impuesto: producto.impuesto,
+          costo: producto.costo,
+          precio_final: producto.precio_total,
+          precio: producto.precio,
+          id_bodega: producto.id_bodega,
+          cantidad: producto.cantidad,
+          detalles: producto.detalles.map((detalle: any) => {
+            return {
+              id: detalle.id,
+              cantidad: detalle.cantidad,
+              nombre_producto: detalle.producto.nombre,
+              descripcion: detalle.producto.descripcion,
+              id_producto: detalle.id_producto,
+              cantidad_combo: detalle.cantidad * producto.cantidad,
+              precio: detalle.precio,
+              costo: detalle.costo,
+              total: detalle.costo * detalle.cantidad,
+              img: detalle.producto.img,
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-        }, error => {this.alertService.error(error);});
-
-    }
-
-    public setCategoria(categoria:any){
-        if(categoria.subcategoria){
-            this.subcategRes.push(categoria);
-            this.producto.id_subcategoria= categoria.id;
-
-        }else{
-            this.categorias.push(categoria);
-            this.producto.id_categoria = categoria.id;
-        }
-
-    }
-
-    public setCompuesto(){
-        if(this.producto.tipo == 'Producto'){
-            this.producto.tipo = 'Compuesto';
-        }else{
-            this.producto.tipo = 'Producto';
-        }
-    }
-
-    // CALCULO DEL STOCK MULTIPLICADO
-    public calCantidadenCombo(){
-        if(this.producto.stock > 0){
-            this.producto.detalles.forEach((detalle: any) => {
-                detalle.cantidad_combo= detalle.cantidad * this.producto.stock;
-              });
-        }
-    }
-
-    public calPrecioFinal(){
-        if(this.usuario.empresa.iva > 0){
-            this.producto.impuesto = this.usuario.empresa.iva / 100;
-            this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
-        }
-    }
-
-
-    public onSubmit() {
-        this.guardar = true;
-        this.producto.codigo="CMPKIT"+this.producto.codigo;
-        this.apiService.store('producto/compuesto', this.producto).subscribe(producto => {
-            this.guardar = false;
-            if(!this.producto.id) {
-                this.producto = producto;
             }
-            this.router.navigate(['/productos']);
-
-        },error => {this.alertService.error(error); this.guardar = false; });
-
-
-    }
-
-    public barcode(){
-        var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
-    }
-
-    public verificarSiExiste(){
-        if(this.producto.nombre){
-            this.apiService.getAll('productos', { nombre: this.producto.nombre, estado: 1, }).subscribe(productos => { 
-                if(productos.data[0]){
-                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
-                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
-                    );
-                }
-                this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+          }),
         }
-    }
-
-    public sumTotal() {
-        this.producto.costo = (parseFloat(this.sumPipe.transform(this.producto.detalles, 'total'))).toFixed(2);
-    }
-
-    public updatecompra(producto:any) {
-        this.producto = producto;
+        this.cantidadOriginal = +data.cantidad;
+        this.producto.patchValue(data);
         this.sumTotal();
-    }
+        this.loading = false;
 
-    // creacion de sku 
-private correlativo: number = 1; // Inicialmente, este sería el primer SKU
+        if (params.edit_id) {
+          this.mode = "edit";
+          this.producto.get("id_bodega")?.disable();
+          this.producto.get("codigo_combo")?.disable();
+          this.producto.get("cantidad")?.disable();
+        }
+        if (params.detail_id) {
+          this.mode = "show";
+          this.producto.disable();
+        }
+      }, error => { this.alertService.error(error); });
 
- public updateInputValue(): void {
-    const categoriaSeleccionada = this.categorias.find((c:any) => c.id === this.producto.id_categoria);
-    const subcategoriaSeleccionada = this.subcategorias.find((s:any) => s.id === this.producto.id_subcategoria); 
-    // console.log( this.producto.id_subcategoria);
 
-    let nombreCategoria = '';
-    let nombreSubcategoria = '';
+    });
 
-    if (categoriaSeleccionada) {
+    this.updateStockFormControl.valueChanges.subscribe(async (value) => {
+      if (value) {
+        let confirm = await Swal.fire({
+          title: 'Edicion de combo',
+          text: '¿Seguro que quieres modificar la cantidad del combo?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí',
+          cancelButtonText: 'No'
+        });
 
-        this.subcategRes = this.subcategorias.filter((subcategoria:any) => subcategoria.id_cate_padre === categoriaSeleccionada.id);
-        nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
-        console.log("Este es el action de la categoria");
-        console.log(this.subcategRes);
-        
-    }
+        if (!confirm.isConfirmed) {
+          this.updateStockFormControl.setValue(false, { emitEvent: false });
+          return;
+        }
 
-    if (subcategoriaSeleccionada) {
-      nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
-      console.log("Este es el action de la subcategoria");
-      console.log(nombreSubcategoria);
-    }
+        this.producto.get("cantidad")?.enable();
+      }
+      else {
+        this.producto.get("cantidad")?.setValue(this.cantidadOriginal);
+        this.producto.get("cantidad")?.disable();
+      }
 
-    if (this.producto.id_categoria && this.producto.id_subcategoria) {
-      this.producto.codigo= `${nombreCategoria}${nombreSubcategoria}${this.correlativo.toString().padStart(5, '0')}`;
+
+    });
+  }
+  getNewCorrelativo() {
+    this.apiService.getToUrl(this.apiService.apiUrl + 'combos/GetNewCorrelativo').subscribe((data) => {
+      this.producto.get("codigo_combo")?.setValue(data.correlativo);
+    });
+  }
+  // CALCULO DEL STOCK MULTIPLICADO
+  public calCantidadenCombo() {
+    if (this.formValue.cantidad > 0) {
+
+
+      this.producto.get("detalles")?.setValue(this.detalles.map((detalle: any) => {
+        detalle.cantidad_combo = detalle.cantidad * this.formValue.cantidad;
+        return detalle;
+      }));
     }
   }
 
-//   variantes 
+  public calPrecioFinal() {
+    if (this.usuario.empresa.iva > 0) {
+      this.producto.get("impuesto")?.setValue(this.usuario.empresa.iva / 100);
+      this.producto.get("precio_final")?.setValue(
+        (
+          (this.formValue.precio * 1) +
+          (this.formValue.precio * this.formValue.impuesto)
+        ).toFixed(2));
+    }
+  }
 
-addVariant(): void {
+
+  public onSubmit() {
+    this.guardar = true;
+    // this.producto.codigo = "CMPKIT" + this.producto.codigo;
+
+
+    if (this.mode == "create") {
+      this.apiService.store('combos/crear', this.producto.getRawValue()).subscribe(producto => {
+        this.guardar = false;
+        if (!this.formValue.id) {
+          this.producto = producto;
+        }
+        this.router.navigate(['/producto/combos']);
+
+      }, error => { this.alertService.error(error); this.guardar = false; });
+    }
+    else {
+      this.apiService.store('combos/actualizar', this.producto.getRawValue()).subscribe(producto => {
+        this.guardar = false;
+        if (!this.formValue.id) {
+          this.producto = producto;
+        }
+        this.router.navigate(['/producto/combos']);
+
+      }, error => { this.alertService.error(error); this.guardar = false; });
+    }
+
+  }
+
+  public barcode() {
+    var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.formValue.codigo + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+  }
+
+  public verificarSiExiste() {
+    if (this.formValue.nombre) {
+      this.apiService.getAll('productos', { nombre: this.formValue.nombre, estado: 1, }).subscribe(productos => {
+        if (productos.data[0]) {
+          this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
+            'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+          );
+        }
+        this.loading = false;
+      }, error => { this.alertService.error(error); this.loading = false; });
+    }
+  }
+
+  public sumTotal() {
+    this.producto.get("costo")?.setValue((parseFloat(this.sumPipe.transform(this.detalles, 'total'))).toFixed(2));
+  }
+
+  public updatecompra(producto: any) {
+
+    this.producto.get("detalles")?.setValue(producto.detalles);
+
+    this.sumTotal();
+  }
+  addVariant(): void {
     this.variants.push({ nombre: '', cantidad: 0 });
   }
 
   removeVariant(index: number): void {
     this.variants.splice(index, 1);
   }
-    
+
 
 }

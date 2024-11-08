@@ -1,13 +1,14 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Inventario</h2>
-  <button *ngIf="apiService.canCreate()" (click)="openModal(majuste)" tooltip="Crear ajuste (F7)"
-    class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir ajuste</button>
+  <button *ngIf="apiService.canCreate()" [routerLink]="['/producto/combo/crear']" tooltip="Crear ajuste (F7)"
+    class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir combo</button>
 </section>
+
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="row mb-3">
     <div class="col">
-      <span class="text-muted d-flex align-items-center gap-2" *ngIf="ajustes?.total">
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="combos?.total">
         Mostrando
         <select name="paginate" class="form-select w-auto" (change)="filtrarAjustes()" [(ngModel)]="filtros.paginate">
           <option value="10">10</option>
@@ -15,7 +16,7 @@
           <option value="50">50</option>
           <option value="100">100</option>
         </select>
-        de {{ ajustes?.total + ' registros' }}
+        de {{ combos?.total + ' registros' }}
       </span>
     </div>
 
@@ -25,7 +26,7 @@
           class="btn btn-default tcla-F6">
           <img src="/assets/icons/download.png" class="icon">
         </button>
-        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarAjustes()" autocomplete="off">
+        <form class="d-flex input-group" name="form" (ngSubmit)="filtrar()" autocomplete="off">
           <div class="input-group">
             <div class="input-group-text bg-white border-end-0">
               <i class="fa fa-search text-muted"></i>
@@ -53,13 +54,12 @@
         routerLink="/consignas">Consignas</button>
     </div>
     <div class="col-md-6 d-flex justify-content-end gap-2">
-      <select name="estado" (change)="filtrarAjustes()" [(ngModel)]="filtros.estado"
-        class="form-select bg-default w-auto">
+      <select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
         <option value="">Estado</option>
         <option value="Confirmado">Confirmado</option>
         <option value="Cancelado">Cancelado</option>
       </select>
-      <select name="id_bodega" (change)="filtrarAjustes()" [(ngModel)]="filtros.id_bodega"
+      <select name="id_bodega" (change)="filtrar()" [(ngModel)]="filtros.id_bodega"
         class="form-select bg-default w-auto">
         <option value="">Bodega</option>
         <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
@@ -73,62 +73,54 @@
           <tr>
             <th (click)="setOrden('created_at')"
               [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}"
-              class="click">Fecha</th>
-            <th>Usuario</th>
-            <th>Producto</th>
+              class="click">Fecha de creacion</th>
+            <th>Codigo</th>
+            <th>Nombre combo</th>
             <th class="d-none d-lg-table-cell">Descripción</th>
+            <th>Costo</th>
+            <th>Precio total con iva</th>
             <th>Estado</th>
-            <th>Bodega</th>
-            <th (click)="setOrden('ajuste')"
-              [ngClass]="{'sorted-asc': filtros.orden == 'ajuste' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'ajuste' && filtros.direccion == 'desc'}"
-              class="click text-center">Ajuste</th>
+            <td></td>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="8" class="text-center" *ngIf="ajustes?.total < 1 && !loading">
-              <span class="badge bg-primary">No tiene ajustes registrados</span>
+            <td colspan="8" class="text-center" *ngIf="combos?.total < 1 && !loading">
+              <span class="badge bg-primary">No tiene combos registrados</span>
             </td>
             <td colspan="8" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
-          <tr *ngFor=" let ajuste of ajustes?.data">
-            <td>{{ ajuste.created_at | date:'dd/MM/yyyy' }}</td>
-            <td>{{ ajuste.nombre_usuario }}</td>
-            <td>{{ ajuste.nombre_producto }}<a class="float-end d-none" tooltip="Ver información del producto"
-                routerLink="/producto/{{ajuste.id_producto}}"><i class="fa fa-edit"></i></a></td>
-            <td class="d-none d-lg-table-cell"><span tooltip="{{ ajuste.concepto}}">{{ ajuste.concepto | truncate:20
-                }}</span></td>
+          <tr *ngFor=" let combo of combos?.data">
+            <td>{{ combo.created_at | date:'dd/MM/yyyy' }}</td>
+            <td>{{combo.codigo_combo}}</td>
+            <td>{{ combo.nombre }}</td>
+            <td>{{combo.descripcion}}</td>
+            <td>{{combo.costo_total | currency}}</td>
+            <td>{{combo.precio_total |currency}} </td>
             <td>
-              <select name="estado" class="form-select w-auto border-0" (change)="setEstado(ajuste)"
-                [(ngModel)]="ajuste.estado"
-                [ngClass]="{'bg-light-danger' : ajuste?.estado == 'Cancelado', 'bg-light-success' : ajuste?.estado == 'Confirmado'}">
-                <option value="Confirmado">Confirmado</option>
-                <option value="Cancelado">Cancelado</option>
+              <select name="estado" class="form-select w-auto border-0" [(ngModel)]="combo.estado"
+                [ngClass]="{'bg-light-danger' : combo?.estado == 'Inactivo', 'bg-light-success' : combo?.estado == 'Activo'}"
+                (ngModelChange)="setComboState(combo)">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
               </select>
             </td>
-            <td>{{ ajuste.nombre_bodega }}</td>
-            <td class="text-center">
-              <span [ngClass]="{ 'text-danger' : ajuste.ajuste < 0, 'text-success' : ajuste.ajuste > 0 }" class="click"
-                placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                {{ ajuste.ajuste }}
+            <td>
+              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
               </span>
-              <ng-template #popTemplate>
-                <table width="100%">
-                  <tr>
-                    <td>Stock anterior: </td>
-                    <td class="text-end">{{ ajuste.stock_actual }}</td>
-                  </tr>
-                  <tr>
-                    <td>Ajuste: </td>
-                    <td class="text-end">{{ ajuste.ajuste }}</td>
-                  </tr>
-                  <tr>
-                    <td>Stock actual: </td>
-                    <td class="text-end">{{ ajuste.stock_real }}</td>
-                  </tr>
-                </table>
+              <ng-template #accionesTemplate>
+                <div class="d-flex flex-column align-items-start">
+                  <a *ngIf="combo.estado == 'Activo' && apiService.canEdit()"
+                    routerLink="/producto/combo/editar/{{combo.id}}" class="btn">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a routerLink="/producto/combo/ver/{{combo.id}}" class="btn">
+                    <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                  </a>
+                </div>
               </ng-template>
             </td>
           </tr>
@@ -136,73 +128,12 @@
       </table>
     </div>
 
-    <div class="col-12" *ngIf="ajustes?.last_page > 1">
+    <div class="col-12" *ngIf="combos?.last_page > 1">
       <app-pagination [items]="ajustes" (setPagination)="setPagination($event)"></app-pagination>
     </div>
   </div>
 </section>
 
-<ng-template #majuste>
-  <div class="modal-header justify-content-between">
-    <h5 class="modal-title mb-0">Nuevo ajuste </h5>
-    <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i
-        class="fa fa-close"></i></button>
-  </div>
-  <div class="modal-body">
-    <app-notificaciones-container></app-notificaciones-container>
-    <form (ngSubmit)="onSubmit()" autocomplete="off">
-      <div class="row">
-        <div class="form-group col-md-12">
-          <label for="">Producto</label>
-          <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="ajuste.id_producto"
-            class="form-select p-0">
-            <ng-option value="" selected>Seleccionar producto</ng-option>
-            <ng-option *ngFor="let producto of productos" [value]="producto.id">
-              {{producto.nombre}}
-            </ng-option>
-          </ng-select>
-        </div>
-        <div class="form-group col-md-12">
-          <label for="">Bodega</label>
-          <ng-select [disabled]="!ajuste.id_producto" name="id_bodega" (change)="setBodega()"
-            [(ngModel)]="ajuste.id_bodega" class="form-select p-0">
-            <ng-option value="" selected>Seleccionar bodega</ng-option>
-            <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
-              {{inventario.nombre_bodega}}
-              <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
-            </ng-option>
-          </ng-select>
-        </div>
-        <div class="form-group col-md-12">
-          <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
-          <input type="text" [disabled]="!ajuste.id_bodega"
-            oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
-            class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()"
-            (keyup)="calAjuste()" name="stock_real">
-        </div>
-
-        <div class="form-group col-md-12" *ngIf="ajuste.stock_real">
-          <label for="ajuste">Se realizá un ajuste de:</label>
-          <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>
-          <p *ngIf="!ajuste.stock_real"> 0</p>
-        </div>
-
-        <div class="form-group col-md-12">
-          <label for="concepto">Concepto:</label>
-          <input type="text" class="form-control" [(ngModel)]="ajuste.concepto" name="concepto">
-        </div>
-
-      </div>
-      <div class="d-grid mt-3">
-        <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
-          <span *ngIf="!saving">Guardar</span>
-          <span *ngIf="saving">Guardando...</span>
-        </button>
-      </div>
-
-    </form>
-  </div>
-</ng-template>
 
 <ng-template #mfilter>
   <div class="modal-header">

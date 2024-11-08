@@ -55,6 +55,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
 
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
+import { ComboIndexComponent } from './productos/producto/combo/combo-index/combo-index.component';
 
 @NgModule({
   imports: [
@@ -77,7 +78,7 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     FocusModule.forRoot()
   ],
   declarations: [
-  	ProductosComponent,
+    ProductosComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
@@ -107,10 +108,11 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     BodegasComponent,
     ProductoComboComponent,
     ComboDetallesComponent,
-    BuscadorProductoComponent
+    BuscadorProductoComponent,
+    ComboIndexComponent
   ],
   exports: [
-  	ProductosComponent,
+    ProductosComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,

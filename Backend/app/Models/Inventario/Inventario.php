@@ -2,6 +2,7 @@
 
 namespace App\Models\Inventario;
 
+use App\Models\ComboProducto;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -32,7 +33,7 @@ class Inventario extends Model
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
     }
 
-    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL)
+    public function kardex($modelo, $cantidad, $precio = NULL, $costo = NULL, $detalle = null)
     {
 
         $clase = get_class($modelo);
@@ -113,6 +114,14 @@ class Inventario extends Model
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Devolución Compra Anulada';
             }
+        } else if ($clase == ComboProducto::class) {
+            if ($cantidad > 0) {
+                $entradaCantidad =  $cantidad;
+                $clase = 'Combo';
+            } else {
+                $salidaCantidad =  abs($cantidad);
+                $clase = 'Combo Anulado';
+            }
         } else {
             // return null;
         }
@@ -129,7 +138,7 @@ class Inventario extends Model
             'fecha'             => date('Y-m-d'),
             'id_producto'       => $this->id_producto,
             'id_inventario'     => $this->id_bodega,
-            'detalle'           => $clase,
+            'detalle'           => $detalle ?? $clase,
             'referencia'        => $modelo->id,
             'precio_unitario'   => $salidaCantidad ? $precio : null,
             'costo_unitario'    => $entradaCantidad ? $costo : null,
