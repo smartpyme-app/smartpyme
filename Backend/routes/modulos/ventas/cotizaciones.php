@@ -25,6 +25,4 @@ Route::post('/cotizacion/detalle',          [DetallesController::class, 'histori
 Route::get('/cotizaciones',                    [CotizacionVentaController::class, 'index']);
 
 Route::post("cotizacionVentas", [CotizacionVentaController::class, 'store']);
-Route::post("updateCotizacionVentas", [CotizacionVentaController::class, 'update']);
-Route::post("updateStateCotizacionVentas", [CotizacionVentaController::class, 'updateState']);
 Route::get("cotizacionVentas/{id}", [CotizacionVentaController::class, 'read']);

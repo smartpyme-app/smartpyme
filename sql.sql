@@ -1,221 +1,43 @@
--- Bancos
-CREATE TABLE cuentas_bancarias (
+ALTER TABLE devoluciones_venta ADD correlativo varchar(255) NULL after fecha;
+ALTER TABLE devoluciones_venta ADD id_documento int NULL after correlativo;
+
+ALTER TABLE productos ADD deleted_at timestamp NULL after updated_at;
+ALTER TABLE inventario ADD deleted_at timestamp NULL after updated_at;
+
+
+CREATE TABLE licencias (
     id int NOT NULL AUTO_INCREMENT,
-    numero varchar(255) NOT NULL,
-    nombre_banco varchar(255) NOT NULL,
-    tipo varchar(255) NOT NULL,
-    saldo decimal(10,2) NOT NULL,
-    correlativo_cheques int NULL,
-    id_cuenta_contable int NULL,
-    id_empresa int NOT NULL,
+    num_licencias int NULL,
+    id_empresa int  NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
 
-CREATE TABLE cuentas_bancarias_cheques (
+CREATE TABLE licencia_empresas (
     id int NOT NULL AUTO_INCREMENT,
-    fecha date NOT NULL,
-    id_cuenta int NOT NULL,
-    correlativo int NOT NULL,
-    anombrede varchar(255) NOT NULL,
-    concepto varchar(255) NOT NULL,
-    estado varchar(255) NOT NULL,
-    referencia varchar(255) NULL,
-    id_referencia int NULL,
-    total decimal(10,2) NOT NULL,
-    id_usuario int NOT NULL,
-    id_empresa int NOT NULL,
+    id_licencia int  NOT NULL,
+    id_empresa int NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
-
-CREATE TABLE cuentas_bancarias_transacciones (
-    id int NOT NULL AUTO_INCREMENT,
-    fecha date NOT NULL,
-    id_cuenta int NOT NULL,
-    concepto varchar(255) NOT NULL,
-    tipo varchar(255) NOT NULL,
-    tipo_operacion varchar(255) NOT NULL,
-    estado varchar(255) NOT NULL,
-    total decimal(10,2) NOT NULL,
-    referencia varchar(255) NULL,
-    id_referencia int NULL,
-    url_referencia varchar(255) NULL,
-    id_usuario int NOT NULL,
-    id_empresa int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE cuentas_bancarias_conciliaciones (
-    id int NOT NULL AUTO_INCREMENT,
-    fecha date NOT NULL,
-    desde date NOT NULL,
-    hasta date NOT NULL,
-    id_cuenta int NOT NULL,
-    gastos decimal(10,2) NULL DEFAULT 0,
-    impuestos decimal(10,2) NULL DEFAULT 0,
-    otras_entradas decimal(10,2) NULL DEFAULT 0,
-    saldo_anterior decimal(10,2) NOT NULL,
-    saldo_actual decimal(10,2) NOT NULL,
-    nota varchar(255) NULL,
-    id_usuario int NOT NULL,
-    id_empresa int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
--- Catalogo
-
-CREATE TABLE contabilidad_configuracion (
-    id int NOT NULL AUTO_INCREMENT,
-    id_cuenta_ventas int NOT NULL,
-    id_cuenta_devoluciones_ventas int NOT NULL,
-
-    id_cuenta_inventario int NOT NULL,
-    id_cuenta_ajustes_inventario int NOT NULL,
-
-    id_cuenta_cxc int NOT NULL,
-    id_cuenta_devoluciones_clientes int NOT NULL,
-    id_cuenta_cxp int NOT NULL,
-    id_cuenta_devoluciones_proveedores int NOT NULL,
-
-    id_cuenta_iva_ventas int NOT NULL,
-    id_cuenta_iva_retenido_ventas int NOT NULL,
-    id_cuenta_renta_retenida_ventas int NOT NULL,
-    id_cuenta_iva_compras int NOT NULL,
-    id_cuenta_iva_retenido_compras int NOT NULL,
-    id_cuenta_renta_retenida_compras int NOT NULL,
-
-    generar_partidas varchar(100) DEFAULT 'Manual',
-    id_empresa int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
-
-CREATE TABLE catalogo_cuentas (
-    id int NOT NULL AUTO_INCREMENT,
-    codigo int NOT NULL,
-    nombre varchar(255) NOT NULL,
-    naturaleza varchar(255) NOT NULL,
-    id_cuenta_padre int NULL,
-    rubro varchar(255) NOT NULL,
-    nivel int NOT NULL,
-    cargo decimal(9,2) DEFAULT 0,
-    abono decimal(9,2) DEFAULT 0,
-    saldo decimal(9,2) DEFAULT 0,
-    id_empresa int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
-
-CREATE TABLE partidas (
-    id int NOT NULL AUTO_INCREMENT,
-    fecha date NOT NULL,
-    tipo varchar(255) NOT NULL,
-    concepto varchar(255) NOT NULL,
-    estado varchar(255) NOT NULL,
-    referencia varchar(50) NOT NULL,
-    id_referencia int NOT NULL,
-    id_usuario int NOT NULL,
-    id_empresa int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE partida_detalles (
-    id int NOT NULL AUTO_INCREMENT,
-    id_cuenta int NOT NULL,
-    codigo varchar(255) NOT NULL,
-    nombre_cuenta varchar(255) NOT NULL,
-    concepto varchar(255) NOT NULL,
-    debe decimal(10,2) NULL DEFAULT 0,
-    haber decimal(10,2) NULL DEFAULT 0,
-    saldo decimal(10,2) NULL DEFAULT 0,
-    id_partida int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE retenciones (
-    id int NOT NULL AUTO_INCREMENT,
-    nombre varchar(255) NOT NULL,
-    porcentaje decimal(10,2) NOT NULL,
-    id_cuenta_contable_ventas int NOT NULL,
-    id_cuenta_contable_compras int NOT NULL,
-    id_empresa int NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
-
-
-
 
 ALTER TABLE empresas ADD agrupar_detalles_venta BOOL DEFAULT false after editar_precio_venta;
 ALTER TABLE empresas ADD vendedor_inventario BOOL DEFAULT false after agrupar_detalles_venta;
 ALTER TABLE empresas ADD venta_consigna BOOL DEFAULT true after vendedor_inventario;
 
-ALTER TABLE impuestos ADD id_cuenta_contable_ventas INT NULL after porcentaje;
-ALTER TABLE impuestos ADD id_cuenta_contable_compras INT NULL after id_cuenta_contable_ventas;
+ALTER TABLE eventos CHANGE id_servicio id_servicio INT(11) NULL;
 
-
--- Bodegas
-
-
-CREATE TABLE sucursal_bodegas AS SELECT * FROM sucursales;
-ALTER TABLE sucursal_bodegas ADD PRIMARY KEY(id);
-
-ALTER TABLE `sucursal_bodegas`
-  DROP `telefono`,
-  DROP `correo`,
-  DROP `municipio`,
-  DROP `departamento`,
-  DROP `direccion`;
-
-ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
-UPDATE sucursal_bodegas SET id_sucursal=id;
-
-
-ALTER TABLE ajustes CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-ALTER TABLE traslados CHANGE id_sucursal_de id_bodega_de INT(11) NULL DEFAULT NULL;
-ALTER TABLE traslados CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-
-ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-
-ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
-ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
-
-ALTER TABLE partidas ADD referencia varchar(50) NOT NULL after estado;
-ALTER TABLE partidas ADD id_referencia INT NOT NULL after referencia;
-
-
---Traslados
-ALTER TABLE traslados ADD fecha date NULL after id;
-ALTER TABLE traslados CHANGE id_producto id_producto INT(11) NULL;
-ALTER TABLE traslados CHANGE concepto concepto VARCHAR(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;
-ALTER TABLE traslados CHANGE cantidad cantidad DECIMAL(10,2) NULL;
-CREATE TABLE traslado_detalles (
+CREATE TABLE detalles_evento (
     id int NOT NULL AUTO_INCREMENT,
-    id_producto INT NOT NULL,
-    cantidad decimal(10,2) NOT NULL,
-    id_traslado int NOT NULL,
+    id_producto int  NOT NULL,
+    cantidad int NOT NULL,
+    id_evento int NOT NULL,
     created_at timestamp NULL,
     updated_at timestamp NULL,
     PRIMARY KEY (id)
 );
-
-
 
 
 CREATE TABLE producto_composicion_opciones (
@@ -284,14 +106,6 @@ ALTER TABLE detalles_devolucion_compra ADD exenta varchar(255) NULL AFTER no_suj
 ALTER TABLE detalles_devolucion_compra ADD gravada varchar(255) NULL AFTER exenta;
 
 
-ALTER TABLE productos ADD talla varchar(255) NULL AFTER medida;
-ALTER TABLE productos ADD color varchar(255) NULL AFTER talla;
-ALTER TABLE productos ADD material varchar(255) NULL AFTER color;
-ALTER TABLE productos ADD dimensiones decimal(9,2) NULL AFTER material;
-
-
-ALTER TABLE categorias  ADD subcategoria BOOL DEFAULT false after id_empresa;
-ALTER TABLE categorias  ADD id_cate_padre INT NULL after subcategoria;
 CREATE TABLE detalles_compuesto_venta (
     id int NOT NULL AUTO_INCREMENT,
     id_producto int  NOT NULL,
@@ -315,66 +129,13 @@ CREATE TABLE paises (
 ALTER TABLE proveedores ADD cod_pais varchar(255) NULL AFTER pais;
 ALTER TABLE clientes ADD cod_pais varchar(255) NULL AFTER pais;
 
-ALTER TABLE gastos_categorias ADD id_cuenta_contable INT NULL AFTER nombre;
 
-ALTER TABLE contabilidad_configuracion ADD id_cuenta_iva_retenido_ventas INT NULL AFTER id_cuenta_ventas;
-ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_ventas INT NULL AFTER id_cuenta_ventas;
-ALTER TABLE contabilidad_configuracion ADD id_cuenta_iva_retenido_compras INT NULL AFTER id_cuenta_ventas;
-ALTER TABLE contabilidad_configuracion ADD id_cuenta_renta_retenida_compras INT NULL AFTER id_cuenta_ventas;
-ALTER TABLE contabilidad_configuracion ADD id_cuenta_costo_venta INT NULL AFTER id_cuenta_ventas;
-ALTER TABLE contabilidad_configuracion ADD generar_partidas varchar(100) DEFAULT 'Manual' AFTER id_cuenta_costo_venta;
-
-ALTER TABLE formas_pago ADD id_banco INT NULL AFTER nombre;
+ALTER TABLE sucursales ADD tipo_establecimiento varchar(255) NULL AFTER direccion;
+ALTER TABLE sucursales ADD cod_estable_mh varchar(255) NULL AFTER tipo_establecimiento;
 
 
-ALTER TABLE cuentas_bancarias CHANGE numero numero VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;
-ALTER TABLE cuentas_bancarias CHANGE saldo saldo DECIMAL(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE productos  ADD cod_proveed_prod varchar(255) NULL after id_categoria;
-ALTER TABLE productos  ADD id_subcategoria INT(11) NULL after id_categoria;
 
 
-ALTER TABLE catalogo_cuentas ADD cargo decimal(9,2) DEFAULT 0 after nivel;
-ALTER TABLE catalogo_cuentas ADD abono decimal(9,2) DEFAULT 0 after cargo;
-ALTER TABLE catalogo_cuentas ADD saldo decimal(9,2) DEFAULT 0 after abono;
-
-
---refactor de ordenes de compra y compras
-
-CREATE TABLE orden_compras (
-    id int NOT NULL AUTO_INCREMENT,
-    fecha date NOT NULL,
-    id_usuario int NOT NULL,
-    id_bodega int NOT NULL,
-    tipo_documento varchar(255) DEFAULT NULL,
-    id_proveedor int DEFAULT NULL,
-    id_proyecto int DEFAULT NULL,
-    observaciones text,
-    referencia varchar(255) DEFAULT NULL,
-    estado varchar(255) NOT NULL,
-    id_empresa int NOT NULL,
-    id_sucursal int DEFAULT NULL,
-    created_at timestamp NULL DEFAULT NULL,
-    updated_at timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3;
-
-CREATE TABLE detalles_orden_compra (
-    id int NOT NULL AUTO_INCREMENT,
-    id_orden_compra int NOT NULL,
-    id_producto int NOT NULL,
-    cantidad decimal(10,2) NOT NULL,
-    costo double NOT NULL,
-    descuento double NOT NULL DEFAULT '0',
-    total decimal(10,2) NOT NULL,
-    created_at timestamp NULL DEFAULT NULL,
-    updated_at timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-ALTER TABLE orden_compras ADD cobrar_impuestos BOOL DEFAULT false AFTER estado;
-ALTER TABLE orden_compras ADD cobrar_percepcion BOOL DEFAULT false AFTER cobrar_impuestos;
-
-ALTER TABLE detalles_orden_compra ADD cantidad_procesada decimal(10,2) NOT NULL DEFAULT '0' AFTER cantidad;
--- refactor cotizacion  / ventas
 CREATE TABLE cotizacion_ventas (
   id int unsigned NOT NULL AUTO_INCREMENT,
   estado varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -412,43 +173,9 @@ CREATE TABLE detalles_cotizacion_ventas (
   gravada decimal(9,4) DEFAULT '0.0000',
   iva decimal(9,4) DEFAULT '0.0000',
   descripcion varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  id_producto int DEFAULT NULL,
-  codigo_combo varchar(100) DEFAULT NULL,
+  id_producto int NOT NULL,
   id_cotizacion_venta int NOT NULL,
   created_at timestamp NULL DEFAULT NULL,
   updated_at timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---refactor combos
-CREATE TABLE combos_productos (
-    id int NOT NULL AUTO_INCREMENT,
-    codigo_combo varchar(255) NOT NULL,
-    correlativo int NOT NULL,
-    descripcion text NOT NULL,
-    nombre varchar(255) NOT NULL,
-    id_empresa int NOT NULL,
-    id_bodega int NOT NULL,
-    cantidad int NOT NULL,
-    precio decimal(10,2) NOT NULL, --precio sin iva
-    precio_total decimal(10,2) NOT NULL,
-    costo_total decimal(10,2) NOT NULL,
-    estado enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo',
-    created_at timestamp NULL DEFAULT NULL,
-    updated_at timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE INDEX combos_correlativo_IDX USING BTREE ON combos_productos (correlativo);
-
-
-CREATE TABLE detalles_combo_producto (
-    id int NOT NULL AUTO_INCREMENT,
-    id_combo int NOT NULL,
-    id_producto int NOT NULL,
-    cantidad int NOT NULL,
-    costo decimal(10,2) NOT NULL,
-    precio decimal(10,2) NOT NULL,
-    created_at timestamp NULL DEFAULT NULL,
-    updated_at timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

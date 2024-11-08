@@ -50,8 +50,8 @@ const routes: Routes = [
 
       { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
       { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
-      { path: 'cotizacion/editar/:edit_id', component: CotizacionFormComponent, title: 'Cotización' },
-      { path: 'cotizacion/ver/:show_id', component: CotizacionFormComponent, title: 'Cotización' },
+      { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
+      { path: 'cotizacion/ver/:id', component: CotizacionFormComponent, title: 'Cotización' },
       //
       { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta' },
       { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago' },
