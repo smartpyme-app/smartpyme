@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Contabilidad\Reportes;
 
 use App\Exports\Contabilidad\BalanceComprobacionExport;
 use App\Exports\Contabilidad\DiarioAuxiliarExport;
+use App\Exports\Contabilidad\DiarioMayorExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Catalogo\Cuenta;
@@ -62,130 +63,101 @@ class GenerarReportesController extends Controller
 
     }
 
-    public function generarRepLibroDiarioAux($desde,$hasta, $type){
+    public function generarRepLibroDiario($desde,$hasta, $type){
         if($type === 'pdf'){
-            return $this->generarRepLibroDiarioAuxPDF($desde, $hasta);
+            return $this->generarRepLibroDiarioPDF($desde, $hasta);
         }else{
-            return $this->generarRepLibroDiarioAuxExcel($desde, $hasta);
+            return $this->generarRepLibroDiarioExcel($desde, $hasta);
         }
     }
 
-    public function generarRepLibroDiarioAuxPDF($desde,$hasta){
-
-        // Falta revisar porque lo enviua desordenado
-
-        $cuentas = [];
+    public function generarRepLibroDiarioPDF($fechaInicio,$fechaFin){
 
         $empresa_id= auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
 
-        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
-            $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$desde, $hasta])->orderBy('codigo', 'asc')
-            ->get()->groupBy('codigo')->all();
+        $partidas = Partida::with(['detalles' => function($query) {
+            $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
+        }])
+            ->where('id_empresa', $empresa_id)
+            ->when($fechaInicio && $fechaFin, function ($query) use ($fechaInicio, $fechaFin) {
+                return $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+            })
+            ->orderBy('fecha', 'asc')
+            ->get();
 
-        foreach ($det_agrup as $index => $collection){
+        $reporteLibroDiario = $partidas->map(function ($partida) {
+            return [
+                'partida_num' => '#'.$partida->id,
+                'fecha' => $partida->fecha,
+                'concepto' => $partida->concepto,
+                'detalles' => $partida->detalles->map(function ($detalle) {
+                    return [
+                        'codigo' => $detalle->codigo,
+                        'nombre_cuenta' => $detalle->nombre_cuenta,
+                        'debe' => $detalle->debe,
+                        'haber' => $detalle->haber,
+                    ];
+                }),
+            ];
+        });
 
-            $cuent= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->first();
-            $nombre_cuent= $cuent->nombre;
-            $nat_cuenta= $cuent->naturaleza;
-
-            $sum_deb=0;
-            $sum_hab=0;
-            foreach ($collection as $det_part){
-//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-                $sum_deb+=$det_part->debe;
-                $sum_hab+=$det_part->haber;
-            }
-
-            $cuenta_reporte = new CuentaReporte();
-            $cuenta_reporte->cuenta= $index;
-            $cuenta_reporte->nombre= $nombre_cuent;
-            $cuenta_reporte->detalles= $collection;
-            $cuenta_reporte->naturaleza= $nat_cuenta;
-            $cuenta_reporte->cargo= $sum_deb;
-            $cuenta_reporte->abono= $sum_hab;
-            $cuenta_reporte->saldo_actual= 100;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
-            $cuenta_reporte->saldo_anterior= 100;  //este saldo debe venir de la base de datos con respecto al mes anterior al que se esta haciendo la prueba
-            array_push($cuentas,$cuenta_reporte);
-        }
-
-//        dd($cuentas);
-// Fecha en formato dd/mm/yyyy
-        $fecha = date('d/m/Y');
-
-// Hora en formato 12 horas con a.m./p.m.
-        $hora = date('h:i:s a');
-
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_auxiliar', compact('cuentas', 'empresa','desde', 'hasta', 'hora', 'fecha'));
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario', compact('reporteLibroDiario', 'empresa','fechaInicio', 'fechaFin'));
         $pdf->setPaper('US Letter', 'landscape');
 
         return  $pdf->stream();
     }
 
-    public function generarRepLibroDiarioAuxExcel($desde,$hasta){
-
-        // Falta revisar porque lo enviua desordenado
-
-        $cuentas = [];
+    public function generarRepLibroDiarioExcel($fechaInicio,$fechaFin){
 
         $empresa_id= auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
 
-        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
-            $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$desde, $hasta])->orderBy('codigo', 'asc')
-            ->get()->groupBy('codigo')->all();
+        $partidas = Partida::with(['detalles' => function($query) {
+            $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
+        }])
+            ->where('id_empresa', $empresa_id)
+            ->when($fechaInicio && $fechaFin, function ($query) use ($fechaInicio, $fechaFin) {
+                return $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+            })
+            ->orderBy('fecha', 'asc')
+            ->get();
 
-        foreach ($det_agrup as $index => $collection){
-
-            $cuent= Cuenta::where('codigo', $index)->where('id_empresa', auth()->user()->id_empresa)->first();
-            $nombre_cuent= $cuent->nombre;
-            $nat_cuenta= $cuent->naturaleza;
-
-            $sum_deb=0;
-            $sum_hab=0;
-            foreach ($collection as $det_part){
-//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-                $sum_deb+=$det_part->debe;
-                $sum_hab+=$det_part->haber;
-            }
-
-            $cuenta_reporte = new CuentaReporte();
-            $cuenta_reporte->cuenta= $index;
-            $cuenta_reporte->nombre= $nombre_cuent;
-            $cuenta_reporte->detalles= $collection;
-            $cuenta_reporte->naturaleza= $nat_cuenta;
-            $cuenta_reporte->cargo= $sum_deb;
-            $cuenta_reporte->abono= $sum_hab;
-            $cuenta_reporte->saldo_actual= 100;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
-            $cuenta_reporte->saldo_anterior= 100;  //este saldo debe venir de la base de datos con respecto al mes anterior al que se esta haciendo la prueba
-            array_push($cuentas,$cuenta_reporte);
-        }
-
-//        dd($cuentas);
-// Fecha en formato dd/mm/yyyy
-        $fecha = date('d/m/Y');
-
-// Hora en formato 12 horas con a.m./p.m.
-        $hora = date('h:i:s a');
+        $reporteLibroDiario = $partidas->map(function ($partida) {
+            return [
+                'partida_num' => '#'.$partida->id,
+                'fecha' => $partida->fecha,
+                'concepto' => $partida->concepto,
+                'detalles' => $partida->detalles->map(function ($detalle) {
+                    return [
+                        'codigo' => $detalle->codigo,
+                        'nombre_cuenta' => $detalle->nombre_cuenta,
+                        'debe' => $detalle->debe,
+                        'haber' => $detalle->haber,
+                    ];
+                }),
+            ];
+        });
 
         $data = [
             'empresa' => $empresa,
-            'desde' => $desde,
-            'hasta' => $hasta,
-            'cuentas' => $cuentas,
-            'hora' => $hora,
-            'fecha' => $fecha,
+            'fechaInicio' => $fechaInicio,
+            'fechaFin' => $fechaFin,
+            'reporteLibroDiario' => $reporteLibroDiario,
         ];
 
-        // Exportar a Excel
-        return Excel::download(new DiarioAuxiliarExport($data), 'diario_auxiliar.xlsx');
+        return Excel::download(new DiarioAuxiliarExport($data), 'libro_diario.xlsx');
     }
 
-    public function generarRepLibroDiarioMayor($startDate, $endDate, $concepto = null){
+    public function generarRepLibroDiarioMayor($desde,$hasta, $type){
+        if($type === 'pdf'){
+            return $this->generarRepLibroDiarioMayorPDF($desde, $hasta);
+        }else{
+            return $this->generarRepLibroDiarioMayorExcel($desde, $hasta);
+        }
+    }
+
+    public function generarRepLibroDiarioMayorPDF($startDate, $endDate, $concepto = null){
 
         $cuentas = [];
 
@@ -200,7 +172,7 @@ class GenerarReportesController extends Controller
         $partidas= Detalle::whereHas('partida', function($query) use ($empresa_id) {
             $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$startDate, $endDate])->get();
 
-        //elegir entre los detalles de las partidas cuales tienen cuentas eque empiezan con los cuatros digitos de las partidas padre
+        //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
         foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
         {
             $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre){
@@ -247,8 +219,6 @@ class GenerarReportesController extends Controller
 
         }
 
-//        dd($cuentas);
-
         $empresa = Empresa::findOrfail($empresa_id);
 
         $desde= $startDate;
@@ -267,58 +237,82 @@ class GenerarReportesController extends Controller
 
     }
 
-    public function generarRepMovCuenta($startDate, $endDate, $cuenta_cod){
+    public function generarRepLibroDiarioMayorExcel($startDate, $endDate, $concepto = null){
+
+        $cuentas = [];
+
+        //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
+        $nivel_datos=2;
 
         $empresa_id= auth()->user()->id_empresa;
 
-        $cuenta= Cuenta::where('codigo', $cuenta_cod)->where('id_empresa', auth()->user()->id_empresa)->first();
+        //cuentas que no aceptan datos segun nivel
+        $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-//        dd($cuenta_cod);
+        $partidas= Detalle::whereHas('partida', function($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);})->whereBetween('created_at', [$startDate, $endDate])->get();
 
-        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
-            $query->where('id_empresa', $empresa_id);})
-            ->whereBetween('created_at', [$startDate, $endDate])->where('codigo', $cuenta_cod)
-            ->get();
+        //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
+        foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
+        {
+            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre){
+                return strpos($detalle->codigo, (string)$cod_padre) === 0;
+            });
+
+            // Convertir el resultado a una colección nuevamente (opcional)
+            $partidasFiltradas = $partidasFiltradas->values();
+
+//            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
+
+            $sum_deb=0;
+            $sum_hab=0;
+            foreach ($partidasFiltradas as $det_part){
+
+//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+
+                $sum_deb+=$det_part->debe;
+                $sum_hab+=$det_part->haber;
+
+            }
+
+            if (count($partidasFiltradas)!=0){
+
+                $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
+
+
+                $cuenta_reporte= new CuentaReporte();
+                $cuenta_reporte->cuenta= $cod_padre;
+                $cuenta_reporte->nombre= $cnt->nombre;
+                $cuenta_reporte->detalles = $partidasFiltradas;
+                $cuenta_reporte->naturaleza = $cnt->naturaleza;
+                $cuenta_reporte->cargo = $sum_deb;
+                $cuenta_reporte->abono = $sum_hab;
+                $cuenta_reporte->saldo_actual = 0;
+                $cuenta_reporte->saldo_anterior = 0;
+
+
+                array_push($cuentas,$cuenta_reporte);
+
+            }
+
+
+        }
 
         $empresa = Empresa::findOrfail($empresa_id);
 
         $desde= $startDate;
         $hasta= $endDate;
 
-        // Fecha en formato dd/mm/yyyy
-        $fecha = date('d/m/Y');
+        $data = [
+            'empresa' => $empresa,
+            'desde' => $desde,
+            'hasta' => $hasta,
+            'cuentas' => $cuentas,
+        ];
 
-// Hora en formato 12 horas con a.m./p.m.
-        $hora = date('h:i:s a');
-
-        $sum_deb=0;
-        $sum_hab=0;
-        foreach ($det_agrup as $detalle){
-//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-            $sum_deb+=$detalle->debe;
-            $sum_hab+=$detalle->haber;
-        }
-
-//        dd($cuenta);
-
-        $cuenta_reporte = new CuentaReporte();
-        $cuenta_reporte->cuenta= $cuenta_cod;
-        $cuenta_reporte->nombre= $cuenta->nombre;
-        $cuenta_reporte->detalles= $det_agrup;
-        $cuenta_reporte->naturaleza= $cuenta->naturaleza;
-        $cuenta_reporte->cargo= $sum_deb;
-        $cuenta_reporte->abono= $sum_hab;
-        $cuenta_reporte->saldo_actual= 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
-        $cuenta_reporte->saldo_anterior= 0;
-
-        $pdf= PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
-
-        $pdf->setPaper('US Letter', 'landscape' );
-
-        return $pdf->stream();
-
+        // Exportar a Excel
+        return Excel::download(new DiarioMayorExport($data), 'libro_diario_mayor.xlsx');
 
     }
 
@@ -424,6 +418,61 @@ class GenerarReportesController extends Controller
 
         // Exportar a Excel
         return Excel::download(new BalanceComprobacionExport($data), 'balance_comprobacion.xlsx');
+
+    }
+
+    public function generarRepMovCuenta($startDate, $endDate, $cuenta_cod){
+
+        $empresa_id= auth()->user()->id_empresa;
+
+        $cuenta= Cuenta::where('codigo', $cuenta_cod)->where('id_empresa', auth()->user()->id_empresa)->first();
+
+//        dd($cuenta_cod);
+
+        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);})
+            ->whereBetween('created_at', [$startDate, $endDate])->where('codigo', $cuenta_cod)
+            ->get();
+
+        $empresa = Empresa::findOrfail($empresa_id);
+
+        $desde= $startDate;
+        $hasta= $endDate;
+
+        // Fecha en formato dd/mm/yyyy
+        $fecha = date('d/m/Y');
+
+// Hora en formato 12 horas con a.m./p.m.
+        $hora = date('h:i:s a');
+
+        $sum_deb=0;
+        $sum_hab=0;
+        foreach ($det_agrup as $detalle){
+//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+
+            $sum_deb+=$detalle->debe;
+            $sum_hab+=$detalle->haber;
+        }
+
+//        dd($cuenta);
+
+        $cuenta_reporte = new CuentaReporte();
+        $cuenta_reporte->cuenta= $cuenta_cod;
+        $cuenta_reporte->nombre= $cuenta->nombre;
+        $cuenta_reporte->detalles= $det_agrup;
+        $cuenta_reporte->naturaleza= $cuenta->naturaleza;
+        $cuenta_reporte->cargo= $sum_deb;
+        $cuenta_reporte->abono= $sum_hab;
+        $cuenta_reporte->saldo_actual= 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
+        $cuenta_reporte->saldo_anterior= 0;
+
+        $pdf= PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
+
+        $pdf->setPaper('US Letter', 'landscape' );
+
+        return $pdf->stream();
+
 
     }
 
