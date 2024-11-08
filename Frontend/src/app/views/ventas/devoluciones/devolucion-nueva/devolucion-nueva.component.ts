@@ -49,7 +49,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.devolucion.fecha = this.apiService.date();
                 this.devolucion.id_venta = id;
                 this.devolucion.tipo = 'Interna';
-                this.devolucion.cuenta_a_terceros = 0;
+                this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
 
                 this.devolucion.percepcion = parseFloat(this.venta.iva_percibido) > 0 ? true : false; 
                 this.devolucion.retencion = parseFloat(this.venta.iva_retenido) > 0 ? true : false;

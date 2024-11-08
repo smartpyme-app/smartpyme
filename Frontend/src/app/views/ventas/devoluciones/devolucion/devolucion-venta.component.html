@@ -41,9 +41,9 @@
                     <tr>
                         <th class="text-center">N°</th>
                         <th>Producto</th>
+                        <th class="text-end">Cantidad</th>
                         <th class="text-end">Precio</th>
                         <th class="text-end">Descuento</th>
-                        <th class="text-end">Cantidad</th>
                         <th class="text-end">Total</th>
                     </tr>
                 </thead>
@@ -57,9 +57,9 @@
                     <tr *ngFor="let detalle of venta.detalles; let i=index">
                         <td class="text-center"> {{ i + 1 }} </td>
                         <td> {{ detalle.nombre_producto }} </td>
+                        <td class="text-end">{{ detalle.cantidad }}</td>
                         <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.cantidad }}</td>
                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
