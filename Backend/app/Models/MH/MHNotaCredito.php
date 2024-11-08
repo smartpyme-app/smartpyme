@@ -134,7 +134,7 @@ class MHNotaCredito extends Model
               "nit" =>  $this->devolucion->cliente->nit ? str_replace('-', '', $this->devolucion->cliente->nit) : NULL,
               "nombreComercial" =>  $this->devolucion->cliente->nombre_empresa,
               "nrc" => str_replace('-', '', $this->devolucion->cliente->ncr),
-              "nombre" => $this->devolucion->cliente->nombre_completo,
+              "nombre" => $this->devolucion->nombre_cliente,
               "codActividad" => $this->devolucion->cliente->cod_giro,
               "descActividad" => $this->devolucion->cliente->giro,
               "direccion" => [

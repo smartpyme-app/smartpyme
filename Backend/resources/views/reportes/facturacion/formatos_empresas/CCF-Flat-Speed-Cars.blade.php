@@ -4,7 +4,7 @@
     <title> Flat Speed Cars {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
-        *{ font-size: 13px; margin: 0; padding: 0;}
+        *{ font-size: 12px; margin: 0; padding: 0;}
 
         #factura{
             font-family: serif;
@@ -42,7 +42,7 @@
         .gravadas{ width: 1.5cm; text-align: right;} 
 
 
-        #letras     {top: 17cm; font-size: 10px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 17cm; font-size: 12px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
 
         #suma       {top: 16.5cm; left: 13.3cm; width: 2cm; text-align: right;}
         #iva        {top: 17cm; left: 13.3cm; width: 2cm; text-align: right;}

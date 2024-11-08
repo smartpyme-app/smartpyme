@@ -450,6 +450,7 @@ export class FacturacionComponent implements OnInit {
                     }else{
                         window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
                         this.cargarDatosIniciales();
+                        this.loadData();
                         this.router.navigate(['/venta/crear']);
                     }
                 }else{
