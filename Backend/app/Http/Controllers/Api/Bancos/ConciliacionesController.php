@@ -58,7 +58,7 @@ class ConciliacionesController extends Controller
             'desde'         => 'required|date',
             'hasta'         => 'required|date',
             'id_cuenta'     => 'required|numeric',
-            'saldo_anterior' => 'required|numeric',
+            // 'saldo_anterior' => 'required|numeric',
             'saldo_actual'  => 'required|numeric',
             'nota'          => 'sometimes|max:255',
             'id_usuario'    => 'required|numeric',

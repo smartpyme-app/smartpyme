@@ -14,6 +14,7 @@ export class VentaDetallesComponent implements OnInit {
 
   @Input() venta: any = {};
   @Input() usuarios: any = {};
+  @Input() mode: "create" | "edit" | "show" = "create";
   public usuario: any = {};
   public detalle: any = {};
   public composicion: any = {};

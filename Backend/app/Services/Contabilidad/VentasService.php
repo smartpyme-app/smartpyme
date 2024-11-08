@@ -94,16 +94,16 @@ class VentasService
 
             // Costo de venta
 
-            $partida = Partida::create([
-                'fecha' => $venta->fecha,
-                'tipo' => 'Ingreso',
-                'concepto' => 'Ingresos por costo de ventas. ' . $venta->nombre_documento . ' #' . $venta->correlativo,
-                'estado' => 'Pendiente',
-                'referencia'    => 'Venta',
-                'id_referencia' => $venta->id,
-                'id_usuario' => $venta->id_usuario,
-                'id_empresa' => $venta->id_empresa,
-            ]);
+            // $partida = Partida::create([
+            //     'fecha' => $venta->fecha,
+            //     'tipo' => 'Ingreso',
+            //     'concepto' => 'Ingresos por costo de ventas. ' . $venta->nombre_documento . ' #' . $venta->correlativo,
+            //     'estado' => 'Pendiente',
+            //     'referencia'    => 'Venta',
+            //     'id_referencia' => $venta->id,
+            //     'id_usuario' => $venta->id_usuario,
+            //     'id_empresa' => $venta->id_empresa,
+            // ]);
 
             $cuenta = Cuenta::where('id', $configuracion->id_cuenta_costo_venta)->firstOrFail();
             Detalle::create([
