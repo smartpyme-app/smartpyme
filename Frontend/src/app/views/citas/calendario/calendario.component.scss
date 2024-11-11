@@ -3,10 +3,13 @@
   --fullcalendar-color-contrast-1: #14532D;
 
   --fullcalendar-color-2: #FFDAD6;
-  --fullcalendar-color-contrast-2: #410002;
+  --fullcalendar-color-contrast-2: #640004;
 
   --fullcalendar-color-3: #D7E2FF;
   --fullcalendar-color-contrast-3: #001B3F;
+
+  --fullcalendar-color-4: #fffbc4;
+  --fullcalendar-color-contrast-4: #5e5f11;
 
   --fullcalendar-base-grey-color: #44474E;
 
@@ -96,14 +99,24 @@
   }
 }
 
-::ng-deep .fc-timeGridDay-view .fc-timegrid-event-harness:nth-child(2n) {
+::ng-deep .fc-timegrid-event-harness:has(.event-confirmed) {
+  --bg-color: var(--fullcalendar-color-1);
+  --fg-color: var(--fullcalendar-color-contrast-1);
+}
+
+::ng-deep .fc-timegrid-event-harness:has(.event-pending) {
+  --bg-color: var(--fullcalendar-color-3);
+  --fg-color: var(--fullcalendar-color-contrast-3);
+}
+
+::ng-deep .fc-timegrid-event-harness:has(.event-canceled) {
   --bg-color: var(--fullcalendar-color-2);
   --fg-color: var(--fullcalendar-color-contrast-2);
 }
 
-::ng-deep .fc-timeGridDay-view .fc-timegrid-event-harness:nth-child(3n) {
-  --bg-color: var(--fullcalendar-color-3);
-  --fg-color: var(--fullcalendar-color-contrast-3);
+::ng-deep .fc-timegrid-event-harness:has(.event-unconfirmed) {
+  --bg-color: var(--fullcalendar-color-4);
+  --fg-color: var(--fullcalendar-color-contrast-4);
 }
 
 ::ng-deep .fc-timeGridWeek-view {
@@ -128,40 +141,40 @@
   }
 }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-sun .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-2);
-  --fg-color: var(--fullcalendar-color-contrast-2);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-sun .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-2);
+//   --fg-color: var(--fullcalendar-color-contrast-2);
+// }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-mon .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-3);
-  --fg-color: var(--fullcalendar-color-contrast-3);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-mon .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-3);
+//   --fg-color: var(--fullcalendar-color-contrast-3);
+// }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-tue .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-1);
-  --fg-color: var(--fullcalendar-color-contrast-1);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-tue .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-1);
+//   --fg-color: var(--fullcalendar-color-contrast-1);
+// }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-wed .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-2);
-  --fg-color: var(--fullcalendar-color-contrast-2);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-wed .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-2);
+//   --fg-color: var(--fullcalendar-color-contrast-2);
+// }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-thu .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-3);
-  --fg-color: var(--fullcalendar-color-contrast-3);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-thu .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-3);
+//   --fg-color: var(--fullcalendar-color-contrast-3);
+// }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-fri .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-1);
-  --fg-color: var(--fullcalendar-color-contrast-1);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-fri .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-1);
+//   --fg-color: var(--fullcalendar-color-contrast-1);
+// }
 
-::ng-deep .fc-timeGridWeek-view .fc-day-sat .fc-timegrid-event-harness {
-  --bg-color: var(--fullcalendar-color-1);
-  --fg-color: var(--fullcalendar-color-contrast-1);
-}
+// ::ng-deep .fc-timeGridWeek-view .fc-day-sat .fc-timegrid-event-harness {
+//   --bg-color: var(--fullcalendar-color-1);
+//   --fg-color: var(--fullcalendar-color-contrast-1);
+// }
 
 ::ng-deep .fc-dayGridMonth-view {
   --fc-small-font-size: 0.7em;
@@ -202,21 +215,37 @@
 
 }
 
+::ng-deep .fc-daygrid-event-harness:has(.event-confirmed) {
+  --fg-color: var(--fullcalendar-color-contrast-1);
+}
+
+::ng-deep .fc-daygrid-event-harness:has(.event-pending) {
+  --fg-color: var(--fullcalendar-color-contrast-3);
+}
+
+::ng-deep .fc-daygrid-event-harness:has(.event-canceled) {
+  --fg-color: var(--fullcalendar-color-contrast-2);
+}
+
+::ng-deep .fc-daygrid-event-harness:has(.event-unconfirmed) {
+  --fg-color: var(--fullcalendar-color-contrast-4);
+}
+
 // ::ng-deep .fc-daygrid-day-events:nth-child(n) {
 //   --bg-color: var(--fullcalendar-color-1);
 //   --fg-color: var(--fullcalendar-color-contrast-1);
 
 // }
 
-::ng-deep .fc-daygrid-event-harness:nth-of-type(2n) {
-  --bg-color: var(--fullcalendar-color-2);
-  --fg-color: var(--fullcalendar-color-contrast-2);
-}
+// ::ng-deep .fc-daygrid-event-harness:nth-of-type(2n) {
+//   --bg-color: var(--fullcalendar-color-2);
+//   --fg-color: var(--fullcalendar-color-contrast-2);
+// }
 
-::ng-deep .fc-daygrid-event-harness:nth-of-type(3n) {
-  --bg-color: var(--fullcalendar-color-3);
-  --fg-color: var(--fullcalendar-color-contrast-3);
-}
+// ::ng-deep .fc-daygrid-event-harness:nth-of-type(3n) {
+//   --bg-color: var(--fullcalendar-color-3);
+//   --fg-color: var(--fullcalendar-color-contrast-3);
+// }
 
 ::ng-deep .fc-multiMonthYear-view {
   .fc-multimonth-title {

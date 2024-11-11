@@ -82,6 +82,9 @@ export class CitasComponent implements OnInit {
   }
 
   updateCalendar() {
+    this.calendario.loadAll();
+    this.filtrarEventos();
+    return;
     this.loading = true;
     this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => {
       this.loading = false;

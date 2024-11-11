@@ -9,6 +9,14 @@
 </section>
 <section>
   <div class="row">
+    <div class="col-12 d-flex gap-10 mb-3">
+      <button class="btn btn-default" (click)="prevDay()">
+        <i class="fa fa-chevron-left"></i>
+      </button>
+      <button class="btn btn-default" (click)="nextDay()">
+        <i class="fa fa-chevron-right"></i>
+      </button>
+    </div>
     <div class="col-8 d-flex flex-wrap gap-10">
       <div> <button class="btn " (click)="setNowSelection()"
           [ngClass]="selectedPeriodType=='day'?'btn-primary':'btn-default'">
