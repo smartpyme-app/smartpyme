@@ -351,7 +351,7 @@ class VentasController extends Controller
 
                     // $producto = Producto::where('id', $det['id_producto'])
                     // ->with('composiciones')->firstOrFail();
-                    if ($det['codigo_combo']) {
+                    if ($det['codigo_combo'] ?? null) {
                         $combo = ComboProducto::where('codigo_combo', $det['codigo_combo'])->first();
                         $combo->cantidad -= $det['cantidad'];
                         $combo->save();
