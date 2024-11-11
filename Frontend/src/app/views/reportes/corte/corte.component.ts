@@ -19,7 +19,7 @@ export class CorteComponent implements OnInit {
     ngOnInit(){
         this.usuario = this.apiService.auth_user();
 
-        if(this.usuario.tipo == 'Administrador'){
+        if(this.usuario.tipo != 'Ventas'){
             this.filtros.id_sucursal = '';
             this.filtros.id_usuario = '';
         }else{
