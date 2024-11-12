@@ -210,7 +210,10 @@
 
       <div class="form-group col-md-3 col-lg-3 ">
         <label for="dai_Taza">Taza del DAI:</label><br>
-        <input type="text" class="form-control" placeholder="%" [(ngModel)]="compra.dai_Taza" name="dai_Taza">
+        <div class="input-group">
+          <span class="input-group-text">%</span>
+          <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.dai_Taza" name="dai_Taza">
+        </div>
       </div>
 
       <div class="form-group col-md-3 col-lg-3">
@@ -241,22 +244,21 @@
       <!-- GASTOS O IMPUESTOS -->
       <h6 class="mt-3">Gastos e Impuestos</h6>
 
-
       <div class="form-group col-md-3 col-lg-3">
-        <label for="transporte">Transporte:</label><br>
+        <label for="transporte">Transporte</label><br>
         <div class="input-group">
           <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.transporte"
-            name="transporte">
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo"
+                 (input)="updateAereoForDetails()">
         </div>
       </div>
 
       <div class="form-group col-md-3 col-lg-3">
-        <label for="otro_gastos">Otros gastos</label><br>
+        <label for="seguro">Seguro</label><br>
         <div class="input-group">
           <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.otro_gastos"
-            name="otro_gastos">
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.insurance"
+                 name="insurance" (input)="updateInsuranceForDetails()">
         </div>
       </div>
 
@@ -271,50 +273,13 @@
       </div>
 
       <div class="form-group col-md-3 col-lg-3">
-        <label for="seguro">Seguro</label><br>
+        <label for="otro_gastos">Otros gastos</label><br>
         <div class="input-group">
           <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.seguro"
-            name="seguro">
+          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.otro_gastos"
+                 name="otro_gastos" (input)="updateGastosForDetails()">
         </div>
       </div>
-
-      <div class="form-group col-md-3 col-lg-3">
-        <label for="inland">Inland</label><br>
-        <div class="input-group">
-          <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.inland" name="inland"
-            (input)="updateInlandForDetails()">
-        </div>
-      </div>
-
-      <div class="form-group col-md-3 col-lg-3">
-        <label for="insurance">Insurance</label><br>
-        <div class="input-group">
-          <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.insurance"
-            name="insurance" (input)="updateInsuranceForDetails()">
-        </div>
-      </div>
-
-      <div class="form-group col-md-3 col-lg-3">
-        <label for="aereo">Aereo</label><br>
-        <div class="input-group">
-          <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.aereo" name="aereo"
-            (input)="updateAereoForDetails()">
-        </div>
-      </div>
-
-      <div class="form-group col-md-3 col-lg-3">
-        <label for="fob_tot">FOB total</label><br>
-        <div class="input-group">
-          <span class="input-group-text">$</span>
-          <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="compra.fob_tot"
-            name="fob_tot" readonly>
-        </div>
-      </div>
-
     </div>
 
     <div>
@@ -323,16 +288,14 @@
         <div class="col-md-12 table-responsive">
           <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
             <thead>
-              <tr>
+              <tr *ngIf="compra?.detalles?.length >= 1">
                 <th style="width: 150px;">Producto</th>
                 <th style="width: 70px;">Cantidad</th>
-                <th style="width: 150px;">Costo antes de dist</th>
+                <th style="width: 110px;">Costo antes de dist</th>
                 <th style="width: 70px;">{{compra.incoterms}}</th>
                 <th style="width: 70px;">Distrib</th>
-                <th style="width: 70px;">Inland</th>
-                <th style="width: 70px;">Insurance</th>
-                <th style="width: 70px;">Aereo</th>
-                <th style="width: 70px;">CIF</th>
+                <th style="width: 70px;">Transporte</th>
+                <th style="width: 70px;">Seguro</th>
                 <th style="width: 70px;">DAI</th>
                 <th style="width: 70px;">Gastos</th>
                 <th style="width: 70px;">Landed</th>
@@ -357,7 +320,7 @@
                   <input [(ngModel)]="detalle.cantidad" class="form-control" readonly>
                 </td>
                 <!-- FOB ANTES DEL IMPUESTO  -->
-                <td style="width: 150px;">
+                <td style="width: 110px;">
                   <div class="input-group">
                     <span class="input-group-text">$</span>
                     <input type="text" [(ngModel)]="detalle.costo" class="form-control" name="costo" placeholder="$0.00"
@@ -373,23 +336,14 @@
                   <input type="text" [(ngModel)]="detalle.distribucion" class="form-control" name="distribucion"
                     readonly>
                 </td>
-                <!-- inland -->
-                <td style="width: 70px;">
-                  <input type="text" [(ngModel)]="detalle.inland" class="form-control" name="inland" readonly>
-                </td>
-                <!-- insurance  -->
-                <td style="width: 70px;">
-                  <input type="text" [(ngModel)]="detalle.insurance" class="form-control" name="insurance" readonly>
-                </td>
-                <!-- aereo -->
+                <!-- transporte -->
                 <td style="width: 70px;">
                   <input type="text" [(ngModel)]="detalle.aereo" class="form-control" name="aereo" readonly>
                 </td>
-                <!-- CIF  -->
+                <!-- seguro  -->
                 <td style="width: 70px;">
-                  <input type="text" [(ngModel)]="detalle.cif" class="form-control" name="cif" readonly>
+                  <input type="text" [(ngModel)]="detalle.insurance" class="form-control" name="insurance" readonly>
                 </td>
-                <!-- DAI  -->
                 <td style="width: 70px;">
                   <input type="text" [(ngModel)]="detalle.dai" class="form-control" name="dai" readonly>
                 </td>
@@ -399,12 +353,24 @@
                 </td>
                 <!-- landed  -->
                 <td style="width: 70px;">
-                  <input type="text" [(ngModel)]="detalle.landed" class="form-control" name="landed">
+                  <input type="text" [(ngModel)]="detalle.landed" class="form-control" name="landed" readonly>
                 </td>
                 <!-- COSTO UNITARIO  -->
                 <td style="width: 70px;" class="text-right">{{ detalle.costo_calc | currency:'USD':'symbol':'1.2'}}</td>
 
               </tr>
+            <tr *ngIf="compra?.detalles?.length > 1">
+              <td colspan="3">
+                <h6 class="mt-3">Total:</h6>
+              </td>
+              <td><input type="text" [value]="calcularTotal('fobTotal')" class="form-control" name="total" readonly></td>
+              <td><input type="text" [value]="calcularTotal('distribucion')" class="form-control" name="total" readonly></td>
+              <td><input type="text" [value]="calcularTotal('aereo')" class="form-control" name="total" readonly></td>
+              <td><input type="text" [value]="calcularTotal('insurance')" class="form-control" name="total" readonly></td>
+              <td><input type="text" [value]="calcularTotal('dai')" class="form-control" name="total" readonly></td>
+              <td><input type="text" [value]="calcularTotal('gastos')" class="form-control" name="total" readonly></td>
+              <td><input type="text" [value]="calcularTotal('landed')" class="form-control" name="total" readonly></td>
+            </tr>
             </tbody>
           </table>
 
