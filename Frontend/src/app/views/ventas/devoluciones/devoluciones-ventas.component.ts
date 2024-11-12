@@ -103,7 +103,7 @@ export class DevolucionesVentasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page).subscribe(ventas => { 
+        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
