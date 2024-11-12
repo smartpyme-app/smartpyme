@@ -32,6 +32,14 @@ class Categoria extends Model
         }
     }
 
+    public function cuentas(){
+        return $this->hasMany('App\Models\Inventario\Categorias\Cuenta', 'id_categoria');
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
     public function productos(){
         return $this->hasMany(Producto::class, 'id_categoria');
     }

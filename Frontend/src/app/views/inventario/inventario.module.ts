@@ -51,6 +51,7 @@ import { AjusteComponent } from './ajustes/ajuste/ajuste.component';
 import { ServiciosComponent } from './servicios/servicios.component';
 
 import { CategoriasComponent } from './categorias/categorias.component';
+import { CategoriaCuentasComponent } from './categorias/cuentas/categoria-cuentas.component';
 import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias.component';
 
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
@@ -103,6 +104,7 @@ import { ComboIndexComponent } from './productos/producto/combo/combo-index/comb
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
+    CategoriaCuentasComponent,
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent,
@@ -137,6 +139,7 @@ import { ComboIndexComponent } from './productos/producto/combo/combo-index/comb
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
+    CategoriaCuentasComponent,
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent,
