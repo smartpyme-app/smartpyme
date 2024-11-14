@@ -16,6 +16,22 @@ class Cuenta extends Model
         'id_cuenta_contable_costo',
     );
 
+    protected $appends = ['nombre_sucursal', 'nombre_cuenta', 'nombre_cuenta_costo'];
+
+    public function getNombreSucursalAttribute()
+    {
+        return $this->sucursal()->pluck('nombre')->first();
+    }
+
+    public function getNombreCuentaAttribute()
+    {
+        return $this->cuenta()->pluck('nombre')->first();
+    }
+
+    public function getNombreCuentaCostoAttribute()
+    {
+        return $this->cuentaCosto()->pluck('nombre')->first();
+    }
 
     public function sucursal(){
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
@@ -26,7 +42,11 @@ class Cuenta extends Model
     }
 
     public function cuenta(){
-        return $this->hasMany('App\Models\Contabilidad\Cuenta', 'id_cuenta_contable');
+        return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta_contable');
+    }
+
+    public function cuentaCosto(){
+        return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta_contable_costo');
     }
 
 }

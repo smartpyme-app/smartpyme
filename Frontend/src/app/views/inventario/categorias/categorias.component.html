@@ -88,11 +88,11 @@
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <app-notificaciones-container></app-notificaciones-container>
         <div class="row mb-3">
-            <div class="form-group col-12">
+            <div class="form-group col-lg-8">
                 <label for="categoria.nombre">Nombre</label>
                 <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="categoria.nombre" name="categoria.nombre" focus="true">
             </div>
-            <div class="form-group col-12">
+            <div class="form-group col-lg-4 pt-lg-4">
                 <div class="form-switch bg-light-info rounded">
                   <label for="activo">Activo</label>
                   <input class="form-check-input ms-3" type="checkbox" role="switch" id="activo" [(ngModel)]="categoria.enable" name="categoria.enable">
@@ -106,13 +106,10 @@
             </div>
 
         </div>
-        <div class="row">
-            <h6>Configuración Contable</h6>
             
-            <app-categoria-cuentas [categoria]="categoria"></app-categoria-cuentas>
+        <app-categoria-cuentas [categoria]="categoria"></app-categoria-cuentas>
 
-        </div>
-        <div class="d-grid">
+        <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
                 <span *ngIf="!loading">Guardar</span>
                 <span *ngIf="loading">Guardando...</span>

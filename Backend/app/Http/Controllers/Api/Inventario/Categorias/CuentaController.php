@@ -12,15 +12,21 @@ class CuentaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'categoria_id'          => 'required|numeric',
-            'sucursal_id'           => 'required|numeric',
-            'cuenta_contable_id'    => 'required|numeric',
+            'id_categoria'          => 'required|numeric',
+            'id_sucursal'           => 'required|numeric',
+            'id_cuenta_contable'    => 'required|numeric',
         ]);
 
-        if($request->id)
+        if($request->id){
             $cuenta = Cuenta::findOrFail($request->id);
-        else
+        }
+        else{
             $cuenta = new Cuenta;
+            $existe = Cuenta::where('id_categoria', $request->id_categoria)->where('id_sucursal', $request->id_sucursal)->first();
+
+            if($existe)
+                return  Response()->json(['error' => 'Ya ha sido configurada una cuenta en esta sucursal', 'code' => 400], 400);
+        }
 
         $cuenta->fill($request->all());
         $cuenta->save();
@@ -31,7 +37,7 @@ class CuentaController extends Controller
 
     public function delete($id)
     {
-        $cuenta = SubCategoria::findOrFail($id);
+        $cuenta = Cuenta::findOrFail($id);
         $cuenta->delete();
 
         return Response()->json($cuenta, 201);

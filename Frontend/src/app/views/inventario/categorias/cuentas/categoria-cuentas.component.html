@@ -1,30 +1,37 @@
 <div class="row">
-    <a (click)="openModal(mcuenta, {})" class="btn btn-default float-end" tooltip="Agregar cuenta">
-        <i class="fa fa-fw fa-plus"></i>
-    </a>
+    <div class="col-12">
+        <h6 class="float-start">Configuración Contable</h6>
+        <a (click)="openModal(mcuenta, {})" class="btn btn-default float-end mb-3" tooltip="Agregar cuenta">
+            Agregar cuenta
+        </a>
+    </div>
     <div class="col-12 table-responsive">
-        <table class="table table-borderless table-hover align-middle">
+        <table class="table table-bordered table-hover align-middle">
             <thead>
                 <tr>
-                    <th>Categoria</th>
-                    <th class="d-none d-md-table-cell">Descripción</th>
-                    <th class="d-none d-lg-table-cell">Estado</th>
+                    <th>Sucursal</th>
+                    <th>Cuenta contable</th>
+                    <th>Cuenta de costos</th>
                     <th class="text-center">Más</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td colspan="8" class="text-center" *ngIf="categoria?.cuentas?.length < 1 && !loading">
-                        <span class="badge bg-primary">No tiene cuentas registrados</span>
+                        <span class="badge bg-primary">No tiene cuentas registradas</span>
                     </td>
                     <td colspan="8" class="text-center" *ngIf="loading">
                         <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
                 <tr *ngFor=" let cuenta of categoria?.cuentas">
-                    <td>{{ cuenta.sucursal?.nombre }}</td>
-                    <td>{{ cuenta.cuenta?.nombre }}</td>
-                    <td class="text-center">
+                    <td>{{ cuenta.nombre_sucursal }}</td>
+                    <td>{{ cuenta.nombre_cuenta }}</td>
+                    <td>{{ cuenta.nombre_cuenta_costo }}</td>
+                    <td class="d-flex gap-2 justify-content-center">
+                        <a (click)="delete(cuenta)" class="btn btn-light" tooltip="Eliminar cuenta">
+                            <i class="fa fa-fw fa-trash"></i>
+                        </a>
                         <a (click)="openModal(mcuenta, cuenta)" class="btn btn-default" tooltip="Editar cuenta">
                             <i class="fa fa-fw fa-pencil-alt"></i>
                         </a>
@@ -82,9 +89,9 @@
 
         </div>
         <div class="d-grid">
-            <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Guardar</span>
-                <span *ngIf="loading">Guardando...</span>
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
             </button>
         </div>
     </form>

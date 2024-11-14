@@ -28,15 +28,13 @@
                         
                         <td>{{categoria.nombre }} </td>
                         <td>{{categoria.cuenta?.nombre }} </td>
-                        <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a class="btn btn-default" (click)="delete(categoria.id)" tooltip="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                <a class="btn btn-default" (click)="openModal(mdetalle, categoria)" tooltip="Editar">
-                                    <i class="fa fa-pencil-alt"></i>
-                                </a>
-                            </div>  
+                        <td class="d-flex justify-content-center gap-2">
+                            <a class="btn btn-light" (click)="delete(categoria.id)" tooltip="Eliminar">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                            <a class="btn btn-default" (click)="openModal(mdetalle, categoria)" tooltip="Editar">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
                         </td>
 
                     </tr>

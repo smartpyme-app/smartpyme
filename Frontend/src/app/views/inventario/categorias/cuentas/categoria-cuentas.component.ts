@@ -42,7 +42,7 @@ export class CategoriaCuentasComponent implements OnInit {
             this.cuenta.id_categoria = this.categoria.id;
         }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public onSubmit():void{
@@ -63,7 +63,7 @@ export class CategoriaCuentasComponent implements OnInit {
 
     public delete(cuenta:any) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('categoria/cuenta', cuenta.id) .subscribe(data => {
+            this.apiService.delete('categoria/cuenta/', cuenta.id) .subscribe(data => {
                 for (let i = 0; i < this.categoria.cuentas.length; i++) { 
                     if (this.categoria.cuentas[i].id == data.id )
                         this.categoria.cuentas.splice(i, 1);
