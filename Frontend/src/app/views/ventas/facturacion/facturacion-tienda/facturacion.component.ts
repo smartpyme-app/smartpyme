@@ -1,10 +1,10 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { SumPipe } from '@pipes/sum.pipe';
-import { AlertService } from '@services/alert.service';
-import { ApiService } from '@services/api.service';
-import { MHService } from '@services/MH.service';
+import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {Router, ActivatedRoute} from '@angular/router';
+import {BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
+import {SumPipe} from '@pipes/sum.pipe';
+import {AlertService} from '@services/alert.service';
+import {ApiService} from '@services/api.service';
+import {MHService} from '@services/MH.service';
 
 import * as moment from 'moment';
 
@@ -37,6 +37,8 @@ export class FacturacionComponent implements OnInit {
   public duplicarventa = false;
   public facturarCotizacion = false;
   public api: boolean = false;
+  public opAvanzadas = false;
+  public opAvanzadasFacturacion = false;
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -48,13 +50,15 @@ export class FacturacionComponent implements OnInit {
   public creditoTemplate!: TemplateRef<any>;
 
 
-  constructor( 
-        public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router,
-    ) {
-        this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
-    }
+  constructor(
+    public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
+    private modalService: BsModalService, private sumPipe: SumPipe,
+    private route: ActivatedRoute, private router: Router,
+  ) {
+    this.router.routeReuseStrategy.shouldReuseRoute = function () {
+      return false;
+    };
+  }
 
 
   ngOnInit() {
@@ -68,21 +72,27 @@ export class FacturacionComponent implements OnInit {
       if (this.apiService.auth_user().tipo != 'Administrador') {
         this.sucursales = this.sucursales.filter((item: any) => item.id == this.apiService.auth_user().id_sucursal);
       }
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
 
     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
       this.bodegas = bodegas;
       if (this.apiService.auth_user().tipo != 'Administrador') {
         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
       }
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
 
     this.apiService.getAll('usuarios/list').subscribe(usuarios => {
       this.usuarios = usuarios;
       if (this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor') {
         this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
       }
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
 
     // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
     //     this.bancos = bancos;
@@ -90,12 +100,16 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
       this.formaPagos = formaPagos;
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
 
     this.apiService.getAll('canales/list').subscribe(canales => {
       this.canales = canales;
       this.venta.id_canal = this.canales[0].id;
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
 
     this.apiService.getAll('impuestos').subscribe(impuestos => {
       this.impuestos = impuestos;
@@ -104,17 +118,25 @@ export class FacturacionComponent implements OnInit {
         this.sumTotal();
       }
 
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
 
     this.apiService.getAll('clientes/list').subscribe(clientes => {
       this.clientes = clientes;
       this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+    }, error => {
+      this.alertService.error(error);
+      this.loading = false;
+    });
 
     this.apiService.getAll('proyectos/list').subscribe(proyectos => {
       this.proyectos = proyectos;
       this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+    }, error => {
+      this.alertService.error(error);
+      this.loading = false;
+    });
   }
 
   public cargarDocumentos() {
@@ -148,7 +170,9 @@ export class FacturacionComponent implements OnInit {
         }
       }
 
-    }, error => { this.alertService.error(error); });
+    }, error => {
+      this.alertService.error(error);
+    });
   }
 
   public cargarDatosIniciales() {
@@ -201,7 +225,10 @@ export class FacturacionComponent implements OnInit {
       this.apiService.read('venta/', +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
         this.venta = venta;
         this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
-      }, error => { this.alertService.error(error); this.loading = false; });
+      }, error => {
+        this.alertService.error(error);
+        this.loading = false;
+      });
     }
 
     // Facturar venta recurrente
@@ -226,7 +253,10 @@ export class FacturacionComponent implements OnInit {
         this.venta.detalles.forEach((detalle: any) => {
           detalle.id = null;
         });
-      }, error => { this.alertService.error(error); this.loading = false; });
+      }, error => {
+        this.alertService.error(error);
+        this.loading = false;
+      });
     }
 
     // Facturar cotizacion
@@ -260,7 +290,10 @@ export class FacturacionComponent implements OnInit {
           this.venta.detalles = [];
         }
 
-      }, error => { this.alertService.error(error); this.loading = false; });
+      }, error => {
+        this.alertService.error(error);
+        this.loading = false;
+      });
     }
 
 
@@ -313,9 +346,15 @@ export class FacturacionComponent implements OnInit {
             this.sumTotal();
             this.loading = false;
             console.log(this.venta);
-          }, error => { this.alertService.error(error); this.loading = false; });
+          }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+          });
         });
-      }, error => { this.alertService.error(error); this.loading = false; });
+      }, error => {
+        this.alertService.error(error);
+        this.loading = false;
+      });
     }
     this.cargarDocumentos();
     this.loadData();
@@ -324,7 +363,7 @@ export class FacturacionComponent implements OnInit {
   totalPorMetodoDePago() {
     // Agregar los metodos que tengan asignado un monto
     this.venta.metodos_de_pago = this.formaPagos.filter((item: any) => item.total && (item.total > 0))
-    this.formaPagos.push({ 'nombre': 'Multiple' })
+    this.formaPagos.push({'nombre': 'Multiple'})
     this.venta.forma_pago = 'Multiple';
     this.venta.efectivo = this.formaPagos.find((item: any) => item.nombre == 'Efectivo').total;
     console.log(this.venta);
@@ -420,7 +459,7 @@ export class FacturacionComponent implements OnInit {
   // Facturar
 
   public openModalFacturar(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
   }
 
   public onFacturar() {
@@ -464,13 +503,13 @@ export class FacturacionComponent implements OnInit {
       // }
 
       if (this.venta.cotizacion != 1 && this.apiService.auth_user().empresa.impresion_en_facturacion) {
-        if(this.apiService.auth_user().empresa.facturacion_electronica){
-            this.venta.id = venta.id;
-            this.emitirDTE();
-        }else{
-            window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-            this.cargarDatosIniciales();
-            this.router.navigate(['/venta/crear']);
+        if (this.apiService.auth_user().empresa.facturacion_electronica) {
+          this.venta.id = venta.id;
+          this.emitirDTE();
+        } else {
+          window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+          this.cargarDatosIniciales();
+          this.router.navigate(['/venta/crear']);
         }
 
       } else {
@@ -485,25 +524,32 @@ export class FacturacionComponent implements OnInit {
           //Generar partida contable
           if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
             this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
-            }, error => { this.alertService.error(error); });
+            }, error => {
+              this.alertService.error(error);
+            });
           }
 
         }
       }
 
 
-      if (this.modalRef) { this.modalRef.hide() }
+      if (this.modalRef) {
+        this.modalRef.hide()
+      }
       this.saving = false;
 
 
-    }, error => { this.alertService.error(error); this.saving = false; });
+    }, error => {
+      this.alertService.error(error);
+      this.saving = false;
+    });
 
   }
 
   //Limpiar
 
   public limpiar() {
-    this.modalRef = this.modalService.show(this.supervisorTemplate, { class: 'modal-xs' });
+    this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
   }
 
   public supervisorCheck() {
@@ -513,42 +559,52 @@ export class FacturacionComponent implements OnInit {
       this.cargarDatosIniciales();
       this.loading = false;
       this.supervisor = {};
-    }, error => { this.alertService.error(error); this.loading = false; });
+    }, error => {
+      this.alertService.error(error);
+      this.loading = false;
+    });
   }
 
 
   // DTE
 
-          emitirDTE(){
-              this.emiting = true;
-              this.mhService.emitirDTE(this.venta).then((venta) => {
-                  this.venta = venta;
-                  this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
-                  this.enviarDTE();
-                  this.emiting = false;
+  emitirDTE() {
+    this.emiting = true;
+    this.mhService.emitirDTE(this.venta).then((venta) => {
+      this.venta = venta;
+      this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+      this.enviarDTE();
+      this.emiting = false;
 
-                  window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-                  this.cargarDatosIniciales();
-                  this.router.navigate(['/venta/crear']);
+      window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+      this.cargarDatosIniciales();
+      this.router.navigate(['/venta/crear']);
 
-              }).catch((error) => {
+    }).catch((error) => {
 
-                  this.cargarDatosIniciales();
-                  this.router.navigate(['/venta/crear']);
-                  
-                  this.emiting = false;
-                  this.alertService.warning('El documento no fue emitido.', error);
-              });
-          }
+      this.cargarDatosIniciales();
+      this.router.navigate(['/venta/crear']);
 
-          enviarDTE(){
-              this.sending = true;
-              this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
-                  this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
-                  this.sending = false;
-              },error => {this.alertService.error('DTE no pudo ser enviado por correo.'); this.sending = false; });
-          }
+      this.emiting = false;
+      this.alertService.warning('El documento no fue emitido.', error);
+    });
+  }
 
+  enviarDTE() {
+    this.sending = true;
+    this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
+      this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+      this.sending = false;
+    }, error => {
+      this.alertService.error('DTE no pudo ser enviado por correo.');
+      this.sending = false;
+    });
+  }
 
-
+  toggleDiv(): void {
+    this.opAvanzadas = !this.opAvanzadas; // Cambiar entre true y false
+  }
+  toggleDivFacturacion(): void {
+    this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
+  }
 }
