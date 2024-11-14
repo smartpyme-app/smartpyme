@@ -219,7 +219,7 @@ export class DevolucionesVentasComponent implements OnInit {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
                                 this.venta.sello_mh = dte.selloRecibido;
-                                this.venta.estado = 'Anulada';
+                                this.venta.enable = false;
                                 this.apiService.store('devolucion/venta', this.venta).subscribe(data => {
                                     // this.alertService.success('Venta guardada.');
                                 },error => {this.alertService.error(error); this.saving = false; });
@@ -243,7 +243,7 @@ export class DevolucionesVentasComponent implements OnInit {
         }
         else{
             if (confirm('¿Confirma anular la devolución?')){
-                this.venta.estado = 'Anulada';
+                this.venta.enable = false;
                 this.onSubmit();
             }
         }

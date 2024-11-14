@@ -20,6 +20,7 @@ class MHNotaDebito extends Model
 
     public function generarDTE($devolucion){
         $this->devolucion = $devolucion;
+        $this->empresa = $this->devolucion->empresa()->first();
         $this->sucursal = $this->devolucion->usuario()->first()->sucursal()->first();
 
         $this->caja_codigo = '0001';

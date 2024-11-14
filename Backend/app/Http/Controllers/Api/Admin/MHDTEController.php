@@ -122,7 +122,12 @@ class MHDTEController extends Controller
     }
 
     public function generarDTEAnulado(Request $request){
-        $venta = Venta::where('id', $request->id)->firstOrFail();
+
+        if ($request->tipo_dte == '05') {
+            $venta = DevolucionVenta::where('id', $request->id)->firstOrFail();
+        }else{
+            $venta = Venta::where('id', $request->id)->firstOrFail();
+        }
         
         $mh = new MHAnulacion;
         $DTEAnular = $mh->generarDTE($venta, $venta->dte);
