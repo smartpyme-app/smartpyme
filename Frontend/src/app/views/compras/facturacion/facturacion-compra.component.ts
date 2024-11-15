@@ -406,7 +406,6 @@ export class FacturacionCompraComponent implements OnInit {
     // Calcular distribución en porcentajecls
     const distribucion = (detalle.fobTotal / this.compra.fob_tot) * 100;
     detalle.distribucion = parseFloat(distribucion.toFixed(2)); // Mantener dos decimales
-    this.updateInlandForDetails();
     this.updateInsuranceForDetails();
     this.updateAereoForDetails();
     this.updateDaiForDetails();
@@ -415,17 +414,6 @@ export class FacturacionCompraComponent implements OnInit {
     this.updateLanded(detalle);
   }
 
-  public updateInlandForDetails(): void {
-    // Verificamos si `compra.inland` tiene un valor numérico
-    if (this.compra && this.compra.inland != null && this.compra.detalles) {
-      this.compra.detalles.forEach((detalle: any) => {
-        // Si `detalle.distribucion` tiene un valor numérico, calculamos `detalle.inland`
-        if (detalle.distribucion != null) {
-          detalle.inland = parseFloat((this.compra.inland * (detalle.distribucion / 100)).toFixed(2));
-        }
-      });
-    }
-  }
 
   public updateInsuranceForDetails(): void {
     // Verificamos si `compra.insurance` tiene un valor numérico
@@ -476,28 +464,31 @@ export class FacturacionCompraComponent implements OnInit {
   }
 
   public updateCIF(detalle: any): void {
-    // Calcula la suma de inland, insurance, aereo y fobTotal
+    // Calcula la suma de insurance, aereo y fobTotal
     detalle.fobTotal = parseFloat(detalle.fobTotal);
-    detalle.cif = detalle.fobTotal + detalle.inland + detalle.insurance + detalle.aereo;
+    detalle.cif = detalle.fobTotal + detalle.insurance + detalle.aereo;
     detalle.cif = parseFloat(detalle.cif).toFixed(2);
   }
 
   public updateLanded(detalle: any): void {
     // Calcula la suma de gastos, DAI, CIF
     detalle.cif = parseFloat(detalle.cif);
-    // detalle.landed = parseFloat((detalle.cif || 0) + (detalle.dai || 0) + (detalle.gastos || 0));
-    console.log("este es el detalle de CIF");
-    console.log(typeof detalle.cif);
-    console.log("este es el detalle de dai");
-    console.log(detalle.dai);
-    console.log("este es el detalle de GASTOS");
-    console.log(detalle.gastos);
 
     detalle.landed = detalle.dai + detalle.gastos + detalle.cif;
     detalle.landed = parseFloat(detalle.landed).toFixed(2);
     detalle.costo_calc = detalle.landed / detalle.cantidad;
   }
 
+  // Calcula el total de un campo específico de todos los detalles
+  public calcularTotal(campo: string): number {
+    // Verifica si `this.compra` y `this.compra.detalles` existen y no están vacíos
+    if (!this.compra || !this.compra.detalles || this.compra.detalles.length === 0) {
+      return 0;
+    }
 
-
+    return this.compra.detalles.reduce((total: number, detalle: any) => {
+      const valor = parseFloat(detalle[campo]) || 0;
+      return total + valor;
+    }, 0);
+  }
 }
