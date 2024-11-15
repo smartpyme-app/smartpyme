@@ -124,7 +124,7 @@ class MHFactura extends Model
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->empresa->cod_estable_mh ? $this->empresa->cod_estable_mh : NULL,
+            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
             "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,

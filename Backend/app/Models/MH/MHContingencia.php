@@ -16,6 +16,8 @@ class MHContingencia extends Model
     public function generarDTE($empresa, $DTEs, $tipo = 3){
         $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
         $this->empresa = $empresa;
+        $this->sucursal = $this->empresa->sucursales()->first();
+        $this->caja_codigo = '0001';
 
         $identificacion = [
             "version" => 3,
@@ -61,6 +63,8 @@ class MHContingencia extends Model
             "tipoEstablecimiento" => '02',
             "telefono" => $this->empresa->telefono,
             "correo" => $this->empresa->correo,
+            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
+            "codPuntoVenta" => NULL,
         ];
 
         return  
