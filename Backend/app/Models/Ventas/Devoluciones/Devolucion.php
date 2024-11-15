@@ -35,7 +35,7 @@ class Devolucion extends Model {
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_documento'];
-    protected $casts = ['enable' => 'string'];
+    protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
     {

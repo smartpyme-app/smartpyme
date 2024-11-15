@@ -164,7 +164,7 @@ class MHNotaCredito extends Model
         if ($this->devolucion->iva) {
             $tributos = collect();
             if ($this->devolucion->iva){ 
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->devolucion->iva,2))]);
+                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->devolucion->iva,2, '.', ''))]);
             }
         }
 
@@ -192,7 +192,7 @@ class MHNotaCredito extends Model
                   "ivaPerci1" => floatval(number_format($this->devolucion->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->devolucion->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total + $this->devolucion->iva_retenido, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total, 2, '.', '')),
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
