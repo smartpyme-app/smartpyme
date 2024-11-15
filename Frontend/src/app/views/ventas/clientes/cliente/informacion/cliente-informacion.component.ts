@@ -21,6 +21,8 @@ export class ClienteInformacionComponent implements OnInit {
     public municipios:any = [];
     public actividad_economicas:any = [];
 
+    public catalogo:any = [];
+
     modalRef?: BsModalRef;
 
     constructor( 
@@ -35,6 +37,10 @@ export class ClienteInformacionComponent implements OnInit {
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
     }
 
     public loadAll(){

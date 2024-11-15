@@ -100,13 +100,8 @@ class ProductosController extends Controller
             ->take(15)
             ->get();
 
-        $combos = ComboProducto::select(
-            "*",
-            "costo_total as costo",
-            DB::raw("'productos/default.jpg' as img")
-        )->with("detalles.producto")->where('nombre', 'like', "%$txt%")->get();
 
-        return Response()->json([...$productos, ...$combos], 200);
+        return Response()->json($productos, 200);
     }
 
 
@@ -198,6 +193,8 @@ class ProductosController extends Controller
 
     public function storeCompuesto(Request $request)
     {
+
+        DB::beginTransaction();
         if (empty($request->codigo)) {
             $request['codigo'] = NULL;
         }
@@ -230,8 +227,8 @@ class ProductosController extends Controller
             $composicion = new Composicion;
 
             //            $composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
-            $composicion->cantidad = $detalle->cantidad;
-            $composicion->id_producto = $detalle->id_producto;
+            $composicion->cantidad = $detalle["cantidad"];
+            $composicion->id_producto = $detalle["id_producto"];
             $composicion->id_compuesto = $producto->id;
             $composicion->save();
         }
@@ -248,6 +245,7 @@ class ProductosController extends Controller
             }
         }
 
+        DB::commit();
         return Response()->json($producto, 200);
     }
 

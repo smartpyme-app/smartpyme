@@ -16,6 +16,7 @@ class Cliente extends Model {
        'apellido',
        'ncr',
        'giro',
+       'cod_giro',
        'tipo',
        'tipo_contribuyente',
        'dui',
@@ -27,8 +28,11 @@ class Cliente extends Model {
        'pais',
        'cod_pais',
        'municipio',
+       'cod_municipio',
        'distrito',
+       'cod_distrito',
        'departamento',
+       'cod_departamento',
        'fecha_cumpleanos',
        'telefono',
        'correo',
@@ -38,11 +42,7 @@ class Cliente extends Model {
        'etiquetas',
        'id_usuario',
        'id_empresa',
-
-       'cod_giro',
-       'cod_municipio',
-       'cod_distrito',
-       'cod_departamento',
+       'id_cuenta_contable',
        
     ];
     protected $appends = ['nombre_completo'];

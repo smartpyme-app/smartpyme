@@ -14,9 +14,13 @@ use Maatwebsite\Excel\Facades\Excel;
 class CategoriasController extends Controller
 {
 
-    public function index() {
+    public function index(Request $request) {
 
-        $categorias = Categoria::orderBy('enable', 'desc')
+        $categorias = Categoria::with('cuentas')
+                                ->when($request->id_sucursal, function ($q) use ($request) {
+                                    $q->where('id_sucursal', $request->id_sucursal);
+                                })
+                                ->orderBy('enable', 'desc')
                                 ->orderBy('nombre', 'asc')
                                 ->get();
 

@@ -20,12 +20,12 @@
             position: absolute; 
         }
 
-        #cliente        {top: 4cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 4.5cm; left: 2.7cm; width: 9cm;}
-        #departamento   {top: 5.5cm; left: 3cm; }
+        #cliente        {top: 4cm; left: 2cm; width: 9cm;}
+        #direccion      {top: 4.5cm; left: 2.2cm; width: 4.5cm;}
+        #departamento   {top: 5.5cm; left: 2.8cm; }
         
-        #fecha          {top: 3.5cm; left: 9cm; }
-        #nit            {top: 4cm; left: 9cm;}
+        #fecha          {top: 3.4cm; left: 9cm; }
+        #nit            {top: 3.9cm; left: 9cm;}
         #ncr            {top: 4.5cm; left: 9cm; }
         #giro           {top: 5cm; left: 8.5cm; width: 4.5cm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
         #condicion      {top: 5.5cm; left: 10cm; }
@@ -44,13 +44,13 @@
 
         #letras     {top: 16cm; font-size: 10px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 16cm; left: 11cm; width: 2cm; text-align: right;}
-        #iva        {top: 16.5cm; left: 11cm; width: 2cm; text-align: right;}
-        #subtotal    {top: 17cm; left: 11cm; width: 2cm; text-align: right;}
-        #iva_retenido     {top: 17.5cm; left: 11cm; width: 2cm; text-align: right;}
-        #no_sujeta     {top: 18cm; left: 11cm; width: 2cm; text-align: right;}
-        #exenta     {top: 18.5cm; left: 11cm; width: 2cm; text-align: right;}
-        #total      {top: 19cm; left: 11cm; width: 2cm; text-align: right;}
+        #suma       {top: 16cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #iva        {top: 16.5cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #subtotal    {top: 17cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #iva_retenido     {top: 17.5cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #no_sujeta     {top: 18cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #exenta     {top: 18.5cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #total      {top: 19.2cm; left: 10.8cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}  
 

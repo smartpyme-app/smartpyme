@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\Api\Inventario\Categorias\CategoriasController;
 use App\Http\Controllers\Api\Inventario\Categorias\SubCategoriasController;
+use App\Http\Controllers\Api\Inventario\Categorias\CuentaController;
 
     Route::get('/categorias',               [CategoriasController::class, 'index']);
     Route::get('/categorias/padre',         [CategoriasController::class, 'categoriasPadre']);
@@ -29,5 +30,9 @@ use App\Http\Controllers\Api\Inventario\Categorias\SubCategoriasController;
 
     Route::post('/subcategorias/import',          [SubCategoriasController::class, 'import']);
 
+
+
+    Route::post('/categoria/cuenta',               [CuentaController::class, 'store']);
+    Route::delete('/categoria/cuenta/{id}',        [CuentaController::class, 'delete']);
 
 ?>

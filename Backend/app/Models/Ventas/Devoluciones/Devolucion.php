@@ -35,7 +35,7 @@ class Devolucion extends Model {
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_documento'];
-    protected $casts = ['enable' => 'string'];
+    protected $casts = ['enable' => 'boolean'];
 
     protected static function booted()
     {
@@ -90,8 +90,9 @@ class Devolucion extends Model {
         return $this->belongsTo('App\Models\User','id_usuario');
     }
 
-    public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
+    public function sucursal()
+    {
+        return $this->venta ? $this->venta->sucursal : null;
     }
 
     public function documento(){

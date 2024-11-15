@@ -18,6 +18,7 @@ export class ProveedorComponent implements OnInit {
     public municipios:any = [];
     public distritos:any = [];
     public actividad_economicas:any = [];
+    public catalogo:any = [];
     public loading = false;
     public saving = false;
 
@@ -34,6 +35,11 @@ export class ProveedorComponent implements OnInit {
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+        
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
+        
         this.loadAll();
     }
 

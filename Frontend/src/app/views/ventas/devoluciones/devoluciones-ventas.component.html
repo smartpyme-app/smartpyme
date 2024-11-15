@@ -101,17 +101,17 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.enable && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
+                                    <a *ngIf="venta.enable && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular devolución
+                                    </a>
                                     <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                                    </a>
-                                    <a *ngIf="venta.estado == 'Pagada' && apiService.canEdit()" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
                                     <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación

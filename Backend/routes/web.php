@@ -1643,6 +1643,19 @@ Route::get('/actualizarMH', function(){
     return 'Listo';
 });
 
+Route::get('/actualizarCategorias', function(){
+
+    $categorias = App\Models\Inventario\Categorias\Categoria::all();
+
+    foreach ($categorias as $categoria) {
+        $sucursal = $categoria->empresa()->first()->sucursales()->first();
+        $categoria->id_sucursal = $sucursal->id ?? NULL;
+        $categoria->save();
+    }
+
+    return 'Listo';
+});
+
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 

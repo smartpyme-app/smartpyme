@@ -179,3 +179,24 @@ CREATE TABLE detalles_cotizacion_ventas (
   updated_at timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+ALTER TABLE clientes ADD id_cuenta_contable INT NULL after id_usuario;
+ALTER TABLE proveedores ADD id_cuenta_contable INT  NULL after id_usuario;
+
+
+ALTER TABLE categorias ADD id_sucursal INT  NULL after id_empresa;
+ALTER TABLE categorias ADD id_cuenta_contable INT  NULL after id_sucursal;
+ALTER TABLE categorias ADD id_cuenta_contable_costo INT  NULL after id_cuenta_contable;
+
+
+CREATE TABLE categoria_sucursal_cuenta (
+    id int NOT NULL AUTO_INCREMENT,
+    categoria_id INT NOT NULL,
+    sucursal_id INT NOT NULL,
+    cuenta_contable_id INT NOT NULL,
+    created_at timestamp NULL,
+    updated_at timestamp NULL,
+    PRIMARY KEY (id)
+);

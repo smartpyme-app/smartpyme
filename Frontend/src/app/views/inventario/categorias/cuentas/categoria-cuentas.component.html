@@ -1,0 +1,99 @@
+<div class="row">
+    <div class="col-12">
+        <h6 class="float-start">Configuración Contable</h6>
+        <a (click)="openModal(mcuenta, {})" class="btn btn-default float-end mb-3" tooltip="Agregar cuenta">
+            Agregar cuenta
+        </a>
+    </div>
+    <div class="col-12 table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Sucursal</th>
+                    <th>Cuenta contable</th>
+                    <th>Cuenta de costos</th>
+                    <th class="text-center">Más</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="8" class="text-center" *ngIf="categoria?.cuentas?.length < 1 && !loading">
+                        <span class="badge bg-primary">No tiene cuentas registradas</span>
+                    </td>
+                    <td colspan="8" class="text-center" *ngIf="loading">
+                        <span class="badge bg-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr *ngFor=" let cuenta of categoria?.cuentas">
+                    <td>{{ cuenta.nombre_sucursal }}</td>
+                    <td>{{ cuenta.nombre_cuenta }}</td>
+                    <td>{{ cuenta.nombre_cuenta_costo }}</td>
+                    <td class="d-flex gap-2 justify-content-center">
+                        <a (click)="delete(cuenta)" class="btn btn-light" tooltip="Eliminar cuenta">
+                            <i class="fa fa-fw fa-trash"></i>
+                        </a>
+                        <a (click)="openModal(mcuenta, cuenta)" class="btn btn-default" tooltip="Editar cuenta">
+                            <i class="fa fa-fw fa-pencil-alt"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<ng-template #mcuenta>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Cuenta</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="row mb-3">
+            <div class="form-group col-12">
+              <label for="cuenta.id_sucursal">Sucursal:</label>
+              <select name="id_sucursal" [(ngModel)]="cuenta.id_sucursal" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                  {{sucursal.nombre}}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="cuenta.id_cuenta_contable">Cuenta de inventario:</label>
+                <ng-select [(ngModel)]="cuenta.id_cuenta_contable" class="form-select p-0" name="cuenta.id_cuenta_contable">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="cuenta.id_cuenta_contable_costo">Cuenta de costo:</label>
+                <ng-select [(ngModel)]="cuenta.id_cuenta_contable_costo" class="form-select p-0" name="cuenta.id_cuenta_contable_costo">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
