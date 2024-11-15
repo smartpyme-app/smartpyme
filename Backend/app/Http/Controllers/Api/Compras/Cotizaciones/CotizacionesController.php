@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\OrdenesDeComprasExport;
+use App\Models\Compras\Compra;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
 use Illuminate\Support\Facades\Auth;
@@ -141,6 +142,15 @@ class CotizacionesController extends Controller
             ], 400);
         }
 
+        if ($request->estado == "Anulada") {
+            $existCompras = Compra::where("num_orden_compra", $cotizacion->id)->where("estado", "!=", "Anulada")->exists();
+            if ($existCompras) {
+                return response()->json([
+                    "error" => "No se puede anular una cotización que ya tiene compras asociadas",
+                    "currentState" => $cotizacion->estado
+                ], 400);
+            }
+        }
 
         $cotizacion->fill($request->merge([
             "id_empresa" => Auth::user()->id_empresa,
