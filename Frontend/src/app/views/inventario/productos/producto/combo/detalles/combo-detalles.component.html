@@ -1,5 +1,4 @@
-<app-buscar-producto [producto]="producto" (productoSelect)="productoSelect($event)"
-  *ngIf="mode=='create'"></app-buscar-producto>
+<app-buscar-producto [producto]="producto" (productoSelect)="productoSelect($event)"></app-buscar-producto>
 
 <div class="row">
   <div class="col-md-12 table-responsive">
@@ -29,11 +28,11 @@
           </td>
           <td style="width: 150px;">
             <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control" [disabled]="mode!='create'">
+              (keyup)="updateTotal(detalle)" class="form-control">
           </td>
           <td style="width: 150px;">
             <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control" name="costo" [disabled]="true">
+              (keyup)="updateTotal(detalle)" class="form-control" name="costo">
           </td>
           <td style="width: 150px;">
             <input type="number" [(ngModel)]="detalle.cantidad_combo" class="form-control" name="cantidad_combo"
@@ -42,7 +41,7 @@
           <td style="width: 100px;" class="text-right" ngModel="">{{ detalle.total | currency:'USD':'symbol':'1.2'}}
           </td>
           <td style="width: 50px;" class="text-center">
-            <div class="btn-group" *ngIf="mode=='create'">
+            <div class="btn-group">
               <span class="btn btn-link" (click)="delete(detalle)">
                 <i class="fa fa-trash"></i>
               </span>
