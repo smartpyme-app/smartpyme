@@ -114,15 +114,17 @@ class Inventario extends Model
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Devolución Compra Anulada';
             }
-        } else if ($clase == ComboProducto::class) {
-            if ($cantidad > 0) {
-                $entradaCantidad =  $cantidad;
-                $clase = 'Combo';
-            } else {
-                $salidaCantidad =  abs($cantidad);
-                $clase = 'Combo Anulado';
-            }
-        } else {
+        }
+        // else if ($clase == ComboProducto::class) {
+        //     if ($cantidad > 0) {
+        //         $entradaCantidad =  $cantidad;
+        //         $clase = 'Combo';
+        //     } else {
+        //         $salidaCantidad =  abs($cantidad);
+        //         $clase = 'Combo Anulado';
+        //     }
+        // }
+        else {
             // return null;
         }
 
