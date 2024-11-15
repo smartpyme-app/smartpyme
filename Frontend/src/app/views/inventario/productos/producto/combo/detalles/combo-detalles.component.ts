@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
@@ -11,10 +11,9 @@ import Swal from 'sweetalert2';
   selector: 'app-producto-combo-detalles',
   templateUrl: './combo-detalles.component.html'
 })
-export class ComboDetallesComponent implements OnInit, OnChanges {
+export class ComboDetallesComponent implements OnInit {
 
   @Input() producto: any = {};
-  @Input() mode: 'create' | 'edit' | 'show' = 'create';
   public detalle: any = {};
   public supervisor: any = {};
 
@@ -37,11 +36,6 @@ export class ComboDetallesComponent implements OnInit, OnChanges {
 
   ngOnInit() {
   }
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['mode']) {
-
-    }
-  }
 
   openModalEdit(template: TemplateRef<any>, detalle: any) {
     this.detalle = detalle;
@@ -52,8 +46,7 @@ export class ComboDetallesComponent implements OnInit, OnChanges {
     if (!detalle.cantidad) {
       detalle.cantidad = 0;
     }
-
-    detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento || 0)).toFixed(2);
+    detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
     this.update.emit(this.producto);
   }
 
@@ -74,6 +67,7 @@ export class ComboDetallesComponent implements OnInit, OnChanges {
 
   // Agregar detalle
   productoSelect(producto: any): void {
+    console.log(this.producto);
     this.detalle = Object.assign({}, producto);
     this.detalle.id = null;
 
