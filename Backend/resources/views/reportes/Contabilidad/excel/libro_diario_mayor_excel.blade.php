@@ -157,7 +157,7 @@
         </th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Periodo: {{$desde}} - {{$hasta}}</strong></th>
+        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Periodo: {{$month_name}} - {{$year}}</strong></th>
     </tr>
     <tr>
         <th colspan="6" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong></th>

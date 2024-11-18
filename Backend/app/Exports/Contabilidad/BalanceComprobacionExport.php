@@ -26,8 +26,8 @@ class BalanceComprobacionExport implements FromView, WithStyles
     {
         return view('reportes.contabilidad.excel.balance_comprobacion_excel', [
             'empresa' => $this->data['empresa'],
-            'fechaInicio' => $this->data['fechaInicio'],
-            'fechaFin' => $this->data['fechaFin'],
+            'month_name' => $this->data['month_name'],
+            'year' => $this->data['year'],
             'balanceComprobacion' => $this->data['balanceComprobacion'],
         ]);
     }

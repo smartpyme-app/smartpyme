@@ -46,7 +46,7 @@
     <div class="header">
         <h2>Reporte Libro Diario</h2>
         <p>Empresa: {{ $empresa->nombre }}</p>
-        <p>Periodo: {{ $fechaInicio }} - {{ $fechaFin }}</p>
+        <p>Periodo: {{ $month_name }} - {{ $year }}</p>
         <p id="valores_expresados">VALORES ESPRESADOS EN US DOLARES</p>
     </div>
 

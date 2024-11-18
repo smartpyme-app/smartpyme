@@ -13,7 +13,7 @@
         <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong></th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Período: {{ $fechaInicio }} a {{ $fechaFin }}</strong></th>
+        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Período: {{ $month_name }} - {{ $year }}</strong></th>
     </tr>
     <tr>
         <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Todos los Centros de Costos</strong></th>
