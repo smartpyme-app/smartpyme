@@ -2,7 +2,7 @@
     <div class="col-12">
         <h6 class="float-start">Configuración Contable</h6>
         <a (click)="openModal(mcuenta, {})" class="btn btn-default float-end mb-3" tooltip="Agregar cuenta">
-            Agregar cuenta
+            Agregar sucursal
         </a>
     </div>
     <div class="col-12 table-responsive">
@@ -10,8 +10,10 @@
             <thead>
                 <tr>
                     <th>Sucursal</th>
-                    <th>Cuenta contable</th>
+                    <th>Cuenta de inventario</th>
                     <th>Cuenta de costos</th>
+                    <th>Cuenta de ingresos</th>
+                    <th>Cuenta de devoluciones</th>
                     <th class="text-center">Más</th>
                 </tr>
             </thead>
@@ -26,8 +28,10 @@
                 </tr>
                 <tr *ngFor=" let cuenta of categoria?.cuentas">
                     <td>{{ cuenta.nombre_sucursal }}</td>
-                    <td>{{ cuenta.nombre_cuenta }}</td>
+                    <td>{{ cuenta.nombre_cuenta_inventario }}</td>
                     <td>{{ cuenta.nombre_cuenta_costo }}</td>
+                    <td>{{ cuenta.nombre_cuenta_ingresos }}</td>
+                    <td>{{ cuenta.nombre_cuenta_devoluciones }}</td>
                     <td class="d-flex gap-2 justify-content-center">
                         <a (click)="delete(cuenta)" class="btn btn-light" tooltip="Eliminar cuenta">
                             <i class="fa fa-fw fa-trash"></i>
@@ -77,6 +81,30 @@
             <div class="form-group col-md-12">
                 <label for="cuenta.id_cuenta_contable_costo">Cuenta de costo:</label>
                 <ng-select [(ngModel)]="cuenta.id_cuenta_contable_costo" class="form-select p-0" name="cuenta.id_cuenta_contable_costo">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="cuenta.id_cuenta_contable_ingresos">Cuenta de ingresos:</label>
+                <ng-select [(ngModel)]="cuenta.id_cuenta_contable_ingresos" class="form-select p-0" name="cuenta.id_cuenta_contable_ingresos">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="cuenta.id_cuenta_contable_devoluciones">Cuenta de devoluciones:</label>
+                <ng-select [(ngModel)]="cuenta.id_cuenta_contable_devoluciones" class="form-select p-0" name="cuenta.id_cuenta_contable_devoluciones">
                     <ng-option value="">Seleccione aquí</ng-option>
                     <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
                         <div class="d-flex align-items-center">

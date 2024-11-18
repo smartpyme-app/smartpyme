@@ -189,6 +189,8 @@ ALTER TABLE proveedores ADD id_cuenta_contable INT  NULL after id_usuario;
 ALTER TABLE categorias ADD id_sucursal INT  NULL after id_empresa;
 ALTER TABLE categorias ADD id_cuenta_contable INT  NULL after id_sucursal;
 ALTER TABLE categorias ADD id_cuenta_contable_costo INT  NULL after id_cuenta_contable;
+ALTER TABLE categoria_sucursal_cuenta ADD id_cuenta_contable_ingresos INT  NULL after id_cuenta_contable_costo;
+ALTER TABLE categoria_sucursal_cuenta ADD id_cuenta_contable_devoluciones INT  NULL after id_cuenta_contable_ingresos;
 
 
 CREATE TABLE categoria_sucursal_cuenta (
