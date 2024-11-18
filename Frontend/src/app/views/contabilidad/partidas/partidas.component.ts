@@ -38,7 +38,6 @@ export class PartidasComponent implements OnInit {
   ];
 
   years: number[] = [];
-  //saving = false;
 
   modalRef!: BsModalRef;
 
@@ -87,7 +86,7 @@ export class PartidasComponent implements OnInit {
 
   generateYears() {
     const currentYear = new Date().getFullYear();
-    for (let year = 2020; year <= currentYear; year++) {
+    for (let year = 2023; year <= currentYear; year++) {
       this.years.push(year);
     }
   }
