@@ -1,9 +1,12 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Partidas</h2>
-    <div>
-        <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img src="/assets/icons/download.png" style="height: 16px; width: 16px;" ></button>
-        <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)" class="btn btn-default bn_mrgn" ><i class="fa fa-plus"></i> Añadir partida</button>
-    </div>
+  <h2 class="page-heading">Partidas</h2>
+  <div>
+    <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
+      src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
+    <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
+            class="btn btn-default bn_mrgn"><i class="fa fa-plus"></i> Añadir partida
+    </button>
+  </div>
 
 </section>
 
@@ -15,115 +18,129 @@
 
 
 <section class="bg-white p-4 rounded mb-3">
-    <div class="row">
-        <div class="col-md-6 mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
             <span class="text-muted" *ngIf="partidas?.total">
                 Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
             </span>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <div class="d-flex gap-2">
-                <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-partidas'"></app-importar-excel> -->
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPartidas()" autocomplete="off">
-                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar concepto o tipo de partida" [(ngModel)]="filtros.buscador">
-                </form>
-                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
-            </div>
-        </div>
     </div>
 
-    <div class="d-flex">
-        <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/contabilidad/partidas">Todas</button>
-             <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="filtros.estado = 'Pendiente'; filtrarPartidas();" >Por revisar <span class="badge bg-warning text-dark">{{ partidas.total_pendientes }}</span> </button> <!-- routerLink="/devoluciones/ventas" -->
-        </div>
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2">
+        <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'catalogo-partidas'"></app-importar-excel> -->
+        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarPartidas()" autocomplete="off">
+          <input type="text" name="buscador" class="form-control pull-right"
+                 placeholder="Buscar concepto o tipo de partida" [(ngModel)]="filtros.buscador">
+        </form>
+        <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"><img
+          src="/assets/icons/filter.png" class="icon"></button>
+      </div>
+    </div>
+  </div>
 
-        <div class="col-md-6 d-flex gap-2 mb-3 justify-content-end">
-            <select name="estado" (change)="filtrarPartidas()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
-                <option value="" selected>Estado</option>
-                <option value="Aplicada">Aplicada</option>
-                <option value="Pendiente">Pendiente</option>
-                <option value="Anulada">Anulada</option>
-            </select>
-
-
-        </div>
+  <div class="d-flex">
+    <div class="col-md-6 d-flex gap-2 mb-3">
+      <button class="tcla-F5 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
+              [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/contabilidad/partidas">Todas
+      </button>
+      <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+              (click)="filtros.estado = 'Pendiente'; filtrarPartidas();">Por revisar <span
+        class="badge bg-warning text-dark">{{ partidas.total_pendientes }}</span></button>
+      <!-- routerLink="/devoluciones/ventas" -->
     </div>
 
+    <div class="col-md-6 d-flex gap-2 mb-3 justify-content-end">
+      <select name="estado" (change)="filtrarPartidas()" [(ngModel)]="filtros.estado"
+              class="form-select bg-default w-auto">
+        <option value="" selected>Estado</option>
+        <option value="Aplicada">Aplicada</option>
+        <option value="Pendiente">Pendiente</option>
+        <option value="Anulada">Anulada</option>
+      </select>
 
-    <div class="row">
-        <div class="table-responsive">
-            <table class="table table-borderless table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Concepto</th>
-                        <th># de Partida</th>
-                        <th>Estado</th>
-                        <th>Tipo</th>
-                        <th class="text-center">Más</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center" *ngIf="partidas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
-                        </td>
-                        <td colspan="6" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
 
-                    <tr *ngFor=" let partida of partidas?.data">
-                        <!-- Fecha -->
-                        <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
-                        <!-- Concepto -->
-                        <td>{{ partida.concepto }}</td>
-                        <!-- Numero partida -->
-                         <td>{{ partida.id}}</td>
-                        <!-- Estado -->
-                        <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aplicada'}">{{ partida.estado }}</span>
-                           <!--  <select name="enable" class="form-select w-auto border-0" (change)="setEstadoChange(partida)" [ngClass]="{'bg-light-warning' : partida?.estado == 'Pendiente', 'bg-light-success' : partida?.estado == 'Aplicada', 'bg-light-danger' : partida?.estado == 'Anulada'}" [(ngModel)]="partida.estado">
-                                <option value="Aplicada">Aplicada</option>
-                                <option value="Pendiente" >Pendiente</option>
-                                <option value="Anulada">Anulada</option>
-                            </select> -->
-                        </td>
-                         <!-- Tipo -->
-                         <td>{{ partida.tipo }}</td>
-                         <!-- Más -->
-                        <td class="text-center">
+    </div>
+  </div>
+
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Concepto</th>
+          <th># de Partida</th>
+          <th>Estado</th>
+          <th>Tipo</th>
+          <th class="text-center">Más</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td colspan="6" class="text-center" *ngIf="partidas?.total < 1 && !loading">
+            <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
+          </td>
+          <td colspan="6" class="text-center" *ngIf="loading">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+
+        <tr *ngFor=" let partida of partidas?.data">
+          <!-- Fecha -->
+          <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
+          <!-- Concepto -->
+          <td>{{ partida.concepto }}</td>
+          <!-- Numero partida -->
+          <td>{{ partida.id }}</td>
+          <!-- Estado -->
+          <td>
+            <span class="badge py-2" style="font-size: 0.8rem;"
+                  [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aplicada'}">{{ partida.estado }}</span>
+            <!--  <select name="enable" class="form-select w-auto border-0" (change)="setEstadoChange(partida)" [ngClass]="{'bg-light-warning' : partida?.estado == 'Pendiente', 'bg-light-success' : partida?.estado == 'Aplicada', 'bg-light-danger' : partida?.estado == 'Anulada'}" [(ngModel)]="partida.estado">
+                 <option value="Aplicada">Aplicada</option>
+                 <option value="Pendiente" >Pendiente</option>
+                 <option value="Anulada">Anulada</option>
+             </select> -->
+          </td>
+          <!-- Tipo -->
+          <td>{{ partida.tipo }}</td>
+          <!-- Más -->
+          <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/contabilidad/partida/{{partida.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                                    </a>
-                                    <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Aplicar
-                                    </a>
-                                    <a *ngIf="partida.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Anular
-                                    </a>
-                                    <a *ngIf="partida.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="col-12" *ngIf="partidas?.last_page > 1">
-            <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+            <ng-template #accionesTemplate>
+              <div class="list-group border-0">
+                <a routerLink="/contabilidad/partida/{{partida.id}}"
+                   class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                </a>
+                <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()"
+                   (click)="setEstado(partida, 'Aplicada')"
+                   class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-check"></i> Aplicar
+                </a>
+                <a *ngIf="partida.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')"
+                   class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-ban"></i> Anular
+                </a>
+                <a *ngIf="partida.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')"
+                   class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-check"></i> Revertir anulación
+                </a>
+              </div>
+            </ng-template>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
+
+    <div class="col-12" *ngIf="partidas?.last_page > 1">
+      <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+  </div>
 </section>
 
 
@@ -131,52 +148,52 @@
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h2 class="text-center">Filtrar</h2>
+      <h2 class="text-center">Filtrar</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
     <form autocomplete="off" (ngSubmit)="filtrarPartidas()">
-        <div class="row">
+      <div class="row">
 
-            <div class="form-group col-sm-6">
-                <label for="">Del:</label>
-                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="">Al:</label>
-                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.estado">Estado:</label>
-                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
-                    <option value="">Todos</option>
-                    <option value="Aplicada">Aplicadas</option>
-                    <option value="Pendiente">Pendientes</option>
-                    <option value="Anulada">Anuladas</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.tipo">Tipo:</label>
-                <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
-                    <option value="">Todos</option>
-                    <option value="Ingreso">Ingreso</option>
-                    <option value="CxC">CxC</option>
-                    <option value="CxP">CxP</option>
-                    <option value="Diario">Diario</option>
-                    <option value="Cierre">Cierre</option>
-                    <option value="Egreso">Egreso</option>
-                </select>
-            </div>
+        <div class="form-group col-sm-6">
+          <label for="">Del:</label>
+          <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
         </div>
+        <div class="form-group col-sm-6">
+          <label for="">Al:</label>
+          <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+        </div>
+        <div class="form-group col-sm-6">
+          <label for="filtros.estado">Estado:</label>
+          <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+            <option value="">Todos</option>
+            <option value="Aplicada">Aplicadas</option>
+            <option value="Pendiente">Pendientes</option>
+            <option value="Anulada">Anuladas</option>
+          </select>
+        </div>
+        <div class="form-group col-sm-6">
+          <label for="filtros.tipo">Tipo:</label>
+          <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
+            <option value="">Todos</option>
+            <option value="Ingreso">Ingreso</option>
+            <option value="CxC">CxC</option>
+            <option value="CxP">CxP</option>
+            <option value="Diario">Diario</option>
+            <option value="Cierre">Cierre</option>
+            <option value="Egreso">Egreso</option>
+          </select>
+        </div>
+      </div>
 
-        <div class="d-grid mt-3">
-            <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
-            </button>
-        </div>
+      <div class="d-grid mt-3">
+        <button type="submit" [disabled]="loading" class="btn btn-primary">
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
+        </button>
+      </div>
     </form>
   </div>
 </ng-template>
@@ -184,208 +201,246 @@
 
 <!-- generacion de documentos -->
 <ng-template #mdocgenerate>
-    <div class="modal-header">
-      <div class="modal-title text-center">
-          <h2 class="text-center">Generar reporte</h2>
-      </div>
-      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center">Generar reporte</h2>
     </div>
-    <div class="modal-body">
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
 
-      <app-notificaciones-container></app-notificaciones-container>
+    <app-notificaciones-container></app-notificaciones-container>
 
-      <div>
-        <div class="d-flex align-items-start">
-            <div class="nav flex-column nav-pills me-3 px-2 py-2 border rounded" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-              <button class="nav-link text-nowrap text-start text-dark active" id="v-pills-libro-diario-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario" type="button" role="tab" aria-controls="v-pills-home" aria-selected="true">Libro diario</button>
-<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-mayor-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-mayor" type="button" role="tab" aria-controls="v-pills-libro-mayor" aria-selected="false">Libro mayor</button>-->
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-diario-mayor-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario-mayor" type="button" role="tab" aria-controls="v-pills-libro-diario-mayor" aria-selected="false">Libro diario mayor</button>
-<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Libro auxiliar</button>-->
-<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Estado de resultados</button>-->
-              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-balance-comprobacion-tab" data-bs-toggle="pill" data-bs-target="#v-pills-balance-comprobacion" type="button" role="tab" aria-controls="v-pills-balance-comprobacion" aria-selected="false">Balance de comprobación</button>
-<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Balance general</button>-->
-<!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>-->
-            </div>
-            <div class="tab-content" id="v-pills-tabContent">
-              <!-- tab 1 formulario LIBRO DIARIO-->
-              <div class="tab-pane fade show active" id="v-pills-libro-diario" role="tabpanel" aria-labelledby="v-pills-libro-diario-tab">
-                <form (ngSubmit)="imprimirDiarioAux()" #auxForm="ngForm">
-                    <div class="row">
-                        <div class="form-group col-md-6">
-                            <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.desde"/>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
-                        </div>
-                      <div class="form-group col-md-6">
-                        <label for="">Tipo de reporte:</label>
-                        <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                          <option value="pdf" selected>PDF</option>
-                          <option value="excel">Excel</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="row">
-                        <div class="form-group col-md-12 mt-3">
-                            <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                                <span *ngIf="saving">Guardando...</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
+    <div>
+      <div class="d-flex align-items-start">
+        <div class="nav flex-column nav-pills me-3 px-2 py-2 border rounded" id="v-pills-tab" role="tablist"
+             aria-orientation="vertical">
+          <button class="nav-link text-nowrap text-start text-dark active" id="v-pills-libro-diario-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario" type="button" role="tab"
+                  aria-controls="v-pills-home" aria-selected="true">Libro diario
+          </button>
+          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-mayor-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-mayor" type="button" role="tab" aria-controls="v-pills-libro-mayor" aria-selected="false">Libro mayor</button>-->
+          <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-diario-mayor-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario-mayor" type="button" role="tab"
+                  aria-controls="v-pills-libro-diario-mayor" aria-selected="false">Libro diario mayor
+          </button>
+          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-monthsages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Libro auxiliar</button>-->
+          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Estado de resultados</button>-->
+          <button class="nav-link text-nowrap text-start text-dark" id="v-pills-balance-comprobacion-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-balance-comprobacion" type="button" role="tab"
+                  aria-controls="v-pills-balance-comprobacion" aria-selected="false">Balance de comprobación
+          </button>
+          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Balance general</button>-->
+          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>-->
+        </div>
+        <div class="tab-content" id="v-pills-tabContent">
+          <!-- tab 1 formulario LIBRO DIARIO-->
+          <div class="tab-pane fade show active" id="v-pills-libro-diario" role="tabpanel"
+               aria-labelledby="v-pills-libro-diario-tab">
+            <form (ngSubmit)="imprimirDiarioAux()" #auxForm="ngForm">
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="month">Mes:</label>
+                  <select class="form-select" name="month"  required [(ngModel)]="reporte.month">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="year">Año:</label>
+                  <select class="form-select" name="year"  required [(ngModel)]="reporte.year">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
+                    <option value="pdf" selected>PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
               </div>
-              <!-- tab 2 formulario LIBRO MAYOR -->
-              <div class="tab-pane fade" id="v-pills-libro-mayor" role="tabpanel" aria-labelledby="v-pills-libro-mayor-tab">
-
-              <form (ngSubmit)="imprimirMayor()" #mayorForm="ngForm">
-                    <div class="row">
-                        <div class="form-group col-md-9">
-                            <label for="nombre">Concepto:</label>
-                            <input type="text" class="form-control" name="nombre" required [(ngModel)]="reporte.concepto">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="reporte.desde">Desde:</label>
-                            <input type='date' class="form-control" name="reporte.desde" required [(ngModel)]="reporte.desde"/>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="reporte.hasta">Hasta:</label>
-                            <input type='date' class="form-control" name="reporte.hasta" required [(ngModel)]="reporte.hasta"/>
-                        </div>
-                        <div class="form-group col-md-5">
-                            <label for="nombre">Centro de costo:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                        </div>
-
-                    </div>
-                    <div class="row">
-                        <div class="form-group col-md-12 mt-3">
-                            <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                                <span >Generar documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                                <span *ngIf="saving">Guardando...</span>
-                            </button>
-                        </div>
-                    </div>
-              </form>
-
+              <div class="row">
+                <div class="form-group col-md-12 mt-3">
+                  <button type="submit" [disabled]="!auxForm.form.valid || saving"
+                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span *ngIf="saving">Guardando...</span>
+                  </button>
+                </div>
               </div>
-              <!-- tab 3 formulario LIBRO DIARIO MAYOR -->
-              <div class="tab-pane fade" id="v-pills-libro-diario-mayor" role="tabpanel" aria-labelledby="v-pills-libro-diario-mayor-tab">
-                <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor()" novalidate>
-                    <div class="row">
-                      <div class="form-group col-md-6">
-                        <label for="desde">Desde:</label>
-                        <input type="date" class="form-control" name="desde" required [(ngModel)]="reporte.desde" #desde="ngModel"/>
-                        <!-- Mostrar un mensaje de error si el campo es inválido -->
-                        <div *ngIf="desde.invalid && (desde.dirty || desde.touched)" class="text-danger">
-                          El campo "Desde" es requerido.
-                        </div>
-                      </div>
-
-                      <div class="form-group col-md-6">
-                        <label for="hasta">Hasta:</label>
-                        <input type="date" class="form-control" name="hasta" required [(ngModel)]="reporte.hasta" #hasta="ngModel"/>
-                        <!-- Mostrar un mensaje de error si el campo es inválido -->
-                        <div *ngIf="hasta.invalid && (hasta.dirty || hasta.touched)" class="text-danger">
-                          El campo "Hasta" es requerido.
-                        </div>
-                      </div>
-                      <div class="form-group col-md-6">
-                        <label for="">Tipo de reporte:</label>
-                        <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                          <option value="pdf" selected>PDF</option>
-                          <option value="excel">Excel</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <div class="form-group col-md-12 mt-3">
-                        <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
-                          <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                          <span *ngIf="saving">Guardando...</span>
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-            </div>
-              <!-- tab 4 formulario BALANCE COMPROBACION-->
-              <div class="tab-pane fade" id="v-pills-balance-comprobacion" role="tabpanel" aria-labelledby="v-pills-balance-comprobacion-tab">
-                <form (ngSubmit)="imprimirBalanceComprobacion()" #auxForm="ngForm">
-                  <div class="row">
-                    <div class="form-group col-md-6">
-                      <label for="">Desde:</label>
-                      <input type='date' class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.desde"/>
-                    </div>
-                    <div class="form-group col-md-6">
-                      <label for="">Hasta:</label>
-                      <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
-                    </div>
-                    <div class="form-group col-md-6">
-                      <label for="">Tipo de reporte:</label>
-                      <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                        <option value="pdf" selected>PDF</option>
-                        <option value="excel">Excel</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="form-group col-md-12 mt-3">
-                      <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                        <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                        <span *ngIf="saving">Guardando...</span>
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <!-- tab 5 formulario LIBRO MAYOR -->
-              <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
-
-                <form (ngSubmit)="imprimirMovCuenta()">
-                    <div class="row">
-                        <div class="form-group col-md-6">
-                            <label for="">Desde:</label>
-                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.desde"/>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="">Hasta:</label>
-                            <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
-                        </div>
-                        <div class="form-group col-md-8">
-                            <label for="nombre">Cuenta desde:</label>
-                            <ng-select [(ngModel)]="reporte.cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta">
-                                <ng-option value="">Seleccione aquí</ng-option>
-                                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.codigo">
-                                    <div class="d-flex align-items-center">
-                                        <span class="col-4">{{ cuenta.codigo }} </span>
-                                        <span class="col-8"> - {{ cuenta.nombre | truncate:20}}</span>
-                                    </div>
-                                </ng-option>
-                            </ng-select>
-                        </div>
-                        <div class="form-group col-md-8">
-                            <label for="nombre">Centro de costo:</label>
-                            <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                        </div>
-
-                    </div>
-                    <div class="row">
-                        <div class="form-group col-md-12 mt-3">
-                            <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end" >
-                                <span >Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                                <span *ngIf="saving">Guardando...</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-              </div>
-            </div>
+            </form>
           </div>
+          <!-- tab 2 formulario LIBRO MAYOR -->
+          <div class="tab-pane fade" id="v-pills-libro-mayor" role="tabpanel" aria-labelledby="v-pills-libro-mayor-tab">
 
+            <form (ngSubmit)="imprimirMayor()" #mayorForm="ngForm">
+              <div class="row">
+                <!--                        <div class="form-group col-md-9">-->
+                <!--                            <label for="nombre">Concepto:</label>-->
+                <!--                            <input type="text" class="form-control" name="nombre" required [(ngModel)]="reporte.concepto">-->
+                <!--                        </div>-->
+                <div class="form-group col-md-4">
+                  <label for="month">Mes:</label>
+                  <input type='date' class="form-control" name="reporte.desde" required [(ngModel)]="reporte.mes"/>
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="year">Año:</label>
+                  <input type='date' class="form-control" name="reporte.hasta" required [(ngModel)]="reporte.year"/>
+                </div>
+                <div class="form-group col-md-5">
+                  <label for="nombre">Centro de costo:</label>
+                  <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
+                </div>
+
+              </div>
+              <div class="row">
+                <div class="form-group col-md-12 mt-3">
+                  <button type="submit" [disabled]="reporteForm.invalid || saving"
+                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                    <span>Generar documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span *ngIf="saving">Guardando...</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+
+          </div>
+          <!-- tab 3 formulario LIBRO DIARIO MAYOR -->
+          <div class="tab-pane fade" id="v-pills-libro-diario-mayor" role="tabpanel"
+               aria-labelledby="v-pills-libro-diario-mayor-tab">
+            <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor()" novalidate>
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="month">Mes:</label>
+                  <select class="form-select" name="month"  required [(ngModel)]="reporte.mes">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="year">Año:</label>
+                  <select class="form-select" name="year"  required [(ngModel)]="reporte.year">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
+                    <option value="pdf" selected>PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="form-group col-md-12 mt-3">
+                  <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
+                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span *ngIf="saving">Guardando...</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <!-- tab 4 formulario BALANCE COMPROBACION-->
+          <div class="tab-pane fade" id="v-pills-balance-comprobacion" role="tabpanel"
+               aria-labelledby="v-pills-balance-comprobacion-tab">
+            <form (ngSubmit)="imprimirBalanceComprobacion()" #auxForm="ngForm">
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="month">Mes:</label>
+                  <select class="form-select" name="month"  required [(ngModel)]="reporte.mes">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="year">Año:</label>
+                  <select class="form-select" name="year"  required [(ngModel)]="reporte.year">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
+                    <option value="pdf" selected>PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="form-group col-md-12 mt-3">
+                  <button type="submit" [disabled]="!auxForm.form.valid || saving"
+                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span *ngIf="saving">Guardando...</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <!-- tab 5 formulario LIBRO MAYOR -->
+          <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+
+            <form (ngSubmit)="imprimirMovCuenta()">
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="">Desde:</label>
+                  <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.desde"/>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Hasta:</label>
+                  <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
+                </div>
+                <div class="form-group col-md-8">
+                  <label for="nombre">Cuenta desde:</label>
+                  <ng-select [(ngModel)]="reporte.cuenta" (change)="selectCuenta()" class="form-select p-0"
+                             name="detalle.id_cuenta">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.codigo">
+                      <div class="d-flex align-items-center">
+                        <span class="col-4">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre | truncate:20 }}</span>
+                      </div>
+                    </ng-option>
+                  </ng-select>
+                </div>
+                <div class="form-group col-md-8">
+                  <label for="nombre">Centro de costo:</label>
+                  <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
+                </div>
+
+              </div>
+              <div class="row">
+                <div class="form-group col-md-12 mt-3">
+                  <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
+                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span *ngIf="saving">Guardando...</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
       </div>
+
     </div>
-  </ng-template>
+  </div>
+</ng-template>

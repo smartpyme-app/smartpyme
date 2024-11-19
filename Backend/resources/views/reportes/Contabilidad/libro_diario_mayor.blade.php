@@ -40,12 +40,12 @@
 
         #empresa_nombre {
             top: 0.5cm;
-            left: 9.5cm;
+            left: 8.5cm;
         }
 
         #titulo_doc {
             top: 1cm;
-            left: 9.5cm;
+            left: 8.5cm;
             font-weight: bold;
         }
 
@@ -151,7 +151,7 @@
     <div class="header">
         <p id="titulo_doc">Reporte Libro Diario Mayor</p>
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
-        <p id="fechas_filtro">Periodo: {{$desde}} - {{$hasta}}</p>
+        <p id="fechas_filtro">Periodo: {{$month_name}} - {{$year}}</p>
         <p id="val_dolares">VALORES ESPRESADOS EN US DOLARES</p>
     </div>
     <div style="page-break-after:auto;">

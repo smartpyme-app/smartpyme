@@ -41,27 +41,33 @@
 
         #empresa_nombre {
             top: 0.5cm;
-            left: 9.5cm;
+            left: 8cm;
+            font-weight: bold;
         }
 
         #titulo_balance {
             top: 1cm;
-            left: 8.3cm;
+            left: 8cm;
+        }
+
+        #periodo {
+            top: 1.5cm;
+            left: 8cm;
         }
 
         #c_costos {
-            top: 1.5cm;
-            left: 9cm;
+            top: 2cm;
+            left: 8cm;
         }
 
         #us_doll {
-            top: 2cm;
-            left: 7.5cm;
+            top: 2.5cm;
+            left: 8cm;
         }
 
         #naturaleza {
-            top: 2.5cm;
-            left: 9.5cm;
+            top: 3cm;
+            left: 8cm;
         }
 
         #fecha_actual {
@@ -154,7 +160,8 @@
 
         {{--        al centro del documento --}}
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
-        <p id="titulo_balance">Balance de Comprobación a finde mes</p> {{-- aqui se debe colocar el mes --}}
+        <p id="titulo_balance">Balance de Comprobación</p>
+        <p id="periodo">Periodo: {{$month_name}} - {{$year}}</p>
         <p id="c_costos">Todos los Centros de Costos</p>
         <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>
         <p id="naturaleza">ACTIVOS Y GASTOS</p>
@@ -199,7 +206,8 @@
 
             {{--        al centro del documento --}}
             <p id="empresa_nombre">{{$empresa->nombre}}</p>
-            <p id="titulo_balance">Balance de Comprobación a finde mes</p> {{-- aqui se debe colocar el mes --}}
+            <p id="titulo_balance">Balance de Comprobación a finde mes</p>
+            <p id="periodo">Periodo: {{$month_name}} - {{$year}}</p>
             <p id="c_costos">Todos los Centros de Costos</p>
             <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>
             <p id="naturaleza">ACTIVOS Y GASTOS</p>

@@ -27,7 +27,7 @@
         </th>
     </tr>
     <tr>
-        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Periodo: {{ $fechaInicio }}- {{ $fechaFin }}</strong></th>
+        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Periodo: {{ $month_name }} - {{ $year }}</strong></th>
     </tr>
     <tr>
         <th colspan="7" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong>

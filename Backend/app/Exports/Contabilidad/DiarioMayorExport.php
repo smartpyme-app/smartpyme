@@ -25,8 +25,8 @@ class DiarioMayorExport implements FromView, WithStyles
     {
         return view('reportes.contabilidad.excel.libro_diario_mayor_excel', [
             'empresa' => $this->data['empresa'],
-            'desde' => $this->data['desde'],
-            'hasta' => $this->data['hasta'],
+            'month_name' => $this->data['month_name'],
+            'year' => $this->data['year'],
             'cuentas' => $this->data['cuentas'],
         ]);
     }
