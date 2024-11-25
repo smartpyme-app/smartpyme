@@ -53,7 +53,7 @@ class DevolucionComprasController extends Controller
 
     public function read($id) {
 
-        $compra = Devolucion::where('id', $id)->with('detalles', 'proveedor')->first();
+        $compra = Devolucion::where('id', $id)->with('detalles', 'compra', 'proveedor')->first();
         return Response()->json($compra, 200);
  
     }
@@ -126,9 +126,9 @@ class DevolucionComprasController extends Controller
             $devolucion->fill($request->all());
             $devolucion->save();
 
-            $compra = Compra::findOrFail($request['id_compra']);
-            $compra->estado = 'Anulada';
-            $compra->save();
+            // $compra = Compra::findOrFail($request['id_compra']);
+            // $compra->estado = 'Anulada';
+            // $compra->save();
 
 
         // Detalles

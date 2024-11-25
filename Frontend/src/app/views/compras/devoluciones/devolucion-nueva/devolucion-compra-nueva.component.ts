@@ -14,6 +14,7 @@ import { ApiService } from '@services/api.service';
 export class DevolucionCompraNuevaComponent implements OnInit {
 
     public compra: any= {};
+    public devolucion: any= {};
     public detalle: any = {};
     public documentos:any = [];
     public supervisor:any = {};
@@ -41,26 +42,29 @@ export class DevolucionCompraNuevaComponent implements OnInit {
         else{
             this.loading = true;
             this.compra.cliente = {};
-            this.cargarDocumentos();
             this.apiService.read('compra/', id).subscribe(compra => {
                 this.compra = compra;
-                this.compra.id = null;
-                this.compra.fecha = this.apiService.date();
-                this.compra.id_compra = id;
-                this.compra.tipo = 'Interna';
-                this.compra.observaciones = '';
+                this.devolucion.detalles = compra.detalles;
+                this.devolucion.id_proveedor = compra.id_proveedor;
+                this.devolucion.fecha = this.apiService.date();
+                this.devolucion.id_compra = id;
+                this.devolucion.tipo = 'Interna';
+                this.devolucion.observaciones = '';
 
-                this.compra.percepcion = this.compra.iva_percibido > 0 ? true : false; 
-                this.compra.retencion = this.compra.iva_retenido > 0 ? true : false;
+                this.devolucion.cobrar_impuestos = this.compra.iva > 0 ? true : false; 
+                this.devolucion.percepcion = this.compra.iva_percibido > 0 ? true : false; 
+                this.devolucion.retencion = this.compra.iva_retenido > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
-                    this.compra.id_caja = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
-                    this.compra.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
+                    this.devolucion.id_caja = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
+                    this.devolucion.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
                 }
-                this.compra.id_usuario = this.apiService.auth_user().id;
-                this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
-                // this.sumTotal();
+                this.devolucion.id_usuario = this.apiService.auth_user().id;
+                this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
+                this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
+                this.sumTotal();
+                this.cargarDocumentos();
                 this.loading = false;
             }, error => {this.alertService.error(error);this.loading = false;});
         }
@@ -68,65 +72,90 @@ export class DevolucionCompraNuevaComponent implements OnInit {
     }
 
     cargarDocumentos(){
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
+            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
+
+            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
+                let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
+                console.log(documento);
+                if(documento){
+                    this.devolucion.tipo_documento = documento.nombre;
+                }
+            }
+            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_credito') {
+
+                console.log(this.documentos);
+                let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
+                console.log(documento);
+                if(documento){
+                    this.devolucion.tipo_documento = documento.nombre;
+                }
+            }
+            console.log(this.devolucion);
         }, error => {this.alertService.error(error);});
     }
 
     cargarDatosIniciales(){
         this.cargarDocumentos();
-        this.compra = {};
-        this.compra.fecha = this.apiService.date();
-        this.compra.tipo = 'Interna';
-        this.compra.cliente = {};
-        this.compra.detalles = [];
-        this.compra.canal = 'Tienda';
-        this.compra.descuento = 0;
+        this.devolucion = {};
+        this.devolucion.fecha = this.apiService.date();
+        this.devolucion.tipo = 'Interna';
+        this.devolucion.cliente = {};
+        this.devolucion.detalles = [];
+        this.devolucion.canal = 'Tienda';
+        this.devolucion.descuento = 0;
         this.detalle = {};
 
         let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
         if (corte) {
-            this.compra.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
-            this.compra.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id_caja;
-            this.compra.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
+            this.devolucion.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
+            this.devolucion.caja_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id_caja;
+            this.devolucion.corte_id = JSON.parse(sessionStorage.getItem('worder_corte')!).id;
         }
 
-        this.compra.id_usuario = this.apiService.auth_user().id;
-        this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
+        this.devolucion.id_usuario = this.apiService.auth_user().id;
+        this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
         // this.sumTotal();
         this.imprimir = true;
     }
 
     public sumTotal() {
-        this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
-        this.compra.iva_percibido = this.compra.percepcion ? this.compra.sub_total * 0.01 : 0; 
-        this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0; 
+        this.devolucion.sub_total = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total'))).toFixed(2);
+        this.devolucion.percepcion = this.devolucion.cobrar_percepcion ? this.devolucion.sub_total * 0.01 : 0; 
+        this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0;
+        this.devolucion.renta_retenida = this.devolucion.renta ? this.devolucion.sub_total * 0.10 : 0; 
 
-        this.compra.iva = (parseFloat(this.sumPipe.transform(this.compra.impuestos, 'monto'))).toFixed(2);
-        this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
-        // this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
-        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.iva_percibido) - parseFloat(this.compra.iva_retenido)).toFixed(2);
+        if(this.devolucion.cobrar_impuestos){
+            this.devolucion.iva = ( this.devolucion.sub_total * 0.13 ).toFixed(2);
+        }else{
+            this.devolucion.iva = 0;
+        }
+
+        this.devolucion.descuento = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'descuento'))).toFixed(2);
+        this.devolucion.total_costo = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total_costo'))).toFixed(2);
+        this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.percepcion) - parseFloat(this.devolucion.iva_retenido) - parseFloat(this.devolucion.renta_retenida)).toFixed(2);
     }
 
 
-    updateCompra(compra:any) {
-        this.compra = compra;
+    updateCompra(devolucion:any) {
+        this.devolucion = devolucion;
         this.sumTotal();
     }
 
     // Devolución
         openModalDevolucion(template: TemplateRef<any>) {
             this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
-            this.compra.tipo = 'Cambio de producto';
+            this.devolucion.tipo = 'Cambio de producto';
         }
 
         public onDevolucion() {
 
             this.saving = true;
-            this.apiService.store('devolucion-compra', this.compra).subscribe(compra => {
+            this.apiService.store('devolucion-compra', this.devolucion).subscribe(devolucion => {
                 this.saving = false;
-                if(compra.tipo_documento == 'Factura' || compra.tipo_documento == 'Credito Fiscal' || compra.tipo_documento == 'Ticket'){
-                    this.imprimirDocDevolucion(compra);
+                if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
+                    this.imprimirDocDevolucion(devolucion);
                 }
                 this.router.navigate(['/devoluciones/compras']);
                 this.alertService.success('Devolucion de compra creada', 'La devolución de compra fue guardado exitosamente.');
@@ -134,9 +163,9 @@ export class DevolucionCompraNuevaComponent implements OnInit {
         }
 
 
-    public imprimirDocDevolucion(compra:any){
+    public imprimirDocDevolucion(devolucion:any){
         setTimeout(()=>{
-            window.open(this.apiService.baseUrl + '/api/reporte/devolucion/' + compra.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+            window.open(this.apiService.baseUrl + '/api/reporte/devolucion/' + devolucion.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
         }, 1000);
     }
 

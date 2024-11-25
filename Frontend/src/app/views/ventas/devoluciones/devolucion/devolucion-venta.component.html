@@ -4,9 +4,9 @@
 </section>
 <div class="card">
     <div class="card-body">
-        <h4 class="card-title text-center">
-            Información
-            <a *ngIf="venta.credito" routerLink="/credito/{{venta.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
+        <h4 class="card-title">
+            <!-- Información -->
+            <a *ngIf="devolucion.credito" routerLink="/credito/{{devolucion.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
                 <i class="fa fa-money-check"></i>
             </a>
         </h4>
@@ -16,16 +16,14 @@
                     <th>Fecha</th>
                     <th>Cliente</th>
                     <th>Usuario</th>
-                    <th>Venta</th>
+                    <th>Observaciones</th>
                 </tr>
                 <tr>
-                    <td>{{ venta.fecha | date:'dd/MM/yyyy'}}</td>
-                    <td>{{ venta.nombre_cliente }}</td>
-                    <td>{{ venta.nombre_usuario }}</td>
-                    <td>{{ venta.venta.nombre_documento }} #{{ venta.venta.correlativo }}</td>
+                    <td>{{ devolucion.fecha | date:'dd/MM/yyyy'}}</td>
+                    <td>{{ devolucion.nombre_cliente }}</td>
+                    <td>{{ devolucion.nombre_usuario }}</td>
+                    <td>{{ devolucion.observaciones }}</td>
                 </tr>
-                <tr><th colspan="4">Observaciones:</th></tr>
-                <tr><td colspan="4">{{ venta.observaciones }}</td></tr>
             </table>
         </div>    
     </div>
@@ -34,7 +32,7 @@
 
 <div class="card">
     <div class="card-body">
-        <h4 class="card-title text-center">Detalle</h4>
+        <!-- <h4 class="card-title">Detalle</h4> -->
         <div class="table-responsive" style="min-height: 300px;">
             <table class="table table-borderless">
                 <thead>
@@ -48,13 +46,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <td colspan="8" class="text-center" *ngIf="venta.detalles?.length < 1 && !loading">
+                    <td colspan="8" class="text-center" *ngIf="devolucion.detalles?.length < 1 && !loading">
                         <span class="badge badge-info">No tiene productos agregados</span>
                     </td>
                     <td colspan="8" class="text-center" *ngIf="loading">
                         <span class="badge badge-info">Cargando...</span>
                     </td>
-                    <tr *ngFor="let detalle of venta.detalles; let i=index">
+                    <tr *ngFor="let detalle of devolucion.detalles; let i=index">
                         <td class="text-center"> {{ i + 1 }} </td>
                         <td> {{ detalle.nombre_producto }} </td>
                         <td class="text-end">{{ detalle.cantidad }}</td>
@@ -65,45 +63,71 @@
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>IVA:</b></td>
-                        <td class="text-end"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="venta?.descuento > 0">
+                    <tr *ngIf="devolucion?.descuento > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="venta?.iva_retenido > 0">
+                    <tr *ngIf="devolucion?.iva_retenido > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Retención:</b></td>
-                        <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="venta?.exenta > 0">
+                    <tr *ngIf="devolucion?.exenta > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Ventas Exentas:</b></td>
-                        <td class="text-end"><b>{{ venta?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="venta?.no_sujeta > 0">
+                    <tr *ngIf="devolucion?.no_sujeta > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Ventas No Sujetas:</b></td>
-                        <td class="text-end"><b>{{ venta?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="venta.cuenta_a_terceros > 0">
+                    <tr *ngIf="devolucion.cuenta_a_terceros > 0">
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"> <b>Cuenta a terceros</b> </td>
-                        <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td class="text-end"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<section class="card" *ngIf="devolucion?.venta">
+    <div class="card-body">
+        <h6 class="my-3">Datos de la venta</h6>
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                    <th>Forma de pago</th>
+                    <th>Tipo de documento</th>
+                </tr>
+                <tr>
+                    <td>{{ devolucion?.venta.fecha | date:'dd/MM/yyyy'}}</td>
+                    <td>{{ devolucion?.venta.nombre_cliente }}</td>
+                    <td>{{ devolucion?.venta.nombre_usuario }}</td>
+                    <td>{{ devolucion?.venta.estado }}</td>
+                    <td>{{ devolucion?.venta.forma_pago }}</td>
+                    <td>{{ devolucion?.venta.nombre_documento }} #{{ devolucion?.venta.correlativo }}</td>
+                </tr>
+            </table>
+        </div>    
+    </div>
+</section>

@@ -11,10 +11,20 @@
                 <label for="fecha">Fecha</label><br>
                 <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha" required>
             </div>
-            <div class="form-group col-md-10">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.tipo_documento">
+                <label for="tipo_documento">Documento</label>
+                <select name="tipo_documento" [(ngModel)]="devolucion.tipo_documento" class="form-select">
+                    <option value="{{documento.nombre}}" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.tipo_documento">
+                <label for="referencia">Correlativo</label>
+                <input type="number" class="form-control" [(ngModel)]="devolucion.referencia" name="referencia" id="referencia">
+            </div>
+            <div class="form-group col-md-6">
                 <div class="form-group">
                     <label for="">Observaciones:</label>
-                    <input type="text" class="form-control" [(ngModel)]="compra.observaciones" name="observaciones" placeholder="Escribe aquí" required>
+                    <input type="text" class="form-control" [(ngModel)]="devolucion.observaciones" name="observaciones" placeholder="Escribe aquí" required>
                 </div>
             </div>
         </div>
@@ -43,59 +53,59 @@
 
     <div class="card-body">
         <div class="row">
-            <app-devolucion-compra-detalles [compra]="compra" (update)="updateCompra($event)" (sumTotal)="sumTotal()"></app-devolucion-compra-detalles>
+            <app-devolucion-compra-detalles [devolucion]="devolucion" (update)="updateCompra($event)" (sumTotal)="sumTotal()"></app-devolucion-compra-detalles>
             <div class="col-md-12">
                 <table class="table table-sm table-borderless table-condensed mb-0">
                     <tbody>
                         <tr>
                             <td class="text-right"> Sub Total: </td>
-                            <td width="70px" class="text-right"> {{ compra.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.sub_total | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                         <tr>
                             <td class="text-right"> IVA: </td>
-                            <td width="70px" class="text-right"> {{ compra.iva | currency:'USD':'symbol':'1.2'}} </td>
+                            <td width="70px" class="text-right"> {{ devolucion.iva | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
                        <!--  <tr>
                             <td class="text-right">
                                 <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="compra.percepcion">
-                                        <input id="compra.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.percepcion" name="compra.percepcion" *ngIf="!loading">
+                                    <label class="form-check-label" for="devolucion.percepcion">
+                                        <input id="devolucion.percepcion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.percepcion" name="compra.percepcion" *ngIf="!loading">
                                         IVA percibido:
                                     </label>
                                 </div>
                             </td>
                             <td  width="70px" class="text-right">
-                               {{ (compra.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
+                               {{ (devolucion.iva_percibido ) | currency:'USD':'symbol':'1.2'}}
                             </td>
                         </tr>
                         <tr>
                             <td class="text-right">
                                 <div class="form-check form-switch w-100">
-                                    <label class="form-check-label" for="compra.retencion">
-                                        <input id="compra.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
+                                    <label class="form-check-label" for="devolucion.retencion">
+                                        <input id="devolucion.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
                                         IVA retenido:
                                     </label>
                                 </div>
                             </td>
                             <td  width="70px" class="text-right">
-                               {{ (compra.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
+                               {{ (devolucion.iva_retenido ) | currency:'USD':'symbol':'1.2'}}
                             </td>
                         </tr> -->
                       <!--   <tr>
                             <td class="text-right">No Sujeta:</td>
-                            <td width="70px" class="text-right">{{ compra.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
+                            <td width="70px" class="text-right">{{ devolucion.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
                         </tr>
                         <tr>
                             <td class="text-right">Exenta:</td>
-                            <td width="70px" class="text-right">{{ compra.exenta | currency:'USD':'symbol':'1.2'}}</td>
+                            <td width="70px" class="text-right">{{ devolucion.exenta | currency:'USD':'symbol':'1.2'}}</td>
                         </tr>
                         <tr>
                             <td class="text-right">Gravada:</td>
-                            <td width="70px" class="text-right">{{ compra.gravada | currency:'USD':'symbol':'1.2'}}</td>
+                            <td width="70px" class="text-right">{{ devolucion.gravada | currency:'USD':'symbol':'1.2'}}</td>
                         </tr> -->
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
-                            <td width="70px" class="text-right"><b> {{ compra.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td width="70px" class="text-right"><b> {{ devolucion.total | currency:'USD':'symbol':'1.2'}}</b> </td>
                         </tr>
                     </tbody>
                 </table>
