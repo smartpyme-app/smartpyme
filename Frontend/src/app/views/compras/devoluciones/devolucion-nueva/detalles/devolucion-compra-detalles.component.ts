@@ -88,19 +88,6 @@ export class DevolucionCompraDetallesComponent implements OnInit {
 
         }
 
-        // public delete(detalle:any){
-        //     if (confirm('Confirma eliminar el detalle')) { 
-
-        //         for (var i = 0; i < this.devolucion.detalles.length; ++i) {
-        //             if (this.devolucion.detalles[i].producto_id === detalle.producto_id ){
-        //                 this.devolucion.detalles.splice(i, 1);
-        //                 this.update.emit(this.devolucion);
-        //             }
-        //         }
-        //     }
-
-        // }
-
     public sumTotalEmit(){
         this.sumTotal.emit();
     }

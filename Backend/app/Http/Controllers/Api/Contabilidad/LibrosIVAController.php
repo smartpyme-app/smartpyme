@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Compra;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Exports\Contabilidad\LibroContribuyentesExport;
 use App\Exports\Contabilidad\AnexoContribuyentesExport;
@@ -81,7 +83,7 @@ class LibrosIVAController extends Controller
                         ->orderByDesc('fecha')
                         ->get();
 
-        $ivas = $ventas->map(function ($venta) {
+        $ventasData = $ventas->map(function ($venta) {
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
 
@@ -106,9 +108,48 @@ class LibrosIVAController extends Controller
 
         });
 
-        $ivas = $ivas->sortByDesc('correlativo')->values()->all();
+        $devoluciones = DevolucionVenta::with(['cliente'])
+            ->where('enable', true)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
 
-        return response()->json($ivas, 200);
+
+        // Transformar devoluciones
+        $devolucionesData = $devoluciones->map(function ($venta) {
+            $documento = $venta->documento;
+            $cliente = optional($venta->cliente);
+
+            return [
+                'fecha'                 => $venta->fecha,
+                'correlativo'         => $venta->correlativo,
+                'num_documento'         => $venta->correlativo,
+                'nombre_cliente'        => $venta->nombre_cliente,
+                'nit_nrc'               => $cliente->nit ?? $cliente->ncr,
+                'ventas_exentas'        => $venta->exenta > 0 ? $venta->exenta * -1 : $venta->exenta,
+                'ventas_no_sujetas'     => $venta->no_sujeta > 0 ? $venta->no_sujeta * -1 : $venta->no_sujeta,
+                'ventas_gravadas'       => $venta->sub_total > 0 ? $venta->sub_total * -1 : $venta->sub_total,
+                'cuenta_a_terceros'     => $venta->cuenta_a_terceros > 0 ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
+                'debito_fiscal'         => $venta->iva > 0 ? $venta->iva * -1 : $venta->iva,
+                'ventas_exentas_cuenta_a_terceros'=> 0,
+                'ventas_gravadas_cuenta_a_terceros'=> 0,
+                'debito_fiscal_cuenta_a_terceros'=> 0,
+                'debito_fiscal_cuenta_a_terceros'=> 0,
+                'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
+                'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
+            ];
+
+        });
+
+        // Unir y ordenar ambas colecciones por fecha
+        $libroventas = collect($ventasData)
+            ->merge(collect($devolucionesData))
+            ->sortByDesc(function ($item) {
+                return [$item['fecha'], $item['correlativo']];
+            })
+            ->values()
+            ->all();
+
+        return response()->json($libroventas, 200);
     }
 
     public function contribuyentesLibroExport(Request $request){
@@ -196,8 +237,45 @@ class LibrosIVAController extends Controller
             ];
         });
 
+        $devoluciones = DevolucionCompra::with(['proveedor'])
+            ->where('enable', true)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+
+        // Transformar gastos
+        $devolucionesData = $devoluciones->map(function ($devolucion) {
+            $proveedor = optional($devolucion->proveedor);
+
+
+            return [
+                'fecha'                 => $devolucion->fecha,
+                'clase_documento'       => 1,
+                'tipo_documento'        => $devolucion->tipo_documento,
+                'num_documento'         => $devolucion->referencia,
+                'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
+                'nombre_proveedor'      => $devolucion->nombre_proveedor,
+                'compras_exentas'       => 0,
+                'importaciones_exentas' => 0,
+                'compras_gravadas'      => $devolucion->sub_total * -1,
+                'importaciones_gravadas'=> 0,
+                'credito_fiscal'        => $devolucion->iva * -1,
+                'anticipo_iva_percibido'=> $devolucion->percepcion * -1,
+                'compras_cuenta_terceros'=> 0,
+                'credito_cuenta_terceros'=> 0,
+                'total'                 => $devolucion->total * -1,
+                'sujeto_excluido'       => 0,
+            ];
+        });
+
         // Unir y ordenar ambas colecciones por fecha
-        $libroCompras = $comprasData->merge($gastosData)->sortBy('fecha')->values()->all();
+        $libroCompras = collect($comprasData)
+            ->merge(collect($gastosData))
+            ->merge(collect($devolucionesData))
+            ->sortBy('fecha')
+            ->values()
+            ->all();
+
 
         return response()->json($libroCompras, 200);
     }

@@ -6,22 +6,37 @@ import { ApiService } from '@services/api.service';
 })
 export class CurrencyPipe implements PipeTransform {
 
-  public currencyCode:any = 'USD';
+    public currencyCode:any = 'USD';
 
-  constructor(private apiService: ApiService) { }
+    constructor(private apiService: ApiService) { }
 
-  transform(value: number): string {
-    if(value){
-    }else{
-        value = 0;
-    }
-        this.currencyCode = this.apiService.auth_user() ? this.apiService.auth_user().empresa.moneda : 'USD';
+    transform(value: number): string {
+        // Si el valor es nulo o indefinido, se asigna 0.
+        if (value === null || value === undefined) {
+          value = 0;
+        }
 
-        const formattedValue = new Intl.NumberFormat('en-US', {
+        // Obtener el código de moneda según el usuario autenticado
+        this.currencyCode = this.apiService.auth_user()
+          ? this.apiService.auth_user().empresa.moneda
+          : 'USD'; // Default a USD si no hay usuario autenticado.
+
+        // Si el valor es negativo, formatear y ponerlo entre paréntesis
+        if (value < 0) {
+          return `(${new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: this.currencyCode,
+          }).format(Math.abs(value))})`;
+        }
+
+        // Formatear el valor como moneda usando Intl.NumberFormat
+        const formattedValue = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: this.currencyCode,
         }).format(value);
 
+        // Devolver el valor formateado
         return formattedValue;
-  }
+    }
+
 }

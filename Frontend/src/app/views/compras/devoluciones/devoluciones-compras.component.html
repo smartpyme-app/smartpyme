@@ -59,6 +59,7 @@
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Proveedor</th>
+                        <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Observaciones</th>
                         <th>Estado</th>
                         <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
@@ -79,18 +80,43 @@
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{compra.tipo_documento}} # {{compra.correlativo}}</td>
                         <td>{{compra.observaciones}}</td>
                         <td>
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(compra)" [(ngModel)]="compra.enable" [ngClass]="{'bg-light-danger' : compra?.enable == 0, 'bg-light-success' : compra?.enable == 1}">
-                                <option value="1">Confirmada</option>
-                                <option value="0">Anulada</option>
-                            </select>
+                            <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : compra?.enable == 0, 'bg-light-success' : compra?.enable == 1}">
+                                {{ compra.enable == '1' ? 'Confirmada' : 'Anulada' }}
+                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
+                                    ✅                       
+                                </span>
+                            </span>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
-                            <a routerLink="/devolucion/compra/{{compra.id}}" class="btn btn-light">
-                                <i class="fa fa-fw fa-magnifying-glass"></i>
-                            </a>
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                   <!--  <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.enable && !compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Emitir DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                    </a>
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Ver DTE">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                    </a> -->
+                                    <a routerLink="/devolucion/compra/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="compra.enable == '1' && apiService.canEdit()" (click)="setEstado(compra, 0)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular devolución
+                                    </a>
+                                    <a *ngIf="compra.enable == '0' && apiService.canEdit()" (click)="setEstado(compra, 1)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(compra)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
+                                </div>
+                            </ng-template>
                         </td>
 
                     </tr>

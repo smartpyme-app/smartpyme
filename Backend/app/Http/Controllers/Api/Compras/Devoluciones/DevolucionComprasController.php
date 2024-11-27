@@ -59,13 +59,12 @@ class DevolucionComprasController extends Controller
     }
 
 
-
     public function store(Request $request)
     {
 
         $request->validate([
             'fecha'             => 'required',
-            'estado'            => 'required',
+            'enable'            => 'required',
             'id_proveedor'      => 'required',
             'id_usuario'        => 'required',
         ]);
@@ -74,6 +73,36 @@ class DevolucionComprasController extends Controller
             $compra = Devolucion::findOrFail($request->id);
         else
             $compra = new Devolucion;
+
+        // Ajustar stocks
+        foreach ($compra->detalles as $detalle) {
+
+            $producto = Producto::where('id', $detalle->id_producto)
+                                    ->with('composiciones')->firstOrFail();
+                                    
+            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $compra->compra()->pluck('id_sucursal')->first())->first();
+            
+            // Anular y regresar stock
+            if(($compra->enable != '0') && ($request['enable'] == '0')){
+
+                if ($inventario) {
+                    $inventario->stock += $detalle->cantidad;
+                    $inventario->save();
+                    $inventario->kardex($compra, $detalle->cantidad * -1);
+                }
+
+            }
+            // Cancelar anulación y descargar stock
+            if(($compra->enable == '0') && ($request['enable'] != '0')){
+                // Aplicar stock
+                if ($inventario) {
+                    $inventario->stock -= $detalle->cantidad;
+                    $inventario->save();
+                    $inventario->kardex($compra, $detalle->cantidad);
+                }
+
+            }
+        }
         
         $compra->fill($request->all());
         $compra->save();
