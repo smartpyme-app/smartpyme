@@ -11,7 +11,7 @@
             width: 14cm;
             height: 21cm;
             margin-left: 0cm;
-            margin-top: 0cm;
+            margin-top: -1.5cm;
             position: relative;
 /*            border: 1px solid red;*/
         }
@@ -21,20 +21,20 @@
         }
 
         #cliente        {top: 4cm; left: 2cm; width: 9cm;}
-        #direccion      {top: 4.5cm; left: 2.2cm; width: 4.5cm;}
+        #direccion      {top: 4.5cm; left: 2.2cm; width: 5cm;}
         #departamento   {top: 5.5cm; left: 2.8cm; }
         
         #fecha          {top: 3.4cm; left: 9cm; }
         #nit            {top: 3.9cm; left: 9cm;}
         #ncr            {top: 4.5cm; left: 9cm; }
         #giro           {top: 5cm; left: 8.5cm; width: 4.5cm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-        #condicion      {top: 5.5cm; left: 10cm; }
+        #condicion      {top: 5.5cm; left: 10.3cm; }
 
 
-        table   {position: absolute; top: 7.5cm; left: 0.4cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 7.5cm; left: 0.2cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.4cm; text-align: left;}
 
-        .cantidad{  width: 1.4cm; text-align: center;}
+        .cantidad{  width: 1.6cm; text-align: center;}
         .producto{ width: 6cm; text-align: left;}
         .precio{ width: 1.2cm; text-align: center;}
         .sujetas{ width: 1cm; text-align: center;}
@@ -42,15 +42,15 @@
         .gravadas{ width: 1.5cm; text-align: right;} 
 
 
-        #letras     {top: 16cm; font-size: 10px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 16.5cm; font-size: 10px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 16cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #iva        {top: 16.5cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #subtotal    {top: 17cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #iva_retenido     {top: 17.5cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #no_sujeta     {top: 18cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #exenta     {top: 18.5cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #total      {top: 19.2cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #suma       {top: 16.2cm; left: 10.7cm; width: 2cm; text-align: right;}
+        #iva        {top: 16.8cm; left: 10.7cm; width: 2cm; text-align: right;}
+        #subtotal    {top: 17.4cm; left: 10.7cm; width: 2cm; text-align: right;}
+        #iva_retenido     {top: 18cm; left: 10.7cm; width: 2cm; text-align: right;}
+        #no_sujeta     {top: 18.6cm; left: 10.7cm; width: 2cm; text-align: right;}
+        #exenta     {top: 19.2cm; left: 10.7cm; width: 2cm; text-align: right;}
+        #total      {top: 19.8cm; left: 10.7cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}  
 
