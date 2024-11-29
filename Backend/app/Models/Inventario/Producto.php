@@ -5,7 +5,7 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class Producto extends Model {
 
@@ -21,11 +21,17 @@ class Producto extends Model {
         'costo',
         'costo_anterior',
         'id_categoria',
+        'id_subcategoria',
         'marca',
         'etiquetas',
         'tipo',
         'enable',
         'id_empresa',
+        'cod_proveed_prod',
+        'talla',
+        'color',
+        'dimension',
+        'material',
     );
 
     protected $appends = ['nombre_categoria', 'img'];
@@ -94,7 +100,7 @@ class Producto extends Model {
     }
 
     public function composiciones(){
-        return $this->hasMany('App\Models\Inventario\Composiciones\Composicion', 'id_producto');
+        return $this->hasMany('App\Models\Inventario\Composiciones\Composicion', 'id_compuesto');
     }
 
     public function precios(){

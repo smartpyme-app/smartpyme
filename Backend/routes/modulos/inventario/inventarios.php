@@ -1,6 +1,7 @@
 <?php
 	
 use App\Http\Controllers\Api\Inventario\InventariosController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/inventario/{id}',                 	[InventariosController::class, 'index']);
     Route::get('/inventario/{id}',                  [InventariosController::class, 'read']);
