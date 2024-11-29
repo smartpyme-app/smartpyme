@@ -56,3 +56,8 @@ ALTER TABLE proveedores ADD cod_distrito varchar(100) NULL AFTER distrito;
 ALTER TABLE empresas ADD distrito varchar(255) NULL AFTER cod_departamento;
 ALTER TABLE empresas ADD cod_distrito varchar(100) NULL AFTER distrito;
 
+
+ALTER TABLE devoluciones_compra ADD iva_retenido decimal(10,2) NULL AFTER iva;
+ALTER TABLE devoluciones_compra ADD tipo_documento varchar(255) NULL AFTER iva;
+ALTER TABLE devoluciones_compra ADD referencia varchar(255) NULL AFTER iva;
+
