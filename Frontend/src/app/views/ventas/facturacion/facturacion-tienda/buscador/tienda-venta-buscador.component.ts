@@ -1,8 +1,8 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
+import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
@@ -36,20 +36,40 @@ export class TiendaVentaBuscadorComponent implements OnInit {
 
     ngOnInit() {
 
-        this.searchControl.valueChanges
-              .pipe(
-                debounceTime(500),
-                filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
-              )
-              .subscribe((results: any[]) => {
-                this.productos = Array.isArray(results) ? results : [];
-                this.loading = false;
 
-                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
-                    this.selectProducto(results[0]);
-                }
-              });
+        this.searchControl.valueChanges
+          .pipe(
+            debounceTime(500),
+            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            switchMap((query: any) => 
+              this.apiService.read('productos/buscar/', query).pipe(
+                catchError(error => {
+                  console.error('Error en la búsqueda:', error);
+                  this.productos = []; // Limpiar resultados en caso de error.
+                  this.loading = false; // Asegurar que el estado de carga se actualice.
+                  return of([]); // Retornar un observable vacío para que el flujo continúe.
+                })
+              )
+            )
+          )
+          .subscribe({
+            next: (results: any[]) => {
+              this.productos = Array.isArray(results) ? results : [];
+              this.loading = false;
+
+              if (
+                results &&
+                results.length === 1 &&
+                this.buscador === results[0].codigo
+              ) {
+                this.selectProducto(results[0]);
+              }
+            },
+            error: (err) => {
+              console.error('Error no controlado:', err); // Log en caso de un error en la suscripción.
+            }
+          });
+
     }
 
     public openModal(template: TemplateRef<any>) {
@@ -114,6 +134,21 @@ export class TiendaVentaBuscadorComponent implements OnInit {
                 'precio' : this.detalle.precio
             });
         this.detalle.costo          = parseFloat(producto.costo);
+
+        // Verificar que los compuestos tengan stock
+            if(producto.tipo == 'Compuesto'){
+
+                producto.composiciones.forEach((composicion:any) => {
+                    composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
+                    let stock          = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
+                    if(stock < composicion.cantidad){
+                        producto.inventarios = [];
+                        console.log("No tiene stock suficiente:" + composicion.nombre_compuesto);
+                    }
+                });
+
+            }
+
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
         if(producto.inventarios.length > 0){
             this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));

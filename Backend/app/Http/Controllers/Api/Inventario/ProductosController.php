@@ -86,7 +86,7 @@ class ProductosController extends Controller
 
     public function search($txt) {
 
-        $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones')->with('precios')
+        $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
                     ->where(function ($q) use ($txt) {
                         $q->where('nombre', 'like', "%$txt%")
                             ->orWhere('barcode', 'like', "%$txt%")

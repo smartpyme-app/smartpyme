@@ -90,7 +90,7 @@ export class VentaDetallesComponent implements OnInit {
                   if (this.apiService.auth_user().codigo_autorizacion) {
                     
                     Swal.fire({
-                          title: 'Ingrese la clave de autorización',
+                          title: 'Ingrese la clave de autorización para vender sin Stock',
                           input: 'password',
                           inputAttributes: {
                             autocapitalize: 'off',
