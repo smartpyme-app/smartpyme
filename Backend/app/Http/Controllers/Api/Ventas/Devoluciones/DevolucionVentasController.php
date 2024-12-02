@@ -14,6 +14,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Paquete;
 use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Creditos\Credito;
@@ -199,6 +200,15 @@ class DevolucionVentasController extends Controller
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
                     $inventario->kardex($devolucion, $det['cantidad']);
+                }
+
+                // Si es paquete cambiar estado
+                $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
+                foreach ($paquetes as $paquete) {
+                    $paquete->estado = 'Pendiente';
+                    $paquete->id_venta = NULL;
+                    $paquete->id_venta_detalle = NULL;
+                    $paquete->save();
                 }
                 
             }

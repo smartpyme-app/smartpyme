@@ -16,12 +16,14 @@
                     <th>Fecha</th>
                     <th>Cliente</th>
                     <th>Usuario</th>
+                    <th>Documento</th>
                     <th>Observaciones</th>
                 </tr>
                 <tr>
                     <td>{{ devolucion.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{ devolucion.nombre_cliente }}</td>
                     <td>{{ devolucion.nombre_usuario }}</td>
+                    <td>{{ (devolucion.nombre_documento || 'Devolución') + (devolucion.correlativo ? ' #' + devolucion.correlativo : '') }}</td>
                     <td>{{ devolucion.observaciones }}</td>
                 </tr>
             </table>

@@ -82,7 +82,7 @@
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
                             <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{venta.id}}">
-                                {{venta.nombre_documento}} #{{venta.correlativo}}
+                                {{ (venta.nombre_documento || 'Devolución') + (venta.correlativo ? ' #' + venta.correlativo : '') }}
                             </a>
                         </td>
                         <td>{{venta.observaciones}}</td>

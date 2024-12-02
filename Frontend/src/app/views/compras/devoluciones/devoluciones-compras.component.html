@@ -80,7 +80,7 @@
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
-                        <td>{{compra.tipo_documento}} # {{compra.referencia}}</td>
+                        <td>{{ (compra.tipo_documento || 'Devolución') + (compra.referencia ? ' #' + compra.referencia : '') }}</td>
                         <td>{{compra.observaciones}}</td>
                         <td>
                             <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : compra?.enable == 0, 'bg-light-success' : compra?.enable == 1}">
