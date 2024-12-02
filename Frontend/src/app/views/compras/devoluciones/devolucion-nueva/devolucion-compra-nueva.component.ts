@@ -52,7 +52,7 @@ export class DevolucionCompraNuevaComponent implements OnInit {
                 this.devolucion.observaciones = '';
 
                 this.devolucion.cobrar_impuestos = this.compra.iva > 0 ? true : false; 
-                this.devolucion.percepcion = this.compra.iva_percibido > 0 ? true : false; 
+                this.devolucion.cobrar_percepcion = this.compra.percepcion > 0 ? true : false; 
                 this.devolucion.retencion = this.compra.iva_retenido > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
@@ -122,7 +122,7 @@ export class DevolucionCompraNuevaComponent implements OnInit {
 
     public sumTotal() {
         this.devolucion.sub_total = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total'))).toFixed(2);
-        this.devolucion.percepcion = this.devolucion.cobrar_percepcion ? this.devolucion.sub_total * 0.01 : 0; 
+        this.devolucion.iva_percibido = this.devolucion.cobrar_percepcion ? this.devolucion.sub_total * 0.01 : 0; 
         this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0;
         this.devolucion.renta_retenida = this.devolucion.renta ? this.devolucion.sub_total * 0.10 : 0; 
 
@@ -134,7 +134,7 @@ export class DevolucionCompraNuevaComponent implements OnInit {
 
         this.devolucion.descuento = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'descuento'))).toFixed(2);
         this.devolucion.total_costo = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total_costo'))).toFixed(2);
-        this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.percepcion) - parseFloat(this.devolucion.iva_retenido) - parseFloat(this.devolucion.renta_retenida)).toFixed(2);
+        this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.iva_percibido) - parseFloat(this.devolucion.iva_retenido) - parseFloat(this.devolucion.renta_retenida)).toFixed(2);
     }
 
 

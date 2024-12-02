@@ -45,7 +45,7 @@
                         <th class="text-center">Costo</th>
                         <th class="text-center">Descuento</th>
                         <th class="text-center">Cantidad</th>
-                        <th class="text-center">Total</th>
+                        <th class="text-end">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,32 +61,37 @@
                         <td class="text-center">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">{{ detalle.cantidad }}</td>
-                        <td class="text-center">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Sub Total:</b></td>
-                        <td class="text-center"><b>{{ devolucion?.subtotal | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.sub_total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>IVA:</b></td>
-                        <td class="text-center"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr>
+                    <tr *ngIf="devolucion?.descuento > 0">
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Descuento:</b></td>
-                        <td class="text-center"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr>
+                    <tr *ngIf="devolucion?.iva_retenido > 0">
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Retención:</b></td>
-                        <td class="text-center"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="devolucion?.iva_percibido > 0">
+                        <td colspan="4" class="text-right"></td>
+                        <td class="text-right"><b>Percepción:</b></td>
+                        <td class="text-end"><b>{{ devolucion?.iva_percibido | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Total:</b></td>
-                        <td class="text-center"><b>{{ devolucion?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ devolucion?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                 </tbody>
             </table>
