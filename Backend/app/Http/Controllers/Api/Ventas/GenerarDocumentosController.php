@@ -175,6 +175,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Vape-Store', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 154 ){ //154  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -306,6 +310,10 @@ class GenerarDocumentosController extends Controller
             }
             elseif(Auth::user()->id_empresa == 321 ){ //321  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Importaciones-Blanco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 290 ){ //290  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Grupo-Lievano', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             else{

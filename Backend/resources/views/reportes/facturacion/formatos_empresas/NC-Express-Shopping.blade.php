@@ -25,7 +25,7 @@
 
         #fecha          {top: 2.5cm; left: 14.5cm; }
         #cliente        {top: 2.5cm; left: 4.4cm;}
-        #direccion      {top: 3cm; left: 4.5cm;}
+        #direccion      {top: 3cm; left: 4.5cm; width: 10cm;}
         #municipio      {top: 3.5cm; left: 5cm;}
         #departamento   {top: 4.3cm; left: 5cm; }
         #nrc            {top: 3cm; left: 14.5cm; }
