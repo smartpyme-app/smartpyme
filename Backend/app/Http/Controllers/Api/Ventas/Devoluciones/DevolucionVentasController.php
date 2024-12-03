@@ -205,7 +205,7 @@ class DevolucionVentasController extends Controller
                 // Si es paquete cambiar estado
                 $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
                 foreach ($paquetes as $paquete) {
-                    $paquete->estado = 'Pendiente';
+                    $paquete->estado = 'En bodega';
                     $paquete->id_venta = NULL;
                     $paquete->id_venta_detalle = NULL;
                     $paquete->save();
