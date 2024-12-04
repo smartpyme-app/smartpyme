@@ -102,7 +102,7 @@ export class ProductoComboComponent implements OnInit {
 
 
   public onSubmit() {
-    this.guardar = true;
+    this.guardar = true;    
     this.producto.codigo = "CMPKIT" + this.producto.codigo;
     this.apiService.store('producto/compuesto', this.producto).subscribe(producto => {
       this.guardar = false;

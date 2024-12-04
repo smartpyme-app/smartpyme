@@ -36,6 +36,8 @@ export class ProductoInventariosComponent implements OnInit {
 
 
     openModal(template: TemplateRef<any>, inventario:any) {
+        console.log(inventario);
+        
         this.inventario = inventario;
         
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {

@@ -7,7 +7,6 @@ use App\Models\Inventario\Composiciones\Composicion;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
-use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Ajuste;
@@ -119,11 +118,10 @@ class ProductosController extends Controller
         return Response()->json($producto, 200);
     }
 
-    public function read($id)
-    {
+    public function read($id){
 
         $producto = Producto::where('id', $id)
-            ->with(['inventarios', 'composiciones.compuesto', 'composiciones.opciones', 'precios.usuarios', 'imagenes', 'proveedores.proveedor'])
+            ->with(['inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores.proveedor'])
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -185,11 +183,10 @@ class ProductosController extends Controller
 
     //    STORE DE COMPUESTOS
 
-    public function storeCompuesto(Request $request)
-    {
+    public function storeCompuesto(Request $request){
 
         DB::beginTransaction();
-        if (empty($request->codigo)) {
+        if(empty($request->codigo)) {
             $request['codigo'] = NULL;
         }
 
@@ -215,7 +212,7 @@ class ProductosController extends Controller
         $producto->fill($request->all());
         $producto->save();
 
-        foreach ($request->detalles as $detalle) {
+        foreach($request->detalles as $detalle){
             $composicion = new Composicion;
             //$composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
             $composicion->cantidad = $detalle["cantidad"];
@@ -235,8 +232,13 @@ class ProductosController extends Controller
                 $inventario->save();
             }
         }
-
+        ## se define el inventario del compuesto en la bodega seleccionada
+        $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
+        $inventarioInicial->stock = $request->stock;
+        $inventarioInicial->save();
+        
         DB::commit();
+        
         return Response()->json($producto, 200);
     }
 
