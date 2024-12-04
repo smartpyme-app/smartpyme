@@ -7,6 +7,8 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
+use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -50,17 +52,36 @@ class ComprasService
                 ]);
 
             //Debe
-                $cuenta = Cuenta::where('id', $configuracion->id_cuenta_inventario)->firstOrFail();
-                Detalle::create([
-                    'id_cuenta'         => $cuenta->id,
-                    'codigo'            => $cuenta->codigo,
-                    'nombre_cuenta'     => $cuenta->nombre,
-                    'concepto'          => 'Compra de mercancía',
-                    'debe'              => $compra->sub_total,
-                    'haber'             => NULL,
-                    'saldo'             => 0,
-                    'id_partida'        => $partida->id
-                ]);
+            $productos_compra = DetalleCompra::where('id_compra', $compra->id)->get();
+            foreach ($productos_compra as $producto) {
+                $id_categoria = $producto->producto->id_categoria;
+                if($id_categoria){
+                    $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $compra->id_sucursal)->firstOrFail();
+                    $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_inventario)->firstOrFail();
+                    Detalle::create([
+                        'id_cuenta'         => $cuenta->id,
+                        'codigo'            => $cuenta->codigo,
+                        'nombre_cuenta'     => $cuenta->nombre,
+                        'concepto'          => 'Compra de mercancía',
+                        'debe'              => $producto->total,
+                        'haber'             => NULL,
+                        'saldo'             => 0,
+                        'id_partida'        => $partida->id
+                    ]);
+                }else{
+                    $cuenta = Cuenta::where('id', $configuracion->id_cuenta_inventario)->firstOrFail();
+                    Detalle::create([
+                        'id_cuenta'         => $cuenta->id,
+                        'codigo'            => $cuenta->codigo,
+                        'nombre_cuenta'     => $cuenta->nombre,
+                        'concepto'          => 'Compra de mercancía',
+                        'debe'              => $compra->sub_total,
+                        'haber'             => NULL,
+                        'saldo'             => 0,
+                        'id_partida'        => $partida->id
+                    ]);
+                }
+            }
 
 
                 if ($compra->iva > 0) {
