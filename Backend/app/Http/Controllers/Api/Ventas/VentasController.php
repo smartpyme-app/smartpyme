@@ -246,8 +246,7 @@ class VentasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
-            // 'correlativo'       => 'required|numeric',
-            'correlativo'       => 'required|numeric|unique:ventas,correlativo,'.$request->id.',id,id_sucursal,'.$request->id_sucursal.',id_documento,'.$request->id_documento,
+            'correlativo'       => 'required|numeric',
             'id_documento'      => 'required|max:255',
             'id_canal'          => 'required|max:255',
             'id_cliente'        => 'required_if:estado,"Pendiente"',

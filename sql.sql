@@ -61,3 +61,5 @@ ALTER TABLE devoluciones_compra ADD iva_retenido decimal(10,2) NULL AFTER iva;
 ALTER TABLE devoluciones_compra ADD tipo_documento varchar(255) NULL AFTER iva;
 ALTER TABLE devoluciones_compra ADD referencia varchar(255) NULL AFTER iva;
 
+ALTER TABLE devoluciones_compra ADD iva_percibido decimal(10,2) NULL AFTER iva;
+
