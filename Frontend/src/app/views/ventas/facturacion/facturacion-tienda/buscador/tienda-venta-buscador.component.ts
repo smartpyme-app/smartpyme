@@ -42,7 +42,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
             switchMap((query: any) => 
-              this.apiService.read('productos/buscar/', query).pipe(
+              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
                   this.productos = []; // Limpiar resultados en caso de error.

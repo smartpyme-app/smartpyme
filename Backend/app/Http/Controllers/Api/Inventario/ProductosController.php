@@ -100,6 +100,23 @@ class ProductosController extends Controller
 
     }
 
+    public function searchByQuery(Request $request) {
+        $query = $request->query('query');
+
+        $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+                    ->where(function ($q) use ($query) {
+                        $q->where('nombre', 'like', "%$query%")
+                            ->orWhere('barcode', 'like', "%$query%")
+                            ->orWhere('codigo', 'like', "%$query%")
+                            ->orWhere('etiquetas', 'like', "%$query%");
+                    })
+                    ->take(15)
+                    ->get();
+
+        return Response()->json($productos, 200);
+
+    }
+
 
     public function porCodigo($codigo) {
        
