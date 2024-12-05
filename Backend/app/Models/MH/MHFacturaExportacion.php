@@ -136,9 +136,9 @@ class MHFacturaExportacion extends Model
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,
-            "tipoItemExpor" => $tipo_item,
-            "recintoFiscal" => NULL, //Punto de Aduana
-            "regimen" => NULL,
+            "tipoItemExpor" => $this->venta->tipo_item_export,
+            "recintoFiscal" => $this->venta->recinto_fiscal, //Punto de Aduana
+            "regimen" => $this->venta->regimen,
         ];
     }
 
@@ -217,8 +217,8 @@ class MHFacturaExportacion extends Model
                     ]
                   ],
                     "numPagoElectronico" => "",
-                    "codIncoterms" => NULL,
-                    "descIncoterms" => NULL,
+                    "codIncoterms" => $this->venta->cod_incoterm,
+                    "descIncoterms" => $this->venta->incoterm,
                     "observaciones" => NULL,
                 ],
                 "apendice" => [
