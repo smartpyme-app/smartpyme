@@ -43,13 +43,18 @@ const routes: Routes = [
       { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas' },
       { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación' },
       { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna' },
-      { path: 'venta/:id', component: VentaComponent, title: 'Venta' },
+      // { path: 'venta/:id', component: VentaComponent, title: 'Venta' },
+      // { path: 'cotizacion/:id', component: VentaComponent, title: 'Cotización' },
+      { path: 'venta/:id', component: VentaComponent, data: { type: 'venta' }, title: 'Venta' },
+      { path: 'cotizacion/:id', component: VentaComponent, data: { type: 'cotizacion' }, title: 'Cotización' },
 
       { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas' },
       { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas' },
 
       { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
-      { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
+    //  { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
+      { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
+
       { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
       { path: 'cotizacion/ver/:id', component: CotizacionFormComponent, title: 'Cotización' },
       //

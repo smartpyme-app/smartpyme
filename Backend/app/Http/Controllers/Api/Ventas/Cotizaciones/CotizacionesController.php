@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\CotizacionesExport;
+use App\Models\CotizacionVenta;
 use Maatwebsite\Excel\Facades\Excel;
 
 
@@ -71,7 +72,8 @@ class CotizacionesController extends Controller
     public function read($id)
     {
 
-        $orden = Cotizacion::where('id', $id)->with('cliente', 'detalles')->firstOrFail();
+        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles','vendedor','empresa','documento','usuario')->firstOrFail();
+       // $orden->saldo = $orden->saldo;
         return Response()->json($orden, 200);
     }
 

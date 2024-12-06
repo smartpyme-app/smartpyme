@@ -7,6 +7,7 @@ import {ApiService} from '@services/api.service';
 import {MHService} from '@services/MH.service';
 
 import * as moment from 'moment';
+import { co } from '@fullcalendar/core/internal-common';
 
 @Component({
   selector: 'app-facturacion',
@@ -139,41 +140,41 @@ export class FacturacionComponent implements OnInit {
     });
   }
 
-  public cargarDocumentos() {
+  public cargarDocumentos(){
     this.apiService.getAll('documentos/list').subscribe(documentos => {
-      this.documentos = documentos;
-      this.documentos = this.documentos.filter((x: any) => x.id_sucursal == this.venta.id_sucursal);
+        this.documentos = documentos;
+        this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
+        console.log(this.documentos);
+        console.log(this.venta);
+        
+        if(!this.venta.id_documento && !this.venta.correlativo){
+          console.log('entro');
+            
+            let documento = this.documentos.find((x:any) => x.predeterminado == 1);
+            if(documento){
+                this.venta.id_documento = documento.id;
+                this.venta.correlativo = documento.correlativo;
+            }else{
+                this.venta.id_documento = documentos[0].id;
+                this.venta.correlativo = documentos[0].correlativo;
+            }
 
-      if (!this.venta.id_documento && !this.venta.correlativo) {
-
-        let documento = this.documentos.find((x: any) => x.predeterminado == 1);
-        if (documento) {
-          this.venta.id_documento = documento.id;
-          this.venta.nombre_documento = documento.nombre;
-          this.venta.correlativo = documento.correlativo;
-        } else {
-          this.venta.id_documento = documentos[0].id;
-          this.venta.nombre_documento = documentos[0].nombre;
-          this.venta.correlativo = documentos[0].correlativo;
+            if(this.venta.cotizacion == 1){
+              console.log('entro a cotizacion');
+              this.documentos = this.documentos
+                // this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
+                // let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
+                if(documento){
+                    this.venta.id_documento = documento.id;
+                    this.venta.correlativo = documento.correlativo;
+                }
+            }else{
+                this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
+            }
         }
 
-        if (this.venta.cotizacion == 1) {
-          this.documentos = this.documentos.filter((x: any) => x.nombre == 'Cotización');
-          let documento = this.documentos.find((x: any) => x.nombre == 'Cotización');
-          if (documento) {
-            this.venta.id_documento = documento.id;
-            this.venta.nombre_documento = documento.nombre;
-            this.venta.correlativo = documento.correlativo;
-          }
-        } else {
-          this.documentos = this.documentos.filter((x: any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
-        }
-      }
-
-    }, error => {
-      this.alertService.error(error);
-    });
-  }
+    }, error => {this.alertService.error(error);});
+}
 
   public cargarDatosIniciales() {
     this.venta = {};

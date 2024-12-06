@@ -91,7 +91,7 @@
                                   <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                       <i class="fa fa-fw fa-edit"></i> Editar
                                   </a>
-                                  <a routerLink="/venta/{{venta.id}}" class="btn">
+                                  <a routerLink="/cotizacion/{{venta.id}}" class="btn">
                                       <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                   </a>
                                   <a *ngIf="venta.estado == 'Pendiente'" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
