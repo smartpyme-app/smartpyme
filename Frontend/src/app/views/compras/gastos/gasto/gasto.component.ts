@@ -26,12 +26,12 @@ export class GastoComponent implements OnInit {
     public documentos:any = [];
     modalRef?: BsModalRef;
 
-	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-	) { }
+    public opAvanzadas: boolean = false;
+    public otrosImpuestos: boolean = false;
 
-	ngOnInit() {
+	constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService) {}
+
+	ngOnInit(){
         this.loadAll();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
@@ -118,6 +118,8 @@ export class GastoComponent implements OnInit {
 
     }
 
+    toggleDiv(): void { this.opAvanzadas = !this.opAvanzadas;}
+
     public cargarDocumentos(){
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
@@ -174,12 +176,12 @@ export class GastoComponent implements OnInit {
             this.gasto.total = this.gasto.sub_total;
         }
         this.gasto.renta_retenida = this.gasto.renta ? this.gasto.sub_total * 0.10 : 0;
+        this.gasto.otros_impuestos = this.gasto.otros_impuestos ? this.gasto.otros_impuestos : 0;
         this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
-        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido) - parseFloat(this.gasto.renta_retenida)).toFixed(2);
+        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.otros_impuestos) + parseFloat(this.gasto.iva_percibido) - parseFloat(this.gasto.renta_retenida)).toFixed(2);
     }
 
     public setSubTotal(){
-
         if(this.gasto.impuesto){
             this.gasto.sub_total = (this.gasto.total / (1 + (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
             this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
@@ -194,7 +196,6 @@ export class GastoComponent implements OnInit {
     public selectTipoDocumento(){
         if(this.gasto.tipo_documento == 'Sujeto excluido'){
             let documento = this.documentos.find((x:any) => x.nombre == this.gasto.tipo_documento);
-            console.log(documento);
             this.gasto.referencia = documento.correlativo;
         }
     }
