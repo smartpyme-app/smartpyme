@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Inventario\Categorias;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Inventario\Categorias\Cuenta;
-    
+
 class CuentaController extends Controller
 {
 
@@ -14,7 +14,6 @@ class CuentaController extends Controller
         $request->validate([
             'id_categoria'          => 'required|numeric',
             'id_sucursal'           => 'required|numeric',
-            'id_cuenta_contable'    => 'required|numeric',
         ]);
 
         if($request->id){
