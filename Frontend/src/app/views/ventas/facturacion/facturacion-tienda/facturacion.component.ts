@@ -210,21 +210,23 @@ export class FacturacionComponent implements OnInit {
       this.venta.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
     }
 
-    // Para proyectos
     if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
       this.venta.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
     }
 
-    // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
+      this.venta.tipo = 'cotizacion'; // Identificador para cotización
+
     }
 
-    // Para editar cotizaciones Pre-venta
     if (this.route.snapshot.paramMap.get('id')!) {
-      this.apiService.read('venta/', +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
+      const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
+      const isCotizacion = this.venta.cotizacion == 1 ? true : false;
+      this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
         this.venta = venta;
+        this.venta.cotizacion = isCotizacion ? 1 : 0;
         this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
       }, error => {
         this.alertService.error(error);
