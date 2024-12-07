@@ -48,6 +48,8 @@ export class VentaComponent implements OnInit {
         //this.apiService.read('venta/', this.venta.id).subscribe(venta => {
         this.apiService.read(endpoint, this.venta.id).subscribe(venta => {
         this.venta = venta;
+        const isCotizacion = this.type === 'cotizacion' ? true : false;
+        this.venta.cotizacion = isCotizacion ? 1 : 0;
 
         if(this.venta.id_proyecto){
             this.apiService.read('proyecto/',this.venta.id_proyecto).subscribe(proyecto => {
