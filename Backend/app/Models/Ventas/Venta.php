@@ -58,6 +58,13 @@ class Venta extends Model {
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+        'tipo_item_export',
+        'cod_incoterm',
+        'incoterm',
+        'recinto_fiscal',
+        'regimen',
+        'seguro',
+        'flete',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];

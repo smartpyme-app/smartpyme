@@ -43,6 +43,8 @@ class Cliente extends Model {
        'cod_municipio',
        'cod_distrito',
        'cod_departamento',
+       'tipo_persona',
+       'tipo_documento',
        
     ];
     protected $appends = ['nombre_completo'];

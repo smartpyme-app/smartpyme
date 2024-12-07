@@ -45,7 +45,7 @@ class MHDTEController extends Controller
             $DTE = $mh->generarDTE($venta);
         }
 
-        elseif ($venta->nombre_documento == 'Factura de Exportación') {
+        elseif ($venta->nombre_documento == 'Factura de exportación') {
             $mh = new MHFacturaExportacion;
             $DTE = $mh->generarDTE($venta);
         }
@@ -265,7 +265,7 @@ class MHDTEController extends Controller
 
     public function generarDTEPDF($id, $tipo, Request $request){
 
-        if ($tipo == '01' || $tipo == '03') {
+        if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);
         }
 
@@ -307,6 +307,12 @@ class MHDTEController extends Controller
             // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
 
         }
+        if ($DTE['identificacion']['tipoDte'] == '11') {
+            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+            // return view('reportes.DTE-CCF', compact('registro', 'DTE'));
+
+        }
         if ($DTE['identificacion']['tipoDte'] == '05') {
             $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
@@ -326,7 +332,7 @@ class MHDTEController extends Controller
 
     public function generarDTEJSON($id, $tipo, Request $request){
 
-        if ($tipo == '01' || $tipo == '03') {
+        if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);
         }
 
@@ -355,7 +361,7 @@ class MHDTEController extends Controller
 
     public function enviarDTE(Request $request){
         
-        if ($request->tipo_dte == '01' || $request->tipo_dte == '03') {
+        if ($request->tipo_dte == '01' || $request->tipo_dte == '03' || $request->tipo_dte == '11') {
             $registro = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
@@ -383,6 +389,10 @@ class MHDTEController extends Controller
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
+        }
+        elseif ($DTE['identificacion']['tipoDte'] == '11') {
+           $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
+
         }
         elseif ($DTE['identificacion']['tipoDte'] == '14') {
            $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));

@@ -136,7 +136,7 @@ class MHFacturaExportacion extends Model
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,
-            "tipoItemExpor" => $this->venta->tipo_item_export,
+            "tipoItemExpor" => (int) $this->venta->tipo_item_export,
             "recintoFiscal" => $this->venta->recinto_fiscal, //Punto de Aduana
             "regimen" => $this->venta->regimen,
         ];
@@ -158,25 +158,16 @@ class MHFacturaExportacion extends Model
             ];
         }
 
-        if ($this->venta->cliente->nit) {
-            $this->venta->cliente->tipo_documento = '36';
-            $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
-        }
-        if ($this->venta->cliente->dui) {
-            $this->venta->cliente->tipo_documento = '13';
-            $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
-        }
-
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
-              "numDocumento" => $this->venta->cliente->num_documento,
+              "numDocumento" => $this->venta->cliente->dui,
               "nombre" => $this->venta->nombre_cliente,
               "nombreComercial" => $this->venta->cliente->nombre_empresa,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
               "codPais" => $this->venta->cliente->cod_pais,
               "nombrePais" => $this->venta->cliente->pais,
               "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
-              "tipoPersona" => $this->venta->cliente->tipo == 'Persona' ? 2 : 1,
+              "tipoPersona" => ($this->venta->cliente->tipo_persona == 'Persona Natural') ? 1 : 2,
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
             ];

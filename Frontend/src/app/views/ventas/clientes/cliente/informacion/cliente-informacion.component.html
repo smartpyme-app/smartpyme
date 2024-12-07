@@ -3,14 +3,18 @@
     <div class="row mb-3">
         <div class="col d-grid">
             <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option1" (change)="setTipo('Persona')">
-            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Persona', 'btn-light' : cliente.tipo == 'Empresa' }" for="option1">Persona</label>
+            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Persona', 'btn-light' : cliente.tipo != 'Persona' }" for="option1">Persona</label>
         </div>
         <div class="col d-grid">
             <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option2" (change)="setTipo('Empresa')">
-            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Empresa', 'btn-light' : cliente.tipo == 'Persona' }" for="option2">Empresa</label>
+            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Empresa', 'btn-light' : cliente.tipo != 'Empresa' }" for="option2">Empresa</label>
+        </div>
+        <div class="col d-grid">
+            <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option3" (change)="setTipo('Extranjero')">
+            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Extranjero', 'btn-light' : cliente.tipo != 'Extranjero' }" for="option3">Extranjero</label>
         </div>
     </div>
-    <div class="row">
+    <div class="row" *ngIf="cliente.tipo != 'Extranjero'">
         <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
             <div class="row">
                 <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
@@ -20,7 +24,7 @@
                 </div>
                 <div class="form-group col-lg-3">
                     <label for="apellido">Apellido</label>
-                    <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label>
@@ -196,6 +200,66 @@
                 </div>
             </div>
         </div>
+    </div>
+    <div class="row" *ngIf="cliente.tipo == 'Extranjero'">
+            <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+            <div class="form-group col-lg-3">
+                <label for="nombre">Nombre</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
+            </div>
+            <div class="form-group col-lg-3">
+                <label for="apellido">Apellido</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="tipo_documento">Tipo de documento</label>
+                <select class="form-select" placeholder="Escribe aquí" name="tipo_documento" [(ngModel)]="cliente.tipo_documento">
+                    <option value="13">DUI</option>
+                    <option value="36">NIT</option>
+                    <option value="03">Pasaporte</option>
+                    <option value="02">Carnet de residente</option>
+                    <option value="37">Otro</option>
+                </select>
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="dui">Número de Identificación</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="nombre_empresa">Nombre comercial</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="tipo_persona">Tipo Persona:</label>
+                <select class="form-select" placeholder="Escribe aquí" name="tipo_persona" [(ngModel)]="cliente.tipo_persona">
+                    <option value="Persona Natural">Persona Natural</option>
+                    <option value="Persona Juridica">Persona Jurídica</option>
+                </select>
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="pais">Pais:</label>
+                <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
+                    <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                        {{ pais.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-12 col-md-6">
+                <label for="direccion">Dirección:</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
+            </div>
+            <div class="form-group col-6 col-lg-6">
+                <label for="giro">Giro</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="cliente.giro">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="correo">Correo</label>
+                <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="telefono">Teléfono:</label>
+                <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
+            </div>
     </div>
     <div class="row">          
         <div class="form-group col-md-12 mt-3">
