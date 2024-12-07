@@ -109,8 +109,8 @@
           <td style="width: 150px;">
             <div class="input-group">
               <span class="input-group-text">%</span>
-              <input type="number" [disabled]="this.mode=='show'" [(ngModel)]="detalle.descuento_porcentaje"
-                (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+              <input type="number" [disabled]="this.mode=='show'" [(ngModel)]="detalle.descuento || detalle.descuento_porcentaje"
+                (change)="updateTotal(detalle)" class="form-control" name="descuento">
             </div>
           </td>
           <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>

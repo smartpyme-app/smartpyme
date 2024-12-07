@@ -140,7 +140,7 @@ class VentasController extends Controller
 
         $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
-   
+
 
         return Response()->json($venta, 200);
     }
@@ -291,7 +291,7 @@ class VentasController extends Controller
 
         DB::beginTransaction();
         // Log::info($request->all());
-        // dd($request->all());
+      //  dd($request->all());
 
         try {
             // return $request->all();
@@ -481,12 +481,18 @@ class VentasController extends Controller
     public function saveQuotation($request)
     {
         try {
-            $cotizacion = new CotizacionVenta();
+            if ($request->id)
+                $cotizacion = CotizacionVenta::findOrFail($request->id);
+            else
+                $cotizacion = new CotizacionVenta();
             $cotizacion->fill($request->all());
             $cotizacion->save();
 
             foreach ($request->detalles as $det) {
-                $detalle = new CotizacionVentaDetalle();
+                if (isset($det['id']))
+                    $detalle = CotizacionVentaDetalle::findOrFail($det['id']);
+                else
+                    $detalle = new CotizacionVentaDetalle();
                 $det['id_cotizacion_venta'] = $cotizacion->id;
                 $det['subtotal'] = $det['precio'] * $det['cantidad'];
                 $det['remember_token'] = null;

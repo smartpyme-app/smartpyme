@@ -207,7 +207,10 @@ export class VentaDetallesComponent implements OnInit {
         }
         if (indexAEliminar !== -1) {
           if (detalle.id) {
-            this.apiService.delete('venta/detalle/', detalle.id).subscribe(detalle => {
+            console.log('venta', this.venta);
+            const endpoint = this.venta.cotizacion == 1 ? 'cotizacion-venta-detalle' : 'venta-detalle';
+
+            this.apiService.delete(endpoint + '/', detalle.id).subscribe(detalle => { 
               this.venta.detalles.splice(indexAEliminar, 1);
               this.update.emit(this.venta);
             }, error => { this.alertService.error(error); this.loading = false; });
