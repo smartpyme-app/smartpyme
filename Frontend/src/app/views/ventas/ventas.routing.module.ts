@@ -46,7 +46,7 @@ const routes: Routes = [
       // { path: 'venta/:id', component: VentaComponent, title: 'Venta' },
       // { path: 'cotizacion/:id', component: VentaComponent, title: 'Cotización' },
       { path: 'venta/:id', component: VentaComponent, data: { type: 'venta' }, title: 'Venta' },
-      { path: 'cotizacion/:id', component: VentaComponent, data: { type: 'cotizacion' }, title: 'Cotización' },
+    
 
       { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas' },
       { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas' },
@@ -57,6 +57,7 @@ const routes: Routes = [
 
       { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
       { path: 'cotizacion/ver/:id', component: CotizacionFormComponent, title: 'Cotización' },
+      { path: 'cotizacion/:id', component: VentaComponent, data: { type: 'cotizacion' }, title: 'Cotización' },
       //
       { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta' },
       { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago' },
