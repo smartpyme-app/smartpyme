@@ -74,12 +74,22 @@
                       <td>{{venta.usuario?.name | truncate:30 }}</td>
                       <td>{{venta.cliente?.nombre | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                       <td>
-                          <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)" [(ngModel)]="venta.estado" [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-success' : venta?.estado == 'Facturada'}">
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="Facturada">Facturada</option>
-                              <option value="Anulada">Anulada</option>
-                          </select>
-                      </td>
+                        <select name="enable" class="form-select w-auto border-0" 
+                                (change)="setEstado(venta)" 
+                                [(ngModel)]="venta.estado" 
+                                [ngClass]="{
+                                  'bg-light-warning': venta?.estado == 'Pendiente',
+                                  'bg-light-danger': venta?.estado == 'Rechazada',
+                                  'bg-light-success': venta?.estado == 'Aprobada' || venta?.estado == 'Completada',
+                                  'bg-light-info': venta?.estado == 'Entregada'
+                                }">
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Aprobada">Aceptada</option>
+                          <option value="Rechazada">En Proceso</option>
+                          <option value="Completada">Completada</option>
+                          <option value="Entregada">Entregada</option>
+                        </select>
+                       </td>
                       <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
                       <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                       <td class="text-center">

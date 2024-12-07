@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\CotizacionVenta;
 use App\Models\Ventas\Venta as Cotizacion;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -42,8 +43,13 @@ class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
+        if($request->cotizacion_id !== null && $request->cotizacion_id != 0){   
+            $model = new CotizacionVenta();
+        }else{
+            $model = new Cotizacion();
+        }
         
-        $ventas = Cotizacion::when($request->buscador, function($query) use ($request){
+        $ventas = $model::when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -79,7 +85,7 @@ class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                    ->where('cotizacion', 1)
+                   // ->where('cotizacion', 1)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                             ->get();

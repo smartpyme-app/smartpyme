@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\CotizacionesExport;
 use App\Models\CotizacionVenta;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 
@@ -72,8 +73,8 @@ class CotizacionesController extends Controller
     public function read($id)
     {
 
-        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles','vendedor','empresa','documento','usuario')->firstOrFail();
-       // $orden->saldo = $orden->saldo;
+        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
+        // $orden->saldo = $orden->saldo;
         return Response()->json($orden, 200);
     }
 
@@ -113,6 +114,7 @@ class CotizacionesController extends Controller
 
     public function store(Request $request)
     {
+        //  dd($request->all());
 
         $request->validate([
             'fecha'         => 'required',
@@ -122,7 +124,15 @@ class CotizacionesController extends Controller
             'id_sucursal'   => 'required|numeric',
         ]);
 
-
+        if ($request->cotizacion_id != null) {
+            if ($request->id)
+                $cotizacion = CotizacionVenta::findOrFail($request->id);
+            else
+                $cotizacion = new CotizacionVenta;
+            $cotizacion->fill($request->all());
+            $cotizacion->save();
+            return Response()->json($cotizacion, 200);
+        }
         if ($request->id)
             $orden = Cotizacion::findOrFail($request->id);
         else
@@ -200,13 +210,36 @@ class CotizacionesController extends Controller
         return Response()->json($orden, 201);
     }
 
-    public function generarDoc($id)
-    {
-        $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+    // public function generarDoc($id)
+    // {
 
-        $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+    //     $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+
+    //     $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+    //     $pdf->setPaper('US Letter', 'portrait');
+    //     return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
+    // }
+
+    public function generarDoc($id, $tipo = null)
+    {
+        if ($tipo === 'cotizacion') {
+            Log::info('Generando documento de cotización');
+            $venta = CotizacionVenta::where('id', $id)
+                ->with('detalles', 'cliente')
+                ->firstOrFail();
+
+            $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+        } else {
+            Log::info('Generando documento de factura');
+            $venta = Cotizacion::where('id', $id)
+                ->with('detalles', 'cliente')
+                ->firstOrFail();
+
+            $pdf = PDF::loadView('reportes.facturacion.factura', compact('venta'));
+        }
+
         $pdf->setPaper('US Letter', 'portrait');
-        return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
+        return $pdf->stream($tipo == 'cotizacion' ? 'cotizacion-' : 'factura-' . $venta->id . '.pdf');
     }
 
     public function vendedor()
@@ -231,6 +264,7 @@ class CotizacionesController extends Controller
 
     public function export(Request $request)
     {
+        //dd($request->all());
         $cotizaciones = new CotizacionesExport();
         $cotizaciones->filter($request);
 
