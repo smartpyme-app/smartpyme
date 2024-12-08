@@ -28,7 +28,7 @@ class CotizacionVentaDetalle extends Model
         "id_producto",
         "id_cotizacion_venta",
         "id_vendedor",
-        "remember_token"
+     //   "remember_token"
     ];
 
     public function producto()

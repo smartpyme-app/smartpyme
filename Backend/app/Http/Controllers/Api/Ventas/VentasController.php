@@ -495,7 +495,7 @@ class VentasController extends Controller
                     $detalle = new CotizacionVentaDetalle();
                 $det['id_cotizacion_venta'] = $cotizacion->id;
                 $det['subtotal'] = $det['precio'] * $det['cantidad'];
-                $det['remember_token'] = null;
+              //  $det['remember_token'] = null;
                 $detalle->fill($det);
                 $detalle->save();
             }
