@@ -21,7 +21,7 @@ class CotizacionVenta extends Model
         "descripcion_personalizada",
         "descripcion_impresion",
         "fecha_expiracion",
-        "detalle_banco",
+        //"detalle_banco",
         "fecha",
         "total_costo",
         "total",
