@@ -7,7 +7,6 @@ use App\Models\Inventario\Composiciones\Composicion;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
-use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Ajuste;
@@ -23,6 +22,7 @@ use App\Exports\ProductosExport;
 use App\Models\ComboProducto;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\DB;
 
 class ProductosController extends Controller
@@ -110,7 +110,7 @@ class ProductosController extends Controller
 
         $producto = Producto::where('codigo', $codigo)
             ->wherehas('sucursales', function ($q) {
-                $q->where('sucursal_id', \JWTAuth::parseToken()->authenticate()->sucursal_id)
+                $q->where('sucursal_id', JWTAuth::parseToken()->authenticate()->sucursal_id)
                     ->where('activo', true);
             })
             ->with('inventarios', 'precios')->get();
@@ -118,18 +118,10 @@ class ProductosController extends Controller
         return Response()->json($producto, 200);
     }
 
-    public function read($id)
-    {
+    public function read($id){
 
         $producto = Producto::where('id', $id)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor'
-            )
+            ->with(['inventarios', 'composiciones', 'precios.usuarios', 'imagenes', 'proveedores.proveedor'])
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -169,15 +161,15 @@ class ProductosController extends Controller
         else
             $producto = new Producto;
 
-
         $producto->fill($request->all());
         $producto->save();
 
         // Configurar inventarios para las bodegas
-        if (!$request->id && $producto->tipo != 'Servicio') {
+        if(!$request->id && $producto->tipo != 'Servicio'){
             $bodegas = Bodega::all();
             $producto->inventarios()->delete();
-            foreach ($bodegas as $bodega) {
+
+            foreach($bodegas as $bodega){
                 $inventario = new Inventario;
                 $inventario->id_producto    = $producto->id;
                 $inventario->stock          = 0;
@@ -191,11 +183,10 @@ class ProductosController extends Controller
 
     //    STORE DE COMPUESTOS
 
-    public function storeCompuesto(Request $request)
-    {
+    public function storeCompuesto(Request $request){
 
         DB::beginTransaction();
-        if (empty($request->codigo)) {
+        if(empty($request->codigo)) {
             $request['codigo'] = NULL;
         }
 
@@ -218,15 +209,12 @@ class ProductosController extends Controller
         else
             $producto = new Producto;
 
-
         $producto->fill($request->all());
         $producto->save();
 
-        foreach ($request->detalles as $detalle) {
-
+        foreach($request->detalles as $detalle){
             $composicion = new Composicion;
-
-            //            $composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
+            //$composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
             $composicion->cantidad = $detalle["cantidad"];
             $composicion->id_producto = $detalle["id_producto"];
             $composicion->id_compuesto = $producto->id;
@@ -234,9 +222,9 @@ class ProductosController extends Controller
         }
 
         // Configurar inventarios para las bodegas
-        if (!$request->id && $producto->tipo != 'Servicio') {
+        if(!$request->id && $producto->tipo != 'Servicio'){
             $bodegas = Bodega::all();
-            foreach ($bodegas as $bodega) {
+            foreach($bodegas as $bodega){
                 $inventario = new Inventario;
                 $inventario->id_producto    = $producto->id;
                 $inventario->stock          = 0;
@@ -244,8 +232,13 @@ class ProductosController extends Controller
                 $inventario->save();
             }
         }
-
+        ## se define el inventario del compuesto en la bodega seleccionada
+        $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
+        $inventarioInicial->stock = $request->stock;
+        $inventarioInicial->save();
+        
         DB::commit();
+        
         return Response()->json($producto, 200);
     }
 

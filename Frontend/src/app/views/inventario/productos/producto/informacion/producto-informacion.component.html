@@ -23,7 +23,7 @@
       <label for="id_categoria" class="w-100">Categoría</label>
       <div class="input-group">
         <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0"
-          (change)="updateInputValue()">
+          (change)="updateInputValue($event)">
           <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
             {{categoria.nombre}}
           </ng-option>
@@ -38,7 +38,7 @@
       <label for="id_subcategoria" class="w-100">Subcategoría</label>
       <div class="input-group">
         <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0"
-          (change)="updateInputValue()">
+          (change)="updateInputValue($event)">
           <ng-option *ngFor="let subcategoria of subcategRes" [value]="subcategoria.id">
             {{subcategoria.nombre}}
           </ng-option>
@@ -100,7 +100,7 @@
       <label for="talla" class="w-100">Talla</label>
       <div class="input-group">
         <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="talla" [addTag]="true"
-          (add)="agregarNuevaTalla($event)" class="form-control form-select" placeholder="Selecciona o agrega una talla"
+          (change)="addAttribute($event, 'talla')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>
@@ -111,7 +111,7 @@
       <label for="color" class="w-100">Color</label>
       <div class="input-group">
         <ng-select [(ngModel)]="producto.color" [items]="colores" bindLabel="color" [addTag]="true"
-          (add)="agregarNuevoColor($event)" class="form-control form-select" placeholder="Selecciona o agrega una talla"
+          (change)="addAttribute($event, 'color')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>
@@ -121,7 +121,7 @@
       <label for="material" class="w-100">Material</label>
       <div class="input-group">
         <ng-select [(ngModel)]="producto.material" [items]="materiales" bindLabel="material" [addTag]="true"
-          (add)="agregarNuevoMaterial($event)" class="form-control form-select"
+          (change)="addAttribute($event, 'material')" class="form-control form-select"
           placeholder="Selecciona o agrega una talla" style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>

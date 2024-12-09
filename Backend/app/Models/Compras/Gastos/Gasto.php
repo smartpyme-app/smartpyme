@@ -39,6 +39,7 @@ class Gasto extends Model {
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+        'otros_impuestos'
     ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];

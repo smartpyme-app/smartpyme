@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Api\Ventas;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use JWTAuth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Carbon\Carbon;
-
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Detalle;
@@ -33,8 +32,7 @@ use App\Models\ComboProducto;
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use Maatwebsite\Excel\Facades\Excel;
-use Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class VentasController extends Controller
 {
@@ -153,33 +151,30 @@ class VentasController extends Controller
             'id_usuario'        => 'required',
         ]);
 
-
         $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
 
         // Ajustar stocks
-        foreach ($venta->detalles as $detalle) {
-
+        foreach ($venta->detalles as $detalle){
             $producto = Producto::where('id', $detalle->id_producto)
                 ->with('composiciones')->firstOrFail();
 
             $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
             // Anular venta y regresar stock
-            if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
+            if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
 
-                if ($inventario) {
+                if($inventario){
                     $inventario->stock += $detalle->cantidad;
                     $inventario->save();
                     $inventario->kardex($venta, $detalle->cantidad * -1);
                 }
 
                 // Inventario compuestos
-                foreach ($producto->composiciones as $comp) {
+                foreach($producto->composiciones as $comp){
 
-                    $inventario = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $venta->id_bodega)->first();
+                    $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->id_bodega)->first();
 
-                    if ($inventario) {
+                    if($inventario){
                         $inventario->stock += $detalle->cantidad * $comp->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
@@ -204,10 +199,9 @@ class VentasController extends Controller
                 // Inventario compuestos
                 foreach ($producto->composiciones as $comp) {
 
-                    $inventario = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $venta->id_bodega)->first();
+                    $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->id_bodega)->first();
 
-                    if ($inventario) {
+                    if($inventario){
                         $inventario->stock -= $detalle->cantidad * $comp->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
@@ -257,9 +251,7 @@ class VentasController extends Controller
         return Response()->json($ventas, 200);
     }
 
-    public function facturacion(Request $request)
-    {
-
+    public function facturacion(Request $request){
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
@@ -294,7 +286,6 @@ class VentasController extends Controller
       //  dd($request->all());
 
         try {
-            // return $request->all();
             // Guardamos la venta
             if ($request->cotizacion == 1) {
                 $quote = $this->saveQuotation($request);
@@ -308,14 +299,12 @@ class VentasController extends Controller
             $venta->save();
 
             // Guardamos los detalles
-
-            foreach ($request->detalles as $det) {
+            foreach ($request->detalles as $det){
                 if (isset($det['id']))
                     $detalle = Detalle::findOrFail($det['id']);
                 else
                     $detalle = new Detalle;
                 $det['id_venta'] = $venta->id;
-
 
                 $detalle->fill($det);
                 $detalle->save();
@@ -345,8 +334,9 @@ class VentasController extends Controller
                 }
 
                 // Si es compuesto
-                if (isset($det['composiciones'])) {
-                    foreach ($det['composiciones'] as $item) {
+                if(isset($det['composiciones'])){
+
+                    foreach($det['composiciones'] as $item){
                         $cd = new DetalleCompuesto;
                         $cd->id_producto = $item['id_compuesto'];
                         $cd->cantidad   = $item['cantidad'];
@@ -355,9 +345,8 @@ class VentasController extends Controller
                     }
                 }
 
-
                 // Actualizar inventario
-                if ($request->cotizacion == 0) {
+                if ($request->cotizacion == 0){
 
                     // $producto = Producto::where('id', $det['id_producto'])
                     // ->with('composiciones')->firstOrFail();
@@ -377,26 +366,24 @@ class VentasController extends Controller
                         // }
                     } else {
 
-                        $inventario = Inventario::where('id_producto', $det['id_producto'])
-                            ->where('id_bodega', $venta->id_bodega)->first();
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $venta->id_bodega)->first();
 
-                        if ($inventario) {
-                            $inventario->stock -= $det['cantidad'];
-                            $inventario->save();
-                            $inventario->kardex($venta, $det['cantidad'], $det['precio']);
-                        }
-
+                            if($inventario){
+                                $inventario->stock -= $det['cantidad'];
+                                $inventario->save();
+                                $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                            }                            
                         // Inventario compuestos
-                        if (isset($det['composiciones'])) {
+                        if (isset($det['composiciones'])){
                             foreach ($det['composiciones'] as $comp) {
 
-                                $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
+                                $inventarioCompuesto = Inventario::where('id_producto', $comp['id_producto'])
                                     ->where('id_bodega', $venta->id_bodega)->first();
 
-                                if ($inventario) {
-                                    $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
-                                    $inventario->save();
-                                    $inventario->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
+                                if ($inventarioCompuesto){
+                                    $inventarioCompuesto->stock -= $det['cantidad'] * $comp['cantidad'];
+                                    $inventarioCompuesto->save();
+                                    $inventarioCompuesto->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
                                 }
                             }
                         }

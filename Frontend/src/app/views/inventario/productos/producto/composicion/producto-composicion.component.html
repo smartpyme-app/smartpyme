@@ -32,9 +32,9 @@
                 </tr>  
 
                 <tr *ngFor=" let composicion of producto?.composiciones">
-                    <td>{{ composicion?.compuesto.nombre }}</td>
-                    <td>{{ composicion?.compuesto.nombre_categoria }}</td>
-                    <td class="text-end">{{ composicion?.compuesto.precio | currency }}</td>
+                    <td>{{ composicion?.nombre_producto }}</td>
+                    <td>{{ composicion?.nombre_categoria }}</td>
+                    <td class="text-end">{{ composicion.precio | currency }}</td>
                     <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
                     <td class="text-end">{{ composicion?.opciones?.length }}</td>
                     <td class="text-center">
@@ -108,14 +108,14 @@
             <table class="table table-bordered">
                 <tbody>
                     <tr>
-                        <td colspan="2" class="text-center" *ngIf="composicion?.opciones?.length < 1">
+                        <td colspan="2" class="text-center" *ngIf="composicion?.length < 1">
                             <span class="badge bg-primary">No tiene opciones registradas</span>
                         </td>
                         <td colspan="2" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
-                    <tr *ngFor="let opcion of composicion.opciones">
+                    <tr *ngFor="let opcion of composicion">
                         <td>{{ opcion.nombre_producto }}</td>
                         <td class="text-center">
                             <a (click)="deleteOpcion(opcion)" class="btn btn-danger">Eliminar</a>
