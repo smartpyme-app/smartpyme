@@ -133,4 +133,20 @@ class CotizacionVentaController extends Controller
         )->where('id', $id)->firstOrFail();
         return response()->json($cotizacion, 200);
     }
+
+
+    public function delete($id)
+    {
+        $detalle = CotizacionVentaDetalle::findOrFail($id);
+        // Actualizar inventario
+            // $producto = Producto::findOrFail($detalle->producto_id);
+            // if ($producto->inventario) {
+            //     Inventario::where('bodega_id', $detalle->venta->bodega_id)->where('producto_id', $detalle->producto_id)->increment('stock', $detalle->cantidad);
+            // }
+        $detalle->delete();
+
+        return Response()->json($detalle, 201);
+
+    }
+
 }

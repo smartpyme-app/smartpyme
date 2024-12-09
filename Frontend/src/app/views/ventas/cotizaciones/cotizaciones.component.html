@@ -1,206 +1,198 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Cotizaciones</h2>
-  <button *ngIf="apiService.canCreate()" routerLink="/cotizacion/crear" tooltip=" Crear cotizacion (F4)"
-    class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir
-    cotización</button>
+  <button *ngIf="apiService.canCreate()" routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
-    <div class="col-md-6 mb-3">
-      <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
-        Mostrando
-        <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-        de {{ ventas?.total + ' registros' }}
-      </span>
-    </div>
-
-    <div class="col-md-6 mb-3">
-      <div class="d-flex gap-2">
-        <button [disabled]="downloading" tooltip="Descargar cotizaciones" (click)="descargar()"
-          class="btn btn-default tcla-F6">
-          <img src="/assets/icons/download.png" class="icon">
-        </button>
-        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
-          <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar"
-            [(ngModel)]="filtros.buscador">
-        </form>
-        <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img
-            src="/assets/icons/filter.png" class="icon"> </button>
+      <div class="col-md-6 mb-3">
+          <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
+              Mostrando 
+              <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+              </select>
+               de {{ ventas?.total + ' registros' }}
+          </span>
       </div>
-    </div>
+
+      <div class="col-md-6 mb-3">
+          <div class="d-flex gap-2">
+              <button [disabled]="downloading" tooltip="Descargar cotizaciones" (click)="descargar()" class="btn btn-default tcla-F6">
+                  <img src="/assets/icons/download.png" class="icon">
+              </button>
+              <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
+                  <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+              </form>
+              <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+          </div>
+      </div>
   </div>
 
   <div class="d-flex mb-3">
-    <div class="col d-flex gap-2">
-      <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
-    </div>
-    <div class="col d-flex gap-2 justify-content-end">
-      <ng-select name="id_cliente" (change)="filtrarVentas()" [(ngModel)]="filtros.id_cliente"
-        class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
-        <ng-option value="">Cliente</ng-option>
-        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-          {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-        </ng-option>
-      </ng-select>
-    </div>
+      <div class="col d-flex gap-2">
+          <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
+      </div>
+      <div class="col d-flex gap-2 justify-content-end">
+          <ng-select name="id_cliente" (change)="filtrarVentas()" [(ngModel)]="filtros.id_cliente" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
+              <ng-option value="">Cliente</ng-option>
+              <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                  {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+              </ng-option>
+          </ng-select>
+      </div>
   </div>
   <div class="row">
-    <div class="table-responsive">
-      <table class="table table-borderless table-hover mb-0">
-        <thead>
-          <tr>
-            <th (click)="setOrden('fecha')"
-              [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}"
-              class="click">Fecha</th>
-            <th (click)="setOrden('id_usuario')"
-              [ngClass]="{'sorted-asc': filtros.orden == 'id_usuario' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_usuario' && filtros.direccion == 'desc'}"
-              class="click">Usuario</th>
-            <th>Cliente</th>
-            <th>Estado</th>
-            <th class="d-none d-md-table-cell">Fecha Expiración</th>
-            <th (click)="setOrden('total')"
-              [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}"
-              class="click text-right">Total</th>
-            <th class="text-center"><i class="fa fa-cog"></i></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
-              <span class="badge bg-primary">No tiene cotizaciones registradas</span>
-            </td>
-            <td colspan="10" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
-            </td>
-          </tr>
+      <div class="table-responsive">
+          <table class="table table-borderless table-hover mb-0">
+              <thead>
+                  <tr>
+                      <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                      <th (click)="setOrden('id_usuario')" [ngClass]="{'sorted-asc': filtros.orden == 'id_usuario' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_usuario' && filtros.direccion == 'desc'}" class="click">Usuario</th>
+                      <th>Cliente</th>
+                      <th>Estado</th>
+                      <th class="d-none d-md-table-cell">Fecha Expiración</th>
+                      <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
+                      <th class="text-center"><i class="fa fa-cog"></i></th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr>
+                      <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
+                          <span class="badge bg-primary">No tiene cotizaciones registradas</span>
+                      </td>
+                      <td colspan="10" class="text-center" *ngIf="loading">
+                          <span class="badge bg-primary">Cargando...</span>
+                      </td>
+                  </tr>
 
-          <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                  <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                      
+                      <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                      <td>{{venta.usuario?.name | truncate:30 }}</td>
+                      <td>{{venta.cliente?.nombre | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                      <td>
+                        <select name="enable" class="form-select w-auto border-0" 
+                                (change)="setEstado(venta)" 
+                                [(ngModel)]="venta.estado" 
+                                [ngClass]="{
+                                  'bg-light-warning': venta?.estado == 'Pendiente',
+                                  'bg-light-danger': venta?.estado == 'Rechazada',
+                                  'bg-light-success': venta?.estado == 'Aprobada' || venta?.estado == 'Completada',
+                                  'bg-light-info': venta?.estado == 'Entregada'
+                                }">
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Aprobada">Aceptada</option>
+                          <option value="Rechazada">En Proceso</option>
+                          <option value="Completada">Completada</option>
+                          <option value="Entregada">Entregada</option>
+                        </select>
+                       </td>
+                      <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
+                      <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                      <td class="text-center">
+                          <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                              <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                          </span>
+                          <ng-template #accionesTemplate>
+                              <div class="d-flex flex-column align-items-start">
+                                  <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
+                                      <i class="fa fa-fw fa-edit"></i> Editar
+                                  </a>
+                                  <a routerLink="/cotizacion/{{venta.id}}" class="btn">
+                                      <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                                  </a>
+                                  <a *ngIf="venta.estado == 'Pendiente'" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
+                                      <i class="fa fa-fw fa-money-bill"></i> Facturar
+                                  </a>
+                                  <a (click)="imprimir(venta)" class="btn">
+                                      <i class="fa fa-fw fa-print"></i> Imprimir
+                                  </a>
+                                  <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
+                                      <i class="fa fa-fw fa-trash"></i> Eliminar
+                                  </a> -->
+                              </div>
+                          </ng-template>
+                      </td>
 
-            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-            <td>{{venta.usuario?.name | truncate:30 }}</td>
-            <td>{{venta.cliente?.nombre | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1"
-                class="float-end d-none" tooltip="Ver información del cliente"
-                routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
-            <td>
-              <select name="enable" class="form-select w-auto border-0" (change)="setEstado(venta)"
-                [(ngModel)]="venta.estado"
-                [ngClass]="{'bg-light-warning' : venta?.estado == 'Pendiente', 'bg-light-danger' : venta?.estado == 'Anulada', 'bg-light-success' : venta?.estado == 'Facturada'}">
-                <option value="Pendiente">Pendiente</option>
-                <option value="Facturada">Facturada</option>
-                <option value="Anulada">Anulada</option>
-              </select>
-            </td>
-            <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
-            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-            <td class="text-center">
-              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-              </span>
-              <ng-template #accionesTemplate>
-                <div class="d-flex flex-column align-items-start">
-                  <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()"
-                    routerLink="/cotizacion/editar/{{venta.id}}" class="btn">
-                    <i class="fa fa-fw fa-edit"></i> Editar
-                  </a>
-                  <a routerLink="/cotizacion/ver/{{venta.id}}" class="btn">
-                    <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                  </a>
-                  <a *ngIf="venta.estado == 'Pendiente'" routerLink="/venta/crear"
-                    [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
-                    <i class="fa fa-fw fa-money-bill"></i> Facturar
-                  </a>
-                  <a (click)="imprimir(venta)" class="btn">
-                    <i class="fa fa-fw fa-print"></i> Imprimir
-                  </a>
-                  <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
-                                        <i class="fa fa-fw fa-trash"></i> Eliminar
-                                    </a> -->
-                </div>
-              </ng-template>
-            </td>
+                  </tr>
+              </tbody>
+          </table>
+      </div>
 
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="col-12" *ngIf="ventas?.last_page > 1">
-      <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
-    </div>
+      <div class="col-12" *ngIf="ventas?.last_page > 1">
+          <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+      </div>
   </div>
 </section>
 
 
 <ng-template #mfilter>
-  <div class="modal-header">
-    <div class="modal-title text-center">
+<div class="modal-header">
+  <div class="modal-title text-center">
       <h2 class="text-center">Filtrar</h2>
-    </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
-  <div class="modal-body">
-    <form autocomplete="off" (ngSubmit)="filtrarVentas()">
+  <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+  <form autocomplete="off" (ngSubmit)="filtrarVentas()">
       <div class="row">
 
-        <div class="form-group col-md-6">
-          <label for="">Del:</label>
-          <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio" />
-        </div>
-        <div class="form-group col-md-6">
-          <label for="">Al:</label>
-          <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin" />
-        </div>
-        <div class="form-group col-md-12">
-          <label for="filtros.id_cliente">Cliente:</label>
-          <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-            <ng-option value="">Todos</ng-option>
-            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-              {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-            </ng-option>
-          </ng-select>
-        </div>
-        <div class="form-group col-md-6">
-          <label for="filtros.id_usuario">Usuario:</label>
-          <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
-            <ng-option value="">Todos</ng-option>
-            <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-              {{ usuario.name }}
-            </ng-option>
-          </ng-select>
-        </div>
-        <div class="form-group col-md-6">
-          <label for="filtros.sucursal">Sucursal:</label>
-          <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
-            <option value="">Todos</option>
-            <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-              {{ sucursal.nombre }}
-            </option>
-          </select>
-        </div>
-        <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
-          <label for="id_proyecto">Proyecto:</label>
-          <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
-            <ng-option value="">Todos</ng-option>
-            <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-              {{ proyecto.nombre }}
-            </ng-option>
-          </ng-select>
-        </div>
-
+          <div class="form-group col-md-6">
+              <label for="">Del:</label>
+              <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+          </div>
+          <div class="form-group col-md-6">
+              <label for="">Al:</label>
+              <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+          </div>
+          <div class="form-group col-md-12">
+              <label for="filtros.id_cliente">Cliente:</label>
+              <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
+                  <ng-option value="">Todos</ng-option>
+                  <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+                      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                  </ng-option>
+              </ng-select>
+          </div>
+          <div class="form-group col-md-6">
+              <label for="filtros.id_usuario">Usuario:</label>
+              <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                  <ng-option value="">Todos</ng-option>
+                  <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                      {{ usuario.name }}
+                  </ng-option>
+              </ng-select>
+          </div>
+          <div class="form-group col-md-6">
+              <label for="filtros.sucursal">Sucursal:</label>
+              <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                  <option value="">Todos</option>
+                  <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                      {{ sucursal.nombre }}
+                  </option>
+              </select>
+          </div>
+          <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+              <label for="id_proyecto">Proyecto:</label>
+              <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                  <ng-option value="">Todos</ng-option>
+                  <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                      {{ proyecto.nombre }}
+                  </ng-option>
+              </ng-select>
+          </div>
+          
       </div>
-
+      
       <div class="d-grid mt-3">
-        <button type="submit" [disabled]="loading" class="btn btn-primary">
-          <span *ngIf="!loading">Filtrar</span>
-          <span *ngIf="loading">Filtrando...</span>
-        </button>
+          <button type="submit" [disabled]="loading" class="btn btn-primary">
+              <span *ngIf="!loading">Filtrar</span>
+              <span *ngIf="loading">Filtrando...</span>
+          </button>
       </div>
-    </form>
-  </div>
+  </form>
+</div>
 </ng-template>
