@@ -11,8 +11,8 @@
 
         #factura{
             width: 14cm; height: 21.7cm;
-            margin-left: 0cm;
-            margin-top: 0cm;
+            margin-left: -0.3cm;
+            margin-top: -1cm;
             position: relative;
 /*            border: 1px solid red;*/   
         }
@@ -22,7 +22,7 @@
             margin: 0px;
         }
 
-        #fecha          {top: 3.5cm; left: 8.7cm; }
+        #fecha          {top: 3.5cm; left: 8.9cm; }
         #nit            {top: 5.4cm; left: 9cm; width: 9cm;}
 
 
@@ -36,7 +36,7 @@
         table td{height: 0.7cm; text-align: left;}
 
         .cantidad{  width: 1.2cm; text-align: center;}
-        .producto{ width: 5.8cm; text-align: left;}
+        .producto{ width: 6.2cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
         .sujetas{ width: 1cm; text-align: center;}
         .exentas{ width: 1cm; text-align: center;}

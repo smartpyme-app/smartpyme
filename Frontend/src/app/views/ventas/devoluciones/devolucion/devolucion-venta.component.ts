@@ -3,8 +3,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 
 @Component({
@@ -14,7 +14,7 @@ import { ApiService } from '../../../../services/api.service';
 
 export class DevolucionVentaComponent implements OnInit {
 
-	public venta: any= {};
+	public devolucion: any= {};
 	public detalles: any= [];
 	public detalle: any = {};
 	
@@ -30,19 +30,19 @@ export class DevolucionVentaComponent implements OnInit {
 	) { }
 
 	ngOnInit() {
-        this.venta.sub_total = 0;
-        this.venta.iva = 0;
-        this.venta.descuento = 0;
-        this.venta.total = 0;
+        this.devolucion.sub_total = 0;
+        this.devolucion.iva = 0;
+        this.devolucion.descuento = 0;
+        this.devolucion.total = 0;
         this.loadAll();	        
 	}
 
     public loadAll(){
 	    const id = +this.route.snapshot.paramMap.get('id')!;
-        this.apiService.read('devolucion/venta/', id).subscribe(venta => {
-           this.venta = venta;
-           this.detalles = venta.detalles;
-           this.proveedor = venta.proveedor;
+        this.apiService.read('devolucion/venta/', id).subscribe(devolucion => {
+           this.devolucion = devolucion;
+           this.detalles = devolucion.detalles;
+           this.proveedor = devolucion.proveedor;
         });
     }
 

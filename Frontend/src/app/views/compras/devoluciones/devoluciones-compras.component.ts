@@ -3,6 +3,8 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-devoluciones-compras',
   templateUrl: './devoluciones-compras.component.html'
@@ -11,6 +13,7 @@ import { ApiService } from '@services/api.service';
 export class DevolucionesComprasComponent implements OnInit {
 
     public compras:any = [];
+    public compra:any = {};
     public id_compra:any = null;
     public loading:boolean = false;
     public downloading:boolean = false;
@@ -59,10 +62,30 @@ export class DevolucionesComprasComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public setEstado(compra:any, estado:string){
-        compra.estado = estado;
-        this.apiService.store('compra', compra).subscribe(compra => { 
-            this.alertService.success('Venta actualizada', 'La compra fue actualizada exitosamente.');
+    public setEstado(compra:any, enable:string){
+
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡No podrás revertir esto!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, anularlo',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.compra = compra;
+            this.compra.enable = enable;
+            this.onSubmit();
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+          }
+        });
+
+    }
+
+    public onSubmit(){
+        this.apiService.store('devolucion/compra', this.compra).subscribe(compra => { 
+            this.alertService.success('Compra actualizada', 'La devolución de compra fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
@@ -92,7 +115,7 @@ export class DevolucionesComprasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page).subscribe(compras => { 
+        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

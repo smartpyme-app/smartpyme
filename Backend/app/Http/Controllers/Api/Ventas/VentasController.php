@@ -260,7 +260,6 @@ class VentasController extends Controller
             'id_canal'          => 'required|max:255',
             'id_cliente'        => 'required_if:estado,"Pendiente"',
             'detalles'          => 'required',
-            // 'fecha_pago'        => 'required',
             'fecha_expiracion'  => 'required_if:cotizacion,1',
             'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
             'credito'           => 'required_if:condicion,"Crédito"',

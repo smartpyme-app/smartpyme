@@ -1,8 +1,9 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
+import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
@@ -35,19 +36,37 @@ export class CompraProductoComponent implements OnInit {
     ngOnInit() {
         console.log(this.compra);
         this.searchControl.valueChanges
-              .pipe(
-                debounceTime(500),
-                filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+          .pipe(
+            debounceTime(500),
+            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            switchMap((query: any) => 
+              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
+                catchError(error => {
+                  console.error('Error en la búsqueda:', error);
+                  this.productos = []; // Limpiar resultados en caso de error.
+                  this.loading = false; // Asegurar que el estado de carga se actualice.
+                  return of([]); // Retornar un observable vacío para que el flujo continúe.
+                })
               )
-              .subscribe((results: any[]) => {
-                this.productos = Array.isArray(results) ? results : [];
-                this.loading = false;
+            )
+          )
+          .subscribe({
+            next: (results: any[]) => {
+              this.productos = Array.isArray(results) ? results : [];
+              this.loading = false;
 
-                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
-                    this.selectProducto(results[0]);
-                }
-              });
+              if (
+                results &&
+                results.length === 1 &&
+                this.buscador === results[0].codigo
+              ) {
+                this.selectProducto(results[0]);
+              }
+            },
+            error: (err) => {
+              console.error('Error no controlado:', err); // Log en caso de un error en la suscripción.
+            }
+          });
 
         // this.buscador = '';
         // const input = document.getElementById('producto')!;

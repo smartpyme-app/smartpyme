@@ -5,13 +5,15 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-devolucion-compra-detalles',
   templateUrl: './devolucion-compra-detalles.component.html'
 })
 export class DevolucionCompraDetallesComponent implements OnInit {
 
-    @Input() compra: any = {};
+    @Input() devolucion: any = {};
     public detalle:any = {};
     public supervisor:any = {};
 
@@ -40,9 +42,9 @@ export class DevolucionCompraDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
-        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(2);
+        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(2);
-        this.update.emit(this.compra);
+        this.update.emit(this.devolucion);
     }
 
     public modalSupervisor(detalle:any){
@@ -62,15 +64,27 @@ export class DevolucionCompraDetallesComponent implements OnInit {
 
     // Eliminar detalle
         public delete(detalle:any){
-            if (confirm('Confirma eliminar el detalle')) { 
 
-                for (var i = 0; i < this.compra.detalles.length; ++i) {
-                    if (this.compra.detalles[i].producto_id === detalle.producto_id ){
-                        this.compra.detalles.splice(i, 1);
-                        this.update.emit(this.compra);
+            Swal.fire({
+              title: '¿Estás seguro?',
+              text: '¡No podrás revertir esto!',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, eliminarlo',
+              cancelButtonText: 'Cancelar'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                let indexAEliminar:any;
+                
+                    indexAEliminar = this.devolucion.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                    if (indexAEliminar !== -1) {
+                        this.devolucion.detalles.splice(indexAEliminar, 1);
+                        this.update.emit(this.devolucion);
                     }
-                }
-            }
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+              }
+            });
 
         }
 

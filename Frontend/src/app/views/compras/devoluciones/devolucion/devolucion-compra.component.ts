@@ -3,8 +3,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 
 @Component({
@@ -14,7 +14,7 @@ import { ApiService } from '../../../../services/api.service';
 
 export class DevolucionCompraComponent implements OnInit {
 
-	public compra: any= {};
+	public devolucion: any= {};
 	public detalles: any= [];
 	public detalle: any = {};
 	
@@ -36,11 +36,11 @@ export class DevolucionCompraComponent implements OnInit {
     public loadAll(){
         this.loading = true;
 	    const id = +this.route.snapshot.paramMap.get('id')!;
-        this.apiService.read('devolucion/compra/', id).subscribe(compra => {
-           this.compra = compra;
-           this.detalles = compra.detalles;
+        this.apiService.read('devolucion/compra/', id).subscribe(devolucion => {
+           this.devolucion = devolucion;
+           this.detalles = devolucion.detalles;
+           this.proveedor = devolucion.proveedor;
             this.loading = false;
-           this.proveedor = compra.proveedor;
         });
     }
 

@@ -5,21 +5,23 @@ namespace App\Http\Controllers\Api\Ventas\Devoluciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use JWTAuth;
-use Carbon\Carbon;
-
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Devoluciones\Detalle;
 use App\Models\Ventas\Venta;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Clientes\Cliente;
+use Luecano\NumeroALetras\NumeroALetras;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Paquete;
 use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
+use Carbon\Carbon;
+use JWTAuth;
+use Auth;
 
 class DevolucionVentasController extends Controller
 {
@@ -89,6 +91,36 @@ class DevolucionVentasController extends Controller
             $venta = Devolucion::findOrFail($request->id);
         else
             $venta = new Devolucion;
+
+            // Ajustar stocks
+            foreach ($venta->detalles as $detalle) {
+
+                $producto = Producto::where('id', $detalle->id_producto)
+                                        ->with('composiciones')->firstOrFail();
+                                        
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->venta()->pluck('id_sucursal')->first())->first();
+                
+                // Anular y regresar stock
+                if(($venta->enable != '0') && ($request['enable'] == '0')){
+
+                    if ($inventario) {
+                        $inventario->stock -= $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($venta, $detalle->cantidad * -1);
+                    }
+
+                }
+                // Cancelar anulación y descargar stock
+                if(($venta->enable == '0') && ($request['enable'] != '0')){
+                    // Aplicar stock
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($venta, $detalle->cantidad);
+                    }
+
+                }
+            }
         
         $venta->fill($request->all());
         $venta->save();        
@@ -169,6 +201,15 @@ class DevolucionVentasController extends Controller
                     $inventario->save();
                     $inventario->kardex($devolucion, $det['cantidad']);
                 }
+
+                // Si es paquete cambiar estado
+                $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
+                foreach ($paquetes as $paquete) {
+                    $paquete->estado = 'En bodega';
+                    $paquete->id_venta = NULL;
+                    $paquete->id_venta_detalle = NULL;
+                    $paquete->save();
+                }
                 
             }
             
@@ -194,7 +235,25 @@ class DevolucionVentasController extends Controller
     public function generarDoc($id){
         $venta = Devolucion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
 
-        $pdf = PDF::loadView('reportes.facturacion.nota-credito', compact('venta'));
+        if(Auth::user()->id_empresa == 187 && $venta->nombre_documento == "Nota de crédito"){//187  OK V2
+
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+
+            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            $formatter = new NumeroALetras();
+            $n = explode(".", number_format($venta->total,2));
+
+
+            $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
+            $centavos = $formatter->toWords($n[1]);
+
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf->setPaper('US Letter', 'portrait'); 
+        }else{
+            $pdf = PDF::loadView('reportes.facturacion.nota-credito', compact('venta'));
+        }
+
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('nota-credito-' . $venta->id . '.pdf');
 

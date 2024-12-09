@@ -12,31 +12,31 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngIf="compra?.detalles?.length < 1">
+                <tr *ngIf="devolucion?.detalles?.length < 1">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios
                         </p>
                     </td>
                 </tr>
-                <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                <tr *ngFor="let detalle of devolucion?.detalles; let i = index">
                     <td>
                         <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.nombre_producto }}
                     </td>
-                    <td style="width: 150px;">
-                        <input type="number" [min]="1" [max]="detalle.cantidad" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="cantidad">
+                     <td style="width: 150px;">
+                        <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="cantidad">
                     </td>
                     <td style="width: 150px;">
-                        {{ detalle.costo | currency:'USD':'symbol':'1.2'}}
+                        <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="costo">
                     </td>
                     <td style="width: 150px;">
-                        {{ detalle.descuento | currency:'USD':'symbol':'1.2'}}
+                        <input type="number" [(ngModel)]="detalle.descuento" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="descuento">
                     </td>
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
-                            <button class="btn btn-link" (click)="delete(detalle)">
+                            <button type="button" class="btn btn-light" (click)="delete(detalle)">
                               <i class="fa fa-trash"></i>
                             </button>
                         </div>

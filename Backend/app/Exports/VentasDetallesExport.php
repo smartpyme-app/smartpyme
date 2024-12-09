@@ -123,7 +123,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               round($row->precio,2),
               round($row->descuento,2),
               round($row->venta()->first()->iva ? $row->total * 0.13 : 0,2),
-              round($row->total - $row->costo * $row->cantidad - ($row->venta()->first()->iva ? $row->total * 0.13 : 0),2),
+              round($row->total - ($row->costo * $row->cantidad),2),
               round($row->total + ($row->venta()->first()->iva ? $row->total * 0.13 : 0),2),
               $row->venta()->first()->sucursal()->first()->empresa()->pluck('nombre')->first(),
               $row->venta()->pluck('observaciones')->first(),
