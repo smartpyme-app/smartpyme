@@ -23,6 +23,8 @@ class MHCCF extends Model
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
 
+        $this->venta->total = $this->venta->total - $this->venta->cuenta_a_terceros;
+
         $this->caja_codigo = '0001';
         $this->venta->tipo_dte = '03';
         $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
