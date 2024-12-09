@@ -82,11 +82,25 @@ export class CotizacionesComponent implements OnInit {
     }, error => { this.alertService.error(error); });
   }
 
-  public setEstado(cotizacion: any) {
-    this.apiService.store('updateStateCotizacionVentas', cotizacion).subscribe(cotizacion => {
+  // public setEstado(cotizacion: any) {
+  //   this.apiService.store('updateStateCotizacionVentas', cotizacion).subscribe(cotizacion => {
+  //     this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
+  //   }, error => { this.alertService.error(error); });
+  // }
+
+public setEstado(cotizacion: any) {
+  // Agregamos el distintivo
+  cotizacion.cotizacion_id = 1;
+  
+  this.apiService.store('cotizacion', cotizacion).subscribe(
+    response => {
       this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
-    }, error => { this.alertService.error(error); });
-  }
+    }, 
+    error => {
+      this.alertService.error(error);
+    }
+  );
+ }
 
 
   public delete(id: number) {
@@ -161,11 +175,15 @@ export class CotizacionesComponent implements OnInit {
   }
 
   public imprimir(venta: any) {
-    window.open(this.apiService.baseUrl + '/api/cotizacion/impresion/' + venta.id + '?token=' + this.apiService.auth_token());
+   
+    window.open(this.apiService.baseUrl + '/api/cotizacion/impresion/' + venta.id + '/cotizacion?token=' + this.apiService.auth_token());
+   // window.open(this.apiService.baseUrl + '/api/cotizacion/impresion/' + venta.id + '?token=' + this.apiService.auth_token() + '&tipo=' + tipo);
   }
 
   public descargar() {
     this.downloading = true;
+    //agregar a filtros que es una cotizacion_id
+    this.filtros.cotizacion_id = 1;
     this.apiService.export('cotizaciones/exportar', this.filtros).subscribe((data: Blob) => {
       const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);

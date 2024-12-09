@@ -31,8 +31,10 @@ use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
 use App\Models\ComboProducto;
 use App\Models\CotizacionVenta;
+use App\Models\CotizacionVentaDetalle;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use Illuminate\Support\Facades\Log;
 
 class VentasController extends Controller
 {
@@ -134,9 +136,11 @@ class VentasController extends Controller
 
     public function read($id)
     {
+        Log::info('ID: ' . $id);
 
         $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
+
 
         return Response()->json($venta, 200);
     }
@@ -286,10 +290,16 @@ class VentasController extends Controller
         ]);
 
         DB::beginTransaction();
+        // Log::info($request->all());
+      //  dd($request->all());
 
         try {
             // return $request->all();
             // Guardamos la venta
+            if ($request->cotizacion == 1) {
+                $quote = $this->saveQuotation($request);
+                return Response()->json($quote, 200);
+            }
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
@@ -465,6 +475,47 @@ class VentasController extends Controller
         } catch (\Throwable $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    public function saveQuotation($request)
+    {
+        try {
+            if ($request->id)
+                $cotizacion = CotizacionVenta::findOrFail($request->id);
+            else
+                $cotizacion = new CotizacionVenta();
+            $cotizacion->fill($request->all());
+            $cotizacion->save();
+
+            foreach ($request->detalles as $det) {
+                if (isset($det['id']))
+                    $detalle = CotizacionVentaDetalle::findOrFail($det['id']);
+                else
+                    $detalle = new CotizacionVentaDetalle();
+                $det['id_cotizacion_venta'] = $cotizacion->id;
+                $det['subtotal'] = $det['precio'] * $det['cantidad'];
+              //  $det['remember_token'] = null;
+                $detalle->fill($det);
+                $detalle->save();
+            }
+
+            if ($request->id_proyecto) {
+                $proyecto = Proyecto::find($request->id_proyecto);
+                if ($proyecto) {
+                    $proyecto->estado = 'Pendiente';
+                    $proyecto->save();
+                }
+            }
+
+            $documento = Documento::findOrfail($cotizacion->id_documento);
+            $documento->increment('correlativo');
+
+            DB::commit();
+            return $cotizacion;
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
         }
     }
 
