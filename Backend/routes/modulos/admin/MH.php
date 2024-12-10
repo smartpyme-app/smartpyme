@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     Route::get('/departamentos', [MHController::class, 'departamentos']);
     Route::get('/actividades_economicas', [MHController::class, 'actividadesEconomicas']);
     Route::get('/unidades', [MHController::class, 'unidades']);
+    Route::get('/recintos', [MHController::class, 'recintos']);
+    Route::get('/regimenes', [MHController::class, 'regimenes']);
+    Route::get('/incoterms', [MHController::class, 'incoterms']);
 
     // Generar DTE
     Route::post('/generarDTE',          [MHDTEController::class, 'generarDTE']);
