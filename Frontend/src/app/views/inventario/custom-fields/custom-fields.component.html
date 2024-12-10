@@ -1,0 +1,277 @@
+<section class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center bg-white p-4 rounded shadow-sm">
+          <h2 class="page-heading mb-0">Campos Personalizados</h2>
+          <button *ngIf="apiService.canCreate()" 
+                  (click)="openModal(modalField, {})" 
+                  tooltip="Crear campo (F4)" 
+                  class="btn btn-primary tcla-F4">
+            <i class="fa fa-plus me-2"></i>Añadir campo
+          </button>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Main Content Section -->
+    <div class="row">
+      <div class="col-12">
+        <div class="bg-white p-4 rounded shadow-sm">
+          
+          <!-- Filters Row -->
+          <div class="row g-3 mb-4">
+            <!-- Records per page -->
+            <div class="col-12 col-md-6">
+              <div class="d-flex align-items-center" *ngIf="customFields?.total > 0">
+                <span class="text-muted me-2">Mostrando</span>
+                <select name="paginate" 
+                        class="form-select w-auto" 
+                        (change)="filtrarCampos()" 
+                        [(ngModel)]="filtros.paginate">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+                <span class="text-muted ms-2">de {{ customFields?.total }} registros</span>
+              </div>
+            </div>
+  
+            <!-- Search -->
+            <div class="col-12 col-md-6">
+              <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCampos()" autocomplete="off">
+                <input type="text" 
+                       name="buscador" 
+                       class="form-control pull-right" 
+                       placeholder="Buscar campos..."
+                       [(ngModel)]="filtros.buscador"
+                       (ngModelChange)="(filtros.buscador.length >= 4 || filtros.buscador.length === 0) && filtrarCampos()">
+              </form>
+            </div>
+          </div>
+  
+          <!-- Table Section -->
+          <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+              <thead >
+                <tr>
+                  <th (click)="setOrden('name')" 
+                      class="cursor-pointer"
+                      [ngClass]="{
+                        'sorted-asc': filtros.orden == 'name' && filtros.direccion == 'asc',
+                        'sorted-desc': filtros.orden == 'name' && filtros.direccion == 'desc'
+                      }">
+                    <div class="d-flex align-items-center">
+                      Nombre del Campo
+                      <i class="fas fa-sort ms-2"></i>
+                    </div>
+                  </th>
+                  <th class="text-center">Tipo</th>
+                  <th class="text-center">Requerido</th>
+                  <th class="text-center">Valores</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="customFields?.total < 1 && !loading">
+                  <td colspan="5" class="text-center py-4">
+                    <div class="alert alert-info mb-0">
+                      <i class="fas fa-info-circle me-2"></i>
+                      No hay campos personalizados registrados
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="loading">
+                  <td colspan="5" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Cargando...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngFor="let field of customFields?.data" class="align-middle">
+                  <td>{{ field.name }}</td>
+                  <td class="text-center">
+                    <span class="badge" [ngClass]="{
+                      'bg-info': field.field_type === 'select',
+                      'bg-secondary': field.field_type === 'text',
+                      'bg-primary': field.field_type === 'number'
+                    }">
+                      {{ field.field_type }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge" [ngClass]="field.is_required ? 'bg-success' : 'bg-warning'">
+                      {{ field.is_required ? "Sí" : "No" }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <button class="btn btn-link" 
+                            [popover]="valoresTemplate" 
+                            [outsideClick]="true"
+                            tooltip="Ver valores">
+                      <span class="badge bg-light text-dark">
+                        {{ field.values.length }} valores
+                      </span>
+                    </button>
+                    <ng-template #valoresTemplate>
+                      <div class="p-3">
+                        <h6 class="border-bottom pb-2 mb-3">Valores disponibles</h6>
+                        <div class="d-flex flex-column gap-2">
+                          <span *ngFor="let value of field.values" 
+                                class="badge bg-light text-dark p-2">
+                            {{ value.value }}
+                          </span>
+                        </div>
+                      </div>
+                    </ng-template>
+                  </td>
+                  <td class="text-center">
+                    <div class="dropdown">
+                      <button class="btn btn-link" 
+                              [popover]="accionesTemplate" 
+                              [outsideClick]="true"
+                              tooltip="Acciones">
+                        <i class="fa fa-ellipsis-vertical"></i>
+                      </button>
+                      <ng-template #accionesTemplate>
+                        <div class="dropdown-menu show position-static">
+                          <button *ngIf="apiService.canEdit()"
+                                  type="button"
+                                  (click)="openModal(modalField, field)"
+                                  class="dropdown-item d-flex align-items-center">
+                            <i class="fas fa-edit me-2"></i>
+                            Editar
+                          </button>
+                        </div>
+                      </ng-template>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+  
+          <!-- Pagination -->
+          <div class="mt-4" *ngIf="customFields?.last_page > 1">
+            <app-pagination
+              [items]="customFields"
+              (setPagination)="setPagination($event)">
+            </app-pagination>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Modal Template -->
+  <ng-template #modalField>
+    <div class="modal-header border-0 bg-light">
+      <h5 class="modal-title h4 mb-0">
+        {{ field.id ? "Editar" : "Crear" }} Campo Personalizado
+      </h5>
+      <button type="button" class="btn-close" (click)="modalRef?.hide()"></button>
+    </div>
+  
+    <div class="modal-body p-4">
+      <form #customFieldForm="ngForm" (ngSubmit)="onSubmit()" autocomplete="off">
+        <!-- Campo Principal -->
+        <div class="mb-4">
+          <div class="row g-3 mb-4">
+            <div class="col-md-8">
+              <label class="form-label">Nombre del campo</label>
+              <input type="text"
+                     class="form-control form-control-lg"
+                     [(ngModel)]="field.name"
+                     name="name"
+                     #name="ngModel"
+                     placeholder="Ej: Color, Talla, Material..."
+                     required/>
+              <div class="invalid-feedback" [class.d-block]="name.invalid && (name.dirty || name.touched)">
+                Este campo es requerido
+              </div>
+            </div>
+  
+            <div class="col-md-4">
+              <div class="form-switch h-100 bg-light p-3 rounded-3 d-flex align-items-center justify-content-between">
+                <label class="form-check-label">Campo requerido</label>
+                <input class="form-check-input m-0"
+                       type="checkbox"
+                       role="switch"
+                       [(ngModel)]="field.is_required"
+                       name="is_required"/>
+              </div>
+            </div>
+          </div>
+  
+          <div class="mb-4">
+            <label class="form-label">Tipo de campo</label>
+            <select class="form-select form-select-lg"
+                    [(ngModel)]="field.field_type"
+                    name="field_type"
+                    #fieldType="ngModel"
+                    required>
+              <option value="select">Lista desplegable</option>
+              <option value="text">Texto</option>
+              <option value="number">Número</option>
+            </select>
+            <div class="invalid-feedback" [class.d-block]="fieldType.invalid && (fieldType.dirty || fieldType.touched)">
+              Este campo es requerido
+            </div>
+          </div>
+        </div>
+  
+        <!-- Valores Section -->
+        <div class="mb-4" *ngIf="field.field_type === 'select'">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <label class="form-label mb-0">Valores disponibles</label>
+            <small class="text-muted">Agrega las opciones para este campo</small>
+          </div>
+  
+          <div class="input-group mb-3">
+            <input type="text"
+                   class="form-control"
+                   [(ngModel)]="newValue"
+                   name="newValue"
+                   (keyup.enter)="addValue(newValue)"
+                   placeholder="Agregar nuevo valor..."/>
+            <button class="btn btn-outline-primary"
+                    type="button"
+                    [disabled]="!newValue?.trim()"
+                    (click)="addValue(newValue)">
+              <i class="fa fa-plus me-2"></i>Agregar
+            </button>
+          </div>
+  
+          <div class="d-flex flex-wrap gap-2">
+            <span *ngFor="let value of field.values"
+                  class="badge bg-light text-dark d-flex align-items-center p-2">
+              {{ value.value }}
+              <button class="btn btn-link btn-sm text-danger p-0 ms-2"
+                      (click)="removeValue(value.id || value.temp_id)">
+                <i class="fa fa-times"></i>
+              </button>
+            </span>
+          </div>
+  
+          <div *ngIf="field.field_type === 'select' && field.values.length === 0"
+               class="alert alert-warning mt-3">
+            <i class="fa fa-exclamation-triangle me-2"></i>
+            Debes agregar al menos un valor para este tipo de campo
+          </div>
+        </div>
+  
+        <!-- Submit Button -->
+        <div class="d-grid gap-2">
+          <button type="submit"
+                  class="btn btn-primary btn-lg"
+                  [disabled]="customFieldForm.invalid || loading || (field.field_type === 'select' && field.values.length === 0)">
+            <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            <span class="ms-2">{{ loading ? "Guardando..." : "Guardar cambios" }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </ng-template>
+  
