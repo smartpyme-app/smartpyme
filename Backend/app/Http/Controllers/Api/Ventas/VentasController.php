@@ -31,8 +31,10 @@ use App\Exports\VentasDetallesExport;
 use App\Models\ComboProducto;
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
+use App\Models\Inventario\CustomFields\ProductCustomField;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class VentasController extends Controller
 {
@@ -154,27 +156,27 @@ class VentasController extends Controller
         $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
 
         // Ajustar stocks
-        foreach ($venta->detalles as $detalle){
+        foreach ($venta->detalles as $detalle) {
             $producto = Producto::where('id', $detalle->id_producto)
                 ->with('composiciones')->firstOrFail();
 
             $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
             // Anular venta y regresar stock
-            if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+            if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
 
-                if($inventario){
+                if ($inventario) {
                     $inventario->stock += $detalle->cantidad;
                     $inventario->save();
                     $inventario->kardex($venta, $detalle->cantidad * -1);
                 }
 
                 // Inventario compuestos
-                foreach($producto->composiciones as $comp){
+                foreach ($producto->composiciones as $comp) {
 
                     $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->id_bodega)->first();
 
-                    if($inventario){
+                    if ($inventario) {
                         $inventario->stock += $detalle->cantidad * $comp->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
@@ -201,7 +203,7 @@ class VentasController extends Controller
 
                     $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->id_bodega)->first();
 
-                    if($inventario){
+                    if ($inventario) {
                         $inventario->stock -= $detalle->cantidad * $comp->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
@@ -251,7 +253,8 @@ class VentasController extends Controller
         return Response()->json($ventas, 200);
     }
 
-    public function facturacion(Request $request){
+    public function facturacion(Request $request)
+    {
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
@@ -282,7 +285,7 @@ class VentasController extends Controller
 
         DB::beginTransaction();
         // Log::info($request->all());
-      //  dd($request->all());
+         //dd($request->all());
 
         try {
             // Guardamos la venta
@@ -298,7 +301,7 @@ class VentasController extends Controller
             $venta->save();
 
             // Guardamos los detalles
-            foreach ($request->detalles as $det){
+            foreach ($request->detalles as $det) {
                 if (isset($det['id']))
                     $detalle = Detalle::findOrFail($det['id']);
                 else
@@ -333,9 +336,9 @@ class VentasController extends Controller
                 }
 
                 // Si es compuesto
-                if(isset($det['composiciones'])){
+                if (isset($det['composiciones'])) {
 
-                    foreach($det['composiciones'] as $item){
+                    foreach ($det['composiciones'] as $item) {
                         $cd = new DetalleCompuesto;
                         $cd->id_producto = $item['id_compuesto'];
                         $cd->cantidad   = $item['cantidad'];
@@ -345,7 +348,7 @@ class VentasController extends Controller
                 }
 
                 // Actualizar inventario
-                if ($request->cotizacion == 0){
+                if ($request->cotizacion == 0) {
 
                     // $producto = Producto::where('id', $det['id_producto'])
                     // ->with('composiciones')->firstOrFail();
@@ -367,19 +370,19 @@ class VentasController extends Controller
 
                         $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $venta->id_bodega)->first();
 
-                            if($inventario){
-                                $inventario->stock -= $det['cantidad'];
-                                $inventario->save();
-                                $inventario->kardex($venta, $det['cantidad'], $det['precio']);
-                            }                            
+                        if ($inventario) {
+                            $inventario->stock -= $det['cantidad'];
+                            $inventario->save();
+                            $inventario->kardex($venta, $det['cantidad'], $det['precio']);
+                        }
                         // Inventario compuestos
-                        if (isset($det['composiciones'])){
+                        if (isset($det['composiciones'])) {
                             foreach ($det['composiciones'] as $comp) {
 
                                 $inventarioCompuesto = Inventario::where('id_producto', $comp['id_producto'])
                                     ->where('id_bodega', $venta->id_bodega)->first();
 
-                                if ($inventarioCompuesto){
+                                if ($inventarioCompuesto) {
                                     $inventarioCompuesto->stock -= $det['cantidad'] * $comp['cantidad'];
                                     $inventarioCompuesto->save();
                                     $inventarioCompuesto->kardex($venta, ($det['cantidad'] * $comp['cantidad']));
@@ -481,9 +484,24 @@ class VentasController extends Controller
                     $detalle = new CotizacionVentaDetalle();
                 $det['id_cotizacion_venta'] = $cotizacion->id;
                 $det['subtotal'] = $det['precio'] * $det['cantidad'];
-              //  $det['remember_token'] = null;
+                //  $det['remember_token'] = null;
                 $detalle->fill($det);
                 $detalle->save();
+
+                if ($det["custom_fields"]) {
+                    foreach ($det["custom_fields"] as $customField) {
+                        Log::info($customField);
+                        if (isset($customField["value"]) && isset($customField["id"])) {
+                            Log::info("customField");
+                            ProductCustomField::create([
+                                "custom_field_id" => $customField["id"],
+                                "custom_field_value_id" => $customField["id_value"],
+                                "cotizacion_venta_detalle_id" => $detalle->id,
+                                "value" => $customField["value"]
+                            ]);
+                        }
+                    }
+                }
             }
 
             if ($request->id_proyecto) {

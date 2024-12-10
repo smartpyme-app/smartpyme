@@ -40,6 +40,12 @@ export class FacturacionComponent implements OnInit {
   public api: boolean = false;
   public opAvanzadas = false;
   public opAvanzadasFacturacion = false;
+  public customFields: any = [];
+  public selectedCustomFields: number[] = [];
+  public activeCustomFields: any = [];
+  public filtros:any = {
+    bandera: true,
+};
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -76,6 +82,14 @@ export class FacturacionComponent implements OnInit {
     }, error => {
       this.alertService.error(error);
     });
+    //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+    if(this.route.snapshot.queryParamMap.get('cotizacion')){
+      this.apiService.getAll('custom-fields',this.filtros).subscribe(customFields => {
+        this.customFields = customFields;
+      }, error => {
+        this.alertService.error(error);
+      });
+    }
 
     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
       this.bodegas = bodegas;
@@ -609,5 +623,10 @@ export class FacturacionComponent implements OnInit {
   }
   toggleDivFacturacion(): void {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
+  }
+
+  updateCustomFields() {
+    this.activeCustomFields = this.customFields.data
+      .filter((f: any) => this.selectedCustomFields.includes(f.id));
   }
 }

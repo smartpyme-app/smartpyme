@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Inventario\CustomFields\ProductCustomField;
 use App\Models\Inventario\Producto;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,5 +45,10 @@ class CotizacionVentaDetalle extends Model
     public function vendedor()
     {
         return $this->belongsTo(User::class, 'id_vendedor');
+    }
+
+    public function customFields()
+    {
+        return $this->hasMany(ProductCustomField::class, 'cotizacion_venta_detalle_id');
     }
 }

@@ -18,6 +18,13 @@
           <th *ngIf="usuario.empresa.vendedor_detalle_venta">Vendedor</th>
           <th>Producto</th>
           <th style="width: 150px;">Cantidad</th>
+          <th
+                *ngFor="let field of customFields.data"
+                style="min-width: 100px"
+                [hidden]="!selectedCustomFields.includes(field.id)"
+              >
+                {{ field.name }}
+          </th>
           <th style="width: 150px;">Precio</th>
           <th style="width: 150px;">Descuento</th>
           <th style="width: 100px;" class="text-right">Total</th>
@@ -91,6 +98,17 @@
               (keyup)="updateTotal(detalle)" class="form-control"
               [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }"
               name="cantidad">
+          </td>
+          <td
+                *ngFor="let field of customFields.data"
+                [hidden]="!selectedCustomFields.includes(field.id)"
+              >
+                <app-producto-specs
+                  [producto]="detalle"
+                  [field]="field"
+                  (onChange)="updateTotal(detalle)"
+                >
+                </app-producto-specs>
           </td>
           <td style="width: 150px;">
             <div class="input-group" *ngIf="detalle?.precios?.length < 2">
