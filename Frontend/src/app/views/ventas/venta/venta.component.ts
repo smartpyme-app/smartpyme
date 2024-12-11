@@ -21,6 +21,11 @@ export class VentaComponent implements OnInit {
     public type: string = '';
 
     modalRef!: BsModalRef;
+    public filtros:any = {
+        bandera: true,
+    };
+
+    public customFields:any = [];
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
@@ -44,6 +49,13 @@ export class VentaComponent implements OnInit {
         this.venta.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
         const endpoint = this.type === 'cotizacion' ? 'cotizacion/' : 'venta/';
+        if(this.type === 'cotizacion'){
+            this.apiService.getAll('custom-fields',this.filtros).subscribe(customFields => {
+                this.customFields = customFields;
+            }, error => {
+                this.alertService.error(error);
+            });
+        }
 
         //this.apiService.read('venta/', this.venta.id).subscribe(venta => {
         this.apiService.read(endpoint, this.venta.id).subscribe(venta => {

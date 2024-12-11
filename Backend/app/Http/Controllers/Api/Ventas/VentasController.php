@@ -491,14 +491,23 @@ class VentasController extends Controller
                 if ($det["custom_fields"]) {
                     foreach ($det["custom_fields"] as $customField) {
                         Log::info($customField);
-                        if (isset($customField["value"]) && isset($customField["id"])) {
+                        if (isset($customField["value"])) {
                             Log::info("customField");
-                            ProductCustomField::create([
-                                "custom_field_id" => $customField["id"],
-                                "custom_field_value_id" => $customField["id_value"],
-                                "cotizacion_venta_detalle_id" => $detalle->id,
-                                "value" => $customField["value"]
-                            ]);
+                            $customFieldId = isset($customField["custom_field"]) ? 
+                                $customField["custom_field"]["id"] : 
+                                $customField["custom_field_id"];
+                            $productCustomField = ProductCustomField::updateOrCreate(
+                                [
+                                    'custom_field_id' => $customFieldId,
+                                    'cotizacion_venta_detalle_id' => $detalle->id
+                                ],
+                                [
+                                    'custom_field_value_id' => isset($customField["id_value"]) ? 
+                                        $customField["id_value"] : 
+                                        $customField["custom_field_value_id"],
+                                    'value' => $customField["value"]
+                                ]
+                            );
                         }
                     }
                 }
