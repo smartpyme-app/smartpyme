@@ -90,17 +90,21 @@ class VentasController extends Controller
                         ->when($request->dte && $request->dte == 1, function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
-                    ->where('cotizacion', 0)
-                        ->when($request->buscador, function($query) use ($request){
-                        return $query->whereHas('cliente', function($q) use ($request){
-                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
-                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                        ->where('cotizacion', 0)
+                        ->when($request->buscador, function ($query) use ($request) {
+                            $buscador = '%' . $request->buscador . '%';
+                            return $query->where(function ($q) use ($buscador) {
+                                $q->whereHas('cliente', function ($qCliente) use ($buscador) {
+                                    $qCliente->where('nombre', 'like', $buscador)
+                                             ->orWhere('nombre_empresa', 'like', $buscador)
+                                             ->orWhere('ncr', 'like', $buscador)
+                                             ->orWhere('nit', 'like', $buscador);
+                                })
+                                ->orWhere('correlativo', 'like', $buscador)
+                                ->orWhere('estado', 'like', $buscador)
+                                ->orWhere('observaciones', 'like', $buscador)
+                                ->orWhere('forma_pago', 'like', $buscador);
+                            });
                         })
                     ->withSum('abonos', 'total')
                     ->orderBy($request->orden, $request->direccion)
