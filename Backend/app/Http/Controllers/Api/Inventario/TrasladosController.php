@@ -155,9 +155,9 @@ class TrasladosController extends Controller
         $origen = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $traslado->id_sucursal_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $traslado->id_sucursal)->first();
 
-        if ($origen->stock < $traslado->cantidad) {
-            return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
-        }
+        // if ($origen->stock < $traslado->cantidad) {
+        //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+        // }
 
         
         if ($origen && $destino) {
@@ -181,9 +181,9 @@ class TrasladosController extends Controller
             $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_sucursal', $traslado->id_sucursal_de)->first();
             $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_sucursal', $traslado->id_sucursal)->first();
 
-            if ($origen->stock < $traslado->cantidad) {
-                return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
-            }
+            // if ($origen->stock < $traslado->cantidad) {
+            //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+            // }
 
             
             if ($origen && $destino) {
