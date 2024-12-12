@@ -45,7 +45,7 @@ class GenerarDocumentosController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
-        if ($documento->nombre == 'Ticket') {
+        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
@@ -324,6 +324,7 @@ class GenerarDocumentosController extends Controller
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
 
+        return "No hay un formato para este tipo de documento de venta.";
 
     }
 
@@ -332,6 +333,5 @@ class GenerarDocumentosController extends Controller
         return view('reportes.anulacion');
 
     }
-
 
 }
