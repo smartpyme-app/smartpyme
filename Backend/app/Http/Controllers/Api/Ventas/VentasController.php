@@ -243,10 +243,19 @@ class VentasController extends Controller
 
     public function facturacion(Request $request){
 
+        // $existe = Venta::where('correlativo', $request->correlativo)
+        //                 ->where('id_sucursal', $request->id_sucursal)
+        //                 ->where('id_documento', $request->id_documento)->exists();
+
+        // if($existe){
+        //     return  Response()->json(['error' => 'Atención: El correlativo ingresado ya está asociado a una venta previa en la sucursal seleccionada. Por favor, ingresa un correlativo no registrado.', 'code' => 400], 400);
+        // }
+
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
             'correlativo'       => 'required|numeric',
+            // 'correlativo'       => 'required|numeric|unique:ventas,correlativo,'.$request->id.',id,id_sucursal,'.$request->id_sucursal.',id_documento,'.$request->id_documento,
             'id_documento'      => 'required|max:255',
             'id_canal'          => 'required|max:255',
             'id_cliente'        => 'required_if:estado,"Pendiente"',
