@@ -18,6 +18,7 @@ export class VentaComponent implements OnInit {
     public usuario:any = {};
     public loading = false;
     public saving = false;
+    public type: string = '';
 
     modalRef!: BsModalRef;
 
@@ -25,6 +26,9 @@ export class VentaComponent implements OnInit {
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        this.route.data.subscribe(data => {
+            this.type = data['type']; // 'venta' o 'cotizacion'
+          });
     }
 
     ngOnInit() {
@@ -39,9 +43,13 @@ export class VentaComponent implements OnInit {
         
         this.venta.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
+        const endpoint = this.type === 'cotizacion' ? 'cotizacion/' : 'venta/';
 
-        this.apiService.read('venta/', this.venta.id).subscribe(venta => {
+        //this.apiService.read('venta/', this.venta.id).subscribe(venta => {
+        this.apiService.read(endpoint, this.venta.id).subscribe(venta => {
         this.venta = venta;
+        const isCotizacion = this.type === 'cotizacion' ? true : false;
+        this.venta.cotizacion = isCotizacion ? 1 : 0;
 
         if(this.venta.id_proyecto){
             this.apiService.read('proyecto/',this.venta.id_proyecto).subscribe(proyecto => {

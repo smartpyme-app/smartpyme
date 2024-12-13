@@ -73,7 +73,7 @@
                             <th width="100" class="text-center">Total</th>
                             
                             <th width="100" class="text-center">Cantidad</th>
-                            <th width="100" class="text-center">Total</th>
+                            <th width="100" class="text-end">Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -105,7 +105,7 @@
                             <td class="text-center">{{ movimiento.salida_valor > 0 ? (movimiento.salida_valor | currency ): ''  }}</td>
 
                             <td class="text-center">{{ movimiento.total_cantidad > 0 ? (movimiento.total_cantidad | number:'1.0') : '' }}</td>
-                            <td class="text-center">{{ movimiento.total_valor > 0 ? (movimiento.total_valor | currency ): ''  }}</td>
+                            <td class="text-end">{{ movimiento.total_valor > 0 ? (movimiento.total_valor | currency ): ''  }}</td>
                         </tr>
 
                     </tbody>

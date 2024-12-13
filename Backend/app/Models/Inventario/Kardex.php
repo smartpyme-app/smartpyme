@@ -48,17 +48,17 @@ class Kardex extends Model {
             $detalle = \App\Models\Ventas\Venta::find($this->referencia);
             $info = $detalle->nombre_documento . ' #' . $detalle->correlativo;
         }
-        if ($this->detalle == 'Devolución Venta' || $this->detalle == 'Devolución Venta Anulada') {
+        if (str_contains($this->detalle, 'Devolución Venta')) {
             $detalle = \App\Models\Ventas\Devoluciones\Devolucion::find($this->referencia);
-            $info = 'Devolución # ' . $detalle->id;
+            $info = ($detalle->nombre_documento ? $detalle->nombre_documento : 'Devolución') . ' #' . $detalle->id;
         }
         if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             $detalle = \App\Models\Compras\Compra::find($this->referencia);
             $info = $detalle->tipo_documento . ' #' . $detalle->referencia;
         }
-        if ($this->detalle == 'Devolución Compra' || $this->detalle == 'Devolución Compra Anulada') {
+        if (str_contains($this->detalle, 'Devolución Compra')) {
             $detalle = \App\Models\Compras\Devoluciones\Devolucion::find($this->referencia);
-            $info = 'Devolución # ' . $detalle->id;
+            $info = ($detalle->tipo_documento ? $detalle->tipo_documento : 'Devolución') . ' #' . $detalle->id;
         }
         if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
             $detalle = \App\Models\Inventario\Traslado::find($this->referencia);

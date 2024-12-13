@@ -4,6 +4,7 @@ namespace App\Exports\Contabilidad;
 
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -64,8 +65,12 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
                             ->whereBetween('fecha', [$request->inicio, $request->fin])
                             ->get();
 
-        // Unir y ordenar ambas colecciones por fecha
-        $libroCompras = $compras->merge($gastos)->sortBy('fecha');
+        $devoluciones = DevolucionCompra::with(['proveedor'])
+            ->where('enable', true)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $libroCompras = $compras->merge($gastos)->merge($devoluciones)->sortBy('fecha');
 
         return $libroCompras;
         
@@ -81,13 +86,13 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
             $compra->referencia,
             $proveedor->nit ?? $proveedor->ncr,
             $compra->nombre_proveedor,
-            $compra->exenta,
+            $compra->id_compra ? $compra->exenta * -1 : $compra->exenta,
             0,
-            $compra->sub_total,
+            $compra->id_compra ? $compra->sub_total * -1 : $compra->sub_total,
             0,
-            $compra->iva,
-            $compra->iva_percibido,
-            $compra->total,
+            $compra->id_compra ? $compra->iva * -1 : $compra->iva,
+            $compra->id_compra ? $compra->iva_percibido * -1 : $compra->iva_percibido,
+            $compra->id_compra ? $compra->total * -1 : $compra->total,
             0,
         ];
 

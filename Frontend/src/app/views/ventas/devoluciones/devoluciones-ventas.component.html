@@ -82,13 +82,13 @@
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
                             <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{venta.id}}">
-                                {{venta.nombre_documento}} #{{venta.correlativo}}
+                                {{ (venta.nombre_documento || 'Devolución') + (venta.correlativo ? ' #' + venta.correlativo : '') }}
                             </a>
                         </td>
                         <td>{{venta.observaciones}}</td>
                         <td>
                             <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
-                                {{ venta.enable ? 'Confirmada' : 'Anulada' }}
+                                {{ venta.enable == '1' ? 'Confirmada' : 'Anulada' }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
                                     ✅                       
                                 </span>
@@ -101,19 +101,19 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.enable && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
+                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.enable == '1' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
-                                    <a *ngIf="venta.enable && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.enable == '1' && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular devolución
                                     </a>
                                     <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.enable == '0' && apiService.canEdit()" (click)="setEstado(venta, '1')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
                                     <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">

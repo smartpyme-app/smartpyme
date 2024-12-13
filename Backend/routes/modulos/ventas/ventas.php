@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Api\Ventas\EntradasController;
 use App\Http\Controllers\Api\WompiController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/ventas',               [VentasController::class, 'index']);
     Route::get('/venta/{id}',           [VentasController::class, 'read']);

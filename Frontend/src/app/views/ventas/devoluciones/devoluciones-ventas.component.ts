@@ -4,6 +4,8 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-devoluciones-ventas',
   templateUrl: './devoluciones-ventas.component.html'
@@ -66,9 +68,25 @@ export class DevolucionesVentasComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public setEstado(venta:any, estado:string){
-        this.venta = venta;
-        this.venta.estado = estado;
+    public setEstado(venta:any, enable:string){
+
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¡No podrás revertir esto!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, anularlo',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.venta = venta;
+            this.venta.enable = enable;
+            this.onSubmit();
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+          }
+        });
+
     }
 
     public onSubmit(){
@@ -242,10 +260,7 @@ export class DevolucionesVentasComponent implements OnInit {
             }
         }
         else{
-            if (confirm('¿Confirma anular la devolución?')){
-                this.venta.enable = false;
-                this.onSubmit();
-            }
+            this.setEstado(venta, '0');
         }
     }
 

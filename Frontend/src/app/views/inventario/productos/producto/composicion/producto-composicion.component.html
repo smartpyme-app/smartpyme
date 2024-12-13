@@ -53,7 +53,7 @@
 <ng-template #mComposicion>
     <div class="modal-header">
         <h3 class="modal-title text-center">Agregar producto</h3>
-        <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>

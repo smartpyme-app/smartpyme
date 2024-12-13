@@ -136,7 +136,7 @@
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
-                                    <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
+                                    <a *ngIf="apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE en contingencia
                                     </a>
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">

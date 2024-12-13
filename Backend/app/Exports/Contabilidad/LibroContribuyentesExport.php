@@ -3,6 +3,7 @@
 namespace App\Exports\Contabilidad;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -57,7 +58,17 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
                         ->get();
-        return $ventas;
+
+        $devoluciones = DevolucionVenta::with(['cliente'])
+            ->where('enable', true)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $libroVentas = $ventas->merge($ventas)->merge($devoluciones)->sortBy(function ($item) {
+                return [$item['fecha'], $item['correlativo']];
+            });
+
+        return $libroVentas;
         
     }
 
@@ -73,15 +84,15 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 $venta->correlativo ?? 'N/A',
                 $venta->nombre_cliente ?? 'N/A',
                 $cliente->nit ?? $cliente->ncr ?? 'N/A',
-                $venta->exenta ?? 0,
-                $venta->no_sujeta ?? 0,
-                $venta->sub_total ?? 0,
-                $venta->iva ?? 0,
+                $venta->id_venta ? $venta->exenta * -1 : $venta->exenta,
+                $venta->id_venta ? $venta->no_sujeta * -1 : $venta->no_sujeta,
+                $venta->id_venta ? $venta->sub_total * -1 : $venta->sub_total,
+                $venta->id_venta ? $venta->iva * -1 : $venta->iva,
                 0,
-                $venta->cuenta_a_terceros ?? 0,
+                $venta->id_venta ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
                 0,
-                $venta->iva_percibido ?? 0,
-                $venta->total ?? 0,
+                $venta->id_venta ? $venta->iva_percibido * -1 : $venta->iva_percibido,
+                $venta->id_venta ? $venta->total * -1 : $venta->total,
             ];
 
     }

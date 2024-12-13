@@ -5,6 +5,8 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-devolucion-venta-detalles',
   templateUrl: './devolucion-venta-detalles.component.html'
@@ -69,15 +71,27 @@ export class DevolucionVentaDetallesComponent implements OnInit {
 
     // Eliminar detalle
         public delete(detalle:any){
-            if (confirm('Confirma eliminar el detalle')) { 
 
-                for (var i = 0; i < this.devolucion.detalles.length; ++i) {
-                    if (this.devolucion.detalles[i].producto_id === detalle.producto_id ){
-                        this.devolucion.detalles.splice(i, 1);
+            Swal.fire({
+              title: '¿Estás seguro?',
+              text: '¡No podrás revertir esto!',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, eliminarlo',
+              cancelButtonText: 'Cancelar'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                let indexAEliminar:any;
+                
+                    indexAEliminar = this.devolucion.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
+                    if (indexAEliminar !== -1) {
+                        this.devolucion.detalles.splice(indexAEliminar, 1);
                         this.update.emit(this.devolucion);
                     }
-                }
-            }
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+              }
+            });
 
         }
 
