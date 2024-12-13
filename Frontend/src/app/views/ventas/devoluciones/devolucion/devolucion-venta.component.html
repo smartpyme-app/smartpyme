@@ -56,7 +56,13 @@
                     </td>
                     <tr *ngFor="let detalle of devolucion.detalles; let i=index">
                         <td class="text-center"> {{ i + 1 }} </td>
-                        <td> {{ detalle.nombre_producto }} </td>
+                        <div class="ms-3">
+                            {{ detalle.nombre_producto }} <br>
+                            <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
+                            <ul style="font-size: 14px;">
+                                <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
+                            </ul>
+                        </div>
                         <td class="text-end">{{ detalle.cantidad }}</td>
                         <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
