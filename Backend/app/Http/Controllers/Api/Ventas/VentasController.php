@@ -140,83 +140,88 @@ class VentasController extends Controller
         return Response()->json($venta, 200);
     }
 
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
             'id_usuario'        => 'required',
         ]);
 
-        $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
+        try {
+            //code...
+            DB::beginTransaction();
 
-        // Ajustar stocks
-        foreach ($venta->detalles as $detalle){
-            $producto = Producto::where('id', $detalle->id_producto)
-                ->with('composiciones')->firstOrFail();
-
-            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
-
-            // Anular venta y regresar stock
-            if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
-
-                if($inventario){
-                    $inventario->stock += $detalle->cantidad;
-                    $inventario->save();
-                    $inventario->kardex($venta, $detalle->cantidad * -1);
-                }
-
-                // Inventario compuestos
-                foreach($producto->composiciones as $comp){
-
-                    $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->id_bodega)->first();
-
+            $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
+    
+            // Ajustar stocks
+            foreach($venta->detalles as $detalle){
+                $producto = Producto::where('id', $detalle->id_producto)->with('composiciones')->firstOrFail();
+    
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
+                // Anular venta y regresar stock
+                if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+                    
                     if($inventario){
-                        $inventario->stock += $detalle->cantidad * $comp->cantidad;
+                        $inventario->stock += $detalle->cantidad;
                         $inventario->save();
-                        $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                        $inventario->kardex($venta, $detalle->cantidad * -1);
+                    }
+                    // Inventario compuestos
+                    foreach($producto->composiciones as $comp){
+                        $inventarioCompuesto = Inventario::where('id_producto', $comp->id_producto)->where('id_bodega', $venta->id_bodega)->first();
+                        if($inventarioCompuesto){
+                            $inventarioCompuesto->stock += $detalle->cantidad * $comp->cantidad;
+                            $inventarioCompuesto->save();
+                            $inventarioCompuesto->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                        }
+                    }
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Cancelado';
+                        $abono->save();
                     }
                 }
-
-                // Abonos
-                foreach ($venta->abonos as $abono) {
-                    $abono->estado = 'Cancelado';
-                    $abono->save();
-                }
-            }
-            // Cancelar anulación de venta y descargar stock
-            if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
-                // Aplicar stock
-                if ($inventario) {
-                    $inventario->stock -= $detalle->cantidad;
-                    $inventario->save();
-                    $inventario->kardex($venta, $detalle->cantidad);
-                }
-
-                // Inventario compuestos
-                foreach ($producto->composiciones as $comp) {
-
-                    $inventario = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $venta->id_bodega)->first();
-
-                    if($inventario){
-                        $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                // Cancelar anulación de venta y descargar stock
+                if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
+                    // Aplicar stock
+                    if ($inventario){
+                        $inventario->stock -= $detalle->cantidad;
                         $inventario->save();
-                        $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                        $inventario->kardex($venta, $detalle->cantidad);
+                    }
+    
+                    // Inventario compuestos
+                    foreach ($producto->composiciones as $comp) {
+    
+                        $inventarioCompuesto = Inventario::where('id_producto', $comp->id_producto)->where('id_bodega', $venta->id_bodega)->first();
+    
+                        if($inventarioCompuesto){
+                            $inventarioCompuesto->stock -= $detalle->cantidad * $comp->cantidad;
+                            $inventarioCompuesto->save();
+                            $inventarioCompuesto->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                        }
+                    }
+    
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Confirmado';
+                        $abono->save();
                     }
                 }
-
-                // Abonos
-                foreach ($venta->abonos as $abono) {
-                    $abono->estado = 'Confirmado';
-                    $abono->save();
-                }
             }
+    
+            $venta->fill($request->all());
+            $venta->save();
+
+            DB::commit();
+    
+            return Response()->json($venta, 200);
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            DB::rollback();
+            return Response()->json(['error' => $th->getMessage()], 400);
         }
-
-        $venta->fill($request->all());
-        $venta->save();
-
-        return Response()->json($venta, 200);
     }
 
     public function delete($id)

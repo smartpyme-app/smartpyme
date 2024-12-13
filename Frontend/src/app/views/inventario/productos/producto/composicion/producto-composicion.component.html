@@ -14,8 +14,8 @@
                     <th>Producto</th>
                     <th>Categoria</th>
                     <th class="text-end">Precio</th>
+                    <th class="text-end">Costo</th>
                     <th class="text-end">Cantidad</th>
-                    <th class="text-end">Opciones</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>
@@ -35,8 +35,8 @@
                     <td>{{ composicion?.nombre_producto }}</td>
                     <td>{{ composicion?.nombre_categoria }}</td>
                     <td class="text-end">{{ composicion.precio | currency }}</td>
+                    <td class="text-end">{{ composicion.costo | currency }}</td>
                     <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
-                    <td class="text-end">{{ composicion?.opciones?.length }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a (click)="delete(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
