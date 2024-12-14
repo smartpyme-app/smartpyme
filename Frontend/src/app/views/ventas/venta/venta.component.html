@@ -74,6 +74,11 @@
                         <th *ngIf="usuario.empresa.vendedor_detalle_venta">Vendedor</th>
                         <th>Detalle</th>
                         <th width="100">Cantidad</th>
+                        <th *ngFor="let field of customFields?.data" 
+                            width="100"
+                            [hidden]="!hasCustomField(field.id)">
+                            {{field.name}}
+                        </th>     
                         <th width="100">Precio</th>
                         <th width="100">Descuento</th>
                         <th width="100" class="text-end">Total</th>
@@ -103,6 +108,10 @@
                             </div>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
+                        <td *ngFor="let field of customFields?.data"
+                            [hidden]="!hasCustomField(field.id)">
+                            {{ getCustomFieldValue(detalle, field.id) }}
+                        </td>
                         <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
