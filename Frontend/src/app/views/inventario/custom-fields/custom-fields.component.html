@@ -238,20 +238,12 @@
             </div>
           </div>
 
-          <div class="col-md-4">
-            <div
-              class="form-switch h-100 bg-light p-3 rounded-3 d-flex align-items-center justify-content-between"
-            >
-              <label class="form-check-label">Campo requerido</label>
-              <input
-                class="form-check-input m-0"
-                type="checkbox"
-                role="switch"
-                [(ngModel)]="field.is_required"
-                name="is_required"
-              />
-            </div>
-          </div>
+          <input
+            type="hidden"
+            [(ngModel)]="field.is_required"
+            name="is_required"
+            [value]="true"
+          />
         </div>
 
         <div class="mb-4">
