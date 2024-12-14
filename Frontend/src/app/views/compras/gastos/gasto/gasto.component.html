@@ -9,15 +9,29 @@
             <div class="form-group col-md-8 col-lg-8 mb-3">
               <h6 class="mt-3">Generales del gasto</h6>
             </div>
-            <div class="form-group col-md-4 col-lg-4 mb-3">
-              <div class="form-switch border rounded">
-                <label>Opciones Avanzadas</label>
-                <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"
-                       [(ngModel)]="opAvanzadas" name="opciones_ava_detalles">
-              </div>
-            </div>
+            
           </div>
         <div class="row">
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="">Fecha:</label>
+                <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="id_usuario">Usuario:</label>
+                <select name="id_usuario" [(ngModel)]="gasto.id_usuario" class="form-select">
+                    <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                        {{ usuario.name }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="id_sucursal">Sucursal:</label>
+                <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" class="form-select">
+                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="id_proveedor" class="w-100">Proveedor:</label>
                 <div class="input-group flex-nowrap">
@@ -52,42 +66,17 @@
                 <label for="referencia">Referencia:</label>
                 <input type="text" class="form-control" name="referencia" [(ngModel)]="gasto.referencia" placeholder="Escriba aquí" />
             </div>
-            <div class="bg-white rounded p-3" *ngIf="opAvanzadas">
-                <div class="row">
-                    <div class="form-group col-md-4 col-lg-3">
-                        <label for="">Fecha:</label>
-                        <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha"/>
-                    </div>
-                    <div class="form-group col-md-4 col-lg-3">
-                        <label for="id_usuario">Usuario:</label>
-                        <select name="id_usuario" [(ngModel)]="gasto.id_usuario" class="form-select">
-                            <option [value]="usuario.id" *ngFor="let usuario of usuarios">
-                                {{ usuario.name }}
-                            </option>
-                        </select>
-                    </div>
-                    <div class="form-group col-md-4 col-lg-3">
-                        <label for="id_sucursal">Sucursal:</label>
-                        <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" class="form-select">
-                            <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
-                                {{ sucursal.nombre }}
-                            </option>
-                        </select>
-                    </div>
-                    <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
-                        <label for="">Proyecto</label>
-                        <div class="input-group flex-nowrap">
-                            <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="gasto.id_proyecto" class="form-select p-0">
-                                <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                                    {{ proyecto.nombre }}
-                                </ng-option>
-                            </ng-select>
-                            <app-crear-proyecto [id_proyecto]="gasto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
-                        </div>
-                    </div>
-                    
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
+                <label for="">Proyecto</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="gasto.id_proyecto" class="form-select p-0">
+                        <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                            {{ proyecto.nombre }}
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-proyecto [id_proyecto]="gasto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
                 </div>
-             </div>
+            </div>
         </div>
     </div>
 
@@ -106,7 +95,7 @@
             </div>
             <div class="form-group col-md-3 col-lg-2">
                 <label for="">Sub total:</label>
-                <input type='number' class="form-control" name="sub_total" (change)="setTotal()" [(ngModel)]="gasto.sub_total"/>
+                <input type='number' class="form-control" name="sub_total" (change)="gasto.total = gasto.sub_total"  [(ngModel)]="gasto.sub_total"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
                 <label for="">IVA:</label>
@@ -115,9 +104,14 @@
             
             <div class="form-group col-md-3 col-lg-2">
                 <label for="" class="fw-medium">Total:</label>
-                <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
+                <input type='number' class="form-control" name="total" disabled [(ngModel)]="gasto.total"/>
             </div>
-            
+            <div class="form-group col-md-4 col-lg-3 without-label">
+                <div class="form-switch border rounded">
+                  <label for="credito">Pendiente</label>
+                  <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="gasto.credito" name="credito"> -->
+                </div>
+            </div>
             <!-- <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi'">
                 <label for="detalle_banco">Bancos:</label>
                 <select name="detalle_banco" [(ngModel)]="gasto.detalle_banco" class="form-select">
@@ -125,64 +119,65 @@
                     <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
                 </select>
             </div> -->
-            <div class="form-group col-md-4 col-lg-3 without-label ">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="impuesto">IVA (13%)</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.impuesto" name="impuesto">
-                </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-3 without-label">
-                <div class="form-switch border rounded">
-                  <label for="credito">Pendiente</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="gasto.credito" name="credito">
-                </div>
-            </div>
             <div class="form-group col-md-3 col-lg-2">
                 <label for="fecha_pago">Fecha de pago:</label><br>
                 <input [disabled]="!gasto.credito" type="date" class="form-control" [(ngModel)]="gasto.fecha_pago" name="fecha_pago" id="fecha_pago">
             </div>
-            <div class="form-group col-md-3 col-lg-2 without-label ">
+
+            <div class="form-group col-md-4 col-lg-4 mt-4">
+                <div class="form-switch border rounded">
+                  <label>Opciones Avanzadas</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"
+                         [(ngModel)]="opAvanzadas" name="opciones_ava_detalles">
+                </div>
+              </div>
+
+            <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="opAvanzadas">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="impuesto">IVA (13%)</label>
+                  <input class="form-check-input float-end" (change)="setImpuesto('iva')" type="checkbox" role="switch" [(ngModel)]="gasto.impuesto" name="impuesto">
+                </div>
+            </div>
+            
+            <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="opAvanzadas">
                 <div class="form-switch bg-light-info rounded">
                   <label for="recurrente">Recurrente</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="gasto.recurrente" name="recurrente">
                 </div>
             </div>
-            <div class="form-group col-md-7 col-lg-5 without-label ">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="recurrente">Agregar impuestos adicionales</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (click)="otrosImpuestos = !otrosImpuestos">
+            <div class="row" *ngIf="opAvanzadas">
+                <div class="form-group col-md-4 col-lg-2" >
+                    <label for="">Percepción:</label>
+                    <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
                 </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="otrosImpuestos">
-                <label for="">Percepción:</label>
-                <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="otrosImpuestos">
-                <label for="">Renta:</label>
-                <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
-            </div>
-            <div class="form-group col-md-5 col-lg-3" *ngIf="otrosImpuestos">
-                <label for="">Otros impuestos:</label>
-                <input type='number' class="form-control" step="any" (change)="setTotal()" name="otros_impuestos" [(ngModel)]="gasto.otros_impuestos"/>
-            </div>
-            
-            <div class="form-group col-md-2 col-lg-2 without-label " *ngIf="otrosImpuestos">
-                <div class="form-switch bg-light-info rounded">
-                  <label for="impuesto">Renta (10%)</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.renta" name="renta">
+                <div class="form-group col-md-4 col-lg-2" >
+                    <label for="">Renta:</label>
+                    <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
                 </div>
-            </div>
-            <div class="form-group col-md-3 col-lg-3 without-label"*ngIf="otrosImpuestos" >
-                <div class="form-switch bg-light-info rounded">
-                  <label for="percepcion">Percepción (1%)</label>
-                  <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
+                <div class="form-group col-md-4 col-lg-2" >
+                    <label for="">Otros impuestos:</label>
+                    <input type='number' class="form-control" step="any" (change)="setImpuesto('otros')"  name="otros_impuestos" [(ngModel)]="gasto.otros_impuestos"/>
                 </div>
-            </div>
-            <div class="form-group col-md-12" *ngIf="otrosImpuestos">
-                <label for="">Observaciones:</label>
-                <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
+                
+                <div class="form-group col-md-3 col-lg-3 without-label " >
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="impuesto">Renta (10%)</label>
+                      <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setImpuesto('renta')"  [(ngModel)]="gasto.renta" name="renta">
+                    </div>
+                </div>
+                <div class="form-group col-md-3 col-lg-3 without-label" >
+                    <div class="form-switch bg-light-info rounded">
+                      <label for="percepcion">Percepción (1%)</label>
+                      <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setImpuesto('percepcion')" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
+                    </div>
+                </div>
+                <div class="form-group col-md-12" >
+                    <label for="">Observaciones:</label>
+                    <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
+                </div>
             </div>
         </div>
+
     </div>
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">

@@ -155,12 +155,12 @@ class DevolucionVentasController extends Controller
             'total_costo'       => 'required|numeric',
             'sub_total'         => 'required|numeric',
             'total'             => 'required|numeric',
-            'observaciones'     => 'required|max:255',
+            // 'observaciones'     => 'required|max:255',
             'id_venta'          => 'required|numeric',
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
-            'id_bodega'       => 'required|numeric',
+            // 'id_bodega'       => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
             'id_empresa'       => 'required|numeric',
         ],[
@@ -194,9 +194,9 @@ class DevolucionVentasController extends Controller
                 $detalle->save();
 
                 $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                    ->where('id_bodega', $request->id_bodega)->first();
+                                    ->where('id_bodega', $devolucion->id_bodega)->first();
 
-                if ($inventario) {
+                if($inventario){
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
                     $inventario->kardex($devolucion, $det['cantidad']);

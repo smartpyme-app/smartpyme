@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-productos',
@@ -23,14 +24,13 @@ export class ProductosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(public apiService: ApiService, private route: ActivatedRoute, private alertService: AlertService, private modalService: BsModalService){}
 
-    ngOnInit() {
-
+    ngOnInit() {        
         this.loadAll();
 
+        if(this.route.snapshot.routeConfig?.path == 'producto-combos') this.verCombos();
+        
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
@@ -39,6 +39,11 @@ export class ProductosComponent implements OnInit {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
         
+    }
+
+    verCombos(){
+        this.filtros.tipo = 'Compuesto';
+        this.filtrarProductos();
     }
 
     public loadAll() {
@@ -51,6 +56,7 @@ export class ProductosComponent implements OnInit {
         this.filtros.direccion = 'asc';
         this.filtros.sin_stock = '';
         this.filtros.paginate = 10;
+        this.filtros.tipo = '';
 
         this.filtrarProductos();
     }
@@ -61,17 +67,13 @@ export class ProductosComponent implements OnInit {
         if(!this.filtros.sin_stock){
             this.filtros.sin_stock = '';
         }
-
         if(!this.filtros.id_categoria){
             this.filtros.id_categoria = '';
         }
-
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            if(this.modalRef){ this.modalRef.hide(); }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

@@ -2,13 +2,15 @@ import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
-
+import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ChangeDetectionStrategy, ChangeDetectorRef  } from '@angular/core';
 
 @Component({
   selector: 'app-producto-informacion',
   templateUrl: './producto-informacion.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ProductoInformacionComponent implements OnInit {
@@ -32,6 +34,7 @@ export class ProductoInformacionComponent implements OnInit {
   constructor(
     private apiService: ApiService, private alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
+    private cdr: ChangeDetectorRef 
   ) {
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     this.addVariant();
@@ -70,6 +73,10 @@ export class ProductoInformacionComponent implements OnInit {
 
   }
 
+  public opAvanzadas: boolean = false;
+
+  toggleDiv(): void { this.opAvanzadas = !this.opAvanzadas; this.cdr.detectChanges(); }
+
   public setCompuesto() {
     if (this.producto.tipo == 'Producto') {
       this.producto.tipo = 'Compuesto';
@@ -93,9 +100,7 @@ export class ProductoInformacionComponent implements OnInit {
   }
 
   public onSubmit() {
-    this.guardar = true;
-    console.log(this.producto);
-    
+    this.guardar = true;    
     this.apiService.store('producto', this.producto).subscribe(producto => {
       this.guardar = false;
       if (!this.producto.id) {
