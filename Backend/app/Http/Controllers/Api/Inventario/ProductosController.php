@@ -67,6 +67,9 @@ class ProductosController extends Controller
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })
+            ->when($request->tipo, function ($q) use ($request) {
+                $q->where('tipo', $request->tipo);
+            })
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             // ->whereNotIn('id_categoria', [1,2])
             ->orderBy('enable', 'desc')

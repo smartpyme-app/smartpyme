@@ -34,10 +34,10 @@ const routes: Routes = [
     title: 'Inventario',
     children: [
       { path: 'productos', component: ProductosComponent, title: 'Productos' },
+      { path: 'producto-combos', component: ProductosComponent, title: 'Compuesto' },
       { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
       { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
       { path: 'producto/combo/crear', component: ProductoComboComponent, title: 'Producto combo' },
-
 
       { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
 

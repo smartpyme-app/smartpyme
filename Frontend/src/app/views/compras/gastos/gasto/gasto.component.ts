@@ -12,7 +12,7 @@ import * as moment from 'moment';
 })
 export class GastoComponent implements OnInit {
 
-    public gasto:any = {};
+    public gasto:any = {iva: 0, renta_retenida: 0, iva_percibido: 0, otros_impuestos: 0};
     public categorias:any = [];
     public proyectos:any = [];
     public proveedores:any = [];
@@ -83,7 +83,6 @@ export class GastoComponent implements OnInit {
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
-            this.gasto = {};
             this.gasto.forma_pago = 'Efectivo';
             this.gasto.estado = 'Confirmado';
             this.gasto.tipo_documento = 'Factura';
@@ -166,31 +165,47 @@ export class GastoComponent implements OnInit {
         }
     }
 
-    public setTotal(){
+    otros_impuestos: boolean = false;
+    otros_impuestos_val: number = 0;
 
-        if(this.gasto.impuesto){
-            this.gasto.total = (this.gasto.sub_total + (this.gasto.sub_total * (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
-            this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
-        }else{
-            this.gasto.iva = 0;
-            this.gasto.total = this.gasto.sub_total;
-        }
-        this.gasto.renta_retenida = this.gasto.renta ? this.gasto.sub_total * 0.10 : 0;
-        this.gasto.otros_impuestos = this.gasto.otros_impuestos ? this.gasto.otros_impuestos : 0;
-        this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
-        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.otros_impuestos) + parseFloat(this.gasto.iva_percibido) - parseFloat(this.gasto.renta_retenida)).toFixed(2);
-    }
+    setImpuesto(impuesto: string){
 
-    public setSubTotal(){
-        if(this.gasto.impuesto){
-            this.gasto.sub_total = (this.gasto.total / (1 + (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
-            this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
-        }else{
-            this.gasto.iva = 0;
-            this.gasto.sub_total = this.gasto.total;
+        switch (impuesto){
+            case 'iva':
+                if(this.gasto.iva == 0){
+                    this.gasto.iva = Number((this.gasto.sub_total * 0.13).toFixed(2));
+                    this.gasto.total += this.gasto.iva;
+                }else{ this.gasto.total -= this.gasto.iva; this.gasto.iva = 0;}
+                break;
+            case 'renta':
+                if(this.gasto.renta_retenida == 0){
+                    this.gasto.renta_retenida = Number((this.gasto.sub_total * 0.10).toFixed(2));
+                    this.gasto.total += this.gasto.renta_retenida;
+                }else{ this.gasto.total -= this.gasto.renta_retenida; this.gasto.renta_retenida = 0;}
+                break;
+            case 'percepcion':
+                if(this.gasto.iva_percibido == 0){
+                    this.gasto.iva_percibido = Number((this.gasto.sub_total * 0.01).toFixed(2));
+                    this.gasto.total += this.gasto.iva_percibido;
+                }else{ this.gasto.total -= this.gasto.iva_percibido; this.gasto.iva_percibido = 0;}
+                break;
+            case 'otros':
+                if(this.otros_impuestos == false){
+                    this.otros_impuestos_val = this.gasto.otros_impuestos;
+                    this.gasto.total += this.gasto.otros_impuestos;
+                    this.otros_impuestos = true;
+                }else{
+                    this.gasto.total -= this.otros_impuestos_val;
+                    this.gasto.total += this.gasto.otros_impuestos;
+                    this.otros_impuestos_val = this.gasto.otros_impuestos;
+                }     
+                
+                break;
+        
+            default:
+                break;
         }
-        this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
-        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido)).toFixed(2);
+ 
     }
 
     public selectTipoDocumento(){
