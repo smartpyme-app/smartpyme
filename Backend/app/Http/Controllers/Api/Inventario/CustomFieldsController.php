@@ -139,10 +139,17 @@ class CustomFieldsController extends Controller
             ], 500);
         }
     }
-    //usage
+
     public function usage($id)
     {
         $customField = CustomField::with('values.productCustomFields', 'productCustomFields')->findOrFail($id);
         return response()->json($customField);
+    }
+
+    public function destroy($id)
+    {
+        $customField = CustomField::findOrFail($id);
+        $customField->delete();
+        return response()->json(['message' => 'Campo personalizado eliminado exitosamente']);
     }
 }

@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
 
 interface CustomFieldValue {
     id?: number;
@@ -188,20 +189,32 @@ export class CustomFieldsComponent implements OnInit {
             return;
         }
 
-        if (!confirm('¿Está seguro de eliminar este campo?')) return;
-
-        this.loading = true;
+       Swal.fire({
+        title: '¿Está seguro de eliminar este campo?',
+        text: 'No se podrá recuperar una vez eliminado',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            this.loading = true;
         try {
             if (field.id) {
-                await this.apiService.delete('custom-fields', field.id).toPromise();
-                this.alertService.success('Éxito', 'Campo eliminado exitosamente');
-                this.loadAll();
+                 this.apiService.delete('custom-fields/',field.id).subscribe({
+                    next: () => {
+                        this.alertService.success('Éxito', 'Campo eliminado exitosamente');
+                        this.loadAll();
+                    },
+                    error: (error) => this.alertService.error(error)
+                });
             }
         } catch (error) {
             this.alertService.error( error);
         } finally {
             this.loading = false;
+            }
         }
+    });
     }
 
     onSubmit() {
@@ -210,14 +223,14 @@ export class CustomFieldsComponent implements OnInit {
             return;
         }
 
-        // Validaciones para campos en uso
+   
         if (this.field.in_use) {
             if (this.field.field_type !== this.originalField.field_type) {
                 this.alertService.error('No se puede cambiar el tipo de un campo que está en uso');
                 return;
             }
 
-            // Verificar que no se eliminen valores en uso
+        
             const hasDeletedUsedValues = this.originalField.values
                 .filter(v => v.in_use)
                 .some(v => !this.field.values.find(nv => nv.id === v.id));
