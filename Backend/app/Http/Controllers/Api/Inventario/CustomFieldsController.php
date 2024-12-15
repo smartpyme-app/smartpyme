@@ -15,7 +15,7 @@ class CustomFieldsController extends Controller
         $user = auth()->user();
         $empresa = $user->empresa;
         if ($request->bandera) {
-            $customFields = CustomField::with('values')->where('empresa_id', $empresa->id)->get();
+            $customFields = CustomField::with('values.productCustomFields', 'productCustomFields')->where('empresa_id', $empresa->id)->get();
 
             // Crear un nuevo array para almacenar los campos válidos
             $validCustomFields = [];
@@ -30,7 +30,7 @@ class CustomFieldsController extends Controller
 
             return response()->json(['data' => $customFields]);
         } else {
-            $customFields = CustomField::with('values')
+            $customFields = CustomField::with('values.productCustomFields', 'productCustomFields')
                 ->where('empresa_id', $empresa->id)
                 ->where('name', 'like', '%' . $request->buscador . '%')
                 ->paginate($request->paginate);
@@ -111,12 +111,22 @@ class CustomFieldsController extends Controller
             ]);
 
             if ($request->field_type === 'select') {
-                // Crear nuevos valores manteniendo los existentes
+                $requestValueIds = collect($request->values)->pluck('id')->filter()->all();
+
+        
+                CustomFieldValue::where('custom_field_id', $customField->id)
+                    ->whereNotIn('id', $requestValueIds)
+                    ->delete();
                 foreach ($request->values as $value) {
-                    CustomFieldValue::firstOrCreate([
-                        'custom_field_id' => $customField->id,
-                        'value' => $value['value']
-                    ]);
+                    if (!empty($value['id'])) {
+                        CustomFieldValue::where('id', $value['id'])
+                            ->update(['value' => $value['value']]);
+                    } else {
+                        CustomFieldValue::create([
+                            'custom_field_id' => $customField->id,
+                            'value' => $value['value']
+                        ]);
+                    }
                 }
             }
 
@@ -128,5 +138,11 @@ class CustomFieldsController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+    //usage
+    public function usage($id)
+    {
+        $customField = CustomField::with('values.productCustomFields', 'productCustomFields')->findOrFail($id);
+        return response()->json($customField);
     }
 }

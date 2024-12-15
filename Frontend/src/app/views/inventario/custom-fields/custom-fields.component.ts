@@ -1,35 +1,63 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+interface CustomFieldValue {
+    id?: number;
+    temp_id?: number;
+    value: string;
+    in_use?: boolean;
+    is_active?: boolean;
+}
+
+interface CustomField {
+    id?: number;
+    name: string;
+    field_type: 'select' | 'text' | 'number';
+    is_required: boolean;
+    values: CustomFieldValue[];
+    in_use?: boolean;
+}
 
 @Component({
-  selector: 'app-custom-fields',
-  templateUrl: './custom-fields.component.html',
+    selector: 'app-custom-fields',
+    templateUrl: './custom-fields.component.html'
 })
 export class CustomFieldsComponent implements OnInit {
-    public customFields:any = [];
-    @ViewChild('modalValues') modalValues!: TemplateRef<any>;
+    public customFields: any = {
+        data: [],
+        total: 0
+    };
 
-    public field:any = {
+    public originalField: CustomField = {
         name: '',
         field_type: 'select',
-        is_required: false,
+        is_required: true,
         values: []
     };
-    public filtros:any = {
+
+    public field: CustomField = {
+        name: '',
+        field_type: 'select',
+        is_required: true,
+        values: []
+    };
+
+    public filtros = {
         buscador: '',
         paginate: 10,
         orden: '',
-        direccion: 'asc'
+        direccion: 'asc',
+        page: 1
     };
-    public loading:boolean = false;
-    public newValue:string = '';  // Para el nuevo valor a agregar
+
+    public loading = false;
+    public newValue = '';
     modalRef?: BsModalRef;
 
     constructor(
-        public apiService: ApiService, 
+        public apiService: ApiService,
         private alertService: AlertService,
         private modalService: BsModalService
     ) {}
@@ -40,20 +68,32 @@ export class CustomFieldsComponent implements OnInit {
 
     loadAll() {
         this.loading = true;
-        this.apiService.getAll('custom-fields', this.filtros).subscribe(customFields => {
-            this.customFields = customFields;
-            this.loading = false;
-        }, error => {
-            this.alertService.error(error);
-            this.loading = false;
+        this.apiService.getAll('custom-fields', this.filtros).subscribe({
+            next: (response) => {
+                this.customFields = response;
+                this.loading = false;
+                this.customFields.data.forEach((field: any) => {
+                    if (field.field_type === 'select') {
+                        field.in_use = field.values.some((value: any) => value.product_custom_fields.length > 0);
+                    } else {
+                        field.in_use = field.product_custom_fields.length > 0;
+                    }
+                });
+
+            },
+            error: (error) => {
+                this.alertService.error('Error');
+                this.loading = false;
+            }
         });
     }
 
     filtrarCampos() {
+        this.filtros.page = 1;
         this.loadAll();
     }
 
-    setOrden(orden:string) {
+    setOrden(orden: string) {
         if (this.filtros.orden === orden) {
             this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
         } else {
@@ -63,69 +103,151 @@ export class CustomFieldsComponent implements OnInit {
         this.filtrarCampos();
     }
 
-    public openModal(template: TemplateRef<any>, field: any = {}) {
+    async openModal(template: TemplateRef<any>, field: Partial<CustomField> = {}) {
         if (!field.id) {
+            // Nuevo campo
             this.field = {
                 name: '',
                 field_type: 'select',
-                is_required: false,
-                values: []
+                is_required: true,
+                values: [],
+                in_use: false
             };
         } else {
-            this.field = {...field};
-            if (!this.field.values) {
-                this.field.values = [];
+            try {
+                // Obtener el campo con sus valores y usos
+                const fieldData = await this.apiService.getAll(`custom-fields/${field.id}/usage`).toPromise();
+                
+                const values = fieldData.values.map((value: any) => ({
+                    id: value.id,
+                    value: value.value,
+                    custom_field_id: value.custom_field_id,
+                    in_use: value.product_custom_fields.length > 0
+                }));
+    
+         
+                this.field = {
+                    id: fieldData.id,
+                    name: fieldData.name,
+                    field_type: fieldData.field_type,
+                    is_required: fieldData.is_required,
+                    values: values,
+           
+                    in_use: values.some((v: any) => v.in_use)
+                };
+
+                this.originalField = { ...this.field };
+            } catch (error) {
+                this.alertService.error('No se pudo cargar la información del campo');
+                return;
             }
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+    
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
     }
 
     addValue(value: string) {
         if (!value?.trim()) return;
-        
-        if (!this.field.values) {
-            this.field.values = [];
+
+        // Verificar duplicados
+        if (this.field.values.some(v => v.value.toLowerCase() === value.trim().toLowerCase())) {
+            this.alertService.warning('Valor duplicado', 'Este valor ya existe');
+            return;
         }
 
         this.field.values.push({
+            temp_id: Date.now(),
             value: value.trim(),
-            id: Date.now()  // Temporal ID para nuevos valores
+            in_use: false,
+            is_active: true
         });
 
-        this.newValue = '';  // Limpiar el input
+        this.newValue = '';
     }
 
     removeValue(valueId: number) {
-        if (!this.field.values) return;
+        const value = this.field.values.find(v => (v.id || v.temp_id) === valueId);
         
-        this.field.values = this.field.values.filter((v: any) => v.id !== valueId);
+        if (value?.in_use) {
+            this.alertService.warning(
+                'Valor en uso',
+                'No se puede eliminar este valor porque está siendo usado en cotizaciones existentes'
+            );
+            return;
+        }
+
+        this.field.values = this.field.values.filter(v => (v.id || v.temp_id) !== valueId);
+    }
+
+    async deleteField(field: CustomField) {
+        if (field.in_use) {
+            this.alertService.warning(
+                'Campo en uso',
+                'No se puede eliminar este campo porque está siendo usado en cotizaciones existentes'
+            );
+            return;
+        }
+
+        if (!confirm('¿Está seguro de eliminar este campo?')) return;
+
+        this.loading = true;
+        try {
+            if (field.id) {
+                await this.apiService.delete('custom-fields', field.id).toPromise();
+                this.alertService.success('Éxito', 'Campo eliminado exitosamente');
+                this.loadAll();
+            }
+        } catch (error) {
+            this.alertService.error( error);
+        } finally {
+            this.loading = false;
+        }
     }
 
     onSubmit() {
-        if (this.field.field_type === 'select' && (!this.field.values?.length)) {
-            this.alertService.error('Debe agregar al menos un valor para campos tipo lista');
+        if (this.field.field_type === 'select' && !this.field.values?.length) {
+            this.alertService.error( 'Debe agregar al menos un valor para campos tipo lista');
             return;
         }
-    
+
+        // Validaciones para campos en uso
+        if (this.field.in_use) {
+            if (this.field.field_type !== this.originalField.field_type) {
+                this.alertService.error('No se puede cambiar el tipo de un campo que está en uso');
+                return;
+            }
+
+            // Verificar que no se eliminen valores en uso
+            const hasDeletedUsedValues = this.originalField.values
+                .filter(v => v.in_use)
+                .some(v => !this.field.values.find(nv => nv.id === v.id));
+
+            if (hasDeletedUsedValues) {
+                this.alertService.error('No se pueden eliminar valores que están en uso');
+                return;
+            }
+        }
+
         const dataToSend = {
             name: this.field.name,
             field_type: this.field.field_type,
             is_required: this.field.is_required,
-            values: this.field.values.map((v: any) => ({
-                value: v.value
+            values: this.field.values.map(v => ({
+                id: v.id,
+                value: v.value,
+                is_active: v.is_active
             }))
         };
-    
+
         this.loading = true;
-        const request = this.field.id ? 
+        const request = this.field.id ?
             this.apiService.update('custom-fields', this.field.id, dataToSend) :
             this.apiService.store('custom-fields', dataToSend);
-    
+
         request.subscribe({
             next: () => {
                 this.alertService.success(
-                    this.field.id ? 'Campo actualizado' : 'Campo creado',
+                    'Éxito',
                     this.field.id ? 'Campo actualizado exitosamente' : 'Campo creado exitosamente'
                 );
                 this.loadAll();
@@ -136,38 +258,8 @@ export class CustomFieldsComponent implements OnInit {
         });
     }
 
-    toggleRequired() {
-        this.field.is_required = !this.field.is_required;
-    }
-
-    openModalValues(field: any) {
-        this.field = {...field};
-        
-        // Cargar los valores actuales del campo
-        this.apiService.getAll(`custom-fields/${field.id}/values`).subscribe(
-            (values) => {
-                this.field.values = values;
-                this.modalRef = this.modalService.show(this.modalValues, {
-                    class: 'modal-lg',
-                    backdrop: 'static'
-                });
-            },
-            error => {
-                this.alertService.error(error);
-            }
-        );
-    }
-
-    setPagination(event: any) {
+    setPagination(event: { page: number }) {
         this.filtros.page = event.page;
         this.loadAll();
     }
-
-    //onSubmit
-
-    
-    
-    
-    
-    
 }

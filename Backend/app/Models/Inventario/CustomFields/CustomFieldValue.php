@@ -20,6 +20,6 @@ class CustomFieldValue extends Model
 
     public function productCustomFields(): HasMany
     {
-        return $this->hasMany(ProductCustomField::class, 'custom_field_id');
+        return $this->hasMany(ProductCustomField::class);
     }
 }

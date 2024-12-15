@@ -24,6 +24,11 @@ class CustomField extends Model
         return $this->hasMany(CustomFieldValue::class);
     }
 
+    public function productCustomFields(): HasMany
+    {
+        return $this->hasMany(ProductCustomField::class);
+    }
+
     public function empresa(): BelongsTo
     {
         return $this->belongsTo(Empresa::class);
