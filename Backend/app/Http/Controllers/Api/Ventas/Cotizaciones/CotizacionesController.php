@@ -73,7 +73,7 @@ class CotizacionesController extends Controller
     public function read($id)
     {
 
-        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
+        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
         // $orden->saldo = $orden->saldo;
         return Response()->json($orden, 200);
     }

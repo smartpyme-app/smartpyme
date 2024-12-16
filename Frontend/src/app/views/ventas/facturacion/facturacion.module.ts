@@ -21,6 +21,7 @@ import { TiendaVentaCitasComponent } from './facturacion-tienda/citas/tienda-ven
 import { VentaDetallesComponent } from './facturacion-tienda/detalles/venta-detalles.component';
 import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
 import { CotizacionFormComponent } from './facturacion-tienda/cotizacion-form/cotizacion-form.component';
+import { ProductoSpecsComponent } from './facturacion-tienda/detalles/producto-specs.component';
 
 @NgModule({
   imports: [
@@ -46,6 +47,7 @@ import { CotizacionFormComponent } from './facturacion-tienda/cotizacion-form/co
     VentaDetallesComponent,
     MetodosDePagoComponent,
     CotizacionFormComponent,
+    ProductoSpecsComponent
   ],
   exports: [
     FacturacionComponent,
@@ -56,6 +58,7 @@ import { CotizacionFormComponent } from './facturacion-tienda/cotizacion-form/co
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    ProductoSpecsComponent
   ]
 })
 export class FacturacionModule { }

@@ -72,10 +72,56 @@
     </div>
   </div>
 </section>
+<!--vamos a mostrar los campos personalizados solo si es una cotizacion-->
+<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion == 1">
+  <h6>Campos personalizados a utilizar</h6>
+  <div class="row">
+    <div class="col-md-12">
+      <ng-select
+        [items]="customFields.data"
+        [multiple]="true"
+        bindLabel="name"
+        bindValue="id"
+        placeholder="Seleccione campos personalizados"
+        [(ngModel)]="selectedCustomFields"
+        (change)="updateCustomFields()"
+        [clearable]="false"
+        [searchable]="true"
+        class="form-control form-select p-0"
+        dropdownPosition="bottom"
+        [loading]="loading"
+      >
+        <ng-template ng-option-tmp let-item="item">
+          <div
+            *ngIf="
+              item.field_type !== 'select' ||
+              (item.field_type === 'select' && item.values?.length > 0)
+            "
+          >
+            {{ item.name }}
+            <small class="text-muted">({{ item.field_type }})</small>
+          </div>
+        </ng-template>
+        <ng-template ng-notfound-tmp>
+          <div class="text-muted p-2">
+            No hay campos personalizados disponibles
+          </div>
+        </ng-template>
+      </ng-select>
+    </div>
+  </div>
+</section>
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Productos y servicios</h6>
-  <app-venta-detalles [venta]="venta" [usuarios]="usuarios" (update)="updateVenta($event)"
-                      (sumTotal)="sumTotal()"></app-venta-detalles>
+  <app-venta-detalles
+    [venta]="venta"
+    [usuarios]="usuarios"
+    [customFields]="customFields"
+    [selectedCustomFields]="selectedCustomFields"
+    (update)="updateVenta($event)"
+    (sumTotal)="sumTotal()"
+  >
+  </app-venta-detalles>
   <div class="row">
     <div class="col-md-12">
       <table class="table table-sm table-borderless table-condensed mb-0">

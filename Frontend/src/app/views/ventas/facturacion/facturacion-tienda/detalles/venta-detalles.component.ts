@@ -14,6 +14,9 @@ export class VentaDetallesComponent implements OnInit {
 
   @Input() venta: any = {};
   @Input() usuarios: any = {};
+  @Input() customFields: any = {};  // Agregar input
+  @Input() selectedCustomFields: number[] = [];
+  @Input() cotizacion: number = 0;
   @Input() mode: "create" | "edit" | "show" = "create";
   public usuario: any = {};
   public detalle: any = {};

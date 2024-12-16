@@ -40,6 +40,12 @@ export class FacturacionComponent implements OnInit {
   public api: boolean = false;
   public opAvanzadas = false;
   public opAvanzadasFacturacion = false;
+  public customFields: any = [];
+  public selectedCustomFields: number[] = [];
+  public activeCustomFields: any = [];
+  public filtros:any = {
+    bandera: true,
+};
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -76,6 +82,14 @@ export class FacturacionComponent implements OnInit {
     }, error => {
       this.alertService.error(error);
     });
+    //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+    if(this.route.snapshot.queryParamMap.get('cotizacion')){
+      this.apiService.getAll('custom-fields',this.filtros).subscribe(customFields => {
+        this.customFields = customFields;
+      }, error => {
+        this.alertService.error(error);
+      });
+    }
 
     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
       this.bodegas = bodegas;
@@ -221,17 +235,44 @@ export class FacturacionComponent implements OnInit {
 
     }
 
-    if (this.route.snapshot.paramMap.get('id')!) {
+    // if (this.route.snapshot.paramMap.get('id')!) {
+    //   const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
+    //   const isCotizacion = this.venta.cotizacion == 1 ? true : false;
+    //   this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
+    //     this.venta = venta;
+    //     this.venta.cotizacion = isCotizacion ? 1 : 0;
+    //     this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
+    //   }, error => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   });
+    // }
+
+    if (this.route.snapshot.paramMap.get('id')) {
       const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
       const isCotizacion = this.venta.cotizacion == 1 ? true : false;
-      this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
-        this.venta = venta;
-        this.venta.cotizacion = isCotizacion ? 1 : 0;
-        this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
-      }, error => {
-        this.alertService.error(error);
-        this.loading = false;
-      });
+      this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!)
+        .subscribe(venta => {
+          this.venta = venta;
+          this.venta.cotizacion = isCotizacion ? 1 : 0;
+          this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
+          
+          // Obtener todos los custom_field_ids únicos de los detalles
+          const usedCustomFieldIds = new Set();
+          this.venta.detalles.forEach((detalle: any) => {
+            if (detalle.custom_fields && detalle.custom_fields.length > 0) {
+              detalle.custom_fields.forEach((cf: any) => {
+                if (cf.custom_field) {
+                  usedCustomFieldIds.add(cf.custom_field.id);
+                }
+              });
+            }
+          });
+          
+          // Pre-seleccionar los campos personalizados
+          this.selectedCustomFields = Array.from(usedCustomFieldIds) as number[];
+          this.updateCustomFields();
+        });
     }
 
     // Facturar venta recurrente
@@ -609,5 +650,10 @@ export class FacturacionComponent implements OnInit {
   }
   toggleDivFacturacion(): void {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
+  }
+
+  updateCustomFields() {
+    this.activeCustomFields = this.customFields.data
+      .filter((f: any) => this.selectedCustomFields.includes(f.id));
   }
 }
