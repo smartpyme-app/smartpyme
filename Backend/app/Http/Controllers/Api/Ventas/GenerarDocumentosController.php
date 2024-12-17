@@ -179,6 +179,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 367 ){ //367  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -207,7 +211,12 @@ class GenerarDocumentosController extends Controller
             if(Auth::user()->id_empresa == 210){ //210
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-fact-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
-            } else{
+            }
+            elseif(Auth::user()->id_empresa == 367 ){ //367  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.factura-sujeto-excluido', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -314,6 +323,10 @@ class GenerarDocumentosController extends Controller
             }
             elseif(Auth::user()->id_empresa == 290 ){ //290  OK V2
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Grupo-Lievano', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 367 ){ //367  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             else{
