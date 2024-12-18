@@ -8,12 +8,11 @@ import { ApiService } from '@services/api.service';
 import { ChangeDetectionStrategy, ChangeDetectorRef  } from '@angular/core';
 
 @Component({
-  selector: 'app-producto-informacion',
-  templateUrl: './producto-informacion.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'app-ver-producto',
+  templateUrl: './ver-producto.component.html',
+  styleUrls: ['./ver-producto.component.css']
 })
-
-export class ProductoInformacionComponent implements OnInit {
+export class VerProductoComponent {
 
   @Input() producto: any = {};
   public categorias: any = [];
@@ -84,64 +83,6 @@ export class ProductoInformacionComponent implements OnInit {
       this.producto.tipo = 'Producto';
     }
   }
-
-  public calPrecioBase() {
-    if (this.usuario.empresa.iva > 0) {
-      this.producto.impuesto = this.usuario.empresa.iva / 100;
-      this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
-    }
-  }
-
-  public calPrecioFinal() {
-    if (this.usuario.empresa.iva > 0) {
-      this.producto.impuesto = this.usuario.empresa.iva / 100;
-      this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
-    }
-  }
-
-  public onSubmit() {
-    this.guardar = true;    
-    this.apiService.store('producto', this.producto).subscribe(producto => {
-      this.guardar = false;
-      if (!this.producto.id) {
-        this.producto = producto;
-      }
-      if (this.producto.tipo == 'Producto') {
-        this.router.navigate(['/producto/editar/' + producto.id]);
-        this.alertService.success("Producto guardado", 'El producto fue guardado exitosamente.');
-      }
-      if (this.producto.tipo == 'Servicio') {
-        this.router.navigate(['/servicio/editar/' + producto.id]);
-        this.alertService.success("Servicio guardado", 'El servicio fue guardado exitosamente.');
-      }
-      if (this.producto.tipo == 'Compuesto') {
-        this.router.navigate(['/producto/editar/' + producto.id]);
-        this.alertService.success("Producto compuesto guardado", 'El producto compuesto fue guardado exitosamente.');
-      }
-      if (this.producto.tipo == 'Materia Prima') {
-        this.router.navigate(['/materias-prima/editar/' + producto.id]);
-        this.alertService.success("Materia prima guardada", 'La materia prima fue guardada exitosamente.');
-      }
-    }, error => { this.alertService.error(error); this.guardar = false; });
-  }
-
-  public barcode() {
-    var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.barcode + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
-  }
-
-  public verificarSiExiste() {
-    if (this.producto.nombre) {
-      this.apiService.getAll('productos', { nombre: this.producto.nombre, estado: 1, }).subscribe(productos => {
-        if (productos.data[0]) {
-          this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
-            'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
-          );
-        }
-        this.loading = false;
-      }, error => { this.alertService.error(error); this.loading = false; });
-    }
-  }
-
   // creacion de sku
   private correlativo: number = 1; // Inicialmente, este sería el primer SKU
 

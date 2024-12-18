@@ -57,6 +57,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
 import { ComboIndexComponent } from './productos/producto/combo/combo-index/combo-index.component';
+import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
 
 @NgModule({
   imports: [
@@ -111,7 +112,8 @@ import { ComboIndexComponent } from './productos/producto/combo/combo-index/comb
     ProductoComboComponent,
     ComboDetallesComponent,
     BuscadorProductoComponent,
-    ComboIndexComponent
+    ComboIndexComponent,
+    VerProductoComponent
   ],
   exports: [
     ProductosComponent,

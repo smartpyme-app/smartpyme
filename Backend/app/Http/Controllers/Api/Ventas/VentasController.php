@@ -33,6 +33,7 @@ use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class VentasController extends Controller
 {
@@ -132,14 +133,12 @@ class VentasController extends Controller
 
 
 
-    public function read($id)
-    {
-        Log::info('ID: ' . $id);
+    public function read($id){
 
+        Log::info('ID: ' . $id);
         $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
-
-
+        
         return Response()->json($venta, 200);
     }
 
@@ -285,11 +284,8 @@ class VentasController extends Controller
             "forma_pago.required" => "La forma de pago es requerida",
         ]);
 
-        DB::beginTransaction();
-        // Log::info($request->all());
-      //  dd($request->all());
-
         try {
+            DB::beginTransaction();
             // Guardamos la venta
             if ($request->cotizacion == 1) {
                 $quote = $this->saveQuotation($request);

@@ -1,0 +1,183 @@
+
+<div class="row">
+  <h5 class="mb-3 font-weight-bold">Detalles</h5>
+  <!-- nombre  -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="nombre">Nombre</label>
+    
+  </div>
+  <!-- categoria -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="id_categoria" class="w-100">Categoría</label>
+    
+  </div>
+
+
+  <!-- subcategoria -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="id_subcategoria" class="w-100">Subcategoría</label>
+    
+  </div>
+  <!-- marca -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="marca">Marca</label>
+    </div>
+
+  <!-- <h6 class="my-3 font-weight-bold">Organización</h6> -->
+  <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
+ 
+
+  <!-- codigo sku  -->
+  <div class="form-group col-md-6 col-lg-3">
+    <label for="codigo">Código</label>
+    <div class="input-group">
+      
+    </div>
+  </div>
+   <!-- unidad de medida -->
+   <div class="form-group col-md-4 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
+    <label for="medida">U. de Medida</label>
+    <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+      <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+        {{ medida.nombre }}
+      </ng-option>
+    </ng-select>
+  </div>
+  <!-- codigo de barra  -->
+  <div class="form-group col-md-6 col-lg-3">
+    <label for="barcode">Código de barras</label>
+    <div class="input-group">
+      
+    </div>
+  </div>
+
+  <!-- codigo de proveedor  -->
+  <div class="form-group col-md-6 col-lg-3">
+    <label for="cod_proveed_prod">Código de proveedor</label>
+    
+  </div>
+
+  <h5 class="my-3 font-weight-bold">Precio</h5>
+
+  <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
+    <label for="precio">Precio sin IVA</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"
+        [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
+    </div>
+  </div>
+  <div class="form-group col-md-4 col-lg-2">
+    <label for="costo">Costo</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      
+    </div>
+  </div>
+  <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
+    <label for="tipo_impuesto">Ganancia</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo).toFixed(2)}}">
+    </div>
+  </div>
+  <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
+    <label for="impuesto">Margen</label>
+    <div class="input-group">
+      <input type="number" class="form-control" disabled
+        value="{{ ((producto.precio - producto.costo) / producto.precio * 100).toFixed(2) }}">
+      <span class="input-group-text">%</span>
+    </div>
+  </div>
+  <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-2">
+    <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()"
+        (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
+    </div>
+  </div>
+  
+  <!-- <div class="form-group col-md-4 col-lg-4 mb-3 mt-3">
+    <div class="form-switch border rounded">
+      <label>Opciones Avanzadas</label>
+      <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"
+             [(ngModel)]="opAvanzadas" name="opciones_ava_detalles">
+    </div>
+  </div> -->
+
+  <div class="row">
+
+    <h5 class="my-3 font-weight-bold">Organización</h5>
+
+  <!-- talla -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="talla" class="w-100">Talla</label>
+    <div class="input-group">
+      
+    </div>
+  </div>
+
+  <!-- color -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="color" class="w-100">Color</label>
+    <div class="input-group">
+     
+    </div>
+  </div>
+  <!-- material -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="material" class="w-100">Material</label>
+    <div class="input-group">
+     
+    </div>
+  </div>
+
+  <!-- dimensiones -->
+  <div class="form-group col-md-12 col-lg-3">
+    <label for="dimensiones">Dimensiones</label>
+    
+  </div>
+
+  <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
+
+  <!-- etiquetas   -->
+
+  <div class="form-group col-md-12 col-lg-6">
+    <label for="etiquetas">Etiquetas</label>
+    <!-- <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí"
+      [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input> -->
+  </div>
+  <!-- Descripcion  -->
+  <div class="form-group col-md-12 col-lg-6">
+    <label for="descripcion">Descripción</label>
+   
+  </div>
+  </div>
+  <div class="bg-white rounded p-3 mb-3" >
+    <div class="col-lg-12">
+        <app-producto-composicion [producto]='producto'></app-producto-composicion>
+    </div>
+</div>
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
+    <div class="col-lg-12">
+        <app-producto-inventarios [producto]='producto'></app-producto-inventarios>
+    </div>
+</div>
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id">
+    <div class="col-lg-12">
+        <app-producto-precios [producto]='producto'></app-producto-precios>
+    </div>
+</div>
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
+    <div class="col-lg-12">
+        <app-producto-proveedores [producto]='producto'></app-producto-proveedores>
+    </div>
+</div>
+<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id">
+    <div class="col-md-12">
+        <app-producto-imagenes [producto]='producto'></app-producto-imagenes>
+    </div>
+</div>
+</div>
+

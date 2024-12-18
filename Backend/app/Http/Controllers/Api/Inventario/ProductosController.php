@@ -236,9 +236,11 @@ class ProductosController extends Controller
             }
         }
         ## se define el inventario del compuesto en la bodega seleccionada
-        $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
-        $inventarioInicial->stock = $request->stock;
-        $inventarioInicial->save();
+        if($request->id_bodega && $request->stock){
+            $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
+            $inventarioInicial->stock = $request->stock;
+            $inventarioInicial->save();
+        }
         
         DB::commit();
         

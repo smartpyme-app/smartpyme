@@ -23,6 +23,7 @@ import { CategoriasComponent } from '@views/inventario/categorias/categorias.com
 import { ServiciosComponent } from '@views/inventario/servicios/servicios.component';
 import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
 import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
+import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
 
 
 const routes: Routes = [
@@ -34,6 +35,7 @@ const routes: Routes = [
       { path: 'productos', component: ProductosComponent, title: 'Productos' },
       { path: 'producto-combos', component: ProductosComponent, title: 'Compuesto' },
       { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
+      { path: 'producto/ver/:id', component: VerProductoComponent, title: 'Producto' },
       { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
       { path: 'producto/combo/crear', component: ProductoComboComponent, title: 'Producto combo' },
 

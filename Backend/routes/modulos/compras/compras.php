@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Compras\ComprasController;
 use App\Http\Controllers\Api\Compras\SalidasController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/compras',         		    [ComprasController::class, 'index']);
     Route::get('/compras/buscar/{txt}',     [ComprasController::class, 'search']);
