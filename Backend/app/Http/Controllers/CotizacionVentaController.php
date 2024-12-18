@@ -137,16 +137,19 @@ class CotizacionVentaController extends Controller
 
     public function delete($id)
     {
-        $detalle = CotizacionVentaDetalle::findOrFail($id);
+        $detalle = CotizacionVentaDetalle::with('customFields')->findOrFail($id);
+        if ($detalle->customFields && count($detalle->customFields) > 0) {
+            foreach ($detalle->customFields as $customField) {
+                $customField->delete();
+            }
+        }
         // Actualizar inventario
-            // $producto = Producto::findOrFail($detalle->producto_id);
-            // if ($producto->inventario) {
-            //     Inventario::where('bodega_id', $detalle->venta->bodega_id)->where('producto_id', $detalle->producto_id)->increment('stock', $detalle->cantidad);
-            // }
+        // $producto = Producto::findOrFail($detalle->producto_id);
+        // if ($producto->inventario) {
+        //     Inventario::where('bodega_id', $detalle->venta->bodega_id)->where('producto_id', $detalle->producto_id)->increment('stock', $detalle->cantidad);
+        // }
         $detalle->delete();
 
         return Response()->json($detalle, 201);
-
     }
-
 }

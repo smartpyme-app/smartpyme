@@ -24,6 +24,8 @@ import { ServiciosComponent } from '@views/inventario/servicios/servicios.compon
 import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
 import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
 import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
+import { CustomFieldsComponent } from '@views/inventario/custom-fields/custom-fields.component';
+
 
 
 const routes: Routes = [
@@ -64,6 +66,9 @@ const routes: Routes = [
 
       { path: 'bodegas', component: BodegasComponent },
       { path: 'bodega/:id', component: BodegaComponent },
+      { path: 'custom-fields', component: CustomFieldsComponent, title: 'Campos personalizados' },
+
+
     ]
   }
 ];
