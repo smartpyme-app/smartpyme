@@ -32,6 +32,8 @@ import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolu
 import { DevolucionVentaDetallesComponent } from '@views/ventas/devoluciones/devolucion-nueva/detalles/devolucion-venta-detalles.component';
 import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
 
+import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -62,7 +64,8 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
     DevolucionVentaNuevaComponent,
-    DevolucionVentaDetallesComponent
+    DevolucionVentaDetallesComponent,
+    OrdenesProduccionComponent
   ],
   exports: [
     VentasComponent,
@@ -79,7 +82,8 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
     DevolucionVentaNuevaComponent,
-    DevolucionVentaDetallesComponent
+    DevolucionVentaDetallesComponent,
+    OrdenesProduccionComponent
   ]
 })
 export class VentasModule { }

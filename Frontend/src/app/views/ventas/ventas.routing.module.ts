@@ -32,6 +32,7 @@ import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-v
 import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/categorias-ventas.component';
 import { CotizacionFormComponent } from './facturacion/facturacion-tienda/cotizacion-form/cotizacion-form.component';
 
+import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
 
 const routes: Routes = [
   {
@@ -80,7 +81,8 @@ const routes: Routes = [
       { path: 'reporte/ventas/historial', canActivate: [AdminGuard], component: HistorialVentasComponent },
       { path: 'reporte/ventas/detalle', canActivate: [AdminGuard], component: DetalleVentasComponent },
       { path: 'reporte/ventas/categorias', canActivate: [AdminGuard], component: CategoriasVentasComponent },
-
+      // Ordenes de producción
+      { path: 'ordenes/produccion', component: OrdenesProduccionComponent, title: 'Ordenes de producción' },
     ]
   }
 ];
