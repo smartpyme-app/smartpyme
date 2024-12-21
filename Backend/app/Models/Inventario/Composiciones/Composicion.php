@@ -32,7 +32,7 @@ class Composicion extends Model {
     }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_compuesto');
     }
 
     public function compuesto(){

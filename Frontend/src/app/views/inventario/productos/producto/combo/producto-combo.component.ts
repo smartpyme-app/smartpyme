@@ -102,7 +102,8 @@ export class ProductoComboComponent implements OnInit {
 
 
   public onSubmit() {
-    this.guardar = true;    
+    this.guardar = true;  
+    this.producto.codigo = "CMPKIT" + this.producto.codigo;  
     this.apiService.store('producto/compuesto', this.producto).subscribe(producto => {
       this.guardar = false;
       if (!this.producto.id) {
@@ -148,7 +149,7 @@ export class ProductoComboComponent implements OnInit {
 
     this.subcategRes = this.subcategorias.filter((cat: any) => { return cat.id_cate_padre == event; });    
 
-    this.producto.codigo = "CMPKIT" + `${categoriaSeleccionada?.nombre ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${subcategoriaSeleccionada?.nombre ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${this.correlativo.toString().padStart(5, '0')}`;
+    this.producto.codigo =  `${categoriaSeleccionada?.nombre ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${subcategoriaSeleccionada?.nombre ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${this.correlativo.toString().padStart(5, '0')}`;
   
   }
 

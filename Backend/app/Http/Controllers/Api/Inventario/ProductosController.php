@@ -219,8 +219,8 @@ class ProductosController extends Controller
             $composicion = new Composicion;
             //$composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
             $composicion->cantidad = $detalle["cantidad"];
-            $composicion->id_producto = $detalle["id_producto"];
-            $composicion->id_compuesto = $producto->id;
+            $composicion->id_compuesto = $detalle["id_producto"];
+            $composicion->id_producto = $producto->id;
             $composicion->save();
         }
 

@@ -5,7 +5,6 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { ChangeDetectionStrategy, ChangeDetectorRef  } from '@angular/core';
 
 @Component({
   selector: 'app-ver-producto',
@@ -20,7 +19,7 @@ export class VerProductoComponent {
   public guardar = false;
 
 
-  constructor(private apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute){}
+  constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute){}
 
   ngOnInit(){
     let param = this.route.snapshot.params;
