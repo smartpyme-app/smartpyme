@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Devoluciones\Detalle;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Ventas\Venta;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Clientes\Cliente;
@@ -21,7 +22,6 @@ use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
-use Auth;
 
 class DevolucionVentasController extends Controller
 {
@@ -160,18 +160,17 @@ class DevolucionVentasController extends Controller
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
-            // 'id_bodega'       => 'required|numeric',
+            'id_bodega'       => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
             'id_empresa'       => 'required|numeric',
         ],[
             'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
 
-        DB::beginTransaction();
-         
-        try {
         
-        // Guardamos la devolucion
+        try {
+            // Guardamos la devolucion
+            DB::beginTransaction();
             if($request->id)
                 $devolucion = Devolucion::findOrFail($request->id);
             else
@@ -180,37 +179,42 @@ class DevolucionVentasController extends Controller
             $devolucion->fill($request->all());
             $devolucion->save();
 
-            // $venta = Venta::findOrFail($request['id_venta']);
-            // $venta->estado = 'Anulada';
-            // $venta->save();
-
-
         // Guardamos los detalles
-
-            foreach ($request->detalles as $det) {
+            foreach($request->detalles as $det){
                 $detalle = new Detalle;
                 $det['id_devolucion_venta'] = $devolucion->id;
                 $detalle->fill($det);
                 $detalle->save();
 
-                $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                    ->where('id_bodega', $devolucion->id_bodega)->first();
+                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
 
                 if($inventario){
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
                     $inventario->kardex($devolucion, $det['cantidad']);
                 }
-
                 // Si es paquete cambiar estado
                 $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
-                foreach ($paquetes as $paquete) {
+                foreach ($paquetes as $paquete){
                     $paquete->estado = 'En bodega';
                     $paquete->id_venta = NULL;
                     $paquete->id_venta_detalle = NULL;
                     $paquete->save();
                 }
-                
+                // Inventario compuestos
+                if($det['composiciones']){
+                    $productoCompuesto = Producto::with('composiciones')->where('id', $det['id_producto'])->first();
+                    foreach($productoCompuesto->composiciones as $comp){
+
+                        $inventarioCompuesto = Inventario::where('id_producto', $comp->id_producto)->where('id_bodega', $request->id_bodega)->first();
+                        
+                        if ($inventarioCompuesto){
+                            $inventarioCompuesto->stock += $det['cantidad'] * $comp->cantidad;
+                            $inventarioCompuesto->save();
+                            $inventarioCompuesto->kardex($devolucion, ($det['cantidad'] * $comp->cantidad));
+                        }
+                    }
+                }
             }
             
         // Incrementar el correlarivo
@@ -219,6 +223,7 @@ class DevolucionVentasController extends Controller
         }
         
         DB::commit();
+
         return Response()->json($devolucion, 200);
 
         } catch (\Exception $e) {
@@ -229,7 +234,6 @@ class DevolucionVentasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
         
-
     }
 
     public function generarDoc($id){

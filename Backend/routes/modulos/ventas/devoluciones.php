@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionVentasController;
 use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionDetallesController;
-
+use Illuminate\Support\Facades\Route;
     // Devoluciones
 
     Route::get('/devoluciones/ventas',                 [DevolucionVentasController::class, 'index']);

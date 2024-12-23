@@ -153,7 +153,7 @@ export class ProductoInformacionComponent implements OnInit {
 
     this.subcategRes = this.subcategorias.filter((cat: any) => { return cat.id_cate_padre == event; });    
 
-    this.producto.codigo = `${categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() ?? ''}${subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() ?? ''}${this.correlativo.toString().padStart(5, '0')}`;
+    this.producto.codigo = `${categoriaSeleccionada?.nombre ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${subcategoriaSeleccionada?.nombre ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${this.correlativo.toString().padStart(5, '0')}`;
   }
   //   variantes
 

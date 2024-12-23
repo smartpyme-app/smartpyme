@@ -102,18 +102,15 @@ export class ProductoComboComponent implements OnInit {
 
 
   public onSubmit() {
-    this.guardar = true;    
-    this.producto.codigo = "CMPKIT" + this.producto.codigo;
+    this.guardar = true;  
+    this.producto.codigo = "CMPKIT" + this.producto.codigo;  
     this.apiService.store('producto/compuesto', this.producto).subscribe(producto => {
       this.guardar = false;
       if (!this.producto.id) {
         this.producto = producto;
       }
       this.router.navigate(['/productos']);
-
     }, error => { this.alertService.error(error); this.guardar = false; });
-
-
   }
 
   public barcode() {
@@ -146,31 +143,14 @@ export class ProductoComboComponent implements OnInit {
   private correlativo: number = 1; // Inicialmente, este sería el primer SKU
 
   public updateInputValue(): void {
-    const categoriaSeleccionada = this.categorias.find((c: any) => c.id === this.producto.id_categoria);
-    const subcategoriaSeleccionada = this.subcategorias.find((s: any) => s.id === this.producto.id_subcategoria);
-    // console.log( this.producto.id_subcategoria);
+    const categoriaSeleccionada = this.categorias.find((c: any) => c.id == this.producto.id_categoria);
 
-    let nombreCategoria = '';
-    let nombreSubcategoria = '';
+    const subcategoriaSeleccionada = this.subcategorias.find((s: any) => s.id == this.producto.id_subcategoria);
 
-    if (categoriaSeleccionada) {
+    this.subcategRes = this.subcategorias.filter((cat: any) => { return cat.id_cate_padre == event; });    
 
-      this.subcategRes = this.subcategorias.filter((subcategoria: any) => subcategoria.id_cate_padre === categoriaSeleccionada.id);
-      nombreCategoria = categoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
-      console.log("Este es el action de la categoria");
-      console.log(this.subcategRes);
-
-    }
-
-    if (subcategoriaSeleccionada) {
-      nombreSubcategoria = subcategoriaSeleccionada.nombre.slice(0, 3).toUpperCase();
-      console.log("Este es el action de la subcategoria");
-      console.log(nombreSubcategoria);
-    }
-
-    if (this.producto.id_categoria && this.producto.id_subcategoria) {
-      this.producto.codigo = `${nombreCategoria}${nombreSubcategoria}${this.correlativo.toString().padStart(5, '0')}`;
-    }
+    this.producto.codigo =  `${categoriaSeleccionada?.nombre ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${subcategoriaSeleccionada?.nombre ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${this.correlativo.toString().padStart(5, '0')}`;
+  
   }
 
   //   variantes
