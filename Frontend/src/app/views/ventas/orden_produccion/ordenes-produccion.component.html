@@ -69,6 +69,7 @@
               <select name="estado" class="form-select w-auto border-0" 
                       (change)="setEstado(orden)" 
                       [(ngModel)]="orden.estado"
+                      [disabled]="orden.estado === 'entregada' || orden.estado === 'aceptada'"
                       [ngClass]="{
                         'bg-light-warning': orden?.estado == 'pendiente',
                         'bg-light-info': orden?.estado == 'aceptada',
@@ -82,7 +83,7 @@
                 <option value="en_proceso">En Proceso</option>
                 <option value="completada">Completada</option>
                 <option value="entregada">Entregada</option>
-                <option value="anulada">Anulada</option>
+                <!-- <option value="anulada">Anulada</option> -->
               </select>
             </td>
             <td>{{orden.fecha_entrega | date:'dd/MM/yyyy'}}</td>
@@ -97,11 +98,17 @@
                      class="btn">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a routerLink="/orden-produccion/{{orden.id}}" class="btn">
+                  <a routerLink="/orden-produccion/detalles/{{orden.id}}" class="btn">
                     <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                   </a>
                   <a (click)="imprimir(orden)" class="btn">
                     <i class="fa fa-fw fa-print"></i> Imprimir
+                  </a>
+                  <!-- Poder anular la orden -->
+                  <a *ngIf="orden.estado != 'anulada' && apiService.canDelete()" 
+                     (click)="anular(orden)" 
+                     class="btn">
+                    <i class="fa fa-fw fa-ban"></i> Anular
                   </a>
                 </div>
               </ng-template>

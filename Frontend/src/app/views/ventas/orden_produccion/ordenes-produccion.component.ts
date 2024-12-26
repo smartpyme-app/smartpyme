@@ -61,7 +61,7 @@ export class OrdenesProduccionComponent implements OnInit {
   public filtrarOrdenes() {
     this.loading = true;
     this.apiService.getAll('ordenes-produccion', this.filtros).subscribe(ordenes => {
-      this.ordenes = ordenes;
+      this.ordenes = ordenes.data;
       this.loading = false;
       if (this.modalRef) {
         this.modalRef.hide();
@@ -133,6 +133,15 @@ export class OrdenesProduccionComponent implements OnInit {
         this.alertService.error(error); 
         this.downloading = false; 
       }
+    );
+  }
+
+  public anular(orden: any) {
+    this.apiService.delete('orden-produccion', orden.id).subscribe(
+      response => {
+        this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
+      }, 
+      error => { this.alertService.error(error); }
     );
   }
 }

@@ -44,7 +44,8 @@ class CotizacionVenta extends Model
         "id_empresa",
         "id_sucursal",
         "cobrar_impuestos",
-        "aplicar_retencion"
+        "aplicar_retencion",
+        "terminos_de_venta"
     ];
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];

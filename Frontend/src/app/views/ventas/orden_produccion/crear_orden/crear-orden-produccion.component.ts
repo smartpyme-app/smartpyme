@@ -16,6 +16,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
   public cotizacion: any = {};
   public loading: boolean = false;
   public customFields: any = [];
+  public isDetalles: boolean = false;
 
   constructor(
     public apiService: ApiService,
@@ -25,13 +26,65 @@ export class CrearOrdenProduccionComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.isDetalles = this.router.url.includes('/detalles/');
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.cargarCotizacion(Number(id));
+      if (this.isDetalles) {
+        this.cargarOrden(Number(id));
+      } else {
+        this.cargarCotizacion(Number(id));
+      }
     } else {
       this.alertService.error('Debe seleccionar una cotización');
       this.router.navigate(['/cotizaciones']);
     }
+  }
+
+  cargarOrden(id: number) {
+    this.loading = true;
+    this.apiService.read('orden-produccion/', id).subscribe(
+      (response: any) => {
+       
+        this.cotizacion = response
+        this.orden = {
+          fecha: new Date().toISOString().split('T')[0],
+          estado: 'pendiente',
+          id_cotizacion: this.cotizacion.id,
+          id_cliente: this.cotizacion.id_cliente,
+          id_usuario: this.cotizacion.id_usuario,
+          id_asesor: this.cotizacion.id_vendedor,
+          id_empresa: this.cotizacion.id_empresa,
+          id_sucursal: this.cotizacion.id_sucursal,
+          observaciones: this.cotizacion.observaciones,
+          subtotal: this.cotizacion.sub_total,
+          total_costo: this.cotizacion.total_costo,
+          descuento: this.cotizacion.descuento,
+          total: this.cotizacion.total,
+          correlativo: this.cotizacion.correlativo,
+          nombre_cliente: this.cotizacion.nombre_cliente,
+          nombre_usuario: this.cotizacion.nombre_usuario,
+          nombre_vendedor: this.cotizacion.nombre_vendedor,
+          nombre_sucursal: this.cotizacion.nombre_sucursal,
+          detalles: this.cotizacion.detalles.map((detalle: any) => ({
+            id_producto: detalle.id_producto,
+            cantidad: detalle.cantidad,
+            descripcion: detalle.descripcion,
+            precio: detalle.precio,
+            total: detalle.total,
+            total_costo: detalle.total_costo,
+            descuento: detalle.descuento,
+            id_cotizacion_venta: detalle.id_cotizacion_venta,
+            custom_fields: detalle.custom_fields || []
+          }))
+        };
+        this.loadCustomFields();
+      },
+      error => {
+        this.alertService.error('Error al cargar la orden');
+        this.loading = false;
+        this.router.navigate(['/ordenes-produccion']);
+      }
+    );
   }
 
   cargarCotizacion(id: number) {
@@ -120,8 +173,6 @@ export class CrearOrdenProduccionComponent implements OnInit {
       this.alertService.error('Debe especificar una fecha de entrega');
       return;
     }
-
-    // Asegurarse de que la fecha de entrega no sea anterior a la fecha actual
     if (new Date(this.orden.fecha_entrega) < new Date(this.orden.fecha)) {
       this.alertService.error('La fecha de entrega no puede ser anterior a la fecha actual');
       return;
@@ -131,7 +182,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
     this.apiService.store('orden-produccion', this.orden).subscribe(
       response => {
         this.alertService.success('Orden creada', 'La orden de producción fue creada exitosamente.');
-        this.router.navigate(['/ordenes-produccion']);
+        this.router.navigate(['/ordenes/produccion']);
       },
       error => {
         this.alertService.error(error);
@@ -140,8 +191,13 @@ export class CrearOrdenProduccionComponent implements OnInit {
     );
   }
 
+  
   cancelar() {
-    this.router.navigate(['/cotizaciones']);
+    if (this.isDetalles) {
+      this.router.navigate(['/ordenes/produccion']);
+    } else {
+      this.router.navigate(['/cotizaciones']);
+    }
   }
 
   // Método auxiliar para formatear fechas

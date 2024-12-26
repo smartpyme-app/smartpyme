@@ -1,5 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-  <h2 class="page-heading">Nueva Orden de Producción</h2>
+  <h2 class="page-heading">
+    {{ isDetalles ? 'Detalles de Orden de Producción' : 'Nueva Orden de Producción' }}
+  </h2>
 </section>
 
 <div class="row" *ngIf="loading">
@@ -151,11 +153,13 @@
     <button type="button" class="btn btn-secondary" (click)="cancelar()">
       <i class="fa fa-times me-2"></i>Cancelar
     </button>
-    <button type="submit" 
-            class="btn btn-primary" 
-            [disabled]="!ordenForm.form.valid || loading">
-      <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-      <span class="ms-2">{{loading ? 'Guardando...' : 'Crear Orden'}}</span>
-    </button>
+    
+    <button *ngIf="!isDetalles" 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="!ordenForm.form.valid || loading">
+    <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+    <span class="ms-2">{{loading ? 'Guardando...' : 'Crear Orden'}}</span>
+  </button>
   </div>
 </form>

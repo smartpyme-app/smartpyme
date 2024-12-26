@@ -316,6 +316,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.correlativo = null;
         this.venta.estado = 'Pagada';
         this.venta.observaciones = '';
+        this.venta.terminos_de_venta = '';
         this.venta.cotizacion = 0;
         this.venta.num_cotizacion = this.venta.id;
         this.venta.id = null;

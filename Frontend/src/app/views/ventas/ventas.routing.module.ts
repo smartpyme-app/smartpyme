@@ -84,6 +84,9 @@ const routes: Routes = [
       // Ordenes de producción
       { path: 'ordenes/produccion', component: OrdenesProduccionComponent, title: 'Ordenes de producción' },
       { path: 'orden-produccion/crear/:id', component: CrearOrdenProduccionComponent, title: 'Crear Orden de Producción' },
+      //{ path: 'orden-produccion/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
+      { path: 'orden-produccion/detalles/:id', component: CrearOrdenProduccionComponent, title: 'Ver Orden de Producción' }
+
     ]
   }
 ];
