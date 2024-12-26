@@ -101,15 +101,10 @@ export class OrdenesProduccionComponent implements OnInit {
   public openFilter(template: TemplateRef<any>) {
     if (!this.usuarios.length) {
       this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-        this.usuarios = usuarios;
+        this.asesores = usuarios;
       }, error => { this.alertService.error(error); });
     }
 
-    if (!this.asesores.length) {
-      this.apiService.getAll('asesores/list').subscribe(asesores => {
-        this.asesores = asesores;
-      }, error => { this.alertService.error(error); });
-    }
 
     this.modalRef = this.modalService.show(template);
   }

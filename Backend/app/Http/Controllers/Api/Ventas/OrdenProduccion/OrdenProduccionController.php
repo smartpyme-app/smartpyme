@@ -11,11 +11,13 @@ use App\Models\Ventas\OrdenProduccion\NotificacionOrdenProduccion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class OrdenProduccionController extends Controller
 {
     public function index(Request $request)
     {
+        Log::info($request->all());
         $query = OrdenProduccion::with(['cliente', 'usuario', 'asesor'])
             ->when($request->estado, function($q, $estado) {
                 return $q->where('estado', $estado);
