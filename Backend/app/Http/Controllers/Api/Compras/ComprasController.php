@@ -14,7 +14,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
-
+use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -514,8 +514,13 @@ class ComprasController extends Controller
     public function sinDevolucion(){
 
         $compras = Compra::where('estado', '!=', 'Anulada')
-                        ->whereMonth('fecha', '>=' , date('m') - 1)
-                        ->whereYear('fecha', date('Y'))
+                        ->where(function ($query) {
+                            // Obtener la fecha límite (hace dos meses desde ahora)
+                            $fechaInicio = Carbon::now()->subMonths(2)->startOfMonth();
+                            $fechaFin = Carbon::now()->endOfMonth();
+
+                            $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+                        })
                         ->whereDoesntHave('devoluciones')
                         ->orderBy('fecha', 'DESC')
                         ->get();
