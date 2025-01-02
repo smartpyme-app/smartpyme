@@ -33,6 +33,10 @@ class Detalle extends Model {
         return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
 
+    public function composiciones(){
+        return $this->hasMany('App\Models\Ventas\Devoluciones\DetalleCompuesto','id_detalle');
+    }
+
     public function venta(){
         return $this->belongsTo('App\Models\Ventas\Devoluciones\Devolucion','id_devolucion_venta');
     }

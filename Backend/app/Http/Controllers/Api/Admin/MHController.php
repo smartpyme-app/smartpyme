@@ -11,6 +11,9 @@ use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
 use App\Models\MH\Unidad;
 use App\Models\MH\Pais;
+use App\Models\MH\Recinto;
+use App\Models\MH\Regimen;
+use App\Models\MH\Incoterm;
 
 class MHController extends Controller
 {
@@ -55,6 +58,27 @@ class MHController extends Controller
        
         $unidades = Unidad::orderBy('nombre','asc')->get();
         return Response()->json($unidades, 200);
+
+    }
+
+    public function recintos() {
+       
+        $recintos = Recinto::orderBy('nombre','asc')->get();
+        return Response()->json($recintos, 200);
+
+    }
+
+    public function regimenes() {
+       
+        $regimenes = Regimen::orderBy('nombre','asc')->get();
+        return Response()->json($regimenes, 200);
+
+    }
+
+    public function incoterms() {
+       
+        $incoterms = Incoterm::orderBy('nombre','asc')->get();
+        return Response()->json($incoterms, 200);
 
     }
 

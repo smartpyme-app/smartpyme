@@ -77,10 +77,9 @@
                         <td class="d-none d-md-table-cell">{{ cliente.dui}}</td>
                         <td class="d-none d-md-table-cell">{{ cliente.ncr }}</td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(cliente)" [(ngModel)]="cliente.tipo" [ngClass]="{'bg-light-success' : cliente?.tipo == 'Empresa', 'bg-light-info' : cliente?.tipo == 'Persona'}">
-                                <option value="Persona">Persona</option>
-                                <option value="Empresa">Empresa</option>
-                            </select>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente?.tipo == 'Empresa', 'bg-info' : cliente?.tipo == 'Persona', 'bg-dark' : cliente?.tipo == 'Extranjero'}">
+                                    {{ cliente.tipo}}
+                            </span>
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">

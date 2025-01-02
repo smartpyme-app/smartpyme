@@ -3,6 +3,7 @@
 namespace App\Exports\Contabilidad;
 
 use App\Models\Ventas\Venta;
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -24,18 +25,29 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-
+        
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function($q) {
-                            $q->where('nombre', 'Crédito fiscal');
+                        ->when($request->tipo_documento, function($query) {
+                            return $query->whereHas('documento', function($q) {
+                                $q->where('nombre', 'Crédito fiscal');
+                            });
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
                         ->get();
 
-        return $ventas;
+        $devoluciones = DevolucionVenta::with(['cliente'])
+            ->where('enable', true)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
+
+        $libroVentas = $ventas->merge($ventas)->merge($devoluciones)->sortBy(function ($item) {
+                return [$item['fecha'], $item['correlativo']];
+            });
+
+        return $libroVentas;
         
     }
 
@@ -62,13 +74,13 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
               trim($row->correlativo), //'Numero Interno',
               $nit_nrc, //'NIT/NRC',
               $nombre, //'Nombre',
-              $row->exenta ? $row->exenta : '0.00', //'Exentas',
-              $row->no_sujeta ? $row->no_sujeta : '0.00', //'No Sujetas',
-              $row->sub_total ? $row->sub_total : '0.00', //'Gravadas', 
-              $row->iva ? $row->iva : '0.00', //'Debito', 
+              $row->id_venta ? $row->exenta * -1 : $row->exenta,
+              $row->id_venta ? $row->no_sujeta * -1 : $row->no_sujeta,
+              $row->id_venta ? $row->sub_total * -1 : $row->sub_total,
+              $row->id_venta ? $row->iva * -1 : $row->iva,
               '0.00', //'Ventas a terceros',
               '0.00', //'Debito ventas a terceros',
-              $row->total ? $row->total : '0.00', //'Total',
+              $row->id_venta ? $row->total * -1 : $row->total,
               null, //'DUI',
               1, //'Anexo',
 
