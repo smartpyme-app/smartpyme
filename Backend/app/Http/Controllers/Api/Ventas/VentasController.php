@@ -774,14 +774,19 @@ class VentasController extends Controller
     public function sinDevolucion(){
 
         $ventas = Venta::where('estado', '!=', 'Anulada')
-                        ->whereMonth('fecha', '>=' , date('m') - 2)
-                        ->whereYear('fecha', date('Y'))
-                        ->whereHas('documento', function($q){
-                            $q->whereIn('nombre', ['Factura', 'Crédito fiscal']);
-                        })
-                        ->whereDoesntHave('devoluciones')
-                        ->orderBy('fecha', 'DESC')
-                        ->get();
+            ->where(function ($query) {
+                // Obtener la fecha límite (hace dos meses desde ahora)
+                $fechaInicio = Carbon::now()->subMonths(2)->startOfMonth();
+                $fechaFin = Carbon::now()->endOfMonth();
+
+                $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+            })
+            ->whereHas('documento', function ($q) {
+                $q->whereIn('nombre', ['Factura', 'Crédito fiscal']);
+            })
+            ->whereDoesntHave('devoluciones')
+            ->orderBy('fecha', 'DESC')
+            ->get();
 
         return Response()->json($ventas, 200);
     }
