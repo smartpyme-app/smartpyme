@@ -19,13 +19,13 @@ class OrdenProduccionController extends Controller
     {
         Log::info($request->all());
         $query = OrdenProduccion::with(['cliente', 'usuario', 'asesor'])
-            ->when($request->estado, function($q, $estado) {
+            ->when($request->estado, function ($q, $estado) {
                 return $q->where('estado', $estado);
             })
-            ->when($request->fecha_entrega, function($q, $fecha) {
+            ->when($request->fecha_entrega, function ($q, $fecha) {
                 return $q->whereDate('fecha_entrega', $fecha);
             })
-            ->when($request->id_asesor, function($q, $asesor) {
+            ->when($request->id_asesor, function ($q, $asesor) {
                 return $q->where('id_asesor', $asesor);
             });
 
@@ -49,35 +49,35 @@ class OrdenProduccionController extends Controller
             ]);
 
             // Crear la orden
-           $cotizacion = CotizacionVenta::find($request->id_cotizacion);
+            $cotizacion = CotizacionVenta::find($request->id_cotizacion);
 
-           $orden = OrdenProduccion::create([
-            'codigo' => $this->generarCodigo(),
-            'fecha' => $request->fecha,
-            'fecha_entrega' => $request->fecha_entrega,
-            'estado' => 'pendiente',
-            'id_cotizacion_venta' => $cotizacion->id,
-            'id_cliente' => $cotizacion->id_cliente,
-            'id_usuario' => Auth::id(),
-            'id_asesor' => $request->id_asesor,
-            'observaciones' => $request->observaciones,
-            'id_empresa' => Auth::user()->id_empresa
-           ]);
-
-           foreach ($cotizacion->detalles as $detalle) {
-            DetalleOrdenProduccion::create([
-                'id_orden_produccion' => $orden->id,
-                'id_producto' => $detalle->id_producto,
-                'cantidad' => $detalle->cantidad,
-                'precio' => $detalle->precio,
-                'total' => $detalle->total,
-                'total_costo' => $detalle->total_costo,
-                'descuento' => $detalle->descuento,
-                'subtotal' => $detalle->subtotal
+            $orden = OrdenProduccion::create([
+                'codigo' => $this->generarCodigo(),
+                'fecha' => $request->fecha,
+                'fecha_entrega' => $request->fecha_entrega,
+                'estado' => 'pendiente',
+                'id_cotizacion_venta' => $cotizacion->id,
+                'id_cliente' => $cotizacion->id_cliente,
+                'id_usuario' => Auth::id(),
+                'id_asesor' => $request->id_asesor,
+                'observaciones' => $request->observaciones,
+                'id_empresa' => Auth::user()->id_empresa
             ]);
-           }
 
-           $this->calcularTotales($orden);
+            foreach ($cotizacion->detalles as $detalle) {
+                DetalleOrdenProduccion::create([
+                    'id_orden_produccion' => $orden->id,
+                    'id_producto' => $detalle->id_producto,
+                    'cantidad' => $detalle->cantidad,
+                    'precio' => $detalle->precio,
+                    'total' => $detalle->total,
+                    'total_costo' => $detalle->total_costo,
+                    'descuento' => $detalle->descuento,
+                    'subtotal' => $detalle->subtotal
+                ]);
+            }
+
+            $this->calcularTotales($orden);
 
             // Registrar historial
             // $orden->historial()->create([
@@ -94,7 +94,7 @@ class OrdenProduccionController extends Controller
             // ]);
 
             // Calcular totales
-           // $this->calcularTotales($orden);
+            // $this->calcularTotales($orden);
 
             DB::commit();
 
@@ -103,7 +103,6 @@ class OrdenProduccionController extends Controller
                 'message' => 'Orden creada exitosamente',
                 'data' => $orden->fresh(['detalles', 'cliente', 'usuario', 'asesor'])
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -124,9 +123,14 @@ class OrdenProduccionController extends Controller
             'asesor',
             'historial.usuario'
         ])->findOrFail($id);
+        //detalles.customFields.customFieldValue
+        $id_cotizacion_venta = $orden->id_cotizacion_venta;
+        $cotizacion_venta = CotizacionVenta::where('id', $id_cotizacion_venta)->with('cliente', 'detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
+        Log::info($orden);
 
         return response()->json($orden);
     }
+    
 
     public function update(Request $request, $id)
     {
@@ -179,7 +183,6 @@ class OrdenProduccionController extends Controller
                 'message' => 'Orden actualizada exitosamente',
                 'data' => $orden->fresh(['detalles', 'cliente', 'usuario', 'asesor'])
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -225,7 +228,6 @@ class OrdenProduccionController extends Controller
                 'message' => 'Estado actualizado exitosamente',
                 'data' => $orden->fresh()
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -239,11 +241,11 @@ class OrdenProduccionController extends Controller
     private function calcularTotales(OrdenProduccion $orden)
     {
         $detalles = $orden->detalles;
-        
+
         $subtotal = $detalles->sum('total');
         $totalCosto = $detalles->sum('total_costo');
         $descuento = $detalles->sum('descuento');
-        
+
         // Actualizar totales en la orden
         $orden->update([
             'subtotal' => $subtotal,
