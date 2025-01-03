@@ -3,6 +3,7 @@
 namespace App\Models\Ventas\Orden_Produccion;
 
 use App\Models\Inventario\CustomFields\CustomField;
+use App\Models\Inventario\CustomFields\ProductCustomField;
 use App\Models\Inventario\Producto;
 use Illuminate\Database\Eloquent\Model;
 
@@ -42,6 +43,6 @@ class DetalleOrdenProduccion extends Model
 
     public function customFields()
     {
-        return $this->hasMany(CustomField::class, 'id_detalle_orden_produccion');
+        return $this->hasMany(ProductCustomField::class, 'orden_produccion_detalle_id');
     }
 }

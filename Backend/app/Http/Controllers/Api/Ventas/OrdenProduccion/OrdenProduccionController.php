@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Ventas\OrdenProduccion;
 
 use App\Http\Controllers\Controller;
 use App\Models\CotizacionVenta;
+use App\Models\CotizacionVentaDetalle;
+use App\Models\Inventario\CustomFields\ProductCustomField;
 use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use App\Models\Ventas\Orden_Produccion\DetalleOrdenProduccion;
 use App\Models\Ventas\OrdenProduccion\HistorialOrdenProduccion;
@@ -37,6 +39,7 @@ class OrdenProduccionController extends Controller
 
     public function store(Request $request)
     {
+        //dd($request->all());
         try {
             DB::beginTransaction();
 
@@ -64,8 +67,11 @@ class OrdenProduccionController extends Controller
                 'id_empresa' => Auth::user()->id_empresa
             ]);
 
+            $cotizacion = CotizacionVenta::with('detalles.customFields.customFieldValue')->find($cotizacion->id);
+
             foreach ($cotizacion->detalles as $detalle) {
-                DetalleOrdenProduccion::create([
+                
+                $orden_produccion = DetalleOrdenProduccion::create([
                     'id_orden_produccion' => $orden->id,
                     'id_producto' => $detalle->id_producto,
                     'cantidad' => $detalle->cantidad,
@@ -75,16 +81,24 @@ class OrdenProduccionController extends Controller
                     'descuento' => $detalle->descuento,
                     'subtotal' => $detalle->subtotal
                 ]);
+                foreach ($detalle->customFields as $customField) {
+                    ProductCustomField::create([
+                        'custom_field_id' => $customField->custom_field_id,
+                        'custom_field_value_id' => $customField->custom_field_value_id,
+                        'orden_produccion_detalle_id' => $orden_produccion->id,
+                        'value' => $customField->value
+                    ]);
+                }
             }
 
             $this->calcularTotales($orden);
 
             // Registrar historial
-            // $orden->historial()->create([
-            //     'estado_nuevo' => 'pendiente',
-            //     'id_usuario' => Auth::id(),
-            //     'comentarios' => 'Orden creada'
-            // ]);
+            $orden->historial()->create([
+                'estado_nuevo' => 'pendiente',
+                'id_usuario' => Auth::id(),
+                'comentarios' => 'Orden creada'
+            ]);
 
             // Crear notificación
             // NotificacionOrdenProduccion::create([
@@ -117,16 +131,12 @@ class OrdenProduccionController extends Controller
     {
         $orden = OrdenProduccion::with([
             'detalles.producto',
-            'detalles',
+            'detalles.customFields.customFieldValue',
             'cliente',
             'usuario',
             'asesor',
             'historial.usuario'
         ])->findOrFail($id);
-        //detalles.customFields.customFieldValue
-        $id_cotizacion_venta = $orden->id_cotizacion_venta;
-        $cotizacion_venta = CotizacionVenta::where('id', $id_cotizacion_venta)->with('cliente', 'detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
-        Log::info($orden);
 
         return response()->json($orden);
     }

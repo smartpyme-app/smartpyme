@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\Registros\Cliente;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
@@ -14,6 +13,7 @@ use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\CotizacionesExport;
 use App\Models\CotizacionVenta;
+use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
