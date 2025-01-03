@@ -1,8 +1,8 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Órdenes de Producción</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/orden-produccion/crear" tooltip="Crear orden de producción" class="btn btn-default">
+    <!-- <button *ngIf="apiService.canCreate()" routerLink="/orden-produccion/crear" tooltip="Crear orden de producción" class="btn btn-default">
       <i class="fa fa-plus"></i> Nueva Orden
-    </button>
+    </button> -->
   </section>
   
   <section class="bg-white p-4 rounded mb-3">
@@ -83,7 +83,7 @@
                 <option value="en_proceso">En Proceso</option>
                 <option value="completada">Completada</option>
                 <option value="entregada">Entregada</option>
-                <!-- <option value="anulada">Anulada</option> -->
+                <option value="anulada">Anulada</option>
               </select>
             </td>
             <td>{{orden.fecha_entrega | date:'dd/MM/yyyy'}}</td>

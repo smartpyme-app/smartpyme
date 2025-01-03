@@ -132,7 +132,7 @@ export class OrdenesProduccionComponent implements OnInit {
   }
 
   public anular(orden: any) {
-    this.apiService.delete('orden-produccion', orden.id).subscribe(
+    this.apiService.store('orden-produccion/anular', orden).subscribe(
       response => {
         this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
       }, 

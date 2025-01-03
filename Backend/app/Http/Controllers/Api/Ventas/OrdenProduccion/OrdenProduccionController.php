@@ -271,4 +271,11 @@ class OrdenProduccionController extends Controller
         $numeroActual = $ultimaOrden ? intval(substr($ultimaOrden->codigo, 3)) + 1 : 1;
         return 'OP-' . str_pad($numeroActual, 6, '0', STR_PAD_LEFT);
     }
+    //anular
+    public function anular(Request $request)
+    {
+        $orden = OrdenProduccion::findOrFail($request->id);
+        $orden->update(['estado' => 'anulada']);
+        return response()->json(['success' => true, 'message' => 'Orden anulada exitosamente']);
+    }
 }

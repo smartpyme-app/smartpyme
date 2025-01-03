@@ -225,7 +225,7 @@ class CotizacionesController extends Controller
         if ($tipo === 'cotizacion') {
             Log::info('Generando documento de cotización');
             $venta = CotizacionVenta::where('id', $id)
-                ->with('detalles', 'cliente')
+                ->with('detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'cliente')
                 ->firstOrFail();
 
             $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
