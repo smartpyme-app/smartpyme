@@ -8,6 +8,8 @@ class Detalle extends Model {
 
     protected $table = 'detalles_devolucion_venta';
     protected $fillable = array(
+        'id_producto',
+        'descripcion',
         'cantidad',
         'precio',
         'costo',
@@ -17,12 +19,15 @@ class Detalle extends Model {
         'exenta',
         'total',
         'id_devolucion_venta',
-        'id_producto'
     );
     protected $appends = ['nombre_producto', 'medida'];
 
     public function getNombreProductoAttribute(){
-        return $this->producto()->pluck('nombre')->first();
+        if ($this->descripcion) {
+            return $this->descripcion;
+        }else{
+            return $this->producto()->pluck('nombre')->first();
+        }
     }
 
     public function getMedidaAttribute(){
