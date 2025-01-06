@@ -7,11 +7,20 @@
     <style>
         * {
             margin: 0cm;
-            font-family: system-ui;
+            font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
         }
 
         body {
+            font-family: serif;
             margin: 50px;
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #000000 !important;
         }
 
         table {
