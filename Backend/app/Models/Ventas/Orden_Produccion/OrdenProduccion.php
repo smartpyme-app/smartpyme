@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Models\Ventas\Orden_Produccion;
 
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Notificacion;
 use App\Models\Admin\Sucursal;
 use App\Models\CotizacionVenta;
 use App\Models\User;
@@ -50,6 +52,56 @@ class OrdenProduccion extends Model
         'iva' => 'decimal:2',
         'total' => 'decimal:2'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+     
+        self::created(function ($model) {
+            self::crearNotificacion($model, [
+                'titulo' => 'Nueva Orden de Producción',
+                'descripcion' => "Nueva orden de producción #{$model->codigo} creada"
+            ]);
+        });
+
+    
+        self::updated(function ($model) {
+            if ($model->isDirty('estado') && $model->estado === 'completada') {
+                self::crearNotificacion($model, [
+                    'titulo' => 'Orden de Producción Completada', 
+                    'descripcion' => "La orden de producción #{$model->codigo} completada"
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Crea una notificación para la orden de producción
+     * 
+     * @param OrdenProduccion $model
+     * @param array $datos
+     * @return void
+     */
+    private static function crearNotificacion($model, array $datos)
+    {
+        Notificacion::create([
+            'titulo' => $datos['titulo'],
+            'descripcion' => $datos['descripcion'],
+            'tipo' => 'Orden de Producción',
+            'categoria' => 'ordenes_produccion', 
+            'prioridad' => 'Alta',
+            'leido' => false,
+            'referencia' => 'orden de producción',
+            'id_referencia' => $model->id,
+            'id_empresa' => $model->id_empresa,
+            'id_sucursal' => null,
+            'id_producto' => null,
+            'dashboard' => true,
+            'tipo_referencia' => 'orden_produccion',
+            'id_orden_produccion' => $model->id
+        ]);
+    }
 
     public function getNombreClienteAttribute()
     {

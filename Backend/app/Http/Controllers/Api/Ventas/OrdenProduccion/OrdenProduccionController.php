@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Ventas\OrdenProduccion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Notificacion;
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use App\Models\Inventario\CustomFields\ProductCustomField;
@@ -71,7 +72,7 @@ class OrdenProduccionController extends Controller
             $cotizacion = CotizacionVenta::with('detalles.customFields.customFieldValue')->find($cotizacion->id);
 
             foreach ($cotizacion->detalles as $detalle) {
-                
+
                 $orden_produccion = DetalleOrdenProduccion::create([
                     'id_orden_produccion' => $orden->id,
                     'id_producto' => $detalle->id_producto,
@@ -100,16 +101,7 @@ class OrdenProduccionController extends Controller
                 'id_usuario' => Auth::id(),
                 'comentarios' => 'Orden creada'
             ]);
-
-            // Crear notificación
-            // NotificacionOrdenProduccion::create([
-            //     'id_orden_produccion' => $orden->id,
-            //     'tipo' => 'nueva_orden',
-            //     'mensaje' => "Nueva orden de producción #{$orden->codigo} creada"
-            // ]);
-
-            // Calcular totales
-            // $this->calcularTotales($orden);
+            
 
             DB::commit();
 
@@ -141,7 +133,7 @@ class OrdenProduccionController extends Controller
 
         return response()->json($orden);
     }
-    
+
 
     public function update(Request $request, $id)
     {
@@ -206,47 +198,42 @@ class OrdenProduccionController extends Controller
 
     public function cambiarEstado(Request $request)
     {
-        try {
-            DB::beginTransaction();
+        // try {
+        DB::beginTransaction();
 
-            $request->validate([
-                'estado' => 'required|in:pendiente,aceptada,en_proceso,completada,entregada,anulada',
-                'comentarios' => 'nullable|string'
-            ]);
+        $request->validate([
+            'estado' => 'required|in:pendiente,aceptada,en_proceso,completada,entregada,anulada',
+            'comentarios' => 'nullable|string'
+        ]);
 
-            $orden = OrdenProduccion::findOrFail($request->id);
-            $estadoAnterior = $orden->estado;
+        $orden = OrdenProduccion::findOrFail($request->id);
+        $estadoAnterior = $orden->estado;
 
-            // Validar cambio de estado
-            // if ($estadoAnterior === 'anulada') {
-            //     throw new \Exception('No se puede cambiar el estado de una orden anulada');
-            // }
+        $orden->update(['estado' => $request->estado]);
 
-            // Actualizar estado
-            $orden->update(['estado' => $request->estado]);
 
-            
-            $orden->historial()->create([
-                'estado_anterior' => $estadoAnterior,
-                'estado_nuevo' => $request->estado,
-                'id_usuario' => Auth::id(),
-                'comentarios' => 'Estado actualizado a ' . $request->estado
-            ]);
-            DB::commit();
+        $orden->historial()->create([
+            'estado_anterior' => $estadoAnterior,
+            'estado_nuevo' => $request->estado,
+            'id_usuario' => Auth::id(),
+            'comentarios' => 'Estado actualizado a ' . $request->estado
+        ]);
+        
+        DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Estado actualizado exitosamente',
-                'data' => $orden->fresh()
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al cambiar el estado',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado actualizado exitosamente',
+            'data' => $orden->fresh()
+        ]);
+        // } catch (\Exception $e) {
+        //     DB::rollBack();
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Error al cambiar el estado',
+        //         'error' => $e->getMessage()
+        //     ], 500);
+        // }
     }
 
     private function calcularTotales(OrdenProduccion $orden)
@@ -283,11 +270,10 @@ class OrdenProduccionController extends Controller
     //imprimir
     public function imprimir($id)
     {
-        $orden = OrdenProduccion::with(['cliente','empresa', 'detalles.producto', 'detalles.customFields.customFieldValue', 'cliente', 'usuario', 'asesor'])->findOrFail($id);
-     // return response()->json($orden->detalles);
+        $orden = OrdenProduccion::with(['cliente', 'empresa', 'detalles.producto', 'detalles.customFields.customFieldValue', 'cliente', 'usuario', 'asesor'])->findOrFail($id);
+        // return response()->json($orden->detalles);
         $pdf = PDF::loadView('reportes.facturacion.orden_produccion', compact('orden'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('orden_produccion-' . $orden->id . '.pdf');
-        
     }
 }
