@@ -66,7 +66,9 @@ class OrdenProduccionController extends Controller
                 'id_usuario' => Auth::id(),
                 'id_asesor' => $request->id_asesor,
                 'observaciones' => $request->observaciones,
-                'id_empresa' => Auth::user()->id_empresa
+                'id_empresa' => $cotizacion->id_empresa,
+                'id_bodega' => $cotizacion->id_bodega,
+                'terminos_condiciones' => $cotizacion->terminos_de_venta
             ]);
 
             $cotizacion = CotizacionVenta::with('detalles.customFields.customFieldValue')->find($cotizacion->id);

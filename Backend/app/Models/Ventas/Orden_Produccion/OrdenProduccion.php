@@ -34,7 +34,9 @@ class OrdenProduccion extends Model
         'gravada',
         'iva',
         'total',
-        'id_empresa'
+        'id_empresa',
+        'id_bodega',
+        'terminos_condiciones'
     ];
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];
 

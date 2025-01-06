@@ -46,9 +46,11 @@ export class CrearOrdenProduccionComponent implements OnInit {
       (response: any) => {
        
         this.cotizacion = response
+
         this.orden = {
           fecha: new Date().toISOString().split('T')[0],
-          estado: 'pendiente',
+          fecha_entrega: new Date(this.cotizacion.fecha_entrega).toISOString().split('T')[0],
+          estado: 'pendiente', 
           id_cotizacion: this.cotizacion.id,
           id_cliente: this.cotizacion.id_cliente,
           id_usuario: this.cotizacion.id_usuario,
@@ -77,6 +79,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
             custom_fields: detalle.custom_fields || []
           }))
         };
+
         this.loadCustomFields();
       },
       error => {
@@ -108,6 +111,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
           id_usuario: this.cotizacion.id_usuario,
           id_asesor: this.cotizacion.id_vendedor,
           id_empresa: this.cotizacion.id_empresa,
+          id_bodega: this.cotizacion.id_bodega,
           id_sucursal: this.cotizacion.id_sucursal,
           observaciones: this.cotizacion.observaciones,
           subtotal: this.cotizacion.sub_total,
@@ -201,7 +205,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
     }
   }
 
-  // Método auxiliar para formatear fechas
+
   formatDate(date: string): string {
     return new Date(date).toISOString().split('T')[0];
   }
