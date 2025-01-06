@@ -218,20 +218,20 @@ class OrdenProduccionController extends Controller
             $estadoAnterior = $orden->estado;
 
             // Validar cambio de estado
-            if ($estadoAnterior === 'anulada') {
-                throw new \Exception('No se puede cambiar el estado de una orden anulada');
-            }
+            // if ($estadoAnterior === 'anulada') {
+            //     throw new \Exception('No se puede cambiar el estado de una orden anulada');
+            // }
 
             // Actualizar estado
             $orden->update(['estado' => $request->estado]);
 
-            // Registrar historial
-            // $orden->historial()->create([
-            //     'estado_anterior' => $estadoAnterior,
-            //     'estado_nuevo' => $request->estado,
-            //     'id_usuario' => Auth::id(),
-            //     'comentarios' => $request->comentarios
-            // ]);
+            
+            $orden->historial()->create([
+                'estado_anterior' => $estadoAnterior,
+                'estado_nuevo' => $request->estado,
+                'id_usuario' => Auth::id(),
+                'comentarios' => 'Estado actualizado a ' . $request->estado
+            ]);
             DB::commit();
 
             return response()->json([
