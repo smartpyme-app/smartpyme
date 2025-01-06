@@ -97,7 +97,6 @@
                   [hidden]="!hasCustomField(field.id)">
                 {{field.name}}
               </th>
-              <th class="text-end">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -126,23 +125,8 @@
                   {{getCustomFieldValue(detalle, field.id)}}
                 </span>
               </td>
-              <td class="text-end">{{detalle.total | currency:'USD':'symbol':'1.2-2'}}</td>
             </tr>
           </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
-              <td class="text-end">{{orden.subtotal | currency:'USD':'symbol':'1.2-2'}}</td>
-            </tr>
-            <tr *ngIf="orden.descuento > 0">
-              <td colspan="3" class="text-end"><strong>Descuento:</strong></td>
-              <td class="text-end">{{orden.descuento | currency:'USD':'symbol':'1.2-2'}}</td>
-            </tr>
-            <tr>
-              <td colspan="3" class="text-end"><strong>Total:</strong></td>
-              <td class="text-end"><strong>{{orden.total | currency:'USD':'symbol':'1.2-2'}}</strong></td>
-            </tr>
-          </tfoot>
         </table>
       </div>
     </div>
