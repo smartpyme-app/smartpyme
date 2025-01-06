@@ -38,4 +38,14 @@ class ProductCustomField extends Model
     {
         return $this->belongsTo(DetalleOrdenProduccion::class, 'orden_produccion_detalle_id');
     }
+
+    public function getCustomFieldValue($customField)
+    {
+        if ($customField->custom_field_value_id) {
+            // Es un campo select, obtener valor de custom_field_values
+            return $customField->customFieldValue->value;
+        }
+        // Es un campo de texto directo
+        return $customField->value;
+    }
 }

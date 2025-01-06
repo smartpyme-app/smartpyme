@@ -283,8 +283,8 @@ class OrdenProduccionController extends Controller
     //imprimir
     public function imprimir($id)
     {
-        $orden = OrdenProduccion::with(['detalles.producto', 'detalles.customFields.customFieldValue', 'cliente', 'usuario', 'asesor'])->findOrFail($id);
-        //return response()->json($orden);
+        $orden = OrdenProduccion::with(['cliente','empresa', 'detalles.producto', 'detalles.customFields.customFieldValue', 'cliente', 'usuario', 'asesor'])->findOrFail($id);
+     // return response()->json($orden->detalles);
         $pdf = PDF::loadView('reportes.facturacion.orden_produccion', compact('orden'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('orden_produccion-' . $orden->id . '.pdf');
