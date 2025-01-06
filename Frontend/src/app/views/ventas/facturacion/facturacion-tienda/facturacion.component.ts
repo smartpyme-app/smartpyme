@@ -5,6 +5,7 @@ import {SumPipe} from '@pipes/sum.pipe';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {MHService} from '@services/MH.service';
+import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
 import { co } from '@fullcalendar/core/internal-common';
@@ -530,15 +531,24 @@ export class FacturacionComponent implements OnInit {
   }
 
   public onFacturar() {
-    if (confirm('¿Confirma procesar la ' + (this.venta.cotizacion == 1 ? ' cotización.' : 'venta.'))) {
-      if (!this.venta.recibido)
-        this.venta.recibido = this.venta.total;
+    Swal.fire({
+      title: '¿Confirma procesar la ' + (this.venta.cotizacion == 1 ? 'cotización' : 'venta') + '?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, procesar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (!this.venta.recibido) {
+          this.venta.recibido = this.venta.total;
+        }
 
-      if (this.venta.forma_pago == 'Wompi') {
-        this.venta.estado = 'Pendiente';
+        if (this.venta.forma_pago == 'Wompi') {
+          this.venta.estado = 'Pendiente';
+        }
+        this.onSubmit();
       }
-      this.onSubmit();
-    }
+    });
   }
 
   // Guardar venta
