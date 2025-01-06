@@ -9,4 +9,5 @@ Route::post('/orden-produccion', [OrdenProduccionController::class, 'store']);
 Route::put('/orden-produccion/{id}', [OrdenProduccionController::class, 'update']);
 Route::post('/orden-produccion/cambiar-estado', [OrdenProduccionController::class, 'cambiarEstado']);
 Route::post('/orden-produccion/anular', [OrdenProduccionController::class, 'anular']);
+Route::get('/orden-produccion/imprimir/{id}', [OrdenProduccionController::class, 'imprimir']);
 ?>

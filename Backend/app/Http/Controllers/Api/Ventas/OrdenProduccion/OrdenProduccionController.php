@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class OrdenProduccionController extends Controller
 {
@@ -277,5 +278,16 @@ class OrdenProduccionController extends Controller
         $orden = OrdenProduccion::findOrFail($request->id);
         $orden->update(['estado' => 'anulada']);
         return response()->json(['success' => true, 'message' => 'Orden anulada exitosamente']);
+    }
+
+    //imprimir
+    public function imprimir($id)
+    {
+        $orden = OrdenProduccion::with(['detalles.producto', 'detalles.customFields.customFieldValue', 'cliente', 'usuario', 'asesor'])->findOrFail($id);
+        //return response()->json($orden);
+        $pdf = PDF::loadView('reportes.facturacion.orden_produccion', compact('orden'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('orden_produccion-' . $orden->id . '.pdf');
+        
     }
 }
