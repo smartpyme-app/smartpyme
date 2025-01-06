@@ -46,7 +46,7 @@ class GenerarDocumentosController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
-        if ($documento->nombre == 'Ticket') {
+        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
@@ -180,6 +180,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 367 ){ //367  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -208,7 +212,12 @@ class GenerarDocumentosController extends Controller
             if(Auth::user()->id_empresa == 210){ //210
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-fact-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
-            } else{
+            }
+            elseif(Auth::user()->id_empresa == 367 ){ //367  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.factura-sujeto-excluido', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -317,6 +326,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Grupo-Lievano', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 367 ){ //367  OK V2
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
@@ -325,6 +338,7 @@ class GenerarDocumentosController extends Controller
             return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
 
+        return "No hay un formato para este tipo de documento de venta.";
 
     }
 
@@ -333,6 +347,5 @@ class GenerarDocumentosController extends Controller
         return view('reportes.anulacion');
 
     }
-
 
 }

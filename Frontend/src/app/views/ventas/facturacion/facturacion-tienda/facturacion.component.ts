@@ -28,6 +28,10 @@ export class FacturacionComponent implements OnInit {
   public sucursales: any = [];
   public bodegas: any = [];
   public impuestos: any = [];
+  public recintos:any = [];
+  public regimenes:any = [];
+  public incoterms:any = [];
+
   // public bancos:any = [];
   public canales: any = [];
   public supervisor: any = {};
@@ -493,12 +497,30 @@ export class FacturacionComponent implements OnInit {
     console.log(this.venta);
   }
 
-  public setDocumento(id_documento: any) {
-    let documento = this.documentos.find((x: any) => x.id == id_documento);
-    this.venta.id_documento = documento.id;
-    this.venta.nombre_documento = documento.nombre;
-    this.venta.correlativo = documento.correlativo;
-  }
+    public setDocumento(id_documento:any){
+      let documento = this.documentos.find((x:any) => x.id == id_documento);
+      this.venta.nombre_documento = documento.nombre;
+      this.venta.id_documento = documento.id;
+      this.venta.correlativo = documento.correlativo;
+
+      if(this.venta.nombre_documento == 'Factura de exportación'){
+          this.apiService.getAll('recintos').subscribe(recintos => {
+              this.recintos = recintos;
+          }, error => {this.alertService.error(error);});
+          this.apiService.getAll('regimenes').subscribe(regimenes => {
+              this.regimenes = regimenes;
+          }, error => {this.alertService.error(error);});
+          this.apiService.getAll('incoterms').subscribe(incoterms => {
+              this.incoterms = incoterms;
+          }, error => {this.alertService.error(error);});
+      }
+    }
+
+    setIncoterm(){
+        this.venta.incoterm = this.incoterms.find((item:any) => item.cod == this.venta.cod_incoterm).nombre;
+    }
+
+
 
 
   // Facturar

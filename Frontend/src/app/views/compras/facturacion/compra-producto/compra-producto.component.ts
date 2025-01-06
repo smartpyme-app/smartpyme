@@ -28,7 +28,7 @@ export class CompraProductoComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
 
-    constructor( 
+    constructor(
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
     ) { }
@@ -39,8 +39,8 @@ export class CompraProductoComponent implements OnInit {
           .pipe(
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
-              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
+            switchMap((query: any) =>
+              this.apiService.getAll(`productos/buscar/${encodeURIComponent(query)}`).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
                   this.productos = []; // Limpiar resultados en caso de error.
@@ -96,7 +96,7 @@ export class CompraProductoComponent implements OnInit {
         }
 
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

@@ -219,8 +219,8 @@ class ProductosController extends Controller
             $composicion = new Composicion;
             //$composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
             $composicion->cantidad = $detalle["cantidad"];
-            $composicion->id_producto = $detalle["id_producto"];
-            $composicion->id_compuesto = $producto->id;
+            $composicion->id_compuesto = $detalle["id_producto"];
+            $composicion->id_producto = $producto->id;
             $composicion->save();
         }
 
@@ -236,9 +236,11 @@ class ProductosController extends Controller
             }
         }
         ## se define el inventario del compuesto en la bodega seleccionada
-        $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
-        $inventarioInicial->stock = $request->stock;
-        $inventarioInicial->save();
+        if($request->id_bodega && $request->stock){
+            $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
+            $inventarioInicial->stock = $request->stock;
+            $inventarioInicial->save();
+        }
         
         DB::commit();
         

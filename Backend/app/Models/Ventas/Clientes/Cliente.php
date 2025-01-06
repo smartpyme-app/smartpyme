@@ -43,6 +43,8 @@ class Cliente extends Model {
        'id_usuario',
        'id_empresa',
        'id_cuenta_contable',
+       'tipo_persona',
+       'tipo_documento',
        
     ];
     protected $appends = ['nombre_completo'];

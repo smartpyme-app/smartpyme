@@ -19,7 +19,7 @@ Route::get('/pago-wompi', [App\Http\Controllers\WompiController::class, 'pagoWom
 Route::get('/payment/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('payment.n1co');
 Route::get('/registro/{id}', [AuthJWTController::class, 'pagoFinish'])->name('payment.finish');
 
-Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])->name('suscripcion.ticket');
+Route::get('/descargar-ticket/{id}',    [AuthJWTController::class, 'suscription'])->name('suscripcion.ticket');
 
 use App\Models\MH\Pais;
 use App\Models\MH\Unidad;
@@ -50,15 +50,15 @@ Route::get('/cargarmh', function(){
     // Incoterm
         Incoterm::create(['cod' => '01', 'nombre' => 'EXW-En fabrica']);
         Incoterm::create(['cod' => '02', 'nombre' => 'FCA-Libre transportista']);
-        Incoterm::create(['cod' => '03', 'nombre' => 'C PT-Transporte pagado hasta']);
+        Incoterm::create(['cod' => '03', 'nombre' => 'CPT-Transporte pagado hasta']);
         Incoterm::create(['cod' => '04', 'nombre' => 'CIP-Transporte y seguro pagado hasta']);
-        Incoterm::create(['cod' => '05', 'nombre' => 'DAP-Entre a en el lu ar']);
-        Incoterm::create(['cod' => '06', 'nombre' => 'DPU-Entre ado en el lu ar descar ado']);
-        Incoterm::create(['cod' => '07', 'nombre' => 'DDP-Entre acon impuestos pa ados']);
+        Incoterm::create(['cod' => '05', 'nombre' => 'DAP-Entrega en el lugar']);
+        Incoterm::create(['cod' => '06', 'nombre' => 'DPU-Entregado en el lugar descargado']);
+        Incoterm::create(['cod' => '07', 'nombre' => 'DDP-Entrega con impuestos pagados']);
         Incoterm::create(['cod' => '08', 'nombre' => 'FAS-Libre al costado del buque']);
         Incoterm::create(['cod' => '09', 'nombre' => 'FOB-Libre a bordo']);
         Incoterm::create(['cod' => '10', 'nombre' => 'CFR-Costo y flete']);
-        Incoterm::create(['cod' => '11', 'nombre' => 'CIF- Costo se uro flete']);
+        Incoterm::create(['cod' => '11', 'nombre' => 'CIF-Costo seguro y flete']);
 
     //Regimen
         Regimen::create(['cod' => 'EX1.1000.000', 'nombre' => 'Exportación Definitiva, Exportación Definitiva, Régimen Común EX1.1040.000 Exportación Definitiva, Exportación Definitiva Sustitución de Mercancías, Régimen Común']);
@@ -1643,21 +1643,8 @@ Route::get('/actualizarMH', function(){
     return 'Listo';
 });
 
-Route::get('/actualizarCategorias', function(){
-
-    $categorias = App\Models\Inventario\Categorias\Categoria::all();
-
-    foreach ($categorias as $categoria) {
-        $sucursal = $categoria->empresa()->first()->sucursales()->first();
-        $categoria->id_sucursal = $sucursal->id ?? NULL;
-        $categoria->save();
-    }
-
-    return 'Listo';
-});
-
-Route::get('/',       			[HomeController::class, 'index'])->name('home');
-Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
+Route::get('/',                 [HomeController::class, 'index'])->name('home');
+Route::post('/demo',            [HomeController::class, 'demoPost'])->name('demo');
 
 
 Auth::routes();

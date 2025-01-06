@@ -51,7 +51,7 @@ export class CrearClienteComponent implements OnInit {
             this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
     public setTipo(tipo:any){

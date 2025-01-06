@@ -9,6 +9,8 @@
 
 <section class="card border-0 p-3 mb-3">
   <div class="row">
+    <h6 class="mt-3">Detalles de la compra</h6>
+    
     <div class="form-group col-md-4 col-lg-2">
       <label for="fecha">Fecha</label><br>
       <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
@@ -21,13 +23,19 @@
         </option>
       </select>
     </div>
-    <div class="form-group col-md-4 col-lg-3">
-      <label for="id_bodega">Bodega</label>
-      <select name="id_bodega" [(ngModel)]="compra.id_bodega" class="form-select">
-        <option [value]="bodega.id" *ngFor="let bodega of bodegas">
-          {{ bodega.nombre }}
-        </option>
-      </select>
+    <div class="form-group col-md-6 col-lg-4">
+      <label for="">Proveedor</label>
+      <div class="input-group flex-nowrap">
+        <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor"
+          class="form-select p-0">
+          <ng-option value=""> Seleccione aquí </ng-option>
+          <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
+          <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
+          </ng-option>
+        </ng-select>
+        <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
+      </div>
     </div>
     <div class="form-group col-md-4 col-lg-2">
       <label for="tipo_documento">Documento</label>
@@ -46,22 +54,13 @@
       <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia"
         placeholder="Escribe aquí">
     </div>
-  </div>
-  <div class="row">
-    <h6 class="mt-3">Detalles de la compra</h6>
-    <div class="form-group col-md-6 col-lg-4">
-      <label for="">Proveedor</label>
-      <div class="input-group flex-nowrap">
-        <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor"
-          class="form-select p-0">
-          <ng-option value=""> Seleccione aquí </ng-option>
-          <ng-option value="" *ngIf="loading"> Cargando proveedores... </ng-option>
-          <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo}}
-          </ng-option>
-        </ng-select>
-        <app-crear-proveedor [id_proveedor]="compra.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
-      </div>
+    <div class="form-group col-md-4 col-lg-3">
+      <label for="id_bodega">Bodega</label>
+      <select name="id_bodega" [(ngModel)]="compra.id_bodega" class="form-select">
+        <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+          {{ bodega.nombre }}
+        </option>
+      </select>
     </div>
     <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-4">
       <label for="">Proyecto</label>
@@ -81,6 +80,7 @@
         name="observaciones">
     </div>
   </div>
+ 
 </section>
 <section class="card border-0 p-3 mb-3" *ngIf="cotizacion.detalles?.length>0">
   <h6 class="mt-3">Detalles de la Orden de compra</h6>
@@ -182,6 +182,77 @@
           </tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<section class="card border-0 p-3 mb-3">
+  <div class="row">
+    <h6 class="mt-3">Detalles de facturación</h6>
+    <!-- Estado: {{ compra.estado }} -->
+    <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
+      <div class="form-switch border rounded">
+        <label for="credito">Compra al crédito</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()"
+          [(ngModel)]="compra.credito" name="compra.credito">
+      </div>
+    </div>
+    <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
+      <div class="form-switch border rounded">
+        <label for="consigna">Consigna</label>
+        <input [disabled]="!compra.credito" class="form-check-input float-end" type="checkbox" role="switch"
+          (change)="setConsigna()" [(ngModel)]="compra.consigna" name="compra.credito">
+      </div>
+    </div>
+    <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!duplicarcompra && compra.cotizacion == 0">
+      <div class="form-switch bg-light-info rounded">
+        <label for="recurrente">Compra recurrente</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="compra.recurrente"
+          name="compra.recurrente">
+      </div>
+    </div>
+    <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
+      <label for="fecha_pago">Fecha de pago:</label><br>
+      <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
+    </div>
+    <div class="form-group col-md-6 col-lg-3" *ngIf="compra.cotizacion == 0">
+      <label for="forma_pago">Forma de pago</label>
+      <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
+        <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+      </select>
+    </div>
+    <!-- <div class="form-group col-md-6 col-lg-3" *ngIf="compra.forma_pago != 'Efectivo'">
+            <label for="detalle_banco">Bancos</label>
+            <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
+                <option value="">Seleccione aquí</option>
+                <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }}</option>
+            </select>
+        </div> -->
+    <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
+      <label for="num_serie">Num. Serie</label>
+      <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie"
+        placeholder="Escribe aquí">
+    </div>
+    <div class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="cobrar_impuestos">Con IVA</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+          [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
+      </div>
+    </div>
+    <div class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="percepcion">Percepción</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+          [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion">
+      </div>
+    </div>
+    <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="renta">Renta</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
+          [(ngModel)]="compra.renta" name="compra.renta">
+      </div>
     </div>
   </div>
 </section>
@@ -382,80 +453,8 @@
 
     </div>
   </div>
-
-
 </section>
 
-<section class="card border-0 p-3 mb-3">
-  <div class="row">
-    <h6 class="mt-3">Detalles de facturación</h6>
-    <!-- Estado: {{ compra.estado }} -->
-    <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
-      <div class="form-switch border rounded">
-        <label for="credito">Compra al crédito</label>
-        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()"
-          [(ngModel)]="compra.credito" name="compra.credito">
-      </div>
-    </div>
-    <div class="form-group col-lg-3 without-label" *ngIf="compra.cotizacion == 0">
-      <div class="form-switch border rounded">
-        <label for="consigna">Consigna</label>
-        <input [disabled]="!compra.credito" class="form-check-input float-end" type="checkbox" role="switch"
-          (change)="setConsigna()" [(ngModel)]="compra.consigna" name="compra.credito">
-      </div>
-    </div>
-    <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!duplicarcompra && compra.cotizacion == 0">
-      <div class="form-switch bg-light-info rounded">
-        <label for="recurrente">Compra recurrente</label>
-        <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="compra.recurrente"
-          name="compra.recurrente">
-      </div>
-    </div>
-    <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
-      <label for="fecha_pago">Fecha de pago:</label><br>
-      <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
-    </div>
-    <div class="form-group col-md-6 col-lg-3" *ngIf="compra.cotizacion == 0">
-      <label for="forma_pago">Forma de pago</label>
-      <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
-        <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
-      </select>
-    </div>
-    <!-- <div class="form-group col-md-6 col-lg-3" *ngIf="compra.forma_pago != 'Efectivo'">
-            <label for="detalle_banco">Bancos</label>
-            <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
-                <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }}</option>
-            </select>
-        </div> -->
-    <div class="form-group col-md-4 col-lg-3" *ngIf="compra.cotizacion == 0">
-      <label for="num_serie">Num. Serie</label>
-      <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie"
-        placeholder="Escribe aquí">
-    </div>
-    <div class="form-group col-md-6 col-lg-3 without-label">
-      <div class="form-switch bg-light-info rounded">
-        <label for="cobrar_impuestos">Con IVA</label>
-        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
-          [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
-      </div>
-    </div>
-    <div class="form-group col-md-6 col-lg-3 without-label">
-      <div class="form-switch bg-light-info rounded">
-        <label for="percepcion">Percepción</label>
-        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
-          [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion">
-      </div>
-    </div>
-    <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
-      <div class="form-switch bg-light-info rounded">
-        <label for="renta">Renta</label>
-        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
-          [(ngModel)]="compra.renta" name="compra.renta">
-      </div>
-    </div>
-  </div>
-</section>
 <section class="card border-0 p-3 mb-3">
   <div class="row">
     <div class="col-md-12">
