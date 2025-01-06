@@ -122,7 +122,7 @@ class CotizacionVentaController extends Controller
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);
-        Log::info($ordenes);
+       
 
         return Response()->json($ordenes, 200);
     }

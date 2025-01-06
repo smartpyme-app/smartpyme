@@ -69,7 +69,7 @@
               <select name="estado" class="form-select w-auto border-0" 
                       (change)="setEstado(orden)" 
                       [(ngModel)]="orden.estado"
-                      [disabled]="orden.estado === 'entregada' || orden.estado === 'aceptada'"
+                      [disabled]="orden.estado === 'entregada' || orden.estado === 'aceptada' || orden.estado === 'anulada'"
                       [ngClass]="{
                         'bg-light-warning': orden?.estado == 'pendiente',
                         'bg-light-info': orden?.estado == 'aceptada',

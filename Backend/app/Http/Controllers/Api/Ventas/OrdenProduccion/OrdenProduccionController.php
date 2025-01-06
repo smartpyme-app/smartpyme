@@ -21,7 +21,7 @@ class OrdenProduccionController extends Controller
 {
     public function index(Request $request)
     {
-        Log::info($request->all());
+       
         $query = OrdenProduccion::with(['cliente', 'usuario', 'asesor'])
             ->when($request->estado, function ($q, $estado) {
                 return $q->where('estado', $estado);
@@ -198,7 +198,7 @@ class OrdenProduccionController extends Controller
 
     public function cambiarEstado(Request $request)
     {
-        // try {
+         try {
         DB::beginTransaction();
 
         $request->validate([
@@ -226,14 +226,14 @@ class OrdenProduccionController extends Controller
             'message' => 'Estado actualizado exitosamente',
             'data' => $orden->fresh()
         ]);
-        // } catch (\Exception $e) {
-        //     DB::rollBack();
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Error al cambiar el estado',
-        //         'error' => $e->getMessage()
-        //     ], 500);
-        // }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cambiar el estado',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     private function calcularTotales(OrdenProduccion $orden)
