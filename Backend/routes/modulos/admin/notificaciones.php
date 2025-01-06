@@ -1,6 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Admin\NotificacionesController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/notificaciones',                  [NotificacionesController::class, 'index']);
     Route::get('/notificacion/{id}',              [NotificacionesController::class, 'read']);
