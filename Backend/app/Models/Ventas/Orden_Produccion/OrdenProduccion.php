@@ -92,7 +92,7 @@ class OrdenProduccion extends Model
             'categoria' => 'ordenes_produccion', 
             'prioridad' => 'Alta',
             'leido' => false,
-            'referencia' => 'orden de producción',
+            'referencia' => 'orden-produccion/detalles',
             'id_referencia' => $model->id,
             'id_empresa' => $model->id_empresa,
             'id_sucursal' => null,

@@ -6,7 +6,8 @@
 
 <div class="row" *ngIf="loading">
   <div class="col-12 text-center">
-    <span class="badge bg-primary">Cargando información de la cotización...</span>
+    <span class="badge bg-primary" *ngIf="!isDetalles">Cargando información de la cotización...</span>
+    <span class="badge bg-primary" *ngIf="isDetalles">Cargando información de la orden de producción...</span>
   </div>
 </div>
 
@@ -15,7 +16,8 @@
   <div class="col-md-12 mb-3">
     <div class="bg-white p-4 rounded">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Información de la Cotización #{{cotizacion.correlativo}}</h4>
+        <h4 *ngIf="!isDetalles">Información de la Cotización #{{cotizacion.correlativo}}</h4>
+        <h4 *ngIf="isDetalles">Información de la Orden de Producción #{{cotizacion.codigo}}</h4>
         <span class="badge bg-success">{{cotizacion.estado}}</span>
       </div>
       <div class="row">
@@ -62,7 +64,7 @@
           <input type="date" 
                  class="form-control" 
                  name="fecha_entrega" 
-                 [(ngModel)]="orden.fecha_entrega" 
+                 [(ngModel)]="orden.fecha_entrega"
                  #fechaEntrega="ngModel"
                  required>
           <div class="invalid-feedback" *ngIf="fechaEntrega.invalid && (fechaEntrega.dirty || fechaEntrega.touched)">

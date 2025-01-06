@@ -135,6 +135,9 @@ export class OrdenesProduccionComponent implements OnInit {
     this.apiService.store('orden-produccion/anular', orden).subscribe(
       response => {
         this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
+        orden.estado = 'anulada';
+
+        this.filtrarOrdenes();
       }, 
       error => { this.alertService.error(error); }
     );

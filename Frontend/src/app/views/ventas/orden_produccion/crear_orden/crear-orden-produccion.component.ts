@@ -101,6 +101,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
         this.orden = {
           fecha: new Date().toISOString().split('T')[0],
+          fecha_entrega: new Date().toISOString().split('T')[0],
           estado: 'pendiente',
           id_cotizacion: this.cotizacion.id,
           id_cliente: this.cotizacion.id_cliente,

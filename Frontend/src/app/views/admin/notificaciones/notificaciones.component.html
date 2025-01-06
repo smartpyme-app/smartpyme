@@ -111,7 +111,9 @@
                 <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'compra' "> Ir a la compra </span>
                 <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'gasto' "> Ir al gasto </span>
                 <span *ngIf="notificacion.tipo == 'Inventario bajo' "> Ver inventario </span>
+                <span *ngIf="notificacion.tipo == 'Orden de Producción' "> Ver orden de producción </span>
             </a>
+
             <button *ngIf="!notificacion.referencia && !notificacion.id_referencia" class="btn btn-primary"  (click)="modalRef.hide();">Entendido</button>
         </div>
   </div>
