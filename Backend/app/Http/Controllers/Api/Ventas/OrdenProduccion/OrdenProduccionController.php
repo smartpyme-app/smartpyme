@@ -68,7 +68,8 @@ class OrdenProduccionController extends Controller
                 'observaciones' => $request->observaciones,
                 'id_empresa' => $cotizacion->id_empresa,
                 'id_bodega' => $cotizacion->id_bodega,
-                'terminos_condiciones' => $cotizacion->terminos_de_venta
+                'terminos_condiciones' => $cotizacion->terminos_de_venta,
+                'id_vendedor' => $cotizacion->id_vendedor
             ]);
 
             $cotizacion = CotizacionVenta::with('detalles.customFields.customFieldValue')->find($cotizacion->id);
@@ -130,8 +131,11 @@ class OrdenProduccionController extends Controller
             'cliente',
             'usuario',
             'asesor',
-            'historial.usuario'
+            'historial.usuario',
+            'vendedor'
         ])->findOrFail($id);
+
+       // Log::info($orden);
 
         return response()->json($orden);
     }

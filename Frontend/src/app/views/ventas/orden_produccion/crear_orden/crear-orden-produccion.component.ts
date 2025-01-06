@@ -76,7 +76,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
             total_costo: detalle.total_costo,
             descuento: detalle.descuento,
             id_cotizacion_venta: detalle.id_cotizacion_venta,
-            custom_fields: detalle.custom_fields || []
+            custom_fields: detalle.custom_fields || [],
+            producto: detalle.producto
           }))
         };
 
