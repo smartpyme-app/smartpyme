@@ -63,11 +63,11 @@
                     <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
                     <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
                 </td>
-                <!-- <td class="text-right">
+                <td class="text-right">
                         @if ($venta->empresa()->pluck('logo')->first())
                             <img width="150" height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
-                    </td> -->
+                    </td>
             </tr>
         </tbody>
     </table>
