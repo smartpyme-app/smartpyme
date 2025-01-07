@@ -11,6 +11,7 @@ use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Ajuste;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Bodega;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Ventas\Venta;
@@ -181,14 +182,14 @@ class ProductosController extends Controller
         $producto->fill($request->all());
         $producto->save();
 
-        // Configurar inventarios para las sucursales
+        // Configurar inventarios para las bodegas
         if (!$request->id && $producto->tipo != 'Servicio') {
-            $sucursales = Sucursal::all();
-            foreach ($sucursales as $sucursal) {
+            $bodegas = Bodega::all();
+            foreach ($bodegas as $bodega) {
                 $inventario = new Inventario;
                 $inventario->id_producto    = $producto->id;
                 $inventario->stock          = 0;
-                $inventario->id_sucursal    = $sucursal->id;
+                $inventario->id_bodega    = $bodega->id;
                 $inventario->save();
             }
         }

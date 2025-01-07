@@ -16,8 +16,7 @@ class BodegasController extends Controller
     
     public function index(Request $request) {
        
-        $bodegas = Bodega::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->when($request->estado !== null, function($q) use ($request){
+        $bodegas = Bodega::when($request->estado !== null, function($q) use ($request){
                                     $q->where('activo', !!$request->estado);
                                 })
                                 ->when($request->id_sucursal, function($q) use ($request){
