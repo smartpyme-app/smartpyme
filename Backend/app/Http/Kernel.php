@@ -71,5 +71,9 @@ class Kernel extends HttpKernel
         'superadmin' => \App\Http\Middleware\SuperAdmin::class,
         'limite.usuarios' => \App\Http\Middleware\LimiteUsuarios::class,
         'limite.sucursales' => \App\Http\Middleware\LimiteSucursales::class,
+        //spatie
+        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
     ];
 }
