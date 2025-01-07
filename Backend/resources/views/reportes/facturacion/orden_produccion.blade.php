@@ -54,11 +54,11 @@
                     <p>{{ $orden->empresa->direccion }}</p>
                     <p>{{ $orden->empresa->telefono }}</p>
                 </td>
-                <!-- <td class="text-right">
+                <td class="text-right">
                    @if ($orden->empresa->logo)
                        <img width="150" height="150" src="{{ asset('img/'.$orden->empresa->logo) }}" alt="Logo">
                    @endif
-               </td> -->
+               </td>
             </tr>
         </tbody>
     </table>
