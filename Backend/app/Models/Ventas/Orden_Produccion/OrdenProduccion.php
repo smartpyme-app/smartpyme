@@ -79,13 +79,7 @@ class OrdenProduccion extends Model
         });
     }
 
-    /**
-     * Crea una notificación para la orden de producción
-     * 
-     * @param OrdenProduccion $model
-     * @param array $datos
-     * @return void
-     */
+
     private static function crearNotificacion($model, array $datos)
     {
         Notificacion::create([
