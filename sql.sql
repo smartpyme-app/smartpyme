@@ -1,27 +1,24 @@
--- FEX
+-- Bodegas
 
-ALTER TABLE ventas ADD tipo_item_export varchar(255) NULL AFTER dte_invalidacion;
-ALTER TABLE ventas ADD cod_incoterm varchar(255) NULL AFTER tipo_item_export;
-ALTER TABLE ventas ADD incoterm varchar(255) NULL AFTER cod_incoterm;
-ALTER TABLE ventas ADD recinto_fiscal varchar(255) NULL AFTER incoterm;
-ALTER TABLE ventas ADD regimen varchar(255) NULL AFTER recinto_fiscal;
+CREATE TABLE sucursal_bodegas AS SELECT * FROM sucursales;
+ALTER TABLE sucursal_bodegas ADD PRIMARY KEY(id);
 
-ALTER TABLE ventas ADD seguro decimal(10,2) default 0 AFTER regimen;
-ALTER TABLE ventas ADD flete decimal(10,2) default 0 AFTER seguro;
+ALTER TABLE `sucursal_bodegas`
+  DROP `telefono`,
+  DROP `correo`,
+  DROP `municipio`,
+  DROP `departamento`,
+  DROP `direccion`;
 
-ALTER TABLE clientes ADD tipo_persona varchar(255) default 0 AFTER cod_departamento;
-ALTER TABLE clientes ADD tipo_documento varchar(255) default 0 AFTER tipo_persona;
-
-ALTER TABLE devoluciones_venta ADD id_sucursal int NULL AFTER id_empresa;
-ALTER TABLE devoluciones_compra ADD id_sucursal int NULL AFTER id_empresa;
+ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
+UPDATE sucursal_bodegas SET id_sucursal=id;
 
 
-CREATE TABLE detalles_compuesto_devolucion_venta (
-    id int NOT NULL AUTO_INCREMENT,
-    id_producto int  NOT NULL,
-    cantidad decimal(10,2) NULL,
-    id_detalle int  NOT NULL,
-    created_at timestamp NULL,
-    updated_at timestamp NULL,
-    PRIMARY KEY (id)
-);
+ALTER TABLE ajustes CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+ALTER TABLE traslados CHANGE id_sucursal_de id_bodega_de INT(11) NULL DEFAULT NULL;
+ALTER TABLE traslados CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+
+ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
+ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
