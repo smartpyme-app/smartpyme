@@ -14,8 +14,32 @@ class PermissionSeeder extends Seeder
      */
     public function run()
     {
-        foreach (config('permissions') as $key => $permissionName) {
-            Permission::updateOrCreate(['name' => $permissionName]);
+   
+        foreach (config('permissions.PERMISSION_INVENTARIO') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+        foreach (config('permissions.PERMISSION_VENTAS') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+
+        foreach (config('permissions.PERMISSION_COMPRAS') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+        foreach (config('permissions.PERMISSION_GASTOS') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+
+        foreach (config('permissions.PERMISSION_CITAS_SERVICIOS') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+        foreach (config('permissions.PERMISSION_MI_NEGOCIO') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+        foreach (config('permissions.PERMISSION_CONFIGURACION') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
+        }
+        foreach (config('permissions.PERMISSION_REPORTES') as $permission) {
+            Permission::updateOrCreate(['name' => $permission]);
         }
     }
 }
