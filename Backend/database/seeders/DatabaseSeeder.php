@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             MHTableSeeder::class,
             PermissionSeeder::class,
             RoleSeeder::class,
+            UserRoleSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,
             // UsersTableSeeder::class,
