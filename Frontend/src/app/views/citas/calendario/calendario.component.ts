@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -16,11 +16,14 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
-
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+registerLocaleData(localeEs);
 @Component({
   selector: 'app-calendario',
   templateUrl: './calendario.component.html',
-  styleUrls: ['./calendario.component.scss']
+  styleUrls: ['./calendario.component.scss'],
+  providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }]
 })
 export class CalendarioComponent implements OnInit {
 
@@ -45,6 +48,9 @@ export class CalendarioComponent implements OnInit {
   @ViewChild('fullcalendar') fullcalendar?: FullCalendarComponent;
   get calendar(): Calendar | undefined {
     return this.fullcalendar?.getApi();
+  }
+  get currentDate(): Date {
+    return this.calendar?.getDate() || new Date();
   }
   ngOnInit() {
     forwardRef(() => Calendar);
@@ -76,6 +82,7 @@ export class CalendarioComponent implements OnInit {
         center: '',
         right: ''
       },
+
       customButtons: {
         myCustomButton: {
           text: 'Nuevo',
@@ -90,28 +97,28 @@ export class CalendarioComponent implements OnInit {
             minute: '2-digit',
             omitZeroMinute: false,
             meridiem: 'short'
-          }
+          },
+          headerToolbar: false,
         }
       },
       eventContent: function (arg) {
         let italicEl = document.createElement('span')
         italicEl.classList.add('event-container');
+        let event = arg.event.extendedProps['data'];
 
+        let smallVersion = event.duracion == "15 minutos"
+          || event.duracion == "30 minutos";
+        let extraStyle = smallVersion ? 'smallversion' : '';
         italicEl.innerHTML = `
-        <span class="d-flex justify-content-between event-title">
+        <span class="d-flex justify-content-between event-title ${extraStyle}">
             <span><i class="fa fa-bell"></i> ${arg.event.title}</span>
             <span>${arg.timeText}</span>
-        </span>
-        <span class="w-100 event-body">
-            ${arg.event.extendedProps['data'].descripcion.slice(0, 50)}...
         </span>`;
-        let event = arg.event.extendedProps['data'];
-        console.log(event);
-
-        // if (arg.event.extendedProps) {
-        // } else {
-        //   italicEl.innerHTML = 'normal event'
-        // }
+        if (!smallVersion)
+          italicEl.innerHTML +=
+            `<span class="w-100 event-body" >
+                ${event.descripcion.slice(0, 50)}...
+            </span>`;
 
         let arrayOfDomNodes = [italicEl]
         return { domNodes: arrayOfDomNodes }
