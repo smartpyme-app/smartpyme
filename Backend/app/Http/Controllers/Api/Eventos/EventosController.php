@@ -18,51 +18,47 @@ class EventosController extends Controller
     public function index(Request $request)
     {
 
-        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function ($query) use ($request) {
-            return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-        })
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->where('inicio', '>=', $request->inicio);
-            })
-            ->when($request->fin, function ($query) use ($request) {
-                return $query->where('fin', '<=', $request->fin);
-            })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->when($request->id_usuario, function ($query) use ($request) {
-                return $query->where('id_usuario', $request->id_usuario);
-            })
-            ->when($request->id_cliente, function ($query) use ($request) {
-                return $query->where('id_cliente', $request->id_cliente);
-            })
-            ->when($request->forma_pago, function ($query) use ($request) {
-                return $query->where('forma_pago', $request->forma_pago);
-            })
-            ->when($request->estado, function ($query) use ($request) {
-                return $query->where('estado', $request->estado);
-            })
-            ->when($request->tipo, function ($query) use ($request) {
-                return $query->where('tipo', $request->tipo);
-            })
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
+        $eventos = Evento::with('cliente', 'productos')
+                ->when($request->inicio, function ($query) use ($request) {
+                    return $query->where('inicio', '>=', $request->inicio);
+                })
+                ->when($request->fin, function ($query) use ($request) {
+                    return $query->where('fin', '<=', $request->fin);
+                })
+                ->when($request->id_sucursal, function ($query) use ($request) {
+                    return $query->where('id_sucursal', $request->id_sucursal);
+                })
+                ->when($request->id_usuario, function ($query) use ($request) {
+                    return $query->where('id_usuario', $request->id_usuario);
+                })
+                ->when($request->id_cliente, function ($query) use ($request) {
+                    return $query->where('id_cliente', $request->id_cliente);
+                })
+                ->when($request->forma_pago, function ($query) use ($request) {
+                    return $query->where('forma_pago', $request->forma_pago);
+                })
+                ->when($request->estado, function ($query) use ($request) {
+                    return $query->where('estado', $request->estado);
+                })
+                ->when($request->tipo, function ($query) use ($request) {
+                    return $query->where('tipo', $request->tipo);
+                })
+                ->when($request->buscador, function ($query) use ($request) {
+                    return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('estado', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
+                })
+                ->orderBy($request->orden, $request->direccion)
+                ->orderBy('id', 'desc')
+                ->paginate($request->paginate);
 
         return Response()->json($eventos, 200);
     }
 
     public function list(Request $request)
     {
-        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function ($query) use ($request) {
-            return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-        })
+        $eventos = Evento::with('cliente', 'productos')
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->whereBetween('inicio', [$request->inicio, $request->fin]);
             })
@@ -83,6 +79,12 @@ class EventosController extends Controller
             })
             ->when($request->tipo, function ($query) use ($request) {
                 return $query->where('tipo', $request->tipo);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('estado', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
             })
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')

@@ -252,11 +252,11 @@ export class CalendarioComponent implements OnInit {
       events: []
     };
 
+    this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.loadAll();
   }
 
   public loadAll() {
-    this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.filtros.orden = 'inicio';
     this.filtros.direccion = 'desc';
 
