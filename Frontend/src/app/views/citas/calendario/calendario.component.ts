@@ -99,6 +99,58 @@ export class CalendarioComponent implements OnInit {
             meridiem: 'short'
           },
           headerToolbar: false,
+        },
+        timeGridWeek: {
+          slotLabelFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            omitZeroMinute: false,
+            meridiem: 'short'
+          },
+          headerToolbar: false,
+        },
+        dayGridMonth: {
+          slotLabelFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            omitZeroMinute: false,
+            meridiem: 'short'
+          },
+          headerToolbar: false,
+          eventContent: (renderProps, createElement) => {
+            let italicEl = document.createElement('span')
+            italicEl.classList.add('event-container');
+            italicEl.classList.add('w-100');
+            let event = renderProps.event.extendedProps['data'];
+
+            let smallVersion = event.duracion == "15 minutos"
+              || event.duracion == "30 minutos";
+            let extraStyle = smallVersion ? 'smallversion' : '';
+            let startTime = moment(renderProps.event.start).format('HH:mm');
+            italicEl.innerHTML = `
+            <span class="d-flex justify-content-between w-100 event-title ${extraStyle}" title="${renderProps.event.title}">
+                <span><strong><i class="fa-solid fa-circle"></i> ${renderProps.event.title.slice(0, 18)}<strong></span>
+                <span> ${startTime}</span>
+            </span>`;
+            let arrayOfDomNodes = [italicEl]
+            return { domNodes: arrayOfDomNodes }
+          },
+        },
+        multiMonthYear: {
+          slotLabelFormat: {
+            month: 'short',
+            year: 'numeric'
+          },
+          headerToolbar: false,
+          eventContent: (renderProps, createElement) => {
+            let italicEl = document.createElement('span')
+            italicEl.classList.add('event-container');
+            italicEl.classList.add('w-100');
+            let event = renderProps.event.extendedProps['data'];
+            italicEl.innerHTML = `<i class="fa-solid fa-circle" title="${renderProps.event.title}"></i>`;
+            let arrayOfDomNodes = [italicEl]
+            return { domNodes: arrayOfDomNodes }
+          },
         }
       },
       eventContent: function (arg) {
@@ -109,10 +161,11 @@ export class CalendarioComponent implements OnInit {
         let smallVersion = event.duracion == "15 minutos"
           || event.duracion == "30 minutos";
         let extraStyle = smallVersion ? 'smallversion' : '';
+
         italicEl.innerHTML = `
-        <span class="d-flex justify-content-between event-title ${extraStyle}">
-            <span><i class="fa fa-bell"></i> ${arg.event.title}</span>
-            <span>${arg.timeText}</span>
+        <span class="d-flex justify-content-between event-title ${extraStyle}" title="${arg.event.title}">
+            <span><strong><i class="fa fa-bell"></i> ${arg.event.title.slice(0, 18)}<strong></span>
+            <span> ${arg.timeText.split("-")[0]}</span>
         </span>`;
         if (!smallVersion)
           italicEl.innerHTML +=
@@ -230,12 +283,12 @@ export class CalendarioComponent implements OnInit {
   }
   setWeekSelection() {
     this.selectedPeriodType = "week";
-    this.calendar?.changeView('dayGridWeek');
+    this.calendar?.changeView('timeGridWeek');
 
   }
   setYearSelection() {
     this.selectedPeriodType = "year";
-    this.calendar?.changeView('multiMonth');
+    this.calendar?.changeView('multiMonthYear');
   }
 
 }
