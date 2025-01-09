@@ -14,3 +14,6 @@ Route::post('/assign-permission-to-role', [RolePermissionController::class, 'ass
 Route::post('/remove-permission-from-role', [RolePermissionController::class, 'removePermissionFromRole']);
 Route::post('/assign-permission-to-user', [RolePermissionController::class, 'assignPermissionToUser']);
 Route::post('/remove-permission-from-user', [RolePermissionController::class, 'removePermissionFromUser']);
+
+//roles-permissions
+Route::post('/roles-permissions', [RolePermissionController::class, 'store']);

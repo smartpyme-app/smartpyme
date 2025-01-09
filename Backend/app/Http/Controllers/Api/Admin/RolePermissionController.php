@@ -15,17 +15,6 @@ class RolePermissionController extends Controller
      */
     public function index(Request $request)
     {
-        // $roles = Role::with('permissions')->get();
-        // $permissions = Permission::all();
-        // $users = User::with('roles', 'permissions')->get();
-        
-        // return response()->json([
-        //     'roles' => $roles,
-        //     'permissions' => $permissions,
-        //     'users' => $users,
-        //     'ok' => true
-        // ]);
-        //where like name
         $roles = Role::with('permissions')
                      ->where('name', 'like', '%' . $request->buscador . '%')
                      ->paginate($request->paginate);
@@ -152,5 +141,19 @@ class RolePermissionController extends Controller
             'message' => 'Permiso removido correctamente',
             'user' => $user->load('permissions')
         ]);
+    }
+
+    //store
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'permissions' => 'required|array'
+        ]);
+
+        $role = Role::create(['name' => $request->name]);
+        $role->syncPermissions($request->permissions);
+
+        return response()->json(['message' => 'Rol creado correctamente', 'role' => $role], 201);
     }
 }
