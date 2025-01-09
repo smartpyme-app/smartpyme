@@ -113,6 +113,9 @@ export class RolesPermisosComponent implements OnInit {
     this.apiService.getAll('permissions').subscribe(
       (response) => {
         this.permissions = response;
+        if (this.selectedRole) {
+          this.preparePermissionsForRole();
+        }
       },
       (error) => {
         this.alertService.error(error);
@@ -124,7 +127,11 @@ export class RolesPermisosComponent implements OnInit {
     if (role.name) {
       // Si es edición
       this.selectedRole = role;
-      this.preparePermissionsForRole();
+      if (!this.permissions.length) {
+        this.cargarPermisos();
+      } else {
+        this.preparePermissionsForRole();
+      }
     } else {
       // Si es creación
       this.role = {
@@ -156,7 +163,6 @@ export class RolesPermisosComponent implements OnInit {
   }
 
   onPermissionChange(permission: any) {
-
     console.log('Permiso cambiado:', permission);
   }
 
