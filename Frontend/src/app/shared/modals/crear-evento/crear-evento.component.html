@@ -1,130 +1,324 @@
-<form name="form" (ngSubmit)="onSubmit()">
-        <div class="row">
-            <app-notificaciones-container></app-notificaciones-container>
-            <div class="form-group col-md-12">
-              <label for="descripcion">Descripción</label>
-              <input type="text" placeholder="Escribe aquí" class="form-control"  [(ngModel)]="evento.descripcion" name="descripcion">
-            </div>
+<form name="form" (ngSubmit)="onSubmit()" [ngClass]="{'d-none':conflictEvents?.length>0}">
+  <div class="d-flex flex-wrap justify-content-between mb-2">
 
-            <div class="form-group col-md-6 col-lg-6">
-                <label for="id_usuario">Usuario</label>
-                <ng-select name="id_usuario" [(ngModel)]="evento.id_usuario" class="form-select p-0">
-                    <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
-                        {{ usuario.name }}
-                    </ng-option>
-                </ng-select>
-            </div>
+    <h4>Detalles</h4>
+    <div class="text-primary">
+      <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)">
+        Crear cliente
+      </app-crear-cliente>
+    </div>
+  </div>
 
-            <div class="form-group col-md-6">
-                <label for="">Cliente</label>
-                <div class="input-group flex-nowrap">
-                    <ng-select name="id_cliente" [(ngModel)]="evento.id_cliente" class="form-select p-0">
-                        <ng-option value=""> Seleccione aquí </ng-option>
-                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                            {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
-                        </ng-option>
-                    </ng-select>
-                    <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
-                </div>
-            </div>
+  <div class="row">
 
-            <div class="form-group col-md-4">
-              <label for="inicio">Fecha inicio</label>
-              <input type="datetime-local" class="form-control" (change)="setTime()" name="inicio" [(ngModel)]="evento.inicio">
-            </div>
+    <app-notificaciones-container></app-notificaciones-container>
+    <div class="form-group col-12 col-md-4">
+      <label for="descripcion">Titulo <i class="fa-solid fa-pencil"></i></label>
+      <input type="text" placeholder="Escribe aquí" class="form-control" [(ngModel)]="evento.descripcion"
+        name="descripcion">
+    </div>
 
-            <div class="form-group col-md-4">
-              <label for="duracion">Duración</label>
-              <select name="duracion" (change)="setTime()" [(ngModel)]="evento.duracion" class="form-select" required>
-                <option value="15 minutos">15 minutos</option>
-                <option value="30 minutos">30 minutos</option>
-                <option value="1 hora" selected>1 hora</option>
-                <option value="2 horas">2 horas</option>
-                <option value="3 horas">3 horas</option>
-                <option value="5 horas">5 horas</option>
-                <option value="8 horas">8 horas</option>
-                <option value="12 horas">12 horas</option>
-              </select>
-            </div>
+    <div class="form-group col-12 col-md-4">
+      <label for="id_usuario">
+        Encargado
+        <i class="fa-regular fa-user"></i>
 
-            <div class="form-group col-md-4">
-              <label for="fin">Finaliza</label>
-              <input type="datetime-local" class="form-control" name="fin" [(ngModel)]="evento.fin">
-            </div>
-            
+      </label>
+      <ng-select name="id_usuario" [(ngModel)]="evento.id_usuario" class="form-select p-0">
+        <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
+          {{ usuario.name }}
+        </ng-option>
+      </ng-select>
+    </div>
 
-            <div class="form-group col-md-12">
-                <label for="productoSeleccionado">Productos y servicios</label>
-                <ng-select placeholder="Selecciona un aquí" name="productoSeleccionado" [(ngModel)]="productoSeleccionado" (change)="agregarDetalle()" class="form-select p-0">
-                    <ng-option [value]="producto" *ngFor="let producto of productos">
-                        {{ producto.nombre }}
-                    </ng-option>
-                </ng-select>
-                <table *ngIf="evento?.productos?.length > 0" class="table table-bordered mt-3">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th width="200px">Cantidad</th>
-                            <th width="50px"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let det of evento?.productos; let i = index">
-                            <td> {{ det.nombre_producto  }} </td>
-                            <td>
-                                <input type="number" [(ngModel)]="det.cantidad" name="cantidad{{det.id}}" class="form-control">
-                            </td>
-                            <td><button class="btn btn-danger" (click)="eliminarDetalle(i)">Eliminar</button></td>
-                        </tr>
-                    </tbody>
-                </table>    
-            </div>
-          
-            <div class="form-group col-md-12">
-              <label class="form-label font-weight-bold">Detalles del evento</label>
-                <textarea class="form-control" placeholder="Escribe aquí (Opcional)" name="detalles" [(ngModel)]="evento.detalles" rows="2"></textarea>
-            </div>
+    <div class="form-group col-12 col-md-4">
+      <label for="">Cliente
+        <i class="fa-regular fa-user"></i>
+      </label>
+      <div class="input-group flex-nowrap">
+        <ng-select name="id_cliente" [(ngModel)]="evento.id_cliente" class="form-select p-0">
+          <ng-option value=""> Seleccione aquí </ng-option>
+          <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+            {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
+          </ng-option>
+        </ng-select>
 
-            <div class="form-group col-md-6 col-lg-4">
-                  <label class="form-label font-weight-bold">Estado</label>
-                  <select name="tipo" [(ngModel)]="evento.tipo"  class="form-control form-select">
-                      <option value="Sin confirmar">Sin confirmar</option>
-                      <option value="Confirmado">Confirmado</option>
-                      <option value="Cancelado">Cancelado</option>
-                      <option value="Pagado">Pagado</option>
-                      <option value="Pendiente">Pendiente</option>
-                  </select>
-            </div>
+      </div>
+    </div>
+    <div class="form-group col-md-6 col-lg-4">
+      <label class="form-label font-weight-bold">Frecuencia <i class="fa-regular fa-calendar"></i> </label>
+      <select name="frecuencia" [(ngModel)]="evento.frecuencia" (change)="setFrecuenciaFin()"
+        class="form-control form-select" id="frecuencia">
+        <option value="">No se repite</option>
+        <option value="DAILY">A diario</option>
+        <option value="WEEKLY">Semanalmente</option>
+        <option value="MONTHLY">Mensualmente</option>
+        <option value="YEARLY">Anualmente</option>
+      </select>
+    </div>
+    <div class="form-group col-12 col-md-4" *ngIf="evento.frecuencia">
+      <label for="veces">Repetir</label>
+      <div class="input-group">
+        <input type="number" class="form-control" name="veces" (keyup)="setFrecuenciaFin()"
+          (change)="setFrecuenciaFin()" [(ngModel)]="evento.veces">
+        <span class="input-group-text">Veces</span>
+      </div>
+    </div>
+    <div class="form-group col-md-4">
+      <label for="inicio">Fecha inicio</label>
+      <input type="datetime-local" class="form-control" (change)="setTime()" name="inicio" [(ngModel)]="evento.inicio">
+    </div>
 
-            <div class="form-group col-md-6 col-lg-4">
-                  <label class="form-label font-weight-bold">Se repite</label>
-                  <select name="frecuencia" [(ngModel)]="evento.frecuencia" (change)="setFrecuenciaFin()" class="form-control form-select" id="frecuencia">
-                      <option value="">No</option>
-                      <option value="DAILY">Diario</option>
-                      <option value="WEEKLY">Semanal</option>
-                      <option value="MONTHLY">Mensual</option>
-                      <option value="YEARLY">Anual</option>
-                  </select>
-            </div>
+    <div class="form-group col-md-4">
+      <label for="duracion">Duración</label>
+      <select name="duracion" (change)="setTime()" [(ngModel)]="evento.duracion" class="form-select" required>
+        <option value="15 minutos">15 minutos</option>
+        <option value="30 minutos">30 minutos</option>
+        <option value="1 hora" selected>1 hora</option>
+        <option value="2 horas">2 horas</option>
+        <option value="3 horas">3 horas</option>
+        <option value="5 horas">5 horas</option>
+        <option value="8 horas">8 horas</option>
+        <option value="12 horas">12 horas</option>
+      </select>
+    </div>
 
-            <div class="form-group col-md-6 col-lg-4" *ngIf="evento.frecuencia">
-              <label for="veces">Repetir</label>
-              <div class="input-group">
-                    <input type="number" class="form-control" name="veces" (keyup)="setFrecuenciaFin()" (change)="setFrecuenciaFin()" [(ngModel)]="evento.veces">
-                    <span class="input-group-text">Veces</span>
-              </div>
-            </div>
+    <div class="form-group col-md-4">
+      <label for="fin">Finaliza</label>
+      <input type="datetime-local" class="form-control" name="fin" [(ngModel)]="evento.fin">
+    </div>
 
-            <!-- <div class="form-group col-md-6 col-lg-2" *ngIf="evento.frecuencia">
+    <div class="form-group col-md-6 col-lg-4">
+      <label class="form-label font-weight-bold">Estado <i class="fa-regular fa-circle-check"></i></label>
+      <select name="tipo" [(ngModel)]="evento.tipo" class="form-control form-select">
+        <option value="Sin confirmar">Sin confirmar</option>
+        <option value="Confirmado">Confirmado</option>
+        <option value="Cancelado">Cancelado</option>
+        <option value="Pagado">Pagado</option>
+        <option value="Pendiente">Pendiente</option>
+      </select>
+    </div>
+    <div class="form-group col-md-12">
+      <label class="form-label font-weight-bold">Detalles del evento</label>
+      <textarea class="form-control" placeholder="Escribe aquí (Opcional)" name="detalles" [(ngModel)]="evento.detalles"
+        rows="2"></textarea>
+    </div>
+  </div>
+  <hr>
+  <div class="row">
+    <h5 class="col-6">Productos y servicios</h5>
+    <div class="form-group col-md-6">
+      <div class="d-flex">
+
+        <ng-select placeholder="Selecciona un producto aquí" name="productoSeleccionado"
+          [(ngModel)]="productoSeleccionado" (change)="agregarDetalle()" class="form-select p-0">
+          <ng-option [value]="producto" *ngFor="let producto of productos">
+            {{ producto.nombre }}
+          </ng-option>
+        </ng-select>
+        <button type="button" class="btn btn-default" tooltip="Crear producto" (click)="crearProducto()"> <i
+            class="fa fa-plus"></i> </button>
+      </div>
+    </div>
+    <div class="col-12">
+
+      <table *ngIf="evento?.productos?.length > 0" class="table table-borderless mt-3">
+        <thead>
+          <tr>
+            <th class="border-bottom">Nombre</th>
+            <th class="border-bottom" style="max-width: 70px;">Cantidad</th>
+            <!-- <th class="border-bottom">Costo Individual</th> -->
+            <th class="border-bottom">Precio Individual</th>
+            <th class="border-bottom">Total</th>
+            <th class="border-bottom"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let det of evento?.productos; let i = index">
+            <td> {{ det.nombre_producto }} </td>
+            <td>
+              <input type="number" min="0" [(ngModel)]="det.cantidad" name="cantidad{{det.id}}" style="max-width: 70px;"
+                class="form-control">
+            </td>
+            <!-- <td class="text-end">
+              {{ det.costo | currency:'USD':'symbol':'1.2'}}
+            </td> -->
+            <td class="text-end">
+              {{ det.precio | currency:'USD':'symbol':'1.2'}}
+            </td>
+            <td class="text-end">
+              {{ (det.cantidad||0) * det.precio | currency:'USD':'symbol':'1.2'}}
+            </td>
+            <td><button class="btn" (click)="eliminarDetalle(i)">
+                <i class="fa-regular fa-trash-can text-danger"></i>
+              </button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
+
+
+    <!-- <div class="form-group col-md-6 col-lg-2" *ngIf="evento.frecuencia">
               <label for="frecuencia_fin">Terminar de repetir</label>
               <input type="date" class="form-control" name="frecuencia_fin" [(ngModel)]="evento.frecuencia_fin">
             </div> -->
 
-            <div class="d-grid mt-4">
-                <button [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Agregar</span>
-                    <span *ngIf="saving">Agregando...</span>
-                </button>
-            </div>
-        </div>
-    </form>
+    <div class="d-grid mt-4">
+      <button [disabled]="saving" class="btn btn-primary btn-block">
+        <span *ngIf="!saving">Agregar</span>
+        <span *ngIf="saving">Agregando...</span>
+      </button>
+    </div>
+  </div>
+</form>
+<div *ngIf="conflictEvents.length>0">
+  <button class="btn" (click)="conflictEvents=[];saving=false" tooltip="Ir atrás"> <i
+      class="fa-solid fa-chevron-left text-info"></i></button>
+  <p class="text-danger">Ya tienes citas en la hora seleccionada
+    ({{evento.inicio|date:("dd/MM/yy HH:mm") }} - {{evento.fin|date:("dd/MM/yy HH:mm") }}) </p>
+  <hr>
+  <table class="w-100">
+    <tr *ngFor=" let _evento of conflictEvents">
+      <td>
+        <p class="m-0 d-flex justify-content-between">
+          <span tooltip="{{_evento.descripcion}}">{{_evento.descripcion | truncate:20 }} </span>
+          <small *ngIf="_evento.nombre_cliente">({{_evento.nombre_cliente | truncate:20 }})</small>
+        </p>
+        <p class="m-0 d-flex justify-content-between">
+          <small>{{_evento.inicio | date:'dd/MM/yyyy'}} <span class="badge bg-info">{{_evento.inicio |
+              date:("HH:mm")}} -
+              {{_evento.fin| date:("HH:mm")}}</span> </small>
+          <small class="badge" style="font-size: 0.7rem;"
+            [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{
+            _evento.tipo }}</small>
+        </p>
+      </td>
+      <td>
+        <ng-template #accionesConflictsTemplate>
+          <div class="list-group border-0">
+            <a *ngIf="_evento.tipo != 'Pagado'" (click)="openModal(conflictedEventModal, _evento)"
+              class="list-group-item list-group-item-action border-0 click">
+              <i class="fa fa-fw fa-edit"></i> Editar
+            </a>
+            <a (click)="openModal(meventoDetalle, _evento)"
+              class="list-group-item list-group-item-action border-0 click">
+              <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
+            </a>
+            <a *ngIf="_evento.tipo != 'Cancelado' && _evento.tipo != 'Pagado'" (click)="setEstado(_evento, 'Cancelado')"
+              class="list-group-item list-group-item-action border-0 click">
+              <i class="fa fa-fw fa-ban"></i> Cancelar
+            </a>
+            <a *ngIf="_evento.tipo != 'Pagado'" (click)="delete(_evento)"
+              class="list-group-item list-group-item-action border-0 click">
+              <i class="fa fa-fw fa-trash"></i> Eliminar
+            </a>
+          </div>
+        </ng-template>
+        <button class="btn" [popover]="accionesConflictsTemplate" [outsideClick]="true" tooltip="Acciones"
+          style="position: unset !important;">
+          <i class="fa fa-ellipsis-vertical fa-fw"></i>
+        </button>
+
+      </td>
+    </tr>
+  </table>
+
+</div>
+
+<ng-template #createProductModal>
+  <div class="modal-lg">
+
+    <div class="modal-header">
+      <h4 class="modal-title text-center">
+        <span>Crear Producto</span>
+      </h4>
+      <button type="button" class="btn-close" (click)="modalCreateProductRef.hide(); this.alertService.modal = false;"
+        aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <app-crear-producto (update)="onProductoCreated($event)"></app-crear-producto>
+    </div>
+
+  </div>
+</ng-template>
+
+<ng-template #conflictedEventModal>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">
+      <span *ngIf="conflictedEvent.id">Cita</span>
+    </h4>
+    <div>
+      <button type="button" class="btn text-danger" (click)="eventosConflictoModalRef.hide();" aria-label="Close">
+        Cancelar
+        <i class="fa fa-close text-danger ml-1"></i>
+      </button>
+    </div>
+  </div>
+  <div class="modal-body px-5 py-4">
+    <app-crear-evento [evento]="conflictedEvent" (update)="ObSubmitConflicted()"></app-crear-evento>
+  </div>
+</ng-template>
+<ng-template #meventoDetalle>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">
+      Evento
+    </h4>
+    <button type="button" class="btn-close" (click)="eventosConflictoModalRef.hide();" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+
+      <div class="form-group col-md-12">
+        <label class="fw-bold">Descripción:</label>
+        <p>{{ conflictedEvent.descripcion }}</p>
+      </div>
+
+      <div class="form-group col-md-12">
+        <label class="fw-bold">Detalles del evento:</label>
+        <p>{{ conflictedEvent.detalles }}</p>
+      </div>
+
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Fecha inicio:</label>
+        <p>{{ conflictedEvent.inicio | date:'dd/MM/yyyy hh:mm a'}}</p>
+      </div>
+
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Finaliza:</label>
+        <p>{{ conflictedEvent.fin | date:'dd/MM/yyyy hh:mm a'}}</p>
+      </div>
+
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Duración:</label>
+        <p>{{ conflictedEvent.duracion }}</p>
+      </div>
+
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Usuario:</label>
+        <p>{{ conflictedEvent.nombre_usuario }}</p>
+      </div>
+
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Cliente:</label>
+        <p>{{ conflictedEvent.nombre_cliente }}</p>
+      </div>
+
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Servicio:</label>
+        <p>{{ conflictedEvent.nombre_servicio }}</p>
+      </div>
+
+      <div class="form-group col-md-6">
+        <label class="fw-bold">Estado:</label>
+        <p>{{ conflictedEvent.tipo }}</p>
+      </div>
+
+      <div class="form-group col-md-6" *ngIf="conflictedEvent.frecuencia">
+        <label class="fw-bold">Se repite hasta:</label>
+        <p>{{ conflictedEvent.frecuencia_fin | date:'dd/MM/yyyy'}}</p>
+      </div>
+    </div>
+  </div>
+</ng-template>

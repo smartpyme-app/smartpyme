@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -40,19 +40,40 @@ export class CalendarioComponent implements OnInit {
   public meventoTemplate!: TemplateRef<any>;
   modalRef!: BsModalRef;
   selectedPeriodType: "day" | "week" | "month" | "year" = "day";
-  constructor(private apiService: ApiService, public alertService: AlertService,
+  usuarios: any = [];
+  clientes: any = [];
+  sucursales: any = [];
+
+  constructor(public apiService: ApiService, public alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
     private modalService: BsModalService
   ) { }
 
   @ViewChild('fullcalendar') fullcalendar?: FullCalendarComponent;
+  @ViewChild("fullCalendarContainer") fullCalendarContainer?: any;
   get calendar(): Calendar | undefined {
     return this.fullcalendar?.getApi();
   }
   get currentDate(): Date {
     return this.calendar?.getDate() || new Date();
   }
+  timeGridMinTime = '08:00:00';
+  timeGridMaxTime = '17:30:00';
   ngOnInit() {
+    this.filtros.id_usuario = this.apiService.auth_user().id;
+    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+      this.usuarios = usuarios;
+    }, error => { this.alertService.error(error); });
+
+
+    this.apiService.getAll('clientes/list').subscribe(clientes => {
+      this.clientes = clientes;
+    }, error => { this.alertService.error(error); });
+
+    this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+      this.sucursales = sucursales;
+    }, error => { this.alertService.error(error); });
+
     forwardRef(() => Calendar);
 
     this.calendarOptions = {
@@ -60,7 +81,7 @@ export class CalendarioComponent implements OnInit {
       plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin, rrulePlugin],
       editable: true,
       navLinks: true,
-      firstDay: 0,
+      firstDay: 1,
       timeZone: 'America/El_Salvador',
       locale: esLocale,
       // themeSystem: 'bootstrap5',
@@ -98,6 +119,8 @@ export class CalendarioComponent implements OnInit {
             omitZeroMinute: false,
             meridiem: 'short'
           },
+          slotMinTime: this.timeGridMinTime,
+          slotMaxTime: this.timeGridMaxTime,
           headerToolbar: false,
         },
         timeGridWeek: {
@@ -107,8 +130,14 @@ export class CalendarioComponent implements OnInit {
             omitZeroMinute: false,
             meridiem: 'short'
           },
+          titleFormat: {
+            day: '2-digit',
+            weekday: 'long',
+
+          },
           headerToolbar: false,
         },
+
         dayGridMonth: {
           slotLabelFormat: {
             hour: 'numeric',
@@ -118,15 +147,28 @@ export class CalendarioComponent implements OnInit {
           },
           headerToolbar: false,
           eventContent: (renderProps, createElement) => {
+
+            let event = renderProps.event.extendedProps['data'];
+            let stateClass = "event-pending";
+            if (event.tipo == "Confirmado") {
+              stateClass = "event-confirmed";
+            }
+            if (event.tipo == "Cancelado") {
+              stateClass = "event-canceled";
+            }
+            if (event.tipo == "Sin confirmar") {
+              stateClass = "event-unconfirmed";
+            }
             let italicEl = document.createElement('span')
             italicEl.classList.add('event-container');
             italicEl.classList.add('w-100');
-            let event = renderProps.event.extendedProps['data'];
+            italicEl.classList.add(stateClass);
 
-            let smallVersion = event.duracion == "15 minutos"
-              || event.duracion == "30 minutos";
+            let smallVersion = event?.duracion == "15 minutos"
+              || event?.duracion == "30 minutos";
             let extraStyle = smallVersion ? 'smallversion' : '';
-            let startTime = moment(renderProps.event.start).format('HH:mm');
+            //24 hour format
+            let startTime = moment(renderProps.event.startStr).format('HH:mm');
             italicEl.innerHTML = `
             <span class="d-flex justify-content-between w-100 event-title ${extraStyle}" title="${renderProps.event.title}">
                 <span><strong><i class="fa-solid fa-circle"></i> ${renderProps.event.title.slice(0, 18)}<strong></span>
@@ -135,6 +177,9 @@ export class CalendarioComponent implements OnInit {
             let arrayOfDomNodes = [italicEl]
             return { domNodes: arrayOfDomNodes }
           },
+          events: [
+
+          ]
         },
         multiMonthYear: {
           slotLabelFormat: {
@@ -142,35 +187,60 @@ export class CalendarioComponent implements OnInit {
             year: 'numeric'
           },
           headerToolbar: false,
+          moreLinkContent(renderProps, createElement) {
+            let italicEl = document.createElement('span')
+            italicEl.classList.add('event-container', 'd-flex');
+            italicEl.classList.add('w-100');
+            for (let index = 0; index < renderProps.num; index++) {
+              italicEl.innerHTML += `<i class="fa-solid fa-circle event-dot"></i>`;
+            }
+            let arrayOfDomNodes = [italicEl]
+            return { domNodes: arrayOfDomNodes }
+          },
           eventContent: (renderProps, createElement) => {
             let italicEl = document.createElement('span')
             italicEl.classList.add('event-container');
             italicEl.classList.add('w-100');
             let event = renderProps.event.extendedProps['data'];
-            italicEl.innerHTML = `<i class="fa-solid fa-circle" title="${renderProps.event.title}"></i>`;
+            italicEl.innerHTML = `<i class="fa-solid fa-circle event-dot" title="${renderProps.event.title}"></i> <span class="event-dot-desc">${renderProps.event.title.slice(0, 18)}<span>`;
             let arrayOfDomNodes = [italicEl]
             return { domNodes: arrayOfDomNodes }
           },
+
         }
       },
       eventContent: function (arg) {
+
+        let stateClass = "event-pending";
+        let event = arg.event.extendedProps['data'];
+        if (event.tipo == "Confirmado") {
+          stateClass = "event-confirmed";
+        }
+        if (event.tipo == "Cancelado") {
+          stateClass = "event-canceled";
+        }
+        if (event.tipo == "Sin confirmar") {
+          stateClass = "event-unconfirmed";
+        }
+
+
         let italicEl = document.createElement('span')
         italicEl.classList.add('event-container');
-        let event = arg.event.extendedProps['data'];
+        italicEl.classList.add(stateClass);
 
-        let smallVersion = event.duracion == "15 minutos"
-          || event.duracion == "30 minutos";
+        let smallVersion = event?.duracion == "15 minutos"
+          || event?.duracion == "30 minutos";
         let extraStyle = smallVersion ? 'smallversion' : '';
 
         italicEl.innerHTML = `
         <span class="d-flex justify-content-between event-title ${extraStyle}" title="${arg.event.title}">
-            <span><strong><i class="fa fa-bell"></i> ${arg.event.title.slice(0, 18)}<strong></span>
+            <span><strong><i class="fa-regular fa-bell" style="font-size:1.1em"></i> ${arg.event.title.slice(0, 18)}<strong></span>
             <span> ${arg.timeText.split("-")[0]}</span>
         </span>`;
         if (!smallVersion)
           italicEl.innerHTML +=
             `<span class="w-100 event-body" >
-                ${event.descripcion.slice(0, 50)}...
+                ${event?.descripcion?.slice(0, 50)}...
             </span>`;
 
         let arrayOfDomNodes = [italicEl]
@@ -189,11 +259,15 @@ export class CalendarioComponent implements OnInit {
     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.filtros.orden = 'inicio';
     this.filtros.direccion = 'desc';
+
     this.loading = true;
     this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => {
       this.loading = false;
       if (this.calendarOptions) {
-        this.calendarOptions.events = eventos;
+        this.calendarOptions.events = [...eventos];
+        this.updateMinMaxTime(eventos);
+
+
       }
       if (this.modalRef) {
         this.modalRef.hide();
@@ -201,7 +275,36 @@ export class CalendarioComponent implements OnInit {
       this.update.emit();
     }, error => { this.alertService.error(error); this.loading = false; });
   }
+  updateMinMaxTime(events: any[]) {
+    // if (events.length == 0) return;
+    let minTime = moment().set('hour', 8).set('minute', 0).set('second', 0).format('HH:mm:ss');
+    let maxTime = moment().set('hour', 17).set('minute', 30).set('second', 0).format('HH:mm:ss');
+    for (let index = 0; index < events.length; index++) {
+      const event = events[index];
+      console.log(event);
 
+      let start = moment(event.start).format('HH:mm:ss');
+      let end = moment(event.end).format('HH:mm:ss');
+      if (start < minTime) {
+        minTime = start;
+      }
+      if (end > maxTime) {
+        maxTime = end;
+      }
+    }
+    this.timeGridMinTime = minTime;
+    this.timeGridMaxTime = maxTime;
+
+    console.log(this.timeGridMinTime, this.timeGridMaxTime);
+
+    //set slotMinTime and slotMaxTime on HH:00:00 format of minTime and maxTime
+    // this.calendar?.setOption('slotMinTime', moment(this.timeGridMinTime).format('HH:00:00'));
+    // this.calendar?.setOption('slotMaxTime', moment(this.timeGridMaxTime).format('HH:00:00'));
+
+    this.calendar?.setOption('slotMinTime', this.timeGridMinTime);
+    this.calendar?.setOption('slotMaxTime', this.timeGridMaxTime);
+
+  }
   handleDateClick(arg: any) {
     this.evento = {};
     this.evento.frecuencia = '';
@@ -224,7 +327,7 @@ export class CalendarioComponent implements OnInit {
   handleEventClick(arg: any) {
     this.evento = arg.event.extendedProps.data;
     this.alertService.modal = true;
-    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg' });
+    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg p-2' });
   }
 
   setTime() {
@@ -291,4 +394,12 @@ export class CalendarioComponent implements OnInit {
     this.calendar?.changeView('multiMonthYear');
   }
 
+  nextDay() {
+    this.calendar?.next();
+  }
+  prevDay() {
+    this.calendar?.prev();
+  }
+
 }
+

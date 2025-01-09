@@ -25,11 +25,13 @@
             <tr *ngFor=" let evento of eventos?.data">
               <td>
                 <p class="m-0 d-flex justify-content-between">
-                  <span tooltip="{{evento.descripcion}}">{{evento.descripcion | truncate:20 }}</span>
+                  <span tooltip="{{evento.descripcion}}">{{evento.descripcion | truncate:20 }} </span>
                   <small *ngIf="evento.nombre_cliente">({{evento.nombre_cliente | truncate:20 }})</small>
                 </p>
                 <p class="m-0 d-flex justify-content-between">
-                  <small>{{evento.inicio | date:'dd/MM/yyyy'}}</small>
+                  <small>{{evento.inicio | date:'dd/MM/yyyy'}} <span class="badge bg-info">{{evento.inicio |
+                      date:("HH:mm")}} -
+                      {{evento.fin| date:("HH:mm")}}</span> </small>
                   <small class="badge" style="font-size: 0.7rem;"
                     [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{
                     evento.tipo }}</small>
@@ -98,12 +100,17 @@
   <div class="modal-header">
     <h4 class="modal-title text-center">
       <span *ngIf="evento.id">Editar Cita</span>
-      <span *ngIf="!evento.id">Crear Cita</span>
+      <span *ngIf="!evento.id">Nueva Cita</span>
     </h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;"
-      aria-label="Close"></button>
+    <div>
+      <button type="button" class="btn text-danger" (click)="modalRef.hide(); this.alertService.modal = false;"
+        aria-label="Close">
+        Cancelar
+        <i class="fa fa-close text-danger ml-1"></i>
+      </button>
+    </div>
   </div>
-  <div class="modal-body">
+  <div class="modal-body px-5 py-4">
     <app-crear-evento [evento]="evento" (update)="loadAll(); updateCalendar();"></app-crear-evento>
   </div>
 </ng-template>
