@@ -1,92 +1,116 @@
 <div class="row">
-    <div class="col-xl-4 mb-5">
-        <div class="bg-white p-3">
-            <h3>Próximas Citas 
-                <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})" tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i> Agendar</button>
-                <button tooltip="Filtrar" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
-                <!--  -->
-            </h3>
-            
-            <div class="table-responsive">
-                <table class="table table-borderless table-hover mb-0">
-                    <tbody>
-                        <tr>
-                            <td colspan="2" class="text-center" *ngIf="eventos?.total < 1 && !loading">
-                                <span class="badge bg-primary">No tiene citas próximas</span>
-                            </td>
-                            <td colspan="2" class="text-center" *ngIf="loading">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
-                        <!-- eventos traidos del componente -->
-                        <tr *ngFor=" let evento of eventos?.data">
-                            <td>
-                                <p class="m-0 d-flex justify-content-between">
-                                    <span tooltip="{{evento.descripcion}}">{{evento.descripcion | truncate:20 }}</span>
-                                    <small *ngIf="evento.nombre_cliente">({{evento.nombre_cliente | truncate:20 }})</small>
-                                </p>
-                                <p class="m-0 d-flex justify-content-between">
-                                    <small>{{evento.inicio | date:'dd/MM/yyyy'}}</small>
-                                    <small class="badge" style="font-size: 0.7rem;" [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{ evento.tipo }}</small>
-                                </p>
-                            </td>
-                            <td class="text-center">
-                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                                </span>
-                                <ng-template #accionesTemplate>
-                                    <div class="list-group border-0">
-                                        <a *ngIf="evento.tipo != 'Pagado'" (click)="openModal(mevento, evento)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-edit"></i> Editar
-                                        </a>
-                                        <a (click)="openModal(meventoDetalle, evento)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
-                                        </a>
-                                        <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-money-bill"></i> Generar venta
-                                        </a>
-                                        <a *ngIf="evento.tipo != 'Cancelado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-ban"></i> Cancelar
-                                        </a>
-                                        <a *ngIf="evento.tipo != 'Pagado'" (click)="agregarEventoAlCalendario(evento)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-calendar"></i> Agregar a Google Calendar
-                                        </a>
-                                        <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Confirmado')" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-check"></i> Confirmar
-                                        </a>
-                                        <a *ngIf="evento.tipo != 'Sin confirmar' && evento.tipo != 'Pagado'" (click)="setEstado(evento, 'Sin confirmar')" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-xmark"></i> Sin confirmar
-                                        </a>
-                                        <a *ngIf="evento.tipo != 'Pagado'" (click)="delete(evento)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-trash"></i> Eliminar
-                                        </a>
-                                    </div>
-                                </ng-template>
-                            </td>
+  <div class="col-12 mb-5">
+    <div class="bg-white p-3">
+      <h3>Próximas Citas
+        <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})"
+          tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i>
+          Agendar</button>
+        <button tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img
+            src="/assets/icons/filter.png" class="icon"> </button>
+        <!--  -->
+      </h3>
 
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+          <tbody>
+            <tr>
+              <td colspan="2" class="text-center" *ngIf="eventos?.total < 1 && !loading">
+                <span class="badge bg-primary">No tiene citas próximas</span>
+              </td>
+              <td colspan="2" class="text-center" *ngIf="loading">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+            <!-- eventos traidos del componente -->
+            <tr *ngFor=" let evento of eventos?.data">
+              <td>
+                <p class="m-0 d-flex justify-content-between">
+                  <span tooltip="{{evento.descripcion}}">{{evento.descripcion | truncate:20 }} </span>
+                  <small *ngIf="evento.nombre_cliente">({{evento.nombre_cliente | truncate:20 }})</small>
+                </p>
+                <p class="m-0 d-flex justify-content-between">
+                  <small>{{evento.inicio | date:'dd/MM/yyyy'}} <span class="badge bg-info">{{evento.inicio |
+                      date:("HH:mm")}} -
+                      {{evento.fin| date:("HH:mm")}}</span> </small>
+                  <small class="badge" style="font-size: 0.7rem;"
+                    [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{
+                    evento.tipo }}</small>
+                </p>
+              </td>
+              <td class="text-center">
+                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                  <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                </span>
+                <ng-template #accionesTemplate>
+                  <div class="list-group border-0">
+                    <a *ngIf="evento.tipo != 'Pagado'" (click)="openModal(mevento, evento)"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-edit"></i> Editar
+                    </a>
+                    <a (click)="openModal(meventoDetalle, evento)"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
+                    </a>
+                    <a *ngIf="evento.tipo != 'Pagado'" routerLink="/venta/crear" [queryParams]="{ id_cita:evento.id }"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-money-bill"></i> Generar venta
+                    </a>
+                    <a *ngIf="evento.tipo != 'Cancelado' && evento.tipo != 'Pagado'"
+                      (click)="setEstado(evento, 'Cancelado')"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-ban"></i> Cancelar
+                    </a>
+                    <a *ngIf="evento.tipo != 'Pagado'" (click)="agregarEventoAlCalendario(evento)"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-calendar"></i> Agregar a Google Calendar
+                    </a>
+                    <a *ngIf="evento.tipo != 'Confirmado' && evento.tipo != 'Pagado'"
+                      (click)="setEstado(evento, 'Confirmado')"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-check"></i> Confirmar
+                    </a>
+                    <a *ngIf="evento.tipo != 'Sin confirmar' && evento.tipo != 'Pagado'"
+                      (click)="setEstado(evento, 'Sin confirmar')"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-xmark"></i> Sin confirmar
+                    </a>
+                    <a *ngIf="evento.tipo != 'Pagado'" (click)="delete(evento)"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-trash"></i> Eliminar
+                    </a>
+                  </div>
+                </ng-template>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div class="col-xl-8 mb-5">
-        <div class="bg-white p-3">
-            <app-calendario #calendario (update)="loadAll()"></app-calendario>
-        </div>
+  </div>
+  <div class="col-12 mb-5">
+    <div class="bg-white p-3">
+      <app-calendario #calendario (update)="loadAll()"></app-calendario>
     </div>
+  </div>
 </div>
 
 
 <ng-template #mevento>
   <div class="modal-header">
     <h4 class="modal-title text-center">
-        <span *ngIf="evento.id">Editar Cita</span>
-        <span *ngIf="!evento.id">Crear Cita</span>
+      <span *ngIf="evento.id">Editar Cita</span>
+      <span *ngIf="!evento.id">Nueva Cita</span>
     </h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+    <div>
+      <button type="button" class="btn text-danger" (click)="modalRef.hide(); this.alertService.modal = false;"
+        aria-label="Close">
+        Cancelar
+        <i class="fa fa-close text-danger ml-1"></i>
+      </button>
+    </div>
   </div>
-  <div class="modal-body">
+  <div class="modal-body px-5 py-4">
     <app-crear-evento [evento]="evento" (update)="loadAll(); updateCalendar();"></app-crear-evento>
   </div>
 </ng-template>
@@ -94,62 +118,63 @@
 <ng-template #meventoDetalle>
   <div class="modal-header">
     <h4 class="modal-title text-center">
-        Evento
+      Evento
     </h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;"
+      aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <div class="row">
 
-        <div class="form-group col-md-12">
-          <label class="fw-bold">Descripción:</label>
-          <p>{{ evento.descripcion }}</p>
-        </div>
+      <div class="form-group col-md-12">
+        <label class="fw-bold">Descripción:</label>
+        <p>{{ evento.descripcion }}</p>
+      </div>
 
-        <div class="form-group col-md-12">
-          <label class="fw-bold">Detalles del evento:</label>
-          <p>{{ evento.detalles }}</p>
-        </div>
+      <div class="form-group col-md-12">
+        <label class="fw-bold">Detalles del evento:</label>
+        <p>{{ evento.detalles }}</p>
+      </div>
 
-        <div class="form-group col-md-4">
-          <label class="fw-bold">Fecha inicio:</label>
-          <p>{{ evento.inicio | date:'dd/MM/yyyy hh:mm a'}}</p>
-        </div>
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Fecha inicio:</label>
+        <p>{{ evento.inicio | date:'dd/MM/yyyy hh:mm a'}}</p>
+      </div>
 
-        <div class="form-group col-md-4">
-          <label class="fw-bold">Finaliza:</label>
-          <p>{{ evento.fin | date:'dd/MM/yyyy hh:mm a'}}</p>
-        </div>
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Finaliza:</label>
+        <p>{{ evento.fin | date:'dd/MM/yyyy hh:mm a'}}</p>
+      </div>
 
-        <div class="form-group col-md-4">
-          <label class="fw-bold">Duración:</label>
-          <p>{{ evento.duracion }}</p>
-        </div>
-        
-        <div class="form-group col-md-4">
-            <label class="fw-bold">Usuario:</label>
-            <p>{{ evento.nombre_usuario }}</p>
-        </div>
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Duración:</label>
+        <p>{{ evento.duracion }}</p>
+      </div>
 
-        <div class="form-group col-md-4">
-          <label class="fw-bold">Cliente:</label>
-          <p>{{ evento.nombre_cliente }}</p>
-        </div>
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Usuario:</label>
+        <p>{{ evento.nombre_usuario }}</p>
+      </div>
 
-        <div class="form-group col-md-4">
-          <label class="fw-bold">Servicio:</label>
-          <p>{{ evento.nombre_servicio }}</p>
-        </div>
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Cliente:</label>
+        <p>{{ evento.nombre_cliente }}</p>
+      </div>
 
-        <div class="form-group col-md-6">
-          <label class="fw-bold">Estado:</label>
-          <p>{{ evento.tipo }}</p>
-        </div>
+      <div class="form-group col-md-4">
+        <label class="fw-bold">Servicio:</label>
+        <p>{{ evento.nombre_servicio }}</p>
+      </div>
 
-        <div class="form-group col-md-6" *ngIf="evento.frecuencia">
-          <label class="fw-bold">Se repite hasta:</label>
-          <p>{{ evento.frecuencia_fin | date:'dd/MM/yyyy'}}</p>
-        </div>
+      <div class="form-group col-md-6">
+        <label class="fw-bold">Estado:</label>
+        <p>{{ evento.tipo }}</p>
+      </div>
+
+      <div class="form-group col-md-6" *ngIf="evento.frecuencia">
+        <label class="fw-bold">Se repite hasta:</label>
+        <p>{{ evento.frecuencia_fin | date:'dd/MM/yyyy'}}</p>
+      </div>
     </div>
   </div>
 </ng-template>
@@ -159,53 +184,52 @@
 <ng-template #mfilter>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h2 class="text-center">Filtrar</h2>
+      <h2 class="text-center">Filtrar</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="updateCalendar()">
-        <div class="row">
+      <div class="row">
 
-            <div class="form-group col-sm-6">
-                <label for="">Del:</label>
-                <input type='datetime-local' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="">Al:</label>
-                <input type='datetime-local' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.tipo">Estado:</label>
-                <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
-                    <option value="">Todos</option>
-                    <option value="Sin confirmar">Sin confirmar</option>
-                    <option value="Confirmado">Confirmado</option>
-                    <option value="Cancelado">Cancelado</option>
-                    <option value="Pagado">Pagado</option>
-                    <option value="Pendiente">Pendiente</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtros.id_cliente">Cliente:</label>
-                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                    <ng-option value=""> Seleccione aquí </ng-option>
-                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
-                    </ng-option>
-                </ng-select>
+        <div class="form-group col-sm-6">
+          <label for="">Del:</label>
+          <input type='datetime-local' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio" />
+        </div>
+        <div class="form-group col-sm-6">
+          <label for="">Al:</label>
+          <input type='datetime-local' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin" />
+        </div>
+        <div class="form-group col-sm-6">
+          <label for="filtros.tipo">Estado:</label>
+          <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
+            <option value="">Todos</option>
+            <option value="Sin confirmar">Sin confirmar</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="Cancelado">Cancelado</option>
+            <option value="Pagado">Pagado</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+        <div class="form-group col-sm-6">
+          <label for="filtros.id_cliente">Cliente:</label>
+          <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
+            <ng-option value=""> Seleccione aquí </ng-option>
+            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
+              {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
+            </ng-option>
+          </ng-select>
 
-            </div>
-            
         </div>
-        
-        <div class="d-grid mt-3">
-            <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
-            </button>
-        </div>
+
+      </div>
+
+      <div class="d-grid mt-3">
+        <button type="submit" [disabled]="loading" class="btn btn-primary">
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
+        </button>
+      </div>
     </form>
   </div>
 </ng-template>
-
