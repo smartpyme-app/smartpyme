@@ -1,0 +1,69 @@
+::ng-deep .fc-timeGridDay-view {
+  --color-1: #DCFCE7;
+  --color-contrast-1: #14532D;
+
+  --color-2: #FFDAD6;
+  --color-contrast-2: #410002;
+
+  --color-3: #C4C6D0;
+  --color-contrast-3: #001B3F;
+
+  --fc-event-text-color: black;
+  --fc-today-bg-color: white !important;
+  --fc-non-business-color: white !important;
+  --border-slot-color: #C4C6D0;
+
+  .fc-scrollgrid-sync-table {
+    display: none;
+  }
+
+  .fc-scrollgrid {
+    border: none;
+  }
+
+  .event-title {
+    font-weight: bold !important;
+  }
+
+  .event-body {}
+
+}
+
+::ng-deep .fc-timeGridDay-view td,
+::ng-deep .fc-timeGridDay-view th {
+  border: none !important;
+}
+
+::ng-deep .fc-timegrid-slots tbody tr:nth-of-type(odd) td:nth-of-type(even) {
+  border-top: 1px solid var(--border-slot-color) !important;
+}
+
+::ng-deep .fc-timegrid-slots tbody tr:nth-of-type(even) td:nth-of-type(even) {
+  border-bottom: 1px solid var(--border-slot-color) !important;
+}
+
+
+::ng-deep .fc-timegrid-event-harness {
+  --bg-color: var(--color-1);
+  --fg-color: var(--color-contrast-1);
+  border-radius: 3px !important;
+
+  .fc-event {
+    background-color: var(--bg-color) !important;
+    --fc-event-text-color: var(--fg-color) !important;
+    border: none !important;
+    border-radius: 3px !important;
+    padding: 5px !important;
+    // padding-right: 5px !important;
+  }
+}
+
+::ng-deep .fc-timegrid-event-harness:nth-child(2n) {
+  --bg-color: var(--color-2);
+  --fg-color: var(--color-contrast-2);
+}
+
+::ng-deep .fc-timegrid-event-harness:nth-child(3n) {
+  --bg-color: var(--color-3);
+  --fg-color: var(--color-contrast-3);
+}

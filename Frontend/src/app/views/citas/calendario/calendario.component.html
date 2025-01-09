@@ -1,6 +1,36 @@
-<div id="full-calendar">  
-    <full-calendar  [options]="calendarOptions"></full-calendar>
-</div>
+<section>
+  <div class="d-flex flex-wrap justify-content-between gap-10">
+    <div class="d-flex flex-wrap gap-10">
+      <button class="btn " (click)="setNowSelection()"
+        [ngClass]="selectedPeriodType=='day'?'btn-primary':'btn-default'">
+        Hoy
+      </button>
+      <button class="btn " (click)="setMonthSelection()"
+        [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
+        Mes
+      </button>
+      <button class="btn " (click)="setWeekSelection()"
+        [ngClass]="selectedPeriodType=='week'?'btn-primary':'btn-default'">
+        Semana
+      </button>
+      <button class="btn " (click)="setYearSelection()"
+        [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
+        Año
+      </button>
+    </div>
+    <div class="d-flex gap-10">
+      <ng-select name="encargado" class="form-select p-0 border-0 bg-default w-auto" placeholder="Encargado ">
+        <ng-option value="">Proveedor</ng-option>
+      </ng-select>
+      <ng-select name="usuario" class="form-select p-0 border-0 bg-default w-auto" placeholder="Usuario ">
+        <ng-option value="">Usuario</ng-option>
+      </ng-select>
+    </div>
+  </div>
+  <div>
+    <full-calendar #fullcalendar [options]="calendarOptions"></full-calendar>
+  </div>
+</section>
 
 <ng-template #mevento>
   <div class="modal-header">
@@ -8,9 +38,10 @@
       <span *ngIf="evento.id">Editar Cita</span>
       <span *ngIf="!evento.id">Crear Cita</span>
     </h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;"
+      aria-label="Close"></button>
   </div>
   <div class="modal-body">
-        <app-crear-evento [evento]="evento" (update)="loadAll()"></app-crear-evento>
+    <app-crear-evento [evento]="evento" (update)="loadAll()"></app-crear-evento>
   </div>
 </ng-template>
