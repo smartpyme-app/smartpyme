@@ -11,13 +11,16 @@
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="roles?.total">
                 Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarRoles()" [(ngModel)]="filtros.paginate">
+                <select name="paginate" 
+                        class="form-select w-auto" 
+                        (change)="filtrarRoles()" 
+                        [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
-                de {{ roles?.total + ' registros' }}
+                de {{ roles?.total }} registros
             </span>
         </div>
 
@@ -75,17 +78,12 @@
                 </tbody>
             </table>
         </div>
-
-        <!-- Paginación -->
         <div class="col-12" *ngIf="roles?.last_page > 1">
             <app-pagination [items]="roles" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
 </section>
 
-<!-- ... resto de tu código modal ... -->
-
-<!-- Modal para gestionar permisos -->
 <ng-template #permisoModal>
     <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">

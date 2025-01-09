@@ -13,7 +13,13 @@ export class RolesPermisosComponent implements OnInit {
   public roles: any = {};
   public permisos: any[] = [];
   public loading: boolean = false;
-  public filtros: any = {};
+  public filtros = {
+    buscador: '',
+    paginate: 10,
+    orden: '',
+    direccion: 'asc',
+    page: 1
+};
   permissions: any[] = [];
   selectedRole: any = null;
   searchText: string = ''
