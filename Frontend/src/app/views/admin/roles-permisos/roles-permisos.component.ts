@@ -100,20 +100,10 @@ export class RolesPermisosComponent implements OnInit {
     this.cargarDatos();
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService.paginate(this.roles.path + '?page=' + event.page, this.filtros)
-      .subscribe(
-        roles => {
-          this.roles = roles;
-          this.loading = false;
-        },
-        error => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
-  }
+  setPagination(event: { page: number }) {
+    this.filtros.page = event.page;
+    this.cargarDatos();
+}
 
   cargarPermisos() {
     this.apiService.getAll('permissions').subscribe(
@@ -177,7 +167,7 @@ export class RolesPermisosComponent implements OnInit {
       .filter(p => p.checked)
       .map(p => p.name);
 
-    this.apiService.store('roles-permissions/assign-permission-to-role', {
+    this.apiService.store('update-role-permissions', {
       role: this.selectedRole.name,
       permissions: selectedPermissions
     }).subscribe(

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('/roles-permissions', [RolePermissionController::class, 'index']);
+//roles-permissions
+Route::post('/update-role-permissions', [RolePermissionController::class, 'updateRolePermissions']);
 //permissions   
 Route::get('/permissions', [RolePermissionController::class, 'permissions']);
 Route::post('/assign-role', [RolePermissionController::class, 'assignRoleToUser']);

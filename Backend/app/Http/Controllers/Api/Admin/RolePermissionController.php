@@ -156,4 +156,18 @@ class RolePermissionController extends Controller
 
         return response()->json(['message' => 'Rol creado correctamente', 'role' => $role], 201);
     }
+
+  
+    public function updateRolePermissions(Request $request)
+    {
+        $request->validate([
+            'role' => 'required|exists:roles,name',
+            'permissions' => 'required|array'
+        ]);
+
+        $role = Role::findByName($request->role);
+        $role->syncPermissions($request->permissions);
+
+        return response()->json(['message' => 'Permisos actualizados correctamente', 'role' => $role], 200);
+    }
 }
