@@ -8,6 +8,8 @@ use Carbon\Carbon;
 use JWTAuth;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Inventario;
 
 class BodegasController extends Controller
 {
@@ -47,11 +49,6 @@ class BodegasController extends Controller
     public function read($id) {
         
         $bodega = Bodega::where('id', $id)->firstOrFail();
-
-        // $productos = $bodega->productos()->get();
-        // $bodega->productos  = $productos->count();
-        // $bodega->cantidad   = $productos->sum('stock');
-
         return Response()->json($bodega, 200);
 
     }
@@ -72,6 +69,18 @@ class BodegasController extends Controller
         
         $bodega->fill($request->all());
         $bodega->save();
+
+        // Configurar inventarios para los productos
+        if (!$request->id) {
+            $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
+            foreach ($productos as $producto) {
+                $inventario = new Inventario;
+                $inventario->id_bodega    = $bodega->id;
+                $inventario->stock          = 0;
+                $inventario->id_producto    = $producto->id;
+                $inventario->save();
+            }
+        }
 
         return Response()->json($bodega, 200);
 
