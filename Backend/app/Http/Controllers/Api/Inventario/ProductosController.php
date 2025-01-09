@@ -34,9 +34,11 @@ class ProductosController extends Controller
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
                                 ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->whereHas('inventarios', function($q) use ($request){
-                                        return $q->where('id_sucursal', $request->id_sucursal);
-                                    });
+                                    $q->with(['inventarios' => function ($q) {
+                                        $q->whereHas('bodega', function ($bodegaQuery) {
+                                            $bodegaQuery->where('id_sucursal', Auth::user()->id_sucursal);
+                                        });
+                                    }]);
                                 })
                                 ->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
