@@ -13,17 +13,31 @@ class RolePermissionController extends Controller
     /**
      * Mostrar todos los roles y permisos
      */
-    public function index()
+    public function index(Request $request)
     {
-        $roles = Role::with('permissions')->get();
-        $permissions = Permission::all();
-        $users = User::with('roles', 'permissions')->get();
+        // $roles = Role::with('permissions')->get();
+        // $permissions = Permission::all();
+        // $users = User::with('roles', 'permissions')->get();
         
-        return response()->json([
-            'roles' => $roles,
-            'permissions' => $permissions,
-            'users' => $users
-        ]);
+        // return response()->json([
+        //     'roles' => $roles,
+        //     'permissions' => $permissions,
+        //     'users' => $users,
+        //     'ok' => true
+        // ]);
+        //where like name
+        $roles = Role::with('permissions')
+                     ->where('name', 'like', '%' . $request->buscador . '%')
+                     ->paginate($request->paginate);
+
+        return response()->json($roles, 200);
+    }
+
+    //permissions
+    public function permissions(Request $request)
+    {
+        $permissions = Permission::all();
+        return response()->json($permissions, 200);
     }
 
     /**
