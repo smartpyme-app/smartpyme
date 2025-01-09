@@ -10,7 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
   templateUrl: './roles-permisos.component.html',
 })
 export class RolesPermisosComponent implements OnInit {
-  public roles: any[] = [];
+  public roles: any = {};
   public permisos: any[] = [];
   public loading: boolean = false;
   public filtros: any = {};
@@ -18,6 +18,7 @@ export class RolesPermisosComponent implements OnInit {
   selectedRole: any = null;
   searchText: string = ''
   permisosSeleccionados: any[] = [];
+  role: any = {};
 
   modalRef!: BsModalRef;
 
@@ -33,23 +34,44 @@ export class RolesPermisosComponent implements OnInit {
     this.cargarDatos();
   }
 
-  cargarDatos() {
+  saveRole() {
     this.loading = true;
-    this.apiService.getAll('roles-permissions', this.filtros).subscribe(
-      (response) => {
-          this.roles = response.data;
-          this.loading = false;
-        
+    
+    if (!this.role.name) {
+      this.alertService.error('El nombre del rol es requerido');
+      this.loading = false;
+      return;
+    }
+
+    const roleData = {
+      name: this.role.name,
+      permissions: this.role.permissions
+    };
+
+    this.apiService.store('roles-permissions', roleData).subscribe(
+      response => {
+        this.alertService.success('Rol creado correctamente', 'success');
+        this.closeModal();
+        this.cargarDatos();
+        this.loading = false;
       },
-      (error) => {
+      error => {
         this.alertService.error(error);
         this.loading = false;
       }
     );
-    this.apiService.getAll('permissions', this.filtros).subscribe(
+  }
+
+  cargarDatos() {
+    this.loading = true;
+    this.apiService.getAll('roles-permissions', this.filtros).subscribe(
       (response) => {
-          this.permissions = response;
-          this.loading = false;
+        this.roles = response; // Ahora recibe un objeto con data, total, etc.
+        console.log('Roles:', this.roles.total);
+        this.loading = false;
+        if (this.modalRef) {
+          this.modalRef.hide();
+        }
       },
       (error) => {
         this.alertService.error(error);
@@ -58,9 +80,61 @@ export class RolesPermisosComponent implements OnInit {
     );
   }
 
+  public setOrden(columna: string) {
+    if (this.filtros.orden === columna) {
+      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.filtros.orden = columna;
+      this.filtros.direccion = 'asc';
+    }
+    this.filtrarRoles();
+  }
+
+  public filtrarRoles() {
+    this.cargarDatos();
+  }
+
+  public setPagination(event: any): void {
+    this.loading = true;
+    this.apiService.paginate(this.roles.path + '?page=' + event.page, this.filtros)
+      .subscribe(
+        roles => {
+          this.roles = roles;
+          this.loading = false;
+        },
+        error => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+  }
+
+  cargarPermisos() {
+    this.apiService.getAll('permissions').subscribe(
+      (response) => {
+        this.permissions = response;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
   openModal(template: TemplateRef<any>, role: any) {
-    this.selectedRole = role;
-    this.preparePermissionsForRole();
+    if (role.name) {
+      // Si es edición
+      this.selectedRole = role;
+      this.preparePermissionsForRole();
+    } else {
+      // Si es creación
+      this.role = {
+        name: '',
+        permissions: []
+      };
+      if (!this.permissions.length) {
+        this.cargarPermisos();
+      }
+    }
     this.alertService.modal = true;
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
@@ -82,7 +156,7 @@ export class RolesPermisosComponent implements OnInit {
   }
 
   onPermissionChange(permission: any) {
-    // Lógica para cuando cambia un permiso
+
     console.log('Permiso cambiado:', permission);
   }
 
@@ -110,4 +184,19 @@ export class RolesPermisosComponent implements OnInit {
     this.modalRef.hide();
     this.alertService.modal = false;
   }
+
+  onPermissionSelect(event: any) {
+    const permission = event.target.value;
+    const isChecked = event.target.checked;
+
+    if (isChecked) {
+      this.role.permissions.push(permission);
+    } else {
+      const index = this.role.permissions.indexOf(permission);
+      if (index > -1) {
+        this.role.permissions.splice(index, 1);
+      }
+    }
+  }
+
 }

@@ -1,49 +1,68 @@
 <!-- roles-permisos.component.html -->
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Roles y Permisos</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mrol, {})"  tooltip="Crear rol (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir rol</button>
+    <button *ngIf="apiService.canCreate()" (click)="openModal(mrol, {})" tooltip="Crear rol (F4)" class="btn btn-default tcla-F4">
+        <i class="fa fa-plus"></i> Añadir rol
+    </button>
 </section>
+
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
-        <div class="col">
-            
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="roles?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarRoles()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ roles?.total + ' registros' }}
+            </span>
         </div>
 
-        <div class="col">
+        <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <form class="d-flex input-group" name="form" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">
                             <i class="fa fa-search text-muted"></i>
                         </div>
-                        <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                        <input type="search" 
+                               name="buscador" 
+                               class="form-control pull-right border-start-0" 
+                               placeholder="Buscar" 
+                               [(ngModel)]="filtros.buscador"
+                               (ngModelChange)="filtrarRoles()">
                     </div>
                 </form>
-                <!-- <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
             </div>
         </div>
     </div>
+
     <div class="card-body">
         <div *ngIf="loading" class="text-center p-5">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Cargando...</span>
             </div>
         </div>
+        
         <div *ngIf="!loading" class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Rol</th>
+                        <th (click)="setOrden('name')" 
+                            [ngClass]="{'sorted-asc': filtros.orden == 'name' && filtros.direccion == 'asc', 
+                                      'sorted-desc': filtros.orden == 'name' && filtros.direccion == 'desc'}" 
+                            class="click">Rol</th>
                         <th>Total de Permisos</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let role of roles">
+                    <tr *ngFor="let role of roles?.data">
                         <td>{{role.name}}</td>
-                        <td>
-                            {{role.permissions.length}}
-                        </td>
+                        <td>{{role.permissions.length}}</td>
                         <td>
                             <button class="btn btn-primary btn-sm"
                                     (click)="openModal(permisoModal, role)" 
@@ -56,9 +75,15 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Paginación -->
+        <div class="col-12" *ngIf="roles?.last_page > 1">
+            <app-pagination [items]="roles" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
     </div>
-    
 </section>
+
+<!-- ... resto de tu código modal ... -->
 
 <!-- Modal para gestionar permisos -->
 <ng-template #permisoModal>
@@ -111,3 +136,64 @@
         </button>
     </div>
 </ng-template>
+
+<ng-template #mrol>
+    <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+            <i class="fas fa-plus me-2"></i>
+            Añadir rol
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-body">    
+        <form #roleForm="ngForm" (ngSubmit)="saveRole()">
+            <div class="mb-3">
+                <label for="name" class="form-label">Nombre del rol</label>
+                <input type="text" 
+                       id="name"
+                       name="name" 
+                       class="form-control" 
+                       [(ngModel)]="role.name" 
+                       required
+                       #name="ngModel">
+                <div *ngIf="name.invalid && (name.dirty || name.touched)" class="text-danger">
+                    <small *ngIf="name.errors?.['required']">El nombre es requerido</small>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label d-block">Permisos</label>
+                <div class="permission-grid">
+                    <div class="row">
+                        <div class="col-md-6" *ngFor="let permission of permissions">
+                            <div class="form-check permission-item mb-2">
+                                <input type="checkbox" 
+                                       class="form-check-input" 
+                                       [id]="'newperm_' + permission.id"
+                                       [value]="permission.id"
+                                       (change)="onPermissionSelect($event)">
+                                <label class="form-check-label ms-2" 
+                                       [for]="'newperm_' + permission.id">
+                                    {{permission.name}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer px-0 pb-0">
+                <button type="button" class="btn btn-secondary" (click)="closeModal()">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                        class="btn btn-primary" 
+                        [disabled]="roleForm.invalid || loading">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
