@@ -38,16 +38,11 @@ export class UsuarioComponent implements OnInit {
 	    else{
 	        this.loadAll(id);
 	    }
-	    this.apiService.getAll('sucursales').subscribe(sucursales => { 
+	    this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
 	        this.sucursales = sucursales;
+			console.log(this.sucursales);
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); });
-
-
-        this.apiService.getAll('empleados/list').subscribe(empleados => { 
-            this.empleados = empleados;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
 
 	}
 
@@ -56,6 +51,7 @@ export class UsuarioComponent implements OnInit {
 
 	    this.apiService.read('usuario/', id).subscribe(usuario => { 
 	        this.usuario = usuario;
+			console.log('usuario', this.usuario);	
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -101,5 +97,7 @@ export class UsuarioComponent implements OnInit {
 	       };
 	    reader.readAsDataURL(this.file!);
 	}
+
+	
 
 }
