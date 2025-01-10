@@ -12,6 +12,16 @@
 
       <div class="table-responsive">
         <table class="table table-borderless table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Usuario</th>
+              <th>Descripción</th>
+              <th>Estado</th>
+              <th>Fecha y hora</th>
+              <th>Más</th>
+            </tr>
+          </thead>
           <tbody>
             <tr>
               <td colspan="2" class="text-center" *ngIf="eventos?.total < 1 && !loading">
@@ -23,20 +33,15 @@
             </tr>
             <!-- eventos traidos del componente -->
             <tr *ngFor=" let evento of eventos?.data">
+              <td>{{evento.nombre_cliente | truncate:20 }}</td>
+              <td>{{evento.nombre_usuario | truncate:20 }}</td>
+              <td>{{evento.descripcion | truncate:20 }}</td>
               <td>
-                <p class="m-0 d-flex justify-content-between">
-                  <span tooltip="{{evento.descripcion}}">{{evento.descripcion | truncate:20 }} </span>
-                  <small *ngIf="evento.nombre_cliente">({{evento.nombre_cliente | truncate:20 }})</small>
-                </p>
-                <p class="m-0 d-flex justify-content-between">
-                  <small>{{evento.inicio | date:'dd/MM/yyyy'}} <span class="badge bg-info">{{evento.inicio |
-                      date:("HH:mm")}} -
-                      {{evento.fin| date:("HH:mm")}}</span> </small>
-                  <small class="badge" style="font-size: 0.7rem;"
+                  <span class="badge" style="font-size: 0.7rem;"
                     [ngClass]="{'bg-dark' : evento?.tipo == 'Pendiente','bg-warning' : evento?.tipo == 'Sin confirmar', 'bg-danger' : evento?.tipo == 'Cancelado', 'bg-info' : evento?.tipo == 'Confirmado', 'bg-success' : evento?.tipo == 'Pagado'}">{{
-                    evento.tipo }}</small>
-                </p>
+                    evento.tipo }}</span>
               </td>
+              <td>{{evento.inicio | date:'dd/MM/yyyy'}} {{evento.inicio | date:("hh:mm a")}} - {{evento.fin| date:("hh:mm a")}} </td>
               <td class="text-center">
                 <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                   <i class="fa fa-ellipsis-vertical fa-fw"></i>

@@ -95,16 +95,20 @@ class EventosController extends Controller
             $color = '';
             $textColor = '';
             if ($evento->tipo == 'Pagado') {
-                $color = '#367837';
+                $color = '#DCFCE7';
+                $textColor = '#14532D';
             } elseif ($evento->tipo == 'Sin confirmar') {
-                $color = 'lightgray';
-                $textColor = 'black';
+                $color = '#FFDCC4';
+                $textColor = '#000000';
             } elseif ($evento->tipo == 'Pendiente') {
-                $color = 'orange';
+                $color = '#FFDAD6';
+                $textColor = '#410002';
             } elseif ($evento->tipo == 'Confirmado') {
-                $color = '#3490dc';
+                $color = '#D7E2FF';
+                $textColor = '#001B3F';
             } elseif ($evento->tipo == 'Cancelado') {
                 $color = '#D9213A';
+                $color = '#000000';
             }
 
             $data = new stdClass();
@@ -184,9 +188,8 @@ class EventosController extends Controller
                 ->where('id_usuario', $request->id_usuario)
                 ->where("tipo", "!=",  "Cancelado")
                 ->where(function ($query) use ($inicio, $fin) {
-                    $query->where(fn($q) => $q->where('inicio', '<=', $fin)->where('fin', '>=', $fin))
-                        ->orWhere(fn($q) => $q->where('inicio', '<=', $inicio)->where('fin', '>=', $inicio));
-                })
+                        $query->where(fn($q) => $q->where('inicio', '<', $fin)->where('fin', '>', $inicio));
+                    })
                 ->get();
 
             if ($eventosEnConflicto->count() > 0) {
