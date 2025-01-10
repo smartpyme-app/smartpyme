@@ -286,7 +286,7 @@
 
                                     <div class="alert alert-info mb-4" role="alert">
                                         <i class="fa fa-info-circle me-2"></i>
-                                        Los permisos marcados en gris son heredados del rol y no pueden modificarse
+                                        Todos los permisos pueden ser modificados independientemente de su origen
                                     </div>
 
                                     <!-- Loading -->
@@ -295,30 +295,30 @@
                                         <p class="mt-2 mb-0">Cargando permisos...</p>
                                     </div>
 
-                                    <!-- Permisos por Módulo -->
+                                
                                     <div *ngIf="!permissionsLoading" class="accordion" id="permissionsAccordion">
-                                        <!-- Módulo Inventario -->
-                                        <div class="accordion-item border-0 mb-2">
+                                
+                                        <div class="accordion-item border-0 mb-2" *ngFor="let module of moduleKeys">
                                             <h2 class="accordion-header">
-                                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#inventarioCollapse">
+                                                <button class="accordion-button" type="button" 
+                                                        [attr.data-bs-toggle]="'collapse'" 
+                                                        [attr.data-bs-target]="'#' + module + 'Collapse'">
                                                     <i class="fa fa-box me-2"></i>
-                                                    Inventario
+                                                    {{module | titlecase}}
                                                 </button>
                                             </h2>
-                                            <div id="inventarioCollapse" class="accordion-collapse collapse show">
+                                            <div [id]="module + 'Collapse'" class="accordion-collapse collapse show">
                                                 <div class="accordion-body">
                                                     <div class="row g-3">
-                                                        <div class="col-md-4" *ngFor="let permission of modulePermissions.inventario">
-                                                            <div class="permission-item" [class.disabled]="permission.fromRole">
+                                                        <div class="col-md-4" *ngFor="let permission of modulePermissions[module]">
+                                                            <div class="permission-item">
                                                                 <div class="form-check">
-                                                                    <input type="checkbox" 
-                                                                        class="form-check-input" 
-                                                                        [checked]="permission.selected"
-                                                                        [disabled]="permission.fromRole"
-                                                                        (change)="onPermissionChange(permission)">
+                                                                    <input type="checkbox"
+                                                                           class="form-check-input"
+                                                                           [checked]="permission.selected"
+                                                                           (change)="onPermissionChange(permission)">
                                                                     <label class="form-check-label">
                                                                         {{permission.name}}
-                                                                        
                                                                     </label>
                                                                 </div>
                                                             </div>
@@ -327,8 +327,6 @@
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Repetir para otros módulos -->
                                     </div>
 
                                     <!-- Botones de acción -->

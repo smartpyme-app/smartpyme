@@ -45,6 +45,8 @@ export class UsuarioComponent implements OnInit {
   public allPermissions: Permission[] = [];
   public permissionsLoading: boolean = false;
   public modulePermissions: { [key: string]: Permission[] } = {};
+  public Object = Object; 
+
 
 
   constructor(
@@ -294,9 +296,16 @@ guardarPassword() {
 
   groupPermissionsByModule() {
     this.modulePermissions = {
-	  inventario: this.allPermissions.filter(p => p.name.endsWith('productos')),
       ventas: this.allPermissions.filter(p => p.name.endsWith('ventas')),
       compras: this.allPermissions.filter(p => p.name.endsWith('compras')),
+      productos: this.allPermissions.filter(p => p.name.endsWith('productos')),
+      gastos: this.allPermissions.filter(p => p.name.endsWith('gastos')),
+      clientes: this.allPermissions.filter(p => p.name.endsWith('clientes')),
+      proveedores: this.allPermissions.filter(p => p.name.endsWith('proveedores')),
+      usuarios: this.allPermissions.filter(p => p.name.endsWith('usuarios')),
+      reportes: this.allPermissions.filter(p => p.name.endsWith('reportes')),
+      configuracion: this.allPermissions.filter(p => p.name.endsWith('configuracion')),
+      cotizaciones: this.allPermissions.filter(p => p.name.endsWith('cotizaciones')),
     
     };
 
@@ -341,4 +350,8 @@ guardarPassword() {
       }
     );
   }
+
+  get moduleKeys(): string[] {
+    return Object.keys(this.modulePermissions);
+}
 }
