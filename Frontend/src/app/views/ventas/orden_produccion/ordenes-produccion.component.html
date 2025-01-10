@@ -1,0 +1,168 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Órdenes de Producción</h2>
+    <!-- <button *ngIf="apiService.canCreate()" routerLink="/orden-produccion/crear" tooltip="Crear orden de producción" class="btn btn-default">
+      <i class="fa fa-plus"></i> Nueva Orden
+    </button> -->
+  </section>
+  
+  <section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <span class="text-muted d-flex align-items-center gap-2" *ngIf="ordenes?.total">
+          Mostrando 
+          <select name="paginate" class="form-select w-auto" (change)="filtrarOrdenes()" [(ngModel)]="filtros.paginate">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          de {{ ordenes?.total + ' registros' }}
+        </span>
+      </div>
+  
+      <div class="col-md-6 mb-3">
+        <div class="d-flex gap-2">
+          <!-- <button [disabled]="downloading" tooltip="Descargar órdenes" (click)="descargar()" class="btn btn-default">
+            <img src="/assets/icons/download.png" class="icon">
+          </button> -->
+          <form class="d-flex input-group" (ngSubmit)="filtrarOrdenes()" autocomplete="off">
+            <input type="text" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+          </form>
+          <button tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default">
+            <img src="/assets/icons/filter.png" class="icon">
+          </button>
+        </div>
+      </div>
+    </div>
+  
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th (click)="setOrden('codigo')" [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}" class="click">Código</th>
+            <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+            <th>Cliente</th>
+            <th>Asesor</th>
+            <th>Estado</th>
+            <th>Fecha Entrega</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="ordenes?.total < 1 && !loading">
+            <td colspan="7" class="text-center">
+              <span class="badge bg-primary">No hay órdenes registradas</span>
+            </td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="7" class="text-center">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+  
+          <tr class="animated fadeIn" *ngFor="let orden of ordenes?.data">
+            <td>{{orden.codigo}}</td>
+            <td>{{orden.fecha | date:'dd/MM/yyyy'}}</td>
+            <td>{{orden.cliente?.nombre}}</td>
+            <td>{{orden.asesor?.name}}</td>
+            <td>
+              <select name="estado" class="form-select w-auto border-0" 
+                      (change)="setEstado(orden)" 
+                      [(ngModel)]="orden.estado"
+                      [disabled]="orden.estado === 'entregada' || orden.estado === 'aceptada' || orden.estado === 'anulada'"
+                      [ngClass]="{
+                        'bg-light-warning': orden?.estado == 'pendiente',
+                        'bg-light-info': orden?.estado == 'aceptada',
+                        'bg-light-primary': orden?.estado == 'en_proceso',
+                        'bg-light-success': orden?.estado == 'completada',
+                        'bg-light-secondary': orden?.estado == 'entregada',
+                        'bg-light-danger': orden?.estado == 'anulada'
+                      }">
+                <option value="pendiente">Pendiente</option>
+                <option value="aceptada">Aceptada</option>
+                <option value="en_proceso">En Proceso</option>
+                <option value="completada">Completada</option>
+                <option value="entregada">Entregada</option>
+                <option value="anulada">Anulada</option>
+              </select>
+            </td>
+            <td>{{orden.fecha_entrega | date:'dd/MM/yyyy'}}</td>
+            <td class="text-center">
+              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="d-flex flex-column align-items-start">
+                 
+                  <a routerLink="/orden-produccion/detalles/{{orden.id}}" class="btn">
+                    <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                  </a>
+                  <a (click)="imprimir(orden)" class="btn">
+                    <i class="fa fa-fw fa-print"></i> Imprimir
+                  </a>
+                  <!-- Poder anular la orden -->
+                  <a *ngIf="orden.estado != 'anulada' && apiService.canDelete()" 
+                     (click)="anular(orden)" 
+                     class="btn">
+                    <i class="fa fa-fw fa-ban"></i> Anular
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="col-12" *ngIf="ordenes?.last_page > 1">
+      <app-pagination [items]="ordenes" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+  </section>
+  
+  <!-- Modal de Filtros -->
+  <ng-template #mfilter>
+    <div class="modal-header">
+      <div class="modal-title">
+        <h2>Filtrar Órdenes</h2>
+      </div>
+      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <form (ngSubmit)="filtrarOrdenes()">
+        <div class="row">
+          <div class="form-group col-md-6">
+            <label>Fecha de entrega esperada:</label>
+            <input type="date" class="form-control" name="fin" [(ngModel)]="filtros.fecha_entrega"/>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Responsable:</label>
+            <ng-select [(ngModel)]="filtros.id_asesor" class="form-select p-0" name="id_asesor">
+              <ng-option value="">Todos</ng-option>
+              <ng-option *ngFor="let asesor of asesores" [value]="asesor.id">
+                {{ asesor.name }}
+              </ng-option>
+            </ng-select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Estado:</label>
+            <select [(ngModel)]="filtros.estado" class="form-control form-select" name="estado">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="aceptada">Aceptada</option>
+              <option value="en_proceso">En Proceso</option>
+              <option value="completada">Completada</option>
+              <option value="entregada">Entregada</option>
+              <option value="anulada">Anulada</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+          <button type="submit" [disabled]="loading" class="btn btn-primary">
+            <span *ngIf="!loading">Filtrar</span>
+            <span *ngIf="loading">Filtrando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </ng-template>

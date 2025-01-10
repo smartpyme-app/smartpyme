@@ -7,6 +7,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Producto;
 use App\Models\Ventas\Clientes\Cliente;
+use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,7 +45,8 @@ class CotizacionVenta extends Model
         "id_empresa",
         "id_sucursal",
         "cobrar_impuestos",
-        "aplicar_retencion"
+        "aplicar_retencion",
+        "terminos_de_venta"
     ];
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];
@@ -142,5 +144,10 @@ class CotizacionVenta extends Model
     public function documento()
     {
         return $this->belongsTo(Documento::class, 'id_documento');
+    }
+
+    public function tieneOrdenProduccion()
+    {
+        return $this->hasMany(OrdenProduccion::class, 'id_cotizacion_venta')->where('estado', '!=', 'anulada');
     }
 }

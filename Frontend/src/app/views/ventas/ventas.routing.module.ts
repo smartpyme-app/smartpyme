@@ -32,7 +32,8 @@ import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-v
 import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/categorias-ventas.component';
 import { CotizacionFormComponent } from './facturacion/facturacion-tienda/cotizacion-form/cotizacion-form.component';
 
-
+import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
+import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component';
 const routes: Routes = [
   {
     path: '',
@@ -80,6 +81,11 @@ const routes: Routes = [
       { path: 'reporte/ventas/historial', canActivate: [AdminGuard], component: HistorialVentasComponent },
       { path: 'reporte/ventas/detalle', canActivate: [AdminGuard], component: DetalleVentasComponent },
       { path: 'reporte/ventas/categorias', canActivate: [AdminGuard], component: CategoriasVentasComponent },
+      // Ordenes de producción
+      { path: 'ordenes/produccion', component: OrdenesProduccionComponent, title: 'Ordenes de producción' },
+      { path: 'orden-produccion/crear/:id', component: CrearOrdenProduccionComponent, title: 'Crear Orden de Producción' },
+      //{ path: 'orden-produccion/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
+      { path: 'orden-produccion/detalles/:id', component: CrearOrdenProduccionComponent, title: 'Ver Orden de Producción' }
 
     ]
   }
