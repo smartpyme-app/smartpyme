@@ -92,6 +92,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
   }
 
   cargarCotizacion(id: number) {
+
+    console.log('id', id)
     this.loading = true;
     this.apiService.read('cotizacion/', id).subscribe(
       (response: any) => {
@@ -133,7 +135,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
             total_costo: detalle.total_costo,
             descuento: detalle.descuento,
             id_cotizacion_venta: detalle.id_cotizacion_venta,
-            custom_fields: detalle.custom_fields || []
+            custom_fields: detalle.custom_fields || [],
+            producto: detalle.producto
           }))
         };
 
