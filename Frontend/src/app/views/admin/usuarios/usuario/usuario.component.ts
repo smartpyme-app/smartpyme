@@ -3,10 +3,20 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
+
+interface Permission {
+	id: number;
+	name: string;
+	fromRole: boolean;
+	selected: boolean;
+  }
 @Component({
   selector: 'app-usuario',
   templateUrl: './usuario.component.html'
 })
+
+
+
 export class UsuarioComponent implements OnInit {
   public usuario: any = {
     password_show: false,
@@ -16,6 +26,7 @@ export class UsuarioComponent implements OnInit {
   public empleados: any = [];
   public loading = false;
   public mostrarCambioContrasena = false;
+  
 
   // Img Upload
   public file?: File;
@@ -29,6 +40,11 @@ export class UsuarioComponent implements OnInit {
   public confirmPassword: string = '';
   public showPassword: boolean = false;
   public showConfirmPassword: boolean = false;
+  public rolePermissions: string[] = [];
+  public directPermissions: string[] = [];
+  public allPermissions: Permission[] = [];
+  public permissionsLoading: boolean = false;
+  public modulePermissions: { [key: string]: Permission[] } = {};
 
 
   constructor(
@@ -60,6 +76,8 @@ export class UsuarioComponent implements OnInit {
         this.alertService.error(error);
       }
     );
+
+	this.loadPermissions(id);
   }
 
   public loadAll(id: number) {
@@ -241,4 +259,86 @@ guardarPassword() {
 		}
 	);
 }
+
+  // En ngOnInit o donde cargas el usuario, añadir:
+  loadPermissions(id: number) {
+    this.permissionsLoading = true;
+	console.log('this.usuario.id', this.usuario)
+    this.apiService.getAll(`roles-permissions/user/${id}`).subscribe(
+      (response: any) => {
+		  console.log('response', response);
+        if (response.ok) {
+          const { rolePermissions, directPermissions, allPermissions } = response.data;
+          
+          this.rolePermissions = rolePermissions;
+          this.directPermissions = directPermissions;
+
+          // Preparar permisos para mostrar
+          this.allPermissions = allPermissions.map((perm: any) => ({
+            id: perm.id,
+            name: perm.name,
+            fromRole: rolePermissions.includes(perm.name),
+            selected: rolePermissions.includes(perm.name) || directPermissions.includes(perm.name)
+          }));
+
+          this.groupPermissionsByModule();
+        }
+        this.permissionsLoading = false;
+      },
+      error => {
+        this.alertService.error(error);
+        this.permissionsLoading = false;
+      }
+    );
+  }
+
+  groupPermissionsByModule() {
+    this.modulePermissions = {
+	  inventario: this.allPermissions.filter(p => p.name.endsWith('productos')),
+      ventas: this.allPermissions.filter(p => p.name.endsWith('ventas')),
+      compras: this.allPermissions.filter(p => p.name.endsWith('compras')),
+    
+    };
+
+	console.log('this.modulePermissions', this.modulePermissions);
+  }
+
+
+  onPermissionChange(permission: Permission) {
+    if (permission.fromRole) return; // No permitir cambios en permisos del rol
+
+    // Si está seleccionado, asegurarse que no esté en directPermissions
+    if (!permission.selected) {
+      this.directPermissions = this.directPermissions.filter(p => p !== permission.name);
+    } else {
+      if (!this.directPermissions.includes(permission.name)) {
+        this.directPermissions.push(permission.name);
+      }
+    }
+  }
+
+  savePermissions() {
+    this.permissionsLoading = true;
+    
+    // Solo enviar permisos directos que no vienen del rol
+    const permissionsToSave = this.directPermissions.filter(
+      p => !this.rolePermissions.includes(p)
+    );
+
+    this.apiService.store(`roles-permissions/user/${this.usuario.id}`, {
+      permissions: permissionsToSave
+    }).subscribe(
+      response => {
+        if (response.ok) {
+          this.alertService.success('Permisos actualizados correctamente', 'Los permisos se han actualizado correctamente.');
+          this.loadPermissions(this.usuario.id); // Recargar permisos
+        }
+        this.permissionsLoading = false;
+      },
+      error => {
+        this.alertService.error(error);
+        this.permissionsLoading = false;
+      }
+    );
+  }
 }

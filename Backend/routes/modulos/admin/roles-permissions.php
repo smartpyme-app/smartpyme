@@ -19,3 +19,7 @@ Route::post('/remove-permission-from-user', [RolePermissionController::class, 'r
 
 //roles-permissions
 Route::post('/roles-permissions', [RolePermissionController::class, 'store']);
+
+Route::get('/roles-permissions/user/{id}', [RolePermissionController::class, 'getUserPermissions']);
+Route::post('/roles-permissions/user/{id}', [RolePermissionController::class, 'saveUserPermissions']);
+Route::get('/roles-permissions/role/{id}', [RolePermissionController::class, 'getRolePermissions']);

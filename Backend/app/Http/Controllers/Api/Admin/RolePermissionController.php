@@ -170,4 +170,76 @@ class RolePermissionController extends Controller
 
         return response()->json(['message' => 'Permisos actualizados correctamente', 'role' => $role], 200);
     }
+
+
+    public function getUserPermissions($userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+            $directPermissions = $user->getDirectPermissions()->pluck('name');
+
+            return response()->json([
+                'ok' => true,
+                'data' => [
+                    'role' => $user->roles->first()->name,
+                    'rolePermissions' => $rolePermissions,
+                    'directPermissions' => $directPermissions,
+                    'allPermissions' => Permission::get(['id', 'name'])
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Error al obtener permisos',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function saveUserPermissions(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            
+            // Validar los permisos
+            $request->validate([
+                'permissions' => 'required|array',
+                'permissions.*' => 'exists:permissions,name'
+            ]);
+
+            // Sincronizar solo los permisos directos (no los del rol)
+            $user->syncPermissions($request->permissions);
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Permisos actualizados correctamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Error al actualizar permisos',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function getRolePermissions($roleId)
+    {
+        try {
+            $role = Role::findOrFail($roleId);
+            return response()->json([
+                'ok' => true,
+                'data' => $role->permissions->pluck('name')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Error al obtener permisos del rol',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
