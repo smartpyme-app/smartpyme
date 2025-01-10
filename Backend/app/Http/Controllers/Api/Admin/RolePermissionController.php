@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Module;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
@@ -242,4 +243,13 @@ class RolePermissionController extends Controller
             ], 500);
         }
     }
+
+    //modules
+    public function modules(Request $request)
+    {
+        $modules = Module::with('permissions')->where('name', 'like', '%' . $request->buscador . '%')->paginate($request->paginate);
+        return response()->json($modules, 200);
+    }
+
+    
 }

@@ -23,3 +23,9 @@ Route::post('/roles-permissions', [RolePermissionController::class, 'store']);
 Route::get('/roles-permissions/user/{id}', [RolePermissionController::class, 'getUserPermissions']);
 Route::post('/roles-permissions/user/{id}', [RolePermissionController::class, 'saveUserPermissions']);
 Route::get('/roles-permissions/role/{id}', [RolePermissionController::class, 'getRolePermissions']);
+
+//modules
+Route::get('/modules', [RolePermissionController::class, 'modules']);
+Route::post('/modules', [RolePermissionController::class, 'storeModule']);
+Route::delete('/modules/{id}', [RolePermissionController::class, 'destroyModule']);
+

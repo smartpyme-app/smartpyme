@@ -31,6 +31,7 @@ import { NotificacionesComponent } from './notificaciones/notificaciones.compone
 import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
 import { RolesPermisosComponent } from './roles-permisos/roles-permisos.component';
+import { ModulesComponent } from './modules/modules.component';
 
 @NgModule({
   imports: [
@@ -59,7 +60,8 @@ import { RolesPermisosComponent } from './roles-permisos/roles-permisos.componen
     ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
-    RolesPermisosComponent
+    RolesPermisosComponent,
+    ModulesComponent
   ],
   exports: [
     EmpresaComponent,
@@ -72,7 +74,9 @@ import { RolesPermisosComponent } from './roles-permisos/roles-permisos.componen
     ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
-    RolesPermisosComponent
+    RolesPermisosComponent,
+    ModulesComponent
   ]
 })
 export class AdminModule { }
+

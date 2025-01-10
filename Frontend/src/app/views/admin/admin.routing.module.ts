@@ -18,6 +18,7 @@ import { DocsComponent }     from '@views/admin/docs/docs.component';
 
 import { ReportesComponent }    from '@views/reportes/reportes.component';
 import { RolesPermisosComponent }    from '@views/admin/roles-permisos/roles-permisos.component';
+import { ModulesComponent }    from '@views/admin/modules/modules.component';
 
 const routes: Routes = [
   {
@@ -35,6 +36,7 @@ const routes: Routes = [
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
         { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
         { path: 'roles-permisos', component: RolesPermisosComponent, title: 'Roles y permisos'},
+        { path: 'modulos', component: ModulesComponent, title: 'Módulos'},
     ]
   }
 ];
