@@ -22,3 +22,6 @@ ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
 
 ALTER TABLE compras ADD id_bodega INT NOT NULL after total;
 ALTER TABLE ventas ADD id_bodega INT NOT NULL after id_proyecto;
+
+ALTER TABLE users ADD id_bodega INT NOT NULL after id_sucursal;
+UPDATE users SET id_bodega=id_sucursal;
