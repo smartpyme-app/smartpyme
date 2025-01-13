@@ -365,7 +365,7 @@ class RolePermissionController extends Controller
 
     public function getModule(Request $request)
     {
-        $module = Module::with('permissions', 'submodules', 'custom_permissions')->findOrFail($request->id);
+        $module = Module::with('permissions', 'submodules.permissions', 'custom_permissions')->findOrFail($request->id);
         return response()->json($module, 200);
     }
 }
