@@ -97,7 +97,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
         $sucursales = Sucursal::all();
 
-        if (isset($sucursales[0]) && isset($row['sucursal_1_stock'])) {
+        if (isset($sucursales[0])) {
             
             $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[0]->id)->first();
 
@@ -129,7 +129,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
         }
 
-        if (isset($sucursales[1]) && isset($row['sucursal_2_stock'])) {
+        if (isset($sucursales[1])) {
             
             $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[1]->id)->first();
 
@@ -160,7 +160,38 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             }
         }
 
-        if ($sucursales->count() > 2) {
+        if (isset($sucursales[2])) {
+            
+            $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[2]->id)->first();
+
+            if (!$inventario) {
+                $inventario = new Inventario();
+            }
+
+            $inventario->id_producto = $producto->id;
+            $inventario->id_sucursal = $sucursales[2]->id;
+            $inventario->stock = isset($row['sucursal_3_stock']) ? $row['sucursal_3_stock'] : 0;
+            $inventario->save();
+
+
+            $ajuste = Ajuste::create([
+                'concepto' => 'Ajuste inicial',
+                'id_producto' => $producto->id,
+                'id_sucursal' => $sucursales[2]->id,
+                'stock_actual' => 0,
+                'stock_real' => $inventario->stock,
+                'ajuste' => $inventario->stock,
+                'estado' => 'Confirmado',
+                'id_empresa' => $usuario->id_empresa,
+                'id_usuario' => $usuario->id,
+            ]);
+
+            if ($inventario) {
+                $inventario->kardex($ajuste, $ajuste->ajuste);
+            }
+        }
+
+        if ($sucursales->count() > 3) {
            for ($i=2; $i < $sucursales->count(); $i++) { 
                
                $inventario = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $sucursales[$i]->id)->first();
