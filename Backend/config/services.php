@@ -47,4 +47,18 @@ return [
         'secret' => env('STRIPE_SECRET')
     ],
 
+    'payment' => [
+        'default_gateway' => env('PAYMENT_GATEWAY', 'n1co'),
+        'sandbox_mode' => env('PAYMENT_SANDBOX_MODE', true),
+    ],
+
+    'nico' => [
+        'api_key' => env('NICO_API_KEY'),
+        'sandbox_api_key' => env('NICO_SANDBOX_API_KEY'),
+        'base_url' => env('NICO_BASE_URL', 'https://api-pay.n1co.shop/api'),
+        'sandbox_url' => env('NICO_SANDBOX_URL', 'https://api-pay-sandbox.n1co.shop/api'),
+        'webhook_secret' => env('NICO_WEBHOOK_SECRET'),
+        'sandbox_mode' => env('APP_ENV') !== 'production',
+    ],
+    
 ];

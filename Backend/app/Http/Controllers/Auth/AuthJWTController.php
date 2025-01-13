@@ -193,15 +193,15 @@ class AuthJWTController extends Controller
             // Crear impuesto
                Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
            // Formas de pago
-               FormaDePago::create(['nombre' => 'Efectivo', 'id_empresa' => $empresa->id]);
-               FormaDePago::create(['nombre' => 'Transferencia', 'id_empresa' => $empresa->id]);
-               FormaDePago::create(['nombre' => 'Tarjeta de crédito/débito', 'id_empresa' => $empresa->id]);
+               FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 'id_empresa' => $empresa->id]);
+               FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 'id_empresa' => $empresa->id]);
+               FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TARJETA'), 'id_empresa' => $empresa->id]);
            // Crear documentos
-               Documento::create(['nombre' => 'Ticket', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Factura', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Crédito fiscal', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Cotización', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Orden de compra', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_TICKET'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_FACTURA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+               Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
         }
 
         if ($request->id) {
@@ -216,7 +216,7 @@ class AuthJWTController extends Controller
         $usuario->email        = $request->email;
         $usuario->telefono     = $request->telefono;
         $usuario->password     = bcrypt($request->password);
-        $usuario->tipo         = 'Administrador';
+        $usuario->tipo         = config('constants.TIPO_USUARIO_ADMINISTRADOR');
         $usuario->enable       = true;
         $usuario->save();
 
@@ -225,17 +225,17 @@ class AuthJWTController extends Controller
 
         $usuario->empresa = $usuario->empresa()->first();
 
-        if ($empresa->plan == 'Emprendedor'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/WEwwXTOpy";
+        if ($empresa->plan == config('constants.PLAN_EMPRENDEDOR')){
+            $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
         }
-        if ($empresa->plan == 'Estándar'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/yX99lF1Dl";
+        if ($empresa->plan == config('constants.PLAN_ESTANDAR')){
+            $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
         }
-        if ($empresa->plan == 'Avanzado'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
+        if ($empresa->plan == config('constants.PLAN_AVANZADO')){
+            $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
         }
-        if ($empresa->plan == 'Pro'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
+        if ($empresa->plan == config('constants.PLAN_PRO')){
+            $usuario->url_n1co = config('constants.URL_N1CO_PRO');
         }
 
         // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
@@ -368,8 +368,8 @@ class AuthJWTController extends Controller
         Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
             ->to(env('MAIL_TO_ADDRESS'))
-            ->cc('gabrielaq@smartpyme.sv')
-            ->cc('contact@smartpyme.sv')
+            ->cc(config('constants.MAIL_CC_ADDRESS_1'))
+            ->cc(config('constants.MAIL_CC_ADDRESS_2'))
             ->subject('Se ha registrado una nueva cuenta en SmartPyme');
         });
 

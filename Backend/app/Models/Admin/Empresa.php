@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin;
 
+use App\Models\Suscripcion;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -223,6 +224,10 @@ class Empresa extends Model {
         return $re->count();
     }
 
+    public function suscripcion()
+    {
+        return $this->hasOne(Suscripcion::class);
+    }
 
 
 }
