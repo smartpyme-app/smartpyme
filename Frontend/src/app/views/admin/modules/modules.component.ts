@@ -196,7 +196,7 @@ generateTechnicalName(displayName: string): string {
 }
 
 onDisplayNameChange(event: any) {
-  console.log('onDisplayNameChange', event);
+
   const displayName = event
   this.module.name = this.generateTechnicalName(displayName);
 }

@@ -109,7 +109,6 @@
     </div>
 </section>
 
-
 <ng-template #moduleModal>
     <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">
@@ -118,106 +117,106 @@
         </h5>
         <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
     </div>
+
     <div class="modal-body">
         <form #moduleForm="ngForm" (ngSubmit)="saveModule()">
-            <!-- Información del módulo -->
-            <div class="mb-4">
-                <h6 class="border-bottom pb-2">Información del Módulo</h6>
-                <div class="mb-3">
-                    <label for="display_name" class="form-label">Nombre del módulo</label>
-                    <input type="text"
-                           id="display_name"
-                           name="display_name"
-                           class="form-control"
-                           [(ngModel)]="module.display_name"
-                           (ngModelChange)="onDisplayNameChange($event)"
-                           required
-                           #displayName="ngModel">
-                    <div *ngIf="displayName.invalid && (displayName.dirty || displayName.touched)" class="text-danger">
-                        <small *ngIf="displayName.errors?.['required']">El nombre es requerido</small>
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Información del Módulo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="display_name" class="form-label">Nombre del módulo</label>
+                        <input type="text"
+                               id="display_name"
+                               name="display_name"
+                               class="form-control"
+                               [(ngModel)]="module.display_name"
+                               (ngModelChange)="onDisplayNameChange($event)"
+                               required
+                               #displayName="ngModel">
+                        <div *ngIf="displayName.invalid && (displayName.dirty || displayName.touched)" class="text-danger">
+                            <small *ngIf="displayName.errors?.['required']">El nombre es requerido</small>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Nombre técnico</label>
-                    <input type="text"
-                           class="form-control"
-                           [value]="module.name"
-                           readonly
-                           disabled>
-                    <small class="text-muted">
-                        Este nombre se generará automáticamente y será usado para los permisos
-                    </small>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nombre técnico</label>
+                        <input type="text"
+                               class="form-control"
+                               [value]="module.name"
+                               readonly
+                               disabled>
+                        <small class="text-muted">Este nombre se generará automáticamente y será usado para los permisos</small>
+                    </div>
 
-                <div class="mb-3">
-                    <label for="description" class="form-label">Descripción</label>
-                    <textarea id="description"
-                             name="description"
-                             class="form-control"
-                             [(ngModel)]="module.description"
-                             rows="2"></textarea>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <textarea id="description"
+                                 name="description"
+                                 class="form-control"
+                                 [(ngModel)]="module.description"
+                                 rows="2"></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- Submódulos -->
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <div class="card mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Submódulos</h6>
                     <button type="button" class="btn btn-sm btn-outline-primary" (click)="addSubmodule()">
                         <i class="fas fa-plus me-1"></i> Agregar Submódulo
                     </button>
                 </div>
-
-                <div class="submodules-list">
-                    <div class="card mb-2" *ngFor="let submodule of module.submodules; let i = index">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="card-title mb-0">Submódulo {{i + 1}}</h6>
-                                <button type="button" class="btn btn-sm btn-link text-danger" (click)="removeSubmodule(i)">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                <div class="card-body">
+                    <div class="submodules-list">
+                        <div class="card mb-2" *ngFor="let submodule of module.submodules; let i = index">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">Submódulo {{i + 1}}</h6>
+                                    <button type="button" class="btn btn-sm btn-link text-danger" (click)="removeSubmodule(i)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="mb-2">
+                                    <input type="text"
+                                           class="form-control form-control-sm"
+                                           [(ngModel)]="submodule.display_name"
+                                           (ngModelChange)="onSubmoduleDisplayNameChange(submodule, $event)"
+                                           [name]="'submodule_display_' + i"
+                                           placeholder="Nombre del submódulo"
+                                           required>
+                                </div>
+                                <input type="text"
+                                       class="form-control form-control-sm"
+                                       [value]="submodule.name"
+                                       readonly
+                                       disabled>
                             </div>
-                            <!-- En el template de submódulos -->
-                            <input type="text"
-                                class="form-control form-control-sm"
-                                [(ngModel)]="submodule.display_name"
-                                (ngModelChange)="onSubmoduleDisplayNameChange(submodule, $event)"
-                                [name]="'submodule_display_' + i"
-                                placeholder="Nombre del submódulo"
-                                required>
-
-                            <input type="text"
-                                class="form-control form-control-sm"
-                                [value]="submodule.name"
-                                readonly
-                                disabled>
                         </div>
-                    </div>
 
-                    <div class="text-center text-muted p-3" *ngIf="!module.submodules?.length">
-                        <i class="fas fa-info-circle me-1"></i>
-                        No hay submódulos agregados
+                        <div class="text-center text-muted p-3" *ngIf="!module.submodules?.length">
+                            <i class="fas fa-info-circle me-1"></i>
+                            No hay submódulos agregados
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+
+            <div class="card mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Permisos</h6>
                     <button type="button" class="btn btn-sm btn-outline-primary" (click)="addCustomPermission()">
                         <i class="fas fa-plus me-1"></i> Agregar Permiso Personalizado
                     </button>
                 </div>
-        
-                <!-- Permisos por defecto -->
-                <div class="card mb-3">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Permisos Base</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Permisos del módulo -->
-                            <div class="col-12 mb-3">
+                <div class="card-body">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Permisos Base</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
                                 <h6 class="text-muted mb-2">Módulo: {{module.name || 'nombre_modulo'}}</h6>
                                 <div class="d-flex flex-wrap gap-2">
                                     <span class="badge bg-secondary" *ngFor="let perm of getDefaultModulePermissions()">
@@ -225,9 +224,8 @@
                                     </span>
                                 </div>
                             </div>
-        
-                            <!-- Permisos de submódulos -->
-                            <div class="col-12" *ngFor="let submodule of module.submodules">
+
+                            <div class="mb-2" *ngFor="let submodule of module.submodules">
                                 <h6 class="text-muted mb-2">Submódulo: {{submodule.name || 'nombre_submodulo'}}</h6>
                                 <div class="d-flex flex-wrap gap-2">
                                     <span class="badge bg-secondary" *ngFor="let perm of getDefaultSubmodulePermissions(submodule.name)">
@@ -237,70 +235,57 @@
                             </div>
                         </div>
                     </div>
-                </div>
-        
-                <!-- Permisos personalizados -->
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0">Permisos Personalizados</h6>
-                </div>
-                <div class="card-body">
-                    <div class="custom-permissions-list">
-                        <div class="row g-2 mb-2" *ngFor="let permission of module.custom_permissions; let i = index">
-                            <!-- Acción del permiso -->
-                            <div class="col-md-4">
-                                <input type="text"
-                                    class="form-control form-control-sm"
-                                    [(ngModel)]="permission.action"
-                                    (ngModelChange)="onCustomPermissionChange(permission)"
-                                    [name]="'custom_perm_action_' + i"
-                                    placeholder="Acción (ej: exportar, aprobar)"
-                                    required>
-                            </div>
-                            <!-- Selector de módulo/submódulo -->
-                            <div class="col-md-6">
-                                <select class="form-select form-select-sm"
-                                        [(ngModel)]="permission.target"
-                                        (ngModelChange)="onCustomPermissionChange(permission)"
-                                        [name]="'custom_perm_target_' + i">
-                                    <option [value]="module.name">{{module.display_name}} (Módulo principal)</option>
-                                    <option *ngFor="let sub of module.submodules" 
-                                            [value]="sub.name">
-                                        {{sub.display_name}} (Submódulo)
-                                    </option>
-                                </select>
-                            </div>
-                            <!-- Vista previa del permiso -->
-                            <div class="col-12">
-                                <small class="text-muted">
-                                    Permiso generado: <span class="badge bg-secondary">{{getCustomPermissionPreview(permission)}}</span>
-                                </small>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" 
-                                        class="btn btn-sm btn-outline-danger"
-                                        (click)="removeCustomPermission(i)">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Permisos Personalizados</h6>
                         </div>
-                        
-                        <div class="text-center text-muted p-3" *ngIf="!module.custom_permissions?.length">
-                            <i class="fas fa-info-circle me-1"></i>
-                            No hay permisos personalizados agregados
+                        <div class="card-body">
+                            <div class="row g-3 mb-3" *ngFor="let permission of module.custom_permissions; let i = index">
+                                <div class="col-md-4">
+                                    <input type="text"
+                                           class="form-control form-control-sm"
+                                           [(ngModel)]="permission.action"
+                                           (ngModelChange)="onCustomPermissionChange(permission)"
+                                           [name]="'custom_perm_action_' + i"
+                                           placeholder="Acción (ej: exportar, aprobar)"
+                                           required>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select form-select-sm"
+                                            [(ngModel)]="permission.target"
+                                            (ngModelChange)="onCustomPermissionChange(permission)"
+                                            [name]="'custom_perm_target_' + i">
+                                        <option [value]="module.name">{{module.display_name}} (Módulo principal)</option>
+                                        <option *ngFor="let sub of module.submodules" [value]="sub.name">
+                                            {{sub.display_name}} (Submódulo)
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" (click)="removeCustomPermission(i)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <small class="text-muted">
+                                        Permiso generado: <span class="badge bg-secondary">{{getCustomPermissionPreview(permission)}}</span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="text-center text-muted p-3" *ngIf="!module.custom_permissions?.length">
+                                <i class="fas fa-info-circle me-1"></i>
+                                No hay permisos personalizados agregados
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            </div>
 
             <div class="modal-footer px-0 pb-0">
-                <button type="button" class="btn btn-secondary" (click)="closeModal()">
-                    Cancelar
-                </button>
-                <button type="submit"
-                        class="btn btn-primary"
-                        [disabled]="moduleForm.invalid || loading">
+                <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" [disabled]="moduleForm.invalid || loading">
                     <span *ngIf="!loading">Guardar</span>
                     <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"></span>
                 </button>
