@@ -316,9 +316,9 @@
                                     <table class="table table-hover">
                                         <thead class="table-light">
                                             <tr>
-                                                <th style="width: 200px;">Acción</th>
+                                                <th>Acción</th>
                                                 <th>Aplicar a</th>
-                                                <th style="width: 100px;"></th>
+                                                <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -337,24 +337,26 @@
                                                                 [id]="'module_' + i"
                                                                 [(ngModel)]="permission.applyToModule"
                                                                 [name]="'applyToModule_' + i">
-                                                            <label class="form-check-label" [for]="'module_' + i">
+                                                            <label class="form-check-label text-truncate" [for]="'module_' + i">
                                                                 <i class="fas fa-cube me-1"></i>
                                                                 {{module.display_name}}
                                                             </label>
                                                         </div>
                                                         
                                                         <!-- Submódulos -->
-                                                        <div class="ms-4 d-flex flex-wrap gap-3" *ngIf="module.submodules?.length">
-                                                            <div class="form-check" *ngFor="let sub of module.submodules; let subIndex = index">
-                                                                <input class="form-check-input" 
-                                                                    type="checkbox"
-                                                                    [id]="'sub_' + i + '_' + subIndex"
-                                                                    [(ngModel)]="permission.targets[sub.name]"
-                                                                    [name]="'target_' + i + '_' + sub.name">
-                                                                <label class="form-check-label" [for]="'sub_' + i + '_' + subIndex">
-                                                                    <i class="fas fa-puzzle-piece me-1"></i>
-                                                                    {{sub.display_name}}
-                                                                </label>
+                                                        <div class="ms-4" *ngIf="module.submodules?.length">
+                                                            <div class="d-flex flex-column">
+                                                                <div class="form-check mb-2" *ngFor="let sub of module.submodules; let subIndex = index">
+                                                                    <input class="form-check-input" 
+                                                                        type="checkbox"
+                                                                        [id]="'sub_' + i + '_' + subIndex"
+                                                                        [(ngModel)]="permission.targets[sub.name]"
+                                                                        [name]="'target_' + i + '_' + sub.name">
+                                                                    <label class="form-check-label text-truncate" [for]="'sub_' + i + '_' + subIndex">
+                                                                        <i class="fas fa-puzzle-piece me-1"></i>
+                                                                        {{sub.display_name}}
+                                                                    </label>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
