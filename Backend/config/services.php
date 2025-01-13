@@ -31,9 +31,9 @@ return [
     ],
 
     'google' => [
-       'client_id'     => env('GOOGLE_ID'), 
-       'client_secret' => env('GOOGLE_SECRET'),
-       'redirect'      => env('GOOGLE_REDIRECT')
+        'client_id'     => env('GOOGLE_ID'),
+        'client_secret' => env('GOOGLE_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT')
     ],
 
     'facebook' => [
@@ -60,5 +60,5 @@ return [
         'webhook_secret' => env('NICO_WEBHOOK_SECRET'),
         'sandbox_mode' => env('APP_ENV') !== 'production',
     ],
-    
+
 ];

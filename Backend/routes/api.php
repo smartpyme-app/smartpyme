@@ -85,6 +85,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/super-admin/usuarios.php');
 		require base_path('routes/modulos/super-admin/transacciones.php');
 
+	// N1co
+		require base_path('routes/modulos/n1co/webhook-n1co.php');
+
 		
 });
 

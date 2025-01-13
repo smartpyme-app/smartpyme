@@ -22,7 +22,14 @@ class Suscripcion extends Model
         'fecha_proximo_pago',
         'fin_periodo_prueba',
         'fecha_cancelacion',
-        'motivo_cancelacion'
+        'motivo_cancelacion',
+        'requiere_factura',
+        'nit',
+        'nombre_factura',
+        'direccion_factura',
+        'intentos_cobro',
+        'ultimo_intento_cobro',
+        'historial_pagos'
     ];
 
     protected $dates = [
@@ -30,6 +37,7 @@ class Suscripcion extends Model
         'fecha_proximo_pago',
         'fin_periodo_prueba',
         'fecha_cancelacion',
+        'ultimo_intento_cobro',
         'created_at',
         'updated_at'
     ];

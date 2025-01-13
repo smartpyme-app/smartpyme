@@ -19,13 +19,18 @@ class Plan extends Model
         'duracion_dias',
         'activo',
         'enlace_n1co',
-        'caracteristicas'
+        'caracteristicas',
+        'id_enlace_pago_n1co',
+        'n1co_metadata',
+        'permite_periodo_prueba',
+        'dias_periodo_prueba'
     ];
 
     protected $casts = [
         'caracteristicas' => 'array',
         'activo' => 'boolean',
-        'precio' => 'decimal:2'
+        'precio' => 'decimal:2',
+        'n1co_metadata' => 'array'
     ];
 
     public function suscripciones()
