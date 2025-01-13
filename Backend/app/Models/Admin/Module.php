@@ -14,6 +14,8 @@ class Module extends Model
         'status'
     ];
 
+    protected $appends = ['submodules_count'];
+
     public function submodules()
     {
         return $this->hasMany(Submodule::class);
@@ -23,4 +25,12 @@ class Module extends Model
     {
         return $this->belongsToMany(Permission::class, 'module_permissions');
     }
+
+    //submodules_count
+    public function getSubmodulesCountAttribute()
+    {
+        return $this->submodules()->count();
+    }
+
+
 }

@@ -57,10 +57,10 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th (click)="setOrden('name')" 
+                        <!-- <th (click)="setOrden('name')" 
                             [ngClass]="{'sorted-asc': filtros.orden == 'name' && filtros.direccion == 'asc', 
                                       'sorted-desc': filtros.orden == 'name' && filtros.direccion == 'desc'}" 
-                            class="click">Nombre</th>
+                            class="click">Nombre</th> -->
                         <th (click)="setOrden('display_name')" 
                             [ngClass]="{'sorted-asc': filtros.orden == 'display_name' && filtros.direccion == 'asc', 
                                       'sorted-desc': filtros.orden == 'display_name' && filtros.direccion == 'desc'}" 
@@ -72,7 +72,6 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let module of modules?.data">
-                        <td>{{module.name}}</td>
                         <td>{{module.display_name}}</td>
                         <td>
                             <span class="badge" [ngClass]="module.status ? 'bg-success' : 'bg-danger'">

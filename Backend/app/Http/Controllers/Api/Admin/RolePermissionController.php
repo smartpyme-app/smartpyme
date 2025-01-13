@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin\Module;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Log;
+use App\Models\Admin\ModulePermission;
 
 class RolePermissionController extends Controller
 {
@@ -18,8 +20,8 @@ class RolePermissionController extends Controller
     public function index(Request $request)
     {
         $roles = Role::with('permissions')
-                     ->where('name', 'like', '%' . $request->buscador . '%')
-                     ->paginate($request->paginate);
+            ->where('name', 'like', '%' . $request->buscador . '%')
+            ->paginate($request->paginate);
 
         return response()->json($roles, 200);
     }
@@ -159,7 +161,7 @@ class RolePermissionController extends Controller
         return response()->json(['message' => 'Rol creado correctamente', 'role' => $role], 201);
     }
 
-  
+
     public function updateRolePermissions(Request $request)
     {
         $request->validate([
@@ -204,7 +206,7 @@ class RolePermissionController extends Controller
     {
         try {
             $user = User::findOrFail($userId);
-            
+
             // Validar los permisos
             $request->validate([
                 'permissions' => 'required|array',
@@ -249,15 +251,115 @@ class RolePermissionController extends Controller
     public function modules(Request $request)
     {
         $modules = Module::with('permissions')->where('name', 'like', '%' . $request->buscador . '%')->paginate($request->paginate);
+       
         return response()->json($modules, 200);
     }
 
+    // public function storeModule(Request $request)
+    // {
+    //     Log::info($request->all());
+    //     dd($request->all());
+    // }
+
+
     public function storeModule(Request $request)
     {
-        Log::info($request->all());
-        dd($request->all());
+        DB::beginTransaction();
+        try {
+            // 1. Crear el módulo
+            $module = Module::create([
+                'name' => $request->name,
+                'display_name' => $request->display_name,
+                'description' => $request->description
+            ]);
+
+            // 2. Crear submódulos si existen
+            if (!empty($request->submodules)) {
+                foreach ($request->submodules as $submodule) {
+                    $module->submodules()->create([
+                        'name' => $submodule['name'],
+                        'display_name' => $submodule['display_name']
+                    ]);
+                }
+            }
+
+            // 3. Crear permisos base del módulo
+            $basePermissions = [
+                $request->name . '.ver',
+                $request->name . '.crear',
+                $request->name . '.editar',
+                $request->name . '.eliminar'
+            ];
+
+            foreach ($basePermissions as $permission) {
+                Permission::create(['name' => $permission]);
+                ModulePermission::create([
+                    'module_id' => $module->id,
+                    'permission_id' => Permission::where('name', $permission)->first()->id,
+                    'permission_type' => 'base'
+                ]);
+            }
+
+            // 4. Crear permisos base de submódulos
+            foreach ($module->submodules as $submodule) {
+                $subPermissions = [
+                    $request->name . '.' . $submodule->name . '.ver',
+                    $request->name . '.' . $submodule->name . '.crear',
+                    $request->name . '.' . $submodule->name . '.editar',
+                    $request->name . '.' . $submodule->name . '.eliminar'
+                ];
+
+                foreach ($subPermissions as $permission) {
+                    Permission::create(['name' => $permission]);
+                    ModulePermission::create([
+                        'submodule_id' => $submodule->id,
+                        'permission_id' => Permission::where('name', $permission)->first()->id,
+                        'permission_type' => 'base'
+                    ]);
+                }
+            }
+
+            // 5. Crear permisos personalizados
+            if (!empty($request->custom_permissions)) {
+                foreach ($request->custom_permissions as $customPermission) {
+                    // Si aplica al módulo principal
+                    if ($customPermission['applyToModule']) {
+                        Permission::create([
+                            'name' => $request->name . '.' . $customPermission['action']
+                        ]);
+                        ModulePermission::create([
+                            'module_id' => $module->id,
+                            'permission_id' => Permission::where('name', $request->name . '.' . $customPermission['action'])->first()->id,
+                            'permission_type' => 'custom'
+                        ]);
+                    }
+
+                    // Si aplica a submódulos
+                    if (!empty($customPermission['targets'])) {
+                        foreach ($customPermission['targets'] as $submoduleName => $isSelected) {
+                            if ($isSelected) {
+                                Permission::create([
+                                    'name' => $request->name . '.' . $submoduleName . '.' . $customPermission['action']
+                                ]);
+                                ModulePermission::create([
+                                    'submodule_id' => $submodule->id,
+                                    'permission_id' => Permission::where('name', $request->name . '.' . $submoduleName . '.' . $customPermission['action'])->first()->id,
+                                    'permission_type' => 'custom'
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Módulo creado exitosamente',
+                'module' => $module->load('submodules')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
-
-    
 }
-

@@ -7,6 +7,7 @@ use Spatie\Permission\Models\Permission;
 
 class ModulePermission extends Model
 {
+    
     protected $fillable = [
         'module_id',
         'submodule_id',
