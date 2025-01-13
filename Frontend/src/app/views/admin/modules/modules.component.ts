@@ -171,16 +171,49 @@ getDefaultSubmodulePermissions(submoduleName: string): string[] {
 }
 
 addCustomPermission() {
-    if (!this.module.custom_permissions) {
-        this.module.custom_permissions = [];
-    }
-    this.module.custom_permissions.push({
-        name: '',
-        type: 'module'
-    });
+  if (!this.module.custom_permissions) {
+      this.module.custom_permissions = [];
+  }
+  this.module.custom_permissions.push({
+      action: '',           // Solo la acción (ej: "exportar")
+      target: this.module.name,  // Por defecto el módulo principal
+      name: ''             // El nombre completo generado
+  });
 }
 
 removeCustomPermission(index: number) {
     this.module.custom_permissions.splice(index, 1);
 }
+
+generateTechnicalName(displayName: string): string {
+  return displayName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+      .replace(/[^a-z0-9\s]/g, '')     // Solo letras, números y espacios
+      .trim()
+      .replace(/\s+/g, '_');           // Espacios a guiones bajos
+}
+
+onDisplayNameChange(event: any) {
+  console.log('onDisplayNameChange', event);
+  const displayName = event
+  this.module.name = this.generateTechnicalName(displayName);
+}
+
+onSubmoduleDisplayNameChange(submodule: any, displayName: string) {
+  submodule.name = this.generateTechnicalName(displayName);
+}
+
+onCustomPermissionChange(permission: any) {
+  if (permission.action && permission.target) {
+      permission.name = `${this.module.name}.${permission.target !== this.module.name ? permission.target + '.' : ''}${permission.action}`;
+  }
+}
+
+getCustomPermissionPreview(permission: any): string {
+  if (!permission.action || !permission.target) return 'Pendiente...';
+  return `${this.module.name}.${permission.target !== this.module.name ? permission.target + '.' : ''}${permission.action}`;
+}
+
 }
