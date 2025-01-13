@@ -18,6 +18,7 @@ export class ModulesComponent implements OnInit {
     direccion: 'asc',
     page: 1
   };
+  newPermissionAction: string = '';
 
  
   public module: any = {
@@ -130,7 +131,15 @@ export class ModulesComponent implements OnInit {
         this.apiService.store('modules', moduleData);
 
     operation.subscribe(
-        // ... resto del código
+      response => {
+        this.loadModules();
+        this.alertService.success('Módulo guardado', 'El módulo fue guardado exitosamente.');
+        this.closeModal();
+      },
+      error => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
     );
 }
 
@@ -170,15 +179,66 @@ getDefaultSubmodulePermissions(submoduleName: string): string[] {
     ];
 }
 
+getGeneratedPermissions(): string[] {
+  const permissions: string[] = [];
+  
+  // Verificar que module y custom_permissions existan
+  if (!this.module || !this.module.custom_permissions) {
+    return permissions;
+  }
+
+  this.module.custom_permissions.forEach((perm: any) => {
+    // Verificar que el módulo tenga nombre y acción
+    if (!this.module.name || !perm.action) {
+      return;
+    }
+
+    // Si aplica al módulo principal
+    if (perm.applyToModule) {
+      permissions.push(`${this.module.name}.${perm.action}`);
+    }
+    
+    // Verificar que targets exista antes de iterarlo
+    if (perm.targets) {
+      // Para cada submódulo seleccionado
+      Object.entries(perm.targets).forEach(([submoduleName, isSelected]) => {
+        if (isSelected && submoduleName) {
+          permissions.push(`${this.module.name}.${submoduleName}.${perm.action}`);
+        }
+      });
+    }
+  });
+
+  return permissions;
+}
+
+
+
 addCustomPermission() {
+  if (!this.isValidNewPermission()) return;
+
   if (!this.module.custom_permissions) {
       this.module.custom_permissions = [];
   }
+
+  // Crear objeto de targets con todos los submódulos
+  const targets: {[key: string]: boolean} = {};
+  if (this.module.submodules?.length) {
+      this.module.submodules.forEach((sub: any) => {
+          targets[sub.name] = false;
+      });
+  }
+
+  // Si no hay submódulos, automáticamente aplicar al módulo principal
+  const applyToModule = !this.module.submodules?.length;
+
   this.module.custom_permissions.push({
-      action: '',           // Solo la acción (ej: "exportar")
-      target: this.module.name,  // Por defecto el módulo principal
-      name: ''             // El nombre completo generado
+      action: this.newPermissionAction.toLowerCase(),
+      applyToModule,
+      targets
   });
+
+  this.newPermissionAction = '';
 }
 
 removeCustomPermission(index: number) {
@@ -215,5 +275,15 @@ getCustomPermissionPreview(permission: any): string {
   if (!permission.action || !permission.target) return 'Pendiente...';
   return `${this.module.name}.${permission.target !== this.module.name ? permission.target + '.' : ''}${permission.action}`;
 }
+
+isValidNewPermission(): boolean {
+  if (!this.newPermissionAction) return false;
+  
+  // Verificar que no exista ya esta acción
+  return !this.module.custom_permissions?.some(
+      (p: any) => p.action.toLowerCase() === this.newPermissionAction.toLowerCase()
+  );
+}
+
 
 }

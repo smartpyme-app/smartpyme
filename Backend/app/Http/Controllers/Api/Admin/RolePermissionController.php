@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Log;
 
 class RolePermissionController extends Controller
 {
@@ -251,5 +252,12 @@ class RolePermissionController extends Controller
         return response()->json($modules, 200);
     }
 
+    public function storeModule(Request $request)
+    {
+        Log::info($request->all());
+        dd($request->all());
+    }
+
     
 }
+
