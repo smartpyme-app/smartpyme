@@ -79,17 +79,19 @@
                             </span>
                         </td>
                         <td>{{module.submodules_count || 0}}</td>
-                        <td>
+                        <td style="width: 15%" class="text-end">
                             <div class="btn-group">
-                                <a [routerLink]="['/modulos/editar', module.id]" 
-                                   class="btn btn-sm btn-info me-2" 
-                                   *ngIf="apiService.canEdit()">
-                                    <i class="fa fa-edit"></i>
-                                </a>
+                                <button (click)="openModal(moduleModal, module)" 
+                                        class="btn btn-sm btn-primary me-2"
+                                        
+                                        tooltip="Editar módulo">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                                 <button (click)="deleteModule(module.id)" 
                                         class="btn btn-sm btn-danger"
-                                        *ngIf="apiService.canDelete()">
-                                    <i class="fa fa-trash"></i>
+                                        
+                                        tooltip="Eliminar módulo">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </td>

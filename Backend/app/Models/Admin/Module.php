@@ -31,6 +31,11 @@ class Module extends Model
     {
         return $this->submodules()->count();
     }
+    //custom_permissions
+    public function custom_permissions()
+    {
+        return $this->hasMany(ModulePermission::class, 'module_id', 'id')->where('permission_type', 'custom');
+    }
 
 
 }

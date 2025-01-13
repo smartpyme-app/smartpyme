@@ -250,7 +250,7 @@ class RolePermissionController extends Controller
     //modules
     public function modules(Request $request)
     {
-        $modules = Module::with('permissions')->where('name', 'like', '%' . $request->buscador . '%')->paginate($request->paginate);
+        $modules = Module::with('permissions', 'submodules', 'custom_permissions')->where('name', 'like', '%' . $request->buscador . '%')->paginate($request->paginate);
        
         return response()->json($modules, 200);
     }

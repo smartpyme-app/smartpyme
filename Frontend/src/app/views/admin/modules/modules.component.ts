@@ -1,5 +1,5 @@
 // modules.component.ts
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -28,6 +28,8 @@ export class ModulesComponent implements OnInit {
     submodules: [],
     custom_permissions: []
 };
+@ViewChild('moduleModal') moduleModal!: TemplateRef<any>;  // Agregar esta línea
+
 
   modalRef!: BsModalRef;
 
