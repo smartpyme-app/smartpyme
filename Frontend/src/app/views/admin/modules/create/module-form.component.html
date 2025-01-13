@@ -1,0 +1,263 @@
+<div class="container-fluid p-4">
+    <section class="header-section mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-3 mb-lg-0">
+                <h2 class="h3 mb-0">
+                    Módulo
+                    <small class="text-muted fs-6 ms-2">
+                        {{ isEdit ? 'Editar' : 'Nuevo' }}
+                    </small>
+                </h2>
+            </div>
+            <div class="col-lg-6">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb justify-content-lg-end mb-0">
+                        <li class="breadcrumb-item"><a class="text-decoration-none" routerLink="/">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a class="text-decoration-none" routerLink="/modulos">Módulos</a></li>
+                        <li class="breadcrumb-item active">Módulo</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </section>
+    <section class="main-content">
+        <div class="card shadow-sm border-0">
+            <form #moduleForm="ngForm" (ngSubmit)="saveModule()">
+                <!-- Info Banner -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>Esta sección permite crear y configurar módulos del sistema. Los módulos son componentes principales que agrupan funcionalidades relacionadas.</small>
+                </div>
+
+                <div class="p-4">
+                    <div class="row g-4">
+                        <!-- Left Column -->
+                        <div class="col-lg-6">
+                            <!-- Basic Module Information -->
+                            <div class="mb-4">
+                                <h5 class="fw-bold mb-4">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Información del Módulo
+                                </h5>
+
+                                <!-- Display Name -->
+                                <div class="mb-4">
+                                    <label for="display_name" class="form-label fw-semibold small">Nombre del módulo</label>
+                                    <input type="text"
+                                        id="display_name"
+                                        name="display_name" 
+                                        class="form-control"
+                                        [(ngModel)]="module.display_name"
+                                        (ngModelChange)="onDisplayNameChange($event)"
+                                        required
+                                        #displayName="ngModel"
+                                        placeholder="Ej: Gestión de Usuarios">
+                                    <small class="text-muted">Ingrese un nombre descriptivo y fácil de entender</small>
+                                    <div *ngIf="displayName.invalid && (displayName.dirty || displayName.touched)" 
+                                        class="text-danger mt-1 small">
+                                        <small *ngIf="displayName.errors?.['required']">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            El nombre es requerido
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Technical Name -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold small">Nombre técnico</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="fas fa-code"></i>
+                                        </span>
+                                        <input type="text"
+                                            class="form-control"
+                                            [value]="module.name"
+                                            readonly
+                                            disabled>
+                                    </div>
+                                    <small class="text-muted">Este nombre se genera automáticamente</small>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="mb-4">
+                                    <label for="description" class="form-label fw-semibold small">Descripción</label>
+                                    <textarea id="description"
+                                            name="description"
+                                            class="form-control"
+                                            [(ngModel)]="module.description"
+                                            rows="3"
+                                            placeholder="Describe la función principal de este módulo..."></textarea>
+                                </div>
+
+                                <!-- Submodules Section -->
+                                <div class="border-top pt-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <h5 class="fw-bold mb-0">
+                                            <i class="fas fa-puzzle-piece me-2"></i>
+                                            Submódulos
+                                        </h5>
+                                        <button type="button" 
+                                                class="btn btn-primary btn-sm"
+                                                (click)="addSubmodule()">
+                                            <i class="fas fa-plus me-2"></i>
+                                            Agregar
+                                        </button>
+                                    </div>
+
+                                    <!-- Submodules List -->
+                                    <div class="submodules-list">
+                                        <div class="bg-light p-3 rounded mb-3" *ngFor="let submodule of module.submodules; let i = index">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="mb-0">Submódulo {{i + 1}}</h6>
+                                                <button type="button" 
+                                                        class="btn btn-link text-danger p-0"
+                                                        (click)="removeSubmodule(i)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            <input type="text"
+                                                class="form-control mb-2"
+                                                [(ngModel)]="submodule.display_name"
+                                                (ngModelChange)="onSubmoduleDisplayNameChange(submodule, $event)"
+                                                [name]="'submodule_display_' + i"
+                                                placeholder="Nombre del submódulo"
+                                                required>
+                                            <input type="text"
+                                                class="form-control bg-white"
+                                                [value]="submodule.name"
+                                                readonly
+                                                disabled>
+                                        </div>
+
+                                        <div class="text-center p-4 bg-light rounded" *ngIf="!module.submodules?.length">
+                                            <p class="text-muted mb-0">No hay submódulos agregados</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column - Permissions -->
+                        <div class="col-lg-6">
+                            <h5 class="fw-bold mb-4">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Permisos
+                            </h5>
+
+                            <!-- Base Permissions -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Permisos Base</h6>
+                                
+                                <!-- Module Permissions -->
+                                <div class="mb-4">
+                                    <small class="text-muted d-block mb-2">Módulo: {{module.name || 'nombre_modulo'}}</small>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-primary" *ngFor="let perm of getDefaultModulePermissions()">
+                                            {{perm}}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Submodule Permissions -->
+                                <div class="mb-3" *ngFor="let submodule of module.submodules">
+                                    <small class="text-muted d-block mb-2">Submódulo: {{submodule.name}}</small>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-info" *ngFor="let perm of getDefaultSubmodulePermissions(submodule.name)">
+                                            {{perm}}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom Permissions -->
+                            <div class="border-top pt-4">
+                                <h6 class="fw-bold mb-3">Permisos Personalizados</h6>
+                                
+                                <!-- Add Permission Form -->
+                                <div class="input-group mb-4">
+                                    <input type="text"
+                                        class="form-control"
+                                        [(ngModel)]="newPermissionAction"
+                                        name="newPermissionAction"
+                                        placeholder="Nueva acción (ej: exportar)"
+                                        [ngClass]="{'is-invalid': newPermissionAction && !isValidNewPermission()}">
+                                    <button type="button" 
+                                            class="btn btn-primary"
+                                            [disabled]="!isValidNewPermission()"
+                                            (click)="addCustomPermission()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Custom Permissions List -->
+                                <div class="bg-light p-3 rounded mb-4" *ngFor="let permission of module.custom_permissions; let i = index">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="badge bg-secondary">{{permission.action}}</span>
+                                        <button class="btn btn-link text-danger p-0" 
+                                                (click)="removeCustomPermission(i)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" 
+                                                type="checkbox"
+                                                [id]="'module_' + i"
+                                                [(ngModel)]="permission.applyToModule"
+                                                [name]="'applyToModule_' + i">
+                                            <label class="form-check-label text-truncate" [for]="'module_' + i">
+                                                {{module.display_name}}
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="ms-4" *ngIf="module.submodules?.length">
+                                            <div class="d-flex flex-column">
+                                                <div class="form-check mb-2" *ngFor="let sub of module.submodules; let subIndex = index">
+                                                    <input class="form-check-input" 
+                                                        type="checkbox"
+                                                        [id]="'sub_' + i + '_' + subIndex"
+                                                        [(ngModel)]="permission.targets[sub.name]"
+                                                        [name]="'target_' + i + '_' + sub.name">
+                                                    <label class="form-check-label" [for]="'sub_' + i + '_' + subIndex">
+                                                        {{sub.display_name}}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generated Permissions Preview -->
+                                <div class="bg-light p-3 rounded" *ngIf="getGeneratedPermissions().length">
+                                    <h6 class="mb-3">Permisos generados:</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-success" *ngFor="let perm of getGeneratedPermissions()">
+                                            {{perm}}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Footer -->
+                <div class="border-top p-4 mt-4">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light" routerLink="/modulos">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="btn btn-primary"
+                                [disabled]="moduleForm.invalid || loading">
+                            <i class="fas fa-save me-2" *ngIf="!loading"></i>
+                            <span *ngIf="!loading">Guardar</span>
+                            <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+

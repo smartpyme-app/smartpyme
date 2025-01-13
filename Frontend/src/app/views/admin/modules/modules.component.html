@@ -2,11 +2,16 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Módulos</h2>
     <!-- Reemplazar el botón existente por: -->
-        <button *ngIf="apiService.canCreate()" 
+        <!-- <button *ngIf="apiService.canCreate()" 
             (click)="openModal(moduleModal)" 
             class="btn btn-default">
             <i class="fa fa-plus"></i> Añadir módulo
-        </button>
+        </button> -->
+        <a routerLink="/modulos/crear" 
+            *ngIf="apiService.canCreate()" 
+            class="btn btn-primary">
+                <i class="fa fa-plus me-2"></i> Nuevo Módulo
+        </a>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

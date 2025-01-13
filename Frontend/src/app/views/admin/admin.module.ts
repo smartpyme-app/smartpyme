@@ -32,6 +32,7 @@ import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
 import { RolesPermisosComponent } from './roles-permisos/roles-permisos.component';
 import { ModulesComponent } from './modules/modules.component';
+import { ModuleFormComponent } from './modules/create/module-form.component';
 
 @NgModule({
   imports: [
@@ -61,7 +62,8 @@ import { ModulesComponent } from './modules/modules.component';
     NotificacionesComponent,
     DocsComponent,
     RolesPermisosComponent,
-    ModulesComponent
+    ModulesComponent,
+    ModuleFormComponent
   ],
   exports: [
     EmpresaComponent,
@@ -75,7 +77,8 @@ import { ModulesComponent } from './modules/modules.component';
     NotificacionesComponent,
     DocsComponent,
     RolesPermisosComponent,
-    ModulesComponent
+    ModulesComponent,
+    ModuleFormComponent
   ]
 })
 export class AdminModule { }
