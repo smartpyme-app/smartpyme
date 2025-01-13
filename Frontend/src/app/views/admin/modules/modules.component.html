@@ -86,9 +86,8 @@
                         <td>{{module.submodules_count || 0}}</td>
                         <td style="width: 15%" class="text-end">
                             <div class="btn-group">
-                                <button (click)="openModal(moduleModal, module)" 
+                                <button routerLink="/modulos/editar/{{module.id}}" 
                                         class="btn btn-sm btn-primary me-2"
-                                        
                                         tooltip="Editar módulo">
                                     <i class="fas fa-edit"></i>
                                 </button>

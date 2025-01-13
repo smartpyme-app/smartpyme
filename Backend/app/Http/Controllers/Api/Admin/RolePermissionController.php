@@ -362,4 +362,10 @@ class RolePermissionController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function getModule(Request $request)
+    {
+        $module = Module::with('permissions', 'submodules', 'custom_permissions')->findOrFail($request->id);
+        return response()->json($module, 200);
+    }
 }

@@ -41,7 +41,7 @@ export class ModuleFormComponent implements OnInit {
 
   loadModule(id: number) {
     this.loading = true;
-    this.apiService.getAll('modules/', id).subscribe(
+    this.apiService.read('modules/', id).subscribe(
       module => {
         this.module = module;
         this.loading = false;
