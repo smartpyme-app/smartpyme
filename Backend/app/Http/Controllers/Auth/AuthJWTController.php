@@ -24,6 +24,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AuthJWTController extends Controller
 {
@@ -225,17 +227,43 @@ class AuthJWTController extends Controller
 
         $usuario->empresa = $usuario->empresa()->first();
 
-        if ($empresa->plan == config('constants.PLAN_EMPRENDEDOR')){
-            $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
-        }
-        if ($empresa->plan == config('constants.PLAN_ESTANDAR')){
-            $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
-        }
-        if ($empresa->plan == config('constants.PLAN_AVANZADO')){
-            $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
-        }
-        if ($empresa->plan == config('constants.PLAN_PRO')){
-            $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+        // if ($empresa->plan == config('constants.PLAN_EMPRENDEDOR')){
+        //     $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
+        // }
+        // if ($empresa->plan == config('constants.PLAN_ESTANDAR')){
+        //     $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
+        // }
+        // if ($empresa->plan == config('constants.PLAN_AVANZADO')){
+        //     $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
+        // }
+        // if ($empresa->plan == config('constants.PLAN_PRO')){
+        //     $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+        // }
+
+        Log::info('Empresa plan:', ['plan' => $empresa->plan]);
+        
+        $this->createPaymentLink($empresa->plan, $usuario);
+
+        if (isset($paymentLink['paymentLinkUrl'])) {
+            $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
+            Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
+        } else {
+            Log::error('Error al generar la URL de pago:', ['error' => "error"]);
+        // Manejar el error o usar las URLs por defecto como fallback
+            switch($empresa->plan) {
+                case config('constants.PLAN_EMPRENDEDOR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
+                    break;
+                case config('constants.PLAN_ESTANDAR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
+                    break;
+                case config('constants.PLAN_AVANZADO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
+                    break;
+                case config('constants.PLAN_PRO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+                    break;
+            }
         }
 
         // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
@@ -375,6 +403,59 @@ class AuthJWTController extends Controller
 
 
         return response()->json($usuario, 200);
+    }
+
+    public function createPaymentLink(array $data): array
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('NICO_SANDBOX_API_KEY'),
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ])->post(env('N1CO_BASE_URL') . '/paymentlink/checkout', [
+                'orderName' => $data['name'] ?? 'Orden de SmartPyme',
+                'orderDescription' => $data['description'] ?? null,
+                'amount' => $data['amount'],
+                'successUrl' => $data['success_url'] ?? null,
+                'cancelUrl' => $data['cancel_url'] ?? null,
+                'metadata' => [
+                    [
+                        'name' => 'clientId',
+                        'value' => $data['client_id'] ?? ''
+                    ],
+                    [
+                        'name' => 'planId',
+                        'value' => $data['plan_id'] ?? ''
+                    ]
+                ],
+                'expirationMinutes' => $data['expiration_minutes'] ?? 1440
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('N1co Payment Link Error', [
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error al crear enlace de pago: ' . ($response->json()['title'] ?? 'Error desconocido')
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('N1co Payment Link Exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error al procesar la solicitud: ' . $e->getMessage()
+            ];
+        }
     }
 
 
