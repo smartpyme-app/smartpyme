@@ -1,4 +1,3 @@
-<!-- roles-permisos.component.html -->
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Roles y Permisos</h2>
     <button *ngIf="apiService.canCreate()" (click)="openModal(mrol, {})" tooltip="Crear rol (F4)" class="btn btn-default tcla-F4">
@@ -86,114 +85,212 @@
     </div>
 </section>
 
+<!-- Modal de Permisos -->
+<!-- Modal de Permisos -->
 <ng-template #permisoModal>
-    <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
+    <div class="modal-header bg-primary text-white border-0">
+        <h5 class="modal-title d-flex align-items-center">
             <i class="fas fa-key me-2"></i>
             Gestionar Permisos - {{selectedRole?.name}}
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" (click)="closeModal()"></button>
+        <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
     </div>
-    <div class="modal-body">
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" 
-                           class="form-control" 
-                           [(ngModel)]="searchText" 
-                           placeholder="Buscar permisos...">
-                </div>
+
+    <div class="modal-body p-0">
+        <!-- Barra de búsqueda fija -->
+        <div class="position-sticky top-0 p-3 bg-white shadow-sm" style="z-index: 1020;">
+            <div class="input-group">
+                <span class="input-group-text border-0 bg-light">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" 
+                       class="form-control border-0 bg-light" 
+                       [(ngModel)]="searchText" 
+                       placeholder="Buscar permisos...">
             </div>
         </div>
         
-        <div class="permission-grid">
-            <div class="row">
-                <div class="col-md-6" *ngFor="let permission of filteredPermissions">
-                    <div class="form-check permission-item mb-2">
-                        <input type="checkbox" 
-                               class="form-check-input" 
-                               [id]="'perm_' + permission.id"
-                               [(ngModel)]="permission.checked"
-                               (change)="onPermissionChange(permission)">
-                        <label class="form-check-label ms-2" 
-                               [for]="'perm_' + permission.id">
-                            {{permission.name}}
-                        </label>
+        <!-- Contenedor de módulos con scroll -->
+        <div class="p-3" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+            <div class="accordion">
+                <div *ngFor="let module of modules" class="mb-3">
+                    <!-- Cabecera del módulo -->
+                    <div class="accordion-item border-0 rounded">
+                        <div class="accordion-header">
+                            <button class="accordion-button p-3 rounded shadow-sm" 
+                                    [class.collapsed]="!module.expanded"
+                                    (click)="toggleModule(module)">
+                                <span class="fw-bold">{{module.display_name}}</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Contenido del módulo -->
+                        <div class="accordion-collapse collapse show" [class.show]="module.expanded">
+                            <div class="accordion-body pt-3">
+                                <!-- Permisos del módulo -->
+                                <div *ngIf="filterPermissionsBySearch(module.permissions, searchText).length > 0" 
+                                     class="mb-4">
+                                    <h6 class="fw-bold text-muted mb-3">Permisos generales</h6>
+                                    <div class="row g-2">
+                                        <div class="col-12 col-sm-6" 
+                                             *ngFor="let perm of filterPermissionsBySearch(module.permissions, searchText)">
+                                            <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
+                                                <input type="checkbox" 
+                                                       class="form-check-input" 
+                                                       [id]="'perm_' + perm.permission.id"
+                                                       [checked]="isPermissionSelected(perm.permission)"
+                                                       (change)="onPermissionChange(perm.permission)">
+                                                <label class="form-check-label" [for]="'perm_' + perm.permission.id">
+                                                    {{getSimplePermissionName(perm.permission.name)}}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submódulos -->
+                                <div *ngFor="let submodule of module.submodules" class="mb-3">
+                                    <div *ngIf="filterPermissionsBySearch(submodule.permissions, searchText).length > 0">
+                                        <h6 class="fw-bold text-muted mb-3">{{submodule.display_name}}</h6>
+                                        <div class="row g-2">
+                                            <div class="col-12 col-sm-6" 
+                                                 *ngFor="let perm of filterPermissionsBySearch(submodule.permissions, searchText)">
+                                                <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
+                                                    <input type="checkbox" 
+                                                           class="form-check-input" 
+                                                           [id]="'perm_' + perm.permission.id"
+                                                           [checked]="isPermissionSelected(perm.permission)"
+                                                           (change)="onPermissionChange(perm.permission)">
+                                                    <label class="form-check-label" [for]="'perm_' + perm.permission.id">
+                                                        {{getSimplePermissionName(perm.permission.name)}}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+
+    <div class="modal-footer border-0 shadow-lg">
+        <button type="button" class="btn btn-light" (click)="closeModal()">
             Cancelar
         </button>
-        <button type="button" class="btn btn-primary" (click)="savePermissions()">
+        <button type="button" class="btn btn-primary px-4" (click)="savePermissions()">
             Guardar Cambios
         </button>
     </div>
 </ng-template>
 
 <ng-template #mrol>
-    <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
+    <div class="modal-header bg-primary text-white border-0">
+        <h5 class="modal-title d-flex align-items-center">
             <i class="fas fa-plus me-2"></i>
             Añadir rol
         </h5>
         <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
     </div>
-    <div class="modal-body">    
+
+    <div class="modal-body p-0">    
         <form #roleForm="ngForm" (ngSubmit)="saveRole()">
-            <div class="mb-3">
-                <label for="name" class="form-label">Nombre del rol</label>
-                <input type="text" 
-                       id="name"
-                       name="name" 
-                       class="form-control" 
-                       [(ngModel)]="role.name" 
-                       required
-                       #name="ngModel">
-                <div *ngIf="name.invalid && (name.dirty || name.touched)" class="text-danger">
-                    <small *ngIf="name.errors?.['required']">El nombre es requerido</small>
+            <!-- Sección fija superior -->
+            <div class="position-sticky top-0 p-3 bg-white shadow-sm" style="z-index: 1020;">
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-bold">Nombre del rol</label>
+                    <input type="text" 
+                           id="name"
+                           name="name" 
+                           class="form-control bg-light border-0" 
+                           [(ngModel)]="role.name" 
+                           required
+                           placeholder="Ingrese el nombre del rol"
+                           #name="ngModel">
+                    <div *ngIf="name.invalid && (name.dirty || name.touched)" class="text-danger mt-1">
+                        <small *ngIf="name.errors?.['required']">El nombre es requerido</small>
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label d-block">Permisos</label>
-                <div class="permission-grid">
-                    <div class="row">
-                        <div class="col-md-6" *ngFor="let permission of permissions">
-                            <div class="form-check permission-item mb-2">
-                                <input type="checkbox" 
-                                       class="form-check-input" 
-                                       [id]="'newperm_' + permission.id"
-                                       [value]="permission.id"
-                                       (change)="onPermissionSelect($event)">
-                                <label class="form-check-label ms-2" 
-                                       [for]="'newperm_' + permission.id">
-                                    {{permission.name}}
-                                </label>
+            <!-- Contenedor con scroll -->
+            <div class="p-3" style="max-height: calc(100vh - 300px); overflow-y: auto;">
+                <div class="accordion">
+                    <div *ngFor="let module of modules" class="mb-3">
+                        <div class="accordion-item border-0 rounded">
+                            <!-- Cabecera del módulo -->
+                            <div class="accordion-header">
+                                <button class="accordion-button p-3 rounded shadow-sm" 
+                                        [class.collapsed]="!module.expanded"
+                                        (click)="toggleModule(module)">
+                                    <span class="fw-bold">{{module.display_name}}</span>
+                                </button>
+                            </div>
+
+                            <!-- Contenido del módulo -->
+                            <div class="accordion-collapse collapse show" [class.show]="module.expanded">
+                                <div class="accordion-body pt-3">
+                                    <!-- Permisos del módulo -->
+                                    <div *ngIf="module.permissions.length > 0" class="mb-4">
+                                        <h6 class="fw-bold text-muted mb-3">Permisos generales</h6>
+                                        <div class="row g-2">
+                                            <div class="col-12 col-sm-6" *ngFor="let perm of module.permissions">
+                                                <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
+                                                    <input type="checkbox" 
+                                                           class="form-check-input" 
+                                                           [id]="'newperm_' + perm.permission.id"
+                                                           [value]="perm.permission.name"
+                                                           (change)="onPermissionSelect($event)">
+                                                    <label class="form-check-label" 
+                                                           [for]="'newperm_' + perm.permission.id">
+                                                        {{getSimplePermissionName(perm.permission.name)}}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Submódulos -->
+                                    <div *ngFor="let submodule of module.submodules" class="mb-3">
+                                        <h6 class="fw-bold text-muted mb-3">{{submodule.display_name}}</h6>
+                                        <div class="row g-2">
+                                            <div class="col-12 col-sm-6" *ngFor="let perm of submodule.permissions">
+                                                <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
+                                                    <input type="checkbox" 
+                                                           class="form-check-input" 
+                                                           [id]="'newperm_' + perm.permission.id"
+                                                           [value]="perm.permission.name"
+                                                           (change)="onPermissionSelect($event)">
+                                                    <label class="form-check-label" 
+                                                           [for]="'newperm_' + perm.permission.id">
+                                                        {{getSimplePermissionName(perm.permission.name)}}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="modal-footer px-0 pb-0">
-                <button type="button" class="btn btn-secondary" (click)="closeModal()">
-                    Cancelar
-                </button>
-                <button type="submit" 
-                        class="btn btn-primary" 
-                        [disabled]="roleForm.invalid || loading">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"></span>
-                </button>
-            </div>
         </form>
     </div>
-</ng-template>
 
+    <div class="modal-footer border-0 shadow-lg">
+        <button type="button" class="btn btn-light" (click)="closeModal()">
+            Cancelar
+        </button>
+        <button type="submit" 
+                class="btn btn-primary px-4" 
+                [disabled]="roleForm.invalid || loading"
+                (click)="saveRole()">
+            <span *ngIf="!loading">Guardar</span>
+            <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"></span>
+        </button>
+    </div>
+</ng-template>

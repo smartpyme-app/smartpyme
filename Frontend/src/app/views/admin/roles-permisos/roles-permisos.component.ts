@@ -1,4 +1,3 @@
-// roles-permisos.component.ts
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
@@ -7,11 +6,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-roles-permisos',
-  templateUrl: './roles-permisos.component.html',
+  templateUrl: './roles-permisos.component.html'
 })
 export class RolesPermisosComponent implements OnInit {
   public roles: any = {};
-  public permisos: any[] = [];
+  public modules: any[] = [];
   public loading: boolean = false;
   public filtros = {
     buscador: '',
@@ -19,12 +18,14 @@ export class RolesPermisosComponent implements OnInit {
     orden: '',
     direccion: 'asc',
     page: 1
-};
-  permissions: any[] = [];
+  };
   selectedRole: any = null;
-  searchText: string = ''
+  searchText: string = '';
   permisosSeleccionados: any[] = [];
-  role: any = {};
+  role: any = {
+    name: '',
+    permissions: []
+  };
 
   modalRef!: BsModalRef;
 
@@ -38,6 +39,49 @@ export class RolesPermisosComponent implements OnInit {
 
   ngOnInit() {
     this.cargarDatos();
+    this.cargarModulos();
+  }
+
+  cargarModulos() {
+    //this.apiService.getAll('modules').subscribe(
+      this.apiService.getAll('permissions').subscribe(
+      response => {
+        console.log('Response modules:', response);
+        // Verificamos que response.modules exista, si no, usamos un array vacío
+        this.modules = (response?.modules || []).map((module: any) => ({
+          ...module,
+          expanded: true 
+        }));
+        console.log('Módulos cargados:', this.modules); // Para debug
+      },
+      error => {
+        console.error('Error al cargar módulos:', error); // Para debug
+        this.alertService.error(error);
+        this.modules = []; // Aseguramos que modules sea al menos un array vacío
+      }
+    );
+  }
+
+  toggleModule(module: any) {
+    module.expanded = !module.expanded;
+  }
+
+  filterPermissionsBySearch(permissions: any[], searchText: string) {
+    if (!searchText) return permissions;
+    return permissions.filter(p => 
+      p.permission.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }
+
+  isPermissionSelected(permission: any) {
+    if (this.selectedRole) {
+      return this.selectedRole.permissions.some((p: any) => p.name === permission.name);
+    }
+    return this.role.permissions.includes(permission.name);
+  }
+
+  getSimplePermissionName(fullName: string) {
+    return fullName.split('.').pop();
   }
 
   saveRole() {
@@ -72,8 +116,7 @@ export class RolesPermisosComponent implements OnInit {
     this.loading = true;
     this.apiService.getAll('roles-permissions', this.filtros).subscribe(
       (response) => {
-        this.roles = response; // Ahora recibe un objeto con data, total, etc.
-        console.log('Roles:', this.roles.total);
+        this.roles = response;
         this.loading = false;
         if (this.modalRef) {
           this.modalRef.hide();
@@ -103,70 +146,58 @@ export class RolesPermisosComponent implements OnInit {
   setPagination(event: { page: number }) {
     this.filtros.page = event.page;
     this.cargarDatos();
-}
-
-  cargarPermisos() {
-    this.apiService.getAll('permissions').subscribe(
-      (response) => {
-        this.permissions = response;
-        if (this.selectedRole) {
-          this.preparePermissionsForRole();
-        }
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
   }
 
   openModal(template: TemplateRef<any>, role: any) {
+    this.alertService.modal = true;
     if (role.name) {
-      // Si es edición
+      // Modo edición
       this.selectedRole = role;
-      if (!this.permissions.length) {
-        this.cargarPermisos();
-      } else {
-        this.preparePermissionsForRole();
-      }
-    } else {
-      // Si es creación
       this.role = {
         name: '',
         permissions: []
       };
-      if (!this.permissions.length) {
-        this.cargarPermisos();
-      }
+    } else {
+      // Modo creación
+      this.selectedRole = null;
+      this.role = {
+        name: '',
+        permissions: []
+      };
     }
-    this.alertService.modal = true;
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
 
-  preparePermissionsForRole() {
-    // Asegurarnos que permissions existe y tiene datos
-    if (this.permissions && this.selectedRole) {
-      this.permissions = this.permissions.map(permission => ({
-        ...permission,
-        checked: this.selectedRole.permissions.some((p: any) => p.name === permission.name)
-      }));
+  onPermissionChange(permission: any) {
+    if (this.selectedRole) {
+      const isChecked = this.selectedRole.permissions.some((p: any) => p.name === permission.name);
+      if (isChecked) {
+        this.selectedRole.permissions = this.selectedRole.permissions.filter(
+          (p: any) => p.name !== permission.name
+        );
+      } else {
+        this.selectedRole.permissions.push(permission);
+      }
     }
   }
 
-  get filteredPermissions() {
-    return this.permissions.filter(permission =>
-      permission.name.toLowerCase().includes(this.searchText.toLowerCase())
-    );
-  }
+  onPermissionSelect(event: any) {
+    const permission = event.target.value;
+    const isChecked = event.target.checked;
 
-  onPermissionChange(permission: any) {
-    console.log('Permiso cambiado:', permission);
+    if (isChecked) {
+      this.role.permissions.push(permission);
+    } else {
+      const index = this.role.permissions.indexOf(permission);
+      if (index > -1) {
+        this.role.permissions.splice(index, 1);
+      }
+    }
   }
 
   savePermissions() {
-    const selectedPermissions = this.permissions
-      .filter(p => p.checked)
-      .map(p => p.name);
-
+    const selectedPermissions = this.selectedRole.permissions.map((p: any) => p.name);
+    
     this.apiService.store('update-role-permissions', {
       role: this.selectedRole.name,
       permissions: selectedPermissions
@@ -185,20 +216,12 @@ export class RolesPermisosComponent implements OnInit {
   closeModal() {
     this.modalRef.hide();
     this.alertService.modal = false;
+    this.selectedRole = null;
+    this.role = {
+      name: '',
+      permissions: []
+    };
   }
 
-  onPermissionSelect(event: any) {
-    const permission = event.target.value;
-    const isChecked = event.target.checked;
-
-    if (isChecked) {
-      this.role.permissions.push(permission);
-    } else {
-      const index = this.role.permissions.indexOf(permission);
-      if (index > -1) {
-        this.role.permissions.splice(index, 1);
-      }
-    }
-  }
-
+  
 }

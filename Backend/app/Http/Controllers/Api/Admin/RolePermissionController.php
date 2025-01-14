@@ -29,8 +29,21 @@ class RolePermissionController extends Controller
     //permissions
     public function permissions(Request $request)
     {
+        Log::info('permissions');
+
+        $modules = Module::with([
+            'permissions' => function($query) {
+                $query->with('permission'); // Obtener el permiso relacionado
+            },
+            'submodules' => function($query) {
+                $query->with(['permissions' => function($q) {
+                    $q->with('permission'); // Obtener los permisos de cada submódulo
+                }]);
+            }
+        ])->get();
+
         $permissions = Permission::all();
-        return response()->json($permissions, 200);
+        return response()->json(['modules' => $modules, 'permissions' => $permissions], 200);
     }
 
     /**
