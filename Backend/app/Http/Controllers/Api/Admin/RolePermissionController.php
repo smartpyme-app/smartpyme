@@ -195,6 +195,7 @@ class RolePermissionController extends Controller
             $user = User::findOrFail($userId);
             $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
             $directPermissions = $user->getDirectPermissions()->pluck('name');
+            $modules = Module::with('permissions', 'submodules.permissions')->get();
 
             return response()->json([
                 'ok' => true,
@@ -202,7 +203,8 @@ class RolePermissionController extends Controller
                     'role' => $user->roles->first()->name,
                     'rolePermissions' => $rolePermissions,
                     'directPermissions' => $directPermissions,
-                    'allPermissions' => Permission::get(['id', 'name'])
+                    'allPermissions' => Permission::get(['id', 'name']),
+                    'modules' => $modules
                 ]
             ]);
         } catch (\Exception $e) {

@@ -3,30 +3,25 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
-
 interface Permission {
-	id: number;
-	name: string;
-	fromRole: boolean;
-	selected: boolean;
-  }
+  id: number;
+  name: string;
+  fromRole: boolean;
+  selected: boolean;
+}
 @Component({
   selector: 'app-usuario',
-  templateUrl: './usuario.component.html'
+  templateUrl: './usuario.component.html',
 })
-
-
-
 export class UsuarioComponent implements OnInit {
   public usuario: any = {
     password_show: false,
-    password_confirmation_show: false
+    password_confirmation_show: false,
   };
   public sucursales: any = [];
   public empleados: any = [];
   public loading = false;
   public mostrarCambioContrasena = false;
-  
 
   // Img Upload
   public file?: File;
@@ -45,9 +40,8 @@ export class UsuarioComponent implements OnInit {
   public allPermissions: Permission[] = [];
   public permissionsLoading: boolean = false;
   public modulePermissions: { [key: string]: Permission[] } = {};
-  public Object = Object; 
-
-
+  public Object = Object;
+  public modules: any[] = [];
 
   constructor(
     public apiService: ApiService,
@@ -79,7 +73,7 @@ export class UsuarioComponent implements OnInit {
       }
     );
 
-	this.loadPermissions(id);
+    this.loadPermissions(id);
   }
 
   public loadAll(id: number) {
@@ -172,153 +166,156 @@ export class UsuarioComponent implements OnInit {
     // Validate that the passwords match
     if (this.usuario.password === this.usuario.password_confirmation) {
       // Save the password changes
-      this.apiService.update('usuario', this.usuario.id, {
-        password: this.usuario.password
-      }).subscribe(
-        () => {
-          this.alertService.success(
-            'Contraseña actualizada',
-            'La contraseña se ha actualizado correctamente.'
-          );
-          this.mostrarCambioContrasena = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService
+        .update('usuario', this.usuario.id, {
+          password: this.usuario.password,
+        })
+        .subscribe(
+          () => {
+            this.alertService.success(
+              'Contraseña actualizada',
+              'La contraseña se ha actualizado correctamente.'
+            );
+            this.mostrarCambioContrasena = false;
+          },
+          (error) => {
+            this.alertService.error(error);
+          }
+        );
     } else {
       this.alertService.error('Las contraseñas no coinciden');
     }
   }
 
   editarEmail() {
-	this.editandoEmail = true;
-	this.nuevoEmail = this.usuario.email;
-}
+    this.editandoEmail = true;
+    this.nuevoEmail = this.usuario.email;
+  }
 
-cancelarEmail() {
-	this.editandoEmail = false;
-	this.nuevoEmail = '';
-}
+  cancelarEmail() {
+    this.editandoEmail = false;
+    this.nuevoEmail = '';
+  }
 
-guardarEmail() {
-	if (!this.nuevoEmail) {
-		this.alertService.error('El correo es requerido');
-		return;
-	}
+  guardarEmail() {
+    if (!this.nuevoEmail) {
+      this.alertService.error('El correo es requerido');
+      return;
+    }
 
-	this.apiService.update('usuario/email', this.usuario.id, {
-		email: this.nuevoEmail
-	}).subscribe(
-		() => {
-			this.usuario.email = this.nuevoEmail;
-			this.editandoEmail = false;
-			this.alertService.success('Correo actualizado correctamente', 'El correo electrónico se ha actualizado correctamente.');
-		},
-		error => {
-			this.alertService.error(error);
-		}
-	);
-}
+    this.apiService
+      .update('usuario/email', this.usuario.id, {
+        email: this.nuevoEmail,
+      })
+      .subscribe(
+        () => {
+          this.usuario.email = this.nuevoEmail;
+          this.editandoEmail = false;
+          this.alertService.success(
+            'Correo actualizado correctamente',
+            'El correo electrónico se ha actualizado correctamente.'
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+  }
 
-// Password
-editarPassword() {
-	this.editandoPassword = true;
-	this.newPassword = '';
-	this.confirmPassword = '';
-}
+  // Password
+  editarPassword() {
+    this.editandoPassword = true;
+    this.newPassword = '';
+    this.confirmPassword = '';
+  }
 
-cancelarPassword() {
-	this.editandoPassword = false;
-	this.newPassword = '';
-	this.confirmPassword = '';
-	this.showPassword = false;
-	this.showConfirmPassword = false;
-}
+  cancelarPassword() {
+    this.editandoPassword = false;
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.showPassword = false;
+    this.showConfirmPassword = false;
+  }
 
-guardarPassword() {
-	if (!this.newPassword || !this.confirmPassword) {
-		this.alertService.error('Todos los campos son requeridos');
-		return;
-	}
+  guardarPassword() {
+    if (!this.newPassword || !this.confirmPassword) {
+      this.alertService.error('Todos los campos son requeridos');
+      return;
+    }
 
-	if (this.newPassword !== this.confirmPassword) {
-		this.alertService.error('Las contraseñas no coinciden');
-		return;
-	}
+    if (this.newPassword !== this.confirmPassword) {
+      this.alertService.error('Las contraseñas no coinciden');
+      return;
+    }
 
-	this.apiService.update('usuario/password', this.usuario.id, {
-		password: this.newPassword
-	}).subscribe(
-		() => {
-			this.editandoPassword = false;
-			this.newPassword = '';
-			this.confirmPassword = '';
-			this.alertService.success('Contraseña actualizada correctamente', 'La contraseña se ha actualizado correctamente.');
-		},
-		error => {
-			this.alertService.error(error);
-		}
-	);
-}
+    this.apiService
+      .update('usuario/password', this.usuario.id, {
+        password: this.newPassword,
+      })
+      .subscribe(
+        () => {
+          this.editandoPassword = false;
+          this.newPassword = '';
+          this.confirmPassword = '';
+          this.alertService.success(
+            'Contraseña actualizada correctamente',
+            'La contraseña se ha actualizado correctamente.'
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+  }
 
-  // En ngOnInit o donde cargas el usuario, añadir:
   loadPermissions(id: number) {
     this.permissionsLoading = true;
-	console.log('this.usuario.id', this.usuario)
     this.apiService.getAll(`roles-permissions/user/${id}`).subscribe(
       (response: any) => {
-		  console.log('response', response);
-        if (response.ok) {
-          const { rolePermissions, directPermissions, allPermissions } = response.data;
-          
-          this.rolePermissions = rolePermissions;
-          this.directPermissions = directPermissions;
-
-          // Preparar permisos para mostrar
-          this.allPermissions = allPermissions.map((perm: any) => ({
-            id: perm.id,
-            name: perm.name,
-            fromRole: rolePermissions.includes(perm.name),
-            selected: rolePermissions.includes(perm.name) || directPermissions.includes(perm.name)
+        if (response.data) {
+          // Almacenar los módulos con la propiedad expanded
+          this.modules = response.data.modules.map((module: any) => ({
+            ...module,
+            expanded: false, // Inicialmente colapsados
           }));
 
-          this.groupPermissionsByModule();
+          // Guardar los permisos actuales
+          this.rolePermissions = response.data.rolePermissions || [];
+          this.directPermissions = response.data.directPermissions || [];
         }
         this.permissionsLoading = false;
       },
-      error => {
+      (error) => {
         this.alertService.error(error);
         this.permissionsLoading = false;
       }
     );
   }
 
-  groupPermissionsByModule() {
-    this.modulePermissions = {
-      ventas: this.allPermissions.filter(p => p.name.endsWith('ventas')),
-      compras: this.allPermissions.filter(p => p.name.endsWith('compras')),
-      productos: this.allPermissions.filter(p => p.name.endsWith('productos')),
-      gastos: this.allPermissions.filter(p => p.name.endsWith('gastos')),
-      clientes: this.allPermissions.filter(p => p.name.endsWith('clientes')),
-      proveedores: this.allPermissions.filter(p => p.name.endsWith('proveedores')),
-      usuarios: this.allPermissions.filter(p => p.name.endsWith('usuarios')),
-      reportes: this.allPermissions.filter(p => p.name.endsWith('reportes')),
-      configuracion: this.allPermissions.filter(p => p.name.endsWith('configuracion')),
-      cotizaciones: this.allPermissions.filter(p => p.name.endsWith('cotizaciones')),
-    
-    };
-
-	console.log('this.modulePermissions', this.modulePermissions);
+  toggleModule(module: any) {
+    module.expanded = !module.expanded;
   }
 
+  getSimplePermissionName(fullName: string): string {
+    const parts = fullName.split('.');
+    return parts[parts.length - 1];
+  }
+
+  isPermissionSelected(permission: any): boolean {
+    return (
+      this.rolePermissions.includes(permission.name) ||
+      this.directPermissions.includes(permission.name)
+    );
+  }
 
   onPermissionChange(permission: Permission) {
     if (permission.fromRole) return; // No permitir cambios en permisos del rol
 
     // Si está seleccionado, asegurarse que no esté en directPermissions
     if (!permission.selected) {
-      this.directPermissions = this.directPermissions.filter(p => p !== permission.name);
+      this.directPermissions = this.directPermissions.filter(
+        (p) => p !== permission.name
+      );
     } else {
       if (!this.directPermissions.includes(permission.name)) {
         this.directPermissions.push(permission.name);
@@ -328,30 +325,35 @@ guardarPassword() {
 
   savePermissions() {
     this.permissionsLoading = true;
-    
+
     // Solo enviar permisos directos que no vienen del rol
     const permissionsToSave = this.directPermissions.filter(
-      p => !this.rolePermissions.includes(p)
+      (p) => !this.rolePermissions.includes(p)
     );
 
-    this.apiService.store(`roles-permissions/user/${this.usuario.id}`, {
-      permissions: permissionsToSave
-    }).subscribe(
-      response => {
-        if (response.ok) {
-          this.alertService.success('Permisos actualizados correctamente', 'Los permisos se han actualizado correctamente.');
-          this.loadPermissions(this.usuario.id); // Recargar permisos
+    this.apiService
+      .store(`roles-permissions/user/${this.usuario.id}`, {
+        permissions: permissionsToSave,
+      })
+      .subscribe(
+        (response) => {
+          if (response.ok) {
+            this.alertService.success(
+              'Permisos actualizados correctamente',
+              'Los permisos se han actualizado correctamente.'
+            );
+            this.loadPermissions(this.usuario.id); // Recargar permisos
+          }
+          this.permissionsLoading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.permissionsLoading = false;
         }
-        this.permissionsLoading = false;
-      },
-      error => {
-        this.alertService.error(error);
-        this.permissionsLoading = false;
-      }
-    );
+      );
   }
 
   get moduleKeys(): string[] {
     return Object.keys(this.modulePermissions);
-}
+  }
 }
