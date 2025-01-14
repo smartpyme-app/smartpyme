@@ -42,6 +42,7 @@ export class UsuarioComponent implements OnInit {
   public modulePermissions: { [key: string]: Permission[] } = {};
   public Object = Object;
   public modules: any[] = [];
+  public searchText: string = '';
 
   constructor(
     public apiService: ApiService,
@@ -356,4 +357,6 @@ export class UsuarioComponent implements OnInit {
   get moduleKeys(): string[] {
     return Object.keys(this.modulePermissions);
   }
+
+  
 }

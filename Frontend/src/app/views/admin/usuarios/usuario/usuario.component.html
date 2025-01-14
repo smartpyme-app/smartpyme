@@ -275,78 +275,97 @@
 
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
-                                    <!-- Header -->
-                                    <div class="d-flex justify-content-between align-items-center mb-4">
-                                        <h5 class="card-title mb-0 d-flex align-items-center">
-                                            <i class="fa fa-lock me-2"></i>
-                                            Permisos del Usuario
-                                        </h5>
+                                    <!-- Header Section -->
+                                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa fa-lock text-primary me-2"></i>
+                                            <div>
+                                                <h6 class="mb-0">Permisos del Usuario</h6>
+                                                <small class="text-muted">Gestión de accesos</small>
+                                            </div>
+                                        </div>
                                         <span class="badge bg-primary">{{usuario.tipo}}</span>
                                     </div>
-                            
+
                                     <!-- Info Alert -->
-                                    <div class="alert alert-info mb-4" role="alert">
+                                    <div class="alert alert-info py-2 mb-3" role="alert">
                                         <i class="fa fa-info-circle me-2"></i>
-                                        Todos los permisos pueden ser modificados independientemente de su origen
+                                        <small>Los permisos pueden modificarse independientemente de su origen</small>
                                     </div>
-                            
+
                                     <!-- Loading State -->
-                                    <div *ngIf="permissionsLoading" class="text-center py-4">
+                                    <div *ngIf="permissionsLoading" class="text-center py-3">
                                         <div class="spinner-border text-primary"></div>
-                                        <p class="mt-2 mb-0">Cargando permisos...</p>
+                                        <p class="small mb-0">Cargando permisos...</p>
                                     </div>
-                            
-                                    <!-- Modules Accordion -->
-                                    <div *ngIf="!permissionsLoading" class="accordion">
-                                        <div class="accordion-item border-0 mb-3" *ngFor="let module of modules">
-                                            <div class="accordion-header">
-                                                <button class="accordion-button rounded shadow-sm" 
-                                                        type="button" 
-                                                        [class.collapsed]="!module.expanded"
-                                                        (click)="toggleModule(module)">
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="fw-bold">{{module.display_name}}</span>
-                                                    </div>
-                                                </button>
-                                            </div>
-                            
-                                            <div class="accordion-collapse collapse" [class.show]="module.expanded">
-                                                <div class="accordion-body pt-3">
-                                                    <!-- Module-level permissions -->
-                                                    <div *ngIf="module.permissions?.length > 0" class="mb-4">
-                                                        <h6 class="text-muted mb-3">Permisos generales</h6>
-                                                        <div class="row g-3">
-                                                            <div class="col-md-6" *ngFor="let perm of module.permissions">
-                                                                <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
-                                                                    <input type="checkbox" 
-                                                                           class="form-check-input" 
-                                                                           [id]="'perm_' + perm.permission.id"
-                                                                           [checked]="isPermissionSelected(perm.permission)"
-                                                                           [disabled]="perm.permission.fromRole"
-                                                                           (change)="onPermissionChange(perm.permission)">
-                                                                    <label class="form-check-label" [for]="'perm_' + perm.permission.id">
-                                                                        {{getSimplePermissionName(perm.permission.name)}}
-                                                                    </label>
+
+                                    <!-- Permissions Content -->
+                                    <div *ngIf="!permissionsLoading">
+                                        <!-- Modules Accordion -->
+                                        <div class="accordion" id="permissionsAccordion">
+                                            <div class="accordion-item border mb-2 rounded" *ngFor="let module of modules; let i = index">
+                                                <!-- Module Header -->
+                                                <div class="accordion-header">
+                                                    <button class="accordion-button py-2 rounded fw-semibold" 
+                                                            type="button"
+                                                            [attr.data-bs-toggle]="'collapse'"
+                                                            [attr.data-bs-target]="'#module' + i"
+                                                            [attr.aria-expanded]="module.expanded"
+                                                            [attr.aria-controls]="'module' + i"
+                                                            (click)="toggleModule(module)">
+                                                        <i class="fa fa-folder me-2" [class.fa-folder-open]="module.expanded"></i>
+                                                        Modulo {{module.display_name}} 
+                                                    </button>
+                                                </div>
+
+                                                <!-- Module Content -->
+                                                <div [id]="'module' + i" class="accordion-collapse collapse" [class.show]="module.expanded"
+                                                     [attr.data-bs-parent]="'#permissionsAccordion'">
+                                                    <div class="accordion-body p-3">
+                                                        <!-- Module Permissions -->
+                                                        <div *ngIf="module.permissions?.length > 0" class="mb-4">
+                                                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                                                <i class="fa fa-shield me-1"></i>
+                                                                Permisos de {{module.display_name}}
+                                                            </h6>
+                                                            <div class="row g-2 ps-2">
+                                                                <div class="col-lg-3 col-md-3 col-sm-6 col-6" *ngFor="let perm of module.permissions">
+                                                                    <div class="form-check mb-0">
+                                                                        <input type="checkbox" 
+                                                                               class="form-check-input" 
+                                                                               [id]="'perm_' + perm.permission.id"
+                                                                               [checked]="isPermissionSelected(perm.permission)"
+                                                                               [disabled]="perm.permission.fromRole"
+                                                                               (change)="onPermissionChange(perm.permission)">
+                                                                        <label class="form-check-label small" [for]="'perm_' + perm.permission.id">
+                                                                            {{getSimplePermissionName(perm.permission.name)}}
+                                                                        </label>
+                                                                    </div>
+                                                                 
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                            
-                                                    <!-- Submodules -->
-                                                    <div *ngFor="let submodule of module.submodules" class="mb-4">
-                                                        <h6 class="text-muted mb-3">{{submodule.display_name}}</h6>
-                                                        <div class="row g-3">
-                                                            <div class="col-md-6" *ngFor="let perm of submodule.permissions">
-                                                                <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
-                                                                    <input type="checkbox" 
-                                                                           class="form-check-input" 
-                                                                           [id]="'perm_' + perm.permission.id"
-                                                                           [checked]="isPermissionSelected(perm.permission)"
-                                                                           [disabled]="perm.permission.fromRole"
-                                                                           (change)="onPermissionChange(perm.permission)">
-                                                                    <label class="form-check-label" [for]="'perm_' + perm.permission.id">
-                                                                        {{getSimplePermissionName(perm.permission.name)}}
-                                                                    </label>
+
+                                                        <!-- Submodules -->
+                                                        <div *ngFor="let submodule of module.submodules" class="mb-3 ms-3">
+                                                            <h6 class="text-secondary border-bottom pb-2 mb-2">
+                                                                <i class="fa fa-code-fork me-1"></i>
+                                                               Submodulo  {{submodule.display_name}}
+                                                            </h6>
+                                                            <div class="row g-2 ps-2">
+                                                                <div class="col-lg-3 col-md-3 col-sm-6 col-6" *ngFor="let perm of submodule.permissions">
+                                                                    <div class="form-check mb-0">
+                                                                        <input type="checkbox" 
+                                                                               class="form-check-input" 
+                                                                               [id]="'perm_' + perm.permission.id"
+                                                                               [checked]="isPermissionSelected(perm.permission)"
+                                                                               [disabled]="perm.permission.fromRole"
+                                                                               (change)="onPermissionChange(perm.permission)">
+                                                                        <label class="form-check-label small" [for]="'perm_' + perm.permission.id">
+                                                                            {{getSimplePermissionName(perm.permission.name)}}
+                                                                        </label>
+                                                                    </div>
+                                                                    
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -354,19 +373,20 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                            
-                                    <!-- Save Button -->
-                                    <div class="text-end mt-4">
-                                        <button type="button" 
-                                                class="btn btn-primary" 
-                                                (click)="savePermissions()"
-                                                [disabled]="permissionsLoading">
-                                            <i class="fa" [class.fa-save]="!permissionsLoading" 
-                                               [class.fa-spinner]="permissionsLoading" 
-                                               [class.fa-spin]="permissionsLoading"></i>
-                                            {{permissionsLoading ? 'Guardando...' : 'Guardar Permisos'}}
-                                        </button>
+
+                                        <!-- Save Button -->
+                                        <div class="d-flex justify-content-end mt-3 pt-2 border-top">
+                                            <button type="button" 
+                                                    class="btn btn-primary btn-sm px-3" 
+                                                    (click)="savePermissions()"
+                                                    [disabled]="permissionsLoading">
+                                                <i class="fa me-1" 
+                                                   [class.fa-save]="!permissionsLoading" 
+                                                   [class.fa-spinner]="permissionsLoading" 
+                                                   [class.fa-spin]="permissionsLoading"></i>
+                                                {{permissionsLoading ? 'Guardando...' : 'Guardar'}}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
