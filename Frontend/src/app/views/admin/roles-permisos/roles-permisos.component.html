@@ -130,9 +130,9 @@
                                 <!-- Permisos del módulo -->
                                 <div *ngIf="filterPermissionsBySearch(module.permissions, searchText).length > 0" 
                                      class="mb-4">
-                                    <h6 class="fw-bold text-muted mb-3">Permisos generales</h6>
+                                    <h6 class="fw-bold text-muted mb-3">Permisos del módulo</h6>
                                     <div class="row g-2">
-                                        <div class="col-12 col-sm-6" 
+                                        <div class="col-6 col-sm-4" 
                                              *ngFor="let perm of filterPermissionsBySearch(module.permissions, searchText)">
                                             <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
                                                 <input type="checkbox" 
@@ -151,9 +151,9 @@
                                 <!-- Submódulos -->
                                 <div *ngFor="let submodule of module.submodules" class="mb-3">
                                     <div *ngIf="filterPermissionsBySearch(submodule.permissions, searchText).length > 0">
-                                        <h6 class="fw-bold text-muted mb-3">{{submodule.display_name}}</h6>
+                                        <h6 class="fw-bold text-muted mb-3">Permisos del submódulo: {{submodule.display_name}}</h6>
                                         <div class="row g-2">
-                                            <div class="col-12 col-sm-6" 
+                                            <div class="col-6 col-sm-4" 
                                                  *ngFor="let perm of filterPermissionsBySearch(submodule.permissions, searchText)">
                                                 <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
                                                     <input type="checkbox" 
@@ -235,9 +235,9 @@
                                 <div class="accordion-body pt-3">
                                     <!-- Permisos del módulo -->
                                     <div *ngIf="module.permissions.length > 0" class="mb-4">
-                                        <h6 class="fw-bold text-muted mb-3">Permisos generales</h6>
+                                        <h6 class="fw-bold text-muted mb-3">Permisos del módulo</h6>
                                         <div class="row g-2">
-                                            <div class="col-12 col-sm-6" *ngFor="let perm of module.permissions">
+                                            <div class="col-6 col-sm-4" *ngFor="let perm of module.permissions">
                                                 <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
                                                     <input type="checkbox" 
                                                            class="form-check-input" 
@@ -255,9 +255,9 @@
 
                                     <!-- Submódulos -->
                                     <div *ngFor="let submodule of module.submodules" class="mb-3">
-                                        <h6 class="fw-bold text-muted mb-3">{{submodule.display_name}}</h6>
+                                        <h6 class="fw-bold text-muted mb-3">Permisos del submódulo: {{submodule.display_name}}</h6>
                                         <div class="row g-2">
-                                            <div class="col-12 col-sm-6" *ngFor="let perm of submodule.permissions">
+                                            <div class="col-6 col-sm-4" *ngFor="let perm of submodule.permissions">
                                                 <div class="form-check custom-checkbox p-3 bg-light rounded hover-shadow">
                                                     <input type="checkbox" 
                                                            class="form-check-input" 
