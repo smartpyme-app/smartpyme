@@ -250,8 +250,8 @@ class RolePermissionController extends Controller
     //modules
     public function modules(Request $request)
     {
-        $modules = Module::with('permissions', 'submodules', 'custom_permissions')->where('name', 'like', '%' . $request->buscador . '%')->paginate($request->paginate);
-       
+        $modules = Module::with('permissions', 'submodules')->where('name', 'like', '%' . $request->buscador . '%')->paginate($request->paginate);
+
         return response()->json($modules, 200);
     }
 
@@ -367,5 +367,110 @@ class RolePermissionController extends Controller
     {
         $module = Module::with('permissions', 'submodules.permissions')->findOrFail($request->id);
         return response()->json($module, 200);
+    }
+
+    public function updateModule(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            // 1. Actualizar el módulo
+            $module = Module::findOrFail($id);
+            $module->update([
+                'name' => $request->name,
+                'display_name' => $request->display_name,
+                'description' => $request->description
+            ]);
+
+            // 2. Actualizar o crear submódulos
+            // Eliminar submódulos que ya no existen
+            $currentSubmoduleIds = collect($request->submodules)->pluck('id')->filter();
+            $module->submodules()
+                ->whereNotIn('id', $currentSubmoduleIds)
+                ->get()
+                ->each(function ($submodule) {
+                    // También eliminará los permisos asociados por la relación cascade
+                    $submodule->delete();
+                });
+
+            // Actualizar o crear submódulos
+            foreach ($request->submodules as $subData) {
+                if (isset($subData['id'])) {
+                    $module->submodules()
+                        ->where('id', $subData['id'])
+                        ->update([
+                            'name' => $subData['name'],
+                            'display_name' => $subData['display_name']
+                        ]);
+                } else {
+                    $module->submodules()->create([
+                        'name' => $subData['name'],
+                        'display_name' => $subData['display_name']
+                    ]);
+                }
+            }
+
+            // 3. Actualizar permisos personalizados
+            // Primero, eliminar todos los permisos personalizados existentes
+            $modulePermissionsToDelete = ModulePermission::where(function ($query) use ($module) {
+                $query->where('module_id', $module->id)
+                    ->orWhereIn('submodule_id', $module->submodules->pluck('id'));
+            })->where('permission_type', 'custom')->get();
+
+            foreach ($modulePermissionsToDelete as $mp) {
+                $permission = Permission::find($mp->permission_id);
+                $mp->delete();
+                if ($permission) {
+                    $permission->delete();
+                }
+            }
+
+            // Crear nuevos permisos personalizados
+            if (!empty($request->custom_permissions)) {
+                foreach ($request->custom_permissions as $customPermission) {
+                    // Si aplica al módulo principal
+                    if ($customPermission['applyToModule']) {
+                        $permissionName = $module->name . '.' . $customPermission['action'];
+                        $permission = Permission::firstOrCreate(['name' => $permissionName]);
+
+                        ModulePermission::create([
+                            'module_id' => $module->id,
+                            'permission_id' => $permission->id,
+                            'permission_type' => 'custom'
+                        ]);
+                    }
+
+                    // Si aplica a submódulos
+                    if (!empty($customPermission['targets'])) {
+                        foreach ($customPermission['targets'] as $submoduleName => $isSelected) {
+                            if ($isSelected) {
+                                $submodule = $module->submodules()
+                                    ->where('name', $submoduleName)
+                                    ->first();
+
+                                if ($submodule) {
+                                    $permissionName = $module->name . '.' . $submodule->name . '.' . $customPermission['action'];
+                                    $permission = Permission::firstOrCreate(['name' => $permissionName]);
+
+                                    ModulePermission::create([
+                                        'submodule_id' => $submodule->id,
+                                        'permission_id' => $permission->id,
+                                        'permission_type' => 'custom'
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Módulo actualizado exitosamente',
+                'module' => $module->load(['submodules', 'permissions.permission'])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }
