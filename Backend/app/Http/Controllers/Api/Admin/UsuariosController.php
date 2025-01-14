@@ -182,6 +182,22 @@ class UsuariosController extends Controller
 
     }
 
+    public function updateEmail(Request $request,$id)
+    {
+        $user = Usuario::findOrFail($id);
+        $user->email = $request->email;
+        $user->save();
+        return Response()->json($user, 200);
+    }
+
+    public function updatePassword(Request $request,$id)
+    {
+        $user = Usuario::findOrFail($id);
+        $user->password = Hash::make($request->password);
+        $user->save();
+        return Response()->json($user, 200);
+    }
+
 
 
 }
