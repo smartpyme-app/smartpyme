@@ -5,83 +5,105 @@ namespace App\Http\Controllers;
 use App\Models\Suscripcion;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class N1coWebhookController extends Controller
 {
     public function handle(Request $request)
-    {
-        try {
-            // Verificar la firma del webhook
-            $signature = $request->header('X-H4B-Hmac-Sha256');
-            if (!$this->verifySignature($request->getContent(), $signature)) {
-                Log::warning('N1co Webhook: Invalid signature received');
-                return response()->json(['error' => 'Invalid signature'], 400);
-            }
+{
+    try {
 
-            $payload = $request->all();
+        Log::debug('N1co Webhook: Configuration', [
+            'secret_configured' => !empty(config('services.nico.webhook_secret')),
+            'secret_length' => strlen(config('services.nico.webhook_secret'))
+        ]);
+        // Log inicial de la solicitud
+        Log::info('N1co Webhook: Request received', [
+            'headers' => $request->headers->all(),
+            'content' => $request->getContent(),
+            'raw_payload' => $request->all()
+        ]);
 
-            // Validar estructura del payload
-            $requiredFields = ['orderId', 'description', 'level', 'type'];
-            foreach ($requiredFields as $field) {
-                if (!isset($payload[$field])) {
-                    Log::error('N1co Webhook: Missing required field', ['field' => $field]);
-                    return response()->json(['error' => "Missing required field: {$field}"], 400);
-                }
-            }
-
-            // Registrar la recepción del webhook
-            Log::info('N1co Webhook received', [
-                'type' => $payload['type'],
-                'orderId' => $payload['orderId'],
-                'level' => $payload['level']
-            ]);
-
-            // Manejar los diferentes tipos de eventos
-            switch ($payload['type']) {
-                case 'Created':
-                    return $this->handleOrderCreated($payload);
-
-                case 'SuccessPayment':
-                    return $this->handleSuccessfulPayment($payload);
-
-                case 'PaymentError':
-                    return $this->handleFailedPayment($payload);
-
-                case 'Cancelled':
-                    return $this->handleCancelledPayment($payload);
-
-                case 'Finalized':
-                    return $this->handleOrderFinalized($payload);
-
-                case 'SuccessReverse':
-                    return $this->handleSuccessfulReverse($payload);
-
-                case 'ReverseError':
-                    return $this->handleReverseError($payload);
-
-                case 'ThreeDSecureAuthSucceeded':
-                    return $this->handle3DSAuthSuccess($payload);
-
-                case 'ThreeDSecureAuthError':
-                    return $this->handle3DSAuthError($payload);
-
-                default:
-                    Log::info('N1co Webhook: Unhandled event type', ['type' => $payload['type']]);
-                    return response()->json(['status' => 'success', 'message' => 'Event type not handled']);
-            }
-        } catch (\Exception $e) {
-            Log::error('N1co Webhook: Error processing webhook', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'error' => 'Internal server error',
-                'message' => $e->getMessage()
-            ], 500);
+        // Verificar la firma del webhook
+        $signature = $request->header('X-H4B-Hmac-Sha256');
+        if (!$signature) {
+            Log::error('N1co Webhook: No signature provided in headers');
+            return response()->json(['error' => 'No signature provided'], 400);
         }
+
+        if (!$this->verifySignature($request->getContent(), $signature)) {
+            Log::warning('N1co Webhook: Invalid signature', [
+                'received_signature' => $signature,
+                'content_length' => strlen($request->getContent())
+            ]);
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
+
+        $payload = $request->all();
+
+        // Validar estructura del payload
+        $requiredFields = ['orderId', 'description', 'level', 'type'];
+        foreach ($requiredFields as $field) {
+            if (!isset($payload[$field])) {
+                Log::error('N1co Webhook: Missing required field', ['field' => $field]);
+                return response()->json(['error' => "Missing required field: {$field}"], 400);
+            }
+        }
+
+        // Registrar la recepción del webhook
+        Log::info('N1co Webhook: Processing event', [
+            'type' => $payload['type'],
+            'orderId' => $payload['orderId'],
+            'level' => $payload['level'],
+            'description' => $payload['description']
+        ]);
+
+        // Manejar los diferentes tipos de eventos
+        switch ($payload['type']) {
+            case 'Created':
+                return $this->handleOrderCreated($payload);
+
+            case 'SuccessPayment':
+                return $this->handleSuccessfulPayment($payload);
+
+            case 'PaymentError':
+                return $this->handleFailedPayment($payload);
+
+            case 'Cancelled':
+                return $this->handleCancelledPayment($payload);
+
+            case 'Finalized':
+                return $this->handleOrderFinalized($payload);
+
+            case 'SuccessReverse':
+                return $this->handleSuccessfulReverse($payload);
+
+            case 'ReverseError':
+                return $this->handleReverseError($payload);
+
+            case 'ThreeDSecureAuthSucceeded':
+                return $this->handle3DSAuthSuccess($payload);
+
+            case 'ThreeDSecureAuthError':
+                return $this->handle3DSAuthError($payload);
+
+            default:
+                Log::info('N1co Webhook: Unhandled event type', ['type' => $payload['type']]);
+                return response()->json(['status' => 'success', 'message' => 'Event type not handled']);
+        }
+    } catch (\Exception $e) {
+        Log::error('N1co Webhook: Error processing webhook', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'error' => 'Internal server error',
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
 
     private function handleSuccessfulPayment($payload)
     {
@@ -167,14 +189,124 @@ class N1coWebhookController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+
     private function verifySignature($payload, $signature)
     {
-        $calculatedSignature = hash_hmac(
-            'sha256',
-            $payload,
-            config('services.nico.webhook_secret')
+        if (empty($signature)) {
+            Log::error('N1co Webhook: Empty signature provided');
+            return false;
+        }
+    
+        $secret = config('services.nico.webhook_secret');
+        
+        if (empty($secret)) {
+            Log::error('N1co Webhook: Webhook secret not configured');
+            return false;
+        }
+    
+        // Usar el contenido exacto sin ninguna transformación
+        $calculatedSignature = base64_encode(
+            hash_hmac(
+                'sha256', 
+                $payload,  // payload sin transformar
+                $secret,   // secret sin transformar
+                true      // obtener salida binaria
+            )
         );
+    
+        // Log para debugging
+        Log::debug('N1co Webhook: Signature details', [
+            'received_signature' => $signature,
+            'calculated_signature' => $calculatedSignature,
+            'payload_sample' => substr($payload, 0, 100) . '...' // solo para debug
+        ]);
+    
+        return $signature === $calculatedSignature;
+    }
 
-        return hash_equals($calculatedSignature, $signature);
+    public function createPaymentLink($plan, $cliente)
+    {
+        try {
+            Log::info('Creando enlace de pago N1co', [
+                'plan' => $plan->nombre,
+                'cliente' => $cliente->email
+            ]);
+
+            $data = [
+                "orderName" => "SmartPyme " . $plan->nombre,
+                "orderDescription" => "Suscripción al plan " . strtolower($plan->nombre),
+                "amount" => $plan->precio,
+                "successUrl" => config('app.url') . "/payment/success",
+                "cancelUrl" => config('app.url') . "/payment/cancel",
+                "metadata" => [
+                    [
+                        "name" => "clientId",
+                        "value" => $cliente->id
+                    ],
+                    [
+                        "name" => "planId",
+                        "value" => $plan->id
+                    ],
+                    [
+                        "name" => "empresaId",
+                        "value" => $cliente->empresa_id
+                    ]
+                ],
+                "expirationMinutes" => 60 // 1 hora de expiración
+            ];
+
+            // Hacer la petición a N1co
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.nico.api_key'),
+                'Content-Type' => 'application/json',
+            ])->post(config('services.nico.base_url') . '/paymentlink/checkout', $data);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                
+                // Actualizar el plan con la información del enlace
+                $plan->update([
+                    'enlace_n1co' => $result['paymentLinkUrl'],
+                    'id_enlace_pago_n1co' => $result['orderId'],
+                    'n1co_metadata' => [
+                        'orderCode' => $result['orderCode'],
+                        'createdAt' => now()
+                    ]
+                ]);
+
+                Log::info('Enlace de pago creado exitosamente', [
+                    'orderId' => $result['orderId'],
+                    'url' => $result['paymentLinkUrl']
+                ]);
+
+                return [
+                    'success' => true,
+                    'paymentUrl' => $result['paymentLinkUrl'],
+                    'orderId' => $result['orderId']
+                ];
+            }
+
+            Log::error('Error al crear enlace de pago', [
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error al crear enlace de pago',
+                'details' => $response->json()
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error al crear enlace de pago', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error al crear enlace de pago',
+                'message' => $e->getMessage()
+            ];
+        }
     }
 }
