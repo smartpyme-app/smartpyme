@@ -42,16 +42,67 @@ export class ModuleFormComponent implements OnInit {
   loadModule(id: number) {
     this.loading = true;
     this.apiService.read('modules/', id).subscribe(
-      module => {
-        this.module = module;
-        this.loading = false;
-      },
-      error => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
+        response => {
+            // Encontrar permisos personalizados únicos
+            const customPermissions = new Map<string, any>();
+
+            // Procesar permisos del módulo principal
+            response.permissions
+                .filter((p: any) => p.permission_type === 'custom')
+                .forEach((p: any) => {
+                    const action = p.permission.name.split('.').pop(); // Obtener la última parte (ej: 'exportar' de 'atencion_al_cliente.exportar')
+                    if (!customPermissions.has(action)) {
+                        customPermissions.set(action, {
+                            action,
+                            applyToModule: true,
+                            targets: {}
+                        });
+                    } else {
+                        customPermissions.get(action).applyToModule = true;
+                    }
+
+                    // Inicializar targets con todos los submódulos en false
+                    response.submodules.forEach((sub: any) => {
+                        if (!customPermissions.get(action).targets[sub.name]) {
+                            customPermissions.get(action).targets[sub.name] = false;
+                        }
+                    });
+                });
+
+            // Procesar permisos de submódulos
+            response.submodules.forEach((sub: any) => {
+                sub.permissions
+                    .filter((p: any) => p.permission_type === 'custom')
+                    .forEach((p: any) => {
+                        const action = p.permission.name.split('.').pop(); // Obtener la última parte (ej: 'exportar')
+                        
+                        if (!customPermissions.has(action)) {
+                            customPermissions.set(action, {
+                                action,
+                                applyToModule: false,
+                                targets: {}
+                            });
+                        }
+
+                        // Marcar este submódulo como true para este permiso
+                        customPermissions.get(action).targets[sub.name] = true;
+                    });
+            });
+
+            // Construir el módulo con los permisos personalizados normalizados
+            this.module = {
+                ...response,
+                custom_permissions: Array.from(customPermissions.values())
+            };
+
+            this.loading = false;
+        },
+        error => {
+            this.alertService.error(error);
+            this.loading = false;
+        }
     );
-  }
+}
 
   saveModule() {
     if (this.moduleForm.invalid) return;

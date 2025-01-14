@@ -20,8 +20,14 @@ class Submodule extends Model
         return $this->belongsTo(Module::class);
     }
 
+    // public function permissions()
+    // {
+    //     return $this->belongsToMany(Permission::class, 'module_permissions');
+    // }
+
     public function permissions()
     {
-        return $this->belongsToMany(Permission::class, 'module_permissions');
+        //ir a permissions
+        return $this->hasMany(ModulePermission::class, 'submodule_id')->with('permission');
     }
 }
