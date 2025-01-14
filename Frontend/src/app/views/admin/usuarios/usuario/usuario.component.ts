@@ -331,6 +331,7 @@ export class UsuarioComponent implements OnInit {
     const permissionsToSave = this.directPermissions.filter(
       (p) => !this.rolePermissions.includes(p)
     );
+    console.log('permissionsToSave', permissionsToSave);
 
     this.apiService
       .store(`roles-permissions/user/${this.usuario.id}`, {
