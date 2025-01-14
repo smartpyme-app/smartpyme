@@ -32,11 +32,11 @@ class RolePermissionController extends Controller
         Log::info('permissions');
 
         $modules = Module::with([
-            'permissions' => function($query) {
+            'permissions' => function ($query) {
                 $query->with('permission'); // Obtener el permiso relacionado
             },
-            'submodules' => function($query) {
-                $query->with(['permissions' => function($q) {
+            'submodules' => function ($query) {
+                $query->with(['permissions' => function ($q) {
                     $q->with('permission'); // Obtener los permisos de cada submódulo
                 }]);
             }
@@ -189,13 +189,70 @@ class RolePermissionController extends Controller
     }
 
 
+    // public function getUserPermissions($userId)
+    // {
+    //     try {
+    //         $user = User::findOrFail($userId);
+    //         $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+    //         $directPermissions = $user->getDirectPermissions()->pluck('name');
+    //         $modules = Module::with('permissions', 'submodules.permissions')->get();
+
+    //         return response()->json([
+    //             'ok' => true,
+    //             'data' => [
+    //                 'role' => $user->roles->first()->name,
+    //                 'rolePermissions' => $rolePermissions,
+    //                 'directPermissions' => $directPermissions,
+    //                 'allPermissions' => Permission::get(['id', 'name']),
+    //                 'modules' => $modules
+    //             ]
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Error al obtener permisos',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function getUserPermissions($userId)
     {
         try {
             $user = User::findOrFail($userId);
+
+            // Obtener permisos del rol
             $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+
+            // Obtener permisos directos
             $directPermissions = $user->getDirectPermissions()->pluck('name');
-            $modules = Module::with('permissions', 'submodules.permissions')->get();
+
+            // Obtener permisos revocados
+            $revokedPermissions = DB::table('permission_revocations')
+                ->where('user_id', $userId)
+                ->pluck('permission_name');
+
+            // Obtener permisos efectivos
+            $effectivePermissions = collect($rolePermissions)
+                ->merge($directPermissions)
+                ->diff($revokedPermissions);
+
+            // Filtrar módulos
+            $modules = Module::with(['permissions', 'submodules.permissions'])
+                ->get()
+                ->map(function ($module) use ($revokedPermissions) {
+                    $module->permissions = $module->permissions->filter(function ($permission) use ($revokedPermissions) {
+                        return !$revokedPermissions->contains($permission->permission->name);
+                    });
+
+                    $module->submodules->each(function ($submodule) use ($revokedPermissions) {
+                        $submodule->permissions = $submodule->permissions->filter(function ($permission) use ($revokedPermissions) {
+                            return !$revokedPermissions->contains($permission->permission->name);
+                        });
+                    });
+
+                    return $module;
+                });
 
             return response()->json([
                 'ok' => true,
@@ -203,7 +260,8 @@ class RolePermissionController extends Controller
                     'role' => $user->roles->first()->name,
                     'rolePermissions' => $rolePermissions,
                     'directPermissions' => $directPermissions,
-                    'allPermissions' => Permission::get(['id', 'name']),
+                    'revokedPermissions' => $revokedPermissions,
+                    'effectivePermissions' => $effectivePermissions,
                     'modules' => $modules
                 ]
             ]);
@@ -216,26 +274,51 @@ class RolePermissionController extends Controller
         }
     }
 
-
     public function saveUserPermissions(Request $request, $userId)
     {
         try {
+            DB::beginTransaction();
+
             $user = User::findOrFail($userId);
 
-            // Validar los permisos
             $request->validate([
-                'permissions' => 'required|array',
-                'permissions.*' => 'exists:permissions,name'
+                'added_permissions' => 'present|array',
+                'removed_permissions' => 'present|array'
             ]);
 
-            // Sincronizar solo los permisos directos (no los del rol)
-            $user->syncPermissions($request->permissions);
+            // Manejar permisos a remover
+            foreach ($request->removed_permissions ?? [] as $permission) {
+                DB::table('permission_revocations')->updateOrInsert(
+                    [
+                        'user_id' => $userId,
+                        'permission_name' => $permission
+                    ],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+
+            // Manejar permisos a agregar
+            foreach ($request->added_permissions ?? [] as $permission) {
+                // Eliminar la revocación si existe
+                DB::table('permission_revocations')
+                    ->where('user_id', $userId)
+                    ->where('permission_name', $permission)
+                    ->delete();
+
+                // Dar el permiso si es necesario
+                if (!$user->hasDirectPermission($permission)) {
+                    $user->givePermissionTo($permission);
+                }
+            }
+
+            DB::commit();
 
             return response()->json([
                 'ok' => true,
                 'message' => 'Permisos actualizados correctamente'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'ok' => false,
                 'message' => 'Error al actualizar permisos',

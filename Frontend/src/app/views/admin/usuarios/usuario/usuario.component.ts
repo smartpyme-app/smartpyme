@@ -43,6 +43,11 @@ export class UsuarioComponent implements OnInit {
   public Object = Object;
   public modules: any[] = [];
   public searchText: string = '';
+  public selectedPermissions: string[] = [];
+  public addedPermissions: string[] = []; // Permisos que se añadirán
+  public removedPermissions: string[] = []; // Permisos que se quitarán
+  public revokedPermissions: string[] = []; // Permisos que se revocan
+  public effectivePermissions: string[] = []; // Permisos efectivos
 
   constructor(
     public apiService: ApiService,
@@ -271,28 +276,28 @@ export class UsuarioComponent implements OnInit {
 
   loadPermissions(id: number) {
     this.permissionsLoading = true;
-    this.apiService.getAll(`roles-permissions/user/${id}`).subscribe(
-      (response: any) => {
-        if (response.data) {
-          // Almacenar los módulos con la propiedad expanded
-          this.modules = response.data.modules.map((module: any) => ({
-            ...module,
-            expanded: false, // Inicialmente colapsados
-          }));
 
-          // Guardar los permisos actuales
-          this.rolePermissions = response.data.rolePermissions || [];
-          this.directPermissions = response.data.directPermissions || [];
+    this.apiService.getAll(`roles-permissions/user/${id}`).subscribe({
+        next: (response: any) => {
+            if (response.data) {
+                this.modules = response.data.modules.map((module: any) => ({
+                    ...module,
+                    expanded: false
+                }));
+                this.rolePermissions = response.data.rolePermissions || [];
+                this.directPermissions = response.data.directPermissions || [];
+                this.revokedPermissions = response.data.revokedPermissions || [];
+                this.effectivePermissions = response.data.effectivePermissions || [];
+            }
+            this.permissionsLoading = false;
+        },
+        error: (error) => {
+            console.error('Error cargando permisos:', error);
+            this.alertService.error(error);
+            this.permissionsLoading = false;
         }
-        this.permissionsLoading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.permissionsLoading = false;
-      }
-    );
-  }
-
+    });
+}
   toggleModule(module: any) {
     module.expanded = !module.expanded;
   }
@@ -303,61 +308,102 @@ export class UsuarioComponent implements OnInit {
   }
 
   isPermissionSelected(permission: any): boolean {
-    return (
-      this.rolePermissions.includes(permission.name) ||
-      this.directPermissions.includes(permission.name)
-    );
-  }
+    const permissionName = permission.name;
+    
+    // Si está en los permisos revocados, retornamos false
+    if (this.revokedPermissions?.includes(permissionName)) {
+        return false;
+    }
 
-  onPermissionChange(permission: Permission) {
-    if (permission.fromRole) return; // No permitir cambios en permisos del rol
+    // Si está en los permisos directos, retornamos true
+    if (this.directPermissions?.includes(permissionName)) {
+        return true;
+    }
 
-    // Si está seleccionado, asegurarse que no esté en directPermissions
-    if (!permission.selected) {
-      this.directPermissions = this.directPermissions.filter(
-        (p) => p !== permission.name
+    // Si está en los permisos del rol y no está revocado, retornamos true
+    if (this.rolePermissions?.includes(permissionName)) {
+        return true;
+    }
+
+    return false;
+}
+
+  onPermissionChange(permission: any) {
+    const permissionName = permission.name;
+    const isCurrentlySelected = this.isPermissionSelected(permission);
+
+    if (isCurrentlySelected) {
+      // Si está seleccionado y lo deseleccionamos
+      this.addedPermissions = this.addedPermissions.filter(
+        (p) => p !== permissionName
       );
+      if (!this.removedPermissions.includes(permissionName)) {
+        this.removedPermissions.push(permissionName);
+      }
     } else {
-      if (!this.directPermissions.includes(permission.name)) {
-        this.directPermissions.push(permission.name);
+      // Si no está seleccionado y lo seleccionamos
+      this.removedPermissions = this.removedPermissions.filter(
+        (p) => p !== permissionName
+      );
+      if (!this.addedPermissions.includes(permissionName)) {
+        this.addedPermissions.push(permissionName);
       }
     }
+
+    console.log('Estado de permisos:', {
+      permission: permissionName,
+      added: this.addedPermissions,
+      removed: this.removedPermissions,
+      currentState: isCurrentlySelected,
+    });
   }
 
   savePermissions() {
     this.permissionsLoading = true;
 
-    // Solo enviar permisos directos que no vienen del rol
-    const permissionsToSave = this.directPermissions.filter(
-      (p) => !this.rolePermissions.includes(p)
-    );
-    console.log('permissionsToSave', permissionsToSave);
+    const data = {
+      added_permissions: this.addedPermissions,
+      removed_permissions: this.removedPermissions,
+    };
+
+    console.log('Guardando cambios:', data);
 
     this.apiService
-      .store(`roles-permissions/user/${this.usuario.id}`, {
-        permissions: permissionsToSave,
-      })
-      .subscribe(
-        (response) => {
+      .store(`roles-permissions/user/${this.usuario.id}`, data)
+      .subscribe({
+        next: (response: any) => {
           if (response.ok) {
             this.alertService.success(
-              'Permisos actualizados correctamente',
-              'Los permisos se han actualizado correctamente.'
+              'Permisos actualizados',
+              'Los permisos se han actualizado correctamente'
             );
-            this.loadPermissions(this.usuario.id); // Recargar permisos
+
+            // Resetear los arrays de cambios
+            this.addedPermissions = [];
+            this.removedPermissions = [];
+
+            // Recargar los permisos
+            this.loadPermissions(this.usuario.id);
           }
           this.permissionsLoading = false;
         },
-        (error) => {
+        error: (error) => {
+          console.error('Error al guardar permisos:', error);
           this.alertService.error(error);
           this.permissionsLoading = false;
-        }
-      );
+        },
+      });
+  }
+
+  getTotalPermissions(module: any): number {
+    let total = module.permissions?.length || 0;
+    module.submodules?.forEach((submodule: any) => {
+      total += submodule.permissions?.length || 0;
+    });
+    return total;
   }
 
   get moduleKeys(): string[] {
     return Object.keys(this.modulePermissions);
   }
-
-  
 }
