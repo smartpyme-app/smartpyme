@@ -10,166 +10,281 @@ class RoleSeeder extends Seeder
 {
     public function run()
     {
-       
+        // Definir todos los roles primero
+        $roles = [
+            'ROL_SUPER_ADMIN' => 'super_admin',
+            'ROL_CONTADOR_SUPERIOR' => 'contador_superior',
+            'ROL_CONTADOR_AUXILIAR' => 'contador_auxiliar',
+            'ROL_GERENTE_VENTAS' => 'gerente_ventas',
+            'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',
+            'ROL_GERENTE_COMPRAS' => 'gerente_compras',
+            'ROL_USUARIO' => 'usuario',
+            'ROL_USUARIO_VENTAS' => 'usuario_ventas',
+            'ROL_USUARIO_CITAS' => 'usuario_citas',
+            'ROL_USUARIO_CONSULTAS' => 'usuario_consultas',
+        ];
 
+        // Crear todos los roles
+        foreach ($roles as $configKey => $roleName) {
+            Role::updateOrCreate(['name' => config("constants.{$configKey}", $roleName)]);
+        }
 
         // Super Admin - Acceso Total
-        $superAdmin = Role::updateOrCreate(['name' => config('constants.ROL_SUPER_ADMIN')]);
+        $superAdmin = Role::findByName(config('constants.ROL_SUPER_ADMIN', 'super_admin'));
         $superAdmin->givePermissionTo(Permission::all());
 
         // Contador Superior
-        $contadorSuperior = Role::updateOrCreate(['name' => config('constants.ROL_CONTADOR_SUPERIOR')]);
+        $contadorSuperior = Role::findByName(config('constants.ROL_CONTADOR_SUPERIOR', 'contador_superior'));
         $contadorSuperior->givePermissionTo([
-            // Permisos de Ventas - Solo Ver
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_DEVOLUCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_COTIZACIONES'),
-            // Permisos de Compras
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_VER_COMPRAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_APROBAR_COMPRAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_GESTIONAR_DEVOLUCIONES_COMPRAS'),
-            // Permisos de Gastos
-            config('permissions.PERMISSION_GASTOS.PERMISSION_VER_GASTOS'),
-            config('permissions.PERMISSION_GASTOS.PERMISSION_APROBAR_GASTOS'),
-            config('permissions.PERMISSION_GASTOS.PERMISSION_GESTIONAR_DEVOLUCIONES_GASTOS'),
-            // Reportes
-            config('permissions.PERMISSION_REPORTES.PERMISSION_VER_REPORTES'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_GENERAR_REPORTES'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_EXPORTAR_REPORTES'),
-            // Configuración específica
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_CONFIGURACION')
+            // Ventas - Solo Ver
+            config('permissions.PERMISSION_VENTAS.ver'),
+            config('permissions.PERMISSION_VENTAS.registros.ver'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.ver'),
+            // Compras
+            config('permissions.PERMISSION_COMPRAS.ver'),
+            config('permissions.PERMISSION_COMPRAS.registros.ver'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.ver'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.ver'),
+            // Gastos
+            config('permissions.PERMISSION_GASTOS.ver'),
+            config('permissions.PERMISSION_GASTOS.registros.ver'),
+            config('permissions.PERMISSION_GASTOS.categorias.ver'),
+            // Contabilidad - Acceso Total
+            config('permissions.PERMISSION_CONTABILIDAD.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.crear'),
+            config('permissions.PERMISSION_CONTABILIDAD.editar'),
+            config('permissions.PERMISSION_CONTABILIDAD.eliminar'),
+            config('permissions.PERMISSION_CONTABILIDAD.exportar'),
+            config('permissions.PERMISSION_CONTABILIDAD.partidas.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.partidas.crear'),
+            config('permissions.PERMISSION_CONTABILIDAD.partidas.editar'),
+            config('permissions.PERMISSION_CONTABILIDAD.partidas.eliminar'),
+            config('permissions.PERMISSION_CONTABILIDAD.partidas.exportar'),
+            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.crear'),
+            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.editar'),
+            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.eliminar'),
+            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.exportar'),
+            config('permissions.PERMISSION_CONTABILIDAD.configuracion.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.configuracion.crear'),
+            config('permissions.PERMISSION_CONTABILIDAD.configuracion.editar'),
+            config('permissions.PERMISSION_CONTABILIDAD.configuracion.eliminar'),
+            config('permissions.PERMISSION_CONTABILIDAD.configuracion.exportar'),
+            // Finanzas
+            config('permissions.PERMISSION_FINANZAS.ver'),
+            config('permissions.PERMISSION_FINANZAS.crear'),
+            config('permissions.PERMISSION_FINANZAS.editar'),
+            config('permissions.PERMISSION_FINANZAS.eliminar'),
+            config('permissions.PERMISSION_FINANZAS.exportar'),
+            config('permissions.PERMISSION_FINANZAS.bancos.ver'),
+            config('permissions.PERMISSION_FINANZAS.bancos.crear'),
+            config('permissions.PERMISSION_FINANZAS.bancos.editar'),
+            config('permissions.PERMISSION_FINANZAS.bancos.eliminar'),
+            config('permissions.PERMISSION_FINANZAS.bancos.exportar'),
+            config('permissions.PERMISSION_FINANZAS.libro_iva.ver'),
+            config('permissions.PERMISSION_FINANZAS.libro_iva.crear'),
+            config('permissions.PERMISSION_FINANZAS.libro_iva.editar'),
+            config('permissions.PERMISSION_FINANZAS.libro_iva.eliminar'),
+            config('permissions.PERMISSION_FINANZAS.libro_iva.exportar'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
         ]);
 
         // Contador Auxiliar
-        $contadorAuxiliar = Role::updateOrCreate(['name' => config('constants.ROL_CONTADOR_AUXILIAR')]);
+        $contadorAuxiliar = Role::findByName(config('constants.ROL_CONTADOR_AUXILIAR', 'contador_auxiliar'));
         $contadorAuxiliar->givePermissionTo([
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_VENTAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_VER_COMPRAS'),
-            config('permissions.PERMISSION_GASTOS.PERMISSION_VER_GASTOS'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_VER_REPORTES'),
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_CONFIGURACION')
+            config('permissions.PERMISSION_VENTAS.ver'),
+            config('permissions.PERMISSION_COMPRAS.ver'),
+            config('permissions.PERMISSION_GASTOS.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.partidas.ver'),
+            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.ver'),
+            config('permissions.PERMISSION_FINANZAS.ver'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Gerente Ventas
-        $gerenteVentas = Role::updateOrCreate(['name' => config('constants.ROL_GERENTE_VENTAS')]);
+        $gerenteVentas = Role::findByName(config('constants.ROL_GERENTE_VENTAS', 'gerente_ventas'));
         $gerenteVentas->givePermissionTo([
-            // Inventario
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_PRODUCTOS'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_GESTIONAR_CONSIGNACION'),
+            // Productos
+            config('permissions.PERMISSION_PRODUCTOS.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.ver'),
             // Ventas - Control Total
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_REGISTRAR_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_ANULAR_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_GESTIONAR_PROMOCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_GESTIONAR_DEVOLUCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_GESTIONAR_COTIZACIONES'),
-            // Mi Negocio
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_GESTIONAR_CLIENTES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_GESTIONAR_CANALES_VENTA'),
-            // Reportes
-            config('permissions.PERMISSION_REPORTES.PERMISSION_VER_REPORTES'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_GENERAR_REPORTES')
+            config('permissions.PERMISSION_VENTAS.ver'),
+            config('permissions.PERMISSION_VENTAS.crear'),
+            config('permissions.PERMISSION_VENTAS.editar'),
+            config('permissions.PERMISSION_VENTAS.eliminar'),
+            config('permissions.PERMISSION_VENTAS.exportar'),
+            config('permissions.PERMISSION_VENTAS.registros.ver'),
+            config('permissions.PERMISSION_VENTAS.registros.crear'),
+            config('permissions.PERMISSION_VENTAS.registros.editar'),
+            config('permissions.PERMISSION_VENTAS.registros.eliminar'),
+            config('permissions.PERMISSION_VENTAS.registros.exportar'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.ver'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.crear'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.editar'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.eliminar'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.exportar'),
+            config('permissions.PERMISSION_VENTAS.clientes.ver'),
+            config('permissions.PERMISSION_VENTAS.clientes.crear'),
+            config('permissions.PERMISSION_VENTAS.clientes.editar'),
+            config('permissions.PERMISSION_VENTAS.clientes.eliminar'),
+            config('permissions.PERMISSION_VENTAS.clientes.exportar'),
+            config('permissions.PERMISSION_VENTAS.canales_venta.ver'),
+            config('permissions.PERMISSION_VENTAS.canales_venta.crear'),
+            config('permissions.PERMISSION_VENTAS.canales_venta.editar'),
+            config('permissions.PERMISSION_VENTAS.canales_venta.eliminar'),
+            config('permissions.PERMISSION_VENTAS.canales_venta.exportar'),
+            config('permissions.PERMISSION_VENTAS.formas_pago.ver'),
+            config('permissions.PERMISSION_VENTAS.formas_pago.crear'),
+            config('permissions.PERMISSION_VENTAS.formas_pago.editar'),
+            config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
+            config('permissions.PERMISSION_VENTAS.formas_pago.exportar'),
+            // Finanzas - Reportes
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
         ]);
 
         // Gerente Operaciones
-        $gerenteOperaciones = Role::updateOrCreate(['name' => config('constants.ROL_GERENTE_OPERACIONES')]);
+        $gerenteOperaciones = Role::findByName(config('constants.ROL_GERENTE_OPERACIONES', 'gerente_operaciones'));
         $gerenteOperaciones->givePermissionTo([
-            // Inventario - Control Total
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_PRODUCTOS'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_GESTIONAR_CONSIGNACION'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_GESTIONAR_MATERIA_PRIMA'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_REALIZAR_AJUSTES'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_GESTIONAR_TRASLADOS'),
-            // Operaciones
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_APROBAR_COMPRAS'),
-            config('permissions.PERMISSION_GASTOS.PERMISSION_APROBAR_GASTOS'),
+            // Productos - Control Total
+            config('permissions.PERMISSION_PRODUCTOS.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.crear'),
+            config('permissions.PERMISSION_PRODUCTOS.editar'),
+            config('permissions.PERMISSION_PRODUCTOS.eliminar'),
+            config('permissions.PERMISSION_PRODUCTOS.exportar'),
+            // Inventario
+            config('permissions.PERMISSION_PRODUCTOS.inventario.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.crear'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.editar'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.eliminar'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.exportar'),
+            // Bodegas
+            config('permissions.PERMISSION_PRODUCTOS.bodegas.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.bodegas.crear'),
+            config('permissions.PERMISSION_PRODUCTOS.bodegas.editar'),
+            config('permissions.PERMISSION_PRODUCTOS.bodegas.eliminar'),
+            config('permissions.PERMISSION_PRODUCTOS.bodegas.exportar'),
+            // Compras y Gastos - Aprobaciones
+            config('permissions.PERMISSION_COMPRAS.ver'),
+            config('permissions.PERMISSION_COMPRAS.editar'),
+            config('permissions.PERMISSION_GASTOS.ver'),
+            config('permissions.PERMISSION_GASTOS.editar'),
             // Reportes
-            config('permissions.PERMISSION_REPORTES.PERMISSION_VER_REPORTES'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_GENERAR_REPORTES')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
         ]);
 
         // Gerente Compras
-        $gerenteCompras = Role::updateOrCreate(['name' => config('constants.ROL_GERENTE_COMPRAS')]);
+        $gerenteCompras = Role::findByName(config('constants.ROL_GERENTE_COMPRAS', 'gerente_compras'));
         $gerenteCompras->givePermissionTo([
             // Compras - Control Total
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_VER_COMPRAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_REGISTRAR_COMPRAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_APROBAR_COMPRAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_GESTIONAR_DEVOLUCIONES_COMPRAS'),
-            // Proveedores
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_PROVEEDORES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_GESTIONAR_PROVEEDORES'),
+            config('permissions.PERMISSION_COMPRAS.ver'),
+            config('permissions.PERMISSION_COMPRAS.crear'),
+            config('permissions.PERMISSION_COMPRAS.editar'),
+            config('permissions.PERMISSION_COMPRAS.eliminar'),
+            config('permissions.PERMISSION_COMPRAS.exportar'),
+            config('permissions.PERMISSION_COMPRAS.registros.ver'),
+            config('permissions.PERMISSION_COMPRAS.registros.crear'),
+            config('permissions.PERMISSION_COMPRAS.registros.editar'),
+            config('permissions.PERMISSION_COMPRAS.registros.eliminar'),
+            config('permissions.PERMISSION_COMPRAS.registros.exportar'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.ver'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.crear'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.editar'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.eliminar'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.exportar'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.ver'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.crear'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.editar'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.eliminar'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.exportar'),
+            config('permissions.PERMISSION_COMPRAS.retaceo.ver'),
+            config('permissions.PERMISSION_COMPRAS.retaceo.crear'),
+            config('permissions.PERMISSION_COMPRAS.retaceo.editar'),
+            config('permissions.PERMISSION_COMPRAS.retaceo.eliminar'),
+            config('permissions.PERMISSION_COMPRAS.retaceo.exportar'),
             // Reportes
-            config('permissions.PERMISSION_REPORTES.PERMISSION_VER_REPORTES'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_GENERAR_REPORTES')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
         ]);
 
         // Usuario Regular
-        $usuario = Role::updateOrCreate(['name' => config('constants.ROL_USUARIO')]);
+        $usuario = Role::findByName(config('constants.ROL_USUARIO', 'usuario'));
         $usuario->givePermissionTo([
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_PRODUCTOS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_REGISTRAR_VENTAS'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CLIENTES')
+            config('permissions.PERMISSION_PRODUCTOS.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.ver'),
+            config('permissions.PERMISSION_VENTAS.registros.crear'),
+            config('permissions.PERMISSION_VENTAS.clientes.ver')
         ]);
 
         // Usuario Ventas
-        $usuarioVentas = Role::updateOrCreate(['name' => config('constants.ROL_USUARIO_VENTAS')]);
+        $usuarioVentas = Role::findByName(config('constants.ROL_USUARIO_VENTAS', 'usuario_ventas'));
         $usuarioVentas->givePermissionTo([
-            // Inventario
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_PRODUCTOS'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_CONSIGNACION'),
+            // Productos
+            config('permissions.PERMISSION_PRODUCTOS.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.ver'),
             // Ventas
-            config('permissions.PERMISSION_VENTAS.PERMISSION_REGISTRAR_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_PROMOCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_DEVOLUCIONES'),
-            // Mi Negocio
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CATEGORIAS'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CLIENTES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CIERRE_CAJA'),
-            // Citas
-            config('permissions.PERMISSION_CITAS_SERVICIOS.PERMISSION_VER_CITAS')
+            config('permissions.PERMISSION_VENTAS.registros.ver'),
+            config('permissions.PERMISSION_VENTAS.registros.crear'),
+            config('permissions.PERMISSION_VENTAS.clientes.ver'),
+            config('permissions.PERMISSION_FINANZAS.cierre_caja.ver'),
+            // Servicios
+            config('permissions.PERMISSION_SERVICIOS.ver'),
+            // Citas si están habilitadas
+            config('permissions.PERMISSION_CITAS.ver')
         ]);
 
         // Usuario Citas
-        $usuarioCitas = Role::updateOrCreate(['name' => config('constants.ROL_USUARIO_CITAS')]);
+        $usuarioCitas = Role::findByName(config('constants.ROL_USUARIO_CITAS', 'usuario_citas'));
         $usuarioCitas->givePermissionTo([
-            config('permissions.PERMISSION_CITAS_SERVICIOS.PERMISSION_GESTIONAR_SERVICIOS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_REGISTRAR_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_PROMOCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_DEVOLUCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_COTIZACIONES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CLIENTES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CIERRE_CAJA')
+            config('permissions.PERMISSION_SERVICIOS.ver'),
+            config('permissions.PERMISSION_SERVICIOS.crear'),
+            config('permissions.PERMISSION_SERVICIOS.editar'),
+            config('permissions.PERMISSION_VENTAS.registros.crear'),
+            config('permissions.PERMISSION_VENTAS.registros.ver'),
+            config('permissions.PERMISSION_VENTAS.clientes.ver'),
+            config('permissions.PERMISSION_CITAS.ver'),
+            config('permissions.PERMISSION_CITAS.crear'),
+            config('permissions.PERMISSION_CITAS.editar'),
+            config('permissions.PERMISSION_FINANZAS.cierre_caja.ver')
         ]);
 
         // Usuario Consultas
-        $usuarioConsultas = Role::updateOrCreate(['name' => config('constants.ROL_USUARIO_CONSULTAS')]);
+        $usuarioConsultas = Role::findByName(config('constants.ROL_USUARIO_CONSULTAS', 'usuario_consultas'));
         $usuarioConsultas->givePermissionTo([
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_PRODUCTOS'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_CONSIGNACION'),
-            config('permissions.PERMISSION_INVENTARIO.PERMISSION_VER_MATERIA_PRIMA'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_VENTAS'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_PROMOCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_DEVOLUCIONES'),
-            config('permissions.PERMISSION_VENTAS.PERMISSION_VER_COTIZACIONES'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_VER_COMPRAS'),
-            config('permissions.PERMISSION_COMPRAS.PERMISSION_VER_DEVOLUCIONES_COMPRAS'),
-            config('permissions.PERMISSION_GASTOS.PERMISSION_VER_GASTOS'),
-            config('permissions.PERMISSION_GASTOS.PERMISSION_VER_DEVOLUCIONES_GASTOS'),
-            config('permissions.PERMISSION_CITAS_SERVICIOS.PERMISSION_VER_CITAS'),
-            config('permissions.PERMISSION_REPORTES.PERMISSION_VER_REPORTES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CATEGORIAS'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CLIENTES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_PROVEEDORES'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CANALES_VENTA'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_DOCUMENTOS'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_FORMAS_PAGO'),
-            config('permissions.PERMISSION_MI_NEGOCIO.PERMISSION_VER_CIERRE_CAJA'),
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_USUARIOS'),
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_SUSCRIPCION'),
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_CONFIGURACION'),
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_RECORDATORIOS'),
-            config('permissions.PERMISSION_CONFIGURACION.PERMISSION_VER_PRESUPUESTOS')
+            // Productos
+            config('permissions.PERMISSION_PRODUCTOS.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.inventario.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.bodegas.ver'),
+            config('permissions.PERMISSION_PRODUCTOS.categorias.ver'),
+            // Ventas
+            config('permissions.PERMISSION_VENTAS.ver'),
+            config('permissions.PERMISSION_VENTAS.registros.ver'),
+            config('permissions.PERMISSION_VENTAS.cotizaciones.ver'),
+            config('permissions.PERMISSION_VENTAS.clientes.ver'),
+            config('permissions.PERMISSION_VENTAS.canales_venta.ver'),
+            config('permissions.PERMISSION_VENTAS.formas_pago.ver'),
+            // Compras
+            config('permissions.PERMISSION_COMPRAS.ver'),
+            config('permissions.PERMISSION_COMPRAS.registros.ver'),
+            config('permissions.PERMISSION_COMPRAS.ordenes_compra.ver'),
+            config('permissions.PERMISSION_COMPRAS.proveedores.ver'),
+            // Gastos
+            config('permissions.PERMISSION_GASTOS.ver'),
+            config('permissions.PERMISSION_GASTOS.registros.ver'),
+            config('permissions.PERMISSION_GASTOS.categorias.ver'),
+            // Servicios y Citas
+            config('permissions.PERMISSION_SERVICIOS.ver'),
+            config('permissions.PERMISSION_CITAS.ver'),
+            // Finanzas
+            config('permissions.PERMISSION_FINANZAS.ver'),
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            config('permissions.PERMISSION_FINANZAS.cierre_caja.ver'),
+            config('permissions.PERMISSION_FINANZAS.documentos.ver'),
+            // Ayuda
+            config('permissions.PERMISSION_AYUDA.ver')
         ]);
     }
 }

@@ -2,20 +2,147 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Permisos de Inventario
+    | Permisos de Sistema y Organización
     |--------------------------------------------------------------------------
     */
-    'PERMISSION_INVENTARIO' => [
-        'PERMISSION_VER_PRODUCTOS' => 'ver_productos',
-        'PERMISSION_CREAR_PRODUCTOS' => 'crear_productos',
-        'PERMISSION_EDITAR_PRODUCTOS' => 'editar_productos',
-        'PERMISSION_ELIMINAR_PRODUCTOS' => 'eliminar_productos',
-        'PERMISSION_VER_CONSIGNACION' => 'ver_consignacion',
-        'PERMISSION_GESTIONAR_CONSIGNACION' => 'gestionar_consignacion',
-        'PERMISSION_VER_MATERIA_PRIMA' => 'ver_materia_prima',
-        'PERMISSION_GESTIONAR_MATERIA_PRIMA' => 'gestionar_materia_prima',
-        'PERMISSION_REALIZAR_AJUSTES' => 'realizar_ajustes',
-        'PERMISSION_GESTIONAR_TRASLADOS' => 'gestionar_traslados',
+    'PERMISSION_ORGANIZACION' => [
+        'ver' => 'organizacion.ver',
+        'crear' => 'organizacion.crear',
+        'editar' => 'organizacion.editar',
+        'eliminar' => 'organizacion.eliminar',
+        'exportar' => 'organizacion.exportar',
+
+        'empresas' => [
+            'ver' => 'organizacion.empresas.ver',
+            'crear' => 'organizacion.empresas.crear',
+            'editar' => 'organizacion.empresas.editar',
+            'eliminar' => 'organizacion.empresas.eliminar',
+            'exportar' => 'organizacion.empresas.exportar'
+        ],
+
+        'usuarios' => [
+            'ver' => 'organizacion.usuarios.ver',
+            'crear' => 'organizacion.usuarios.crear',
+            'editar' => 'organizacion.usuarios.editar',
+            'eliminar' => 'organizacion.usuarios.eliminar',
+            'exportar' => 'organizacion.usuarios.exportar'
+        ],
+
+        'licencias' => [
+            'ver' => 'organizacion.licencias.ver',
+            'crear' => 'organizacion.licencias.crear',
+            'editar' => 'organizacion.licencias.editar',
+            'eliminar' => 'organizacion.licencias.eliminar',
+            'exportar' => 'organizacion.licencias.exportar'
+        ]
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Administración
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_ADMINISTRACION' => [
+        'ver' => 'administracion.ver',
+        'crear' => 'administracion.crear',
+        'editar' => 'administracion.editar',
+        'eliminar' => 'administracion.eliminar',
+        'exportar' => 'administracion.exportar',
+
+        'dashboards' => [
+            'ver' => 'administracion.dashboards.ver',
+            'crear' => 'administracion.dashboards.crear',
+            'editar' => 'administracion.dashboards.editar',
+            'eliminar' => 'administracion.dashboards.eliminar',
+            'exportar' => 'administracion.dashboards.exportar'
+        ],
+
+        'facturaciones' => [
+            'ver' => 'administracion.facturaciones.ver',
+            'crear' => 'administracion.facturaciones.crear',
+            'editar' => 'administracion.facturaciones.editar',
+            'eliminar' => 'administracion.facturaciones.eliminar',
+            'exportar' => 'administracion.facturaciones.exportar'
+        ]
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Inteligencia de Negocios
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_INTELIGENCIA_NEGOCIOS' => [
+        'ver' => 'inteligencia_negocios.ver',
+        'crear' => 'inteligencia_negocios.crear',
+        'editar' => 'inteligencia_negocios.editar',
+        'eliminar' => 'inteligencia_negocios.eliminar',
+        'exportar' => 'inteligencia_negocios.exportar'
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Productos
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_PRODUCTOS' => [
+        'ver' => 'productos.ver',
+        'crear' => 'productos.crear',
+        'editar' => 'productos.editar',
+        'eliminar' => 'productos.eliminar',
+        'exportar' => 'productos.exportar',
+
+        'inventario' => [
+            'ver' => 'productos.inventario.ver',
+            'crear' => 'productos.inventario.crear',
+            'editar' => 'productos.inventario.editar',
+            'eliminar' => 'productos.inventario.eliminar',
+            'exportar' => 'productos.inventario.exportar'
+        ],
+
+        'bodegas' => [
+            'ver' => 'productos.bodegas.ver',
+            'crear' => 'productos.bodegas.crear',
+            'editar' => 'productos.bodegas.editar',
+            'eliminar' => 'productos.bodegas.eliminar',
+            'exportar' => 'productos.bodegas.exportar'
+        ],
+
+        'categorias' => [
+            'ver' => 'productos.categorias.ver',
+            'crear' => 'productos.categorias.crear',
+            'editar' => 'productos.categorias.editar',
+            'eliminar' => 'productos.categorias.eliminar',
+            'exportar' => 'productos.categorias.exportar'
+        ],
+
+        'campos_personalizados' => [
+            'ver' => 'productos.campos_personalizados.ver',
+            'crear' => 'productos.campos_personalizados.crear',
+            'editar' => 'productos.campos_personalizados.editar',
+            'eliminar' => 'productos.campos_personalizados.eliminar',
+            'exportar' => 'productos.campos_personalizados.exportar'
+        ],
+
+        'paquetes' => [
+            'ver' => 'productos.paquetes.ver',
+            'crear' => 'productos.paquetes.crear',
+            'editar' => 'productos.paquetes.editar',
+            'eliminar' => 'productos.paquetes.eliminar',
+            'exportar' => 'productos.paquetes.exportar'
+        ]
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Servicios
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_SERVICIOS' => [
+        'ver' => 'servicios.ver',
+        'crear' => 'servicios.crear',
+        'editar' => 'servicios.editar',
+        'eliminar' => 'servicios.eliminar',
+        'exportar' => 'servicios.exportar'
     ],
 
     /*
@@ -24,15 +151,59 @@ return [
     |--------------------------------------------------------------------------
     */
     'PERMISSION_VENTAS' => [
-        'PERMISSION_VER_VENTAS' => 'ver_ventas',
-        'PERMISSION_REGISTRAR_VENTAS' => 'registrar_ventas',
-        'PERMISSION_ANULAR_VENTAS' => 'anular_ventas',
-        'PERMISSION_VER_PROMOCIONES' => 'ver_promociones',
-        'PERMISSION_GESTIONAR_PROMOCIONES' => 'gestionar_promociones',
-        'PERMISSION_VER_DEVOLUCIONES' => 'ver_devoluciones',
-        'PERMISSION_GESTIONAR_DEVOLUCIONES' => 'gestionar_devoluciones',
-        'PERMISSION_VER_COTIZACIONES' => 'ver_cotizaciones',
-        'PERMISSION_GESTIONAR_COTIZACIONES' => 'gestionar_cotizaciones',
+        'ver' => 'ventas.ver',
+        'crear' => 'ventas.crear',
+        'editar' => 'ventas.editar',
+        'eliminar' => 'ventas.eliminar',
+        'exportar' => 'ventas.exportar',
+
+        'registros' => [
+            'ver' => 'ventas.registros.ver',
+            'crear' => 'ventas.registros.crear',
+            'editar' => 'ventas.registros.editar',
+            'eliminar' => 'ventas.registros.eliminar',
+            'exportar' => 'ventas.registros.exportar'
+        ],
+
+        'cotizaciones' => [
+            'ver' => 'ventas.cotizaciones.ver',
+            'crear' => 'ventas.cotizaciones.crear',
+            'editar' => 'ventas.cotizaciones.editar',
+            'eliminar' => 'ventas.cotizaciones.eliminar',
+            'exportar' => 'ventas.cotizaciones.exportar'
+        ],
+
+        'clientes' => [
+            'ver' => 'ventas.clientes.ver',
+            'crear' => 'ventas.clientes.crear',
+            'editar' => 'ventas.clientes.editar',
+            'eliminar' => 'ventas.clientes.eliminar',
+            'exportar' => 'ventas.clientes.exportar'
+        ],
+
+        'canales_venta' => [
+            'ver' => 'ventas.canales_venta.ver',
+            'crear' => 'ventas.canales_venta.crear',
+            'editar' => 'ventas.canales_venta.editar',
+            'eliminar' => 'ventas.canales_venta.eliminar',
+            'exportar' => 'ventas.canales_venta.exportar'
+        ],
+
+        'formas_pago' => [
+            'ver' => 'ventas.formas_pago.ver',
+            'crear' => 'ventas.formas_pago.crear',
+            'editar' => 'ventas.formas_pago.editar',
+            'eliminar' => 'ventas.formas_pago.eliminar',
+            'exportar' => 'ventas.formas_pago.exportar'
+        ],
+
+        'proyectos' => [
+            'ver' => 'ventas.proyectos.ver',
+            'crear' => 'ventas.proyectos.crear',
+            'editar' => 'ventas.proyectos.editar',
+            'eliminar' => 'ventas.proyectos.eliminar',
+            'exportar' => 'ventas.proyectos.exportar'
+        ]
     ],
 
     /*
@@ -41,11 +212,43 @@ return [
     |--------------------------------------------------------------------------
     */
     'PERMISSION_COMPRAS' => [
-        'PERMISSION_VER_COMPRAS' => 'ver_compras',
-        'PERMISSION_REGISTRAR_COMPRAS' => 'registrar_compras',
-        'PERMISSION_APROBAR_COMPRAS' => 'aprobar_compras',
-        'PERMISSION_VER_DEVOLUCIONES_COMPRAS' => 'ver_devoluciones_compras',
-        'PERMISSION_GESTIONAR_DEVOLUCIONES_COMPRAS' => 'gestionar_devoluciones_compras',
+        'ver' => 'compras.ver',
+        'crear' => 'compras.crear',
+        'editar' => 'compras.editar',
+        'eliminar' => 'compras.eliminar',
+        'exportar' => 'compras.exportar',
+
+        'registros' => [
+            'ver' => 'compras.registros.ver',
+            'crear' => 'compras.registros.crear',
+            'editar' => 'compras.registros.editar',
+            'eliminar' => 'compras.registros.eliminar',
+            'exportar' => 'compras.registros.exportar'
+        ],
+
+        'ordenes_compra' => [
+            'ver' => 'compras.ordenes_compra.ver',
+            'crear' => 'compras.ordenes_compra.crear',
+            'editar' => 'compras.ordenes_compra.editar',
+            'eliminar' => 'compras.ordenes_compra.eliminar',
+            'exportar' => 'compras.ordenes_compra.exportar'
+        ],
+
+        'proveedores' => [
+            'ver' => 'compras.proveedores.ver',
+            'crear' => 'compras.proveedores.crear',
+            'editar' => 'compras.proveedores.editar',
+            'eliminar' => 'compras.proveedores.eliminar',
+            'exportar' => 'compras.proveedores.exportar'
+        ],
+
+        'retaceo' => [
+            'ver' => 'compras.retaceo.ver',
+            'crear' => 'compras.retaceo.crear',
+            'editar' => 'compras.retaceo.editar',
+            'eliminar' => 'compras.retaceo.eliminar',
+            'exportar' => 'compras.retaceo.exportar'
+        ]
     ],
 
     /*
@@ -54,73 +257,158 @@ return [
     |--------------------------------------------------------------------------
     */
     'PERMISSION_GASTOS' => [
-        'PERMISSION_VER_GASTOS' => 'ver_gastos',
-        'PERMISSION_REGISTRAR_GASTOS' => 'registrar_gastos',
-        'PERMISSION_APROBAR_GASTOS' => 'aprobar_gastos',
-        'PERMISSION_VER_DEVOLUCIONES_GASTOS' => 'ver_devoluciones_gastos',
-        'PERMISSION_GESTIONAR_DEVOLUCIONES_GASTOS' => 'gestionar_devoluciones_gastos',
+        'ver' => 'gastos.ver',
+        'crear' => 'gastos.crear',
+        'editar' => 'gastos.editar',
+        'eliminar' => 'gastos.eliminar',
+        'exportar' => 'gastos.exportar',
+
+        'registros' => [
+            'ver' => 'gastos.registros.ver',
+            'crear' => 'gastos.registros.crear',
+            'editar' => 'gastos.registros.editar',
+            'eliminar' => 'gastos.registros.eliminar',
+            'exportar' => 'gastos.registros.exportar'
+        ],
+
+        'categorias' => [
+            'ver' => 'gastos.categorias.ver',
+            'crear' => 'gastos.categorias.crear',
+            'editar' => 'gastos.categorias.editar',
+            'eliminar' => 'gastos.categorias.eliminar',
+            'exportar' => 'gastos.categorias.exportar'
+        ]
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Permisos de Citas y Servicios
+    | Permisos de Citas
     |--------------------------------------------------------------------------
     */
-    'PERMISSION_CITAS_SERVICIOS' => [
-        'PERMISSION_VER_CITAS' => 'ver_citas',
-        'PERMISSION_GESTIONAR_CITAS' => 'gestionar_citas',
-        'PERMISSION_VER_SERVICIOS' => 'ver_servicios',
-        'PERMISSION_GESTIONAR_SERVICIOS' => 'gestionar_servicios',
+    'PERMISSION_CITAS' => [
+        'ver' => 'citas.ver',
+        'crear' => 'citas.crear',
+        'editar' => 'citas.editar',
+        'eliminar' => 'citas.eliminar',
+        'exportar' => 'citas.exportar'
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Permisos de Mi Negocio
+    | Permisos de Finanzas
     |--------------------------------------------------------------------------
     */
-    'PERMISSION_MI_NEGOCIO' => [
-        'PERMISSION_VER_CATEGORIAS' => 'ver_categorias',
-        'PERMISSION_GESTIONAR_CATEGORIAS' => 'gestionar_categorias',
-        'PERMISSION_VER_CLIENTES' => 'ver_clientes',
-        'PERMISSION_GESTIONAR_CLIENTES' => 'gestionar_clientes',
-        'PERMISSION_VER_PROVEEDORES' => 'ver_proveedores',
-        'PERMISSION_GESTIONAR_PROVEEDORES' => 'gestionar_proveedores',
-        'PERMISSION_VER_CANALES_VENTA' => 'ver_canales_venta',
-        'PERMISSION_GESTIONAR_CANALES_VENTA' => 'gestionar_canales_venta',
-        'PERMISSION_VER_DOCUMENTOS' => 'ver_documentos',
-        'PERMISSION_GESTIONAR_DOCUMENTOS' => 'gestionar_documentos',
-        'PERMISSION_VER_FORMAS_PAGO' => 'ver_formas_pago',
-        'PERMISSION_GESTIONAR_FORMAS_PAGO' => 'gestionar_formas_pago',
-        'PERMISSION_VER_CIERRE_CAJA' => 'ver_cierre_caja',
-        'PERMISSION_GESTIONAR_CIERRE_CAJA' => 'gestionar_cierre_caja',
+    'PERMISSION_FINANZAS' => [
+        'ver' => 'finanzas.ver',
+        'crear' => 'finanzas.crear',
+        'editar' => 'finanzas.editar',
+        'eliminar' => 'finanzas.eliminar',
+        'exportar' => 'finanzas.exportar',
+
+        'bancos' => [
+            'ver' => 'finanzas.bancos.ver',
+            'crear' => 'finanzas.bancos.crear',
+            'editar' => 'finanzas.bancos.editar',
+            'eliminar' => 'finanzas.bancos.eliminar',
+            'exportar' => 'finanzas.bancos.exportar'
+        ],
+
+        'reporteria' => [
+            'ver' => 'finanzas.reporteria.ver',
+            'crear' => 'finanzas.reporteria.crear',
+            'editar' => 'finanzas.reporteria.editar',
+            'eliminar' => 'finanzas.reporteria.eliminar',
+            'exportar' => 'finanzas.reporteria.exportar'
+        ],
+
+        'libro_iva' => [
+            'ver' => 'finanzas.libro_iva.ver',
+            'crear' => 'finanzas.libro_iva.crear',
+            'editar' => 'finanzas.libro_iva.editar',
+            'eliminar' => 'finanzas.libro_iva.eliminar',
+            'exportar' => 'finanzas.libro_iva.exportar'
+        ],
+
+        'presupuestos' => [
+            'ver' => 'finanzas.presupuestos.ver',
+            'crear' => 'finanzas.presupuestos.crear',
+            'editar' => 'finanzas.presupuestos.editar',
+            'eliminar' => 'finanzas.presupuestos.eliminar',
+            'exportar' => 'finanzas.presupuestos.exportar'
+        ],
+
+        'documentos' => [
+            'ver' => 'finanzas.documentos.ver',
+            'crear' => 'finanzas.documentos.crear',
+            'editar' => 'finanzas.documentos.editar',
+            'eliminar' => 'finanzas.documentos.eliminar',
+            'exportar' => 'finanzas.documentos.exportar'
+        ],
+
+        'impuestos' => [
+            'ver' => 'finanzas.impuestos.ver',
+            'crear' => 'finanzas.impuestos.crear',
+            'editar' => 'finanzas.impuestos.editar',
+            'eliminar' => 'finanzas.impuestos.eliminar',
+            'exportar' => 'finanzas.impuestos.exportar'
+        ],
+
+        'cierre_caja' => [
+            'ver' => 'finanzas.cierre_caja.ver',
+            'crear' => 'finanzas.cierre_caja.crear',
+            'editar' => 'finanzas.cierre_caja.editar',
+            'eliminar' => 'finanzas.cierre_caja.eliminar',
+            'exportar' => 'finanzas.cierre_caja.exportar'
+        ]
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Permisos de Configuración y Sistema
+    | Permisos de Contabilidad
     |--------------------------------------------------------------------------
     */
-    'PERMISSION_CONFIGURACION' => [
-        'PERMISSION_VER_USUARIOS' => 'ver_usuarios',
-        'PERMISSION_GESTIONAR_USUARIOS' => 'gestionar_usuarios',
-        'PERMISSION_VER_SUSCRIPCION' => 'ver_suscripcion',
-        'PERMISSION_GESTIONAR_SUSCRIPCION' => 'gestionar_suscripcion',
-        'PERMISSION_VER_CONFIGURACION' => 'ver_configuracion',
-        'PERMISSION_GESTIONAR_CONFIGURACION' => 'gestionar_configuracion',
-        'PERMISSION_VER_RECORDATORIOS' => 'ver_recordatorios',
-        'PERMISSION_GESTIONAR_RECORDATORIOS' => 'gestionar_recordatorios',
-        'PERMISSION_VER_PRESUPUESTOS' => 'ver_presupuestos',
-        'PERMISSION_GESTIONAR_PRESUPUESTOS' => 'gestionar_presupuestos',
+    'PERMISSION_CONTABILIDAD' => [
+        'ver' => 'contabilidad.ver',
+        'crear' => 'contabilidad.crear',
+        'editar' => 'contabilidad.editar',
+        'eliminar' => 'contabilidad.eliminar',
+        'exportar' => 'contabilidad.exportar',
+
+        'partidas' => [
+            'ver' => 'contabilidad.partidas.ver',
+            'crear' => 'contabilidad.partidas.crear',
+            'editar' => 'contabilidad.partidas.editar',
+            'eliminar' => 'contabilidad.partidas.eliminar',
+            'exportar' => 'contabilidad.partidas.exportar'
+        ],
+
+        'catalogo_cuentas' => [
+            'ver' => 'contabilidad.catalogo_cuentas.ver',
+            'crear' => 'contabilidad.catalogo_cuentas.crear',
+            'editar' => 'contabilidad.catalogo_cuentas.editar',
+            'eliminar' => 'contabilidad.catalogo_cuentas.eliminar',
+            'exportar' => 'contabilidad.catalogo_cuentas.exportar'
+        ],
+
+        'configuracion' => [
+            'ver' => 'contabilidad.configuracion.ver',
+            'crear' => 'contabilidad.configuracion.crear',
+            'editar' => 'contabilidad.configuracion.editar',
+            'eliminar' => 'contabilidad.configuracion.eliminar',
+            'exportar' => 'contabilidad.configuracion.exportar'
+        ]
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Permisos de Reportes
+    | Permisos de Ayuda
     |--------------------------------------------------------------------------
     */
-    'PERMISSION_REPORTES' => [
-        'PERMISSION_VER_REPORTES' => 'ver_reportes',
-        'PERMISSION_GENERAR_REPORTES' => 'generar_reportes',
-        'PERMISSION_EXPORTAR_REPORTES' => 'exportar_reportes',
-    ],
+    'PERMISSION_AYUDA' => [
+        'ver' => 'ayuda.ver',
+        'crear' => 'ayuda.crear',
+        'editar' => 'ayuda.editar',
+        'eliminar' => 'ayuda.eliminar',
+        'exportar' => 'ayuda.exportar'
+    ]
 ];
