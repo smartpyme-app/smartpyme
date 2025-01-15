@@ -60,11 +60,13 @@ import { ReactiveFormsModule } from '@angular/forms';
   import { AdminModule } from '@views/admin/admin.module';
   import { ReportesModule } from '@views/reportes/reportes.module';
   import { CitasModule } from '@views/citas/citas.module';
+  import { HasPermissionDirective } from './directives/has-permission.directive';
 
 
 @NgModule({
   declarations: [
     AppComponent,
+    HasPermissionDirective
   ],
   imports: [
     BrowserModule,

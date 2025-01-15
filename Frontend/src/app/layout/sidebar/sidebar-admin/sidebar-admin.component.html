@@ -20,7 +20,7 @@
     </div>
     <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('administracion.empresas.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" >
                 <a [routerLink]="['/admin/empresas']" tooltip="Empresas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/briefcase.png" class="icon me-2">Empresas
                 </a>
@@ -30,22 +30,22 @@
                     <img src="/assets/icons/briefcase.png" class="icon me-2">Sucursales
                 </a>
             </li> -->
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('administracion.licencias.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/admin/licencias']" tooltip="Licencias" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/star.png" class="icon me-2">Licencias
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('administracion.usuarios.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/user.png" class="icon me-2">Usuarios
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('administracion.dashboards.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/admin/dashboards']" tooltip="Dashboards" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" *ngIf="canShowOption('administracion.facturaciones.crear')">
                 <a [routerLink]="['/admin/facturaciones']" tooltip="Facturación" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/archive.png" class="icon me-2">Facturación
                 </a>

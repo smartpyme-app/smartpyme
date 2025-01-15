@@ -27,6 +27,7 @@ export class SidebarComponent implements OnInit {
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
+    public modules: any = [];
 
     searchControl = new FormControl();
 
@@ -94,6 +95,7 @@ export class SidebarComponent implements OnInit {
           });
 
         this.loadNotificaciones();
+        this.loadModules();
     }
 
 
@@ -238,5 +240,17 @@ export class SidebarComponent implements OnInit {
             this.notificaciones = notificaciones;
         }, error => {this.alertService.error(error); });
     }
+
+    canShowOption(permission: string): boolean {
+        return this.apiService.hasPermission(permission);
+    }
+
+    loadModules() {
+        this.apiService.getModules().subscribe(modules => {
+            this.modules = modules;
+        });
+    }
+
+
 
 }

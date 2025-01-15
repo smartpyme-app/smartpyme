@@ -25,7 +25,7 @@ import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.compone
 import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
 import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
 import { CustomFieldsComponent } from '@views/inventario/custom-fields/custom-fields.component';
-
+import { PermissionGuard } from '@guards/permission.guard';
 
 
 const routes: Routes = [
@@ -34,7 +34,7 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Inventario',
     children: [
-      { path: 'productos', component: ProductosComponent, title: 'Productos' },
+      { path: 'productos', component: ProductosComponent, title: 'Productos',canActivate: [PermissionGuard], data: { permission: 'productos.ver' } },
       { path: 'producto-combos', component: ProductosComponent, title: 'Compuesto' },
       { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
       { path: 'producto/ver/:id', component: VerProductoComponent, title: 'Producto' },
@@ -64,7 +64,7 @@ const routes: Routes = [
       { path: 'servicio/crear', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
       { path: 'servicio/editar/:id', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
 
-      { path: 'bodegas', component: BodegasComponent },
+      { path: 'bodegas', component: BodegasComponent, title: 'Bodegas',canActivate: [PermissionGuard], data: { permission: 'productos.bodegas.ver' } },
       { path: 'bodega/:id', component: BodegaComponent },
       { path: 'custom-fields', component: CustomFieldsComponent, title: 'Campos personalizados' },
 

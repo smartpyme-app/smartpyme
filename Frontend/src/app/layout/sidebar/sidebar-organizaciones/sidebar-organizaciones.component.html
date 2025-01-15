@@ -20,18 +20,18 @@
     </div>
     <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
-            <li class="mb-1">
+            <li *ngIf="canShowOption('organizaciones.empresas.ver')" class="mb-1">
                 <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
                   <img src="/assets/icons/star.png" class="icon me-2">Licencias
                 </button>
                 <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/briefcase.png" class="icon me-2">Empresas</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas/usuarios']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Usuarios</a></li>
+                    <li *ngIf="canShowOption('organizaciones.empresas.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/briefcase.png" class="icon me-2">Empresas</a></li>
+                    <li *ngIf="canShowOption('organizaciones.usuarios.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/organizacion/empresas/usuarios']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Usuarios</a></li>
                   </ul>
                 </div>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('organizaciones.usuarios.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/organizacion/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/users.png" class="icon me-2">Usuarios
                 </a>

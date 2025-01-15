@@ -15,6 +15,17 @@ export class ApiService {
     public appUrl: string = environment.APP_URL;
     public baseUrl: string = environment.API_URL;
     public apiUrl =  this.baseUrl + '/api/';
+    private currentUserPermissions: {
+        rolePermissions: string[],
+        directPermissions: string[],
+        revokedPermissions: string[],
+        effectivePermissions: string[]
+    } = {
+        rolePermissions: [],
+        directPermissions: [],
+        revokedPermissions: [],
+        effectivePermissions: []
+    };
 
     constructor(private http: HttpClient, private alertService: AlertService) { }
    
@@ -35,13 +46,48 @@ export class ApiService {
 
     upload (url: string, formData: any) {let headers = new HttpHeaders(); headers.append('Accept', 'application/json'); headers.append('Authorization','Bearer ' + JSON.parse(localStorage.getItem('SP_token')!) ); let options = {headers}; return this.http.post(this.apiUrl + url, formData, options).pipe(retry(0), catchError(this.handleError)) }
 
-    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
+   // login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
 
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
     export(url:string, filtros: any): Observable<Blob> {
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
     }
+
+    login(user: any) {
+        return this.http.post<any>(this.apiUrl + 'login', user).pipe(
+            map((response: HttpResponse<any>) => {
+                let data: any = response;
+                if (data.token && data.user) {
+                    localStorage.setItem('SP_token', JSON.stringify(data.token));
+                    localStorage.setItem('SP_auth_user', JSON.stringify(data.user));
+                    
+                    // Cargar permisos después del login
+                    this.loadUserPermissions(data.user.id);
+                }
+                return data;
+            })
+        );
+    }
+
+    loadUserPermissions(userId: number) {
+        this.getAll(`roles-permissions/user/${userId}`).subscribe(
+            (response: any) => {
+                if (response.ok) {
+                    const permissions = {
+                        rolePermissions: response.data.rolePermissions || [],
+                        directPermissions: response.data.directPermissions || [],
+                        revokedPermissions: response.data.revokedPermissions || [],
+                        effectivePermissions: response.data.effectivePermissions || []
+                    };
+                    
+                    localStorage.setItem('SP_user_permissions', JSON.stringify(permissions));
+                    this.currentUserPermissions = permissions;
+                }
+            }
+        );
+    }
+
 
     logout() { 
         let data:any = {};
@@ -51,6 +97,12 @@ export class ApiService {
             }, error => {this.alertService.error(error); });
         }
         localStorage.clear();
+        this.currentUserPermissions = {
+            rolePermissions: [],
+            directPermissions: [],
+            revokedPermissions: [],
+            effectivePermissions: []
+        };
     }
 
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
@@ -166,6 +218,37 @@ export class ApiService {
         if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
             return true;
         return false;
+    }
+
+    getModules() {
+        return this.http.get<any>(this.apiUrl + 'modules').pipe(
+            retry(0), 
+            catchError(this.handleError)
+        );
+    }
+    hasPermission(permission: string): boolean {
+        // Primero cargar permisos del localStorage si no están en memoria
+        if (this.currentUserPermissions.effectivePermissions.length === 0) {
+            const storedPermissions = localStorage.getItem('SP_user_permissions');
+            if (storedPermissions) {
+                this.currentUserPermissions = JSON.parse(storedPermissions);
+            }
+        }
+
+        // Verificar si el permiso está revocado
+        if (this.currentUserPermissions.revokedPermissions.includes(permission)) {
+            return false;
+        }
+
+        // Verificar si tiene el permiso efectivo
+        return this.currentUserPermissions.effectivePermissions.includes(permission);
+    }
+
+    hasAnyPermission(permissions: string[]): boolean {
+        return permissions.some(permission => this.hasPermission(permission));
+    }
+    canAccessModule(moduleName: string): boolean {
+        return this.hasPermission(`${moduleName}.acceder`);
     }
 
     generateGoogleCalendarLink(event: any): string {
