@@ -22,8 +22,8 @@ class CreateSuscripcionesTable extends Migration
             
             // Campos básicos
             $table->string('tipo_plan');
-            $table->enum('estado', ['pendiente', 'activo', 'suspendido', 'cancelado', 'error_pago'])
-                  ->default('pendiente');
+            $table->string('estado')
+                  ->default(null);
             $table->decimal('monto', 10, 2);
             
             // Campos de n1co

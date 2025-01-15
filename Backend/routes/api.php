@@ -12,6 +12,8 @@
 |
 */
 
+use Illuminate\Support\Facades\Route;
+
 Route::get('/prueba', function(){ return Response()->json(['message' => 'Success'], 200); });
 
 
@@ -91,6 +93,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');
 		require base_path('routes/modulos/super-admin/transacciones.php');
+
+		Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
+
 
 		
 });

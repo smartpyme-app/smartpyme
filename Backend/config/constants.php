@@ -13,6 +13,13 @@ return [
     'TIPO_PAGO_TRANSFERENCIA' => 'Transferencia',
     'TIPO_PAGO_TARJETA' => 'Tarjeta de crédito/débito',
 
+    'ESTADO_SUSCRIPCION_ACTIVO' => 'activo',
+    'ESTADO_SUSCRIPCION_INACTIVO' => 'inactivo',
+    'ESTADO_SUSCRIPCION_CANCELADO' => 'cancelado',
+    'ESTADO_SUSCRIPCION_PENDIENTE' => 'pendiente',
+    'ESTADO_SUSCRIPCION_RENOVADO' => 'renovado',
+    'ESTADO_SUSCRIPCION_EN_PRUEBA' => 'en prueba',
+
     'TIPO_DOCUMENTO_TICKET' => 'Ticket',
     'TIPO_DOCUMENTO_FACTURA' => 'Factura',
     'TIPO_DOCUMENTO_CREDITO_FISCAL' => 'Crédito fiscal',
@@ -25,4 +32,8 @@ return [
 
     'MAIL_CC_ADDRESS_1' => 'gabrielaq@smartpyme.sv',
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
+
+    'ESTADO_ORDEN_PENDIENTE' => 'pendiente',
+    'ESTADO_ORDEN_RECHAZADO' => 'rechazada',
+    'ESTADO_ORDEN_COMPLETADO' => 'completado',
 ];

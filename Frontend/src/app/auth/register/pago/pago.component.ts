@@ -49,4 +49,8 @@ export class PagoComponent implements OnInit {
         window.open(this.user.url_n1co + '/?callbackurl=' + URL,'_self');
     }
 
+    public backToHome(){
+        this.router.navigate(['/']);
+    }
+
 }
