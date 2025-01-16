@@ -210,9 +210,17 @@
         </p>
     @endif
 
-    <p class="text-center">
-        EFECTIVO: ${{ number_format($venta->monto_pago,2)}} | CAMBIO: ${{ number_format($venta->cambio,2)}}</td>
-    </p>
+    <table style="margin: auto;">
+        <tr>
+            <td>Método de pago:</td><td class="text-right">{{ $venta->forma_pago }}</td>
+        </tr>
+        <tr>
+            <td>Recibido:</td><td class="text-right">${{ number_format($venta->monto_pago,2)}}</td>
+        </tr>
+        <tr>
+            <td>Cambio:</td><td class="text-right">${{ number_format($venta->cambio,2)}}</td>
+        </tr>
+    </table>
 
 
     <p class="text-center"><small>G = GRAVADO &nbsp;&nbsp; E = EXENTO &nbsp;&nbsp; N = NO SUJETO</small></p>
