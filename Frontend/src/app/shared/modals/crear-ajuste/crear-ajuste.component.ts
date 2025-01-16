@@ -45,7 +45,7 @@ export class CrearAjusteComponent implements OnInit {
 	public onSubmit() {
         this.loading = true;
         this.ajuste.id_producto = this.producto.id;
-        this.ajuste.id_sucursal = this.inventario.id_sucursal;
+        this.ajuste.id_bodega = this.inventario.id_bodega;
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 

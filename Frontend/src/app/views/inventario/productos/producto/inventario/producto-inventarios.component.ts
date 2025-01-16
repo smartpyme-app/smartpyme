@@ -27,15 +27,6 @@ export class ProductoInventariosComponent implements OnInit {
     ){ }
 
     ngOnInit() {
-        this.loadAll();
-    }
-
-    public loadAll(){
-        this.loading = true;
-        this.apiService.getAll('sucursales/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setAjuste(event:any){
@@ -46,6 +37,12 @@ export class ProductoInventariosComponent implements OnInit {
 
     openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
+        
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false; });
+        
         if(!this.inventario.id) {
             this.inventario.stock = 0;
             this.inventario.id_sucursal = '';

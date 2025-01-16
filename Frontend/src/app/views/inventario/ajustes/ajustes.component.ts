@@ -17,7 +17,7 @@ export class AjustesComponent implements OnInit {
 
     public filtros:any = {};
     public productos:any = [];
-    public sucursales:any = [];
+    public bodegas:any = [];
     public usuarios:any = [];
     public producto:any = {};
     public sucursal:any = {};
@@ -31,14 +31,14 @@ export class AjustesComponent implements OnInit {
     ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+            this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
 
     }
 
     public loadAll() {
-        this.filtros.id_sucursal = '';
+        this.filtros.id_bodega = '';
         this.filtros.id_producto = '';
         this.filtros.id_usuario = '';
         this.filtros.estado = '';
@@ -94,8 +94,8 @@ export class AjustesComponent implements OnInit {
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
     }
 
-    public setSucursal(){
-        this.sucursal = this.producto?.inventarios.find((item:any) => item.id_sucursal == this.ajuste.id_sucursal);
+    public setBodega(){
+        this.sucursal = this.producto?.inventarios.find((item:any) => item.id_bodega == this.ajuste.id_bodega);
         console.log(this.sucursal);
         this.ajuste.stock_actual = this.sucursal.stock;
     }
@@ -106,7 +106,7 @@ export class AjustesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.ajuste.id_producto = '';
-        this.ajuste.id_sucursal = '';
+        this.ajuste.id_bodega = '';
 
         this.ajuste.id_usuario = this.apiService.auth_user().id;
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
@@ -115,6 +115,8 @@ export class AjustesComponent implements OnInit {
             this.productos = productos;
         }, error => {this.alertService.error(error);});
 
+        this.alertService.modal = true;
+        
         this.modalRef = this.modalService.show(template);
     }
 

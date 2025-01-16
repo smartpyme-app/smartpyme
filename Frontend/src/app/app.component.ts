@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
+import { SwUpdate } from '@angular/service-worker';
 import { ApiService } from '@services/api.service';
 
 import {
@@ -24,9 +25,18 @@ export class AppComponent implements OnInit {
     modalRefStarTour!: BsModalRef;
     modalRefEndTour!: BsModalRef;
 
-    constructor(public apiService: ApiService, public alertService: AlertService,
+    constructor(private updates: SwUpdate, public apiService: ApiService, public alertService: AlertService,
         private tourService: TourService, private modalService: BsModalService
-    ) { }
+    ) {
+
+        if (this.updates.isEnabled) {
+            this.updates.available.subscribe(event => {
+                if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
+                  this.updates.activateUpdate().then(() => document.location.reload());
+                }
+            });
+        }
+    }
     
 
     ngOnInit() {

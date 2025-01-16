@@ -25,14 +25,14 @@ class TrasladosController extends Controller
         $traslados = Traslado::when($request->fin, function($query) use ($request){
                                 return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
-                            ->when($request->id_sucursal_de, function($query) use ($request){
+                            ->when($request->id_bodega_de, function($query) use ($request){
                                 return $query->whereHas('origen', function($q) use ($request){
-                                    $q->where('id_sucursal_de', $request->id_sucursal_de);
+                                    $q->where('id_bodega_de', $request->id_bodega_de);
                                 });
                             })
-                            ->when($request->id_sucursal_para, function($query) use ($request){
+                            ->when($request->id_bodega_para, function($query) use ($request){
                                 return $query->whereHas('destino', function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal_para);
+                                    $q->where('id_bodega', $request->id_bodega_para);
                                 });
                             })
                             ->when($request->search, function($query) use ($request){
@@ -59,8 +59,8 @@ class TrasladosController extends Controller
           // 'fecha'         => 'required',
           'estado'          => 'required',
           'id_producto'     => 'required',
-          'id_sucursal_de' => 'required|numeric',
-          'id_sucursal'     => 'required|numeric',
+          'id_bodega_de' => 'required|numeric',
+          'id_bodega'     => 'required|numeric',
           'concepto'        => 'required',
           'cantidad'      => 'required|numeric',
           'id_usuario'      => 'required|numeric'
@@ -73,13 +73,13 @@ class TrasladosController extends Controller
          
         try {
 
-        if ($request->id_sucursal == $request->id_sucursal_de) {
+        if ($request->id_bodega == $request->id_bodega_de) {
             return  Response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
         }
 
         $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
-        $origen = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $request->id_sucursal_de)->first();
-        $destino = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $request->id_sucursal)->first();
+        $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega_de)->first();
+        $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega)->first();
 
         if ($origen->stock < $request->cantidad) {
             return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
@@ -104,8 +104,8 @@ class TrasladosController extends Controller
         // Composiciones
         foreach ($producto->composiciones as $comp) {
             $producto = Producto::where('id', $comp->id_compuesto)->with('composiciones')->firstOrFail();
-            $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_sucursal', $request->id_sucursal_de)->first();
-            $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_sucursal', $request->id_sucursal)->first();
+            $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $request->id_bodega_de)->first();
+            $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $request->id_bodega)->first();
 
             if ($origen->stock < $request->cantidad) {
                 return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
@@ -152,8 +152,8 @@ class TrasladosController extends Controller
         $traslado->save();
 
         $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
-        $origen = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $traslado->id_sucursal_de)->first();
-        $destino = Inventario::where('id_producto', $producto->id)->where('id_sucursal', $traslado->id_sucursal)->first();
+        $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
+        $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
 
         // if ($origen->stock < $traslado->cantidad) {
         //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
@@ -178,8 +178,8 @@ class TrasladosController extends Controller
         // Composiciones
         foreach ($producto->composiciones as $comp) {
             $producto = Producto::where('id', $comp->id_compuesto)->with('composiciones')->firstOrFail();
-            $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_sucursal', $traslado->id_sucursal_de)->first();
-            $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_sucursal', $traslado->id_sucursal)->first();
+            $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega_de)->first();
+            $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega)->first();
 
             // if ($origen->stock < $traslado->cantidad) {
             //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
