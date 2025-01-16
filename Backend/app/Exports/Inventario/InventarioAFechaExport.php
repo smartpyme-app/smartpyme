@@ -5,26 +5,29 @@ namespace App\Exports\Inventario;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Illuminate\Http\Request;
 use App\Models\Inventario\Producto;
-use App\Models\Inventario\Inventario;
-use App\Models\Inventario\Kardex;
 use App\Models\Admin\Sucursal;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class InventarioAFechaExport implements FromCollection, WithHeadings, WithMapping
 {
     private $sucursales;
-    private $fecha;
-    private $id_empresa;
+    private $kardexData;
 
     public function __construct()
     {
-        $this->fecha = '2024-12-31';
-        $this->id_empresa = 324;
+        // Carga las sucursales de la empresa
+        $this->sucursales = Sucursal::where('id_empresa', 324)->get();
 
-        // Preload all required sucursales for optimization
-        $this->sucursales = Sucursal::where('id_empresa', $this->id_empresa)->get();
+        // Precalcula los datos del Kardex agrupados por sucursal y producto
+        $this->kardexData = DB::table('kardexs')
+            ->select('id_inventario', 'id_producto', DB::raw('MAX(fecha) as ultima_fecha'), 'total_cantidad')
+            ->whereDate('fecha', '<=', '2024-12-31')
+            ->orderBy('fecha', 'desc')
+            ->orderBy('id', 'desc')
+            ->groupBy('id_inventario', 'id_producto', 'total_cantidad')
+            ->get()
+            ->groupBy('id_inventario'); // Agrupa por inventario
     }
 
     public function headings(): array
@@ -45,33 +48,44 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
             $producto->nombre_categoria,
         ];
 
-        // Fetch inventory data for all sucursales in one loop
+        // Agrupar inventarios por sucursal
+        $inventarios = $producto->inventarios->keyBy('id_sucursal');
+
         foreach ($this->sucursales as $sucursal) {
-            $inventario = $producto->inventarios->firstWhere('id_sucursal', $sucursal->id);
+            $stock = 0;
+
+            // Busca el inventario de la sucursal
+            $inventario = $inventarios->get($sucursal->id);
 
             if ($inventario) {
-                $ultimoKardex = $inventario->kardexs()
-                    ->whereMonth('fecha', Carbon::parse($this->fecha)->month)
-                    ->whereYear('fecha', Carbon::parse($this->fecha)->year)
-                    ->orderBy('fecha', 'desc')
-                    ->first();
+                // Verifica si existe el índice en $kardexData
+                if (isset($this->kardexData[$sucursal->id])) {
+                    // Busca el Kardex para este producto en el inventario
+                    $kardex = $this->kardexData[$sucursal->id]
+                        ->where('id_producto', $producto->id)
+                        ->first();
 
-                $fields[] = $ultimoKardex ? $ultimoKardex->total_cantidad : $inventario->stock;
-            } else {
-                $fields[] = 0;
+                    // Si hay Kardex, toma el total_cantidad; si no, toma el stock del inventario
+                    $stock = $kardex ? $kardex->total_cantidad : $inventario->stock;
+                } else {
+                    // No hay Kardex asociado, usa el stock del inventario
+                    $stock = $inventario->stock;
+                }
             }
+
+            $fields[] = $stock;
         }
+
 
         return $fields;
     }
 
     public function collection()
     {
-        $fechaInicio = Carbon::create($this->fecha);
-
-        return Producto::with(['inventarios.kardexs'])
-            ->where('id_empresa', $this->id_empresa)
+        return Producto::with('inventarios')
+            ->where('id_empresa', 324)
             ->whereIn('tipo', ['Producto', 'Compuesto'])
+            ->where('enable', true)
             ->get();
     }
 }
