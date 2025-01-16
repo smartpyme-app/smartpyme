@@ -14,6 +14,9 @@
 
   <div class="content p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <app-header></app-header>
+    <div *ngIf="usuario.empresa.estado_plan.estado == 'Prueba'" class="badge-prueba-gratuita badge bg-danger text-white position-absolute cursor-pointer" (click)="RedirectSuscripcion()">
+      Período de Prueba
+    </div>
     <app-notificaciones-container *ngIf="!alertService.modal"></app-notificaciones-container>
     <router-outlet></router-outlet>
   </div>
