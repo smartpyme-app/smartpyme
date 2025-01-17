@@ -84,6 +84,12 @@ const routes: Routes = [
       loadChildren: () => import('./views/organizaciones-admin/organizaciones-admin.module').then(m => m.OrganizacionesAdminModule),
     },
 
+    // Paywall
+    {
+      path: 'suscripcion', canActivate: [AuthGuard],
+      loadChildren: () => import('./views/paywall/paywall.component').then(m => m.PaywallComponent),
+    },
+
     // Not Found
     {
       path: '**',

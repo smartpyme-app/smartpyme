@@ -1,0 +1,50 @@
+<div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <!-- Alerta de suscripción -->
+        <div class="alert alert-warning text-center" role="alert">
+          <h4 class="alert-heading">Tu suscripción está por terminar</h4>
+          <p>Para continuar disfrutando de todos los beneficios, renueva tu suscripción ahora.</p>
+        </div>
+
+        <!-- Tarjeta del plan actual -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Tu Plan Actual: {{planName}}</h5>
+          </div>
+          <div class="card-body">
+            <h2 class="card-title pricing-card-title">
+              {{currencySymbol}}{{price}} <small class="text-muted">/ mes</small>
+            </h2>
+            <ul class="list-unstyled mt-3 mb-4">
+              <li *ngFor="let feature of planFeatures">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                {{feature}}
+              </li>
+            </ul>
+            
+            <!-- Botón de renovación -->
+            <div class="text-center">
+              <button 
+                class="btn btn-lg btn-primary px-5" 
+                [disabled]="loading"
+                (click)="renewSubscription()">
+                <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Renovar Suscripción
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Métodos de pago aceptados -->
+        <div class="text-center mt-4">
+          <p class="text-muted">Métodos de pago aceptados</p>
+          <div class="payment-methods">
+            <i class="bi bi-credit-card me-3 fs-3"></i>
+            <i class="bi bi-credit-card-2-front me-3 fs-3"></i>
+            <i class="bi bi-credit-card-2-back fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

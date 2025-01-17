@@ -11,7 +11,7 @@
   <div class="content p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <div class="container-fluid p-0 m-0">
       <div *ngIf="usuario.empresa.estado_plan.estado == 'Prueba'" class="alert bg-danger rounded-0  m-0 p-2 text-center">
-          <a href="/suscripcion" class="text-decoration-none text-dark">Estás en tu prueba gratuita, faltan {{ usuario.empresa.estado_plan.dias_faltantes }} días para que termine.
+          <a href="/suscripcion" class="text-decoration-none text-dark">Estás en tu prueba gratuita, faltan {{ usuario.dias_faltantes }} días para que termine.
           Puedes <span class="text-dark fw-bold"> puedes ver tu suscripción acá.</span></a>
       </div>
     </div>
