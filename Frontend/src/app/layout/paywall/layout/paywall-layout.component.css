@@ -1,0 +1,19 @@
+/* paywall-layout.component.css */
+.paywall-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.main-content {
+  flex: 1;
+}
+
+header {
+  border-bottom: 1px solid #dee2e6;
+}
+
+footer {
+  border-top: 1px solid #dee2e6;
+}

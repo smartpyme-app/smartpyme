@@ -1,0 +1,71 @@
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-4 ">
+      <!-- Tarjeta del plan actual -->
+      <div class="card mb-4 rounded-3 ">
+        <div class="card-body text-center">
+            <h4 class="alert-heading">{{getMensajeSuscripcion()}}</h4>
+        <p class="text-muted mx-4">Para continuar disfrutando de todos los beneficios, renueva tu suscripción ahora.</p>
+        <ng-container *ngIf="diasFaltantes > 0">
+          <hr>
+          
+        </ng-container>
+          <div class="list-group mt-3 mb-4">
+            <div class="list-group-item border mb-2 rounded-3 hover-highlight" 
+                 (click)="setPlanFeatures('Emprendedor')"
+                 [class.active]="planName === 'Emprendedor'">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">Plan Emprendedor</h6>
+                  <p class="mb-1 text-muted small">Incluye funciones básicas para comenzar</p>
+                </div>
+                <span class="badge bg-primary rounded-pill">$16.95/mes</span>
+              </div>
+            </div>
+            <div class="list-group-item border mb-2 rounded-3 hover-highlight"
+                 (click)="setPlanFeatures('Estándar')"
+                 [class.active]="planName === 'Estándar'">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">Plan Estándar</h6>
+                  <p class="mb-1 text-muted small">Funciones avanzadas para tu negocio</p>
+                </div>
+                <span class="badge bg-primary rounded-pill">$28.25/mes</span>
+              </div>
+            </div>
+            <div class="list-group-item border mb-2 rounded-3 hover-highlight"
+                 (click)="setPlanFeatures('Avanzado')"
+                 [class.active]="planName === 'Avanzado'">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">Plan Avanzado</h6>
+                  <p class="mb-1 text-muted small">Todas las funciones sin limitaciones</p>
+                </div>
+                <span class="badge bg-primary rounded-pill">$56.50/mes</span>
+              </div>
+            </div>
+          </div>
+          <!-- Botón de renovación -->
+          <div class="text-center">
+            <button 
+              class="btn btn-lg btn-primary px-5 rounded-3" 
+              [disabled]="loading || !planName"
+              (click)="renewSubscription()">
+              <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"></span>
+              Renovar Suscripción
+              <div class="text-white-50 text-muted">Plan {{planName}}</div>
+            </button>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          
+          <button class="btn btn-sm btn-link px-4 rounded-3 cursor-pointer" (click)="renewSubscription()"><p class="text-muted">Pagar con otro método de pago</p></button>
+        </div>
+      </div>
+
+      <!-- Métodos de pago aceptados -->
+     
+    </div>
+  </div>
+</div>

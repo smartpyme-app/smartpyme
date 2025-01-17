@@ -14,9 +14,11 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { PaywallRoutingModule } from './paywall.routing.module';
+import { PaywallRoutingModule } from './paywall-layout.routing.module';
 
-import { PaywallComponent }         from './paywall.component';
+import { PaywallComponent }         from './components/paywall.component';
+import { PaywallLayoutComponent }    from './layout/paywall-layout.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -37,8 +39,8 @@ import { PaywallComponent }         from './paywall.component';
     ProgressbarModule.forRoot(),
   ],
   declarations: [
-    PaywallComponent
-  ],
+    PaywallComponent,
+    PaywallLayoutComponent
   ],
   exports: [
     PaywallComponent

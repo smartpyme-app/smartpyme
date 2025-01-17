@@ -70,6 +70,8 @@ class AuthJWTController extends Controller
 
         $user->empresa = $user->empresa()->with('licencia')->first();
         $user->dias_faltantes = $user->suscripciones()->first()->diasFaltantes();
+        $user->plan = $this->getPlan($user->suscripciones()->first()->plan_id)->nombre;
+        $user->estado_suscripcion = $user->suscripciones()->first()->estado;
 
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
