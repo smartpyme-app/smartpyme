@@ -69,6 +69,7 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        $user->dias_faltantes = $user->suscripciones()->first()->diasFaltantes();
 
         return response()->json(['token' => $token, 'user' => $user], 200);
     }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Admin\Empresa;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Suscripcion extends Model
@@ -87,6 +88,23 @@ class Suscripcion extends Model
             'fecha_cancelacion' => null,
             'motivo_cancelacion' => null
         ]);
+    }
+
+    private function calcularDiasFaltantes(): int
+    {
+        $fechaActual = now();
+        $fechaProximoPago = Carbon::parse($this->fecha_proximo_pago);
+        
+        if ($fechaActual > $fechaProximoPago) {
+            return 0;
+        }
+
+        return $fechaActual->diffInDays($fechaProximoPago);
+    }
+
+    public function diasFaltantes(): int 
+    {
+        return $this->calcularDiasFaltantes();
     }
 
 }
