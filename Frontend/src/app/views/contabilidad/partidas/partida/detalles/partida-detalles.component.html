@@ -1,8 +1,6 @@
 <div class="d-flex justify-content-end mb-3">
     <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
         <a (click)="openModal(mcuenta, {})" class="btn btn-default tcla-F6" title="Agregar cuenta"><img src="/assets/icons/list.png" class="icon"></a>
-        <a class="btn btn-default tcla-F6" title="Generar a partir de ventas"><img src="/assets/icons/trending-up.png" class="icon"></a>
-        <a class="btn btn-default tcla-F6" title="Generar a partir de compras"><img src="/assets/icons/log-in.png" class="icon"></a>
     </div>
 </div>
 
@@ -41,7 +39,7 @@
                         </ng-select>
                     </td>
                     <td>
-                        <input type="text" [(ngModel)]="detalle.concepto" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="concepto">
+                        <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto">
                     </td>
                     <td>
                         <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe">

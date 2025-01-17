@@ -49,6 +49,7 @@ export class PartidaComponent implements OnInit {
             this.partida = {};
             this.partida.fecha = this.apiService.date();
             this.partida.estado = 'Pendiente';
+            this.partida.tipo = 'Ingreso';
             this.partida.detalles = [];
             this.partida.id_usuario = this.apiService.auth_user().id;
             this.partida.id_empresa = this.apiService.auth_user().id_empresa;
@@ -133,5 +134,21 @@ export class PartidaComponent implements OnInit {
             this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
         },error => {this.alertService.error(error); this.saving = false; });
     }
+
+    generarPartidasDelDia(){
+        this.apiService.store('partidas/generar', { fecha : '2024-10-28' }).subscribe(data => {
+            this.partida = data.partida;
+            this.partida.id_usuario = this.apiService.auth_user().id;
+            this.partida.id_empresa = this.apiService.auth_user().id_empresa;
+
+            this.partida.detalles = data.detalles;
+
+            this.sumTotal();
+            
+        }, error => {
+          this.alertService.error(error);
+          this.saving = false;
+        });
+      }
 
 }

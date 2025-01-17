@@ -15,5 +15,7 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
     Route::delete('/partida/detalle/{id}',      [DetallesController::class, 'delete']);
 
     Route::get('/partidas/diario/mayor',        [GenerarDocumentosController::class, 'generarRepLibroDiarioMayor']); //genera el libro diario mayor solamente como temporal
+    
+    Route::post('/partidas/generar',        [PartidasController::class, 'generar']);
 
 ?>
