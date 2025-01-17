@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Devoluciones\Detalle;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Ventas\Venta;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Clientes\Cliente;
@@ -16,12 +15,15 @@ use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Paquete;
+use App\Models\Ventas\Devoluciones\DetalleCompuesto;
 use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Creditos\Credito;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
+use Auth;
 
 class DevolucionVentasController extends Controller
 {
@@ -71,7 +73,7 @@ class DevolucionVentasController extends Controller
 
     public function read($id) {
 
-        $venta = Devolucion::where('id', $id)->with('detalles', 'venta', 'cliente')->first();
+        $venta = Devolucion::where('id', $id)->with('detalles.composiciones', 'detalles.producto', 'venta', 'cliente')->first();
         return Response()->json($venta, 200);
 
     }
@@ -98,7 +100,7 @@ class DevolucionVentasController extends Controller
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
                                         
-                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->venta()->pluck('id_sucursal')->first())->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
                 
                 // Anular y regresar stock
                 if(($venta->enable != '0') && ($request['enable'] == '0')){
@@ -109,6 +111,19 @@ class DevolucionVentasController extends Controller
                         $inventario->kardex($venta, $detalle->cantidad * -1);
                     }
 
+                    // Inventario compuestos
+                    foreach ($detalle->composiciones()->get() as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                                    ->where('id_bodega', $venta->id_bodega)->first();
+
+                        if ($inventario) {
+                            $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                        }
+                    }
+
                 }
                 // Cancelar anulación y descargar stock
                 if(($venta->enable == '0') && ($request['enable'] != '0')){
@@ -117,6 +132,19 @@ class DevolucionVentasController extends Controller
                         $inventario->stock += $detalle->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, $detalle->cantidad);
+                    }
+
+                    // Inventario compuestos
+                    foreach ($detalle->composiciones()->get() as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                                    ->where('id_bodega', $venta->id_bodega)->first();
+
+                        if ($inventario) {
+                            $inventario->stock += $detalle->cantidad * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                        }
                     }
 
                 }
@@ -155,7 +183,7 @@ class DevolucionVentasController extends Controller
             'total_costo'       => 'required|numeric',
             'sub_total'         => 'required|numeric',
             'total'             => 'required|numeric',
-            // 'observaciones'     => 'required|max:255',
+            'observaciones'     => 'required|max:255',
             'id_venta'          => 'required|numeric',
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
@@ -167,10 +195,11 @@ class DevolucionVentasController extends Controller
             'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
 
-        
+        DB::beginTransaction();
+         
         try {
-            // Guardamos la devolucion
-            DB::beginTransaction();
+        
+        // Guardamos la devolucion
             if($request->id)
                 $devolucion = Devolucion::findOrFail($request->id);
             else
@@ -179,42 +208,65 @@ class DevolucionVentasController extends Controller
             $devolucion->fill($request->all());
             $devolucion->save();
 
+            // $venta = Venta::findOrFail($request['id_venta']);
+            // $venta->estado = 'Anulada';
+            // $venta->save();
+
+
         // Guardamos los detalles
-            foreach($request->detalles as $det){
+
+            foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
                 $det['id_devolucion_venta'] = $devolucion->id;
                 $detalle->fill($det);
                 $detalle->save();
 
-                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
+                // Si es compuesto
+                if (isset($det['composiciones'])) {
+                    foreach ($det['composiciones'] as $item) {
+                        $cd = new DetalleCompuesto;
+                        $cd->id_producto = $item['id_producto'];
+                        $cd->cantidad   = $item['cantidad'];
+                        $cd->id_detalle = $detalle->id;
+                        $cd->save();
 
-                if($inventario){
+                    }
+                }
+
+                $inventario = Inventario::where('id_producto', $det['id_producto'])
+                                    ->where('id_bodega', $request->id_bodega)->first();
+
+                if ($inventario) {
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
                     $inventario->kardex($devolucion, $det['cantidad']);
                 }
+
+
+                // Inventario compuestos
+                if (isset($det['composiciones'])) {
+                    foreach ($det['composiciones'] as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp['id_producto'])
+                                    ->where('id_bodega', $devolucion->id_bodega)->first();
+
+                        if ($inventario) {
+                            $inventario->stock += $det['cantidad'] * $comp['cantidad'];
+                            $inventario->save();
+                            $inventario->kardex($devolucion, ($det['cantidad'] * $comp['cantidad']));
+                        }
+                    }
+                }
+
                 // Si es paquete cambiar estado
                 $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
-                foreach ($paquetes as $paquete){
+                foreach ($paquetes as $paquete) {
                     $paquete->estado = 'En bodega';
                     $paquete->id_venta = NULL;
                     $paquete->id_venta_detalle = NULL;
                     $paquete->save();
                 }
-                // Inventario compuestos
-                if($det['composiciones']){
-                    $productoCompuesto = Producto::with('composiciones')->where('id', $det['id_producto'])->first();
-                    foreach($productoCompuesto->composiciones as $comp){
-
-                        $inventarioCompuesto = Inventario::where('id_producto', $comp->id_producto)->where('id_bodega', $request->id_bodega)->first();
-                        
-                        if ($inventarioCompuesto){
-                            $inventarioCompuesto->stock += $det['cantidad'] * $comp->cantidad;
-                            $inventarioCompuesto->save();
-                            $inventarioCompuesto->kardex($devolucion, ($det['cantidad'] * $comp->cantidad));
-                        }
-                    }
-                }
+                
             }
             
         // Incrementar el correlarivo
@@ -223,7 +275,6 @@ class DevolucionVentasController extends Controller
         }
         
         DB::commit();
-
         return Response()->json($devolucion, 200);
 
         } catch (\Exception $e) {
@@ -234,6 +285,7 @@ class DevolucionVentasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
         
+
     }
 
     public function generarDoc($id){
