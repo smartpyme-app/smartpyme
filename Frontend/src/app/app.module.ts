@@ -61,6 +61,8 @@ import { ReactiveFormsModule } from '@angular/forms';
   import { ReportesModule } from '@views/reportes/reportes.module';
   import { CitasModule } from '@views/citas/citas.module';
   import { HasPermissionDirective } from './directives/has-permission.directive';
+  import { RoleGuard } from './guards/role.guard';
+  import { PermissionGuard } from './guards/permission.guard';
 
 
 @NgModule({
@@ -96,7 +98,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     ReactiveFormsModule ,
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService,
+                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, RoleGuard, PermissionGuard,  AlertService, ApiService,
                 MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })

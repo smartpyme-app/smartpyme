@@ -4,24 +4,43 @@ import { LayoutComponent } from '../../layout/layout.component';
 
 import { ProyectosComponent } from '@views/proyectos/proyectos.component';
 import { ProyectoComponent } from '@views/proyectos/proyecto/proyecto.component';
+import { PermissionGuard } from '@guards/permission.guard';
 
 const routes: Routes = [
   {
     path: '',
     component: LayoutComponent,
     title: 'Proyectos',
+    canActivate: [PermissionGuard],
+    data: { permission: 'ventas.proyectos.ver' },
     children: [
-
-        { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
-        { path: 'proyecto/crear', component: ProyectoComponent, title: 'Proyecto' },
-        { path: 'proyecto/editar/:id', component: ProyectoComponent, title: 'Proyecto' },
-
-    ]
-  }
+      {
+        path: 'proyectos',
+        component: ProyectosComponent,
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.proyectos.ver' },
+        title: 'Proyectos',
+      },
+      {
+        path: 'proyecto/crear',
+        component: ProyectoComponent,
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.proyectos.crear' },
+        title: 'Proyecto',
+      },
+      {
+        path: 'proyecto/editar/:id',
+        component: ProyectoComponent,
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.proyectos.editar' },
+        title: 'Proyecto',
+      },
+    ],
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class ProyectosRoutingModule { }
+export class ProyectosRoutingModule {}
