@@ -56,9 +56,11 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
 
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
+
 import { ComboIndexComponent } from './productos/producto/combo/combo-index/combo-index.component';
 import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
 import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
+ 
 @NgModule({
   imports: [
     CommonModule,
@@ -115,6 +117,10 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     ComboIndexComponent,
     VerProductoComponent,
     CustomFieldsComponent
+
+    SubCategoriasComponent,
+    BodegaComponent,
+    BodegasComponent
   ],
   exports: [
     ProductosComponent,
@@ -142,6 +148,7 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
+
     CategoriaCuentasComponent,
     SubCategoriasComponent,
     BodegaComponent,
@@ -150,6 +157,9 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     ComboDetallesComponent,
     BuscadorProductoComponent,
     CustomFieldsComponent
+    SubCategoriasComponent,
+    BodegaComponent,
+    BodegasComponent
   ]
 })
 export class InventarioModule { }

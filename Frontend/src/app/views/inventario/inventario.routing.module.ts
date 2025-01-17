@@ -27,7 +27,6 @@ import { VerProductoComponent } from './productos/producto/ver-producto/ver-prod
 import { CustomFieldsComponent } from '@views/inventario/custom-fields/custom-fields.component';
 
 
-
 const routes: Routes = [
   {
     path: '',
@@ -67,6 +66,9 @@ const routes: Routes = [
       { path: 'bodegas', component: BodegasComponent },
       { path: 'bodega/:id', component: BodegaComponent },
       { path: 'custom-fields', component: CustomFieldsComponent, title: 'Campos personalizados' },
+
+        { path: 'bodegas', component: BodegasComponent },
+        { path: 'bodega/:id', component: BodegaComponent },
 
 
     ]

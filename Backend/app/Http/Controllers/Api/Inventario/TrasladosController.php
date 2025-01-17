@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\Inventario\Producto;
 use App\Models\Inventario\Traslado;
 use App\Models\Inventario\Inventario;
 
@@ -72,18 +73,18 @@ class TrasladosController extends Controller
          
         try {
 
-        // Disminuir origen
-        $origen = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega_de)->first();
-        $destino = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega)->first();
-
-        if ($origen->id_bodega == $destino->id_bodega) {
-            return  Response()->json(['error' => 'Has seleccionado la misma bodega.', 'code' => 400], 400);
+        if ($request->id_bodega == $request->id_bodega_de) {
+            return  Response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
         }
+
+        $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
+        $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega_de)->first();
+        $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega)->first();
 
         if ($origen->stock < $request->cantidad) {
-            return  Response()->json(['error' => 'La bodega no tiene el stock suficiente.', 'code' => 400], 400);
+            return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
         }
-        
+
         
         if ($origen && $destino) {
             $traslado->save();
@@ -97,7 +98,34 @@ class TrasladosController extends Controller
             $destino->kardex($traslado, $traslado->cantidad);
 
         }else{
-            return  Response()->json(['error' => 'Una de las bodegaes no tiene inventario.', 'code' => 400], 400);
+            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+        }
+
+        // Composiciones
+        foreach ($producto->composiciones as $comp) {
+            $producto = Producto::where('id', $comp->id_compuesto)->with('composiciones')->firstOrFail();
+            $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $request->id_bodega_de)->first();
+            $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $request->id_bodega)->first();
+
+            if ($origen->stock < $request->cantidad) {
+                return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+            }
+
+            
+            if ($origen && $destino) {
+                $cantidad = $traslado->cantidad * $comp->cantidad;
+
+                $origen->stock -= $cantidad;
+                $origen->save();
+                $origen->kardex($traslado, $cantidad * -1);
+
+                $destino->stock += $cantidad;
+                $destino->save();
+                $destino->kardex($traslado, $cantidad);
+
+            }else{
+                return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+            }
         }
       
         DB::commit();
@@ -115,14 +143,26 @@ class TrasladosController extends Controller
     
     public function delete($id){
 
+        DB::beginTransaction();
+         
+        try {
+
         $traslado = Traslado::findOrfail($id);
         $traslado->estado = 'Cancelado';
         $traslado->save();
 
-        $origen = Inventario::where('id_producto', $traslado->id_producto)->where('id_bodega', $traslado->id_bodega_de)->first();
-        $destino = Inventario::where('id_producto', $traslado->id_producto)->where('id_bodega', $traslado->id_bodega)->first();
+        $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
+        $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
+        $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
+
+        // if ($origen->stock < $traslado->cantidad) {
+        //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+        // }
+
         
         if ($origen && $destino) {
+            $traslado->save();
+            
             $origen->stock += $traslado->cantidad;
             $origen->save();
             $origen->kardex($traslado, $traslado->cantidad * -1);
@@ -130,11 +170,48 @@ class TrasladosController extends Controller
             $destino->stock -= $traslado->cantidad;
             $destino->save();
             $destino->kardex($traslado, $traslado->cantidad);
+
         }else{
-            return  Response()->json(['error' => 'Una de las bodegaes no tiene inventario', 'code' => 400], 400);
+            return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
         }
 
+        // Composiciones
+        foreach ($producto->composiciones as $comp) {
+            $producto = Producto::where('id', $comp->id_compuesto)->with('composiciones')->firstOrFail();
+            $origen = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega_de)->first();
+            $destino = Inventario::where('id_producto', $comp->id_compuesto)->where('id_bodega', $traslado->id_bodega)->first();
+
+            // if ($origen->stock < $traslado->cantidad) {
+            //     return  Response()->json(['error' => 'La sucursal no tiene el stock suficiente.', 'code' => 400], 400);
+            // }
+
+            
+            if ($origen && $destino) {
+                $cantidad = $traslado->cantidad * $comp->cantidad;
+
+                $origen->stock += $cantidad;
+                $origen->save();
+                $origen->kardex($traslado, $cantidad * -1);
+
+                $destino->stock -= $cantidad;
+                $destino->save();
+                $destino->kardex($traslado, $cantidad);
+
+            }else{
+                return  Response()->json(['error' => 'Una de las sucursales no tiene inventario.', 'code' => 400], 400);
+            }
+        }
+
+        DB::commit();
         return Response()->json($traslado, 201);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
 
     }
 

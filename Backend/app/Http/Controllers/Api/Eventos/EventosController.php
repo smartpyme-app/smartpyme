@@ -18,51 +18,47 @@ class EventosController extends Controller
     public function index(Request $request)
     {
 
-        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function ($query) use ($request) {
-            return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-        })
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->where('inicio', '>=', $request->inicio);
-            })
-            ->when($request->fin, function ($query) use ($request) {
-                return $query->where('fin', '<=', $request->fin);
-            })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->when($request->id_usuario, function ($query) use ($request) {
-                return $query->where('id_usuario', $request->id_usuario);
-            })
-            ->when($request->id_cliente, function ($query) use ($request) {
-                return $query->where('id_cliente', $request->id_cliente);
-            })
-            ->when($request->forma_pago, function ($query) use ($request) {
-                return $query->where('forma_pago', $request->forma_pago);
-            })
-            ->when($request->estado, function ($query) use ($request) {
-                return $query->where('estado', $request->estado);
-            })
-            ->when($request->tipo, function ($query) use ($request) {
-                return $query->where('tipo', $request->tipo);
-            })
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
+        $eventos = Evento::with('cliente', 'productos')
+                ->when($request->inicio, function ($query) use ($request) {
+                    return $query->where('inicio', '>=', $request->inicio);
+                })
+                ->when($request->fin, function ($query) use ($request) {
+                    return $query->where('fin', '<=', $request->fin);
+                })
+                ->when($request->id_sucursal, function ($query) use ($request) {
+                    return $query->where('id_sucursal', $request->id_sucursal);
+                })
+                ->when($request->id_usuario, function ($query) use ($request) {
+                    return $query->where('id_usuario', $request->id_usuario);
+                })
+                ->when($request->id_cliente, function ($query) use ($request) {
+                    return $query->where('id_cliente', $request->id_cliente);
+                })
+                ->when($request->forma_pago, function ($query) use ($request) {
+                    return $query->where('forma_pago', $request->forma_pago);
+                })
+                ->when($request->estado, function ($query) use ($request) {
+                    return $query->where('estado', $request->estado);
+                })
+                ->when($request->tipo, function ($query) use ($request) {
+                    return $query->where('tipo', $request->tipo);
+                })
+                ->when($request->buscador, function ($query) use ($request) {
+                    return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('estado', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
+                })
+                ->orderBy($request->orden, $request->direccion)
+                ->orderBy('id', 'desc')
+                ->paginate($request->paginate);
 
         return Response()->json($eventos, 200);
     }
 
     public function list(Request $request)
     {
-        $eventos = Evento::with('cliente', 'productos')->when($request->buscador, function ($query) use ($request) {
-            return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-        })
+        $eventos = Evento::with('cliente', 'productos')
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->whereBetween('inicio', [$request->inicio, $request->fin]);
             })
@@ -84,6 +80,12 @@ class EventosController extends Controller
             ->when($request->tipo, function ($query) use ($request) {
                 return $query->where('tipo', $request->tipo);
             })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('estado', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
+            })
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->get();
@@ -93,16 +95,20 @@ class EventosController extends Controller
             $color = '';
             $textColor = '';
             if ($evento->tipo == 'Pagado') {
-                $color = '#367837';
+                $color = '#DCFCE7';
+                $textColor = '#14532D';
             } elseif ($evento->tipo == 'Sin confirmar') {
-                $color = 'lightgray';
-                $textColor = 'black';
+                $color = '#FFDCC4';
+                $textColor = '#000000';
             } elseif ($evento->tipo == 'Pendiente') {
-                $color = 'orange';
+                $color = '#FFDAD6';
+                $textColor = '#410002';
             } elseif ($evento->tipo == 'Confirmado') {
-                $color = '#3490dc';
+                $color = '#D7E2FF';
+                $textColor = '#001B3F';
             } elseif ($evento->tipo == 'Cancelado') {
                 $color = '#D9213A';
+                $color = '#000000';
             }
 
             $data = new stdClass();
@@ -182,9 +188,8 @@ class EventosController extends Controller
                 ->where('id_usuario', $request->id_usuario)
                 ->where("tipo", "!=",  "Cancelado")
                 ->where(function ($query) use ($inicio, $fin) {
-                    $query->where(fn($q) => $q->where('inicio', '<=', $fin)->where('fin', '>=', $fin))
-                        ->orWhere(fn($q) => $q->where('inicio', '<=', $inicio)->where('fin', '>=', $inicio));
-                })
+                        $query->where(fn($q) => $q->where('inicio', '<', $fin)->where('fin', '>', $inicio));
+                    })
                 ->get();
 
             if ($eventosEnConflicto->count() > 0) {

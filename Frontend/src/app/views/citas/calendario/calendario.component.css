@@ -1,2 +1,6 @@
 /*background del calendario vista de dia*/
-  .fc-timegrid-slot  { background-color: #ffffff !important; }
+.fc-timegrid-slot  { background-color: #ffffff !important; }
+
+.fc-day-today {
+  background-color: white !important;
+}
