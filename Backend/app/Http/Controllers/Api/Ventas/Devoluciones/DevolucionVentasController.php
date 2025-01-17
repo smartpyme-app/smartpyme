@@ -100,7 +100,7 @@ class DevolucionVentasController extends Controller
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
                                         
-                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->venta()->pluck('id_sucursal')->first())->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
                 
                 // Anular y regresar stock
                 if(($venta->enable != '0') && ($request['enable'] == '0')){
@@ -115,7 +115,7 @@ class DevolucionVentasController extends Controller
                     foreach ($detalle->composiciones()->get() as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_producto)
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock -= $detalle->cantidad * $comp->cantidad;
@@ -138,7 +138,7 @@ class DevolucionVentasController extends Controller
                     foreach ($detalle->composiciones()->get() as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_producto)
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock += $detalle->cantidad * $comp->cantidad;
@@ -188,6 +188,7 @@ class DevolucionVentasController extends Controller
             // 'id_caja'           => 'required|numeric',
             // 'id_corte'          => 'required|numeric',
             'id_usuario'        => 'required|numeric',
+            'id_bodega'       => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
             'id_empresa'       => 'required|numeric',
         ],[
@@ -233,7 +234,7 @@ class DevolucionVentasController extends Controller
                 }
 
                 $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                    ->where('id_sucursal', $request->id_sucursal)->first();
+                                    ->where('id_bodega', $request->id_bodega)->first();
 
                 if ($inventario) {
                     $inventario->stock += $det['cantidad'];
@@ -247,7 +248,7 @@ class DevolucionVentasController extends Controller
                     foreach ($det['composiciones'] as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp['id_producto'])
-                                    ->where('id_sucursal', $devolucion->id_sucursal)->first();
+                                    ->where('id_bodega', $devolucion->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock += $det['cantidad'] * $comp['cantidad'];
