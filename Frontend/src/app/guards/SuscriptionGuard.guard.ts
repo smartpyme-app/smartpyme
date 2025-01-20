@@ -25,7 +25,7 @@ export class SubscriptionGuard implements CanActivate {
       return false;
     }
 
-    if (['inactivo', 'cancelado', 'pendiente'].includes(userData.estado_suscripcion)) {
+    if (['inactivo', 'cancelado'].includes(userData.estado_suscripcion)) {
       this.router.navigate(['/paywall']);
       return false;
     }
