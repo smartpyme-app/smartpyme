@@ -2,7 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from '@services/api.service';
-
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-paywall',
   templateUrl: './paywall.component.html',
@@ -35,7 +35,8 @@ export class PaywallComponent implements OnInit {
   
   constructor(
     private http: HttpClient,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -109,5 +110,10 @@ export class PaywallComponent implements OnInit {
     if (paymentUrl) {
       window.location.href = paymentUrl;
     }
+  }
+
+  logout() {
+    // this.apiService.logout();
+    this.router.navigate(['/login']);
   }
 }
