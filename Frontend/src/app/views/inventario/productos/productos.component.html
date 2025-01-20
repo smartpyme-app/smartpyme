@@ -1,9 +1,9 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
   <h2 class="page-heading">Inventario</h2>
   <div>
-    <button *ngIf="apiService.canCreate()" routerLink="/producto/combo/crear" class="btn btn-default font-weight-bold"
+    <button *ngIf="apiService.canCreateTest('productos.compuestos.crear')" routerLink="/producto/combo/crear" class="btn btn-default font-weight-bold"
       style="margin-right: 10px;"><img src="/assets/icons/plus.png" class="icon me-2"> Crear compuesto</button>
-    <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)"
+    <button *ngIf="apiService.canCreateTest('productos.crear')" routerLink="/producto/crear" tooltip="Crear producto (F4)"
       class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir
       producto</button>
   </div>

@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Proveedores</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/proveedor/crear" tooltip="Crear proveedor (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proveedor</button>
+    <button *ngIf="apiService.canCreateTest('compras.proveedores.crear')" routerLink="/proveedor/crear" tooltip="Crear proveedor (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proveedor</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

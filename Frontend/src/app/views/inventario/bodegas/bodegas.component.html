@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bodegas</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mbodega, {})"  tooltip="Crear bodega (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir bodega</button>
+    <button *ngIf="apiService.canCreateTest('productos.bodegas.crear')" (click)="openModal(mbodega, {})"  tooltip="Crear bodega (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir bodega</button>
 </section>
 <!-- <div>
     <p class="alert bg-primary text-muted border-0" *ngIf="!loading && (bodegas_activas < apiService.auth_user().empresa.bodega_limit)">

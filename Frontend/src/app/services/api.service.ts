@@ -388,36 +388,34 @@ export class ApiService {
     return false;
   }
 
-  //   canCreate() {
-  //     let usuario = this.auth_user();
-  //     if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
-  //       return true;
-  //     return false;
-  //   }
+  canEdit() {
+    let usuario = this.auth_user();
+    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+      return true;
+    return false;
+  }
+  canCreate() {
+    let usuario = this.auth_user();
+    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+      return true;
+    return false;
+  }
 
-  //   canEdit() {
-  //     let usuario = this.auth_user();
-  //     if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
-  //       return true;
-  //     return false;
-  //   }
+  canDelete() {
+    let usuario = this.auth_user();
+    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+      return true;
+    return false;
+  }
 
-  //   canDelete() {
-  //     let usuario = this.auth_user();
-  //     if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
-  //       return true;
-  //     return false;
-  //   }
-
-  canCreate(permission: string): boolean {
+  canCreateTest(permission: string): boolean {
     return this.hasPermission(permission);
   }
 
-  canEdit(permission: string): boolean {
-    return this.hasPermission(permission);
-  }
-
-  canDelete(permission: string): boolean {
+  //   canDelete(permission: string): boolean {
+  //     return this.hasPermission(permission);
+  //   }
+  canEditTest(permission: string): boolean {
     return this.hasPermission(permission);
   }
 

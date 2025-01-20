@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Gastos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
+    <button *ngIf="apiService.canCreateTest('compras.gastos.crear')" routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

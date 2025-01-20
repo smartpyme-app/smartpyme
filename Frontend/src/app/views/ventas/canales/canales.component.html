@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Canales</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mdetalle, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir canal</button>
+    <button *ngIf="apiService.canCreateTest('ventas.canales_venta.crear')" (click)="openModal(mdetalle, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir canal</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

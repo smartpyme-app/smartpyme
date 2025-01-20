@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Presupuestos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/presupuesto/crear" tooltip="Crear presupuesto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir presupuesto</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.presupuestos.crear')" routerLink="/presupuesto/crear" tooltip="Crear presupuesto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir presupuesto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

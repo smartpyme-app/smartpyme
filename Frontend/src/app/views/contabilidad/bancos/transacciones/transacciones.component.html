@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bancos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/bancos/transaccion/crear" tooltip="Crear transacción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transacción</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.transacciones.crear')" routerLink="/bancos/transaccion/crear" tooltip="Crear transacción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transacción</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

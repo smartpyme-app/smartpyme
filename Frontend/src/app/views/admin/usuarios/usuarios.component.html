@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Usuarios</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(musuario, {})"  tooltip="Crear usuario (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
+    <button *ngIf="apiService.canCreateTest('organizacion.usuarios.crear')" (click)="openModal(musuario, {})"  tooltip="Crear usuario (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir usuario</button>
 </section>
 <!-- <div>
     <p class="alert alert-info text-muted border-0" *ngIf="!loading && (usuarios_activos < apiService.auth_user().empresa.user_limit)">

@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Servicios</h2>
-    <button *ngIf="apiService.canCreate() ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
+    <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
