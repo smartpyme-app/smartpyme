@@ -419,6 +419,10 @@ export class ApiService {
     return this.hasPermission(permission);
   }
 
+  canDeleteTest(permission: string): boolean {
+    return this.hasPermission(permission);
+  }
+
   getModules() {
     return this.http
       .get<any>(this.apiUrl + 'modules')

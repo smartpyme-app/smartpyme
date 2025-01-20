@@ -60,7 +60,7 @@
                         <td>{{cuenta.numero}}</td>
                         <td>{{cuenta.tipo}}</td>
                         <td class="text-end">{{cuenta.saldo | currency}}</td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
+                        <td *ngIf="apiService.canEditTest('finanzas.cuentas.editar')" class="text-center">
                             <a class="btn btn-light" routerLink="/bancos/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

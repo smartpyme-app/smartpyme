@@ -87,16 +87,16 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEdit()" routerLink="/cliente/editar/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.clientes.editar')" routerLink="/cliente/editar/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a routerLink="/cliente/detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="cliente.enable && apiService.canEdit()" (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="cliente.enable && apiService.canEditTest('ventas.clientes.editar')" (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-ban"></i> Deshabilitar
                                     </a>
-                                    <a *ngIf="!cliente.enable && apiService.canEdit()" (click)="setActivo(cliente, true)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="!cliente.enable && apiService.canEditTest('ventas.clientes.editar')" (click)="setActivo(cliente, true)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-check"></i> Habilitar
                                     </a>
                                 </div>

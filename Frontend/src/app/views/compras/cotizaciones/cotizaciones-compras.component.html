@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Órdenes de compra</h2>
-  <button *ngIf="apiService.canEdit()" routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }"
+  <button *ngIf="apiService.canEditTest('compras.ordenes_compra.crear')" routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }"
     tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de
     compra</button>
 </section>
@@ -93,7 +93,7 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="d-flex flex-column align-items-start">
-                  <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()"
+                  <a *ngIf="compra.estado == 'Pendiente' && apiService.canEditTest('compras.ordenes_compra.editar')"
                     routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>

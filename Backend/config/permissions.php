@@ -78,6 +78,13 @@ return [
             'eliminar' => 'administracion.roles.eliminar',
             'exportar' => 'administracion.roles.exportar'
         ],
+        'modules' => [
+            'ver' => 'administracion.modules.ver',
+            'crear' => 'administracion.modules.crear',
+            'editar' => 'administracion.modules.editar',
+            'eliminar' => 'administracion.modules.eliminar',
+            'exportar' => 'administracion.modules.exportar'
+        ],
     ],
 
     /*
@@ -259,6 +266,27 @@ return [
             'editar' => 'ventas.proyectos.editar',
             'eliminar' => 'ventas.proyectos.eliminar',
             'exportar' => 'ventas.proyectos.exportar'
+        ],
+        'abonos' => [
+            'ver' => 'ventas.abonos.ver',
+            'crear' => 'ventas.abonos.crear',
+            'editar' => 'ventas.abonos.editar',
+            'eliminar' => 'ventas.abonos.eliminar',
+            'exportar' => 'ventas.abonos.exportar'
+        ],
+        'devoluciones' => [
+            'ver' => 'ventas.devoluciones.ver',
+            'crear' => 'ventas.devoluciones.crear',
+            'editar' => 'ventas.devoluciones.editar',
+            'eliminar' => 'ventas.devoluciones.eliminar',
+            'exportar' => 'ventas.devoluciones.exportar'
+        ],
+        'ordenes_produccion' => [
+            'ver' => 'ventas.ordenes_produccion.ver',
+            'crear' => 'ventas.ordenes_produccion.crear',
+            'editar' => 'ventas.ordenes_produccion.editar',
+            'eliminar' => 'ventas.ordenes_produccion.eliminar',
+            'exportar' => 'ventas.ordenes_produccion.exportar'
         ]
     ],
 
@@ -304,6 +332,13 @@ return [
             'editar' => 'compras.retaceo.editar',
             'eliminar' => 'compras.retaceo.eliminar',
             'exportar' => 'compras.retaceo.exportar'
+        ],
+        'devoluciones' => [
+            'ver' => 'compras.devoluciones.ver',
+            'crear' => 'compras.devoluciones.crear',
+            'editar' => 'compras.devoluciones.editar',
+            'eliminar' => 'compras.devoluciones.eliminar',
+            'exportar' => 'compras.devoluciones.exportar'
         ]
     ],
 

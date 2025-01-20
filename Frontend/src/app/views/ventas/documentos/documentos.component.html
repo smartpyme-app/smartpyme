@@ -42,7 +42,7 @@
                         <th>Correlativo</th>
                         <th>Predeterminado</th>
                         <th>Estado</th>
-                        <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
+                        <th *ngIf="apiService.canEditTest('finanzas.documentos.editar')" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -71,7 +71,7 @@
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
+                        <td *ngIf="apiService.canEditTest('finanzas.documentos.editar')" class="text-center">
                             <a class="btn btn-light" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

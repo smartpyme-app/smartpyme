@@ -113,7 +113,7 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="d-flex flex-column align-items-start">
-                  <a *ngIf="combo.estado == 'Activo' && apiService.canEdit()"
+                  <a *ngIf="combo.estado == 'Activo' && apiService.canEditTest('productos.combos.editar')"
                     routerLink="/producto/combo/editar/{{combo.id}}" class="btn">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>

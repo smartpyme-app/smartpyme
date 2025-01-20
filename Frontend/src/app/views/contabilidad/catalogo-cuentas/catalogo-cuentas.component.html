@@ -58,7 +58,7 @@
                         <td>{{cuenta.saldo_inicial}}</td>
                         <td>{{cuenta.naturaleza}}</td>
                         <td>{{cuenta.rubro}}</td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
+                        <td *ngIf="apiService.canEditTest('contabilidad.catalogo_cuentas.editar')" class="text-center">
                             <a class="btn btn-light" routerLink="/catalogo/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

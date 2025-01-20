@@ -150,7 +150,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column">
-                                    <button *ngIf="apiService.canEdit()" type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
+                                    <button *ngIf="apiService.canEditTest('productos.editar')" type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img  src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
                                     <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">

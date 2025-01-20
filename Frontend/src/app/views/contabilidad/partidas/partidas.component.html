@@ -116,16 +116,16 @@
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                 </a>
-                <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()"
+                <a *ngIf="partida.estado == 'Pendiente' && apiService.canEditTest('contabilidad.partidas.editar')"
                    (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-check"></i> Aplicar
                 </a>
-                <a *ngIf="partida.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')"
+                <a *ngIf="partida.estado != 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Anulada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-ban"></i> Anular
                 </a>
-                <a *ngIf="partida.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')"
+                <a *ngIf="partida.estado == 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-check"></i> Revertir anulación
                 </a>

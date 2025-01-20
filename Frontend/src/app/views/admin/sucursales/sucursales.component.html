@@ -83,7 +83,7 @@
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
+                        <td *ngIf="apiService.canEditTest('administracion.sucursales.editar')" class="text-center">
                             <div class="btn-group" role="group">
     <!--                             <a *ngIf="sucursal.id != 1" class="btn btn-default" (click)="delete(sucursal.id)" data-toggle="tooltip" title="Eliminar">
                                     <i class="fa fa-trash"></i>

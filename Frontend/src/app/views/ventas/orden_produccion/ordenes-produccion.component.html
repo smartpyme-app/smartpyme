@@ -101,7 +101,7 @@
                     <i class="fa fa-fw fa-print"></i> Imprimir
                   </a>
                   <!-- Poder anular la orden -->
-                  <a *ngIf="orden.estado != 'anulada' && apiService.canDelete()" 
+                  <a *ngIf="orden.estado != 'anulada' && apiService.canDeleteTest('ventas.ordenes_produccion.eliminar')" 
                      (click)="anular(orden)" 
                      class="btn">
                     <i class="fa fa-fw fa-ban"></i> Anular

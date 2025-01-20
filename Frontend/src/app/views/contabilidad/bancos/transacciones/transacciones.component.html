@@ -93,7 +93,7 @@
                                     <a routerLink="/bancos/transaccion/{{transaccion.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(transaccion, 'Aprobada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Aprobada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Aprobar
                                     </a>
                                     <a *ngIf="transaccion.url_referencia" (click)="verDocumento(transaccion)" class="list-group-item list-group-item-action border-0 click">
@@ -102,10 +102,10 @@
                                     <a *ngIf="transaccion.id_referencia" routerLink="/{{transaccion.ruta_referencia}}/{{transaccion.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
                                     </a>
-                                    <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(transaccion, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular
                                     </a>
-                                    <a *ngIf="transaccion.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(transaccion, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="transaccion.estado == 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
                                     <a (click)="generarPartidaContable(transaccion)" class="list-group-item list-group-item-action border-0 click">
