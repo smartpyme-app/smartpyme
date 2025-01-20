@@ -42,6 +42,8 @@ export const GUARD_TYPES = {
   SUPER_ADMIN: 'superAdmin',
 } as const;
 
+import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
+import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component';
 const routes: Routes = [
   {
     path: '',
@@ -51,10 +53,10 @@ const routes: Routes = [
       {
         path: 'ventas',
         //canActivate: [AdminGuard, PermissionGuard],
-        canActivate: [RoleGuard,PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
-          permission: 'ventas.ver'
+          permission: 'ventas.ver',
         },
         component: VentasComponent,
         title: 'Ventas',
@@ -62,10 +64,10 @@ const routes: Routes = [
       {
         path: 'venta/crear',
         //canActivate: [PermissionGuard],
-        canActivate: [RoleGuard,PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
-          permission: 'ventas.crear'
+          permission: 'ventas.crear',
         },
         component: FacturacionComponent,
         title: 'Facturación',
@@ -87,7 +89,7 @@ const routes: Routes = [
 
       {
         path: 'ventas/recurrentes',
-       // canActivate: [AdminGuard],
+        // canActivate: [AdminGuard],
         canActivate: [RoleGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
@@ -97,7 +99,7 @@ const routes: Routes = [
       },
       {
         path: 'ventas/abonos',
-       // canActivate: [AdminGuard],
+        // canActivate: [AdminGuard],
         canActivate: [RoleGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
@@ -143,11 +145,11 @@ const routes: Routes = [
       //
       {
         path: 'canales',
-      //  canActivate: [AdminGuard, PermissionGuard],
-        canActivate: [RoleGuard,PermissionGuard],
+        //  canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
-          permission: 'ventas.canales_venta.ver'
+          permission: 'ventas.canales_venta.ver',
         },
         component: CanalesComponent,
         title: 'Canales de venta',
@@ -155,32 +157,32 @@ const routes: Routes = [
       {
         path: 'formas-de-pago',
         // canActivate: [AdminGuard, PermissionGuard],
-        canActivate: [RoleGuard,PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
-          permission: 'ventas.formas_pago.ver'
+          permission: 'ventas.formas_pago.ver',
         },
         component: FormasDePagoComponent,
         title: 'Formas de pago',
       },
       {
         path: 'impuestos',
-       // canActivate: [AdminGuard, PermissionGuard],
-        canActivate: [RoleGuard,PermissionGuard],
+        // canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
-          permission: 'finanzas.impuestos.ver'
+          permission: 'finanzas.impuestos.ver',
         },
         component: ImpuestosComponent,
         title: 'Impuestos',
       },
       {
         path: 'documentos',
-       // canActivate: [AdminGuard, PermissionGuard],
-        canActivate: [RoleGuard,PermissionGuard],
+        // canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
         data: {
           guardType: GUARD_TYPES.ADMIN,
-          permission: 'finanzas.documentos.ver'
+          permission: 'finanzas.documentos.ver',
         },
         component: DocumentosComponent,
         title: 'Documentos',
@@ -261,6 +263,22 @@ const routes: Routes = [
           guardType: GUARD_TYPES.ADMIN,
         },
         component: CategoriasVentasComponent,
+      },
+      {
+        path: 'ordenes/produccion',
+        component: OrdenesProduccionComponent,
+        title: 'Ordenes de producción',
+      },
+      {
+        path: 'orden-produccion/crear/:id',
+        component: CrearOrdenProduccionComponent,
+        title: 'Crear Orden de Producción',
+      },
+      //{ path: 'orden-produccion/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
+      {
+        path: 'orden-produccion/detalles/:id',
+        component: CrearOrdenProduccionComponent,
+        title: 'Ver Orden de Producción',
       },
     ],
   },

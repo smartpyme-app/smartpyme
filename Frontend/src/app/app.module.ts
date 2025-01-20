@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
@@ -63,6 +63,7 @@ import { ReactiveFormsModule } from '@angular/forms';
   import { HasPermissionDirective } from './directives/has-permission.directive';
   import { RoleGuard } from './guards/role.guard';
   import { PermissionGuard } from './guards/permission.guard';
+import { ServiceWorkerModule } from '@angular/service-worker';
 
 
 @NgModule({
@@ -96,6 +97,12 @@ import { ReactiveFormsModule } from '@angular/forms';
     PaquetesModule,
     ProyectosModule,
     ReactiveFormsModule ,
+    ServiceWorkerModule.register('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      // Register the ServiceWorker as soon as the application is stable
+      // or after 30 seconds (whichever comes first).
+      registrationStrategy: 'registerWhenStable:30000'
+    }),
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
                 AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, RoleGuard, PermissionGuard,  AlertService, ApiService,

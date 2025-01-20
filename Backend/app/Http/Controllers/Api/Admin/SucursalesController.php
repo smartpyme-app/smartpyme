@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
-use App\Models\Inventario\Producto;
-use App\Models\Inventario\Inventario;
 use JWTAuth;
 
 class SucursalesController extends Controller
@@ -62,18 +60,6 @@ class SucursalesController extends Controller
         
         $sucursal->fill($request->all());
         $sucursal->save();
-
-        // Configurar inventarios para los productos
-        if (!$request->id) {
-            $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
-            foreach ($productos as $producto) {
-                $inventario = new Inventario;
-                $inventario->id_sucursal    = $sucursal->id;
-                $inventario->stock          = 0;
-                $inventario->id_producto    = $producto->id;
-                $inventario->save();
-            }
-        }
 
         return Response()->json($sucursal, 200);
 

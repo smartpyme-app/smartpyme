@@ -110,6 +110,11 @@
                                   <a (click)="imprimir(venta)" class="btn">
                                       <i class="fa fa-fw fa-print"></i> Imprimir
                                   </a>
+                                  <!-- si esta aprobada se podra crear orden de producción -->
+                                  <a *ngIf="venta.estado == 'Aprobada' && venta.tiene_orden_produccion.length == 0" routerLink="/orden-produccion/crear/{{venta.id}}" class="btn">
+                                      <i class="fa fa-fw fa-cogs"></i> Crear Orden de Producción
+                                  </a>
+                                  
                                   <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
                                       <i class="fa fa-fw fa-trash"></i> Eliminar
                                   </a> -->

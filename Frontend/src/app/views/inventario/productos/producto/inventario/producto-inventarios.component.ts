@@ -36,16 +36,12 @@ export class ProductoInventariosComponent implements OnInit {
 
 
     openModal(template: TemplateRef<any>, inventario:any) {
-        console.log(inventario);
-        
         this.inventario = inventario;
         
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
-        console.log(this.bodegas);
-
         
         if(!this.inventario.id) {
             this.inventario.stock = 0;

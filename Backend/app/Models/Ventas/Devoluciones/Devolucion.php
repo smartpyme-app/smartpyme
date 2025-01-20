@@ -4,7 +4,7 @@ namespace App\Models\Ventas\Devoluciones;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use JWTAuth;
+use Auth;
 
 class Devolucion extends Model {
 
@@ -28,6 +28,7 @@ class Devolucion extends Model {
         'iva_retenido',
         'observaciones',
         'id_cliente',
+        'id_bodega',
         'id_sucursal',
         'id_empresa',
         'enable',
@@ -38,13 +39,13 @@ class Devolucion extends Model {
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_documento'];
     protected $casts = ['enable' => 'boolean'];
 
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
     }

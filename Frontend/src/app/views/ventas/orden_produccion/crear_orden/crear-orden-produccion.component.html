@@ -1,0 +1,151 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">
+    {{ isDetalles ? 'Detalles de Orden de Producción' : 'Nueva Orden de Producción' }}
+  </h2>
+</section>
+
+<div class="row" *ngIf="loading">
+  <div class="col-12 text-center">
+    <span class="badge bg-primary" *ngIf="!isDetalles">Cargando información de la cotización...</span>
+    <span class="badge bg-primary" *ngIf="isDetalles">Cargando información de la orden de producción...</span>
+  </div>
+</div>
+
+<form (ngSubmit)="guardar()" #ordenForm="ngForm" autocomplete="off" *ngIf="!loading">
+  <!-- Información de la Cotización -->
+  <div class="col-md-12 mb-3">
+    <div class="bg-white p-4 rounded">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 *ngIf="!isDetalles">Información de la Cotización #{{cotizacion.correlativo}}</h4>
+        <h4 *ngIf="isDetalles">Información de la Orden de Producción #{{cotizacion.codigo}}</h4>
+        <span class="badge bg-success">{{cotizacion.estado}}</span>
+      </div>
+      <div class="row">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Cliente:</label>
+          <p>{{cotizacion.cliente?.nombre_empresa || cotizacion.cliente?.nombre_completo}}</p>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Vendedor:</label>
+          <p>{{cotizacion.vendedor?.name}}</p>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Total:</label>
+          <p>{{cotizacion.total | currency:'USD':'symbol':'1.2-2'}}</p>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Fecha Cotización:</label>
+          <p>{{cotizacion.fecha | date:'dd/MM/yyyy'}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información de la Orden -->
+  <div class="col-md-12 mb-3">
+    <div class="bg-white p-4 rounded">
+      <h4 class="mb-3">Información de la Orden</h4>
+      <div class="row">
+        <!-- <div class="col-md-6 mb-3">
+          <label class="form-label required">Fecha</label>
+          <input type="date" 
+                 class="form-control" 
+                 name="fecha" 
+                 [(ngModel)]="orden.fecha" 
+                 #fecha="ngModel"
+                 required>
+          <div class="invalid-feedback" *ngIf="fecha.invalid && (fecha.dirty || fecha.touched)">
+            La fecha es requerida
+          </div>
+        </div> -->
+        
+        <div class="col-md-6 mb-3">
+          <label class="form-label required">Fecha de Entrega</label>
+          <input type="date" 
+                 class="form-control" 
+                 name="fecha_entrega" 
+                 [(ngModel)]="orden.fecha_entrega"
+                 #fechaEntrega="ngModel"
+                 required>
+          <div class="invalid-feedback" *ngIf="fechaEntrega.invalid && (fechaEntrega.dirty || fechaEntrega.touched)">
+            La fecha de entrega es requerida
+          </div>
+        </div>
+
+        <div class="col-12 mb-3">
+          <label class="form-label">Observaciones de Producción</label>
+          <textarea class="form-control" 
+                    name="observaciones" 
+                    [(ngModel)]="orden.observaciones" 
+                    rows="3"
+                    placeholder="Ingrese observaciones adicionales para producción"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalles de Producción -->
+  <div class="col-md-12 mb-3">
+    <div class="bg-white p-4 rounded">
+      <h4 class="mb-3">Detalles de Producción</h4>
+
+      <div class="table-responsive">
+        <table class="table table-borderless">
+          <thead>
+            <tr>
+              <th>Descripción</th>
+              <th class="text-center">Cantidad</th>
+              <th class="text-center" *ngFor="let field of customFields"
+                  [hidden]="!hasCustomField(field.id)">
+                {{field.name}}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="8" class="text-center" *ngIf="orden.detalles?.length < 1">
+                <span class="badge bg-primary">No tiene productos agregados</span>
+              </td>
+            </tr>
+
+            <tr *ngFor="let detalle of orden.detalles" class="align-middle">
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="ms-2">
+                    <p class="mb-0">{{detalle.producto.nombre}}</p>
+                    <small class="text-muted">Código: {{detalle.producto.codigo}}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">{{detalle.cantidad}}</td>
+              <td class="text-center" *ngFor="let field of customFields"
+                  [hidden]="!hasCustomField(field.id)">
+                <span [ngClass]="{
+                  'badge bg-info': field.field_type === 'select',
+                  'text-muted': field.field_type === 'text'
+                }">
+                  {{getCustomFieldValue(detalle, field.id)}}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones de Acción -->
+  <div class="d-flex justify-content-end gap-2 mb-4">
+    <button type="button" class="btn btn-secondary" (click)="cancelar()">
+      <i class="fa fa-times me-2"></i>Cancelar
+    </button>
+    
+    <button *ngIf="!isDetalles" 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="!ordenForm.form.valid || loading">
+    <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+    <span class="ms-2">{{loading ? 'Guardando...' : 'Crear Orden'}}</span>
+  </button>
+  </div>
+</form>

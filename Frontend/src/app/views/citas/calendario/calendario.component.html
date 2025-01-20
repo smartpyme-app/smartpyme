@@ -17,7 +17,7 @@
         <i class="fa fa-chevron-right"></i>
       </button>
     </div>
-    <div class="col-8 d-flex flex-wrap gap-10">
+    <div class="col-6 d-flex flex-wrap gap-10">
       <div> <button class="btn " (click)="setNowSelection()"
           [ngClass]="selectedPeriodType=='day'?'btn-primary':'btn-default'">
           Hoy
@@ -30,19 +30,14 @@
           [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
           Mes
         </button></div>
-      <div> <button class="btn " (click)="setYearSelection()"
+      <div *ngIf="apiService.auth_user().tipo != 'Ventas'"> <button class="btn " (click)="setYearSelection()"
           [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
           Año
         </button></div>
     </div>
-    <div class="row col-4">
-      <div class="form-group col-12 col-md-6">
-        <!-- <label for="id_usuario">
-          Encargado
-          <i class="fa-regular fa-user"></i>
-
-        </label> -->
-        <ng-select name="id_usuario" [(ngModel)]="userFilter" class="form-select p-0" placeholder="Encargado"
+    <div class="row col-6 justify-content-end">
+      <div *ngIf="apiService.auth_user().tipo != 'Ventas'" class="form-group col-12 col-md-4">
+        <ng-select name="id_usuario" [(ngModel)]="filtros.id_usuario" class="form-select p-0" placeholder="Encargado"
           (change)="loadAll()">
           <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
             {{ usuario.name }}
@@ -50,16 +45,26 @@
         </ng-select>
       </div>
 
-      <div class="form-group col-12 col-md-6">
-        <!-- <label for="">Cliente
-          <i class="fa-regular fa-user"></i>
-        </label> -->
+      <div class="form-group col-12 col-md-4">
         <div class="input-group flex-nowrap">
-          <ng-select name="id_cliente" [(ngModel)]="clientFilter" class="form-select p-0" placeholder="Cliente"
+          <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0" placeholder="Cliente"
             (change)="loadAll()">
             <ng-option value=""> Seleccione aquí </ng-option>
             <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
               {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
+            </ng-option>
+          </ng-select>
+
+        </div>
+      </div>
+
+      <div *ngIf="apiService.auth_user().tipo != 'Ventas'" class="form-group col-12 col-md-4">
+        <div class="input-group flex-nowrap">
+          <ng-select name="id_sucursal" [(ngModel)]="filtros.id_sucursal" class="form-select p-0" placeholder="Sucursal"
+            (change)="loadAll()">
+            <ng-option value=""> Seleccione aquí </ng-option>
+            <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+              {{ sucursal.nombre }}
             </ng-option>
           </ng-select>
 

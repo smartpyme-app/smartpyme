@@ -266,8 +266,13 @@
              id="fecha_expiracion">
     </div>
     <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
-      <label for="observaciones">Términos de venta:</label><br>
+      <label for="observaciones">Observaciones:</label><br>
       <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones"
+                cols="30" rows="3"></textarea>
+    </div>
+    <div class="form-group col-md-12 col-lg-12">
+      <label for="terminos_de_venta">Términos de venta:</label><br>
+      <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.terminos_de_venta" name="terminos_de_venta"
                 cols="30" rows="3"></textarea>
     </div>
   </div>

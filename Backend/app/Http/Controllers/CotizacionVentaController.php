@@ -6,6 +6,7 @@ use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CotizacionVentaController extends Controller
 {
@@ -87,6 +88,7 @@ class CotizacionVentaController extends Controller
         $ordenes = CotizacionVenta::with(
             "cliente:id,nombre",
             "usuario:id,name",
+            'tieneOrdenProduccion'
         )->when($request->inicio, function ($query) use ($request) {
             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
         })
@@ -120,6 +122,7 @@ class CotizacionVentaController extends Controller
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);
+       
 
         return Response()->json($ordenes, 200);
     }

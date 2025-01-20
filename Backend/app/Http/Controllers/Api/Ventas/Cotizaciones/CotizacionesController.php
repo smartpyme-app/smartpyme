@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Ventas\Cotizaciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\Registros\Cliente;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
@@ -14,6 +13,7 @@ use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\CotizacionesExport;
 use App\Models\CotizacionVenta;
+use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -72,8 +72,9 @@ class CotizacionesController extends Controller
 
     public function read($id)
     {
+        Log::info('Leyendo cotización con id: ' . $id);
 
-        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
+        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles.producto','detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'vendedor', 'empresa', 'documento', 'usuario')->firstOrFail();
         // $orden->saldo = $orden->saldo;
         return Response()->json($orden, 200);
     }
@@ -225,7 +226,7 @@ class CotizacionesController extends Controller
         if ($tipo === 'cotizacion') {
             Log::info('Generando documento de cotización');
             $venta = CotizacionVenta::where('id', $id)
-                ->with('detalles', 'cliente')
+                ->with('detalles.producto', 'detalles.customFields.customFieldValue', 'detalles.customFields.customField', 'cliente')
                 ->firstOrFail();
 
             $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));

@@ -29,7 +29,6 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     }
 
 	ngOnInit() {
-
         const id = +this.route.snapshot.queryParamMap.get('id_venta')!;
         if(id == 0){
             this.cargarDatosIniciales();
@@ -58,12 +57,14 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                     this.devolucion.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
                 }
                 this.devolucion.id_usuario = this.apiService.auth_user().id;
+                this.devolucion.id_bodega = this.apiService.auth_user().id_bodega;
                 this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
                 this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
                 this.devolucion.enable = true;
                 this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
+                console.log(this.devolucion);
             }, error => {this.alertService.error(error);this.loading = false;});
         }
 
@@ -76,7 +77,6 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
             if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
                 let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
-                console.log(documento);
                 if(documento){
                     this.devolucion.id_documento = documento.id;
                     this.devolucion.correlativo = documento.correlativo;
@@ -84,7 +84,6 @@ export class DevolucionVentaNuevaComponent implements OnInit {
             }
             if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_credito') {
                 let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
-                console.log(documento);
                 if(documento){
                     this.devolucion.id_documento = documento.id;
                     this.devolucion.correlativo = documento.correlativo;
@@ -120,6 +119,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
         this.devolucion.id_usuario = this.apiService.auth_user().id;
         this.devolucion.id_sucursal = this.apiService.auth_user().id_sucursal;
+        this.devolucion.id_bodega = this.apiService.auth_user().id_bodega;
         this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
         this.devolucion.enable = true;
         // this.sumTotal();

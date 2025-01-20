@@ -24,6 +24,7 @@ class Devolucion extends Model {
         'observaciones',
         'id_compra',
         'id_usuario',
+        'id_bodega',
         'id_sucursal',
         'id_empresa',
 
