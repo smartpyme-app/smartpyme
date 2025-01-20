@@ -54,40 +54,32 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_CONTABILIDAD.crear'),
             config('permissions.PERMISSION_CONTABILIDAD.editar'),
             config('permissions.PERMISSION_CONTABILIDAD.eliminar'),
-            config('permissions.PERMISSION_CONTABILIDAD.exportar'),
             config('permissions.PERMISSION_CONTABILIDAD.partidas.ver'),
             config('permissions.PERMISSION_CONTABILIDAD.partidas.crear'),
             config('permissions.PERMISSION_CONTABILIDAD.partidas.editar'),
             config('permissions.PERMISSION_CONTABILIDAD.partidas.eliminar'),
-            config('permissions.PERMISSION_CONTABILIDAD.partidas.exportar'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.ver'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.crear'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.editar'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.eliminar'),
-            config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.exportar'),
             config('permissions.PERMISSION_CONTABILIDAD.configuracion.ver'),
             config('permissions.PERMISSION_CONTABILIDAD.configuracion.crear'),
             config('permissions.PERMISSION_CONTABILIDAD.configuracion.editar'),
             config('permissions.PERMISSION_CONTABILIDAD.configuracion.eliminar'),
-            config('permissions.PERMISSION_CONTABILIDAD.configuracion.exportar'),
             // Finanzas
             config('permissions.PERMISSION_FINANZAS.ver'),
             config('permissions.PERMISSION_FINANZAS.crear'),
             config('permissions.PERMISSION_FINANZAS.editar'),
             config('permissions.PERMISSION_FINANZAS.eliminar'),
-            config('permissions.PERMISSION_FINANZAS.exportar'),
             config('permissions.PERMISSION_FINANZAS.bancos.ver'),
             config('permissions.PERMISSION_FINANZAS.bancos.crear'),
             config('permissions.PERMISSION_FINANZAS.bancos.editar'),
             config('permissions.PERMISSION_FINANZAS.bancos.eliminar'),
-            config('permissions.PERMISSION_FINANZAS.bancos.exportar'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.ver'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.crear'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.editar'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.eliminar'),
-            config('permissions.PERMISSION_FINANZAS.libro_iva.exportar'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Contador Auxiliar
@@ -114,35 +106,28 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_VENTAS.crear'),
             config('permissions.PERMISSION_VENTAS.editar'),
             config('permissions.PERMISSION_VENTAS.eliminar'),
-            config('permissions.PERMISSION_VENTAS.exportar'),
             config('permissions.PERMISSION_VENTAS.registros.ver'),
             config('permissions.PERMISSION_VENTAS.registros.crear'),
             config('permissions.PERMISSION_VENTAS.registros.editar'),
             config('permissions.PERMISSION_VENTAS.registros.eliminar'),
-            config('permissions.PERMISSION_VENTAS.registros.exportar'),
             config('permissions.PERMISSION_VENTAS.cotizaciones.ver'),
             config('permissions.PERMISSION_VENTAS.cotizaciones.crear'),
             config('permissions.PERMISSION_VENTAS.cotizaciones.editar'),
             config('permissions.PERMISSION_VENTAS.cotizaciones.eliminar'),
-            config('permissions.PERMISSION_VENTAS.cotizaciones.exportar'),
             config('permissions.PERMISSION_VENTAS.clientes.ver'),
             config('permissions.PERMISSION_VENTAS.clientes.crear'),
             config('permissions.PERMISSION_VENTAS.clientes.editar'),
             config('permissions.PERMISSION_VENTAS.clientes.eliminar'),
-            config('permissions.PERMISSION_VENTAS.clientes.exportar'),
             config('permissions.PERMISSION_VENTAS.canales_venta.ver'),
             config('permissions.PERMISSION_VENTAS.canales_venta.crear'),
             config('permissions.PERMISSION_VENTAS.canales_venta.editar'),
             config('permissions.PERMISSION_VENTAS.canales_venta.eliminar'),
-            config('permissions.PERMISSION_VENTAS.canales_venta.exportar'),
             config('permissions.PERMISSION_VENTAS.formas_pago.ver'),
             config('permissions.PERMISSION_VENTAS.formas_pago.crear'),
             config('permissions.PERMISSION_VENTAS.formas_pago.editar'),
             config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
-            config('permissions.PERMISSION_VENTAS.formas_pago.exportar'),
             // Finanzas - Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Gerente Operaciones
@@ -153,27 +138,23 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_PRODUCTOS.crear'),
             config('permissions.PERMISSION_PRODUCTOS.editar'),
             config('permissions.PERMISSION_PRODUCTOS.eliminar'),
-            config('permissions.PERMISSION_PRODUCTOS.exportar'),
             // Inventario
             config('permissions.PERMISSION_PRODUCTOS.inventario.ver'),
             config('permissions.PERMISSION_PRODUCTOS.inventario.crear'),
             config('permissions.PERMISSION_PRODUCTOS.inventario.editar'),
             config('permissions.PERMISSION_PRODUCTOS.inventario.eliminar'),
-            config('permissions.PERMISSION_PRODUCTOS.inventario.exportar'),
             // Bodegas
             config('permissions.PERMISSION_PRODUCTOS.bodegas.ver'),
             config('permissions.PERMISSION_PRODUCTOS.bodegas.crear'),
             config('permissions.PERMISSION_PRODUCTOS.bodegas.editar'),
             config('permissions.PERMISSION_PRODUCTOS.bodegas.eliminar'),
-            config('permissions.PERMISSION_PRODUCTOS.bodegas.exportar'),
             // Compras y Gastos - Aprobaciones
             config('permissions.PERMISSION_COMPRAS.ver'),
             config('permissions.PERMISSION_COMPRAS.editar'),
             config('permissions.PERMISSION_GASTOS.ver'),
             config('permissions.PERMISSION_GASTOS.editar'),
             // Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Gerente Compras
@@ -184,30 +165,24 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_COMPRAS.crear'),
             config('permissions.PERMISSION_COMPRAS.editar'),
             config('permissions.PERMISSION_COMPRAS.eliminar'),
-            config('permissions.PERMISSION_COMPRAS.exportar'),
             config('permissions.PERMISSION_COMPRAS.registros.ver'),
             config('permissions.PERMISSION_COMPRAS.registros.crear'),
             config('permissions.PERMISSION_COMPRAS.registros.editar'),
             config('permissions.PERMISSION_COMPRAS.registros.eliminar'),
-            config('permissions.PERMISSION_COMPRAS.registros.exportar'),
             config('permissions.PERMISSION_COMPRAS.ordenes_compra.ver'),
             config('permissions.PERMISSION_COMPRAS.ordenes_compra.crear'),
             config('permissions.PERMISSION_COMPRAS.ordenes_compra.editar'),
             config('permissions.PERMISSION_COMPRAS.ordenes_compra.eliminar'),
-            config('permissions.PERMISSION_COMPRAS.ordenes_compra.exportar'),
             config('permissions.PERMISSION_COMPRAS.proveedores.ver'),
             config('permissions.PERMISSION_COMPRAS.proveedores.crear'),
             config('permissions.PERMISSION_COMPRAS.proveedores.editar'),
             config('permissions.PERMISSION_COMPRAS.proveedores.eliminar'),
-            config('permissions.PERMISSION_COMPRAS.proveedores.exportar'),
             config('permissions.PERMISSION_COMPRAS.retaceo.ver'),
             config('permissions.PERMISSION_COMPRAS.retaceo.crear'),
             config('permissions.PERMISSION_COMPRAS.retaceo.editar'),
             config('permissions.PERMISSION_COMPRAS.retaceo.eliminar'),
-            config('permissions.PERMISSION_COMPRAS.retaceo.exportar'),
             // Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.exportar')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Usuario Regular

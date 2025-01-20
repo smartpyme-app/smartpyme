@@ -10,30 +10,26 @@ return [
         'crear' => 'organizacion.crear',
         'editar' => 'organizacion.editar',
         'eliminar' => 'organizacion.eliminar',
-        'exportar' => 'organizacion.exportar',
 
         'empresas' => [
             'ver' => 'organizacion.empresas.ver',
             'crear' => 'organizacion.empresas.crear',
             'editar' => 'organizacion.empresas.editar',
-            'eliminar' => 'organizacion.empresas.eliminar',
-            'exportar' => 'organizacion.empresas.exportar'
+            'eliminar' => 'organizacion.empresas.eliminar'
         ],
 
         'usuarios' => [
             'ver' => 'organizacion.usuarios.ver',
             'crear' => 'organizacion.usuarios.crear',
             'editar' => 'organizacion.usuarios.editar',
-            'eliminar' => 'organizacion.usuarios.eliminar',
-            'exportar' => 'organizacion.usuarios.exportar'
+            'eliminar' => 'organizacion.usuarios.eliminar'
         ],
 
         'licencias' => [
             'ver' => 'organizacion.licencias.ver',
             'crear' => 'organizacion.licencias.crear',
             'editar' => 'organizacion.licencias.editar',
-            'eliminar' => 'organizacion.licencias.eliminar',
-            'exportar' => 'organizacion.licencias.exportar'
+            'eliminar' => 'organizacion.licencias.eliminar'
         ]
     ],
 
@@ -47,43 +43,37 @@ return [
         'crear' => 'administracion.crear',
         'editar' => 'administracion.editar',
         'eliminar' => 'administracion.eliminar',
-        'exportar' => 'administracion.exportar',
 
         'dashboards' => [
             'ver' => 'administracion.dashboards.ver',
             'crear' => 'administracion.dashboards.crear',
             'editar' => 'administracion.dashboards.editar',
-            'eliminar' => 'administracion.dashboards.eliminar',
-            'exportar' => 'administracion.dashboards.exportar'
+            'eliminar' => 'administracion.dashboards.eliminar'
         ],
 
         'facturaciones' => [
             'ver' => 'administracion.facturaciones.ver',
             'crear' => 'administracion.facturaciones.crear',
             'editar' => 'administracion.facturaciones.editar',
-            'eliminar' => 'administracion.facturaciones.eliminar',
-            'exportar' => 'administracion.facturaciones.exportar'
+            'eliminar' => 'administracion.facturaciones.eliminar'
         ],
         'sucursales' => [
             'ver' => 'administracion.sucursales.ver',
             'crear' => 'administracion.sucursales.crear',
             'editar' => 'administracion.sucursales.editar',
-            'eliminar' => 'administracion.sucursales.eliminar',
-            'exportar' => 'administracion.sucursales.exportar'
+            'eliminar' => 'administracion.sucursales.eliminar'
         ],
         'roles' => [
             'ver' => 'administracion.roles.ver',
             'crear' => 'administracion.roles.crear',
             'editar' => 'administracion.roles.editar',
-            'eliminar' => 'administracion.roles.eliminar',
-            'exportar' => 'administracion.roles.exportar'
+            'eliminar' => 'administracion.roles.eliminar'
         ],
         'modules' => [
             'ver' => 'administracion.modules.ver',
             'crear' => 'administracion.modules.crear',
             'editar' => 'administracion.modules.editar',
-            'eliminar' => 'administracion.modules.eliminar',
-            'exportar' => 'administracion.modules.exportar'
+            'eliminar' => 'administracion.modules.eliminar'
         ],
     ],
 
@@ -96,8 +86,7 @@ return [
         'ver' => 'inteligencia_negocios.ver',
         'crear' => 'inteligencia_negocios.crear',
         'editar' => 'inteligencia_negocios.editar',
-        'eliminar' => 'inteligencia_negocios.eliminar',
-        'exportar' => 'inteligencia_negocios.exportar'
+        'eliminar' => 'inteligencia_negocios.eliminar'
     ],
 
     /*
@@ -110,88 +99,76 @@ return [
         'crear' => 'productos.crear',
         'editar' => 'productos.editar',
         'eliminar' => 'productos.eliminar',
-        'exportar' => 'productos.exportar',
 
         'inventario' => [
             'ver' => 'productos.inventario.ver',
             'crear' => 'productos.inventario.crear',
             'editar' => 'productos.inventario.editar',
-            'eliminar' => 'productos.inventario.eliminar',
-            'exportar' => 'productos.inventario.exportar'
+            'eliminar' => 'productos.inventario.eliminar'
         ],
 
         'bodegas' => [
             'ver' => 'productos.bodegas.ver',
             'crear' => 'productos.bodegas.crear',
             'editar' => 'productos.bodegas.editar',
-            'eliminar' => 'productos.bodegas.eliminar',
-            'exportar' => 'productos.bodegas.exportar'
+            'eliminar' => 'productos.bodegas.eliminar'
         ],
 
         'categorias' => [
             'ver' => 'productos.categorias.ver',
             'crear' => 'productos.categorias.crear',
             'editar' => 'productos.categorias.editar',
-            'eliminar' => 'productos.categorias.eliminar',
-            'exportar' => 'productos.categorias.exportar'
+            'eliminar' => 'productos.categorias.eliminar'
         ],
 
         'campos_personalizados' => [
             'ver' => 'productos.campos_personalizados.ver',
             'crear' => 'productos.campos_personalizados.crear',
             'editar' => 'productos.campos_personalizados.editar',
-            'eliminar' => 'productos.campos_personalizados.eliminar',
-            'exportar' => 'productos.campos_personalizados.exportar'
+            'eliminar' => 'productos.campos_personalizados.eliminar'
         ],
 
         'paquetes' => [
             'ver' => 'productos.paquetes.ver',
             'crear' => 'productos.paquetes.crear',
             'editar' => 'productos.paquetes.editar',
-            'eliminar' => 'productos.paquetes.eliminar',
-            'exportar' => 'productos.paquetes.exportar'
+            'eliminar' => 'productos.paquetes.eliminar'
         ],
         'ajustes' => [
             'ver' => 'productos.ajustes.ver',
             'crear' => 'productos.ajustes.crear',
             'editar' => 'productos.ajustes.editar',
-            'eliminar' => 'productos.ajustes.eliminar',
-            'exportar' => 'productos.ajustes.exportar'
+            'eliminar' => 'productos.ajustes.eliminar'
         ],
         'materias_primas' => [
             'ver' => 'productos.materias_primas.ver',
             'crear' => 'productos.materias_primas.crear',
             'editar' => 'productos.materias_primas.editar',
-            'eliminar' => 'productos.materias_primas.eliminar',
-            'exportar' => 'productos.materias_primas.exportar'
+            'eliminar' => 'productos.materias_primas.eliminar'
         ],
         'compuestos' => [
             'ver' => 'productos.compuestos.ver',
             'crear' => 'productos.compuestos.crear',
             'editar' => 'productos.compuestos.editar',
-            'eliminar' => 'productos.compuestos.eliminar',
-            'exportar' => 'productos.compuestos.exportar'
+            'eliminar' => 'productos.compuestos.eliminar'
         ],
         'combos' => [
             'ver' => 'productos.combos.ver',
             'crear' => 'productos.combos.crear',
             'editar' => 'productos.combos.editar',
-            'eliminar' => 'productos.combos.eliminar',
-            'exportar' => 'productos.combos.exportar'
+            'eliminar' => 'productos.combos.eliminar'
         ],
         'promociones' => [
             'ver' => 'productos.promociones.ver',
             'crear' => 'productos.promociones.crear',
             'editar' => 'productos.promociones.editar',
-            'eliminar' => 'productos.promociones.eliminar',
-            'exportar' => 'productos.promociones.exportar'
+            'eliminar' => 'productos.promociones.eliminar'
         ],
         'traslados' => [
             'ver' => 'productos.traslados.ver',
             'crear' => 'productos.traslados.crear',
             'editar' => 'productos.traslados.editar',
-            'eliminar' => 'productos.traslados.eliminar',
-            'exportar' => 'productos.traslados.exportar'
+            'eliminar' => 'productos.traslados.eliminar'
         ]
     ],
 
@@ -204,8 +181,7 @@ return [
         'ver' => 'servicios.ver',
         'crear' => 'servicios.crear',
         'editar' => 'servicios.editar',
-        'eliminar' => 'servicios.eliminar',
-        'exportar' => 'servicios.exportar'
+        'eliminar' => 'servicios.eliminar'
     ],
 
     /*
@@ -218,75 +194,65 @@ return [
         'crear' => 'ventas.crear',
         'editar' => 'ventas.editar',
         'eliminar' => 'ventas.eliminar',
-        'exportar' => 'ventas.exportar',
 
         'registros' => [
             'ver' => 'ventas.registros.ver',
             'crear' => 'ventas.registros.crear',
             'editar' => 'ventas.registros.editar',
-            'eliminar' => 'ventas.registros.eliminar',
-            'exportar' => 'ventas.registros.exportar'
+            'eliminar' => 'ventas.registros.eliminar'
         ],
 
         'cotizaciones' => [
             'ver' => 'ventas.cotizaciones.ver',
             'crear' => 'ventas.cotizaciones.crear',
             'editar' => 'ventas.cotizaciones.editar',
-            'eliminar' => 'ventas.cotizaciones.eliminar',
-            'exportar' => 'ventas.cotizaciones.exportar'
+            'eliminar' => 'ventas.cotizaciones.eliminar'
         ],
 
         'clientes' => [
             'ver' => 'ventas.clientes.ver',
             'crear' => 'ventas.clientes.crear',
             'editar' => 'ventas.clientes.editar',
-            'eliminar' => 'ventas.clientes.eliminar',
-            'exportar' => 'ventas.clientes.exportar'
+            'eliminar' => 'ventas.clientes.eliminar'
         ],
 
         'canales_venta' => [
             'ver' => 'ventas.canales_venta.ver',
             'crear' => 'ventas.canales_venta.crear',
             'editar' => 'ventas.canales_venta.editar',
-            'eliminar' => 'ventas.canales_venta.eliminar',
-            'exportar' => 'ventas.canales_venta.exportar'
+            'eliminar' => 'ventas.canales_venta.eliminar'
         ],
 
         'formas_pago' => [
             'ver' => 'ventas.formas_pago.ver',
             'crear' => 'ventas.formas_pago.crear',
             'editar' => 'ventas.formas_pago.editar',
-            'eliminar' => 'ventas.formas_pago.eliminar',
-            'exportar' => 'ventas.formas_pago.exportar'
+            'eliminar' => 'ventas.formas_pago.eliminar'
         ],
 
         'proyectos' => [
             'ver' => 'ventas.proyectos.ver',
             'crear' => 'ventas.proyectos.crear',
             'editar' => 'ventas.proyectos.editar',
-            'eliminar' => 'ventas.proyectos.eliminar',
-            'exportar' => 'ventas.proyectos.exportar'
+            'eliminar' => 'ventas.proyectos.eliminar'
         ],
         'abonos' => [
             'ver' => 'ventas.abonos.ver',
             'crear' => 'ventas.abonos.crear',
             'editar' => 'ventas.abonos.editar',
-            'eliminar' => 'ventas.abonos.eliminar',
-            'exportar' => 'ventas.abonos.exportar'
+            'eliminar' => 'ventas.abonos.eliminar'
         ],
         'devoluciones' => [
             'ver' => 'ventas.devoluciones.ver',
             'crear' => 'ventas.devoluciones.crear',
             'editar' => 'ventas.devoluciones.editar',
-            'eliminar' => 'ventas.devoluciones.eliminar',
-            'exportar' => 'ventas.devoluciones.exportar'
+            'eliminar' => 'ventas.devoluciones.eliminar'
         ],
         'ordenes_produccion' => [
             'ver' => 'ventas.ordenes_produccion.ver',
             'crear' => 'ventas.ordenes_produccion.crear',
             'editar' => 'ventas.ordenes_produccion.editar',
-            'eliminar' => 'ventas.ordenes_produccion.eliminar',
-            'exportar' => 'ventas.ordenes_produccion.exportar'
+            'eliminar' => 'ventas.ordenes_produccion.eliminar'
         ]
     ],
 
@@ -300,45 +266,39 @@ return [
         'crear' => 'compras.crear',
         'editar' => 'compras.editar',
         'eliminar' => 'compras.eliminar',
-        'exportar' => 'compras.exportar',
 
         'registros' => [
             'ver' => 'compras.registros.ver',
             'crear' => 'compras.registros.crear',
             'editar' => 'compras.registros.editar',
-            'eliminar' => 'compras.registros.eliminar',
-            'exportar' => 'compras.registros.exportar'
+            'eliminar' => 'compras.registros.eliminar'
         ],
 
         'ordenes_compra' => [
             'ver' => 'compras.ordenes_compra.ver',
             'crear' => 'compras.ordenes_compra.crear',
             'editar' => 'compras.ordenes_compra.editar',
-            'eliminar' => 'compras.ordenes_compra.eliminar',
-            'exportar' => 'compras.ordenes_compra.exportar'
+            'eliminar' => 'compras.ordenes_compra.eliminar'
         ],
 
         'proveedores' => [
             'ver' => 'compras.proveedores.ver',
             'crear' => 'compras.proveedores.crear',
             'editar' => 'compras.proveedores.editar',
-            'eliminar' => 'compras.proveedores.eliminar',
-            'exportar' => 'compras.proveedores.exportar'
+            'eliminar' => 'compras.proveedores.eliminar'
         ],
 
         'retaceo' => [
             'ver' => 'compras.retaceo.ver',
             'crear' => 'compras.retaceo.crear',
             'editar' => 'compras.retaceo.editar',
-            'eliminar' => 'compras.retaceo.eliminar',
-            'exportar' => 'compras.retaceo.exportar'
+            'eliminar' => 'compras.retaceo.eliminar'
         ],
         'devoluciones' => [
             'ver' => 'compras.devoluciones.ver',
             'crear' => 'compras.devoluciones.crear',
             'editar' => 'compras.devoluciones.editar',
-            'eliminar' => 'compras.devoluciones.eliminar',
-            'exportar' => 'compras.devoluciones.exportar'
+            'eliminar' => 'compras.devoluciones.eliminar'
         ]
     ],
 
@@ -352,22 +312,19 @@ return [
         'crear' => 'gastos.crear',
         'editar' => 'gastos.editar',
         'eliminar' => 'gastos.eliminar',
-        'exportar' => 'gastos.exportar',
 
         'registros' => [
             'ver' => 'gastos.registros.ver',
             'crear' => 'gastos.registros.crear',
             'editar' => 'gastos.registros.editar',
-            'eliminar' => 'gastos.registros.eliminar',
-            'exportar' => 'gastos.registros.exportar'
+            'eliminar' => 'gastos.registros.eliminar'
         ],
 
         'categorias' => [
             'ver' => 'gastos.categorias.ver',
             'crear' => 'gastos.categorias.crear',
             'editar' => 'gastos.categorias.editar',
-            'eliminar' => 'gastos.categorias.eliminar',
-            'exportar' => 'gastos.categorias.exportar'
+            'eliminar' => 'gastos.categorias.eliminar'
         ]
     ],
 
@@ -380,8 +337,7 @@ return [
         'ver' => 'citas.ver',
         'crear' => 'citas.crear',
         'editar' => 'citas.editar',
-        'eliminar' => 'citas.eliminar',
-        'exportar' => 'citas.exportar'
+        'eliminar' => 'citas.eliminar'
     ],
 
     /*
@@ -394,90 +350,78 @@ return [
         'crear' => 'finanzas.crear',
         'editar' => 'finanzas.editar',
         'eliminar' => 'finanzas.eliminar',
-        'exportar' => 'finanzas.exportar',
 
         'bancos' => [
             'ver' => 'finanzas.bancos.ver',
             'crear' => 'finanzas.bancos.crear',
             'editar' => 'finanzas.bancos.editar',
-            'eliminar' => 'finanzas.bancos.eliminar',
-            'exportar' => 'finanzas.bancos.exportar'
+            'eliminar' => 'finanzas.bancos.eliminar'
         ],
 
         'reporteria' => [
             'ver' => 'finanzas.reporteria.ver',
             'crear' => 'finanzas.reporteria.crear',
             'editar' => 'finanzas.reporteria.editar',
-            'eliminar' => 'finanzas.reporteria.eliminar',
-            'exportar' => 'finanzas.reporteria.exportar'
+            'eliminar' => 'finanzas.reporteria.eliminar'
         ],
 
         'libro_iva' => [
             'ver' => 'finanzas.libro_iva.ver',
             'crear' => 'finanzas.libro_iva.crear',
             'editar' => 'finanzas.libro_iva.editar',
-            'eliminar' => 'finanzas.libro_iva.eliminar',
-            'exportar' => 'finanzas.libro_iva.exportar'
+            'eliminar' => 'finanzas.libro_iva.eliminar'
         ],
 
         'presupuestos' => [
             'ver' => 'finanzas.presupuestos.ver',
             'crear' => 'finanzas.presupuestos.crear',
             'editar' => 'finanzas.presupuestos.editar',
-            'eliminar' => 'finanzas.presupuestos.eliminar',
-            'exportar' => 'finanzas.presupuestos.exportar'
+            'eliminar' => 'finanzas.presupuestos.eliminar'
         ],
 
         'documentos' => [
             'ver' => 'finanzas.documentos.ver',
             'crear' => 'finanzas.documentos.crear',
             'editar' => 'finanzas.documentos.editar',
-            'eliminar' => 'finanzas.documentos.eliminar',
-            'exportar' => 'finanzas.documentos.exportar'
+            'eliminar' => 'finanzas.documentos.eliminar'
         ],
 
         'impuestos' => [
             'ver' => 'finanzas.impuestos.ver',
             'crear' => 'finanzas.impuestos.crear',
             'editar' => 'finanzas.impuestos.editar',
-            'eliminar' => 'finanzas.impuestos.eliminar',
-            'exportar' => 'finanzas.impuestos.exportar'
+            'eliminar' => 'finanzas.impuestos.eliminar'
         ],
 
         'cierre_caja' => [
             'ver' => 'finanzas.cierre_caja.ver',
             'crear' => 'finanzas.cierre_caja.crear',
             'editar' => 'finanzas.cierre_caja.editar',
-            'eliminar' => 'finanzas.cierre_caja.eliminar',
-            'exportar' => 'finanzas.cierre_caja.exportar'
+            'eliminar' => 'finanzas.cierre_caja.eliminar'
         ],
         'cheques' => [
             'ver' => 'finanzas.cheques.ver',
             'crear' => 'finanzas.cheques.crear',
             'editar' => 'finanzas.cheques.editar',
-            'eliminar' => 'finanzas.cheques.eliminar',
-            'exportar' => 'finanzas.cheques.exportar'
+            'eliminar' => 'finanzas.cheques.eliminar'
         ],
         'conciliaciones' => [
             'ver' => 'finanzas.conciliaciones.ver',
             'crear' => 'finanzas.conciliaciones.crear',
             'editar' => 'finanzas.conciliaciones.editar',
-            'eliminar' => 'finanzas.conciliaciones.eliminar',
-            'exportar' => 'finanzas.conciliaciones.exportar'
+            'eliminar' => 'finanzas.conciliaciones.eliminar'
         ],
         'cuentas' => [
-            'ver' => 'finanzas.ver',
+            'ver' => 'finanzas.cuentas.ver',
             'crear' => 'finanzas.cuentas.crear',
             'editar' => 'finanzas.cuentas.editar',
-            'eliminar' => 'finanzas.cuentas.eliminar',
-            'exportar' => 'finanzas.cuentas.exportar'
+            'eliminar' => 'finanzas.cuentas.eliminar'
         ],
         'transacciones' => [
             'ver' => 'finanzas.transacciones.ver',
             'crear' => 'finanzas.transacciones.crear',
             'editar' => 'finanzas.transacciones.editar',
-            'eliminar' => 'finanzas.transacciones.eliminar',
-            'exportar' => 'finanzas.transacciones.exportar'
+            'eliminar' => 'finanzas.transacciones.eliminar'
         ],
     ],
 
@@ -491,30 +435,26 @@ return [
         'crear' => 'contabilidad.crear',
         'editar' => 'contabilidad.editar',
         'eliminar' => 'contabilidad.eliminar',
-        'exportar' => 'contabilidad.exportar',
 
         'partidas' => [
             'ver' => 'contabilidad.partidas.ver',
             'crear' => 'contabilidad.partidas.crear',
             'editar' => 'contabilidad.partidas.editar',
-            'eliminar' => 'contabilidad.partidas.eliminar',
-            'exportar' => 'contabilidad.partidas.exportar'
+            'eliminar' => 'contabilidad.partidas.eliminar'
         ],
 
         'catalogo_cuentas' => [
             'ver' => 'contabilidad.catalogo_cuentas.ver',
             'crear' => 'contabilidad.catalogo_cuentas.crear',
             'editar' => 'contabilidad.catalogo_cuentas.editar',
-            'eliminar' => 'contabilidad.catalogo_cuentas.eliminar',
-            'exportar' => 'contabilidad.catalogo_cuentas.exportar'
+            'eliminar' => 'contabilidad.catalogo_cuentas.eliminar'
         ],
 
         'configuracion' => [
             'ver' => 'contabilidad.configuracion.ver',
             'crear' => 'contabilidad.configuracion.crear',
             'editar' => 'contabilidad.configuracion.editar',
-            'eliminar' => 'contabilidad.configuracion.eliminar',
-            'exportar' => 'contabilidad.configuracion.exportar'
+            'eliminar' => 'contabilidad.configuracion.eliminar'
         ]
     ],
 
@@ -527,7 +467,6 @@ return [
         'ver' => 'ayuda.ver',
         'crear' => 'ayuda.crear',
         'editar' => 'ayuda.editar',
-        'eliminar' => 'ayuda.eliminar',
-        'exportar' => 'ayuda.exportar'
+        'eliminar' => 'ayuda.eliminar'
     ]
 ];
