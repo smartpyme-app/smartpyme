@@ -13,6 +13,7 @@ class RoleSeeder extends Seeder
         // Definir todos los roles primero
         $roles = [
             'ROL_SUPER_ADMIN' => 'super_admin',
+            'ROL_ADMIN' => 'admin',
             'ROL_CONTADOR_SUPERIOR' => 'contador_superior',
             'ROL_CONTADOR_AUXILIAR' => 'contador_auxiliar',
             'ROL_GERENTE_VENTAS' => 'gerente_ventas',
@@ -32,6 +33,10 @@ class RoleSeeder extends Seeder
         // Super Admin - Acceso Total
         $superAdmin = Role::findByName(config('constants.ROL_SUPER_ADMIN', 'super_admin'));
         $superAdmin->givePermissionTo(Permission::all());
+
+        // Admin - Acceso Total
+        $admin = Role::findByName(config('constants.ROL_ADMIN', 'admin'));
+        $admin->givePermissionTo(Permission::all());
 
         // Contador Superior
         $contadorSuperior = Role::findByName(config('constants.ROL_CONTADOR_SUPERIOR', 'contador_superior'));

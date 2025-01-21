@@ -13,6 +13,19 @@ import { environment } from './../../environments/environment';
 import * as moment from 'moment';
 declare let $: any;
 
+export const GUARD_TYPES = {
+  ADMIN: 'admin',
+  CITAS: 'citas',
+  SUPER_ADMIN: 'superAdmin',
+} as const;
+
+interface UserPermissions {
+  role: string;
+  rolePermissions: string[];
+  directPermissions: string[];
+  revokedPermissions: string[];
+  effectivePermissions: string[];
+}
 @Injectable()
 export class ApiService {
   public appUrl: string = environment.APP_URL;
@@ -23,11 +36,13 @@ export class ApiService {
     directPermissions: string[];
     revokedPermissions: string[];
     effectivePermissions: string[];
+    role: string;
   } = {
     rolePermissions: [],
     directPermissions: [],
     revokedPermissions: [],
     effectivePermissions: [],
+    role: '',
   };
 
   constructor(private http: HttpClient, private alertService: AlertService) {}
@@ -165,6 +180,7 @@ export class ApiService {
       directPermissions: [],
       revokedPermissions: [],
       effectivePermissions: [],
+      role: '',
     };
   }
 
@@ -491,5 +507,36 @@ export class ApiService {
 
   private handleError(error: HttpErrorResponse) {
     return throwError(error);
+  }
+  verifyRoleAdmin() {
+    return this.currentUserPermissions.role == 'super_admin';
+  }
+
+  verifyVentasRole(): boolean {
+    return this.currentUserPermissions.role === 'usuario_ventas';
+  }
+
+  verifyCitasRole(): boolean {
+    return this.currentUserPermissions.role === 'usuario_citas';
+  }
+
+  // isAdmin() {
+  //   let usuario = this.auth_user();
+  //   if (
+  //     usuario.tipo == 'Administrador' ||
+  //     usuario.tipo == 'Contador' ||
+  //     usuario.tipo == 'Supervisor'
+  //   )
+  //     return true;
+  //   return false;
+  // }
+
+  isAdminRole() {
+    let role = this.currentUserPermissions.role;
+    return (
+      role === 'super_admin' ||
+      role === 'super_contador' ||
+      role === 'gerente_ventas'
+    );
   }
 }

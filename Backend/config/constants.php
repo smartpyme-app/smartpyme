@@ -4,6 +4,7 @@ return [
     
     // Roles principales del JIRA
     'ROL_SUPER_ADMIN'          => 'super_admin',          // Del SP-117
+    'ROL_ADMIN'                => 'admin',                // Del SP-117
     'ROL_CONTADOR_SUPERIOR'    => 'super_contador',       // Del SP-118
     'ROL_CONTADOR_AUXILIAR'    => 'auxiliar_contable',    // Del SP-118
     'ROL_GERENTE_VENTAS'      => 'gerente_ventas',       // Del SP-119

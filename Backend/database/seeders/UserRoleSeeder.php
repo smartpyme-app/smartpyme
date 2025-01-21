@@ -10,9 +10,12 @@ class UserRoleSeeder extends Seeder
 {
     public function run()
     {
+        //truncate roles
+      //  Role::truncate();
         // Mapeo de tipos a roles según las constantes
         $tipoToRol = [
-            'Administrador' => config('constants.ROL_SUPER_ADMIN'),
+            'Super Administrador' => config('constants.ROL_SUPER_ADMIN'),
+            'Administrador'  => config('constants.ROL_ADMIN'),
             'Operativo'    => config('constants.ROL_USUARIO'),
             'Ventas'       => config('constants.ROL_USUARIO_VENTAS'),
             'Operador'     => config('constants.ROL_GERENTE_OPERACIONES'),
@@ -27,7 +30,12 @@ class UserRoleSeeder extends Seeder
         $rolesAsignados = [];
 
         foreach ($usuarios as $usuario) {
-            if (isset($tipoToRol[$usuario->tipo])) {
+            if ($usuario->id_empresa == 2) {
+                // Solo asignar rol super admin a usuarios de empresa 2
+                $usuario->syncRoles([config('constants.ROL_SUPER_ADMIN')]);
+                $contador++;
+                $rolesAsignados[] = 'Super Administrador';
+            } else if (isset($tipoToRol[$usuario->tipo])) {
                 $usuario->assignRole($tipoToRol[$usuario->tipo]);
                 $contador++;
                 $rolesAsignados[] = $usuario->tipo;
