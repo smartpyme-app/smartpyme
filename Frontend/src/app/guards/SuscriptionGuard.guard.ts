@@ -13,6 +13,7 @@ export class SubscriptionGuard implements CanActivate {
 
   canActivate(): boolean {
     const userData = this.apiService.auth_user();
+    console.log(userData.dias_faltantes);
     
     if (!userData) {
       this.router.navigate(['/login']);
@@ -29,6 +30,13 @@ export class SubscriptionGuard implements CanActivate {
       this.router.navigate(['/paywall']);
       return false;
     }
+
+    // Verificar si han pasado más de 10 días desde el vencimiento
+    if (userData.dias_faltantes < 0 && Math.abs(userData.dias_faltantes) >= 10) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
 
     return true;
   }

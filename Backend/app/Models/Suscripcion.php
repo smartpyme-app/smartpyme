@@ -96,7 +96,8 @@ class Suscripcion extends Model
         $fechaProximoPago = Carbon::parse($this->fecha_proximo_pago);
         
         if ($fechaActual > $fechaProximoPago) {
-            return 0;
+            // Si está vencida, retorna días negativos para indicar días de vencimiento
+            return -$fechaActual->diffInDays($fechaProximoPago);
         }
 
         return $fechaActual->diffInDays($fechaProximoPago);

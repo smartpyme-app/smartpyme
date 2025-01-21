@@ -48,8 +48,8 @@
 
         <!-- Suscripción en período de gracia (1-9 días después de vencer) -->
         <div *ngIf="usuario.dias_faltantes < 0 && usuario.dias_faltantes > -10" 
-             class="alert bg-danger text-white rounded-0 m-0 p-2 text-center">
-          <a href="/paywall" class="text-decoration-none text-white">
+             class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
+          <a href="/paywall" class="text-decoration-none text-dark">
             <i class="fas fa-exclamation-triangle me-2"></i>
             Tu cuenta será desactivada en {{ 10 + usuario.dias_faltantes }} días si no renuevas tu suscripción.
             <span class="fw-bold">Renueva inmediatamente</span>

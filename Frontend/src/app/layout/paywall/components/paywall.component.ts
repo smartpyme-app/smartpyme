@@ -3,20 +3,14 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
+import { AppConstants } from '../../../constants/app.constants';
 @Component({
   selector: 'app-paywall',
   templateUrl: './paywall.component.html',
   styleUrls: ['./paywall.component.css']
 })
 export class PaywallComponent implements OnInit {
-  readonly ESTADOS_SUSCRIPCION = {
-    ACTIVO: 'activo',
-    INACTIVO: 'inactivo',
-    CANCELADO: 'cancelado',
-    PENDIENTE: 'pendiente',
-    RENOVADO: 'renovado',
-    EN_PRUEBA: 'en prueba'
-  };
+  readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
 
   readonly PLAN_URLS: { [key: string]: string } = {
     'Emprendedor': 'https://pay.n1co.shop/pl/WEwwXTOpy',
@@ -54,33 +48,20 @@ export class PaywallComponent implements OnInit {
   }
 
   setPlanFeatures(plan: string) {
-    this.planName = plan; // Asegura que esto esté presente
+    this.planName = plan;
     
     switch (plan) {
-      case 'Emprendedor':
-        this.planFeatures = [
-          'Funciones básicas',
-          'Soporte por correo',
-          'Límite de usuarios básico'
-        ];
-        this.price = 19.99;
+      case AppConstants.PLANES.EMPRENDEDOR.NOMBRE:
+        this.planFeatures = AppConstants.PLANES.EMPRENDEDOR.CARACTERISTICAS;
+        this.price = AppConstants.PLANES.EMPRENDEDOR.PRECIO;
         break;
-      case 'Estándar':
-        this.planFeatures = [
-          'Todas las funciones básicas',
-          'Soporte prioritario',
-          'Más usuarios permitidos',
-          'Reportes avanzados'
-        ];
-        this.price = 28.25;
+      case AppConstants.PLANES.ESTANDAR.NOMBRE:
+        this.planFeatures = AppConstants.PLANES.ESTANDAR.CARACTERISTICAS;
+        this.price = AppConstants.PLANES.ESTANDAR.PRECIO;
         break;
-      case 'Avanzado':
-        this.planFeatures = [
-          'Todas las funciones estándar',
-          'Acceso a API',
-          'Soporte 24/7'
-        ];
-        this.price = 56.50;
+      case AppConstants.PLANES.AVANZADO.NOMBRE:
+        this.planFeatures = AppConstants.PLANES.AVANZADO.CARACTERISTICAS;
+        this.price = AppConstants.PLANES.AVANZADO.PRECIO;
         break;
     }
   }
@@ -89,9 +70,19 @@ export class PaywallComponent implements OnInit {
     if (this.estadoSuscripcion === this.ESTADOS_SUSCRIPCION.EN_PRUEBA) {
       return 'Tu suscripción de prueba ha expirado';
     }
-    // if (this.diasFaltantes > 0) {
-    //   return `Tu suscripción expirará en ${this.diasFaltantes} días`;
-    // }
+
+    if (this.estadoSuscripcion === this.ESTADOS_SUSCRIPCION.CANCELADO) {
+      return 'Tu suscripción ha sido cancelada';
+    }
+
+    if (this.estadoSuscripcion === this.ESTADOS_SUSCRIPCION.INACTIVO) {
+      return 'Tu suscripción ha expirado';
+    }
+
+    if (this.estadoSuscripcion === this.ESTADOS_SUSCRIPCION.PENDIENTE) {
+      return 'Tu suscripción necesita ser renovada';
+    }
+
     return 'Tu suscripción ha expirado';
   }
 

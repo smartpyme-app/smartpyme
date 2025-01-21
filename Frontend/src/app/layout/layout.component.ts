@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
-
+import { AppConstants } from '../constants/app.constants';
 @Component({
   selector: 'app-layout',
   templateUrl: './layout.component.html',
@@ -15,14 +15,7 @@ export class LayoutComponent  {
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
 
-    readonly ESTADOS_SUSCRIPCION = {
-        ACTIVO: 'activo',
-        INACTIVO: 'inactivo',
-        CANCELADO: 'cancelado',
-        PENDIENTE: 'pendiente',
-        RENOVADO: 'renovado',
-        EN_PRUEBA: 'en prueba'
-    };
+    readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
 
     constructor(public apiService: ApiService, public alertService: AlertService, private router: Router) { }
 
@@ -37,7 +30,6 @@ export class LayoutComponent  {
 
     getMensajeSuscripcion(): { mensaje: string, tipo: string } {
         const diasRestantes = this.usuario.dias_faltantes;
-        console.log(diasRestantes);
 
         if (diasRestantes > 7) {
             return {
