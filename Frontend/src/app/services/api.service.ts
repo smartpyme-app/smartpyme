@@ -509,34 +509,57 @@ export class ApiService {
     return throwError(error);
   }
   verifyRoleAdmin() {
-    return this.currentUserPermissions.role == 'super_admin';
+    let user = localStorage.getItem('SP_user_permissions');
+    if (user) {
+      let role = JSON.parse(user).role;
+      return role === 'super_admin';
+    }
+    return false;
   }
 
   verifyVentasRole(): boolean {
-    return this.currentUserPermissions.role === 'usuario_ventas';
+    let user = localStorage.getItem('SP_user_permissions');
+    if (user) {
+      let role = JSON.parse(user).role;
+      return role === 'usuario_ventas';
+    }
+    return false;
   }
 
   verifyCitasRole(): boolean {
-    return this.currentUserPermissions.role === 'usuario_citas';
+    let user = localStorage.getItem('SP_user_permissions');
+    if (user) {
+      let role = JSON.parse(user).role;
+      return role === 'usuario_citas';
+    }
+    return false;
   }
 
-  // isAdmin() {
-  //   let usuario = this.auth_user();
-  //   if (
-  //     usuario.tipo == 'Administrador' ||
-  //     usuario.tipo == 'Contador' ||
-  //     usuario.tipo == 'Supervisor'
-  //   )
-  //     return true;
-  //   return false;
-  // }
-
   isAdminRole() {
-    let role = this.currentUserPermissions.role;
-    return (
-      role === 'super_admin' ||
-      role === 'super_contador' ||
-      role === 'gerente_ventas'
-    );
+    let user = localStorage.getItem('SP_user_permissions');
+    if (user) {
+      let role = JSON.parse(user).role;
+      return (
+        role === 'super_contador' ||
+        role === 'admin' ||
+        role === 'gerente_ventas'
+      );
+    }
+    return false;
+  }
+
+  validateRole(roleToCheck: string, equals: boolean = true): boolean {
+    const userPermissions = localStorage.getItem('SP_user_permissions');
+    if (!userPermissions) {
+      return false;
+    }
+
+    try {
+      const { role } = JSON.parse(userPermissions);
+      return equals ? role === roleToCheck : role !== roleToCheck;
+    } catch (error) {
+      console.error('Error checking role:', error);
+      return false;
+    }
   }
 }

@@ -21,7 +21,9 @@ class UserRoleSeeder extends Seeder
             'Operador'     => config('constants.ROL_GERENTE_OPERACIONES'),
             'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
             'Supervisor'   => config('constants.ROL_GERENTE_VENTAS'),
-            'Citas'        => config('constants.ROL_USUARIO_CITAS')
+            'Citas'        => config('constants.ROL_USUARIO_CITAS'),
+            'Cajero'       => config('constants.ROL_USUARIO_CAJERO'),
+            'Vendedor'     => config('constants.ROL_USUARIO_VENDEDOR'),
         ];
 
         // Obtener todos los usuarios con tipo

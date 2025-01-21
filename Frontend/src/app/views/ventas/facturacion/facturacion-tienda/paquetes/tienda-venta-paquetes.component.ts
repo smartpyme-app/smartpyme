@@ -64,7 +64,10 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 5;
 
-        if(this.apiService.auth_user().tipo != 'Administrador'){
+        // if(this.apiService.auth_user().tipo != 'Administrador'){
+        //     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+        // }
+        if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         }
         

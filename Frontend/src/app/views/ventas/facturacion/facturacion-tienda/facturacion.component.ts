@@ -81,7 +81,10 @@ export class FacturacionComponent implements OnInit {
   public loadData() {
     this.apiService.getAll('sucursales/list').subscribe(sucursales => {
       this.sucursales = sucursales;
-      if (this.apiService.auth_user().tipo != 'Administrador') {
+      // if (this.apiService.auth_user().tipo != 'Administrador') {
+      //   this.sucursales = this.sucursales.filter((item: any) => item.id == this.apiService.auth_user().id_sucursal);
+      // }
+      if (this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
         this.sucursales = this.sucursales.filter((item: any) => item.id == this.apiService.auth_user().id_sucursal);
       }
     }, error => {
@@ -98,7 +101,10 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
       this.bodegas = bodegas;
-      if (this.apiService.auth_user().tipo != 'Administrador') {
+      // if (this.apiService.auth_user().tipo != 'Administrador') {
+      //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+      // }
+      if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
       }
     }, error => {
@@ -107,7 +113,10 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('usuarios/list').subscribe(usuarios => {
       this.usuarios = usuarios;
-      if (this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor') {
+      // if (this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor') {
+      //   this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
+      // }
+      if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false) || this.apiService.validateRole('gerente_ventas', false)) {
         this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
       }
     }, error => {

@@ -56,7 +56,10 @@
                         <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
-                                <a *ngIf="apiService.auth_user().tipo == 'Cajero'" class="btn btn-default" (click)="reemprimir(venta)" tooltip="Reemprimir">
+                                <!-- <a *ngIf="apiService.auth_user().tipo == 'Cajero'" class="btn btn-default" (click)="reemprimir(venta)" tooltip="Reemprimir">
+                                    <i class="fa fa-print"></i>
+                                </a> -->
+                                <a *ngIf="apiService.validateRole('usuario_cajero', true)" class="btn btn-default" (click)="reemprimir(venta)" tooltip="Reemprimir">
                                     <i class="fa fa-print"></i>
                                 </a>
                                 <a class="btn btn-default" routerLink="/devolucion/venta/{{venta.id}}" tooltip="Ver">
