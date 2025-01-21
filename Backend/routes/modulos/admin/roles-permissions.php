@@ -31,3 +31,4 @@ Route::post('/modules', [RolePermissionController::class, 'storeModule']);
 Route::delete('/modules/{id}', [RolePermissionController::class, 'destroyModule']);
 Route::put('/modules/{id}', [RolePermissionController::class, 'updateModule']);
 
+Route::get('/roles', [RolePermissionController::class, 'roles']);

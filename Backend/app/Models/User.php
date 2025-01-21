@@ -43,6 +43,8 @@ class User extends Authenticatable implements JWTSubject
         'enable' => 'string'
     ];
 
+    
+
     protected static function boot()
     {
         parent::boot();
@@ -85,6 +87,12 @@ class User extends Authenticatable implements JWTSubject
 
     public function getJWTCustomClaims() {
       return [];
+    }
+    
+
+    //solo se puede tener un rol    
+    public function getRoleAttribute(){
+        return $this->roles->first();
     }
 
 }

@@ -20,6 +20,7 @@ export class UsuarioComponent implements OnInit {
   };
   public sucursales: any = [];
   public empleados: any = [];
+  public roles: any = [];
   public loading = false;
   public mostrarCambioContrasena = false;
 
@@ -87,11 +88,28 @@ export class UsuarioComponent implements OnInit {
     this.apiService.read('usuario/', id).subscribe(
       (usuario) => {
         this.usuario = usuario;
+        this.usuario.rol_id = usuario.roles[0].id;
         this.loading = false;
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+      }
+    );
+
+    this.apiService.getAll('roles').subscribe(
+      (roles) => {
+        this.roles = roles.map((role: any) => {
+          return {
+            ...role,
+            name: role.name.split('_')
+                         .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                         .join(' ')
+          };
+        });
+      },
+      (error) => {
+        this.alertService.error(error);
       }
     );
   }

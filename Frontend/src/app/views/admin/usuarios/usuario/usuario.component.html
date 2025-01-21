@@ -93,7 +93,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-floating">
+                                    <!-- <div class="form-floating">
                                         <select name="tipo" [(ngModel)]="usuario.tipo" 
                                                 class="form-select" required>
                                             <option value="Administrador">Administrador</option>
@@ -103,6 +103,15 @@
                                             <option value="Ventas">Ventas</option>
                                         </select>
                                         <label>Tipo</label>
+                                    </div> -->
+                                    <div class="form-floating">
+                                        <select name="tipo" [(ngModel)]="usuario.rol_id"
+                                                class="form-select" required>
+                                            <option *ngFor="let role of roles" [value]="role.id">
+                                                {{ role.name }}
+                                            </option>
+                                        </select>
+                                        <label>Rol</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">

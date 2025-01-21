@@ -571,4 +571,18 @@ class RolePermissionController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function roles()
+    {
+        $tipoToRol = [
+            'Administrador'  => config('constants.ROL_ADMIN'),
+            'Supervisor'   => config('constants.ROL_GERENTE_VENTAS'), 
+            'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
+            'Citas'        => config('constants.ROL_USUARIO_CITAS'),
+            'Ventas'       => config('constants.ROL_USUARIO_VENTAS')
+        ];
+
+        $roles = Role::whereIn('name', array_values($tipoToRol))->get();
+        return response()->json($roles, 200);
+    }
 }

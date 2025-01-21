@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
+//log
+use Illuminate\Support\Facades\Log;
 
 class UsuariosController extends Controller
 {
@@ -50,7 +52,8 @@ class UsuariosController extends Controller
 
     public function read($id) {
         
-        $usuario = Usuario::where('id', $id)->firstOrFail();
+        //$usuario = Usuario::where('id', $id)->firstOrFail();
+        $usuario = Usuario::with('roles')->where('id', $id)->firstOrFail();
         return Response()->json($usuario, 200);
     }
 
@@ -80,10 +83,11 @@ class UsuariosController extends Controller
 
     public function store(Request $request)
     {
+      //  Log::info($request->all());
         $request->validate([
             'name'          => 'required|max:255',
             'email'         => 'required|unique:users,email,'.$request->id,
-            'tipo'          => 'required',
+           // 'tipo'          => 'required',
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
             'password'      => [
@@ -132,6 +136,8 @@ class UsuariosController extends Controller
         if(!$request->id){
             $usuario->bienvenida();
         }
+    
+        $usuario->roles()->sync([$request->rol_id]);
 
 
         return Response()->json($usuario, 200);
