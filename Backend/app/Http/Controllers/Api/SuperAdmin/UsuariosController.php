@@ -17,7 +17,7 @@ class UsuariosController extends Controller
 
     public function index(Request $request) {
        
-        $usuarios = Usuario::with('empresa')
+        $usuarios = Usuario::with('empresa','roles')
                                 ->when($request->estado !== null, function($q) use ($request){
                                     $q->where('enable', !!$request->estado);
                                 })
@@ -85,7 +85,7 @@ class UsuariosController extends Controller
         $request->validate([
             'name'          => 'required|max:255',
             'email'         => 'required|unique:users,email,'.$request->id,
-            'tipo'          => 'required',
+            'rol_id'        => 'required',
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
             'password'      => [
@@ -127,7 +127,9 @@ class UsuariosController extends Controller
             $resize->save(public_path('img/'.$path), 50);
             $usuario->avatar = "/" . $path;
         }
+
         
+        $usuario->roles()->sync([$request->rol_id]);
         $usuario->save();
 
         return Response()->json($usuario, 200);

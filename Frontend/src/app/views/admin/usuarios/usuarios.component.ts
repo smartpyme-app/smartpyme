@@ -14,6 +14,7 @@ export class UsuariosComponent implements OnInit {
 
     public sucursales:any = [];
     public usuarios:any = [];
+    public roles:any = [];
     public usuario:any = {};
     public paginacion = [];
     public loading:boolean = false;
@@ -53,9 +54,23 @@ export class UsuariosComponent implements OnInit {
         }      
         this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
+            this.usuarios.data.forEach((usuario:any) => {
+                usuario.rol_id = usuario.roles[0].id;
+                usuario.rol_name = usuario.roles[0].name;
+            });
             this.contarActivos();
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('roles').subscribe(roles => { 
+            this.roles = roles;
+
+            this.roles.forEach((rol:any) => {
+                rol.name = rol.name.split('_')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+            });
+        }, error => {this.alertService.error(error); });
     }
 
     public contarActivos(){

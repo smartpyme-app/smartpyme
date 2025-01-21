@@ -19,7 +19,7 @@ class UsuariosController extends Controller
 
     public function index(Request $request) {
        
-        $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+        $usuarios = Usuario::with('roles')->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
                                 ->with('sucursal')
                                 ->when($request->estado !== null, function($q) use ($request){
                                     $q->where('enable', !!$request->estado);

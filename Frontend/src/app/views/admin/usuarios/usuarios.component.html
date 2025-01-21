@@ -75,7 +75,7 @@
 
                 <tr *ngFor=" let usuario of usuarios.data">                    
                     <td>{{usuario.name}}</td>
-                    <td>{{usuario.tipo}}</td>
+                    <td>{{usuario.rol_name}}</td>
                     <td>{{usuario.sucursal.nombre}}</td>
                     <td>
                         <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
@@ -156,7 +156,7 @@
                     La contraseña debe tener entre 8 y 16 caracteres, al menos un dígito, una minúscula, una mayúscula y un símbolo.
                 </div>
             </div>
-            <div class="form-group col-md-6">
+            <!-- <div class="form-group col-md-6">
                 <label for="tipo">Tipo:</label>
                 <select name="tipo" [(ngModel)]="usuario.tipo" class="form-control form-select">
                     <option value="Administrador">Administrador</option>
@@ -165,8 +165,16 @@
                     <option value="Citas">Citas</option>
                     <option value="Ventas">Ventas</option>
                 </select>
+            </div> -->
+            <div class="form-group col-md-6">
+                <label for="tipo">Rol:</label>
+                <select name="tipo" [(ngModel)]="usuario.rol_id" class="form-control form-select">
+                    <option *ngFor="let role of roles" [value]="role.id">
+                        {{ role.name }}
+                    </option>
+                </select>
             </div>
-            <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
+            <div class="form-group col-md-6">
                 <label for="codigo_autorizacion">Código para autorizaciones:</label>
                 <input type="password" class="form-control" [(ngModel)]="usuario.codigo_autorizacion" name="codigo_autorizacion" placeholder="Código para autorizaciones de venta">
             </div>

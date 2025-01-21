@@ -17,6 +17,7 @@ export class AdminUsuariosComponent implements OnInit {
     public sucursalesList:any = [];
     public empresas:any = [];
     public usuarios:any = [];
+    public roles:any = [];
     public paginacion = [];
     public loading:boolean = false;
     public saving:boolean = false;
@@ -48,8 +49,16 @@ export class AdminUsuariosComponent implements OnInit {
         this.loading = true;        
         this.apiService.getAll('admin-usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
+            this.usuarios.data.forEach((usuario:any) => {
+                usuario.rol_name = usuario.roles[0].name;
+                usuario.rol_id = usuario.roles[0].id;
+            });
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('roles').subscribe(roles => { 
+            this.roles = roles;
+        }, error => {this.alertService.error(error); });
     }
 
 

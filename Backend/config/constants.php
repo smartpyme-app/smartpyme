@@ -18,4 +18,5 @@ return [
     'ROL_USUARIO_CONSULTAS'   => 'usuario_consultas',
     'ROL_USUARIO_CAJERO'      => 'usuario_cajero',
     'ROL_USUARIO_VENDEDOR'    => 'usuario_vendedor',
+    'ROL_USUARIO_COCINERO'    => 'usuario_cocinero',
 ];

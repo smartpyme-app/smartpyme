@@ -21,6 +21,7 @@ export class UsuarioComponent implements OnInit {
   public sucursales: any = [];
   public empleados: any = [];
   public roles: any = [];
+  public rol: any = {};
   public loading = false;
   public mostrarCambioContrasena = false;
 
@@ -62,7 +63,8 @@ export class UsuarioComponent implements OnInit {
 
     if (isNaN(id)) {
       this.usuario = {};
-      this.usuario.tipo = 'Vendedor';
+      this.usuario.tipo = 'admin';
+      this.usuario.rol_id = 1;
       this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;
@@ -89,6 +91,11 @@ export class UsuarioComponent implements OnInit {
       (usuario) => {
         this.usuario = usuario;
         this.usuario.rol_id = usuario.roles[0].id;
+        this.rol = usuario.roles[0];
+        this.rol.name = this.rol.name.split('_')
+                         .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                         .join(' ');
+        
         this.loading = false;
       },
       (error) => {

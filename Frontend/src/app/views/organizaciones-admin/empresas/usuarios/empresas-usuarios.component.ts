@@ -24,6 +24,7 @@ export class EmpresasUsuariosComponent implements OnInit {
     public filtros:any = {};
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
+    public roles:any = [];
 
     modalRef?: BsModalRef;
 
@@ -48,8 +49,22 @@ export class EmpresasUsuariosComponent implements OnInit {
         this.loading = true;        
         this.apiService.getAll('licencias/usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
+            this.usuarios.data.forEach((usuario:any) => {
+                usuario.rol_id = usuario.roles[0].id;
+                usuario.rol_name = usuario.roles[0].name;
+            });
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('roles').subscribe(roles => { 
+            this.roles = roles;
+            this.roles.forEach((rol:any) => {
+                rol.name = rol.name.split('_')
+                                 .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                                 .join(' ');
+            });
+
+        }, error => {this.alertService.error(error); });
     }
 
 

@@ -28,11 +28,16 @@
     </div>
     <div style="min-height: 60vh;">
         <ul class="list-unstyled ps-0">
-            <li *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' && apiService.hasPermission('inteligencia_negocios.ver')" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <!-- <li *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' && apiService.hasPermission('inteligencia_negocios.ver')" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
                     <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
                 </a>
-            </li>
+            </li> -->
+            <li *ngIf="apiService.validateRole('admin', true) || apiService.validateRole('super_admin', true) ||  apiService.validateRole('super_contador', true) && apiService.hasPermission('inteligencia_negocios.ver')" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+              <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+                  <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
+              </a>
+          </li>
             <li class="mb-1" *ngIf="apiService.hasPermission('productos.ver')">
                 <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
                   <img src="/assets/icons/briefcase.png" class="icon me-2">Productos

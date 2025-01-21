@@ -40,7 +40,7 @@
                     </div>
                     <div class="col">
                         <h3 class="h4  mb-1">{{usuario.name}}</h3>
-                        <p class="text-muted mb-0 fs-6">{{usuario.tipo}}</p>
+                        <p class="text-muted mb-0 fs-6">{{rol.name}}</p>
                     </div>
                     <div class="col-auto">
                         <span class="badge rounded-pill px-3 py-2" 
@@ -114,7 +114,16 @@
                                         <label>Rol</label>
                                     </div>
                                 </div>
-                                <div class="col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
+                                <!-- <div class="col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control" 
+                                               [(ngModel)]="usuario.codigo_autorizacion" 
+                                               name="codigo_autorizacion" 
+                                               placeholder="Código para autorizaciones" required>
+                                        <label>Código para autorizaciones</label>
+                                    </div>
+                                </div> -->
+                                <div class="col-md-6" *ngIf="rol.name == 'admin' || rol.name == 'supervisor'">
                                     <div class="form-floating">
                                         <input type="password" class="form-control" 
                                                [(ngModel)]="usuario.codigo_autorizacion" 
@@ -293,7 +302,7 @@
                                                 <small class="text-muted">Gestión de accesos</small>
                                             </div>
                                         </div>
-                                        <span class="badge bg-primary">{{usuario.tipo}}</span>
+                                        <span class="badge bg-primary">{{rol.name}}</span>
                                     </div>
 
                                     <!-- Info Alert -->
