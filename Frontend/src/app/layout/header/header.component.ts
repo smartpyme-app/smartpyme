@@ -12,6 +12,7 @@ import { AlertService } from '@services/alert.service';
 export class HeaderComponent implements OnInit {
 
     public usuario: any = {};
+    public rol: any = {};
     public filtros: any = {};
     public elem: any;
     public notificaciones: any = [];
@@ -23,6 +24,15 @@ export class HeaderComponent implements OnInit {
     ngOnInit() {
         // $('.drop-down').dropdown();
         this.usuario = this.apiService.auth_user();
+
+        let user = localStorage.getItem('SP_user_permissions');
+        if (user) {
+            this.rol = JSON.parse(user).role;
+            this.rol = this.rol.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
+        }
+
+
+
         this.apiService.loadTheme();
 
         this.elem = document.documentElement;
