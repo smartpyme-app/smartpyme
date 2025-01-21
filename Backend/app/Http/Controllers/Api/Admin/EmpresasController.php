@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
+use App\Models\Inventario\Bodega;
 use App\Models\Transaccion;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -116,7 +117,8 @@ class EmpresasController extends Controller
 
         //Crear sucursal
             if(!$request->id){
-                Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+                $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+                Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
             }
 
         return Response()->json($empresa, 200);
