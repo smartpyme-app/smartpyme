@@ -20,7 +20,7 @@ class UserRoleSeeder extends Seeder
             'Ventas'       => config('constants.ROL_USUARIO_VENTAS'),
             'Operador'     => config('constants.ROL_GERENTE_OPERACIONES'),
             'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
-            'Supervisor'   => config('constants.ROL_GERENTE_VENTAS'),
+            'Supervisor'   => config('constants.ROL_USUARIO_SUPERVISOR'),
             'Citas'        => config('constants.ROL_USUARIO_CITAS'),
             'Cajero'       => config('constants.ROL_USUARIO_CAJERO'),
             'Vendedor'     => config('constants.ROL_USUARIO_VENDEDOR'),

@@ -54,7 +54,7 @@ export class RoleGuard implements CanActivate {
         return [
             'usuario_citas',        // ROL_USUARIO_CITAS
             'usuario_ventas',       // ROL_USUARIO_VENTAS
-            'gerente_ventas',       // ROL_GERENTE_VENTAS
+            'usuario_supervisor',       // ROL_usuario_supervisor
             'gerente_operaciones',  // ROL_GERENTE_OPERACIONES
             'super_admin',          // ROL_SUPER_ADMIN
             'super_contador'        // ROL_CONTADOR_SUPERIOR

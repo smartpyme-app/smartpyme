@@ -576,7 +576,7 @@ class RolePermissionController extends Controller
     {
         $tipoToRol = [
             'Administrador'  => config('constants.ROL_ADMIN'),
-            'Supervisor'   => config('constants.ROL_GERENTE_VENTAS'), 
+            'Supervisor'   => config('constants.ROL_USUARIO_SUPERVISOR'),
             'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
             'Citas'        => config('constants.ROL_USUARIO_CITAS'),
             'Ventas'       => config('constants.ROL_USUARIO_VENTAS')

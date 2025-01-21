@@ -1,13 +1,13 @@
 <?php
 
 return [
-    
+
     // Roles principales del JIRA
     'ROL_SUPER_ADMIN'          => 'super_admin',          // Del SP-117
     'ROL_ADMIN'                => 'admin',                // Del SP-117
     'ROL_CONTADOR_SUPERIOR'    => 'super_contador',       // Del SP-118
     'ROL_CONTADOR_AUXILIAR'    => 'auxiliar_contable',    // Del SP-118
-    'ROL_GERENTE_VENTAS'      => 'gerente_ventas',       // Del SP-119
+    'ROL_USUARIO_SUPERVISOR'   => 'usuario_supervisor',       // Del SP-119
     'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',   // Del SP-119
     'ROL_GERENTE_COMPRAS'     => 'gerente_compras',      // Del SP-119
     'ROL_USUARIO'             => 'usuario',               // Del SP-120

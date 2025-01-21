@@ -16,7 +16,7 @@ class RoleSeeder extends Seeder
             'ROL_ADMIN' => 'admin',
             'ROL_CONTADOR_SUPERIOR' => 'contador_superior',
             'ROL_CONTADOR_AUXILIAR' => 'contador_auxiliar',
-            'ROL_GERENTE_VENTAS' => 'gerente_ventas',
+            'ROL_USUARIO_SUPERVISOR' => 'usuario_supervisor',
             'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',
             'ROL_GERENTE_COMPRAS' => 'gerente_compras',
             'ROL_USUARIO' => 'usuario',
@@ -104,7 +104,7 @@ class RoleSeeder extends Seeder
         ]);
 
         // Gerente Ventas
-        $gerenteVentas = Role::findByName(config('constants.ROL_GERENTE_VENTAS', 'gerente_ventas'));
+        $gerenteVentas = Role::findByName(config('constants.ROL_USUARIO_SUPERVISOR', 'usuario_supervisor'));
         $gerenteVentas->givePermissionTo([
             // Productos
             config('permissions.PERMISSION_PRODUCTOS.ver'),
