@@ -75,6 +75,24 @@ return [
             'editar' => 'administracion.modules.editar',
             'eliminar' => 'administracion.modules.eliminar'
         ],
+        'empresas' => [
+            'ver' => 'administracion.empresas.ver',
+            'crear' => 'administracion.empresas.crear',
+            'editar' => 'administracion.empresas.editar',
+            'eliminar' => 'administracion.empresas.eliminar'
+        ],
+        'licencias' => [
+            'ver' => 'administracion.licencias.ver',
+            'crear' => 'administracion.licencias.crear',
+            'editar' => 'administracion.licencias.editar',
+            'eliminar' => 'administracion.licencias.eliminar'
+        ],
+        'usuarios' => [
+            'ver' => 'administracion.usuarios.ver',
+            'crear' => 'administracion.usuarios.crear',
+            'editar' => 'administracion.usuarios.editar',
+            'eliminar' => 'administracion.usuarios.eliminar'
+        ],
     ],
 
     /*
