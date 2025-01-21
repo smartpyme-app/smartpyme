@@ -63,8 +63,8 @@ export class UsuarioComponent implements OnInit {
 
     if (isNaN(id)) {
       this.usuario = {};
-      this.usuario.tipo = 'admin';
-      this.usuario.rol_id = 1;
+      //  this.usuario.tipo = 'admin';
+      this.usuario.rol_id = 2
       this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;
@@ -92,10 +92,11 @@ export class UsuarioComponent implements OnInit {
         this.usuario = usuario;
         this.usuario.rol_id = usuario.roles[0].id;
         this.rol = usuario.roles[0];
-        this.rol.name = this.rol.name.split('_')
-                         .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                         .join(' ');
-        
+        this.rol.name = this.rol.name
+          .split('_')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
         this.loading = false;
       },
       (error) => {
@@ -109,9 +110,12 @@ export class UsuarioComponent implements OnInit {
         this.roles = roles.map((role: any) => {
           return {
             ...role,
-            name: role.name.split('_')
-                         .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                         .join(' ')
+            name: role.name
+              .split('_')
+              .map(
+                (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
+              )
+              .join(' '),
           };
         });
       },
@@ -123,7 +127,8 @@ export class UsuarioComponent implements OnInit {
 
   public onSubmit() {
     this.loading = true;
-    if (this.usuario.tipo == 1) {
+    this.usuario.rol_id = 2;
+    if (this.usuario.rol_id == 2) {
       this.usuario.caja_id == null;
     }
 
@@ -303,26 +308,26 @@ export class UsuarioComponent implements OnInit {
     this.permissionsLoading = true;
 
     this.apiService.getAll(`roles-permissions/user/${id}`).subscribe({
-        next: (response: any) => {
-            if (response.data) {
-                this.modules = response.data.modules.map((module: any) => ({
-                    ...module,
-                    expanded: false
-                }));
-                this.rolePermissions = response.data.rolePermissions || [];
-                this.directPermissions = response.data.directPermissions || [];
-                this.revokedPermissions = response.data.revokedPermissions || [];
-                this.effectivePermissions = response.data.effectivePermissions || [];
-            }
-            this.permissionsLoading = false;
-        },
-        error: (error) => {
-            console.error('Error cargando permisos:', error);
-            this.alertService.error(error);
-            this.permissionsLoading = false;
+      next: (response: any) => {
+        if (response.data) {
+          this.modules = response.data.modules.map((module: any) => ({
+            ...module,
+            expanded: false,
+          }));
+          this.rolePermissions = response.data.rolePermissions || [];
+          this.directPermissions = response.data.directPermissions || [];
+          this.revokedPermissions = response.data.revokedPermissions || [];
+          this.effectivePermissions = response.data.effectivePermissions || [];
         }
+        this.permissionsLoading = false;
+      },
+      error: (error) => {
+        console.error('Error cargando permisos:', error);
+        this.alertService.error(error);
+        this.permissionsLoading = false;
+      },
     });
-}
+  }
   toggleModule(module: any) {
     module.expanded = !module.expanded;
   }
@@ -334,24 +339,24 @@ export class UsuarioComponent implements OnInit {
 
   isPermissionSelected(permission: any): boolean {
     const permissionName = permission.name;
-    
+
     // Si está en los permisos revocados, retornamos false
     if (this.revokedPermissions?.includes(permissionName)) {
-        return false;
+      return false;
     }
 
     // Si está en los permisos directos, retornamos true
     if (this.directPermissions?.includes(permissionName)) {
-        return true;
+      return true;
     }
 
     // Si está en los permisos del rol y no está revocado, retornamos true
     if (this.rolePermissions?.includes(permissionName)) {
-        return true;
+      return true;
     }
 
     return false;
-}
+  }
 
   onPermissionChange(permission: any) {
     const permissionName = permission.name;
