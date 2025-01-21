@@ -3,6 +3,7 @@
 namespace App\Services\PaymentGateways;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class N1coGateway extends BasePaymentGateway
 {
@@ -21,6 +22,70 @@ class N1coGateway extends BasePaymentGateway
     {
         return 'Bearer ' . $this->apiKey;
     }
+
+    public function createPaymentMethod(array $paymentMethodData): array
+    {
+        $response = Http::withHeaders($this->getHeaders())
+            ->post($this->baseUrl . '/PaymentMethods', $paymentMethodData);
+        
+        return $this->handleResponse($response, 'payment method creation');
+    }
+
+    public function createCharge(array $chargeData): array
+    {
+        try {
+            Log::info('Iniciando creación de cargo', ['data' => array_diff_key($chargeData, ['card' => true])]);
+
+            $response = Http::withHeaders($this->getHeaders())
+                ->post($this->baseUrl . '/Charges', $chargeData);
+            
+            $result = $this->handleResponse($response, 'charge creation');
+
+            // Si requiere autenticación 3DS
+            if (isset($result['authentication']) && isset($result['authentication']['url'])) {
+                Log::info('Cargo requiere autenticación 3DS', [
+                    'auth_url' => $result['authentication']['url'],
+                    'auth_id' => $result['authentication']['id']
+                ]);
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('Error al crear cargo', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
+
+    public function processCharge(array $orderData, string $cardId, ?string $authenticationId = null): array
+    {
+        $chargeData = [
+            'customer' => [
+                'name' => $orderData['customer_name'],
+                'email' => $orderData['customer_email'],
+                'phoneNumber' => $orderData['customer_phone']
+            ],
+            'order' => [
+                'amount' => $orderData['amount'],
+                'description' => $orderData['description'] ?? 'Cargo por compra',
+                'name' => $orderData['order_name'] ?? 'Orden de compra'
+            ],
+            'cardId' => $cardId
+        ];
+
+        if ($authenticationId) {
+            $chargeData['authenticationId'] = $authenticationId;
+        }
+
+        if (!empty($orderData['metadata'])) {
+            $chargeData['metadata'] = $orderData['metadata'];
+        }
+
+        return $this->createCharge($chargeData);
+    }
+
 
     public function createCustomer(array $customerData): array
     {
@@ -65,8 +130,17 @@ class N1coGateway extends BasePaymentGateway
     public function createRefund(array $refundData): array
     {
         $response = Http::withHeaders($this->getHeaders())
-            ->post($this->baseUrl . '/refunds', $refundData);
+            ->post($this->baseUrl . '/Refunds', $refundData);
         
         return $this->handleResponse($response, 'refund creation');
     }
+
+    public function updatePaymentMethod(array $updateData): array
+    {
+        $response = Http::withHeaders($this->getHeaders())
+            ->put($this->baseUrl . '/PaymentMethods', $updateData);
+        
+        return $this->handleResponse($response, 'payment method update');
+    }
+
 }
