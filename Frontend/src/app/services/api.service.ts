@@ -542,7 +542,8 @@ export class ApiService {
       return (
         role === 'super_contador' ||
         role === 'admin' ||
-        role === 'gerente_ventas'
+        role === 'gerente_ventas' ||
+        role === 'gerente_citas'
       );
     }
     return false;
