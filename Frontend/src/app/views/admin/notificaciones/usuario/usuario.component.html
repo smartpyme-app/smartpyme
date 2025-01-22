@@ -56,7 +56,7 @@
                     <label for="codigo">Codigo para autorizaciones:</label>
                     <input type="password" class="form-control" [(ngModel)]="usuario.codigo" name="codigo" placeholder="Código para autorizaciones">
                 </div> -->
-                <div class="form-group col-md-4 col-lg-3" *ngIf="usuario.rol_name == 'admin' || usuario.rol_name == 'usuario_supervisor'">
+                <div class="form-group col-md-4 col-lg-3" *ngIf="usuario.rol_name == 'admin' || usuario.rol_name == 'super_admin' || usuario.rol_name == 'usuario_supervisor'">
                     <label for="codigo">Codigo para autorizaciones:</label>
                     <input type="password" class="form-control" [(ngModel)]="usuario.codigo" name="codigo" placeholder="Código para autorizaciones">
                 </div>

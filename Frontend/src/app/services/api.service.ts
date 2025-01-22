@@ -516,6 +516,29 @@ export class ApiService {
     }
     return false;
   }
+  //no es super admin
+  isNotSuperAdmin() {
+    let user = localStorage.getItem('SP_user_permissions');
+    if (user) {
+      let role = JSON.parse(user).role;
+      return role !== 'super_admin';
+    }
+    return true;
+  }
+
+  isAdminRole() {
+    let user = localStorage.getItem('SP_user_permissions');
+    if (user) {
+      let role = JSON.parse(user).role;
+      return (
+        role === 'super_contador' ||
+        role === 'admin' ||
+        role === 'usuario_supervisor' ||
+        role === 'usuario_citas'
+      );
+    }
+    return false;
+  }
 
   verifyVentasRole(): boolean {
     let user = localStorage.getItem('SP_user_permissions');
@@ -535,19 +558,18 @@ export class ApiService {
     return false;
   }
 
-  isAdminRole() {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return (
-        role === 'super_contador' ||
-        role === 'admin' ||
-        role === 'usuario_supervisor' ||
-        role === 'usuario_citas'
-      );
-    }
-    return false;
-  }
+ 
+
+  // isAdmin() {
+  //   let usuario = this.auth_user();
+  //   if (
+  //     usuario.tipo == 'Administrador' ||
+  //     usuario.tipo == 'Contador' ||
+  //     usuario.tipo == 'Supervisor'
+  //   )
+  //     return true;
+  //   return false;
+  // }
 
   validateRole(roleToCheck: string, equals: boolean = true): boolean {
     const userPermissions = localStorage.getItem('SP_user_permissions');

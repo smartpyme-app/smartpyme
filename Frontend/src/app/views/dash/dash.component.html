@@ -11,6 +11,6 @@
 <app-caja-dash *ngIf="apiService.validateRole('usuario_ventas', true)"></app-caja-dash>
 <app-vendedor-dash *ngIf="apiService.validateRole('usuario_vendedor', true)"></app-vendedor-dash>
 
-<app-organizaciones-dash *ngIf="apiService.isAdminRole() && usuario.empresa.licencia"></app-organizaciones-dash>
+<app-organizaciones-dash *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-organizaciones-dash>
 
 
