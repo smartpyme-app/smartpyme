@@ -7,7 +7,7 @@ use App\Models\Suscripcion;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
-class VerificarSuscripciones extends Command
+class VerificarSuscripcion extends Command
 {
     protected $signature = 'suscripciones:verificar';
     protected $description = 'Verifica y actualiza el estado de las suscripciones y períodos de prueba';

@@ -38,7 +38,15 @@ class N1coChargeController extends Controller
     public function createPaymentMethod(Request $request)
     {
         try {
+
+
+            Log::info('Datos del cliente', [
+                'customer' => $request->input('customer')
+            ]);
+
             $validator = Validator::make($request->all(), [
+                'customer.id' => 'required|integer',
+                'customer.name' => 'required|string',
                 'customer.email' => 'required|email',
                 'customer.phoneNumber' => 'required|string',
                 'card.number' => 'required|string|min:13|max:16',
@@ -56,9 +64,10 @@ class N1coChargeController extends Controller
                 ], 422);
             }
 
-            $token = $request->input('token');
+
             $paymentData = [
                 'customer' => [
+                    'id' => $request->input('customer.id'),
                     'name' => $request->input('customer.name'),
                     'email' => $request->input('customer.email'),
                     'phoneNumber' => $request->input('customer.phoneNumber')
@@ -66,7 +75,7 @@ class N1coChargeController extends Controller
                 'card' => [
                     'number' => preg_replace('/\s+/', '', $request->input('card.number')),
                     'expirationMonth' => $request->input('card.expirationMonth'),
-                    'expirationYear' => $request->input('card.expirationYear'),
+                    'expirationYear' => "20" . $request->input('card.expirationYear'),
                     'cvv' => $request->input('card.cvv'),
                     'cardHolder' => $request->input('card.cardHolder')
                 ]
@@ -100,6 +109,7 @@ class N1coChargeController extends Controller
             ], 500);
         }
     }
+    
 
     public function processCharge(Request $request)
     {

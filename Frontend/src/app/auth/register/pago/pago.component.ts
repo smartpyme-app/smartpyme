@@ -59,6 +59,8 @@ export class PagoComponent implements OnInit {
             
             const paymentMethodData = {
                 customer: {
+                    id: this.user.id.toString(),
+                    name: this.user.name,
                     email: this.user.email,
                     phoneNumber: this.user.telefono || ''
                 },
@@ -81,7 +83,7 @@ export class PagoComponent implements OnInit {
                     empresa_id: this.user.empresa.id,
                     card_id: result.data.id,
                     amount: this.user.empresa.plan.precio,
-                    customer_name: this.user.nombre,
+                    customer_name: this.user.name,
                     customer_email: this.user.email,
                     customer_phone: this.user.telefono || '',
                     description: `Pago plan ${this.user.empresa.plan.nombre}`

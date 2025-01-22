@@ -73,9 +73,15 @@ class N1coGateway extends BasePaymentGateway
         ]);
 
         try {
-            $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+
+            $token = $this->getToken()['data']['accessToken'];
+            Log::info('Token obtenido', [
+                'token' => $token
+            ]);
+            $response = Http::withHeaders($this->getHeaders($token))
                 ->post($this->baseUrl . '/PaymentMethods', [
                     'customer' => [
+                        'id' => $data['customer']['id'],
                         'name' => $data['customer']['name'],
                         'email' => $data['customer']['email'],
                         'phoneNumber' => $data['customer']['phoneNumber']
@@ -111,7 +117,7 @@ class N1coGateway extends BasePaymentGateway
             ];
 
         } catch (\Exception $e) {
-            Log::error('Error en createPaymentMethod:', [
+            Log::error('Error en createPaymentMethod GATEWAY:', [
                 'message' => $e->getMessage()
             ]);
             return [

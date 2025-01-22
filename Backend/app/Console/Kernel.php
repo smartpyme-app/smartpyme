@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         'App\Console\Commands\Notificaciones',
-        'App\Console\Commands\VerificarSuscripciones'
+        'App\Console\Commands\VerificarSuscripcion'
     ];
 
     /**
