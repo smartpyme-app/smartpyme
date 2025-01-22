@@ -40,7 +40,7 @@ export class RoleGuard implements CanActivate {
         // Roles administrativos según constants.php
         return [
             'super_admin',      // ROL_SUPER_ADMIN
-            'super_contador',   // ROL_CONTADOR_SUPERIOR
+            'usuario_contador',   // ROL_CONTADOR_SUPERIOR
             'admin',            // ROL_ADMIN
             'auxiliar_contable' // ROL_CONTADOR_AUXILIAR
         ].includes(userRole);
@@ -57,7 +57,7 @@ export class RoleGuard implements CanActivate {
             'usuario_supervisor',       // ROL_usuario_supervisor
             'gerente_operaciones',  // ROL_GERENTE_OPERACIONES
             'super_admin',          // ROL_SUPER_ADMIN
-            'super_contador'        // ROL_CONTADOR_SUPERIOR
+            'usuario_contador'        // ROL_CONTADOR_SUPERIOR
         ].includes(userRole);
     }
 

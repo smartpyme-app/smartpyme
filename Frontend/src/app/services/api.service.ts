@@ -531,7 +531,7 @@ export class ApiService {
     if (user) {
       let role = JSON.parse(user).role;
       return (
-        role === 'super_contador' ||
+        role === 'usuario_contador' ||
         role === 'admin' ||
         role === 'usuario_supervisor' ||
         role === 'usuario_citas'
