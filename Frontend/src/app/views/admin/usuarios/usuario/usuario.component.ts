@@ -130,7 +130,7 @@ export class UsuarioComponent implements OnInit {
 
   public onSubmit() {
     this.loading = true;
-    this.usuario.rol_id = 2;
+    //this.usuario.rol_id = 2;
     if (this.usuario.rol_id == 2) {
       this.usuario.caja_id == null;
     }
