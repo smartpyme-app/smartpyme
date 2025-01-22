@@ -96,25 +96,25 @@
                                             <i class="fas fa-puzzle-piece me-2"></i>
                                             Submódulos
                                         </h5>
-                                        <button type="button" 
+                                        <!-- <button type="button" 
                                                 class="btn btn-primary btn-sm"
                                                 (click)="addSubmodule()">
                                             <i class="fas fa-plus me-2"></i>
                                             Agregar
-                                        </button>
+                                        </button> -->
                                     </div>
 
                                     <!-- Submodules List -->
                                     <div class="submodules-list">
                                         <div class="bg-light p-3 rounded mb-3" *ngFor="let submodule of module.submodules; let i = index">
-                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <!-- <div class="d-flex justify-content-between align-items-center mb-3">
                                                 <h6 class="mb-0">Submódulo {{i + 1}}</h6>
                                                 <button type="button" 
                                                         class="btn btn-link text-danger p-0"
                                                         (click)="removeSubmodule(i)">
                                                     <i class="fas fa-times"></i>
                                                 </button>
-                                            </div>
+                                            </div> -->
                                             <input type="text"
                                                 class="form-control mb-2"
                                                 [(ngModel)]="submodule.display_name"
@@ -170,10 +170,10 @@
                             </div>
 
                             <!-- Custom Permissions -->
-                            <div class="border-top pt-4">
+                            <!-- <div class="border-top pt-4">
                                 <h6 class="fw-bold mb-3">Permisos Personalizados</h6>
                                 
-                                <!-- Add Permission Form -->
+                          
                                 <div class="input-group mb-4">
                                     <input type="text"
                                         class="form-control"
@@ -189,7 +189,7 @@
                                     </button>
                                 </div>
 
-                                <!-- Custom Permissions List -->
+                          
                                 <div class="bg-light p-3 rounded mb-4" *ngFor="let permission of module.custom_permissions; let i = index">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <span class="badge bg-secondary">{{permission.action}}</span>
@@ -227,7 +227,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Generated Permissions Preview -->
+                              
                                 <div class="bg-light p-3 rounded" *ngIf="getGeneratedPermissions().length">
                                     <h6 class="mb-3">Permisos generados:</h6>
                                     <div class="d-flex flex-wrap gap-2">
@@ -236,7 +236,7 @@
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -247,13 +247,13 @@
                         <button type="button" class="btn btn-light" routerLink="/modulos">
                             Cancelar
                         </button>
-                        <button type="submit" 
+                        <!-- <button type="submit" 
                                 class="btn btn-primary"
                                 [disabled]="moduleForm.invalid || loading">
                             <i class="fas fa-save me-2" *ngIf="!loading"></i>
                             <span *ngIf="!loading">Guardar</span>
                             <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </form>
