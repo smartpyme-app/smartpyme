@@ -24,6 +24,9 @@ export class UsuarioComponent implements OnInit {
   public rol: any = {};
   public loading = false;
   public mostrarCambioContrasena = false;
+  public searchTerm: string = '';
+  public filterModules: any[] = [];
+
 
   // Img Upload
   public file?: File;
@@ -436,4 +439,17 @@ export class UsuarioComponent implements OnInit {
   get moduleKeys(): string[] {
     return Object.keys(this.modulePermissions);
   }
+
+  filterModule(module: any): void {
+    if (!module || !module.name) {
+      console.error('Módulo inválido:', module);
+      return;
+    }
+  
+
+    this.filterModules = this.modules.filter((mod) => mod.name.includes(module.name));
+
+     
+  }
+  
 }
