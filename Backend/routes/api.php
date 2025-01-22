@@ -12,6 +12,7 @@
 |
 */
 
+use App\Http\Controllers\n1co\N1coChargeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/prueba', function(){ return Response()->json(['message' => 'Success'], 200); });
@@ -21,8 +22,14 @@ Route::get('/prueba', function(){ return Response()->json(['message' => 'Success
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 
+Route::group(['prefix' => 'payment'], function () {
+    Route::post('method', [N1coChargeController::class, 'createPaymentMethod']);
+    Route::post('process', [N1coChargeController::class, 'processCharge']);
+    Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
+    Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
+});
 
-
+// require base_path('routes/modulos/n1co/payment.php');
 require base_path('routes/modulos/auth.php');
 		
 Route::group(['middleware' => ['jwt.auth']], function () {
@@ -93,12 +100,11 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');
 		require base_path('routes/modulos/super-admin/transacciones.php');
-
-		Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
-
-
-		
 });
+
+
+	// Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
+
 
 
 Route::get('/prueba/factura', function () { 
