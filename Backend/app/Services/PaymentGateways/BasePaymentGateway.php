@@ -20,31 +20,4 @@ abstract class BasePaymentGateway implements PaymentGatewayInterface
 
     abstract protected function initialize(): void;
     
-    protected function getHeaders(): array
-    {
-        return [
-            'Authorization' => $this->getAuthorizationHeader(),
-            'Content-Type' => 'application/json'
-        ];
-    }
-
-    abstract protected function getAuthorizationHeader(): string;
-
-    protected function handleResponse($response, string $operation)
-    {
-        if ($response->successful()) {
-            Log::info("$operation successful", [
-                'gateway' => static::class,
-                'response' => $response->json()
-            ]);
-            return $response->json();
-        }
-
-        Log::error("Error in $operation", [
-            'gateway' => static::class,
-            'error' => $response->json()
-        ]);
-        
-        throw new \Exception("Error in $operation: " . $response->body());
-    }
 }

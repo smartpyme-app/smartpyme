@@ -47,55 +47,63 @@ export class PagoComponent implements OnInit {
         this.processingPayment = true;
         
         try {
-            // 1. Primero creamos el payment method
+            // Formatear el número de tarjeta: eliminar espacios y validar longitud
+            const cardNumber = this.paymentData.cardNumber.replace(/\s/g, '');
+            if (cardNumber.length < 13 || cardNumber.length > 16) {
+                this.alertService.error('El número de tarjeta debe tener entre 13 y 16 dígitos');
+                return;
+            }
+    
+            // Formatear el mes con padding si es necesario
+            const expirationMonth = this.paymentData.expirationMonth.padStart(2, '0');
+            
             const paymentMethodData = {
                 customer: {
-                    name: this.user.nombre,
                     email: this.user.email,
                     phoneNumber: this.user.telefono || ''
                 },
                 card: {
-                    number: this.paymentData.cardNumber.replace(/\s/g, ''),
-                    cardHolder: this.paymentData.cardHolder,
-                    expirationMonth: this.paymentData.expirationMonth,
+                    number: cardNumber,
+                    cardHolder: this.paymentData.cardHolder.trim(),
+                    expirationMonth: expirationMonth,
                     expirationYear: this.paymentData.expirationYear,
                     cvv: this.paymentData.cvv
                 }
             };
-
-            // Crear el payment method
-            const paymentMethod = await firstValueFrom(
+    
+            const result = await firstValueFrom(
                 this.n1coPaymentService.createPaymentMethod(paymentMethodData)
             );
-
-            if (!paymentMethod.success) {
-                throw new Error(paymentMethod.message || 'Error al crear el método de pago');
+    
+            if (result.success) {
+                // Proceder con el cargo usando el ID del método de pago
+                const chargeData = {
+                    empresa_id: this.user.empresa.id,
+                    card_id: result.data.id,
+                    amount: this.user.empresa.plan.precio,
+                    customer_name: this.user.nombre,
+                    customer_email: this.user.email,
+                    customer_phone: this.user.telefono || '',
+                    description: `Pago plan ${this.user.empresa.plan.nombre}`
+                };
+    
+                const chargeResult = await firstValueFrom(
+                    this.n1coPaymentService.processDirectPayment(chargeData)
+                );
+    
+                // Manejar la respuesta del cargo
+                if (chargeResult.success) {
+                    this.alertService.success('Éxito', 'Pago procesado exitosamente');
+                    this.router.navigate(['/dashboard']);
+                } else {
+                    this.alertService.error(chargeResult.message || 'Error al procesar el pago');
+                }
             }
-
-            // 2. Procesamos el cargo con el payment method creado
-            const chargeData = {
-                empresa_id: this.user.empresa.id,
-                card_id: paymentMethod.id,
-                customer_name: this.user.nombre,
-                customer_email: this.user.email,
-                customer_phone: this.user.telefono || '',
-                amount: this.user.empresa.plan.precio,
-                description: `Pago plan ${this.user.empresa.plan.nombre}`
-            };
-
-            const result = await firstValueFrom(
-                this.n1coPaymentService.processDirectPayment(chargeData)
-            );
-
-            // Si requiere autenticación 3DS
-            if (result.authentication && result.authentication.url) {
-                await this.handle3DSAuth(result);
-            } else if (result.success) {
-                this.alertService.success('Éxito','Pago procesado exitosamente');
-                this.router.navigate(['/dashboard']);
-            }
+    
         } catch (error: any) {
-            this.alertService.error('Error al procesar el pago: ' + (error.message || ''));
+            console.error('Error en processDirectPayment:', error);
+            this.alertService.error('Error al procesar el pago: ' + 
+                (error.error?.message || error.message || 'Error desconocido'));
         } finally {
             this.processingPayment = false;
         }

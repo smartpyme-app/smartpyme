@@ -12,48 +12,23 @@ import { environment } from '../../../environments/environment';
   
       // Crear método de pago (payment method)
       
-createPaymentMethod(data: {
-    customer: {
-        name: string;
-        email: string;
-        phoneNumber: string;
-    };
-    card: {
-        number: string;
-        expirationMonth: string;
-        expirationYear: string;
-        cvv: string;
-        cardHolder: string;
-    };
-}): Observable<any> {
-    const headers = new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    });
-
-    const options = {
-        headers: headers,
-        withCredentials: true
-    };
-
-    // Asegúrate de que esta es la URL correcta
-    const url = `${this.apiUrl}/payment/method`;
-
-    return this.http.post(url, {
-        customer: {
-            name: data.customer.name,
-            email: data.customer.email,
-            phoneNumber: data.customer.phoneNumber
-        },
-        card: {
-            number: data.card.number.replace(/\s/g, ''), // Eliminar espacios
-            expirationMonth: data.card.expirationMonth,
-            expirationYear: data.card.expirationYear,
-            cvv: data.card.cvv,
-            cardHolder: data.card.cardHolder
-        }
-    }, options);
-}
+      createPaymentMethod(data: any): Observable<any> {
+        console.log('Datos enviados al backend:', data); // Añade este log
+        
+        const headers = new HttpHeaders({
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        });
+    
+        const options = {
+            headers: headers,
+            withCredentials: true
+        };
+    
+        const url = `${this.apiUrl}/payment/method`;
+        
+        return this.http.post(url, data, options);
+    }
   
       // Procesar el cargo usando el payment method
       processDirectPayment(data: {
@@ -67,6 +42,8 @@ createPaymentMethod(data: {
       }): Observable<any> {
           return this.http.post(`${this.apiUrl}/api/payment/process`, data);
       }
+
+      
   
       // Validar el pago (especialmente después de 3DS)
       validatePayment(paymentId: string): Observable<any> {
@@ -86,4 +63,8 @@ createPaymentMethod(data: {
               }, 500);
           });
       }
+
+      
   }
+
+  

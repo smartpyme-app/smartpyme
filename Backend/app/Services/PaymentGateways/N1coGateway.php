@@ -2,6 +2,8 @@
 
 namespace App\Services\PaymentGateways;
 
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -9,57 +11,158 @@ class N1coGateway extends BasePaymentGateway
 {
     protected function initialize(): void
     {
-        $this->apiKey = $this->isSandbox 
-            ? config('services.nico.sandbox_api_key')
-            : config('services.nico.api_key');
-        
         $this->baseUrl = $this->isSandbox 
             ? config('services.nico.sandbox_url')
             : config('services.nico.base_url');
     }
 
-    protected function getAuthorizationHeader(): string
-    {
-        return 'Bearer ' . $this->apiKey;
-    }
-
-    public function createPaymentMethod(array $paymentMethodData): array
-    {
-        $response = Http::withHeaders($this->getHeaders())
-            ->post($this->baseUrl . '/PaymentMethods', $paymentMethodData);
-        
-        return $this->handleResponse($response, 'payment method creation');
-    }
-
-    public function createCharge(array $chargeData): array
+    public function getToken(): array
     {
         try {
-            Log::info('Iniciando creación de cargo', ['data' => array_diff_key($chargeData, ['card' => true])]);
+            Log::info('Obteniendo token N1co', [
+                'client_id' => config('services.nico.client_id'),
+                'client_secret' => config('services.nico.client_secret'),
+                'base_url' => $this->baseUrl
+            ]);
+            $response = Http::post($this->baseUrl . '/Token', [
+                'clientId' => config('services.nico.client_id'),
+                'clientSecret' => config('services.nico.client_secret')
+            ]);
 
-            $response = Http::withHeaders($this->getHeaders())
-                ->post($this->baseUrl . '/Charges', $chargeData);
-            
-            $result = $this->handleResponse($response, 'charge creation');
-
-            // Si requiere autenticación 3DS
-            if (isset($result['authentication']) && isset($result['authentication']['url'])) {
-                Log::info('Cargo requiere autenticación 3DS', [
-                    'auth_url' => $result['authentication']['url'],
-                    'auth_id' => $result['authentication']['id']
-                ]);
+            if ($response->successful()) {
+                $data = $response->json();
+                return [
+                    'success' => true,
+                    'data' => $data
+                ];
             }
 
-            return $result;
-        } catch (\Exception $e) {
-            Log::error('Error al crear cargo', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            Log::error('Error obteniendo token N1co', [
+                'status' => $response->status(),
+                'response' => $response->json()
             ]);
-            throw $e;
+
+            return [
+                'success' => false,
+                'error' => 'Error al obtener token'
+            ];
+        } catch (\Exception $e) {
+            Log::error('Exception obteniendo token N1co', [
+                'message' => $e->getMessage()
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
         }
     }
 
-    public function processCharge(array $orderData, string $cardId, ?string $authenticationId = null): array
+    protected function getHeaders(string $token): array
+    {
+        return [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json'
+        ];
+    }
+
+    public function createPaymentMethod(array $data): array 
+    {
+        Log::info('Creando método de pago', [
+            'customer_email' => $data['customer']['email'] ?? null
+        ]);
+
+        try {
+            $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+                ->post($this->baseUrl . '/PaymentMethods', [
+                    'customer' => [
+                        'name' => $data['customer']['name'],
+                        'email' => $data['customer']['email'],
+                        'phoneNumber' => $data['customer']['phoneNumber']
+                    ],
+                    'card' => [
+                        'number' => $data['card']['number'],
+                        'expirationMonth' => $data['card']['expirationMonth'],
+                        'expirationYear' => $data['card']['expirationYear'],
+                        'cvv' => $data['card']['cvv'],
+                        'cardHolder' => $data['card']['cardHolder']
+                    ]
+                ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                Log::info('Método de pago creado exitosamente', [
+                    'card_id' => $result['id'] ?? null
+                ]);
+                return [
+                    'success' => true,
+                    'data' => $result
+                ];
+            }
+
+            Log::error('Error creando método de pago', [
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $response->json()['message'] ?? 'Error creando método de pago'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error en createPaymentMethod:', [
+                'message' => $e->getMessage()
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function createCharge(array $chargeData, string $token): array 
+    {
+        try {
+            Log::info('Iniciando cargo', [
+                'amount' => $chargeData['order']['amount'] ?? null,
+                'customer_email' => $chargeData['customer']['email'] ?? null,
+                'card_id' => $chargeData['cardId'] ?? null
+            ]);
+
+            $response = Http::withHeaders($this->getHeaders($token))
+                ->post($this->baseUrl . '/Charges', $chargeData);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                return [
+                    'success' => true,
+                    'data' => $result
+                ];
+            }
+
+            Log::error('Error creando cargo', [
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $response->json()['message'] ?? 'Error al crear el cargo'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error en createCharge:', [
+                'message' => $e->getMessage()
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function processCharge(array $orderData, string $cardId, string $token, ?string $authenticationId = null): array
     {
         $chargeData = [
             'customer' => [
@@ -83,13 +186,14 @@ class N1coGateway extends BasePaymentGateway
             $chargeData['metadata'] = $orderData['metadata'];
         }
 
-        return $this->createCharge($chargeData);
+        return $this->createCharge($chargeData, $token);
     }
 
+//aqui voy
 
     public function createCustomer(array $customerData): array
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->post($this->baseUrl . '/customers', $customerData);
         
         return $this->handleResponse($response, 'customer creation');
@@ -97,7 +201,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function processPayment(array $paymentData): array
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->post($this->baseUrl . '/payments', $paymentData);
         
         return $this->handleResponse($response, 'payment processing');
@@ -105,7 +209,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function createSubscription(array $subscriptionData): array
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->post($this->baseUrl . '/subscriptions', $subscriptionData);
         
         return $this->handleResponse($response, 'subscription creation');
@@ -113,7 +217,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function cancelSubscription(string $subscriptionId): bool
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->delete($this->baseUrl . "/subscriptions/{$subscriptionId}");
         
         return $response->successful();
@@ -121,7 +225,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function getCustomer(string $customerId): array
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->get($this->baseUrl . "/customers/{$customerId}");
         
         return $this->handleResponse($response, 'get customer');
@@ -129,7 +233,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function createRefund(array $refundData): array
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->post($this->baseUrl . '/Refunds', $refundData);
         
         return $this->handleResponse($response, 'refund creation');
@@ -137,10 +241,20 @@ class N1coGateway extends BasePaymentGateway
 
     public function updatePaymentMethod(array $updateData): array
     {
-        $response = Http::withHeaders($this->getHeaders())
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
             ->put($this->baseUrl . '/PaymentMethods', $updateData);
         
         return $this->handleResponse($response, 'payment method update');
     }
+
+    private function handleResponse(Response $response, string $action): array
+    {
+        if ($response->successful()) {
+            return ['success' => true, 'data' => $response->json()];
+        }
+        return ['success' => false, 'error' => $response->json()];
+    }
+
+  
 
 }

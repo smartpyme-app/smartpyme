@@ -54,9 +54,11 @@ return [
 
     'nico' => [
         'api_key' => env('NICO_API_KEY'),
+        'client_id' => env('NICO_CLIENT_ID'),
+        'client_secret' => env('NICO_CLIENT_SECRET'),
         'sandbox_api_key' => env('NICO_SANDBOX_API_KEY'),
-        'base_url' => env('NICO_BASE_URL', 'https://api-pay.n1co.shop/api'),
-        'sandbox_url' => env('NICO_SANDBOX_URL', 'https://api-pay-sandbox.n1co.shop/api'),
+        'base_url' => env('NICO_BASE_URL', 'https://api.n1co.com/api/v2'),
+        'sandbox_url' => env('NICO_SANDBOX_URL', 'https://api-sandbox.n1co.shop/api/v2'),
         'webhook_secret' => env('NICO_WEBHOOK_SECRET'),
         'sandbox_mode' => env('APP_ENV') !== 'production',
     ],
