@@ -30,9 +30,6 @@ import { UsuarioComponent } from './usuarios/usuario/usuario.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
-import { RolesPermisosComponent } from './roles-permisos/roles-permisos.component';
-import { ModulesComponent } from './modules/modules.component';
-import { ModuleFormComponent } from './modules/create/module-form.component';
 
 @NgModule({
   imports: [
@@ -60,10 +57,7 @@ import { ModuleFormComponent } from './modules/create/module-form.component';
     UsuarioComponent,
     ReportesComponent,
     NotificacionesComponent,
-    DocsComponent,
-    RolesPermisosComponent,
-    ModulesComponent,
-    ModuleFormComponent
+    DocsComponent
   ],
   exports: [
     EmpresaComponent,
@@ -76,9 +70,6 @@ import { ModuleFormComponent } from './modules/create/module-form.component';
     ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
-    RolesPermisosComponent,
-    ModulesComponent,
-    ModuleFormComponent
   ]
 })
 export class AdminModule { }

@@ -17,9 +17,6 @@ import { NotificacionesComponent }     from '@views/admin/notificaciones/notific
 import { DocsComponent }     from '@views/admin/docs/docs.component';
 
 import { ReportesComponent }    from '@views/reportes/reportes.component';
-import { RolesPermisosComponent }    from '@views/admin/roles-permisos/roles-permisos.component';
-import { ModulesComponent }    from '@views/admin/modules/modules.component';
-import { ModuleFormComponent } from './modules/create/module-form.component';
 
 const routes: Routes = [
   {
@@ -35,11 +32,7 @@ const routes: Routes = [
          { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario' },
         { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
-        { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
-        { path: 'roles-permisos', component: RolesPermisosComponent, title: 'Roles y permisos'},
-        { path: 'modulos', component: ModulesComponent, title: 'Módulos'},
-        { path: 'modulos/crear', component: ModuleFormComponent, title: 'Crear módulo'},
-        { path: 'modulos/editar/:id', component: ModuleFormComponent, title: 'Editar módulo'}
+        { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'}
     ]
   }
 ];
