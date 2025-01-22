@@ -64,7 +64,7 @@ export class RoleGuard implements CanActivate {
 
     private checkSuperAdminAccess(userRole: string, empresaId: number): boolean {
         // Solo super_admin de la empresa 2 tiene acceso
-        return userRole === 'super_admin' && empresaId === 2;
+        return userRole === 'super_admin';
     }
 
     private handleAccessDenied(): boolean {

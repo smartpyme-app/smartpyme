@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
 class EmpresasController extends Controller
@@ -53,6 +54,7 @@ class EmpresasController extends Controller
     }
 
     public function list() {
+        Log::info('Listado de empresas');
        
         $empresas = Empresa::orderby('nombre')
                                 ->where('activo', true)
