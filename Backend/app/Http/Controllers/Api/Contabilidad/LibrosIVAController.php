@@ -47,6 +47,8 @@ class LibrosIVAController extends Controller
                 'exportaciones'         => 0,
                 'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
+                'no_sujeta'            => $venta->no_sujeta,
+                'id_venta'              => $venta->id,
             ];
         });
 
@@ -104,6 +106,8 @@ class LibrosIVAController extends Controller
                 'debito_fiscal_cuenta_a_terceros'=> 0,
                 'iva_percibido'         => $venta->iva_percibido,
                 'total'                 => $venta->total,
+                'no_sujeta'            => $venta->no_sujeta,
+                'id_venta'              => $venta->id,
             ];
 
         });
@@ -201,6 +205,8 @@ class LibrosIVAController extends Controller
                 'credito_cuenta_terceros'=> 0,
                 'total'                 => $compra->total,
                 'sujeto_excluido'       => 0,
+                'no_sujeta'            => $compra->no_sujeta,
+                'id_compra'             => $compra->id,
             ];
         });
 
