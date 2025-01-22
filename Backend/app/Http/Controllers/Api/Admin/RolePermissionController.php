@@ -218,7 +218,7 @@ class RolePermissionController extends Controller
 
     public function getUserPermissions($userId)
     {
-        try {
+       // try {
             $user = User::findOrFail($userId);
 
             // Obtener permisos del rol
@@ -265,13 +265,13 @@ class RolePermissionController extends Controller
                     'modules' => $modules
                 ]
             ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Error al obtener permisos',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'ok' => false,
+        //         'message' => 'Error al obtener permisos',
+        //         'error' => $e->getMessage()
+        //     ], 500);
+        // }
     }
 
     public function saveUserPermissions(Request $request, $userId)
