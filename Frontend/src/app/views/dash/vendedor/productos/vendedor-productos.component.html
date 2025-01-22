@@ -86,7 +86,7 @@
                         <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
                             <div *ngIf="filtros.id_sucursal">
-                                {{ producto.inventarios | filter:'id_sucursal':filtros.id_sucursal | sum:'stock' }}
+                                {{ producto.inventarios | sum:'stock' }}
                             </div>
                             <div *ngIf="!filtros.id_sucursal">
                                 <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
