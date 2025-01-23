@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
 
     Route::get('/partidas/diario/mayor',        [GenerarDocumentosController::class, 'generarRepLibroDiarioMayor']); //genera el libro diario mayor solamente como temporal
     
-    Route::post('/partidas/generar',        [PartidasController::class, 'generar']);
+    Route::post('/partidas/generar/ingreso',        [PartidasController::class, 'generarIngresos']);
+    Route::post('/partidas/generar/egreso',        [PartidasController::class, 'generarEgresos']);
 
 ?>

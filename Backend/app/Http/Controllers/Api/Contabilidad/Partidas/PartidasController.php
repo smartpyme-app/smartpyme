@@ -143,7 +143,7 @@ class PartidasController extends Controller
 
     }
 
-    public function generar(Request $request)
+    public function generarIngresos(Request $request)
     {
         $request->validate([
             'fecha' => 'required|date',
@@ -175,7 +175,7 @@ class PartidasController extends Controller
             } else {
                 $formapago = FormaDePago::with('banco')->where('nombre', $venta->forma_pago)->firstOrFail();
                 if(!$formapago || !$formapago->banco){
-                    return 'La forma de pago no tiene cuenta ' . $venta->id;
+                    return  Response()->json(['titulo' => 'La forma de pago no tiene cuenta contable.', 'error' => 'Venta: ' . $venta->nombre_documento . '#' . $venta->correlativo, 'code' => 400], 400);
                 }
                 $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->firstOrFail();
             }
@@ -196,8 +196,6 @@ class PartidasController extends Controller
                 $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                 if($id_categoria){
                     return 'La forma de pago no tiene cuenta ' . $detalle->nombre_producto;
-                }
-                if($id_categoria){
                     $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->firstOrFail();
                     $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->firstOrFail();
                     $detalles[] = [
@@ -219,6 +217,7 @@ class PartidasController extends Controller
                         'debe' => NULL,
                         'haber' => $venta->sub_total,
                         'saldo' => 0,
+                        'productos' => $productos_venta,
                     ];
                     break;
                 }

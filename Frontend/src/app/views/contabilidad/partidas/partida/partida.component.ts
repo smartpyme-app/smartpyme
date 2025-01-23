@@ -120,6 +120,11 @@ export class PartidaComponent implements OnInit {
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
+    openModal(template: TemplateRef<any>) {
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    }
+
     public setTipoCliente(tipo:any){
         this.cliente.tipo = tipo;
     }
@@ -136,14 +141,21 @@ export class PartidaComponent implements OnInit {
     }
 
     generarPartidasDelDia(){
-        this.apiService.store('partidas/generar', { fecha : '2024-10-28' }).subscribe(data => {
+        this.saving = true;
+        this.apiService.store('partidas/generar/' + this.partida.tipo.toLowerCase() , this.partida).subscribe(data => {
             this.partida = data.partida;
             this.partida.id_usuario = this.apiService.auth_user().id;
             this.partida.id_empresa = this.apiService.auth_user().id_empresa;
 
             this.partida.detalles = data.detalles;
+            if(this.partida.detalles.length == 0){
+                this.alertService.info('No hay registros', 'No se encontraron transacciones.')
+            }else{
+                this.sumTotal();
+                this.modalRef?.hide();
+            }
 
-            this.sumTotal();
+            this.saving = false;
             
         }, error => {
           this.alertService.error(error);
