@@ -23,8 +23,6 @@ class MHCCF extends Model
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
 
-        $this->venta->total = $this->venta->total - $this->venta->cuenta_a_terceros;
-
         $this->caja_codigo = '0001';
         $this->venta->tipo_dte = '03';
         $this->venta->numero_control = 'DTE-'. $this->venta->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->venta->correlativo, 15, '0', STR_PAD_LEFT);
@@ -79,7 +77,7 @@ class MHCCF extends Model
             }
 
         // Total en letras
-        $partes = explode('.', strval( number_format($this->venta->total, 2) ));
+        $partes = explode('.', strval( number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2) ));
 
         $formatter = new NumeroALetras();
         $n = explode(".", number_format($venta->total,2));
@@ -192,9 +190,9 @@ class MHCCF extends Model
                   "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total + $this->venta->iva_retenido, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido, 2, '.', '')),
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalPagar" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
                   // "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
@@ -202,7 +200,7 @@ class MHCCF extends Model
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
+                      "montoPago" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
                       "referencia" => NULL,
                       "plazo" => NULL,
                       "periodo" => NULL

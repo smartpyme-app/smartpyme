@@ -23,8 +23,6 @@ class MHNotaCredito extends Model
         $this->empresa = $this->devolucion->empresa()->first();
         $this->sucursal = $this->devolucion->usuario()->first()->sucursal()->first();
 
-        $this->devolucion->total = $this->devolucion->total - $this->devolucion->cuenta_a_terceros;
-
         $this->caja_codigo = '0001';
         $this->devolucion->tipo_dte = '05';
         $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
@@ -79,7 +77,7 @@ class MHNotaCredito extends Model
             }
 
         // Total en letras
-        $partes = explode('.', strval( number_format($this->devolucion->total, 2) ));
+        $partes = explode('.', strval( number_format($this->devolucion->total - $this->devolucion->cuenta_a_terceros, 2) ));
 
         $formatter = new NumeroALetras();
         $n = explode(".", number_format($devolucion->total,2));
@@ -194,7 +192,7 @@ class MHNotaCredito extends Model
                   "ivaPerci1" => floatval(number_format($this->devolucion->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->devolucion->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total - $this->devolucion->cuenta_a_terceros, 2, '.', '')),
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
