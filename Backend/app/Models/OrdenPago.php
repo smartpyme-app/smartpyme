@@ -10,19 +10,25 @@ class OrdenPago extends Model
     use HasFactory;
 
     protected $table = 'ordenes_pagos';
-
     protected $fillable = [
         'id_orden',
         'id_usuario',
+        'id_orden_n1co',
+        'id_plan',
         'plan',
-        'link_pago',
-        'checkout_note',
         'monto',
         'estado',
+        'divisa',
+        'codigo_autorizacion',
     ];
 
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario');
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class, 'id_plan');
     }
 }

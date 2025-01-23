@@ -21,6 +21,13 @@ export class PagoComponent implements OnInit {
         expirationYear: '',
         cvv: ''
     };
+
+    public billingInfo = {
+        countryCode: '',
+        stateCode: '',
+        zipCode: ''
+    };
+
     public processingPayment = false;
 
     constructor(
@@ -70,6 +77,16 @@ export class PagoComponent implements OnInit {
                     expirationMonth: expirationMonth,
                     expirationYear: this.paymentData.expirationYear,
                     cvv: this.paymentData.cvv
+                },
+                plan:{
+                    id_plan: this.user.plan_id,
+                    plan_name: this.user.plan,
+
+                },
+                billingInfo: {
+                    countryCode: this.billingInfo.countryCode,
+                    stateCode: this.billingInfo.stateCode,
+                    zipCode: this.billingInfo.zipCode
                 }
             };
     

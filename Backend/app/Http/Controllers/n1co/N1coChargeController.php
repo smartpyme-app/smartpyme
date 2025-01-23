@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\n1co;
 
 use App\Http\Controllers\Controller;
+use App\Models\MetodoPago;
+use App\Models\OrdenPago;
+use App\Models\Plan;
 use App\Services\PaymentGateways\N1coGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class N1coChargeController extends Controller
 {
@@ -38,12 +42,6 @@ class N1coChargeController extends Controller
     public function createPaymentMethod(Request $request)
     {
         try {
-
-
-            Log::info('Datos del cliente', [
-                'customer' => $request->input('customer')
-            ]);
-
             $validator = Validator::make($request->all(), [
                 'customer.id' => 'required|integer',
                 'customer.name' => 'required|string',
@@ -89,6 +87,66 @@ class N1coChargeController extends Controller
                     'message' => 'Error al crear método de pago',
                     'error' => $result['error']
                 ], 500);
+            }
+
+            $paymentMethod = MetodoPago::create([
+                'id_usuario' => $request->input('customer.id'),
+                'id_tarjeta' => $result['data']['id'],
+                'marca_tarjeta' => $result['data']['bin']['brand'],
+                'ultimos_cuatro' => substr($request->input('card.number'), -4),
+                'titular_tarjeta' => $request->input('card.cardHolder'),
+                'nombre_emisor' => $result['data']['bin']['issuerName'],
+                'codigo_pais' => $result['data']['bin']['countryCode'],
+                'es_predeterminado' => true,
+                'esta_activo' => true
+            ]);
+
+            $plan = Plan::find($request->input('plan.id_plan'));
+
+            $order = OrdenPago::create([
+                'id_usuario' => $request->input('customer.id'),
+                'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
+                'id_orden_n1co' => $result['data']['id'],
+                'id_plan' => $plan->id,
+                'plan' => $plan->nombre,
+                'monto' => $plan->precio,
+                'estado' => 'pendiente',
+            ]);
+
+            $chargeData = [
+                'customer' => [
+                    'name' => $request->input('customer.name'),
+                    'email' => $request->input('customer.email'),
+                    'phoneNumber' => $request->input('customer.phoneNumber')
+                ],
+                'cardId' => $result['data']['id'],
+                'order' => [
+                    'id' => $order->id_orden,
+                    'lineItems' => [
+                        [
+                            // 'sku' => $request->input('order.lineItems.0.sku'),
+                            'product' => [
+                                'name' => $plan->nombre,
+                                'price' => $plan->precio
+                            ],
+                            'quantity' => 1
+                        ]
+                    ],
+                    'description' => $plan->descripcion,
+                    'name' => $plan->nombre
+                ],
+                'billingInfo' => [
+                    'countryCode' =>  $result['data']['bin']['countryCode'],
+                    'stateCode' => $request->input('billingInfo.stateCode'),
+                    'zipCode' => $request->input('billingInfo.zipCode')
+                ]
+            ];
+            
+            $chargeResult = $this->n1coGateway->createCharge($chargeData);
+
+            if (!$chargeResult['success']) {
+                $paymentMethod->update(['is_active' => false]);
+                return response()->json($chargeResult, 500);
             }
 
             return response()->json([

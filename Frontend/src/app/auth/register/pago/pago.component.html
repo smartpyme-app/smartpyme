@@ -173,6 +173,65 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <!-- País -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">País</label>
+                                    <select 
+                                        class="form-control" 
+                                        [(ngModel)]="billingInfo.countryCode"
+                                        name="countryCode"
+                                        required
+                                        [ngClass]="{'is-invalid': countryCode.invalid && (countryCode.dirty || countryCode.touched)}"
+                                        #countryCode="ngModel">
+                                        <option value="" disabled selected>Seleccione un país</option>
+                                        <option value="SV">El Salvador</option>
+                                        <option value="US">Estados Unidos</option>
+                                        <option value="MX">México</option>
+                                        <!-- Agregar más opciones según sea necesario -->
+                                    </select>
+                                    <div class="invalid-feedback" *ngIf="countryCode.invalid && (countryCode.dirty || countryCode.touched)">
+                                        País inválido
+                                    </div>
+                                </div>
+
+                                <!-- Código de Estado -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Código de Estado</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="billingInfo.stateCode"
+                                        name="stateCode"
+                                        required
+                                        [ngClass]="{'is-invalid': stateCode.invalid && (stateCode.dirty || stateCode.touched)}"
+                                        maxlength="2"
+                                        placeholder="SS"
+                                        #stateCode="ngModel">
+                                    <div class="invalid-feedback" *ngIf="stateCode.invalid && (stateCode.dirty || stateCode.touched)">
+                                        Código de estado inválido
+                                    </div>
+                                </div>
+
+                                <!-- Código ZIP -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Código ZIP</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="billingInfo.zipCode"
+                                        name="zipCode"
+                                        required
+                                        [ngClass]="{'is-invalid': zipCode.invalid && (zipCode.dirty || zipCode.touched)}"
+                                        maxlength="5"
+                                        placeholder="1101"
+                                        #zipCode="ngModel">
+                                    <div class="invalid-feedback" *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)">
+                                        Código ZIP inválido
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Botones de acción -->
                             <div class="d-grid gap-2">
                                 <button 

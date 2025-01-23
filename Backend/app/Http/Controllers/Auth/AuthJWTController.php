@@ -237,7 +237,7 @@ class AuthJWTController extends Controller
 
             DB::commit();
 
-            $this->createSuscripcion([
+            $suscripcion = $this->createSuscripcion([
                 'empresa_id' => $empresa->id,
                 'plan_id' => $this->getPlan($request['empresa']['plan'])->id,
                 'usuario_id' => $usuario->id,
@@ -306,6 +306,9 @@ class AuthJWTController extends Controller
                         break;
                 }
             }
+
+            $usuario->plan = $empresa->plan;
+            $usuario->plan_id = $suscripcion['plan_id'];
 
             // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
 

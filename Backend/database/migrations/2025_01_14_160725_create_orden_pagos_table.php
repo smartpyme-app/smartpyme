@@ -15,12 +15,15 @@ class CreateOrdenPagosTable extends Migration
     {
         Schema::create('ordenes_pagos', function (Blueprint $table) {
             $table->id();
-            $table->string('id_orden');
+            $table->string('id_orden', 50);
             $table->unsignedBigInteger('id_usuario');
-            $table->string('plan');
-            $table->string('checkout_note');
+            $table->string('id_orden_n1co')->nullable();
+            $table->unsignedBigInteger('id_plan');
+            $table->string('plan')->nullable();
             $table->decimal('monto', 10, 2);
             $table->string('estado')->default('pendiente');
+            $table->string('divisa')->default('USD');
+            $table->string('codigo_autorizacion')->nullable();
             $table->timestamps();
         });
     }

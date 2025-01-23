@@ -127,16 +127,17 @@ class N1coGateway extends BasePaymentGateway
         }
     }
 
-    public function createCharge(array $chargeData, string $token): array 
+    public function createCharge(array $chargeData): array 
     {
         try {
+            
             Log::info('Iniciando cargo', [
                 'amount' => $chargeData['order']['amount'] ?? null,
                 'customer_email' => $chargeData['customer']['email'] ?? null,
                 'card_id' => $chargeData['cardId'] ?? null
             ]);
 
-            $response = Http::withHeaders($this->getHeaders($token))
+            $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
                 ->post($this->baseUrl . '/Charges', $chargeData);
 
             if ($response->successful()) {
@@ -199,7 +200,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function createCustomer(array $customerData): array
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/customers', $customerData);
         
         return $this->handleResponse($response, 'customer creation');
@@ -207,7 +208,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function processPayment(array $paymentData): array
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/payments', $paymentData);
         
         return $this->handleResponse($response, 'payment processing');
@@ -215,7 +216,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function createSubscription(array $subscriptionData): array
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/subscriptions', $subscriptionData);
         
         return $this->handleResponse($response, 'subscription creation');
@@ -223,7 +224,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function cancelSubscription(string $subscriptionId): bool
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->delete($this->baseUrl . "/subscriptions/{$subscriptionId}");
         
         return $response->successful();
@@ -231,7 +232,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function getCustomer(string $customerId): array
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->get($this->baseUrl . "/customers/{$customerId}");
         
         return $this->handleResponse($response, 'get customer');
@@ -239,7 +240,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function createRefund(array $refundData): array
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/Refunds', $refundData);
         
         return $this->handleResponse($response, 'refund creation');
@@ -247,7 +248,7 @@ class N1coGateway extends BasePaymentGateway
 
     public function updatePaymentMethod(array $updateData): array
     {
-        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['token']))
+        $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->put($this->baseUrl . '/PaymentMethods', $updateData);
         
         return $this->handleResponse($response, 'payment method update');
