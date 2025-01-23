@@ -21,7 +21,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class LibrosIVAController extends Controller
 {
 
-    public function consumidores(Request $request) 
+    public function consumidores(Request $request)
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
@@ -70,7 +70,7 @@ class LibrosIVAController extends Controller
         return Excel::download($consumidores, 'AnexoConsumidoresExport.xlsx');
     }
 
-    public function contribuyentes(Request $request) 
+    public function contribuyentes(Request $request)
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
@@ -102,6 +102,7 @@ class LibrosIVAController extends Controller
                 'ventas_gravadas_cuenta_a_terceros'=> 0,
                 'debito_fiscal_cuenta_a_terceros'=> 0,
                 'debito_fiscal_cuenta_a_terceros'=> 0,
+                'iva_retenido'         => $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido,
                 'total'                 => $venta->total,
             ];
@@ -134,6 +135,7 @@ class LibrosIVAController extends Controller
                 'ventas_gravadas_cuenta_a_terceros'=> 0,
                 'debito_fiscal_cuenta_a_terceros'=> 0,
                 'debito_fiscal_cuenta_a_terceros'=> 0,
+                'iva_retenido'         => $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
             ];
