@@ -38,6 +38,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             'Ventas Exentas a Cuenta de Terceros',
             'Ventas Gravadas a Cuenta de Terceros',
             'Débito Fiscal por Cuenta de Terceros',
+            'IVA Retenido',
             'IVA Percibido',
             'Total',
         ];
@@ -46,7 +47,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->when($request->tipo_documento, function($query) {
@@ -69,7 +70,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             });
 
         return $libroVentas;
-        
+
     }
 
     public function map($venta): array{
@@ -91,6 +92,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 0,
                 $venta->id_venta ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
                 0,
+                $venta->id_venta ? $venta->iva_retenido * -1 : $venta->iva_retenido,
                 $venta->id_venta ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 $venta->id_venta ? $venta->total * -1 : $venta->total,
             ];
