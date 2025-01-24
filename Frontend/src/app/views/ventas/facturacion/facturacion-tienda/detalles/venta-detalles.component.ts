@@ -164,7 +164,7 @@ export class VentaDetallesComponent implements OnInit {
       this.detalle.cuenta_a_terceros = 0;
     }
 
-    if (!this.detalle.total) {
+    if(!this.detalle.total || detalle){
       this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
     }
 
