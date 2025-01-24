@@ -16,6 +16,7 @@ use App\Exports\Contabilidad\LibroConsumidoresExport;
 use App\Exports\Contabilidad\AnexoConsumidoresExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LibrosIVAController extends Controller
@@ -25,14 +26,22 @@ class LibrosIVAController extends Controller
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function($q) {
-                            $q->where('nombre', 'Factura');
-                        })
-                        ->whereBetween('fecha', [$request->inicio, $request->fin])
-                        ->where('cotizacion', 0)
-                        ->orderByDesc('fecha')
-                        ->get();
+            ->where('estado', '!=', 'Anulada')
+            // ->whereHas('documento', function($q) {
+            //     $q->where('nombre', 'Factura')
+            //         ->orWhere('nombre', 'Factura de exportación');
+
+            // })
+            ->whereHas('documento', function ($q) {
+                $q->where('nombre', 'Factura')
+                    ->orWhere('nombre', 'Factura de exportación');
+            })
+
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderByDesc('fecha')
+            ->get();
+            //Log::info($ventas);
 
         $ivas = $ventas->map(function ($venta) {
             $documento = $venta->documento;
@@ -43,27 +52,36 @@ class LibrosIVAController extends Controller
                 'correlativo'           => $venta->correlativo,
                 'num_control_interno'   => $venta->correlativo,
                 'ventas_exentas'        => $venta->exenta,
-                'ventas_gravadas'       => $venta->total,
-                'exportaciones'         => 0,
+                // 'ventas_gravadas'       => $venta->total,
+                'ventas_gravadas' => $venta->documento->nombre === 'Factura de exportación' ? 0 : $venta->total,
+                //'exportaciones'         => 0,
+                'exportaciones' => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : 0,
                 'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
+                'no_sujeta'            => $venta->no_sujeta,
+                'id_venta'              => $venta->id,
             ];
         });
+        //
+
 
         // Ordenamos por 'correlativo' de forma descendente y reindexamos
         $ivas = $ivas->sortByDesc('num_documento')->values()->all();
+       // Log::info($ivas);
 
         return response()->json($ivas, 200);
     }
 
-    public function consumidoresLibroExport(Request $request){
+    public function consumidoresLibroExport(Request $request)
+    {
         $consumidores = new LibroConsumidoresExport();
         $consumidores->filter($request);
 
         return Excel::download($consumidores, 'LibroConsumidoresExport.xlsx');
     }
 
-    public function consumidoresAnexoExport(Request $request){
+    public function consumidoresAnexoExport(Request $request)
+    {
         $consumidores = new AnexoConsumidoresExport();
         $consumidores->filter($request);
 
@@ -74,14 +92,14 @@ class LibrosIVAController extends Controller
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function($q) {
-                            $q->where('nombre', 'Crédito fiscal');
-                        })
-                        ->whereBetween('fecha', [$request->inicio, $request->fin])
-                        ->where('cotizacion', 0)
-                        ->orderByDesc('fecha')
-                        ->get();
+            ->where('estado', '!=', 'Anulada')
+            ->whereHas('documento', function ($q) {
+                $q->where('nombre', 'Crédito fiscal');
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderByDesc('fecha')
+            ->get();
 
         $ventasData = $ventas->map(function ($venta) {
             $documento = $venta->documento;
@@ -105,8 +123,9 @@ class LibrosIVAController extends Controller
                 'iva_retenido'         => $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido,
                 'total'                 => $venta->total,
+                'no_sujeta'            => $venta->no_sujeta,
+                'id_venta'              => $venta->id,
             ];
-
         });
 
         $devoluciones = DevolucionVenta::with(['cliente'])
@@ -139,7 +158,6 @@ class LibrosIVAController extends Controller
                 'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
             ];
-
         });
 
         // Unir y ordenar ambas colecciones por fecha
@@ -154,19 +172,20 @@ class LibrosIVAController extends Controller
         return response()->json($libroventas, 200);
     }
 
-    public function contribuyentesLibroExport(Request $request){
+    public function contribuyentesLibroExport(Request $request)
+    {
         $contribuyentes = new LibroContribuyentesExport();
         $contribuyentes->filter($request);
 
         return Excel::download($contribuyentes, 'LibroContribuyentesExport.xlsx');
     }
 
-    public function contribuyentesAnexoExport(Request $request){
+    public function contribuyentesAnexoExport(Request $request)
+    {
         $contribuyentes = new AnexoContribuyentesExport();
         $contribuyentes->filter($request);
 
         return Excel::download($contribuyentes, 'AnexoContribuyentesExport.xlsx');
-
     }
 
     public function compras(Request $request)
@@ -174,13 +193,13 @@ class LibrosIVAController extends Controller
 
         // Obtener las compras
         $compras = Compra::with(['proveedor'])
-                            ->where('estado', '!=', 'Anulada')
-                            ->when($request->id_sucursal, function($q) use ($request){
-                                $q->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->whereBetween('fecha', [$request->inicio, $request->fin])
-                            ->where('cotizacion', 0)
-                            ->get();
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->get();
 
         // Transformar compras
         $comprasData = $compras->map(function ($compra) {
@@ -196,24 +215,26 @@ class LibrosIVAController extends Controller
                 'compras_exentas'       => $compra->exenta,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => $compra->sub_total,
-                'importaciones_gravadas'=> 0,
+                'importaciones_gravadas' => 0,
                 'credito_fiscal'        => $compra->iva,
-                'anticipo_iva_percibido'=> $compra->percepcion,
-                'compras_cuenta_terceros'=> 0,
-                'credito_cuenta_terceros'=> 0,
+                'anticipo_iva_percibido' => $compra->percepcion,
+                'compras_cuenta_terceros' => 0,
+                'credito_cuenta_terceros' => 0,
                 'total'                 => $compra->total,
                 'sujeto_excluido'       => 0,
+                'no_sujeta'            => $compra->no_sujeta,
+                'id_compra'             => $compra->id,
             ];
         });
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
-                            ->where('estado', '!=', 'Anulada')
-                            ->when($request->id_sucursal, function($q) use ($request) {
-                                $q->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->whereBetween('fecha', [$request->inicio, $request->fin])
-                            ->get();
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
 
         // Transformar gastos
         $gastosData = $gastos->map(function ($gasto) {
@@ -229,11 +250,11 @@ class LibrosIVAController extends Controller
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => $gasto->sub_total,
-                'importaciones_gravadas'=> 0,
+                'importaciones_gravadas' => 0,
                 'credito_fiscal'        => $gasto->iva,
-                'anticipo_iva_percibido'=> $gasto->percepcion,
-                'compras_cuenta_terceros'=> 0,
-                'credito_cuenta_terceros'=> 0,
+                'anticipo_iva_percibido' => $gasto->percepcion,
+                'compras_cuenta_terceros' => 0,
+                'credito_cuenta_terceros' => 0,
                 'total'                 => $gasto->total,
                 'sujeto_excluido'       => 0,
             ];
@@ -260,11 +281,11 @@ class LibrosIVAController extends Controller
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => $devolucion->sub_total * -1,
-                'importaciones_gravadas'=> 0,
+                'importaciones_gravadas' => 0,
                 'credito_fiscal'        => $devolucion->iva * -1,
-                'anticipo_iva_percibido'=> $devolucion->percepcion * -1,
-                'compras_cuenta_terceros'=> 0,
-                'credito_cuenta_terceros'=> 0,
+                'anticipo_iva_percibido' => $devolucion->percepcion * -1,
+                'compras_cuenta_terceros' => 0,
+                'credito_cuenta_terceros' => 0,
                 'total'                 => $devolucion->total * -1,
                 'sujeto_excluido'       => 0,
             ];
@@ -283,18 +304,19 @@ class LibrosIVAController extends Controller
     }
 
 
-    public function comprasLibroExport(Request $request){
+    public function comprasLibroExport(Request $request)
+    {
         $compras = new LibroComprasExport();
         $compras->filter($request);
 
         return Excel::download($compras, 'LibroComprasExport.xlsx');
     }
 
-    public function comprasAnexoExport(Request $request){
+    public function comprasAnexoExport(Request $request)
+    {
         $compras = new AnexoComprasExport();
         $compras->filter($request);
 
         return Excel::download($compras, 'AnexoComprasExport.xlsx');
     }
-
 }
