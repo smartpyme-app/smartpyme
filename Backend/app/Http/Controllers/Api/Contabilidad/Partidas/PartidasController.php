@@ -195,16 +195,25 @@ class PartidasController extends Controller
             foreach ($productos_venta as $detalle) {
                 $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                 if($id_categoria){
-                    return 'La forma de pago no tiene cuenta ' . $detalle->nombre_producto;
-                    $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->firstOrFail();
-                    $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->firstOrFail();
+                    $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->first();
+                    
+                    if(!$cuenta_categoria_sucursal){
+                        return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $venta->correlativo, 'code' => 400], 400);
+                    }
+
+                    $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
+                    
+                    if(!$cuenta){
+                        return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $venta->correlativo, 'code' => 400], 400);
+                    }
+
                     $detalles[] = [
                         'id_cuenta' => $cuenta->id,
                         'codigo' => $cuenta->codigo,
                         'nombre_cuenta' => $cuenta->nombre,
                         'concepto' => $venta->nombre_documento . '#' . $venta->correlativo,
                         'debe' => NULL,
-                        'haber' => $detalle->total,
+                        'haber' => round($detalle->total,2),
                         'saldo' => 0,
                     ];
                 }else{
@@ -248,6 +257,71 @@ class PartidasController extends Controller
                     'saldo' => 0,
                 ];
             }
+
+
+            // Costo de venta
+
+                $productos_venta = DetalleVenta::with('producto')->where('id_venta', $venta->id)->get();
+
+                foreach ($productos_venta as $detalle) {
+                    $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
+                    if($id_categoria){
+                        $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->first();
+                        
+                        if(!$cuenta_categoria_sucursal){
+                            return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $venta->correlativo, 'code' => 400], 400);
+                        }
+                        
+                        $cuenta_costos = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_costo)->firstOrFail();
+                        
+                        if(!$cuenta_costos){
+                            return  Response()->json(['titulo' => 'La categoria no tiene cuenta de costo contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $venta->correlativo, 'code' => 400], 400);
+                        }
+
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta_costos->id,
+                            'codigo' => $cuenta_costos->codigo,
+                            'nombre_cuenta' => $cuenta_costos->nombre,
+                            'concepto' => $venta->nombre_documento . '#' . $venta->correlativo,
+                            'debe' => round(($detalle->costo * $detalle->cantidad),2),
+                            'haber' => NULL,
+                            'saldo' => 0,
+                        ];
+
+                        $cuenta_inventarios = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_inventario)->firstOrFail();
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta_inventarios->id,
+                            'codigo' => $cuenta_inventarios->codigo,
+                            'nombre_cuenta' => $cuenta_inventarios->nombre,
+                            'concepto' => $venta->nombre_documento . '#' . $venta->correlativo,
+                            'debe' => NULL,
+                            'haber' => round(($detalle->costo * $detalle->cantidad),2),
+                            'saldo' => 0,
+                        ];
+                    }else{
+                        $cuenta = Cuenta::where('id', $configuracion->id_cuenta_costo_venta)->firstOrFail();
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta->id,
+                            'codigo' => $cuenta->codigo,
+                            'nombre_cuenta' => $cuenta->nombre,
+                            'concepto' => $venta->nombre_documento . '#' . $venta->correlativo,
+                            'debe' => $venta->total_costo,
+                            'haber' => NULL,
+                            'saldo' => 0,
+                        ];
+                        $cuenta = Cuenta::where('id', $configuracion->id_cuenta_inventario)->firstOrFail();
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta->id,
+                            'codigo' => $cuenta->codigo,
+                            'nombre_cuenta' => $cuenta->nombre,
+                            'concepto' => $venta->nombre_documento . '#' . $venta->correlativo,
+                            'debe' => NULL,
+                            'haber' => $venta->total_costo,
+                            'saldo' => 0,
+                        ];
+                    }
+                }
+
 
         }
 

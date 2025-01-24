@@ -115,7 +115,7 @@ class VentasService
             }
 
 
-            // Costo de venta
+        // Costo de venta
              $partida = Partida::create([
                  'fecha' => $venta->fecha,
                  'tipo' => 'Ingreso',
