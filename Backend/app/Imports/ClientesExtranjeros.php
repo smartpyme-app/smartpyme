@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+
 class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation
 {
     private $numRows = 0;
@@ -16,6 +17,13 @@ class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation
     public function model(array $row)
     {
         ++$this->numRows;
+        $formato_documento = [
+            'DUI' => '13',
+            'NIT' => '36',
+            'Pasaporte' => '03',
+            'Carnet de residente' => '02',
+            'Otro' => '37',
+        ];
 
         $cliente = new Cliente();
         $cliente->nombre = $row['nombre'];
@@ -23,7 +31,8 @@ class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation
         $cliente->tipo   = 'Extranjero';
         $cliente->tipo_contribuyente   = 'Pequeño';
         $cliente->dui   = $row['numero_identificacion'];
-        $cliente->tipo_documento = $row['tipo_documento'];
+        // $cliente->tipo_documento = $row['tipo_documento'];
+        $cliente->tipo_documento = $formato_documento[$row['tipo_documento']];
         $cliente->direccion = $row['direccion'];
         $cliente->telefono  = $row['telefono'];
         $cliente->correo    = $row['correo'];
@@ -37,7 +46,6 @@ class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation
         $cliente->id_usuario = Auth::user()->id;
         $cliente->id_empresa = Auth::user()->id_empresa;
         $cliente->save();
-
     }
 
     public function rules(): array
