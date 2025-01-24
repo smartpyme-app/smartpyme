@@ -63,6 +63,7 @@ class Venta extends Model
         'regimen',
         'seguro',
         'flete',
+        'no_sujeta'
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];

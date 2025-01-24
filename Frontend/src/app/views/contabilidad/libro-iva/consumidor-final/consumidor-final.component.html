@@ -66,6 +66,7 @@
                             <th>Correlativo</th>
                             <th class="text-end">Ventas Exentas</th>
                             <th class="text-end">Ventas Gravadas</th>
+                            <th class="text-end">Ventas No Sujetas</th>
                             <th class="text-end">Exportaciones</th>
                             <th class="text-end">Total</th>
                             <th class="text-end">Venta a Cuenta de Terceros</th>
@@ -86,6 +87,7 @@
                             <td>{{iva.correlativo}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
                             <td class="text-end">{{iva.ventas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.exportaciones | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
