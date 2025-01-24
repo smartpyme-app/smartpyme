@@ -1,7 +1,7 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ partida.id ? 'Editar ' : 'Crear ' }} Partida</h3>
     <div class="d-flex gap-2">
-        <button (click)="openModal(mGenerarPartidas)" tooltip="Generar partidas del día" class="btn btn-default"> Generar partida <img
+        <button *ngIf="!partida.id" (click)="openModal(mGenerarPartidas)" tooltip="Generar partidas del día" class="btn btn-default"> Generar partida <img
           src="/assets/icons/plus-circle.png" style="height: 16px; width: 16px;"></button>
         <button class="btn btn-light text-danger" routerLink="/contabilidad/partidas"><i class="fa fa-arrow-left"></i> Regresar</button>
     </div>
