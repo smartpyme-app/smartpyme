@@ -106,7 +106,7 @@ class N1coChargeController extends Controller
             $order = OrdenPago::create([
                 'id_usuario' => $request->input('customer.id'),
                 'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
-                'id_orden_n1co' => $result['data']['id'],
+                'id_orden_n1co' => null,
                 'id_plan' => $plan->id,
                 'plan' => $plan->nombre,
                 'monto' => $plan->precio,
@@ -144,7 +144,14 @@ class N1coChargeController extends Controller
             
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
+            Log::info('Resultado del cargo', [
+                'chargeResult' => $chargeResult
+            ]);
+
             if (!$chargeResult['success']) {
+                Log::error('Error al crear cargo', [
+                    'message' => $chargeResult['error']
+                ]);
                 $paymentMethod->update(['is_active' => false]);
                 return response()->json($chargeResult, 500);
             }

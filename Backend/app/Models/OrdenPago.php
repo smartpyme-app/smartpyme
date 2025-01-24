@@ -20,6 +20,7 @@ class OrdenPago extends Model
         'estado',
         'divisa',
         'codigo_autorizacion',
+        'id_autorizacion_3ds',
     ];
 
     public function usuario()
