@@ -31,7 +31,9 @@ use App\Http\Controllers\Api\Ventas\VentasController;
 
     Route::post('/clientes-personas/importar',          [ClientesController::class, 'importPersonas']);
     Route::post('/clientes-empresas/importar',          [ClientesController::class, 'importEmpresas']);
+    Route::post('/clientes-extranjeros/importar',          [ClientesController::class, 'importExtranjeros']);
     Route::get('/clientes-personas/exportar',    [ClientesController::class, 'exportPersonas']);
     Route::get('/clientes-empresas/exportar',    [ClientesController::class, 'exportEmpresas']);
+    Route::get('/clientes-extranjeros/exportar',    [ClientesController::class, 'exportExtranjeros']);
 
 ?>

@@ -14,8 +14,12 @@ use App\Imports\ClientesPersonas;
 use App\Imports\ClientesEmpresas;
 use App\Exports\ClientesPersonasExport;
 use App\Exports\ClientesEmpresasExport;
+use App\Exports\ClientesExtranjerosExport;
+use App\Imports\ClientesExtranjeros;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use Illuminate\Support\Facades\Log;
+use PgSql\Lob;
 
 class ClientesController extends Controller
 {
@@ -117,7 +121,7 @@ class ClientesController extends Controller
             ]);
         // }
 
-
+Log::info($request->all());
         if($request->id)
             $cliente = Cliente::findOrFail($request->id);
         else
@@ -282,6 +286,19 @@ class ClientesController extends Controller
 
     }
 
+    public function importExtranjeros(Request $request){
+        
+        $request->validate([
+            'file'          => 'required',
+        ]);
+
+        $import = new ClientesExtranjeros();
+        Excel::import($import, $request->file);
+        
+        return Response()->json($import->getRowCount(), 200);
+
+    }
+
     public function exportPersonas(Request $request){
 
       $clientes = new ClientesPersonasExport();
@@ -296,6 +313,14 @@ class ClientesController extends Controller
       $clientes->filter($request);
 
       return Excel::download($clientes, 'clientes-empresas.xlsx');
+    }
+
+    public function exportExtranjeros(Request $request){
+
+      $clientes = new ClientesExtranjerosExport();
+      $clientes->filter($request);
+
+      return Excel::download($clientes, 'clientes-extranjeros.xlsx');
     }
 
 

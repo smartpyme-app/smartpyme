@@ -169,29 +169,115 @@
 </ng-template>
 
 
-<ng-template #mimportar>
+<!-- <ng-template #mimportar>
   <div class="modal-header">
     <div class="modal-title text-center">
-        <h2 class="text-center no-margin">¿Qué tipo de clientes desea importar?</h2>
+        <h2 class="text-center no-margin">Importación de Clientes</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-        <div class="row text-center">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-12 col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Clientes Persona Natural</h5>
+                            <p class="card-text">Importar clientes individuales</p>
+                            <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"></app-importar-excel>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="form-group col-sm-6">
-                <label for="">Importar clientes de tipo persona:</label>
-                <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"></app-importar-excel>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="">Importar clientes de tipo empresa:</label>
-                <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-empresas'"></app-importar-excel>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Clientes Empresa</h5>
+                            <p class="card-text">Importar clientes corporativos</p>
+                            <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-empresas'"></app-importar-excel>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Clientes Extranjeros</h5>
+                            <p class="card-text">Importar clientes internacionales</p>
+                            <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-extranjeros'"></app-importar-excel>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
   </div>
-</ng-template>
+</ng-template> -->
 
-<ng-template #mexportar>
+
+<ng-template #mimportar>
+    <div class="modal-header bg-primary text-white py-3">
+      <div class="modal-title w-100">
+        <h4 class="text-center mb-0">Importación de Clientes</h4>
+      </div>
+      <button type="button" class="btn-close btn-close-white" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  
+    <div class="modal-body p-4">
+      <div class="container-fluid">
+        <div class="row">
+          <!-- Persona Natural -->
+          <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm hover-effect">
+              <div class="card-body d-flex align-items-center p-4">
+                <div class="me-4">
+                  <i class="fas fa-user fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-2">Clientes Persona Natural</h5>
+                  <p class="text-muted mb-3">Importar clientes individuales</p>
+                  <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"></app-importar-excel>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Empresa -->
+          <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm hover-effect">
+              <div class="card-body d-flex align-items-center p-4">
+                <div class="me-4">
+                  <i class="fas fa-building fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-2">Clientes Empresa</h5>
+                  <p class="text-muted mb-3">Importar clientes corporativos</p>
+                  <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-empresas'"></app-importar-excel>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Extranjeros -->
+          <div class="col-12">
+            <div class="card border-0 shadow-sm hover-effect">
+              <div class="card-body d-flex align-items-center p-4">
+                <div class="me-4">
+                  <i class="fas fa-globe fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-2">Clientes Extranjeros</h5>
+                  <p class="text-muted mb-3">Importar clientes internacionales</p>
+                  <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-extranjeros'"></app-importar-excel>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  
+<!-- <ng-template #mexportar>
   <div class="modal-header">
     <div class="modal-title text-center">
         <h2 class="text-center no-margin">¿Qué tipo de clientes desea exportar?</h2>
@@ -215,4 +301,79 @@
             </div>
         </div>
   </div>
-</ng-template>
+</ng-template> -->
+<ng-template #mexportar>
+    <div class="modal-header bg-primary text-white py-3">
+      <div class="modal-title w-100">
+        <h4 class="text-center mb-0">¿Qué tipo de clientes desea exportar?</h4>
+      </div>
+      <button type="button" class="btn-close btn-close-white" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+    </div>
+  
+    <div class="modal-body p-4">
+      <div class="container-fluid">
+        <div class="row">
+          <app-notificaciones-container></app-notificaciones-container>
+          
+          <!-- Persona Natural -->
+          <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm hover-effect">
+              <div class="card-body d-flex align-items-center p-4">
+                <div class="me-4">
+                  <i class="fas fa-user fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-3">Clientes Persona Natural</h5>
+                  <button [disabled]="downloading" tooltip="Descargar clientes persona" 
+                          (click)="descargarPersonas()" 
+                          class="btn btn-primary tcla-F6">
+                    <i class="fas fa-download me-2"></i>
+                    Exportar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Empresa -->
+          <div class="col-12">
+            <div class="card border-0 shadow-sm hover-effect">
+              <div class="card-body d-flex align-items-center p-4">
+                <div class="me-4">
+                  <i class="fas fa-building fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-3">Clientes Empresa</h5>
+                  <button [disabled]="downloading" tooltip="Descargar clientes empresa" 
+                          (click)="descargarEmpresas()" 
+                          class="btn btn-primary tcla-F6">
+                    <i class="fas fa-download me-2"></i>
+                    Exportar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card border-0 shadow-sm hover-effect">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="me-4">
+                        <i class="fas fa-globe fa-2x text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="fw-bold mb-3">Clientes Extranjeros</h5>
+                        <button [disabled]="downloading" tooltip="Descargar clientes internacionales" 
+                                (click)="descargarExtranjeros()" 
+                                class="btn btn-primary tcla-F6">
+                          <i class="fas fa-download me-2"></i>
+                          Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  
