@@ -116,8 +116,7 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     BuscadorProductoComponent,
     ComboIndexComponent,
     VerProductoComponent,
-    CustomFieldsComponent
-
+    CustomFieldsComponent,
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent
@@ -148,7 +147,6 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
-
     CategoriaCuentasComponent,
     SubCategoriasComponent,
     BodegaComponent,
@@ -156,7 +154,7 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     ProductoComboComponent,
     ComboDetallesComponent,
     BuscadorProductoComponent,
-    CustomFieldsComponent
+    CustomFieldsComponent,
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent

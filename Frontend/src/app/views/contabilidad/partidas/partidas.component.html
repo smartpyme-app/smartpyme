@@ -1,10 +1,10 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Partidas</h2>
-  <div>
+  <div class="d-flex gap-2">
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
       src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
     <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
-            class="btn btn-default bn_mrgn"><i class="fa fa-plus"></i> Añadir partida
+            class="btn btn-default"><i class="fa fa-plus"></i> Añadir partida
     </button>
   </div>
 
