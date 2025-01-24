@@ -23,63 +23,63 @@ use PgSql\Lob;
 
 class ClientesController extends Controller
 {
-    
 
-    public function index(Request $request) {
-        
-        $clientes = Cliente::where('id','!=', 1)->withSum('ventas', 'total')
-                    ->when($request->buscador, function($query) use ($request){
-                        return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                    ->orwhere('apellido', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('red_social', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
-                    })
-                    ->when($request->nombre, function($q) use ($request){
-                        $q->where('nombre', $request->nombre);
-                    })
-                    ->when($request->apellido, function($q) use ($request){
-                        $q->where('apellido', $request->apellido);
-                    })
-                    ->when($request->tipo, function($q) use ($request){
-                        $q->where('tipo', $request->tipo);
-                    })
-                    ->when($request->fecha_cumpleanos, function($q) use ($request){
-                        $q->where('fecha_cumpleanos', $request->fecha_cumpleanos);
-                    })
-                    ->when($request->tipo_contribuyente, function($q) use ($request){
-                        $q->where('tipo_contribuyente', $request->tipo_contribuyente);
-                    })
-                    ->when($request->estado !== null, function($q) use ($request){
-                        $q->where('enable', !!$request->estado);
-                    })
-                    ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
-                    ->paginate($request->paginate);
+
+    public function index(Request $request)
+    {
+
+        $clientes = Cliente::where('id', '!=', 1)->withSum('ventas', 'total')
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('apellido', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('nombre_empresa', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('nit', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('giro', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('telefono', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('red_social', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('ncr', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('dui', 'like',  '%' . $request->buscador . '%');
+            })
+            ->when($request->nombre, function ($q) use ($request) {
+                $q->where('nombre', $request->nombre);
+            })
+            ->when($request->apellido, function ($q) use ($request) {
+                $q->where('apellido', $request->apellido);
+            })
+            ->when($request->tipo, function ($q) use ($request) {
+                $q->where('tipo', $request->tipo);
+            })
+            ->when($request->fecha_cumpleanos, function ($q) use ($request) {
+                $q->where('fecha_cumpleanos', $request->fecha_cumpleanos);
+            })
+            ->when($request->tipo_contribuyente, function ($q) use ($request) {
+                $q->where('tipo_contribuyente', $request->tipo_contribuyente);
+            })
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
+            ->paginate($request->paginate);
 
         return Response()->json($clientes, 200);
-
     }
 
-    public function list() {
+    public function list()
+    {
 
-        $clientes = Cliente::orderBy('nombre','asc')
-                            ->where('enable', true)
-                            ->get();
-        
+        $clientes = Cliente::orderBy('nombre', 'asc')
+            ->where('enable', true)
+            ->get();
+
         return Response()->json($clientes, 200);
-
     }
 
-    public function read($id) {
+    public function read($id)
+    {
 
         $cliente = Cliente::findOrFail($id);
 
         return Response()->json($cliente, 200);
-
     }
 
     public function store(Request $request)
@@ -106,32 +106,31 @@ class ClientesController extends Controller
         //         // 'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
         //     ]);
         // }{
-            $request->validate([
-                'nombre'         => 'required_if:tipo,"Persona"',
-                'apellido'       => 'required_if:tipo,"Persona"',
-                'nombre_empresa'    => 'required_if:tipo,"Empresa"',
-                // 'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
-                // 'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
-                // 'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
-                'id_usuario'     => 'required|numeric',
-                'id_empresa'     => 'required|numeric|exists:empresas,id',
-            ],[
-                'nombre.required_if' => 'El campo nombre es obligatorio.',
-                'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
-            ]);
+        $request->validate([
+            'nombre'         => 'required_if:tipo,"Persona"',
+            'apellido'       => 'required_if:tipo,"Persona"',
+            'nombre_empresa'    => 'required_if:tipo,"Empresa"',
+            // 'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
+            // 'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
+            // 'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
+            'id_usuario'     => 'required|numeric',
+            'id_empresa'     => 'required|numeric|exists:empresas,id',
+        ], [
+            'nombre.required_if' => 'El campo nombre es obligatorio.',
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
+        ]);
         // }
 
-Log::info($request->all());
-        if($request->id)
+        Log::info($request->all());
+        if ($request->id)
             $cliente = Cliente::findOrFail($request->id);
         else
             $cliente = new Cliente;
-        
+
         $cliente->fill($request->all());
         $cliente->save();
 
         return Response()->json($cliente, 200);
-
     }
 
     public function delete($id)
@@ -140,61 +139,61 @@ Log::info($request->all());
         $cliente->delete();
 
         return Response()->json($cliente, 201);
-
     }
 
-    public function ventas($id) {
+    public function ventas($id)
+    {
 
         $ventas = Venta::where('id_cliente', $id)
-                        ->where('estado', '!=', 'Anulada')
-                        ->orderBy('id', 'desc')
-                        ->paginate(10);
+            ->where('estado', '!=', 'Anulada')
+            ->orderBy('id', 'desc')
+            ->paginate(10);
         return Response()->json($ventas, 200);
-
     }
 
-    public function creditos($id) {
+    public function creditos($id)
+    {
 
         $creditos = Credito::where('id_cliente', $id)
-                        ->orderBy('id', 'desc')
-                        ->paginate(10);
+            ->orderBy('id', 'desc')
+            ->paginate(10);
         return Response()->json($creditos, 200);
-
     }
 
-    public function ventasFilter(Request $request) {
+    public function ventasFilter(Request $request)
+    {
 
         if ($request->estado == 'Anulada') {
             $ventas = Venta::where('id_cliente', $request->id)
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->orderBy('id','desc')->paginate(100000);
-        }else{
+                ->when($request->estado, function ($query) use ($request) {
+                    return $query->where('estado', $request->estado);
+                })
+                ->when($request->metodo_pago, function ($query) use ($request) {
+                    return $query->where('metodo_pago', $request->metodo_pago);
+                })
+                ->orderBy('id', 'desc')->paginate(100000);
+        } else {
 
             $ventas = Venta::where('id_cliente', $request->id)
-                        ->where('estado', '!=', 'Anulada')
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->orderBy('id','desc')->paginate(100000);
+                ->where('estado', '!=', 'Anulada')
+                ->when($request->estado, function ($query) use ($request) {
+                    return $query->where('estado', $request->estado);
+                })
+                ->when($request->metodo_pago, function ($query) use ($request) {
+                    return $query->where('metodo_pago', $request->metodo_pago);
+                })
+                ->orderBy('id', 'desc')->paginate(100000);
         }
 
         return Response()->json($ventas, 200);
-
     }
 
-    public function cxc() {
-       
-        $clientes = Cliente::where('id','!=', 1)
-                        ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
-                        ->paginate(10);
+    public function cxc()
+    {
+
+        $clientes = Cliente::where('id', '!=', 1)
+            ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
+            ->paginate(10);
 
         foreach ($clientes as $cliente) {
             $cliente->num_ventas_pendientes = $cliente->ventasPendientes->count();
@@ -202,130 +201,133 @@ Log::info($request->all());
         }
 
         return Response()->json($clientes, 200);
-
     }
 
-    public function cxcBuscar($txt) {
-       
-        $clientes = Cliente::where('id','!=', 1)->where('nombre', 'like' ,'%' . $txt . '%')
-                        ->orWhere('registro', 'like' , $txt . '%')
-                        ->orWhereRaw('REPLACE(registro, "-", "") like "'.$txt.'"')
-                        ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
-                        ->paginate(10);
+    public function cxcBuscar($txt)
+    {
+
+        $clientes = Cliente::where('id', '!=', 1)->where('nombre', 'like', '%' . $txt . '%')
+            ->orWhere('registro', 'like', $txt . '%')
+            ->orWhereRaw('REPLACE(registro, "-", "") like "' . $txt . '"')
+            ->whereRaw('clientes.id in (select id_cliente from ventas where estado = ?)', ['Pendiente'])
+            ->paginate(10);
 
         return Response()->json($clientes, 200);
-
     }
 
-    public function estadoCuenta($id) {
-       
+    public function estadoCuenta($id)
+    {
+
         $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
         $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
         $cliente->fletes = $cliente->fletes()->where('estado', 'Pendiente')->get();
         // return $cliente;
         $reportes = \PDF::loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
-
     }
 
-    public function dash(Request $request) {
+    public function dash(Request $request)
+    {
 
         $datos = new \stdClass();
 
         $datos->ventas   = \App\Models\Ventas\Venta::selectRaw('count(id) AS total, id_cliente, (select nombre from clientes where id_cliente = id) as nombre')
-                                    ->groupBy('id_cliente')
-                                    // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('id_sucursal', $request->id_sucursal);
-                                    // })
-                                    // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('id_sucursal', $request->id_sucursal);
-                                    // })
-                                    ->orderBy('total', 'desc')
-                                    ->take(5)
-                                    ->get();
+            ->groupBy('id_cliente')
+            // ->when('sucursal', function($q) use($request){
+            //     $q->where('id_sucursal', $request->id_sucursal);
+            // })
+            // ->when('sucursal', function($q) use($request){
+            //     $q->where('id_sucursal', $request->id_sucursal);
+            // })
+            ->orderBy('total', 'desc')
+            ->take(5)
+            ->get();
 
         $datos->municipios   = Cliente::selectRaw('count(id) AS total, municipio')
-                                    ->groupBy('municipio')
-                                    // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('id_sucursal', $request->id_sucursal);
-                                    // })
-                                    // ->when('sucursal', function($q) use($request){
-                                    //     $q->where('id_sucursal', $request->id_sucursal);
-                                    // })
-                                    ->orderBy('total', 'desc')
-                                    ->take(5)
-                                    ->get();
+            ->groupBy('municipio')
+            // ->when('sucursal', function($q) use($request){
+            //     $q->where('id_sucursal', $request->id_sucursal);
+            // })
+            // ->when('sucursal', function($q) use($request){
+            //     $q->where('id_sucursal', $request->id_sucursal);
+            // })
+            ->orderBy('total', 'desc')
+            ->take(5)
+            ->get();
 
 
         return Response()->json($datos, 200);
     }
 
-    public function importPersonas(Request $request){
-        
+    public function importPersonas(Request $request)
+    {
+
         $request->validate([
             'file'          => 'required',
         ]);
 
         $import = new ClientesPersonas();
         Excel::import($import, $request->file);
-        
-        return Response()->json($import->getRowCount(), 200);
 
+        return Response()->json($import->getRowCount(), 200);
     }
 
-    public function importEmpresas(Request $request){
-        
+    public function importEmpresas(Request $request)
+    {
+
         $request->validate([
             'file'          => 'required',
         ]);
 
         $import = new ClientesEmpresas();
         Excel::import($import, $request->file);
-        
-        return Response()->json($import->getRowCount(), 200);
 
+        return Response()->json($import->getRowCount(), 200);
     }
 
-    public function importExtranjeros(Request $request){
-        
+    public function importExtranjeros(Request $request)
+    {
         $request->validate([
-            'file'          => 'required',
+            'file' => 'required'
         ]);
-
         $import = new ClientesExtranjeros();
+
         Excel::import($import, $request->file);
-        
-        return Response()->json($import->getRowCount(), 200);
 
+        return response()->json($import->getRowCount(), 200);
     }
 
-    public function exportPersonas(Request $request){
+    public function exportPersonas(Request $request)
+    {
 
-      $clientes = new ClientesPersonasExport();
-      $clientes->filter($request);
+        $clientes = new ClientesPersonasExport();
+        $clientes->filter($request);
 
-      return Excel::download($clientes, 'clientes-personas.xlsx');
+        return Excel::download($clientes, 'clientes-personas.xlsx');
     }
 
-    public function exportEmpresas(Request $request){
+    public function exportEmpresas(Request $request)
+    {
 
-      $clientes = new ClientesEmpresasExport();
-      $clientes->filter($request);
+        $clientes = new ClientesEmpresasExport();
+        $clientes->filter($request);
 
-      return Excel::download($clientes, 'clientes-empresas.xlsx');
+        return Excel::download($clientes, 'clientes-empresas.xlsx');
     }
 
-    public function exportExtranjeros(Request $request){
+    public function exportExtranjeros(Request $request)
+    {
 
-      $clientes = new ClientesExtranjerosExport();
-      $clientes->filter($request);
+        $clientes = new ClientesExtranjerosExport();
+        $clientes->filter($request);
 
-      return Excel::download($clientes, 'clientes-extranjeros.xlsx');
+        return Excel::download($clientes, 'clientes-extranjeros.xlsx');
     }
 
 
-    public function datos(Request $request) {
-       
+    public function datos(Request $request)
+    {
+
         $cliente = Cliente::where('id', $request->id)->firstOrFail();
 
         $ventas = $cliente->ventas()->whereBetween('fecha', [$request->inicio, $request->fin])->get();
@@ -341,8 +343,5 @@ Log::info($request->all());
 
 
         return Response()->json($cliente, 200);
-
     }
-
-
 }

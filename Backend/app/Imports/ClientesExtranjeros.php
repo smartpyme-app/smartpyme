@@ -8,6 +8,7 @@ use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation
@@ -24,6 +25,10 @@ class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation
             'Carnet de residente' => '02',
             'Otro' => '37',
         ];
+
+        Log::info($formato_documento);
+        //imprimir row
+        Log::info($row);
 
         $cliente = new Cliente();
         $cliente->nombre = $row['nombre'];
