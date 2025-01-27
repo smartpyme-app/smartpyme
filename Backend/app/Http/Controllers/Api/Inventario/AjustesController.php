@@ -11,7 +11,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use App\Models\Admin\Tanque;
 
-use App\Exports\AjustesExport;
+use App\Exports\Inventario\AjustesExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AjustesController extends Controller
@@ -24,7 +24,7 @@ class AjustesController extends Controller
                                 return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
                             ->when($request->id_bodega, function($query) use ($request){
-                                return $query->whereHas('sucursal', function($q) use ($request){
+                                return $query->whereHas('bodega', function($q) use ($request){
                                     $q->where('id_bodega', $request->id_bodega);
                                 });
                             })
