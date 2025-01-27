@@ -262,8 +262,12 @@
                     </div>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>
+<app-threeds-modal 
+    *ngIf="mostrar3DSModal"
+    [authUrl]="urlAutenticacion"
+    (close)="mostrar3DSModal = false">
+</app-threeds-modal>
 

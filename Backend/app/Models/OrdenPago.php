@@ -14,13 +14,14 @@ class OrdenPago extends Model
         'id_orden',
         'id_usuario',
         'id_orden_n1co',
+        'id_autorizacion_3ds',
+        'autorizacion_url',
         'id_plan',
         'plan',
         'monto',
         'estado',
         'divisa',
         'codigo_autorizacion',
-        'id_autorizacion_3ds',
     ];
 
     public function usuario()

@@ -18,6 +18,8 @@ class CreateOrdenPagosTable extends Migration
             $table->string('id_orden', 50);
             $table->unsignedBigInteger('id_usuario');
             $table->string('id_orden_n1co')->nullable();
+            $table->string('id_autorizacion_3ds')->nullable();
+            $table->string('autorizacion_url')->nullable();
             $table->unsignedBigInteger('id_plan');
             $table->string('plan')->nullable();
             $table->decimal('monto', 10, 2);

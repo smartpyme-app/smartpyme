@@ -144,10 +144,6 @@ class N1coChargeController extends Controller
             
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
-            Log::info('Resultado del cargo', [
-                'chargeResult' => $chargeResult
-            ]);
-
             if (!$chargeResult['success']) {
                 Log::error('Error al crear cargo', [
                     'message' => $chargeResult['error']
@@ -155,18 +151,38 @@ class N1coChargeController extends Controller
                 $paymentMethod->update(['is_active' => false]);
                 return response()->json($chargeResult, 500);
             }
-
+    
+            if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                Log::info('Autenticación requerida', [
+                    'authentication_id' => $chargeResult['data']['authentication']['id'],
+                    'authentication_url' => $chargeResult['data']['authentication']['url'],
+                    'charge_data' => $chargeResult['data']
+                ]);
+                $order->update([
+                    'estado' => 'autenticacion_pendiente',
+                    'id_autenticacion_3ds' => $chargeResult['data']['authentication']['id']
+                ]);
+    
+                return response()->json([
+                    'success' => true,
+                    'requires_3ds' => true,
+                    'authentication_url' => $chargeResult['data']['authentication']['url'],
+                    'authentication_id' => $chargeResult['data']['authentication']['id'],
+                    'order_id' => $order->id_orden
+                ]);
+            }
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Método de pago creado exitosamente',
                 'data' => $result['data']
             ]);
-
+    
         } catch (\Exception $e) {
             Log::error('Error en createPaymentMethod:', [
                 'message' => $e->getMessage()
             ]);
-
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Error al procesar el método de pago',

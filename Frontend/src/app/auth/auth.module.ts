@@ -13,6 +13,7 @@ import { LockComponent } from './../auth/lock/lock.component';
 import { RegisterComponent } from './../auth/register/register.component';
 import { PagoComponent } from './../auth/register/pago/pago.component';
 import { ForgetComponent } from './../auth/forget/forget.component';
+import { ThreedsModalComponent } from './../auth/register/pago/modal/threeds-modal.component';
 
 @NgModule({
   imports: [
@@ -30,7 +31,8 @@ import { ForgetComponent } from './../auth/forget/forget.component';
     LockComponent,
     ForgetComponent,
     RegisterComponent,
-    PagoComponent
+    PagoComponent,
+    ThreedsModalComponent
   ],
   exports: [
   	LoginComponent,

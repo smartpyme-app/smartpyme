@@ -4,6 +4,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { firstValueFrom } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-pago',
@@ -28,13 +29,18 @@ export class PagoComponent implements OnInit {
         zipCode: ''
     };
 
+
     public processingPayment = false;
+    public mostrar3DSModal = false;
+    public urlAutenticacion!: SafeResourceUrl;
 
     constructor(
         private apiService: ApiService,
         private router: Router,
         private alertService: AlertService,
-        private n1coPaymentService: N1coPaymentService
+        private n1coPaymentService: N1coPaymentService,
+        private sanitizer: DomSanitizer
+        
     ) { }
 
     ngOnInit() {
@@ -93,7 +99,15 @@ export class PagoComponent implements OnInit {
             const result = await firstValueFrom(
                 this.n1coPaymentService.createPaymentMethod(paymentMethodData)
             );
-    
+
+            if (result.requires_3ds) {
+                console.log('Resultado 3DS:', result); // Agregar este log
+                this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
+                    result.authentication_url
+                );
+                this.mostrar3DSModal = true;
+                return;
+            }
             if (result.success) {
                 // Proceder con el cargo usando el ID del método de pago
                 const chargeData = {
@@ -156,4 +170,9 @@ export class PagoComponent implements OnInit {
     public backToHome() {
         this.router.navigate(['/']);
     }
+
+    abrirModal3DS() {
+        this.mostrar3DSModal = true;
+        this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl('https://front-3ds-sandbox.n1co.com/authentication/test');
+      }
 }
