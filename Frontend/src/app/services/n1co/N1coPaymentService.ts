@@ -31,7 +31,7 @@ import { environment } from '../../../environments/environment';
     }
   
       // Procesar el cargo usando el payment method
-      processDirectPayment(data: {
+      createMethodPaymentWithCharge(data: {
           empresa_id: number;
           card_id: string;
           customer_name: string;
@@ -41,6 +41,13 @@ import { environment } from '../../../environments/environment';
           description?: string;
       }): Observable<any> {
           return this.http.post(`${this.apiUrl}/api/payment/process`, data);
+      }
+
+      processDirectPayment3DS(data: {
+          authentication_id: string;
+          order_id: string;
+      }): Observable<any> {
+          return this.http.post(`${this.apiUrl}/api/process/3ds`, data);
       }
 
       

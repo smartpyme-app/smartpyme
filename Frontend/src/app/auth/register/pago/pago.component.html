@@ -72,7 +72,7 @@
                     </div>
 
                     <div *ngIf="showDirectPayment" class="payment-form">
-                        <form (ngSubmit)="processDirectPayment()" #paymentForm="ngForm">
+                        <form (ngSubmit)="createMethodPaymentWithCharge()" #paymentForm="ngForm">
                             <!-- Número de tarjeta -->
                             <div class="mb-3">
                                 <label class="form-label">Número de Tarjeta</label>

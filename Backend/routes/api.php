@@ -25,6 +25,7 @@ require base_path('routes/modulos/n1co/webhook-n1co.php');
 Route::group(['prefix' => 'payment'], function () {
     Route::post('method', [N1coChargeController::class, 'createPaymentMethod']);
     Route::post('process', [N1coChargeController::class, 'processCharge']);
+    Route::post('process/3ds', [N1coChargeController::class, 'processCharge3DS']);
     Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
     Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
 });

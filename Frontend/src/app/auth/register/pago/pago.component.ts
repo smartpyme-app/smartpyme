@@ -54,7 +54,7 @@ export class PagoComponent implements OnInit {
     }
 
     // Nuevo método para procesar pago con tarjeta
-    public async processDirectPayment() {
+    public async createMethodPaymentWithCharge() {
         if (this.processingPayment) return;
         
         this.processingPayment = true;
@@ -101,13 +101,36 @@ export class PagoComponent implements OnInit {
             );
 
             if (result.requires_3ds) {
-                console.log('Resultado 3DS:', result); // Agregar este log
+                console.log('Resultado 3DS:', result);
                 this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
                     result.authentication_url
                 );
                 this.mostrar3DSModal = true;
+                
+                setTimeout(async () => {
+                    this.mostrar3DSModal = false;
+                    
+                    try {
+                        const response = await firstValueFrom(
+                            this.n1coPaymentService.processDirectPayment3DS({
+                                authentication_id: result.authentication_id,
+                                order_id: result.order_id
+                            })
+                        );
+                        
+                        if (response.success) {
+                            this.alertService.success('Éxito', 'Pago procesado exitosamente');
+                            this.router.navigate(['/dashboard']);
+                        }
+                    } catch (error) {
+                        this.alertService.error('Error procesando el pago');
+                    }
+                }, 10000); // 10 segundos
+                
                 return;
-            }
+             }
+
+
             if (result.success) {
                 // Proceder con el cargo usando el ID del método de pago
                 const chargeData = {
@@ -121,7 +144,7 @@ export class PagoComponent implements OnInit {
                 };
     
                 const chargeResult = await firstValueFrom(
-                    this.n1coPaymentService.processDirectPayment(chargeData)
+                    this.n1coPaymentService.createMethodPaymentWithCharge(chargeData)
                 );
     
                 // Manejar la respuesta del cargo
@@ -134,7 +157,7 @@ export class PagoComponent implements OnInit {
             }
     
         } catch (error: any) {
-            console.error('Error en processDirectPayment:', error);
+            console.error('Error en createMethodPaymentWithCharge:', error);
             this.alertService.error('Error al procesar el pago: ' + 
                 (error.error?.message || error.message || 'Error desconocido'));
         } finally {

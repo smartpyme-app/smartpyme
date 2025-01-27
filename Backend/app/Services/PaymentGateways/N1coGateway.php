@@ -169,6 +169,15 @@ class N1coGateway extends BasePaymentGateway
         }
     }
 
+    public function processCharge3DS(array $data): array
+    {
+        $chargeData = [
+            'authenticationId' => $data['authentication_id'],
+            'orderId' => $data['order_id']
+        ];
+        return $this->createCharge($chargeData);
+    }
+
     public function processCharge(array $orderData, string $cardId, string $token, ?string $authenticationId = null): array
     {
         $chargeData = [
