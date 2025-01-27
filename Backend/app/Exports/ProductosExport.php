@@ -42,7 +42,8 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($row): array{
             $etiquetas = $row->etiquetas;
-           $fields = [
+            $stockSum = $row->inventarios->sum('stock');
+            $fields = [
               $row->nombre,
               $row->nombre_categoria,
               $row->codigo,
@@ -52,7 +53,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
               number_format($row->precio, 2),
               number_format($row->precio - $row->costo, 2),
               number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),
-              $row->inventarios->sum('stock'),
+              $stockSum ? $stockSum : '0',
               $row->proveedores()->count() ? $row->proveedores()->first()->nombre_proveedor : '',
               $row->enable ? 'Activo' : 'Inactivo',
               // $etiquetas,
