@@ -65,11 +65,11 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
                         ->where('id_producto', $producto->id)
                         ->first();
 
-                    // Si hay Kardex, toma el total_cantidad; si no, toma el stock del inventario
+                    // Si hay Kardex, toma el total_cantidad; si no asignar 0
                     $stock = $kardex ? $kardex->total_cantidad : '0';
                 } else {
-                    // No hay Kardex asociado, usa el stock del inventario
-                    $stock = $inventario->stock;
+                    // No hay Kardex asociado, asignar 0
+                    $stock = '0';
                 }
             }
 
