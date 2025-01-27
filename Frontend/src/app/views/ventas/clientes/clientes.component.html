@@ -215,11 +215,11 @@
 
 
 <ng-template #mimportar>
-    <div class="modal-header bg-primary text-white py-3">
-      <div class="modal-title w-100">
-        <h4 class="text-center mb-0">Importación de Clientes</h4>
+    <div class="modal-header py-3">
+      <div class="modal-title text-center">
+        <h4 class="text-center no-margin">Importación de Clientes</h4>
       </div>
-      <button type="button" class="btn-close btn-close-white" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+      <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
     </div>
   
     <div class="modal-body p-4">
@@ -234,8 +234,8 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-2">Clientes Persona Natural</h5>
-                  <p class="text-muted mb-3">Importar clientes individuales</p>
-                  <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"></app-importar-excel>
+                  <!-- <p class="text-muted mb-3">Importar clientes individuales</p> -->
+                  <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"> </app-importar-excel>
                 </div>
               </div>
             </div>
@@ -250,7 +250,7 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-2">Clientes Empresa</h5>
-                  <p class="text-muted mb-3">Importar clientes corporativos</p>
+                  <!-- <p class="text-muted mb-3">Importar clientes corporativos</p> -->
                   <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-empresas'"></app-importar-excel>
                 </div>
               </div>
@@ -266,7 +266,7 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-2">Clientes Extranjeros</h5>
-                  <p class="text-muted mb-3">Importar clientes internacionales</p>
+                  <!-- <p class="text-muted mb-3">Importar clientes internacionales</p> -->
                   <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-extranjeros'"></app-importar-excel>
                 </div>
               </div>
@@ -303,11 +303,11 @@
   </div>
 </ng-template> -->
 <ng-template #mexportar>
-    <div class="modal-header bg-primary text-white py-3">
-      <div class="modal-title w-100">
-        <h4 class="text-center mb-0">¿Qué tipo de clientes desea exportar?</h4>
+    <div class="modal-header py-3">
+      <div class="modal-title text-center">
+        <h4 class="text-center no-margin ">¿Qué tipo de clientes desea exportar?</h4>
       </div>
-      <button type="button" class="btn-close btn-close-white" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
+      <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
     </div>
   
     <div class="modal-body p-4">
@@ -326,7 +326,7 @@
                   <h5 class="fw-bold mb-3">Clientes Persona Natural</h5>
                   <button [disabled]="downloading" tooltip="Descargar clientes persona" 
                           (click)="descargarPersonas()" 
-                          class="btn btn-primary tcla-F6">
+                          class="btn btn-default tcla-F6">
                     <i class="fas fa-download me-2"></i>
                     Exportar
                   </button>
@@ -346,7 +346,7 @@
                   <h5 class="fw-bold mb-3">Clientes Empresa</h5>
                   <button [disabled]="downloading" tooltip="Descargar clientes empresa" 
                           (click)="descargarEmpresas()" 
-                          class="btn btn-primary tcla-F6">
+                          class="btn btn-default tcla-F6">
                     <i class="fas fa-download me-2"></i>
                     Exportar
                   </button>
@@ -364,7 +364,7 @@
                         <h5 class="fw-bold mb-3">Clientes Extranjeros</h5>
                         <button [disabled]="downloading" tooltip="Descargar clientes internacionales" 
                                 (click)="descargarExtranjeros()" 
-                                class="btn btn-primary tcla-F6">
+                                class="btn btn-default tcla-F6">
                           <i class="fas fa-download me-2"></i>
                           Exportar
                         </button>
