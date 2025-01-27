@@ -23,17 +23,17 @@
         }
 
         #fecha          {top: 3.5cm; left: 6.5cm; }
-        #cliente        {top: 3.8cm; left: 1.8cm; width: 9cm;}
-        #direccion      {top: 4.5cm; left: 1.8cm; width: 9cm;}
-        #nit            {top: 5cm; left: 1.8cm; }
+        #cliente        {top: 3.6cm; left: 1.8cm; width: 9cm;}
+        #direccion      {top: 4.1cm; left: 1.8cm; width: 9cm;}
+        #nit            {top: 4.6cm; left: 1.8cm; }
 
 
-        table   {width: 9cm; position: absolute; top: 6cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
-        table td{height: 0.5cm; text-align: left; overflow: hidden;}
+        table   {width: 9cm; position: absolute; top: 5.9cm; left: 0.3cm; text-align: left; border-collapse: collapse; }
+        table td{height: 0.4cm; text-align: left; overflow: hidden;}
 
         .cantidad{ width: 1cm; text-align: center;}
         .producto {
-            width: 4cm; 
+            width: 4.2cm; 
             text-align: left; 
             word-wrap: break-word; 
             white-space: break-spaces;
