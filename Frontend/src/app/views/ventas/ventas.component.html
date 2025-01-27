@@ -208,7 +208,8 @@
 <ng-template #mdescargar>
   <div class="modal-header">
     <h4 class="modal-title text-center">Descargar registro de ventas</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+    <button type="button" class="btn-close" (click)="modalRefDescargar.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -228,6 +229,19 @@
                     <span *ngIf="downloadingVentas">Descargando...</span>
                 </button>
             </div>
+            <!-- <div class="d-grid my-4">
+                <p>Descarga Acumulado por Producto.</p>
+                <button [disabled]="saving" (click)="descargarAcumulado()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingVentas">Descargar Acumulado</span>
+                    <span *ngIf="downloadingVentas">Descargando...</span>
+                </button>
+            </div> -->
+            <div class="d-grid my-4">
+                <p>Descarga Acumulado por Producto.</p>
+                <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)" class="btn btn-primary btn-block">
+                  Descargar Acumulado
+                </button>
+              </div>
         </div>
   </div>
 </ng-template>
@@ -463,3 +477,74 @@
     </form>
   </div>
 </ng-template>
+
+    <ng-template #mfiltrosAcumulado>
+      <div class="modal-header">
+        <h4 class="modal-title text-center">Filtros para Reporte Acumulado</h4>
+        <button type="button" class="btn-close" (click)="modalRefAcumulado.hide()" aria-label="Close"></button>
+        <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+      </div>
+      <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        
+        <form (ngSubmit)="descargarAcumulado()">
+          <div class="row">
+            <!-- Fechas -->
+            <div class="form-group col-sm-6">
+              <label>Del:</label>
+              <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.inicio" name="inicio">
+            </div>
+            <div class="form-group col-sm-6">
+              <label>Al:</label>
+              <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
+            </div>
+    
+            <!-- Sucursales -->
+            <div class="form-group col-12 mt-3">
+              <label>Sucursales:</label>
+              <ng-select [multiple]="true"
+                        [items]="sucursales"
+                        [(ngModel)]="filtrosAcumulado.sucursales"
+                        bindLabel="nombre"
+                        bindValue="id"
+                        placeholder="Seleccione sucursales"
+                        name="sucursales">
+              </ng-select>
+            </div>
+    
+            <!-- Categorías -->
+            <div class="form-group col-12 mt-3">
+              <label>Categorías:</label>
+              <ng-select [multiple]="true"
+                        [items]="categorias"
+                        [(ngModel)]="filtrosAcumulado.categorias"
+                        bindLabel="nombre"
+                        bindValue="id"
+                        placeholder="Seleccione categorías"
+                        name="categorias">
+              </ng-select>
+            </div>
+    
+            <!-- Marcas -->
+            <div class="form-group col-12 mt-3">
+              <label>Marcas:</label>
+              <ng-select [multiple]="true"
+                        [items]="marcas"
+                        [(ngModel)]="filtrosAcumulado.marcas"
+                        bindLabel="nombre"
+                        bindValue="nombre"
+                        placeholder="Seleccione marcas"
+                        name="marcas">
+              </ng-select>
+            </div>
+          </div>
+    
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
+              <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>
+              <span *ngIf="downloadingAcumulado">Descargando...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </ng-template>
