@@ -97,6 +97,7 @@
                             <td colspan="3" class="text-center"><b>Total</b></td>                                
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'exportaciones' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
