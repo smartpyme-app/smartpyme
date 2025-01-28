@@ -9,7 +9,7 @@ class OrdenPago extends Model
 {
     use HasFactory;
 
-    protected $table = 'ordenes_pagos';
+    protected $table = 'ordenes_pago';
     protected $fillable = [
         'id_orden',
         'id_usuario',
@@ -35,6 +35,11 @@ class OrdenPago extends Model
     public function plan()
     {
         return $this->belongsTo(Plan::class, 'id_plan');
+    }
+
+    public function detalles()
+    {
+        return $this->hasMany(OrdenPagoDetalle::class, 'orden_pago_id');
     }
 
     public function updateStatusAuthentication3DS($authenticationId, $authenticationUrl,$status)

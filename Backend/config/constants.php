@@ -20,9 +20,9 @@ return [
     'ESTADO_SUSCRIPCION_RENOVADO' => 'renovado',
     'ESTADO_SUSCRIPCION_EN_PRUEBA' => 'en prueba',
 
-    'ESTADO_ORDEN_PENDIENTE' => 'pendiente',
-    'ESTADO_ORDEN_RECHAZADO' => 'rechazada',
-    'ESTADO_ORDEN_COMPLETADO' => 'completado',
+    'ESTADO_ORDEN_PAGO_PENDIENTE' => 'pendiente',
+    'ESTADO_ORDEN_PAGO_RECHAZADO' => 'rechazada',
+    'ESTADO_ORDEN_PAGO_COMPLETADO' => 'completado',
     'ESTADO_ORDEN_AUTENTICACION_PENDIENTE' => 'autenticacion_pendiente',
     'ESTADO_ORDEN_AUTENTICACION_EXITOSA' => 'autenticacion_exitosa',
     'ESTADO_ORDEN_AUTENTICACION_RECHAZADA' => 'autenticacion_rechazada',
@@ -41,8 +41,4 @@ return [
 
     'MAIL_CC_ADDRESS_1' => 'gabrielaq@smartpyme.sv',
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
-
-    'ESTADO_ORDEN_PENDIENTE' => 'pendiente',
-    'ESTADO_ORDEN_RECHAZADO' => 'rechazada',
-    'ESTADO_ORDEN_COMPLETADO' => 'completado',
 ];

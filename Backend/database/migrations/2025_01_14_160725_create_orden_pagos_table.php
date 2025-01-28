@@ -13,7 +13,7 @@ class CreateOrdenPagosTable extends Migration
      */
     public function up()
     {
-        Schema::create('ordenes_pagos', function (Blueprint $table) {
+        Schema::create('ordenes_pago', function (Blueprint $table) {
             $table->id();
             $table->string('id_orden', 50);
             $table->unsignedBigInteger('id_usuario');
@@ -40,6 +40,6 @@ class CreateOrdenPagosTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('ordenes_pagos');
+        Schema::dropIfExists('ordenes_pago');
     }
 }

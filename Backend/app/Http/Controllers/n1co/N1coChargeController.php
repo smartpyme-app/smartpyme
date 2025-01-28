@@ -231,7 +231,7 @@ class N1coChargeController extends Controller
             if (!$result['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error al procesar el cargo',
+                    'message' => 'Error al procesar el cargo processCharge',
                     'error' => $result['error']
                 ], 500);
             }
@@ -248,7 +248,7 @@ class N1coChargeController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al procesar el cargo',
+                'message' => 'Error al procesar el cargo processCharge2',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -258,6 +258,23 @@ class N1coChargeController extends Controller
     {
         try {
             $result = $this->n1coGateway->processCharge3DS($request->all());
+
+            Log::info('Resultado de la creación del cargo', [
+                'charge_result' => $result
+            ]);
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al procesar el cargo processCharge3DS',
+                    'error' => $result['error']
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $result['data']
+            ]);
         } catch (\Exception $e) {
             Log::error('Error processing charge 3DS', [
                 'message' => $e->getMessage()

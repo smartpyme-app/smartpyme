@@ -14,8 +14,12 @@ class CustomMigrate extends Command
     // Lista predefinida de migraciones a ejecutar
     protected $migrationsToExecute = [
         // 'create_users_table', //ejemplo
-        // 'create_plans_table',
+        'create_plans_table',
         'create_suscripciones_table',
+        'create_orden_pagos_table',
+        'create_metodos_pago_table',
+        'create_orden_pago_detalles_table',
+
     ];
 
     public function handle()

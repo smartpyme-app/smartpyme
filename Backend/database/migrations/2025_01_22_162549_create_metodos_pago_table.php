@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CrearTablaMetodosPago extends Migration
+class CreateMetodosPagoTable extends Migration
 {
     /**
      * Run the migrations.
@@ -37,6 +37,6 @@ class CrearTablaMetodosPago extends Migration
      */
     public function down()
     {
-        //
+        Schema::dropIfExists('metodos_pago');
     }
 }

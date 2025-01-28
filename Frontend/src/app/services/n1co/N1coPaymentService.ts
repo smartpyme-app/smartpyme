@@ -44,11 +44,21 @@ import { environment } from '../../../environments/environment';
       }
 
       processDirectPayment3DS(data: {
-          authentication_id: string;
-          order_id: string;
-      }): Observable<any> {
-          return this.http.post(`${this.apiUrl}/payment/process/3ds`, data);
-      }
+        authentication_id: string;
+        order_id: string;
+    }): Observable<any> {
+        const url = `${this.apiUrl}/payment/process/3ds`;
+        console.log('Calling URL:', url); // Para debug
+        console.log('With data:', data);  // Para debug
+    
+        return this.http.post(url, data, {
+            headers: new HttpHeaders({
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }),
+            withCredentials: true
+        });
+    }
 
       // Validar el pago (especialmente después de 3DS)
       validatePayment(paymentId: string): Observable<any> {

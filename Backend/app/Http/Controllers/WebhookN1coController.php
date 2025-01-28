@@ -112,28 +112,44 @@ class WebhookN1coController extends Controller
     {
         try {
             $metadata = $payload['metadata'];
-            $checkoutNote = $metadata['CheckoutNote'];
 
             Log::info('Procesando pago exitoso', [
-                'checkout_note' => $checkoutNote,
-                'order_id' => $payload['orderId']
+                'payload' => $payload
             ]);
 
             // Buscar la orden usando el checkoutNote
-            $ordenPago = DB::table('ordenes_pagos')
-                ->where('checkout_note', $checkoutNote)
-                ->where('estado', 'pendiente')
+            $ordenPago = DB::table('ordenes_pago')
+                ->where('id_orden', $payload['orderReference'])
+                // ->where('id_orden_n1co', $payload['orderId'])
                 ->first();
 
             if ($ordenPago) {
                 // Actualizar el estado de la orden
-                DB::table('ordenes_pagos')
-                    ->where('checkout_note', $checkoutNote)
-                    ->update([
-                        'estado' => 'completado',
-                        'id_orden' => $payload['orderId'],
-                        'updated_at' => now()
-                    ]);
+                $ordenPago->update([
+                    'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'),
+                ]);
+
+                if (isset($metadata['orderDetail']) && is_array($metadata['orderDetail'])) {
+                    foreach ($metadata['orderDetail'] as $detail) {
+                        $ordenPago->detalles()->create([
+                            'orden_pago_id' => $ordenPago->id,
+                            'item_id' => $detail['itemId'],
+                            'name' => $detail['name'], 
+                            'price' => $detail['price'],
+                            'quantity' => $detail['quantity'],
+                            'modifiers_total' => $detail['modifiersTotal'],
+                            'sku' => $detail['sku'],
+                            'product_image_url' => $detail['productImageUrl'],
+                            'note' => $detail['note'],
+                            'description' => $detail['description'],
+                            'quantity_available' => $detail['quantityAvailable'],
+                            'requires_shipping' => $detail['requiresShipping'],
+                            'promo_id' => $detail['promoId'],
+                            'promo_price' => $detail['promoPrice'],
+                            'promo_name' => $detail['promoName']
+                        ]);
+                    }
+                }
 
                 // Buscar el usuario
                 $user = User::find($ordenPago->id_usuario);
@@ -158,12 +174,10 @@ class WebhookN1coController extends Controller
                 } else {
                     Log::error('Usuario no encontrado', [
                         'user_id' => $ordenPago->id_usuario,
-                        'checkout_note' => $checkoutNote
                     ]);
                 }
             } else {
                 Log::warning('Orden de pago no encontrada', [
-                    'checkout_note' => $checkoutNote,
                     'payload' => $payload
                 ]);
             }
@@ -205,7 +219,6 @@ class WebhookN1coController extends Controller
 
     private function handleOrderCreated($payload)
     {
-
         return response()->json(['status' => 'success']);
     }
 

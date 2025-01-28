@@ -279,21 +279,20 @@ class AuthJWTController extends Controller
             //     $usuario->url_n1co = config('constants.URL_N1CO_PRO');
             // }
 
-            Log::info('Empresa plan:', ['plan' => $empresa->plan]);
 
-            $paymentLink = $this->createPaymentLink([
-                'name' => "SmartPyme Plan " . $empresa->plan,
-                'description' => "Suscripción SmartPyme - Plan " . $empresa->plan,
-                'amount' => $empresa->total,
-                'user_id' => $usuario->id,
-                'plan' => $empresa->plan
-            ]);
+            // $paymentLink = $this->createPaymentLink([
+            //     'name' => "SmartPyme Plan " . $empresa->plan,
+            //     'description' => "Suscripción SmartPyme - Plan " . $empresa->plan,
+            //     'amount' => $empresa->total,
+            //     'user_id' => $usuario->id,
+            //     'plan' => $empresa->plan
+            // ]);
 
-            if ($paymentLink['success']) {
-                $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
-                Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
-            } else {
-                Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
+            // if ($paymentLink['success']) {
+            //     $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
+            //     Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
+            // } else {
+                // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
                 // Usar URLs por defecto como fallback
                 switch ($empresa->plan) {
                     case config('constants.PLAN_EMPRENDEDOR'):
@@ -309,7 +308,7 @@ class AuthJWTController extends Controller
                         $usuario->url_n1co = config('constants.URL_N1CO_PRO');
                         break;
                 }
-            }
+            // }
 
             $usuario->plan = $empresa->plan;
             $usuario->plan_id = $suscripcion['plan_id'];

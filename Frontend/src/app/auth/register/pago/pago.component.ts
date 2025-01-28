@@ -120,7 +120,7 @@ export class PagoComponent implements OnInit {
                         
                         if (response.success) {
                             this.alertService.success('Éxito', 'Pago procesado exitosamente');
-                            this.router.navigate(['/dashboard']);
+                            this.router.navigate(['/pago']);
                         }
                     } catch (error) {
                         this.alertService.error('Error procesando el pago');

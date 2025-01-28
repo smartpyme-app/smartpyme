@@ -2,6 +2,9 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Models\MetodoPago;
+use App\Models\OrdenPago;
+use App\Models\Plan;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -11,7 +14,7 @@ class N1coGateway extends BasePaymentGateway
 {
     protected function initialize(): void
     {
-        $this->baseUrl = $this->isSandbox 
+        $this->baseUrl = $this->isSandbox
             ? config('services.nico.sandbox_url')
             : config('services.nico.base_url');
     }
@@ -66,7 +69,7 @@ class N1coGateway extends BasePaymentGateway
         ];
     }
 
-    public function createPaymentMethod(array $data): array 
+    public function createPaymentMethod(array $data): array
     {
         Log::info('Creando método de pago', [
             'customer_email' => $data['customer']['email'] ?? null
@@ -115,7 +118,6 @@ class N1coGateway extends BasePaymentGateway
                 'success' => false,
                 'error' => $response->json()['message'] ?? 'Error creando método de pago'
             ];
-
         } catch (\Exception $e) {
             Log::error('Error en createPaymentMethod GATEWAY:', [
                 'message' => $e->getMessage()
@@ -127,10 +129,10 @@ class N1coGateway extends BasePaymentGateway
         }
     }
 
-    public function createCharge(array $chargeData): array 
+    public function createCharge(array $chargeData): array
     {
         try {
-            
+
             Log::info('Iniciando cargo', [
                 'amount' => $chargeData['order']['amount'] ?? null,
                 'customer_email' => $chargeData['customer']['email'] ?? null,
@@ -161,7 +163,69 @@ class N1coGateway extends BasePaymentGateway
                 'success' => false,
                 'error' => $response->json()['message'] ?? 'Error al crear el cargo'
             ];
+        } catch (\Exception $e) {
+            Log::error('Error en createCharge:', [
+                'message' => $e->getMessage()
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    public function createCharge3DS(array $chargeData): array
+    {
+        try {
 
+            Log::info('Iniciando cargo', [
+                'amount' => $chargeData['order']['amount'] ?? null,
+                'customer_email' => $chargeData['customer']['email'] ?? null,
+                'card_id' => $chargeData['cardId'] ?? null
+            ]);
+
+            $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
+                ->post($this->baseUrl . '/Charges', $chargeData);
+
+            Log::info('Respuesta de la creación del cargo', [
+                'response' => $response->json()
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                if ($result['status'] === 'SUCCEEDED') {
+                    $ordenPago = OrdenPago::where('id_orden', $result['order']['reference'])->first();
+                    if ($ordenPago) {
+                        $ordenPago->update([
+                            'id_orden_n1co' => $result['order']['id'],
+                            'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
+                            'codigo_autorizacion' => $result['order']['authorizationCode']
+                        ]);
+                    }
+                } else if ($result['status'] === 'AUTHENTICATION_REQUIRED') {
+                    $ordenPago = OrdenPago::where('id_orden', $result['order']['reference'])->first();
+                    if ($ordenPago) {
+                        $ordenPago->update([
+                            'id_autorizacion_3ds' => $result['authentication']['id'],
+                            'autorizacion_url' => $result['authentication']['url'],
+                            'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+                        ]);
+                    }
+                }
+                return [
+                    'success' => true,
+                    'data' => $result
+                ];
+            }
+
+            Log::error('Error creando cargo', [
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $response->json()['message'] ?? 'Error al crear el cargo'
+            ];
         } catch (\Exception $e) {
             Log::error('Error en createCharge:', [
                 'message' => $e->getMessage()
@@ -175,15 +239,108 @@ class N1coGateway extends BasePaymentGateway
 
     public function processCharge3DS(array $data): array
     {
-        $chargeData = [
-            'authenticationId' => $data['authentication_id'],
-            'orderId' => $data['order_id']
-        ];
+        try {
+            if (!isset($data['order_id']) || !isset($data['authentication_id'])) {
+                return [
+                    'success' => false,
+                    'error' => 'Datos de orden incompletos'
+                ];
+            }
 
-        Log::info('Procesando cargo 3DS', [
-            'chargeData' => $chargeData
-        ]);
-        return $this->createCharge($chargeData);
+            // Buscar la orden y sus datos relacionados
+            $ordenPago = OrdenPago::where('id_orden', $data['order_id'])
+                ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'))
+                ->first();
+
+            if (!$ordenPago) {
+                Log::error('Orden no encontrada o no está autenticada', [
+                    'order_id' => $data['order_id']
+                ]);
+                return [
+                    'success' => false,
+                    'error' => 'Orden no encontrada o no está autenticada'
+                ];
+            }
+
+            // Obtener el método de pago asociado
+            $methodPayment = MetodoPago::where('id_usuario', $ordenPago->id_usuario)
+                ->where('esta_activo', true)
+                ->first();
+
+            if (!$methodPayment) {
+                return [
+                    'success' => false,
+                    'error' => 'Método de pago no encontrado'
+                ];
+            }
+
+            $plan = Plan::find($ordenPago->id_plan);
+
+            $chargeData = [
+                'customer' => [
+                    'name' => $ordenPago->nombre_cliente,
+                    'email' => $ordenPago->email_cliente,
+                    'phoneNumber' => $ordenPago->telefono_cliente
+                ],
+                'cardId' => $methodPayment->id_tarjeta,
+                'authenticationId' => $data['authentication_id'],
+                'order' => [
+                    'id' => $ordenPago->id_orden,
+                    'lineItems' => [
+                        [
+                            'sku' => $plan->sku,
+                            'product' => [
+                                'name' => $ordenPago->plan,
+                                'price' => floatval($ordenPago->monto)
+                            ],
+                            'quantity' => 1
+                        ]
+                    ],
+                    'description' => 'Pago de suscripción ' . $ordenPago->plan,
+                    'name' => 'Orden #' . $ordenPago->id_orden
+                ],
+                'billingInfo' => [
+                    'countryCode' => $methodPayment->codigo_pais,
+                    'stateCode' => $methodPayment->codigo_estado ?? 'SS',
+                    'zipCode' => $methodPayment->codigo_postal ?? '1101'
+                ]
+            ];
+
+            Log::info('Iniciando cargo con autenticación 3DS', [
+                'order_id' => $ordenPago->id_orden,
+                'authentication_id' => $data['authentication_id'],
+                'charge_data' => $chargeData
+            ]);
+
+            $charge = $this->createCharge3DS($chargeData);
+
+            if ($charge['success']) {
+
+                $ordenPago->update([
+                    'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
+                    // 'codigo_autorizacion' => $charge['data']['authorizationCode'],
+                    'monto_pagado' => $charge['data']['order']['amount']
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => $charge['data']['message'],
+                    'amount' => $charge['data']['order']['amount'],
+                    'currency' => $charge['data']['order']['currency'],
+                    // 'authorization_code' => $charge['data']['authorizationCode']
+                ];
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error en processCharge3DS:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     public function processCharge(array $orderData, string $cardId, string $token, ?string $authenticationId = null): array
@@ -213,13 +370,13 @@ class N1coGateway extends BasePaymentGateway
         return $this->createCharge($chargeData, $token);
     }
 
-//aqui voy
+    //aqui voy
 
     public function createCustomer(array $customerData): array
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/customers', $customerData);
-        
+
         return $this->handleResponse($response, 'customer creation');
     }
 
@@ -227,7 +384,7 @@ class N1coGateway extends BasePaymentGateway
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/payments', $paymentData);
-        
+
         return $this->handleResponse($response, 'payment processing');
     }
 
@@ -235,7 +392,7 @@ class N1coGateway extends BasePaymentGateway
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/subscriptions', $subscriptionData);
-        
+
         return $this->handleResponse($response, 'subscription creation');
     }
 
@@ -243,7 +400,7 @@ class N1coGateway extends BasePaymentGateway
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->delete($this->baseUrl . "/subscriptions/{$subscriptionId}");
-        
+
         return $response->successful();
     }
 
@@ -251,7 +408,7 @@ class N1coGateway extends BasePaymentGateway
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->get($this->baseUrl . "/customers/{$customerId}");
-        
+
         return $this->handleResponse($response, 'get customer');
     }
 
@@ -259,7 +416,7 @@ class N1coGateway extends BasePaymentGateway
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->post($this->baseUrl . '/Refunds', $refundData);
-        
+
         return $this->handleResponse($response, 'refund creation');
     }
 
@@ -267,7 +424,7 @@ class N1coGateway extends BasePaymentGateway
     {
         $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
             ->put($this->baseUrl . '/PaymentMethods', $updateData);
-        
+
         return $this->handleResponse($response, 'payment method update');
     }
 
@@ -278,7 +435,4 @@ class N1coGateway extends BasePaymentGateway
         }
         return ['success' => false, 'error' => $response->json()];
     }
-
-  
-
 }
