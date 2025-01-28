@@ -106,6 +106,7 @@
                         <tr>
                             <td colspan="5" class="text-center"><b>Total</b></td>                                
                             <td class="text-end"><b>{{ ivas | sum:'compras_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'importaciones_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'compras_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'credito_fiscal' | currency:'USD':'symbol':'1.2' }}</b></td>
