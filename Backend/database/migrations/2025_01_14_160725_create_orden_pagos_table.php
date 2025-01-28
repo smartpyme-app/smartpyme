@@ -21,6 +21,9 @@ class CreateOrdenPagosTable extends Migration
             $table->string('id_autorizacion_3ds')->nullable();
             $table->string('autorizacion_url')->nullable();
             $table->unsignedBigInteger('id_plan');
+            $table->string('nombre_cliente')->nullable();
+            $table->string('email_cliente')->nullable();
+            $table->string('telefono_cliente')->nullable();
             $table->string('plan')->nullable();
             $table->decimal('monto', 10, 2);
             $table->string('estado')->default('pendiente');

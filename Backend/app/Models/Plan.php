@@ -33,6 +33,8 @@ class Plan extends Model
         'n1co_metadata' => 'array'
     ];
 
+    protected $appends = ['sku'];
+
     public function suscripciones()
     {
         return $this->hasMany(Suscripcion::class);
@@ -41,5 +43,10 @@ class Plan extends Model
     public function estaActivo(): bool
     {
         return $this->activo;
+    }
+
+    public function getSkuAttribute()
+    {
+        return 'PLAN-' . $this->id;
     }
 }

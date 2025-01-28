@@ -113,18 +113,18 @@ class WebhookN1coController extends Controller
         try {
             $metadata = $payload['metadata'];
             $checkoutNote = $metadata['CheckoutNote'];
-    
+
             Log::info('Procesando pago exitoso', [
                 'checkout_note' => $checkoutNote,
                 'order_id' => $payload['orderId']
             ]);
-    
+
             // Buscar la orden usando el checkoutNote
             $ordenPago = DB::table('ordenes_pagos')
                 ->where('checkout_note', $checkoutNote)
                 ->where('estado', 'pendiente')
                 ->first();
-    
+
             if ($ordenPago) {
                 // Actualizar el estado de la orden
                 DB::table('ordenes_pagos')
@@ -134,10 +134,10 @@ class WebhookN1coController extends Controller
                         'id_orden' => $payload['orderId'],
                         'updated_at' => now()
                     ]);
-    
+
                 // Buscar el usuario
                 $user = User::find($ordenPago->id_usuario);
-    
+
                 if ($user) {
                     // Actualizar o crear suscripción
                     Suscripcion::updateOrCreate(
@@ -150,7 +150,7 @@ class WebhookN1coController extends Controller
                             'id_orden' => $payload['orderId']
                         ]
                     );
-    
+
                     Log::info('Suscripción actualizada', [
                         'user_id' => $user->id,
                         'order_id' => $payload['orderId']
@@ -167,16 +167,15 @@ class WebhookN1coController extends Controller
                     'payload' => $payload
                 ]);
             }
-    
+
             return response()->json(['status' => 'success']);
-    
         } catch (\Exception $e) {
             Log::error('Error procesando pago exitoso', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'payload' => $payload
             ]);
-    
+
             return response()->json(['error' => 'Error procesando pago'], 500);
         }
     }
@@ -238,6 +237,11 @@ class WebhookN1coController extends Controller
                 ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'))
                 ->first();
 
+            $ordenPago->update([
+                'id_orden_n1co' => $payload['orderId'],
+                'updated_at' => now()
+            ]);
+
             if (!$ordenPago) {
                 Log::warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
                     'orderReference' => $payload['orderReference']
@@ -251,7 +255,7 @@ class WebhookN1coController extends Controller
             // Actualizar el estado de autenticación
             $ordenPago->updateStatusAuthentication3DS(
                 $payload['metadata']['authenticationId'],
-                null, // La URL ya no es necesaria en este punto
+                null,
                 config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA')
             );
 
@@ -264,7 +268,6 @@ class WebhookN1coController extends Controller
                 'status' => 'success',
                 'message' => 'Estado de autenticación actualizado correctamente'
             ]);
-
         } catch (\Exception $e) {
             Log::error('N1co Webhook: Error procesando autenticación 3DS exitosa', [
                 'error' => $e->getMessage(),
@@ -275,6 +278,60 @@ class WebhookN1coController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error procesando autenticación 3DS'
+            ], 500);
+        }
+    }
+
+    private function handle3DSAuthError($payload)
+    {
+        try {
+            Log::info('N1co Webhook: 3DS Authentication error', [
+                'orderId' => $payload['orderId'],
+                'orderReference' => $payload['orderReference'],
+                'reason' => $payload['metadata']['reason'] ?? 'No reason provided',
+                'description' => $payload['metadata']['description'] ?? 'No description provided'
+            ]);
+
+            $ordenPago = OrdenPago::where('id_orden', $payload['orderReference'])
+                ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'))
+                ->first();
+
+            if (!$ordenPago) {
+                Log::warning('N1co Webhook: Orden de pago no encontrada para error 3DS', [
+                    'orderReference' => $payload['orderReference']
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Orden no encontrada'
+                ], 404);
+            }
+
+            // Actualizar el estado a fallido
+            $ordenPago->updateStatusAuthentication3DS(
+                $payload['metadata']['authenticationId'],
+                null,
+                config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
+            );
+
+            Log::info('N1co Webhook: Estado de autenticación 3DS actualizado a fallido', [
+                'orderReference' => $payload['orderReference'],
+                'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Estado de autenticación actualizado a fallido'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('N1co Webhook: Error procesando fallo de autenticación 3DS', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payload' => $payload
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error procesando fallo de autenticación 3DS'
             ], 500);
         }
     }

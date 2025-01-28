@@ -47,7 +47,7 @@ import { environment } from '../../../environments/environment';
           authentication_id: string;
           order_id: string;
       }): Observable<any> {
-          return this.http.post(`${this.apiUrl}/process/3ds`, data);
+          return this.http.post(`${this.apiUrl}/payment/process/3ds`, data);
       }
 
       // Validar el pago (especialmente después de 3DS)

@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Api\Ventas\EntradasController;
-use App\Http\Controllers\Api\WompiController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/ventas',               [VentasController::class, 'index']);
     Route::get('/venta/{id}',           [VentasController::class, 'read']);
@@ -23,6 +23,6 @@ use App\Http\Controllers\Api\WompiController;
     Route::get('/ventas/exportar',    [VentasController::class, 'export']);
     Route::get('/ventas-detalles/exportar',    [VentasController::class, 'exportDetalles']);
 
-    Route::get('/venta/wompi-link/{id}', [WompiController::class, 'wompiLink'])->name('wompi.link');  
+    // Route::get('/venta/wompi-link/{id}', [WompiController::class, 'wompiLink'])->name('wompi.link');  
 
 ?>
