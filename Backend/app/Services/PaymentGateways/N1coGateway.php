@@ -140,6 +140,10 @@ class N1coGateway extends BasePaymentGateway
             $response = Http::withHeaders($this->getHeaders($this->getToken()['data']['accessToken']))
                 ->post($this->baseUrl . '/Charges', $chargeData);
 
+            Log::info('Respuesta de la creación del cargo', [
+                'response' => $response->json()
+            ]);
+
             if ($response->successful()) {
                 $result = $response->json();
                 return [
@@ -175,6 +179,10 @@ class N1coGateway extends BasePaymentGateway
             'authenticationId' => $data['authentication_id'],
             'orderId' => $data['order_id']
         ];
+
+        Log::info('Procesando cargo 3DS', [
+            'chargeData' => $chargeData
+        ]);
         return $this->createCharge($chargeData);
     }
 

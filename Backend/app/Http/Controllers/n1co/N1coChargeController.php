@@ -107,6 +107,8 @@ class N1coChargeController extends Controller
                 'id_usuario' => $request->input('customer.id'),
                 'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
                 'id_orden_n1co' => null,
+                'id_autorizacion_3ds' => null,
+                'autorizacion_url' => null,
                 'id_plan' => $plan->id,
                 'plan' => $plan->nombre,
                 'monto' => $plan->precio,
@@ -144,6 +146,10 @@ class N1coChargeController extends Controller
             
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
+            Log::info('Resultado de la creación del cargo', [
+                'charge_result' => $chargeResult
+            ]);
+
             if (!$chargeResult['success']) {
                 Log::error('Error al crear cargo', [
                     'message' => $chargeResult['error']
@@ -153,25 +159,24 @@ class N1coChargeController extends Controller
             }
     
             if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
-                Log::info('Autenticación requerida', [
-                    'authentication_id' => $chargeResult['data']['authentication']['id'],
-                    'authentication_url' => $chargeResult['data']['authentication']['url'],
-                    'charge_data' => $chargeResult['data']
+                $authenticationId = $chargeResult['data']['authentication']['id'];
+                $authenticationUrl = $chargeResult['data']['authentication']['url'];
+
+                $order->updateStatusAuthentication3DS($authenticationId, $authenticationUrl, config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'));
+
+                Log::info('ID de autenticación 3DS', [
+                    'authentication_id' => $authenticationId
                 ]);
-                $order->update([
-                    'estado' => 'autenticacion_pendiente',
-                    'id_autenticacion_3ds' => $chargeResult['data']['authentication']['id']
-                ]);
-    
+
                 return response()->json([
                     'success' => true,
                     'requires_3ds' => true,
-                    'authentication_url' => $chargeResult['data']['authentication']['url'],
-                    'authentication_id' => $chargeResult['data']['authentication']['id'],
+                    'authentication_url' => $authenticationUrl,
+                    'authentication_id' => $authenticationId,
                     'order_id' => $order->id_orden
                 ]);
             }
-    
+                
             return response()->json([
                 'success' => true,
                 'message' => 'Método de pago creado exitosamente',
@@ -243,6 +248,17 @@ class N1coChargeController extends Controller
                 'message' => 'Error al procesar el cargo',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function processCharge3DS(Request $request)
+    {
+        try {
+            $result = $this->n1coGateway->processCharge3DS($request->all());
+        } catch (\Exception $e) {
+            Log::error('Error processing charge 3DS', [
+                'message' => $e->getMessage()
+            ]);
         }
     }
 }

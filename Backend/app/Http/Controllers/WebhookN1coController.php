@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrdenPago;
 use App\Models\Suscripcion;
 use App\Models\User;
 use Carbon\Carbon;
@@ -225,12 +226,57 @@ class WebhookN1coController extends Controller
 
     private function handle3DSAuthSuccess($payload)
     {
-        Log::info('N1co Webhook: 3DS Authentication successful', [
-            'orderId' => $payload['orderId'],
-            'authenticationId' => $payload['metadata']['authenticationId'] ?? null
-        ]);
-        // Implementar lógica para autenticación 3DS exitosa
-        return response()->json(['status' => 'success']);
+        try {
+            Log::info('N1co Webhook: 3DS Authentication successful', [
+                'orderId' => $payload['orderId'],
+                'orderReference' => $payload['orderReference'],
+                'authenticationId' => $payload['metadata']['authenticationId'] ?? null
+            ]);
+
+            // Buscar la orden de pago por el orderReference
+            $ordenPago = OrdenPago::where('id_orden', $payload['orderReference'])
+                ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'))
+                ->first();
+
+            if (!$ordenPago) {
+                Log::warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
+                    'orderReference' => $payload['orderReference']
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Orden no encontrada o no está en estado pendiente de autenticación'
+                ], 404);
+            }
+
+            // Actualizar el estado de autenticación
+            $ordenPago->updateStatusAuthentication3DS(
+                $payload['metadata']['authenticationId'],
+                null, // La URL ya no es necesaria en este punto
+                config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA')
+            );
+
+            Log::info('N1co Webhook: Estado de autenticación 3DS actualizado exitosamente', [
+                'orderReference' => $payload['orderReference'],
+                'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA')
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Estado de autenticación actualizado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('N1co Webhook: Error procesando autenticación 3DS exitosa', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payload' => $payload
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error procesando autenticación 3DS'
+            ], 500);
+        }
     }
 
 

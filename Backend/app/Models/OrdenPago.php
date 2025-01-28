@@ -33,4 +33,13 @@ class OrdenPago extends Model
     {
         return $this->belongsTo(Plan::class, 'id_plan');
     }
+
+    public function updateStatusAuthentication3DS($authenticationId, $authenticationUrl,$status)
+    {
+        return $this->update([
+            'estado' => $status,
+            'id_autorizacion_3ds' => $authenticationId,
+            'autorizacion_url' => $authenticationUrl
+        ]);
+    }
 }

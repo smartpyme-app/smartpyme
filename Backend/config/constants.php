@@ -20,6 +20,15 @@ return [
     'ESTADO_SUSCRIPCION_RENOVADO' => 'renovado',
     'ESTADO_SUSCRIPCION_EN_PRUEBA' => 'en prueba',
 
+    'ESTADO_ORDEN_PENDIENTE' => 'pendiente',
+    'ESTADO_ORDEN_RECHAZADO' => 'rechazada',
+    'ESTADO_ORDEN_COMPLETADO' => 'completado',
+    'ESTADO_ORDEN_AUTENTICACION_PENDIENTE' => 'autenticacion_pendiente',
+    'ESTADO_ORDEN_AUTENTICACION_EXITOSA' => 'autenticacion_exitosa',
+    'ESTADO_ORDEN_AUTENTICACION_RECHAZADA' => 'autenticacion_rechazada',
+    'ESTADO_ORDEN_AUTENTICACION_CANCELADA' => 'autenticacion_cancelada',
+    'ESTADO_ORDEN_AUTENTICACION_FALLIDA' => 'autenticacion_fallida',
+
     'TIPO_DOCUMENTO_TICKET' => 'Ticket',
     'TIPO_DOCUMENTO_FACTURA' => 'Factura',
     'TIPO_DOCUMENTO_CREDITO_FISCAL' => 'Crédito fiscal',
