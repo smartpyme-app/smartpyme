@@ -49,7 +49,7 @@
                 <option value="Confirmado">Confirmado</option>
                 <option value="Cancelado">Cancelado</option>
             </select>
-            <select name="id_sucursal_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_sucursal_de" class="form-select bg-default w-auto">
+            <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de" class="form-select bg-default w-auto">
                 <option value="">Sucursal</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
             </select>
@@ -122,37 +122,37 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="">De</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_sucursal_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_sucursal_de" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar sucursal</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_sucursal">
-                        {{inventario.nombre_sucursal}}
+                <ng-select [disabled]="!traslado.id_producto" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
+                    <ng-option value="" selected>Seleccionar bodega</ng-option>
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+                        {{inventario.nombre_bodega}}
                         <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
                     </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Para</label>
-                <ng-select [disabled]="!traslado.id_producto" name="id_sucursal" (change)="setSucursalPara()" [(ngModel)]="traslado.id_sucursal" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar sucursal</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_sucursal">
-                        {{inventario.nombre_sucursal}}
+                <ng-select [disabled]="!traslado.id_producto" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
+                    <ng-option value="" selected>Seleccionar bodega</ng-option>
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+                        {{inventario.nombre_bodega}}
                         <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
                     </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-md-12">
                 <label for="stock_real">Cantidad a trasladar:</label>
-                <input type="number" [disabled]="!traslado.id_sucursal_de && !traslado.id_sucursal" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
+                <input type="number" [disabled]="!traslado.id_bodega_de && !traslado.id_bodega" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
             </div>
             
-            <div class="form-group col-md-6" *ngIf="traslado.id_sucursal_de">
+            <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">
                 <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ (sucursalDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+                <p>{{ (bodegaDe.stock * 1) - (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
             </div>
             
-            <div class="form-group col-md-6" *ngIf="traslado.id_sucursal">
+            <div class="form-group col-md-6" *ngIf="traslado.id_bodega">
                 <label for="traslado">Stock luego del traslado:</label>
-                <p>{{ (sucursalPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
+                <p>{{ (bodegaPara.stock * 1) + (traslado.cantidad ? traslado.cantidad * 1 : 0) }}</p>
             </div>
 
             <div class="form-group col-md-12">
@@ -209,7 +209,7 @@
             </div>
             <div class="form-group col-lg-6">
                 <label for="">Sucursal de:</label>
-                <select [(ngModel)]="filtros.id_sucursal_de" class="form-select" name="filtros.id_sucursal_de">
+                <select [(ngModel)]="filtros.id_bodega_de" class="form-select" name="filtros.id_bodega_de">
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
@@ -218,7 +218,7 @@
             </div>
             <div class="form-group col-lg-6">
                 <label for="">Sucursal para:</label>
-                <select [(ngModel)]="filtros.id_sucursal_para" class="form-select" name="filtros.id_sucursal_para">
+                <select [(ngModel)]="filtros.id_bodega_para" class="form-select" name="filtros.id_bodega_para">
                     <option value="">Todos</option>
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}

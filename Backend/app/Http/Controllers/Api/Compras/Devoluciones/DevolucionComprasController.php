@@ -80,7 +80,7 @@ class DevolucionComprasController extends Controller
             $producto = Producto::where('id', $detalle->id_producto)
                                     ->with('composiciones')->firstOrFail();
                                     
-            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $compra->compra()->pluck('id_sucursal')->first())->first();
+            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
             
             // Anular y regresar stock
             if(($compra->enable != '0') && ($request['enable'] == '0')){
@@ -136,6 +136,7 @@ class DevolucionComprasController extends Controller
             'observaciones'     => 'required|max:255',
             'id_compra'         => 'required',
             'id_usuario'        => 'required',
+            'id_bodega'        => 'required',
             'id_empresa'        => 'required',
         ],[
             'detalles.required' => 'No hay detalles agregados'
@@ -169,7 +170,7 @@ class DevolucionComprasController extends Controller
                 $detalle->save();
                 
                 // Actualizar inventario
-                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_sucursal', $request->id_sucursal)->first();
+                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
 
                 if ($inventario) {
                     $inventario->stock -= $det['cantidad'];

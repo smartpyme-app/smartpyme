@@ -74,6 +74,7 @@
                             <th class="text-end">Ventas Exentas a Cuenta de Terceros</th>
                             <th class="text-end">Ventas Gravadas a Cuenta de Terceros</th>
                             <th class="text-end">Débito Fiscal por Cuenta de Terceros</th>
+                            <th class="text-end">IVA Retenido</th>
                             <th class="text-end">IVA Percibido</th>
                             <th class="text-end">Total</th>
                         </tr>
@@ -101,12 +102,13 @@
                             <td class="text-end">{{iva.ventas_exentas_cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.ventas_gravadas_cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.debito_fiscal_cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.iva_retenido | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.iva_percibido | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
 
                         </tr>
                         <tr>
-                            <td colspan="6" class="text-center"><b>Totales</b></td>                                
+                            <td colspan="6" class="text-center"><b>Totales</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_no_sujetas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
@@ -114,6 +116,7 @@
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas_cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas_cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'debito_fiscal_cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'iva_retenido' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'iva_percibido' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>

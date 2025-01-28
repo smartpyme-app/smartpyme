@@ -86,6 +86,7 @@ class UsuariosController extends Controller
             'tipo'          => 'required',
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
+            'id_bodega'     => 'required',
             'password'      => [
                   'required_if:id,null',
                   'confirmed',

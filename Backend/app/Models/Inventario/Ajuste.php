@@ -4,7 +4,7 @@ namespace App\Models\Inventario;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use JWTAuth;
+use Auth;
 
 class Ajuste extends Model {
 
@@ -12,7 +12,7 @@ class Ajuste extends Model {
     protected $fillable = array(
         'concepto',
         'id_producto',
-        'id_sucursal',
+        'id_bodega',
         'stock_actual',
         'stock_real',
         'ajuste',
@@ -21,18 +21,17 @@ class Ajuste extends Model {
         'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_sucursal'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega'];
 
-    protected static function booted()
+    protected static function boot()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
+        parent::boot();
 
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
-        
     }
 
     public function getNombreUsuarioAttribute()
@@ -45,13 +44,13 @@ class Ajuste extends Model {
         return  $this->producto()->first() ? $this->producto()->pluck('nombre')->first() : '';
     }
 
-    public function getNombreSucursalAttribute()
+    public function getNombreBodegaAttribute()
     {
-        return  $this->sucursal()->first() ? $this->sucursal()->pluck('nombre')->first() : '';
+        return  $this->bodega()->first() ? $this->bodega()->pluck('nombre')->first() : '';
     }
 
-    public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
+    public function bodega(){
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
     }
 
     public function empresa(){

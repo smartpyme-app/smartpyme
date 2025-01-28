@@ -36,6 +36,15 @@ Route::get('/traslados', function(){
     return Excel::download($tralados, 'tralados.xlsx');
 });
 
+use App\Exports\Inventario\InventarioAFechaExport;
+
+Route::get('/inventariostock', function(){
+
+    $inventario = new InventarioAFechaExport();
+    return Excel::download($inventario, 'inventario.xlsx');
+    
+});
+
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 

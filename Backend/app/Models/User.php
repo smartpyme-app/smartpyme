@@ -24,6 +24,7 @@ class User extends Authenticatable implements JWTSubject
         'enable',
         'tour_bienvenida',
         'codigo',
+        'id_bodega',
         'id_sucursal',
         'tipo',
         'modulo_citas',

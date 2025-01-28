@@ -20,7 +20,8 @@ import { AjusteComponent } from '@views/inventario/ajustes/ajuste/ajuste.compone
 import { CategoriasComponent } from '@views/inventario/categorias/categorias.component';
 
 import { ServiciosComponent } from '@views/inventario/servicios/servicios.component';
-
+import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
+import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
 
 
 const routes: Routes = [
@@ -55,6 +56,9 @@ const routes: Routes = [
         { path: 'servicios', canActivate: [CitasGuard], component: ServiciosComponent, title: 'Servicios'},
         { path: 'servicio/crear', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
         { path: 'servicio/editar/:id', canActivate: [CitasGuard], component: ProductoComponent, title: 'Servicio' },
+
+        { path: 'bodegas', component: BodegasComponent },
+        { path: 'bodega/:id', component: BodegaComponent },
 
 
     ]

@@ -49,9 +49,9 @@
                 <option value="Confirmado">Confirmado</option>
                 <option value="Cancelado">Cancelado</option>
             </select>
-            <select name="id_sucursal" (change)="filtrarAjustes()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
-                <option value="">Sucursal</option>
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+            <select name="id_bodega" (change)="filtrarAjustes()" [(ngModel)]="filtros.id_bodega" class="form-select bg-default w-auto">
+                <option value="">Bodega</option>
+                <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
             </select>
         </div>
     </div>
@@ -65,7 +65,7 @@
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Descripción</th>
                         <th>Estado</th>
-                        <th>Sucursal</th>
+                        <th>Bodega</th>
                         <th (click)="setOrden('ajuste')" [ngClass]="{'sorted-asc': filtros.orden == 'ajuste' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'ajuste' && filtros.direccion == 'desc'}" class="click text-center">Ajuste</th>
                     </tr>
                 </thead>
@@ -89,7 +89,7 @@
                                 <option value="Cancelado">Cancelado</option>
                             </select>
                         </td>
-                        <td>{{ ajuste.nombre_sucursal }}</td>
+                        <td>{{ ajuste.nombre_bodega }}</td>
                         <td class="text-center">
                             <span [ngClass]="{ 'text-danger' : ajuste.ajuste < 0, 'text-success' : ajuste.ajuste > 0 }" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                 {{ ajuste.ajuste }}
@@ -119,6 +119,7 @@
     <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form (ngSubmit)="onSubmit()" autocomplete="off">
         <div class="row">
             <div class="form-group col-md-12">
@@ -131,18 +132,18 @@
                 </ng-select>
             </div>
             <div class="form-group col-md-12">
-                <label for="">Sucursal</label>
-                <ng-select [disabled]="!ajuste.id_producto" name="id_sucursal" (change)="setSucursal()" [(ngModel)]="ajuste.id_sucursal" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar sucursal</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_sucursal">
-                        {{inventario.nombre_sucursal}}
+                <label for="">Bodega</label>
+                <ng-select [disabled]="!ajuste.id_producto" name="id_bodega" (change)="setBodega()" [(ngModel)]="ajuste.id_bodega" class="form-select p-0">
+                    <ng-option value="" selected>Seleccionar bodega</ng-option>
+                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
+                        {{inventario.nombre_bodega}}
                         <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock</span>
                     </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-md-12">
                 <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
-                <input type="text" [disabled]="!ajuste.id_sucursal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real">
+                <input type="text" [disabled]="!ajuste.id_bodega" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real">
             </div>
             
             <div class="form-group col-md-12" *ngIf="ajuste.stock_real">
@@ -176,6 +177,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
     <form autocomplete="off" (ngSubmit)="filtrarAjustes()">
         <div class="row mb-3">
             <div class="form-group col-md-6">
@@ -204,11 +206,11 @@
                 </select>
             </div>
             <div class="form-group col-md-6">
-                <label for="">Sucursal:</label>
-                <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
+                <label for="">Bodega:</label>
+                <select [(ngModel)]="filtros.id_bodega" class="form-select" name="filtros.id_bodega">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
-                        {{ sucursal.nombre }}
+                    <option *ngFor="let bodega of bodegas" [ngValue]="bodega.id">
+                        {{ bodega.nombre }}
                     </option>
                 </select>
             </div>

@@ -69,7 +69,7 @@
                     </tr>
 
                     <tr *ngFor=" let venta of ventas?.data">
-                        
+
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
@@ -79,7 +79,7 @@
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
                                 {{ venta.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
@@ -108,6 +108,9 @@
                                     <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
+                                  <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <i class="fa fa-fw fa-edit"></i> Editar
+                                  </a>
                                     <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
@@ -210,13 +213,51 @@
                 </ng-select>
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 <span *ngIf="!loading">Filtrar</span>
                 <span *ngIf="loading">Filtrando...</span>
             </button>
         </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mventa>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Editar venta</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form name="form" (ngSubmit)="onSubmit()">
+      <div class="row">
+        <div class="form-group col-md-6">
+          <label for="fecha">Fecha:</label>
+          <input type="date" [(ngModel)]="venta.fecha" name="fecha" class="form-control">
+        </div>
+        <div class="form-group col-md-6">
+          <label for="forma_pago">Método de pago:</label>
+          <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
+            <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
+          <label for="fecha_pago">Fecha de pago:</label>
+          <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
+        </div>
+        <div class="form-group col-md-12">
+          <label for="observaciones">Observaciones:</label>
+          <textarea class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" cols="30" rows="2"></textarea>
+        </div>
+        <div class="d-grid mt-4">
+          <button [disabled]="saving" class="btn btn-primary btn-block">
+            <span *ngIf="!saving">Guardar</span>
+            <span *ngIf="saving">Guardando...</span>
+          </button>
+        </div>
+      </div>
     </form>
   </div>
 </ng-template>

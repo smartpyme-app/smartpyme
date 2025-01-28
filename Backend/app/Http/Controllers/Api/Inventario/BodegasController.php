@@ -8,14 +8,38 @@ use Carbon\Carbon;
 use JWTAuth;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Inventario;
 
 class BodegasController extends Controller
 {
     
 
-    public function index() {
+    
+    public function index(Request $request) {
        
-        $bodegas = Bodega::all();
+        $bodegas = Bodega::when($request->estado !== null, function($q) use ($request){
+                                    $q->where('activo', !!$request->estado);
+                                })
+                                ->when($request->id_sucursal, function($q) use ($request){
+                                    $q->where('id_sucursal', $request->id_sucursal);
+                                })
+                                ->when($request->buscador, function($query) use ($request){
+                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
+                                                 ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
+                                })
+                                ->orderBy($request->orden, $request->direccion)
+                                ->paginate($request->paginate);
+
+        return Response()->json($bodegas, 200);
+
+    }
+
+    public function list() {
+       
+        $bodegas = Bodega::orderby('nombre')
+                                ->where('activo', true)
+                                ->get();
 
         return Response()->json($bodegas, 200);
 
@@ -25,11 +49,6 @@ class BodegasController extends Controller
     public function read($id) {
         
         $bodega = Bodega::where('id', $id)->firstOrFail();
-
-        $productos = $bodega->productos()->get();
-        $bodega->productos  = $productos->count();
-        $bodega->cantidad   = $productos->sum('stock');
-
         return Response()->json($bodega, 200);
 
     }
@@ -39,7 +58,8 @@ class BodegasController extends Controller
         $request->validate([
             'nombre'       => 'required|max:255',
             'descripcion'  => 'sometimes|max:255',
-            'sucursal_id'  => 'required|numeric',
+            'id_sucursal'  => 'required|numeric',
+            'id_empresa'  => 'required|numeric',
         ]);
 
         if($request->id)
@@ -49,6 +69,18 @@ class BodegasController extends Controller
         
         $bodega->fill($request->all());
         $bodega->save();
+
+        // Configurar inventarios para los productos
+        if (!$request->id) {
+            $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
+            foreach ($productos as $producto) {
+                $inventario = new Inventario;
+                $inventario->id_bodega    = $bodega->id;
+                $inventario->stock          = 0;
+                $inventario->id_producto    = $producto->id;
+                $inventario->save();
+            }
+        }
 
         return Response()->json($bodega, 200);
 

@@ -27,7 +27,8 @@
            ],
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
@@ -50,6 +51,8 @@
               "src/assets/plugins/chartist-plugin-tooltips/js/chartist-plugin-tooltip.min.js",
               "src/assets/js/app.js",
             ],
+            "serviceWorker": true,
+            "ngswConfigPath": "ngsw-config.json",
           },
           "configurations": {
             "production": {
@@ -112,7 +115,8 @@
             "tsConfig": "tsconfig.spec.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "src/styles.css"

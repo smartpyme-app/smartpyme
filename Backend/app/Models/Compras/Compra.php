@@ -40,13 +40,14 @@ class Compra extends Model {
         'sub_total',
         'observaciones',
         'total',
-        // 'id_bodega',
+        'id_bodega',
         'id_proyecto',
         'id_usuario',
         'id_sucursal',
         'id_empresa',
         'dte',
         'dte_invalidacion',
+        'no_sujeta'
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];

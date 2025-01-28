@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Compras\DevolucionDetalle as Detalle;
 use App\Models\Inventario\Producto;
-use App\Models\Inventario\BodegaProducto;
-use App\Models\Admin\Bomba;
-use App\Models\Admin\Tanque;
+use App\Models\Inventario\Bodega;
 
 class DevolucionDetallesController extends Controller
 {
@@ -43,17 +41,9 @@ class DevolucionDetallesController extends Controller
             $producto = Producto::findOrFail($request->producto_id);
 
             if ($producto->inventario) {
-                // Si es gasolina disminuir tanque
-                if ($producto->categoria_id == 1) {
-                    $tanque = Tanque::findOrFail($request->tanque_id);
-                    $tanque->stock -= $request->cantidad;
-                    $tanque->save();
-                // Si es producto disminuir bodega
-                } else {
-                    $bodega = BodegaProducto::where('bodega_id', 1)->where('producto_id',$producto->id)->first();
-                    $bodega->stock -= $request->cantidad;
-                    $bodega->save();
-                }
+                $bodega = Bodega::where('bodega_id', 1)->where('producto_id',$producto->id)->first();
+                $bodega->stock -= $request->cantidad;
+                $bodega->save();
             }
         }
         
@@ -70,15 +60,9 @@ class DevolucionDetallesController extends Controller
         $detalle = Detalle::findOrFail($id);
         // Actualizar inventario
             $producto = Producto::findOrFail($detalle->producto_id);
-            if ($producto->categoria == 1) {
-                $tanque = Tanque::findOrFail($detalle->tanque_id);
-                $tanque->stock += $detalle->cantidad;
-                $tanque->save();
-            } else {
-                $bodega = BodegaProducto::where('bodega_id', 1)->where('producto_id', $detalle->producto_id)->first();
-                $bodega->stock += $detalle->cantidad;
-                $bodega->save();
-            } 
+            $bodega = Bodega::where('bodega_id', 1)->where('producto_id', $detalle->producto_id)->first();
+            $bodega->stock += $detalle->cantidad;
+            $bodega->save();
         $detalle->delete();
 
         return Response()->json($detalle, 201);

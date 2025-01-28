@@ -67,6 +67,7 @@
                             <th class="">NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
                             <th class="">NOMBRE DEL PROVEEDOR</th>
                             <th class=" text-end">COMPRAS EXENTAS INTERNAS</th>
+                            <th class=" text-end">COMPRAS NO SUJETAS</th>
                             <th class=" text-end">IMPORTACIONES E INTERNACIONES EXENTAS</th>
                             <th class=" text-end">COMPRAS INTERNAS GRAVADAS</th>
                             <th class=" text-end">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
@@ -92,6 +93,7 @@
                             <td>{{iva.nit_nrc}}</td>
                             <td>{{iva.nombre_proveedor}}</td>
                             <td class="text-end">{{iva.compras_exentas | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-end">{{iva.no_sujeta | currency:'USD':'symbol':'1.2' }}</td>
                             <td class="text-end">{{iva.importaciones_exentas | currency:'USD':'symbol':'1.2' }}</td>
                             <td class="text-end">{{iva.compras_gravadas | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.credito_fiscal | currency:'USD':'symbol':'1.2'}}</td>
@@ -104,6 +106,7 @@
                         <tr>
                             <td colspan="5" class="text-center"><b>Total</b></td>                                
                             <td class="text-end"><b>{{ ivas | sum:'compras_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'importaciones_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'compras_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'credito_fiscal' | currency:'USD':'symbol':'1.2' }}</b></td>

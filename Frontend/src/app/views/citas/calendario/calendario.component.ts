@@ -22,7 +22,6 @@ registerLocaleData(localeEs);
 @Component({
   selector: 'app-calendario',
   templateUrl: './calendario.component.html',
-  styleUrls: ['./calendario.component.scss'],
   providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }]
 })
 export class CalendarioComponent implements OnInit {
@@ -146,37 +145,7 @@ export class CalendarioComponent implements OnInit {
             meridiem: 'short'
           },
           headerToolbar: false,
-          eventContent: (renderProps, createElement) => {
-
-            let event = renderProps.event.extendedProps['data'];
-            let stateClass = "event-pending";
-            if (event.tipo == "Confirmado") {
-              stateClass = "event-confirmed";
-            }
-            if (event.tipo == "Cancelado") {
-              stateClass = "event-canceled";
-            }
-            if (event.tipo == "Sin confirmar") {
-              stateClass = "event-unconfirmed";
-            }
-            let italicEl = document.createElement('span')
-            italicEl.classList.add('event-container');
-            italicEl.classList.add('w-100');
-            italicEl.classList.add(stateClass);
-
-            let smallVersion = event?.duracion == "15 minutos"
-              || event?.duracion == "30 minutos";
-            let extraStyle = smallVersion ? 'smallversion' : '';
-            //24 hour format
-            let startTime = moment(renderProps.event.startStr).format('HH:mm');
-            italicEl.innerHTML = `
-            <span class="d-flex justify-content-between w-100 event-title ${extraStyle}" title="${renderProps.event.title}">
-                <span><strong><i class="fa-solid fa-circle"></i> ${renderProps.event.title.slice(0, 18)}<strong></span>
-                <span> ${startTime}</span>
-            </span>`;
-            let arrayOfDomNodes = [italicEl]
-            return { domNodes: arrayOfDomNodes }
-          },
+          
           events: [
 
           ]
@@ -187,64 +156,9 @@ export class CalendarioComponent implements OnInit {
             year: 'numeric'
           },
           headerToolbar: false,
-          moreLinkContent(renderProps, createElement) {
-            let italicEl = document.createElement('span')
-            italicEl.classList.add('event-container', 'd-flex');
-            italicEl.classList.add('w-100');
-            for (let index = 0; index < renderProps.num; index++) {
-              italicEl.innerHTML += `<i class="fa-solid fa-circle event-dot"></i>`;
-            }
-            let arrayOfDomNodes = [italicEl]
-            return { domNodes: arrayOfDomNodes }
-          },
-          eventContent: (renderProps, createElement) => {
-            let italicEl = document.createElement('span')
-            italicEl.classList.add('event-container');
-            italicEl.classList.add('w-100');
-            let event = renderProps.event.extendedProps['data'];
-            italicEl.innerHTML = `<i class="fa-solid fa-circle event-dot" title="${renderProps.event.title}"></i> <span class="event-dot-desc">${renderProps.event.title.slice(0, 18)}<span>`;
-            let arrayOfDomNodes = [italicEl]
-            return { domNodes: arrayOfDomNodes }
-          },
+          
 
         }
-      },
-      eventContent: function (arg) {
-
-        let stateClass = "event-pending";
-        let event = arg.event.extendedProps['data'];
-        if (event.tipo == "Confirmado") {
-          stateClass = "event-confirmed";
-        }
-        if (event.tipo == "Cancelado") {
-          stateClass = "event-canceled";
-        }
-        if (event.tipo == "Sin confirmar") {
-          stateClass = "event-unconfirmed";
-        }
-
-
-        let italicEl = document.createElement('span')
-        italicEl.classList.add('event-container');
-        italicEl.classList.add(stateClass);
-
-        let smallVersion = event?.duracion == "15 minutos"
-          || event?.duracion == "30 minutos";
-        let extraStyle = smallVersion ? 'smallversion' : '';
-
-        italicEl.innerHTML = `
-        <span class="d-flex justify-content-between event-title ${extraStyle}" title="${arg.event.title}">
-            <span><strong><i class="fa-regular fa-bell" style="font-size:1.1em"></i> ${arg.event.title.slice(0, 18)}<strong></span>
-            <span> ${arg.timeText.split("-")[0]}</span>
-        </span>`;
-        if (!smallVersion)
-          italicEl.innerHTML +=
-            `<span class="w-100 event-body" >
-                ${event?.descripcion?.slice(0, 50)}...
-            </span>`;
-
-        let arrayOfDomNodes = [italicEl]
-        return { domNodes: arrayOfDomNodes }
       },
       dateClick: this.handleDateClick.bind(this),
       eventClick: this.handleEventClick.bind(this),
@@ -252,11 +166,11 @@ export class CalendarioComponent implements OnInit {
       events: []
     };
 
+    this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.loadAll();
   }
 
   public loadAll() {
-    this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.filtros.orden = 'inicio';
     this.filtros.direccion = 'desc';
 

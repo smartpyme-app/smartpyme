@@ -25,6 +25,7 @@ export class FacturacionComponent implements OnInit {
     public documentos:any = [];
     public formaPagos:any = [];
     public sucursales:any = [];
+    public bodegas:any = [];
     public impuestos:any = [];
     public recintos:any = [];
     public regimenes:any = [];
@@ -69,6 +70,13 @@ export class FacturacionComponent implements OnInit {
             this.sucursales = sucursales;
             if(this.apiService.auth_user().tipo != 'Administrador'){
                 this.sucursales = this.sucursales.filter((item:any) => item.id == this.apiService.auth_user().id_sucursal );
+            }
+        }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
+            if(this.apiService.auth_user().tipo != 'Administrador'){
+                this.bodegas = this.bodegas.filter((item:any) => item.id_sucursal == this.apiService.auth_user().id_sucursal );
             }
         }, error => {this.alertService.error(error);});
 

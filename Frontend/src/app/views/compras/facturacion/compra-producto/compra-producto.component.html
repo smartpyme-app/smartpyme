@@ -10,7 +10,7 @@
                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
                 <p class="mb-0">
                     {{ producto.nombre }} <br>
-                    <small class="text-muted">{{ producto.inventarios | filter:'id_sucursal':compra.id_sucursal | sum:'stock' }} disponibles</small>
+                    <small class="text-muted">{{ producto.inventarios | filter:'id_bodega':compra.id_bodega | sum:'stock' }} disponibles</small>
                 </p>
               </a>
             </ul>
@@ -95,10 +95,10 @@
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                                 <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                                 <td class="text-center">
-                                    <div *ngIf="filtros.id_sucursal">
-                                        {{ producto.inventarios | filter:'id_sucursal':filtros.id_sucursal | sum:'stock' }}
+                                    <div *ngIf="filtros.id_bodega">
+                                        {{ producto.inventarios | filter:'id_bodega':filtros.id_bodega | sum:'stock' }}
                                     </div>
-                                    <div *ngIf="!filtros.id_sucursal">
+                                    <div *ngIf="!filtros.id_bodega">
                                         <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                             {{ producto.inventarios | sum:'stock' }}
                                         </span>

@@ -48,6 +48,9 @@ class VentasController extends Controller
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
+                        ->when($request->id_bodega, function($query) use ($request){
+                            return $query->where('id_bodega', $request->id_bodega);
+                        })
                         ->when($request->id_cliente, function($query) use ($request){
                             return $query->where('id_cliente', $request->id_cliente);
                         })
@@ -84,10 +87,10 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->when($request->dte && $request->dte == 0, function($query) {
+                        ->when($request->dte && $request->dte == '0', function($query) {
                                 return $query->whereNull('sello_mh');
                         })
-                        ->when($request->dte && $request->dte == 1, function($query) {
+                        ->when($request->dte && $request->dte == '1', function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
                         ->where('cotizacion', 0)
@@ -146,7 +149,7 @@ class VentasController extends Controller
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
 
-                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_sucursal', $venta->id_sucursal)->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
                 // Anular venta y regresar stock
                 if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
@@ -161,7 +164,7 @@ class VentasController extends Controller
                     foreach ($detalle->composiciones()->get() as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_compuesto)
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock += $detalle->cantidad * $comp->cantidad;
@@ -190,7 +193,7 @@ class VentasController extends Controller
                     foreach ($detalle->composiciones()->get() as $comp) {
 
                         $inventario = Inventario::where('id_producto', $comp->id_compuesto)
-                                    ->where('id_sucursal', $venta->id_sucursal)->first();
+                                    ->where('id_bodega', $venta->id_bodega)->first();
 
                         if ($inventario) {
                             $inventario->stock -= $detalle->cantidad * $comp->cantidad;
@@ -274,6 +277,7 @@ class VentasController extends Controller
             'total'             => 'required|numeric',
             'nota'              => 'max:255',
             'id_usuario'        => 'required|numeric',
+            'id_bodega'         => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
         ], [
             'detalles.required' => 'Tiene que agregar productos',
@@ -350,7 +354,7 @@ class VentasController extends Controller
                                         // ->with('composiciones')->firstOrFail();
 
                     $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                        ->where('id_sucursal', $venta->id_sucursal)->first();
+                                        ->where('id_bodega', $venta->id_bodega)->first();
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
                         $inventario->save();
@@ -362,7 +366,7 @@ class VentasController extends Controller
                         foreach ($det['composiciones'] as $comp) {
 
                             $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
-                                        ->where('id_sucursal', $venta->id_sucursal)->first();
+                                        ->where('id_bodega', $venta->id_bodega)->first();
 
                             if ($inventario) {
                                 $inventario->stock -= $det['cantidad'] * $comp['cantidad'];
