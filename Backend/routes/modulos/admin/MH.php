@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     Route::post('/generarContingencia',    [MHDTEController::class, 'generarContingencia']);
     Route::post('/generarDTEAnulado',    [MHDTEController::class, 'generarDTEAnulado']);
 
+    Route::post('/consultarDTE',    [MHDTEController::class, 'consultarDTE']);
+
     // Generar facturas
     Route::get('/reporte/ticket/{id}',  [MHDTEController::class, 'generarTicket']);
 

@@ -332,10 +332,15 @@
                 <span *ngIf="sending">Enviando...</span>
             </button>
 
-            <button *ngIf="!venta.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
-                <span *ngIf="!saving">Emitir</span>
-                <span *ngIf="saving">Emitiendo...</span>
-            </button>
+            <div class="w-100" *ngIf="!venta?.sello_mh">
+                <p *ngIf="consulting" class="alert alert-info">El DTE ya fue emitido, se consultará por el sello correspondiente.</p>
+                <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
+                    <span *ngIf="!saving && !consulting">Emitir</span>
+                    <span *ngIf="saving">Emitiendo...</span>
+
+                    <span *ngIf="!saving && consulting">Obteniendo sello...</span>
+                </button>
+            </div>
 
         </div>
   </div>
@@ -448,8 +453,8 @@
                 <label for="filtro.dte">Facturación electrónica (DTE):</label>
                 <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
                     <option value="">Todos</option>
-                    <option value="0">Sin emitir</option>
-                    <option value="1">Emitidos</option>
+                    <option value="1">Sin emitir</option>
+                    <option value="2">Emitidos</option>
                 </select>
             </div>
         </div>

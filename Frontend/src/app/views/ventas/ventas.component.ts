@@ -16,6 +16,7 @@ export class VentasComponent implements OnInit {
     public loading:boolean = false;
     public saving:boolean = false;
     public sending:boolean = false;
+    public consulting:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingVentas:boolean = false;
 
@@ -311,7 +312,12 @@ export class VentasComponent implements OnInit {
             this.enviarDTE();
         }).catch((error) => {
             this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
+            console.log(error);
+            if(error == '[identificacion.codigoGeneracion] YA EXISTE UN REGISTRO CON ESE VALOR'){
+                this.consultarDTE();
+            }else{
+                this.alertService.warning('Hubo un problema', error);
+            }
         });
     }
 
@@ -385,6 +391,45 @@ export class VentasComponent implements OnInit {
                 this.onSubmit();
             }
         }
+    }
+
+    consultarDTE(){
+        this.consulting = true;
+        let data = {
+            codigoGeneracion: this.venta.dte.identificacion.codigoGeneracion,
+            fechaEmi: this.venta.dte.identificacion.fecEmi,
+            ambiente: this.venta.dte.identificacion.ambiente
+        };
+
+        setTimeout(()=>{
+
+            this.apiService.store('consultarDTE', data).subscribe(dte => {
+                if (dte && dte.selloVal) {
+                    this.venta.dte.sello = dte.selloVal;
+                    this.venta.sello_mh = dte.selloVal;
+                    this.apiService.store('venta', this.venta).subscribe(data => {
+                        this.alertService.success('Sello recibido', 'El DTE ha sido sellado.');
+                        if(this.venta.cliente_id){
+                            this.enviarDTE();
+                        }
+                        setTimeout(()=>{
+                            this.modalRef?.hide();
+                        },500);
+                        this.consulting = false;
+                    },error => {this.alertService.error(error);});
+                }
+                else if (dte){
+                    this.consulting = false;
+                    this.alertService.info('No se obtuvo el sello', 'El DTE no ha sido emitido.');
+                }else {
+                    this.consulting = false;
+                    this.alertService.info('No se obtuvo el sello', 'Hacienda no devolvió el sello.');
+                }
+            }, error => {
+                this.consulting = false;
+                this.alertService.warning('Hubo un problema', error);
+            });
+        },1000);
     }
 
 

@@ -87,10 +87,10 @@ class VentasController extends Controller
                         ->when($request->tipo_documento, function($query) use ($request){
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
-                        ->when($request->dte && $request->dte == 0, function($query) {
+                        ->when($request->dte && $request->dte == '0', function($query) {
                                 return $query->whereNull('sello_mh');
                         })
-                        ->when($request->dte && $request->dte == 1, function($query) {
+                        ->when($request->dte && $request->dte == '1', function($query) {
                             return $query->whereNotNull('sello_mh');
                         })
                         ->where('cotizacion', 0)

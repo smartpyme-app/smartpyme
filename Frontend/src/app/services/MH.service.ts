@@ -11,6 +11,7 @@ export class MHService {
 
     public url_firmado: string = 'https://facturadtesv.com:8443/firmardocumento/';
     public url_recepciondte: string = '/fesv/recepciondte';
+    public url_consultadte: string = 'fesv/recepcion/consultadte';
     public url_anular_dte: string = '/fesv/anulardte';
     public url_contingencia: string = '/fesv/contingencia';
 
@@ -68,6 +69,25 @@ export class MHService {
         console.log(formData);
 
         return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
+    }
+
+    consultarDTE(venta: any): Observable<any> {
+        let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
+        let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
+
+        const headers = new HttpHeaders({
+          'Content-Type': 'application/json',
+          'User-Agent': 'Angular',
+          'Authorization': token.token,
+        });
+
+
+        let formData:any = {};
+        formData.nitEmisor = user.empresa.nit.replace(/-/g, '');
+        formData.tdte = venta.dte.identificacion.tipoDte;
+        formData.codigoGeneracion = venta.dte.codigo_generacion;
+
+        return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_consultadte}`, formData, { headers, params: { saltarJWT: true } });
     }
 
     enviarContingenciaDTEs(venta: any, dteFirmado: any): Observable<any> {
@@ -137,7 +157,7 @@ export class MHService {
                             },error => {this.alertService.error(error);});
                         }
                     },error => {
-                        if(error.error && error.error.observaciones.length > 0){
+                        if(error.error && error.error.observaciones && error.error.observaciones.length > 0){
                             reject(error.error.observaciones);
                         }
                         else if(error.error && error.error.descripcionMsg){
