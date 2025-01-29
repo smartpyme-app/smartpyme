@@ -16,10 +16,15 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
 {
     public $request;
     private $total_ventas = 0;
+    private $fecha_inicio;
+    private $fecha_fin;
 
     public function __construct($request)
     {
         $this->request = $request;
+
+        $this->fecha_inicio = $request->inicio ?? DB::table('ventas')->where('id_empresa', $request->id_empresa)->min('fecha');
+        $this->fecha_fin = $request->fin ?? DB::table('ventas')->where('id_empresa', $request->id_empresa)->max('fecha');
     }
 
     public function title(): string
@@ -29,7 +34,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
 
     public function styles(Worksheet $sheet)
     {
-    
+
         $sheet->getStyle('A6:F6')->applyFromArray([
             'fill' => [
                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
@@ -41,7 +46,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             ]
         ]);
 
-    
+
         $sheet->getStyle('A1')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -56,7 +61,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             ]
         ]);
 
- 
+
         $lastRow = $sheet->getHighestRow();
         $sheet->getStyle('A6:F' . $lastRow)->applyFromArray([
             'borders' => [
@@ -78,7 +83,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             ]
         ]);
 
-  
+
         $sheet->getColumnDimension('A')->setWidth(25);
         $sheet->getColumnDimension('B')->setWidth(20);
         $sheet->getColumnDimension('C')->setWidth(30);
@@ -101,13 +106,13 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             $sucursales = 'Todas';
         }
 
-        $fecha_inicio = $this->request->inicio ?? DB::table('ventas')->min('fecha');
-        $fecha_fin = $this->request->fin ?? DB::table('ventas')->max('fecha');
+        // $this->fecha_inicio = $this->request->inicio ?? DB::table('ventas')->where('id_empresa', $this->request->id_empresa)->min('fecha');
+        // $this->fecha_fin = $this->request->fin ?? DB::table('ventas')->where('id_empresa', $this->request->id_empresa)->max('fecha');
 
         return [
             ['Reporte de Ventas - Acumulado por producto'],
-            ['Fecha Inicio:', $fecha_inicio],
-            ['Fecha Final:', $fecha_fin],
+            ['Fecha Inicio:', $this->fecha_inicio],
+            ['Fecha Final:', $this->fecha_fin],
             ['Sucursal:', $sucursales],
             [''],
             [
@@ -137,8 +142,8 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
         )
             ->join('ventas', 'ventas.id', '=', 'detalles_venta.id_venta')
             ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->whereBetween('ventas.fecha', [$request->inicio, $request->fin]);
+            ->when($this->fecha_inicio, function ($query) use ($request) {
+                return $query->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
             })
             ->when($request->sucursales, function ($query) use ($request) {
                 return $query->whereIn('ventas.id_sucursal', $request->sucursales);
@@ -155,7 +160,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             ->groupBy('productos.id', 'productos.id_categoria', 'productos.marca', 'productos.nombre')
             ->get();
 
- 
+
         $this->total_ventas = $detalles->sum('total_ventas');
 
         $detalles->push((object)[
@@ -173,13 +178,13 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
     public function map($row): array
     {
         if ($row->id_categoria === null) {
-   
+
             return [
                 'TOTAL',
                 '',
                 '',
                 $row->unidades_vendidas,
-                '$' . number_format(round($row->total_ventas, 2)),
+                '$' . number_format(round($row->total_ventas, 2), 2),
                 $row->existencias
             ];
         }
@@ -191,7 +196,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             $row->marca,
             $row->sku,
             $row->unidades_vendidas,
-            '$' . number_format(round($row->total_ventas, 2)),
+            '$' . number_format(round($row->total_ventas, 2), 2),
             $row->existencias ?? 0
         ];
     }

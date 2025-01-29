@@ -14,10 +14,16 @@ use Illuminate\Support\Facades\Log;
 class VentasCategoriaSheet implements FromCollection, WithTitle, WithHeadings, WithStyles, WithMapping
 {
     protected $request;
+    private $fecha_inicio;
+    private $fecha_fin;
+
 
     public function __construct($request)
     {
         $this->request = $request;
+
+        $this->fecha_inicio = $request->inicio ?? DB::table('ventas')->where('id_empresa', $request->id_empresa)->min('fecha');
+        $this->fecha_fin = $request->fin ?? DB::table('ventas')->where('id_empresa', $request->id_empresa)->max('fecha');
     }
 
     public function title(): string
@@ -97,15 +103,15 @@ class VentasCategoriaSheet implements FromCollection, WithTitle, WithHeadings, W
             $sucursales = 'Todas';
         }
 
-        $fecha_inicio = $this->request->inicio ?? DB::table('ventas')->min('fecha');
+        // $fecha_inicio = $this->request->inicio ?? DB::table('ventas')->where('id_empresa', $this->request->id_empresa)->min('fecha');
 
-        $fecha_fin = $this->request->fin ?? DB::table('ventas')->max('fecha');
+        // $fecha_fin = $this->request->fin ?? DB::table('ventas')->where('id_empresa', $this->request->id_empresa)->max('fecha');
 
 
         return [
             ['Reporte de Ventas - Por Categoría'],
-            ['Fecha Inicio:', $fecha_inicio],
-            ['Fecha Final:', $fecha_fin],
+            ['Fecha Inicio:', $this->fecha_inicio],
+            ['Fecha Final:', $this->fecha_fin],
             ['Sucursal:', $sucursales],
             [''],
             [
@@ -121,6 +127,11 @@ class VentasCategoriaSheet implements FromCollection, WithTitle, WithHeadings, W
     {
         $request = $this->request;
 
+        $request->inicio = $request->inicio ?? DB::table('ventas')->where('id_empresa', $request->id_empresa)->min('fecha');
+        $request->fin = $request->fin ?? DB::table('ventas')->where('id_empresa', $request->id_empresa)->max('fecha');
+
+      
+
         $detalles = DB::table('detalles_venta')
             ->join('ventas', 'ventas.id', '=', 'detalles_venta.id_venta')
             ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
@@ -131,8 +142,8 @@ class VentasCategoriaSheet implements FromCollection, WithTitle, WithHeadings, W
                 DB::raw('SUM(detalles_venta.cantidad) as unidades_vendidas'),
                 DB::raw('SUM(detalles_venta.total) as total_ventas')
             )
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->whereBetween('ventas.fecha', [$request->inicio, $request->fin]);
+            ->when($this->fecha_inicio, function ($query) use ($request) {
+                return $query->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
             })
             ->when($request->sucursales, function ($query) use ($request) {
                 return $query->whereIn('ventas.id_sucursal', $request->sucursales);
