@@ -140,6 +140,7 @@ class VentasCategoriaSheet implements FromCollection, WithTitle, WithHeadings, W
             ->when($request->categorias, function ($query) use ($request) {
                 return $query->whereIn('productos.id_categoria', $request->categorias);
             })
+            ->where('ventas.id_empresa', $request->id_empresa)
             ->where('ventas.estado', '!=', 'Anulada')
             ->where('ventas.cotizacion', 0)
             ->groupBy('categorias.id', 'categorias.nombre')

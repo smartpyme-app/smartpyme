@@ -125,6 +125,8 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
     {
         $request = $this->request;
 
+        
+
         $detalles = Detalle::select(
             'productos.id_categoria',
             'productos.marca',
@@ -147,6 +149,7 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
             ->when($request->marcas, function ($query) use ($request) {
                 return $query->whereIn('productos.marca', $request->marcas);
             })
+            ->where('ventas.id_empresa', $request->id_empresa)
             ->where('ventas.estado', '!=', 'Anulada')
             ->where('ventas.cotizacion', 0)
             ->groupBy('productos.id', 'productos.id_categoria', 'productos.marca', 'productos.nombre')

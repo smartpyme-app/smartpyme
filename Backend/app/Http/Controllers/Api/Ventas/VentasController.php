@@ -906,7 +906,10 @@ class VentasController extends Controller
 
     public function acumuladoExport(Request $request){
 
-       
+       //enviar id de la empresa en el request
+
+       $user = JWTAuth::parseToken()->authenticate();
+         $request->request->add(['id_empresa' => $user->id_empresa]);
         $ventas = new VentasAcumuladoExport();
         $ventas->filter($request);
 
