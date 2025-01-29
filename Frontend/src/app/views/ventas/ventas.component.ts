@@ -395,7 +395,7 @@ export class VentasComponent implements OnInit {
     this.downloadingVentas = true;
     this.saving = true;
 
-    this.apiService.export('ventas-acumulado/exportar', this.filtrosAcumulado).subscribe(
+    this.apiService.exportAcumulado('ventas-acumulado/exportar', this.filtrosAcumulado).subscribe(
       (data: Blob) => {
         const blob = new Blob([data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -419,6 +419,15 @@ export class VentasComponent implements OnInit {
 
         this.downloadingVentas = false;
         this.saving = false;
+
+     
+        this.filtrosAcumulado = {
+          inicio: '',
+          fin: '',
+          sucursales: [],
+          categorias: [],
+          marcas: [],
+        };
       },
       (error) => {
         this.alertService.error(error);

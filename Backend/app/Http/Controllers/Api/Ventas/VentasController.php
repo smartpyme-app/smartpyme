@@ -906,7 +906,7 @@ class VentasController extends Controller
 
     public function acumuladoExport(Request $request){
 
-        Log::info($request->all());
+       
         $ventas = new VentasAcumuladoExport();
         $ventas->filter($request);
 
