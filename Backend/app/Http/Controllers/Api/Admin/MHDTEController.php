@@ -10,6 +10,7 @@ use App\Models\MH\Departamento;
 use App\Models\MH\Municipio;
 use App\Models\MH\Unidad;
 
+use Illuminate\Support\Facades\Http;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHFactura;
 use App\Models\MH\MHFacturaExportacion;
@@ -430,6 +431,17 @@ class MHDTEController extends Controller
             return Response()->json(['error' => 'El cliente no tiene correo electrónico'], 400);
         }
 
+    }
+
+    public function consultarDTE(Request $request)
+    {
+        $response = Http::get('https://admin.factura.gob.sv/prod/consultas/publica/simple/1', [
+            'codigoGeneracion' => $request->codigoGeneracion,
+            'fechaEmi' => $request->fechaEmi,
+            'ambiente' => $request->ambiente,
+        ]);
+
+        return $response->json();
     }
 
 

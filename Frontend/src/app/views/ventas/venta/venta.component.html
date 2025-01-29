@@ -63,6 +63,42 @@
     </div>
 
 </div>
+<div class="card border-0" *ngIf="venta.nombre_documento == 'Factura de exportación'">
+    <div class="card-body">
+        <div class="row">
+            <h6 class="col-12"> Detalles de facturacion </h6>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Tipo de exportación</label>
+                <p>{{ venta.tipo_item_export }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Codigo de exportación</label>
+                <p>{{ venta.cod_incoterm }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium"> Incoterm </label>
+                <p>{{ venta.incoterm }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Recinto fiscal</label>
+                <p>{{ venta.recinto_fiscal }}</p>
+            </div> 
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Regimen</label>
+                <p>{{ venta.regimen }}</p>
+            </div> 
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Seguro</label>
+                <p>{{ venta.seguro }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Flete</label>
+                <p>{{ venta.flete }}</p>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 <div class="card">
     <div class="card-body">
@@ -151,6 +187,30 @@
             </table>
         </div>
     </div>
+</div>
+<div class="card border-0" *ngIf="venta.dte">
+    <div class="card-body">
+        <div class="row">
+            <h6 class="col-12"> Detalles de DTE</h6>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Tipo de dte</label>
+                <p>{{ venta.tipo_dte }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Sello MH</label>
+                <p>{{ venta.sello_mh }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium"> Codigo de Generación </label>
+                <p>{{ venta.codigo_generacion }}</p>
+            </div>
+            <div class="form-group col-lg-4">
+                <label class="fw-medium">Numero de control</label>
+                <p>{{ venta.numero_control }}</p>
+            </div> 
+        </div>
+    </div>
+
 </div>
 
 <div class="card" *ngIf="venta.observaciones">
