@@ -1,6 +1,8 @@
 <?php 
 
 use App\Http\Controllers\Api\Contabilidad\LibrosIVAController;
+//use Route;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/libro-iva/consumidores',           [LibrosIVAController::class, 'consumidores']);
     Route::get('/libro-iva/consumidores/descargar-libro',         [LibrosIVAController::class, 'consumidoresLibroExport']);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Ventas;
 
+use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -30,6 +31,7 @@ use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use Illuminate\Support\Facades\Log;
 
 class VentasController extends Controller
 {
@@ -901,6 +903,20 @@ class VentasController extends Controller
 
         return Excel::download($ventas, 'ventas-detalles.xlsx');
     }
+
+    public function acumuladoExport(Request $request){
+
+       //enviar id de la empresa en el request
+
+       $user = JWTAuth::parseToken()->authenticate();
+         $request->request->add(['id_empresa' => $user->id_empresa]);
+        $ventas = new VentasAcumuladoExport();
+        $ventas->filter($request);
+
+        return Excel::download($ventas, 'corte.xlsx');
+    }
+
+    
 
 
 }
