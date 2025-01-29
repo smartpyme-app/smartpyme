@@ -24,13 +24,13 @@
             <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
             <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
-        <div class="col d-flex gap-2 justify-content-end">
+        <!-- <div class="col d-flex gap-2 justify-content-end">
             <select name="estado"  [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
             </select>
-        </div>
+        </div> -->
     </div>
     <div class="row">
         <div class="table-responsive">
@@ -40,7 +40,7 @@
                         <th>Sucursal</th>
                         <th>Nombre</th>
                         <th>Correlativo</th>
-                        <th>Predeterminado</th>
+                        <!-- <th>Predeterminado</th> -->
                         <th>Estado</th>
                         <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
@@ -55,16 +55,18 @@
                         </td>
                     </tr>
 
-                    <tr *ngFor="let documento of documentos | filter:['nombre']:filtro.nombre | filter:'activo':filtro.estado">
+                    <!-- mostrar solo activos -->
+                    <tr *ngFor="let documento of documentos | filter:['nombre']:filtro.nombre | filter:'activo':'1'">
+                        
                         <td>{{documento.nombre_sucursal}}</td>
                         <td>{{documento.nombre }}</td>
                         <td>{{documento.correlativo}}</td>
-                        <td>
+                        <!-- <td>
                             <select name="predeterminado" [(ngModel)]="documento.predeterminado" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.predeterminado == 0, 'bg-light-success' : documento.predeterminado == 1}">
                                 <option value="1">Si</option>
                                 <option value="0">No</option>
                             </select>
-                        </td>
+                        </td> -->
                         <td>
                             <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}">
                                 <option value="1">Activo</option>
@@ -74,6 +76,16 @@
                         <td *ngIf="apiService.canEdit()" class="text-center">
                             <a class="btn btn-light" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
+                            </a>
+
+                            <a  routerLink="/documento/historial/{{documento.nombre}}" class="btn btn-light" tooltip="Ver historial">
+                                <i class="fa fa-right-left"></i> 
+                            </a>
+                             
+                            
+                            <!-- agregar nueva resolucion -->
+                            <a class="btn btn-light" (click)="openModal(mresolucion, documento)" tooltip="Agregar nueva resolución">
+                                <i class="fa fa-plus"></i>
                             </a>
                         </td>
 

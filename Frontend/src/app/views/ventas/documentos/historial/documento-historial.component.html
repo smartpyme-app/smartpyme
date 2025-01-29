@@ -1,0 +1,67 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>Historial de Documento: {{ nombre }}</h3>
+    <button class="btn btn-light text-danger" routerLink="/documentos">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </button>
+</div>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="documentos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="cargarDocumentos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ documentos?.total + ' registros' }}
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
+                    <th (click)="setOrden('correlativo')" [ngClass]="{'sorted-asc': filtros.orden == 'correlativo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'correlativo' && filtros.direccion == 'desc'}" class="click">Correlativo</th>
+                    <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha de Creación</th>
+                    <th>Estado</th>
+              
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="documentos?.total < 1 && !loading">
+                    <td colspan="6" class="text-center">
+                        <span class="badge bg-primary">No hay documentos en el historial</span>
+                    </td>
+                </tr>
+                <tr *ngIf="loading">
+                    <td colspan="6" class="text-center">
+                        <span class="badge bg-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr *ngFor="let documento of documentos?.data">
+                    <td>{{ documento.nombre }}</td>
+                    <td>{{ documento.correlativo }}</td>
+                    <td>{{ documento.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                        <span class="badge" [ngClass]="{
+                            'bg-success': documento.activo == 1,
+                            'bg-warning': documento.activo == 0
+                        }">
+                            {{ documento.activo == 1 ? 'Activo' : 'Inactivo' }}
+                        </span>
+                    </td>
+                 
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-12" *ngIf="documentos?.last_page > 1">
+        <app-pagination [items]="documentos" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+</section>

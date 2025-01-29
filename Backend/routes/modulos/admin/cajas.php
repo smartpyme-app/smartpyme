@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\Admin\CajasController;
 use App\Http\Controllers\Api\Admin\CortesController;
 use App\Http\Controllers\Api\Admin\DocumentosController;
+//use Route;
+use Illuminate\Support\Facades\Route;
 
 // Cajas
 	Route::get('/cajas',               [CajasController::class, 'index']);
@@ -25,6 +27,8 @@ use App\Http\Controllers\Api\Admin\DocumentosController;
 
 // Documentos
     Route::get('/documentos',             [DocumentosController::class, 'index']);
+    //documentos/historial
+    Route::get('/documentos/historial',   [DocumentosController::class, 'historial']);
     Route::get('/documentos/list',         [DocumentosController::class, 'list']);
     Route::get('/documento/{id}',         [DocumentosController::class, 'read']);
     Route::post('/documento',             [DocumentosController::class, 'store']);

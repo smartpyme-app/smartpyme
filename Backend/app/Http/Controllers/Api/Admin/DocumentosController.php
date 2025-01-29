@@ -5,33 +5,47 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Documento;
+use Illuminate\Support\Facades\Log;
 
 class DocumentosController extends Controller
 {
-    
 
-    public function index() {
-       
+
+    public function index()
+    {
+
         $documentos = Documento::orderBy('id_sucursal', 'asc')->get();
-        
-        return Response()->json($documentos, 200);
 
+        return Response()->json($documentos, 200);
+    }
+    //historial
+    public function historial(Request $request)
+    {
+
+        $documentos = Documento::where('nombre', $request->nombre)
+           // ->where('activo', false)
+
+            ->orderBy('id_sucursal', 'asc')
+            ->paginate($request->paginate);
+
+
+        return Response()->json($documentos, 200);
     }
 
-    public function list() {
-       
-        $documentos = Documento::where('activo', true)->get(); 
-        
-        return Response()->json($documentos, 200);
+    public function list()
+    {
 
+        $documentos = Documento::where('activo', true)->get();
+
+        return Response()->json($documentos, 200);
     }
 
 
-    public function read($id) {
+    public function read($id)
+    {
 
         $documento = Documento::findOrFail($id);
         return Response()->json($documento, 200);
-
     }
 
     public function store(Request $request)
@@ -48,27 +62,25 @@ class DocumentosController extends Controller
             'id_sucursal'    => 'required|numeric'
         ]);
 
-        if($request->id){
+        if ($request->id) {
             $documento = Documento::findOrFail($request->id);
-        }
-        else{
+        } else {
             $documento = new Documento;
 
             $existe = Documento::where('id_sucursal', $request->id_sucursal)->where('nombre', $request->nombre)->first();
 
-            if($existe)
+            if ($existe)
                 return  Response()->json(['error' => 'Ya ha sido agregado el documento', 'code' => 400], 400);
-
         }
 
 
         // Solo colocar un documento predeterminado por sucursal
-        if($request->id){
-            
+        if ($request->id) {
+
             $documentos = Documento::where('id_sucursal', $documento->id_sucursal)
-                                    ->where('predeterminado', true)
-                                    ->where('id', '!=' ,$documento->id)
-                                    ->get();
+                ->where('predeterminado', true)
+                ->where('id', '!=', $documento->id)
+                ->get();
 
             foreach ($documentos as $doc) {
                 $doc->predeterminado = false;
@@ -76,21 +88,18 @@ class DocumentosController extends Controller
             }
         }
 
-        
+
         $documento->fill($request->all());
         $documento->save();
 
         return Response()->json($documento, 200);
-
     }
 
-    public function delete($id){
+    public function delete($id)
+    {
         $documento = Documento::findOrFail($id);
         $documento->delete();
-        
+
         return Response()->json($documento, 201);
-
     }
-
-
 }
