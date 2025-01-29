@@ -12,11 +12,14 @@ class OrdenPago extends Model
     protected $table = 'ordenes_pago';
     protected $fillable = [
         'id_orden',
-        'id_usuario',
+        'id_usuario', 
         'id_orden_n1co',
         'id_autorizacion_3ds',
         'autorizacion_url',
         'id_plan',
+        'payment_id',
+        'charge_id',
+        'item_id',
         'nombre_cliente',
         'email_cliente',
         'telefono_cliente',
@@ -25,6 +28,7 @@ class OrdenPago extends Model
         'estado',
         'divisa',
         'codigo_autorizacion',
+        'fecha_transaccion',
     ];
 
     public function usuario()

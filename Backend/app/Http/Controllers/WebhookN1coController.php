@@ -118,38 +118,22 @@ class WebhookN1coController extends Controller
             ]);
 
             // Buscar la orden usando el checkoutNote
-            $ordenPago = DB::table('ordenes_pago')
-                ->where('id_orden', $payload['orderReference'])
+            $ordenPago = OrdenPago::where('id_orden', $payload['orderReference'])
                 // ->where('id_orden_n1co', $payload['orderId'])
                 ->first();
 
             if ($ordenPago) {
-                // Actualizar el estado de la orden
-                $ordenPago->update([
-                    'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'),
+                Log::info('Orden de pago encontrada en handleSuccessfulPayment', [
+                    'ordenPago' => $ordenPago
                 ]);
 
-                if (isset($metadata['orderDetail']) && is_array($metadata['orderDetail'])) {
-                    foreach ($metadata['orderDetail'] as $detail) {
-                        $ordenPago->detalles()->create([
-                            'orden_pago_id' => $ordenPago->id,
-                            'item_id' => $detail['itemId'],
-                            'name' => $detail['name'], 
-                            'price' => $detail['price'],
-                            'quantity' => $detail['quantity'],
-                            'modifiers_total' => $detail['modifiersTotal'],
-                            'sku' => $detail['sku'],
-                            'product_image_url' => $detail['productImageUrl'],
-                            'note' => $detail['note'],
-                            'description' => $detail['description'],
-                            'quantity_available' => $detail['quantityAvailable'],
-                            'requires_shipping' => $detail['requiresShipping'],
-                            'promo_id' => $detail['promoId'],
-                            'promo_price' => $detail['promoPrice'],
-                            'promo_name' => $detail['promoName']
-                        ]);
-                    }
-                }
+                $ordenPago->update([
+                    'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'),
+                    'item_id' => $metadata['orderDetail'][0]['itemId'] ?? null,
+                    'fecha_transaccion' => Carbon::parse($metadata['TransactionDate'])->format('Y-m-d H:i:s'),
+                    'payment_id' => $metadata['PaymentId'],
+                    'charge_id' => $metadata['ChargeId']
+                ]);
 
                 // Buscar el usuario
                 $user = User::find($ordenPago->id_usuario);
@@ -157,9 +141,9 @@ class WebhookN1coController extends Controller
                 if ($user) {
                     // Actualizar o crear suscripción
                     Suscripcion::updateOrCreate(
-                        ['user_id' => $user->id],
+                        ['usuario_id' => $user->id],
                         [
-                            'status' => 'active',
+                            'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                             'fecha_ultimo_pago' => now(),
                             'fecha_proximo_pago' => now()->addMonth(),
                             'id_pago' => $metadata['PaymentId'],
@@ -266,11 +250,10 @@ class WebhookN1coController extends Controller
             }
 
             // Actualizar el estado de autenticación
-            $ordenPago->updateStatusAuthentication3DS(
-                $payload['metadata']['authenticationId'],
-                null,
-                config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA')
-            );
+            $ordenPago->update([
+                'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'),
+                'authentication_id' => $payload['metadata']['authenticationId'],
+            ]);
 
             Log::info('N1co Webhook: Estado de autenticación 3DS actualizado exitosamente', [
                 'orderReference' => $payload['orderReference'],

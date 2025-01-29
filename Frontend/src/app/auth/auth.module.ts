@@ -14,6 +14,7 @@ import { RegisterComponent } from './../auth/register/register.component';
 import { PagoComponent } from './../auth/register/pago/pago.component';
 import { ForgetComponent } from './../auth/forget/forget.component';
 import { ThreedsModalComponent } from './../auth/register/pago/modal/threeds-modal.component';
+import { PaymentSuccessComponent } from './../auth/register/pago/payment-success.component';
 
 @NgModule({
   imports: [
@@ -32,14 +33,16 @@ import { ThreedsModalComponent } from './../auth/register/pago/modal/threeds-mod
     ForgetComponent,
     RegisterComponent,
     PagoComponent,
-    ThreedsModalComponent
+    ThreedsModalComponent,
+    PaymentSuccessComponent
   ],
   exports: [
   	LoginComponent,
     LockComponent,
     ForgetComponent,
     RegisterComponent,
-    PagoComponent
+    PagoComponent,
+    PaymentSuccessComponent
   ]
 })
 export class AuthModule { }

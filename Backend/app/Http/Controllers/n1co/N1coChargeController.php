@@ -167,6 +167,7 @@ class N1coChargeController extends Controller
 
                 $order->updateStatusAuthentication3DS($authenticationId, $authenticationUrl, config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'));
 
+                
                 Log::info('ID de autenticación 3DS', [
                     'authentication_id' => $authenticationId
                 ]);
@@ -273,12 +274,37 @@ class N1coChargeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $result['data']
+                'message' => $result['message'],
+                'amount' => $result['amount'],
+                'currency' => $result['currency']
             ]);
+
         } catch (\Exception $e) {
             Log::error('Error processing charge 3DS', [
                 'message' => $e->getMessage()
             ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar el cargo processCharge3DS',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
+
+    public function checkAuthenticationStatus(Request $request)
+    {
+        $data = $request->all();
+        $result = $this->n1coGateway->checkAuthenticationStatus($data);
+
+        Log::info('Resultado de la verificación de autenticación', [
+            'result' => $result
+        ]);
+
+        $ordenPago = $result['data'];
+        return response()->json([
+            'success' => true,
+            'estado' => $ordenPago->estado
+        ]);
     }
 }

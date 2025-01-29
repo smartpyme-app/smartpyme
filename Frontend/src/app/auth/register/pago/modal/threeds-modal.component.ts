@@ -4,11 +4,11 @@ import { SafeResourceUrl } from '@angular/platform-browser';
 @Component({
   selector: 'app-threeds-modal',
   template: `
-    <div class="modal-backdrop" (click)="onClose()"></div>
+    <div class="modal-backdrop"></div>
     <div class="modal-container">
       <div class="modal-header">
         <h5>Autenticación 3D Secure</h5>
-        <button class="btn-close" (click)="onClose()"></button>
+        <!-- <button class="btn-close" (click)="onClose()"></button> -->
       </div>
       <div class="modal-body">
         <iframe [src]="authUrl" width="100%" height="600px" frameborder="0"></iframe>

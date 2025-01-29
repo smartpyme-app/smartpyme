@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable,throwError  } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 @Injectable({
     providedIn: 'root'
   })
   export class N1coPaymentService {
+      private paymentResponse: any = null;
       private apiUrl = environment.API_URL + '/api';
   
       constructor(private http: HttpClient) {}
@@ -48,8 +50,6 @@ import { environment } from '../../../environments/environment';
         order_id: string;
     }): Observable<any> {
         const url = `${this.apiUrl}/payment/process/3ds`;
-        console.log('Calling URL:', url); // Para debug
-        console.log('With data:', data);  // Para debug
     
         return this.http.post(url, data, {
             headers: new HttpHeaders({
@@ -78,6 +78,31 @@ import { environment } from '../../../environments/environment';
               }, 500);
           });
       }
+
+      checkAuthenticationStatus(data: {
+        authentication_id: string;
+        order_id: string;
+    }): Observable<any> {
+        return this.http.post(`${this.apiUrl}/payment/check-auth-status`, data)
+            .pipe(
+                catchError(error => {
+                    console.error('Error checking authentication status:', error);
+                    return throwError(() => new Error('Error verificando el estado de autenticación'));
+                })
+            );
+    }
+
+    setPaymentResponse(response: any) {
+        this.paymentResponse = response;
+    }
+
+    getPaymentResponse() {
+        return this.paymentResponse;
+    }
+
+    clearPaymentResponse() {
+        this.paymentResponse = null;
+    }
 
       
   }

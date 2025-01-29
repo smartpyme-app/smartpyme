@@ -59,6 +59,7 @@ export class PagoComponent implements OnInit {
         
         this.processingPayment = true;
         
+        
         try {
             // Formatear el número de tarjeta: eliminar espacios y validar longitud
             const cardNumber = this.paymentData.cardNumber.replace(/\s/g, '');
@@ -107,28 +108,77 @@ export class PagoComponent implements OnInit {
                 );
                 this.mostrar3DSModal = true;
                 
-                setTimeout(async () => {
-                    this.mostrar3DSModal = false;
-                    
+                const checkAuthentication = async () => {
                     try {
-                        const response = await firstValueFrom(
-                            this.n1coPaymentService.processDirectPayment3DS({
+                        const authStatus = await firstValueFrom(
+                            this.n1coPaymentService.checkAuthenticationStatus({
                                 authentication_id: result.authentication_id,
                                 order_id: result.order_id
                             })
                         );
-                        
-                        if (response.success) {
-                            this.alertService.success('Éxito', 'Pago procesado exitosamente');
-                            this.router.navigate(['/pago']);
+            
+                        // Usar los estados definidos en tus constantes
+                        switch (authStatus.estado) {
+                            case 'autenticacion_exitosa':
+                                this.mostrar3DSModal = false;
+                                const response = await firstValueFrom(
+                                    this.n1coPaymentService.processDirectPayment3DS({
+                                        authentication_id: result.authentication_id,
+                                        order_id: result.order_id
+                                    })
+                                );
+                                
+                                if (response.success) {
+                                    this.alertService.success('Éxito', 'Pago procesado exitosamente');
+                                    this.n1coPaymentService.setPaymentResponse(response);
+                                    this.router.navigate(['/pago-exitoso']);
+                                }
+                                return true;
+            
+                            case 'autenticacion_rechazada':
+                            case 'autenticacion_cancelada':
+                            case 'autenticacion_fallida':
+                                this.mostrar3DSModal = false;
+                                this.alertService.error(`La autenticación ha sido ${authStatus.estado}`);
+                                return true;
+            
+                            case 'autenticacion_pendiente':
+                                return false;
+            
+                            default:
+                                return false;
                         }
                     } catch (error) {
-                        this.alertService.error('Error procesando el pago');
+                        console.error('Error verificando autenticación:', error);
+                        this.alertService.error('Error verificando el estado de la autenticación');
+                        this.mostrar3DSModal = false;
+                        return true;
                     }
-                }, 10000); // 10 segundos
+                };
+            
+                // Esperar 10 segundos antes de empezar a verificar
+                setTimeout(async () => {
+                    const interval = setInterval(async () => {
+                        const shouldStop = await checkAuthentication();
+                        if (shouldStop) {
+                            clearInterval(interval);
+                            this.processingPayment = false;
+                        }
+                    }, 3000);
+            
+                    // Tiempo máximo de espera
+                    setTimeout(() => {
+                        clearInterval(interval);
+                        if (this.mostrar3DSModal) {
+                            this.mostrar3DSModal = false;
+                            this.alertService.error('El tiempo de autenticación ha expirado');
+                            this.processingPayment = false;
+                        }
+                    }, 120000);
+                }, 10000);
                 
                 return;
-             }
+            }
 
 
             if (result.success) {

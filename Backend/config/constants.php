@@ -23,6 +23,7 @@ return [
     'ESTADO_ORDEN_PAGO_PENDIENTE' => 'pendiente',
     'ESTADO_ORDEN_PAGO_RECHAZADO' => 'rechazada',
     'ESTADO_ORDEN_PAGO_COMPLETADO' => 'completado',
+    
     'ESTADO_ORDEN_AUTENTICACION_PENDIENTE' => 'autenticacion_pendiente',
     'ESTADO_ORDEN_AUTENTICACION_EXITOSA' => 'autenticacion_exitosa',
     'ESTADO_ORDEN_AUTENTICACION_RECHAZADA' => 'autenticacion_rechazada',

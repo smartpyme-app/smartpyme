@@ -21,6 +21,9 @@ class CreateOrdenPagosTable extends Migration
             $table->string('id_autorizacion_3ds')->nullable();
             $table->string('autorizacion_url')->nullable();
             $table->unsignedBigInteger('id_plan');
+            $table->string('payment_id')->nullable();
+            $table->string('charge_id')->nullable();
+            $table->string('item_id')->nullable();
             $table->string('nombre_cliente')->nullable();
             $table->string('email_cliente')->nullable();
             $table->string('telefono_cliente')->nullable();
@@ -29,6 +32,7 @@ class CreateOrdenPagosTable extends Migration
             $table->string('estado')->default('pendiente');
             $table->string('divisa')->default('USD');
             $table->string('codigo_autorizacion')->nullable();
+            $table->dateTime('fecha_transaccion')->nullable();
             $table->timestamps();
         });
     }

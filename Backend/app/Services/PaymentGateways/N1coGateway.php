@@ -211,10 +211,16 @@ class N1coGateway extends BasePaymentGateway
                         ]);
                     }
                 }
+
+                Log::info('Resultado del cargo despues de los ifs', [
+                    'result' => $result
+                ]);
+
                 return [
                     'success' => true,
                     'data' => $result
                 ];
+
             }
 
             Log::error('Error creando cargo', [
@@ -246,10 +252,11 @@ class N1coGateway extends BasePaymentGateway
                     'error' => 'Datos de orden incompletos'
                 ];
             }
+            
 
             // Buscar la orden y sus datos relacionados
             $ordenPago = OrdenPago::where('id_orden', $data['order_id'])
-                ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'))
+                // ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'))
                 ->first();
 
             if (!$ordenPago) {
@@ -315,13 +322,6 @@ class N1coGateway extends BasePaymentGateway
             $charge = $this->createCharge3DS($chargeData);
 
             if ($charge['success']) {
-
-                $ordenPago->update([
-                    'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
-                    // 'codigo_autorizacion' => $charge['data']['authorizationCode'],
-                    'monto_pagado' => $charge['data']['order']['amount']
-                ]);
-
                 return [
                     'success' => true,
                     'message' => $charge['data']['message'],
@@ -368,6 +368,30 @@ class N1coGateway extends BasePaymentGateway
         }
 
         return $this->createCharge($chargeData, $token);
+    }
+
+    public function checkAuthenticationStatus(array $data): array
+    {
+        Log::info('Verificando estado de autenticación', [
+            'data' => $data
+        ]);
+
+       $authenticationId = $data['authentication_id'];
+
+       Log::info('Authentication ID', [
+        'authentication_id' => $authenticationId
+       ]);
+
+       $ordenPago = OrdenPago::where('id_autorizacion_3ds', $authenticationId)->first();
+
+       Log::info('Orden de pago encontrada', [
+        'orden_pago' => $ordenPago
+       ]);
+
+       if ($ordenPago) {
+        return ['success' => true, 'data' => $ordenPago];
+       }
+       return ['success' => false, 'error' => 'Orden no encontrada'];
     }
 
     //aqui voy
