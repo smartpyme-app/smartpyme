@@ -252,12 +252,12 @@ class LibrosIVAController extends Controller
                 'id_compra' => $compra->id,
             ];
 
-    
+
             switch ($compra->tipo_documento) {
                 case 'Sujeto excluido':
                     $data['sujeto_excluido'] = $compra->total;
                     break;
-                default: 
+                default:
                     $data['compras_gravadas'] = $compra->sub_total;
                     $data['credito_fiscal'] = $compra->iva;
                     $data['total'] = $compra->total;
@@ -280,7 +280,7 @@ class LibrosIVAController extends Controller
         $gastosData = $gastos->map(function ($gasto) {
             $proveedor = optional($gasto->proveedor);
 
-            return [
+            $data = [
                 'fecha'                 => $gasto->fecha,
                 'clase_documento'       => 1, // Por ejemplo, otro tipo de documento para gastos
                 'tipo_documento'        => $gasto->tipo_documento,
@@ -289,15 +289,28 @@ class LibrosIVAController extends Controller
                 'nombre_proveedor'      => $gasto->nombre_proveedor,
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
-                'compras_gravadas'      => $gasto->sub_total,
+                'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,
-                'credito_fiscal'        => $gasto->iva,
+                'credito_fiscal'        => 0,
                 'anticipo_iva_percibido' => $gasto->percepcion,
                 'compras_cuenta_terceros' => 0,
                 'credito_cuenta_terceros' => 0,
-                'total'                 => $gasto->total,
+                'total'                 => 0,
                 'sujeto_excluido'       => 0,
             ];
+
+            switch ($gasto->tipo_documento) {
+                case 'Sujeto excluido':
+                    $data['sujeto_excluido'] = $gasto->total;
+                    break;
+                default:
+                    $data['compras_gravadas'] = $gasto->sub_total;
+                    $data['credito_fiscal'] = $gasto->iva;
+                    $data['total'] = $gasto->total;
+                    break;
+            }
+
+            return $data;
         });
 
         $devoluciones = DevolucionCompra::with(['proveedor'])
@@ -311,7 +324,7 @@ class LibrosIVAController extends Controller
             $proveedor = optional($devolucion->proveedor);
 
 
-            return [
+            $data = [
                 'fecha'                 => $devolucion->fecha,
                 'clase_documento'       => 1,
                 'tipo_documento'        => $devolucion->tipo_documento,
@@ -320,15 +333,28 @@ class LibrosIVAController extends Controller
                 'nombre_proveedor'      => $devolucion->nombre_proveedor,
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
-                'compras_gravadas'      => $devolucion->sub_total * -1,
+                'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,
-                'credito_fiscal'        => $devolucion->iva * -1,
+                'credito_fiscal'        => 0,
                 'anticipo_iva_percibido' => $devolucion->percepcion * -1,
                 'compras_cuenta_terceros' => 0,
                 'credito_cuenta_terceros' => 0,
-                'total'                 => $devolucion->total * -1,
+                'total'                 => 0,
                 'sujeto_excluido'       => 0,
             ];
+
+            switch ($devolucion->tipo_documento) {
+                case 'Sujeto excluido':
+                    $data['sujeto_excluido'] = $devolucion->total * -1;
+                    break;
+                default:
+                    $data['compras_gravadas'] = $devolucion->sub_total * -1;
+                    $data['credito_fiscal'] = $devolucion->iva * -1;
+                    $data['total'] = $devolucion->total * -1;
+                    break;
+            }
+
+            return $data;
         });
 
         // Unir y ordenar ambas colecciones por fecha

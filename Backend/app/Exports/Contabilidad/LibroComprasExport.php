@@ -11,11 +11,11 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 
-class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
+class LibroComprasExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return \Illuminate\Support\Collection
+     */
     public $request;
     private $index = 1;
 
@@ -24,8 +24,9 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
         $this->request = $request;
     }
 
-    public function headings():array{
-        return[
+    public function headings(): array
+    {
+        return [
             'N°',
             'FECHA',
             'NÚMERO DE DOCUMENTO',
@@ -45,26 +46,26 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+        $request = $this->request; //where('id_empresa', Auth::user()->id_empresa)
+
         // Obtener las compras
         $compras = Compra::with(['proveedor'])
-                            ->where('estado', '!=', 'Anulada')
-                            ->when($request->id_sucursal, function($q) use ($request){
-                                $q->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->whereBetween('fecha', [$request->inicio, $request->fin])
-                            ->where('cotizacion', 0)
-                            ->get();
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->get();
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
-                            ->where('estado', '!=', 'Anulada')
-                            ->when($request->id_sucursal, function($q) use ($request) {
-                                $q->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->whereBetween('fecha', [$request->inicio, $request->fin])
-                            ->get();
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get();
 
         $devoluciones = DevolucionCompra::with(['proveedor'])
             ->where('enable', true)
@@ -74,29 +75,40 @@ class LibroComprasExport implements FromCollection,WithHeadings, WithMapping
         $libroCompras = $compras->merge($gastos)->merge($devoluciones)->sortBy('fecha');
 
         return $libroCompras;
-        
     }
 
-    public function map($compra): array{
-
+    public function map($compra): array
+    {
         $proveedor = optional($compra->proveedor);
+        $multiplier = isset($compra->id_compra) ? -1 : 1;
 
-        return [
+        // Valores base
+        $data = [
             $this->index++,
             $compra->fecha,
             $compra->referencia,
             $proveedor->nit ?? $proveedor->ncr,
             $compra->nombre_proveedor,
-            $compra->id_compra ? $compra->exenta * -1 : $compra->exenta,
-            $compra->id_compra ? $compra->no_sujeta * -1 : $compra->no_sujeta,
-            0,
-            $compra->id_compra ? $compra->sub_total * -1 : $compra->sub_total,
-            0,
-            $compra->id_compra ? $compra->iva * -1 : $compra->iva,
-            $compra->id_compra ? $compra->iva_percibido * -1 : $compra->iva_percibido,
-            $compra->id_compra ? $compra->total * -1 : $compra->total,
-            0,
+            0, // compras_exentas
+            0, // compras_no_sujetas
+            0, // importaciones_exentas
+            0, // compras_gravadas
+            0, // importaciones_gravadas
+            0, // credito_fiscal
+            0, // anticipo_iva_percibido
+            0, // total
+            0  // sujetos_excluidos
         ];
 
+        if ($compra->tipo_documento == 'Sujeto excluido') {
+            $data[13] = $compra->total * $multiplier; // Solo asignar a sujetos excluidos
+        } else {
+            $data[8] = $compra->sub_total * $multiplier;  // COMPRAS GRAVADAS
+            $data[10] = $compra->iva * $multiplier;       // CRÉDITO FISCAL
+            $data[11] = ($compra->percepcion ?? 0) * $multiplier; // ANTICIPO IVA
+            $data[12] = $compra->total * $multiplier;     // TOTAL
+        }
+
+        return $data;
     }
 }
