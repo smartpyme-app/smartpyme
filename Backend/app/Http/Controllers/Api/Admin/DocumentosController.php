@@ -23,7 +23,7 @@ class DocumentosController extends Controller
     {
 
         $documentos = Documento::where('nombre', $request->nombre)
-           // ->where('activo', false)
+           ->where('activo', false)
 
             ->orderBy('id_sucursal', 'asc')
             ->paginate($request->paginate);
