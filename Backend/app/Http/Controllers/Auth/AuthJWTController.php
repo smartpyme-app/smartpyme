@@ -74,6 +74,9 @@ class AuthJWTController extends Controller
         $user->plan = $this->getPlan($user->suscripciones()->first()->plan_id)->nombre;
         $user->estado_suscripcion = $user->suscripciones()->first()->estado;
 
+        $suscripcion = $user->suscripciones()->first(['estado', 'fecha_proximo_pago', 'fecha_ultimo_pago', 'fin_periodo_prueba', 'tipo_plan']);
+        $user->suscripcion = $suscripcion;
+
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
 

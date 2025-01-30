@@ -26,7 +26,7 @@ class PlanesSeeder extends Seeder
             'id_enlace_pago_n1co' => null,
             'n1co_metadata' => null,
             'permite_periodo_prueba' => true,
-            'dias_periodo_prueba' => 15,
+            'dias_periodo_prueba' => 3,
         ]);
 
         Plan::create([
@@ -41,7 +41,7 @@ class PlanesSeeder extends Seeder
             'id_enlace_pago_n1co' => null,
             'n1co_metadata' => null,
             'permite_periodo_prueba' => true,
-            'dias_periodo_prueba' => 15,
+            'dias_periodo_prueba' => 3,
         ]);
 
         Plan::create([
@@ -56,7 +56,7 @@ class PlanesSeeder extends Seeder
             'id_enlace_pago_n1co' => null,
             'n1co_metadata' => null,
             'permite_periodo_prueba' => true,
-            'dias_periodo_prueba' => 15,
+            'dias_periodo_prueba' => 3,
         ]);
 
         Plan::create([
@@ -71,7 +71,7 @@ class PlanesSeeder extends Seeder
             'id_enlace_pago_n1co' => null,
             'n1co_metadata' => null,
             'permite_periodo_prueba' => true,
-            'dias_periodo_prueba' => 15,
+            'dias_periodo_prueba' => 3,
         ]);
     }
 }

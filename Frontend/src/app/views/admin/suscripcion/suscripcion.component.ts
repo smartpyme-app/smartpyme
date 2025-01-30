@@ -31,6 +31,7 @@ export class SuscripcionComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
         this.apiService.getAll('suscripcion').subscribe(suscripcion => {
             this.suscripcion = suscripcion;
+            console.log(this.suscripcion);
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
     }

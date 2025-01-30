@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MetodoPago;
 use App\Models\OrdenPago;
 use App\Models\Plan;
+use App\Models\User;
 use App\Services\PaymentGateways\N1coGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -62,47 +63,122 @@ class N1coChargeController extends Controller
                 ], 422);
             }
 
+            $customerId = $request->input('customer.id');
+            $metodoPago = MetodoPago::where('id_usuario', $customerId)->where('esta_activo', true)->where('es_predeterminado', true)->first();
+            if ($metodoPago) {
 
-            $paymentData = [
-                'customer' => [
-                    'id' => $request->input('customer.id'),
-                    'name' => $request->input('customer.name'),
-                    'email' => $request->input('customer.email'),
-                    'phoneNumber' => $request->input('customer.phoneNumber')
-                ],
-                'card' => [
-                    'number' => preg_replace('/\s+/', '', $request->input('card.number')),
-                    'expirationMonth' => $request->input('card.expirationMonth'),
-                    'expirationYear' => "20" . $request->input('card.expirationYear'),
-                    'cvv' => $request->input('card.cvv'),
-                    'cardHolder' => $request->input('card.cardHolder')
-                ]
-            ];
+                Log::info('Método de pago encontrado', [
+                    'metodo_pago' => $metodoPago
+                ]);
 
-            $result = $this->n1coGateway->createPaymentMethod($paymentData);
+                $ordenPago = OrdenPago::where('id_usuario', $customerId)->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'))->first();
 
-            if (!$result['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al crear método de pago',
-                    'error' => $result['error']
-                ], 500);
+                if ($ordenPago) {
+                    $chargeData = [
+                        'customer' => [
+                            'name' => $request->input('customer.name'),
+                            'email' => $request->input('customer.email'),
+                            'phoneNumber' => $request->input('customer.phoneNumber')
+                        ],
+                        'cardId' => $metodoPago->id_tarjeta,
+                        'order' => [
+                            'id' => $ordenPago->id_orden,
+                            'lineItems' => [
+                                [
+                                    // 'sku' => $request->input('order.lineItems.0.sku'),
+                                    'product' => [
+                                        'name' => $ordenPago->plan,
+                                        'price' => $ordenPago->monto
+                                    ],
+                                    'quantity' => 1
+                                ]
+                            ],
+                            'description' => $ordenPago->plan,
+                            'name' => $ordenPago->plan
+                        ],
+                        'billingInfo' => [
+                            'countryCode' =>  $metodoPago->codigo_pais,
+                            'stateCode' => $request->input('billingInfo.stateCode'),
+                            'zipCode' => $request->input('billingInfo.zipCode')
+                        ]
+                    ];
+
+                    Log::info('Datos de la orden de pago', [
+                        'charge_data' => $chargeData
+                    ]);
+        
+                    $chargeResult = $this->n1coGateway->createCharge($chargeData);
+        
+                    Log::info('Resultado de la creación del cargo', [
+                        'charge_result' => $chargeResult
+                    ]);
+        
+        
+                    if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                        $authenticationId = $chargeResult['data']['authentication']['id'];
+                        $authenticationUrl = $chargeResult['data']['authentication']['url'];
+        
+                        $ordenPago->updateStatusAuthentication3DS($authenticationId, $authenticationUrl, config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'));
+        
+        
+                        Log::info('ID de autenticación 3DS', [
+                            'authentication_id' => $authenticationId
+                        ]);
+        
+                        return response()->json([
+                            'success' => true,
+                            'requires_3ds' => true,
+                            'authentication_url' => $authenticationUrl,
+                            'authentication_id' => $authenticationId,
+                            'order_id' => $ordenPago->id_orden
+                        ]);
+                    }
+                }
+
+
+            } else {
+                $paymentData = [
+                    'customer' => [
+                        'id' => $request->input('customer.id'),
+                        'name' => $request->input('customer.name'),
+                        'email' => $request->input('customer.email'),
+                        'phoneNumber' => $request->input('customer.phoneNumber')
+                    ],
+                    'card' => [
+                        'number' => preg_replace('/\s+/', '', $request->input('card.number')),
+                        'expirationMonth' => $request->input('card.expirationMonth'),
+                        'expirationYear' => "20" . $request->input('card.expirationYear'),
+                        'cvv' => $request->input('card.cvv'),
+                        'cardHolder' => $request->input('card.cardHolder')
+                    ]
+                ];
+
+                $result = $this->n1coGateway->createPaymentMethod($paymentData);
+
+                if (!$result['success']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error al crear método de pago',
+                        'error' => $result['error']
+                    ], 500);
+                }
+
+                $paymentMethod = MetodoPago::create([
+                    'id_usuario' => $request->input('customer.id'),
+                    'id_tarjeta' => $result['data']['id'],
+                    'marca_tarjeta' => $result['data']['bin']['brand'],
+                    'ultimos_cuatro' => substr($request->input('card.number'), -4),
+                    'titular_tarjeta' => $request->input('card.cardHolder'),
+                    'nombre_emisor' => $result['data']['bin']['issuerName'],
+                    'codigo_pais' => $result['data']['bin']['countryCode'],
+                    'es_predeterminado' => true,
+                    'esta_activo' => true
+                ]);
+
             }
-
-            $paymentMethod = MetodoPago::create([
-                'id_usuario' => $request->input('customer.id'),
-                'id_tarjeta' => $result['data']['id'],
-                'marca_tarjeta' => $result['data']['bin']['brand'],
-                'ultimos_cuatro' => substr($request->input('card.number'), -4),
-                'titular_tarjeta' => $request->input('card.cardHolder'),
-                'nombre_emisor' => $result['data']['bin']['issuerName'],
-                'codigo_pais' => $result['data']['bin']['countryCode'],
-                'es_predeterminado' => true,
-                'esta_activo' => true
-            ]);
-
+            
             $plan = Plan::find($request->input('plan.id_plan'));
-
+            
             $order = OrdenPago::create([
                 'id_usuario' => $request->input('customer.id'),
                 'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
@@ -146,7 +222,7 @@ class N1coChargeController extends Controller
                     'zipCode' => $request->input('billingInfo.zipCode')
                 ]
             ];
-            
+
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
             Log::info('Resultado de la creación del cargo', [
@@ -160,14 +236,14 @@ class N1coChargeController extends Controller
                 $paymentMethod->update(['is_active' => false]);
                 return response()->json($chargeResult, 500);
             }
-    
+
             if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
                 $authenticationId = $chargeResult['data']['authentication']['id'];
                 $authenticationUrl = $chargeResult['data']['authentication']['url'];
 
                 $order->updateStatusAuthentication3DS($authenticationId, $authenticationUrl, config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'));
 
-                
+
                 Log::info('ID de autenticación 3DS', [
                     'authentication_id' => $authenticationId
                 ]);
@@ -180,18 +256,17 @@ class N1coChargeController extends Controller
                     'order_id' => $order->id_orden
                 ]);
             }
-                
+
             return response()->json([
                 'success' => true,
                 'message' => 'Método de pago creado exitosamente',
                 'data' => $result['data']
             ]);
-    
         } catch (\Exception $e) {
             Log::error('Error en createPaymentMethod:', [
                 'message' => $e->getMessage()
             ]);
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al procesar el método de pago',
@@ -199,7 +274,7 @@ class N1coChargeController extends Controller
             ], 500);
         }
     }
-    
+
 
     public function processCharge(Request $request)
     {
@@ -241,7 +316,6 @@ class N1coChargeController extends Controller
                 'success' => true,
                 'data' => $result['data']
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error processing charge', [
                 'message' => $e->getMessage()
@@ -278,7 +352,6 @@ class N1coChargeController extends Controller
                 'amount' => $result['amount'],
                 'currency' => $result['currency']
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error processing charge 3DS', [
                 'message' => $e->getMessage()

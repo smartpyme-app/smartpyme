@@ -139,7 +139,7 @@ export class PagoComponent implements OnInit {
                             case 'autenticacion_cancelada':
                             case 'autenticacion_fallida':
                                 this.mostrar3DSModal = false;
-                                this.alertService.error(`La autenticación ha sido ${authStatus.estado}`);
+                                this.alertService.error(`La autenticación ha fallado, intentalo nuevamente o contacta con nosotros`);
                                 return true;
             
                             case 'autenticacion_pendiente':

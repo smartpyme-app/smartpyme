@@ -9,7 +9,7 @@ import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
   styleUrls: ['./payment-success.component.css']
 })
 export class PaymentSuccessComponent implements OnInit, OnDestroy {
-  countdown: number = 5;
+  countdown: number = 10;
   paymentResponse: any;
 
   constructor(

@@ -29,7 +29,7 @@ export class RegisterComponent implements OnInit {
         this.apiService.getToUrl('https://restcountries.com/v3.1/all?order=name').subscribe(
         data => {
             this.paises = data;
-            console.log(data);
+            // console.log(data);
         },
         error => {
             this.alertService.error(error);
