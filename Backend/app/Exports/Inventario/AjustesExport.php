@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\Inventario;
 
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -40,7 +40,7 @@ class AjustesExport implements FromCollection, WithHeadings, WithMapping
            $fields = [
               $row->producto()->pluck('nombre')->first(),
               $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
-              $row->sucursal()->pluck('nombre')->first(),
+              $row->bodega()->pluck('nombre')->first(),
               $row->stock_actual,
               $row->ajuste,
               $row->stock_real,
@@ -58,9 +58,9 @@ class AjustesExport implements FromCollection, WithHeadings, WithMapping
         return Ajuste::when($request->fin, function($query) use ($request){
                                 return $query->whereBetween('created_at', [$request->inicio . ' 00:00:00', $request->fin . ' 23:59:59']);
                             })
-                            ->when($request->id_sucursal, function($query) use ($request){
-                                return $query->whereHas('sucursal', function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
+                            ->when($request->id_bodega, function($query) use ($request){
+                                return $query->whereHas('bodega', function($q) use ($request){
+                                    $q->where('id_bodega', $request->id_bodega);
                                 });
                             })
                             ->when($request->id_usuario, function($query) use ($request){

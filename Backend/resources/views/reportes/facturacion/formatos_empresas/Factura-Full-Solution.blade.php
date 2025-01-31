@@ -28,15 +28,15 @@
         }
 
         #fecha          {top: 3cm; left: 13cm; }
-        #nit            {top: 3.5cm; left: 13cm; }
-        #condicion      {top: 4cm; left: 13cm; }
-        #cliente        {top: 3cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 3.5cm; left: 2.5cm; width: 10cm;}
-        #municipio      {top: 4cm; left: 2.5cm; width: 9cm;}
-        #departamento      {top: 4cm; left: 7cm; width: 9cm;}
+        #cliente        {top: 3cm; left: 1.7cm; width: 9cm;}
+        #direccion      {top: 3.5cm; left: 1.7cm; width: 15cm;}
+        #municipio      {top: 4cm; left: 1.7cm; width: 9cm;}
+        #departamento   {top: 4cm; left: 7cm; width: 9cm;}
+        #nit            {top: 4cm; left: 13cm; }
+        #condicion      {top: 4.5cm; left: 1.7cm; }
 
 
-        table   {position: absolute; top: 5cm; left: 1cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 6cm; left: 1cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.6cm; text-align: left;}
 
         .codigobarra{ width: 1.5cm; text-align: center;}
@@ -53,9 +53,19 @@
         #letras     {top: 15cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
 
         #suma       {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
-        #no_sujeta  {top: 14cm; left: 18cm; width: 2cm; text-align: right;}
-        #exenta     {top: 14.5cm; left: 18cm; width: 2cm; text-align: right;}
+        #iva_retenido  {top: 13.4cm; left: 18cm; width: 2cm; text-align: right;}
+        #subtotal  {top: 13.8cm; left: 18cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 14.2cm; left: 18cm; width: 2cm; text-align: right;}
+        #exenta     {top: 14.6cm; left: 18cm; width: 2cm; text-align: right;}
         #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right;}
+
+        #text_suma       {top: 13cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva_retenido  {top: 13.4cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_subtotal   {top: 13.8cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_no_sujeta  {top: 14.2cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_exenta     {top: 14.6cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_total      {top: 15cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+
 
         .no-print{position: absolute;}
 
@@ -109,7 +119,22 @@
 
     <div id="totales">
         <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+        <p id="text_suma">SUMAS</p>
         <p id="suma"> $ {{ number_format($venta->total, 2) }}</p>
+        <p id="text_subtotal">SUB-TOTAL</p>
+        <p id="subtotal"> $ {{ number_format($venta->total, 2) }}</p>
+        <p id="text_iva_retenido">(-) IVA RETENIDO</p>
+            @if($venta->iva_retenido > 0)
+                <p id="iva_retenido"> ${{ number_format($venta->iva_retenido, 2) }}</p>
+            @endif
+        <p id="text_no_sujeta">NO SUJETAS</p>
+            @if($venta->no_sujeta > 0)
+            <p id="no_sujeta"> ${{ number_format($venta->no_sujeta, 2) }}</p>
+            @endif
+        <p id="text_exenta">EXENTAS</p>
+        @if($venta->exenta > 0)
+            <p id="exenta"> ${{ number_format($venta->exenta, 2) }}</p>
+        @endif
         <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
     </div>
 </section>
@@ -156,7 +181,22 @@
 
     <div id="totales">
         <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
+        <p id="text_suma">SUMAS</p>
         <p id="suma"> $ {{ number_format($venta->total, 2) }}</p>
+        <p id="text_subtotal">SUB-TOTAL</p>
+        <p id="subtotal"> $ {{ number_format($venta->total, 2) }}</p>
+        <p id="text_iva_retenido">(-) IVA RETENIDO</p>
+            @if($venta->iva_retenido > 0)
+                <p id="iva_retenido"> ${{ number_format($venta->iva_retenido, 2) }}</p>
+            @endif
+        <p id="text_no_sujeta">NO SUJETAS</p>
+            @if($venta->no_sujeta > 0)
+            <p id="no_sujeta"> ${{ number_format($venta->no_sujeta, 2) }}</p>
+            @endif
+        <p id="text_exenta">EXENTAS</p>
+        @if($venta->exenta > 0)
+            <p id="exenta"> ${{ number_format($venta->exenta, 2) }}</p>
+        @endif
         <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
     </div>
 </section>
