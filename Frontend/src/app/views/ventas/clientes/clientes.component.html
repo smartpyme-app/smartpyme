@@ -228,11 +228,9 @@
           <!-- Persona Natural -->
           <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm hover-effect">
-              <div class="card-body d-flex align-items-center p-4 justify-content-around">
-                <div class="me-4">
-                  <i class="fas fa-user fa-2x text-primary"></i>
-                </div>
-                <p class="text-muted">Importar clientes individuales</p>
+              <div class="card-body d-flex align-items-center p-4 justify-content-between">
+                <div> <i class="fas fa-user fa-2x text-primary"></i> </div>
+                <p class="col-8 text-muted">Importar clientes individuales</p>
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-personas'"> </app-importar-excel>
               </div>
             </div>
@@ -241,11 +239,9 @@
           <!-- Empresa -->
           <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm hover-effect">
-              <div class="card-body d-flex align-items-center p-4 justify-content-around">
-                <div class="me-4">
-                  <i class="fas fa-building fa-2x text-primary"></i>
-                </div>
-                <p class="text-muted">Importar clientes corporativos</p>
+              <div class="card-body d-flex align-items-center p-4 justify-content-between">
+                <div> <i class="fas fa-building fa-2x text-primary"></i> </div>
+                <p class="col-8 text-muted">Importar clientes corporativos</p>
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-empresas'"></app-importar-excel>
               </div>
             </div>
@@ -254,11 +250,9 @@
           <!-- Extranjeros -->
           <div class="col-12">
             <div class="card border-0 shadow-sm hover-effect">
-              <div class="card-body d-flex align-items-center p-4 justify-content-around">
-                <div class="me-4">
-                  <i class="fas fa-globe fa-2x text-primary"></i>
-                </div>
-                <p class="text-muted">Importar clientes internacionales</p>
+              <div class="card-body d-flex align-items-center p-4 justify-content-between">
+                <div> <i class="fas fa-globe fa-2x text-primary"></i> </div>
+                <p class="col-8 text-muted">Importar clientes internacionales</p>
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'clientes-extranjeros'"></app-importar-excel>
               </div>
             </div>
