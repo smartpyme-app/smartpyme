@@ -18,5 +18,7 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
     
     Route::post('/partidas/generar/ingreso',        [PartidasController::class, 'generarIngresos']);
     Route::post('/partidas/generar/egreso',        [PartidasController::class, 'generarEgresos']);
+    Route::post('/partidas/generar/cxc',        [PartidasController::class, 'generarCxC']);
+    Route::post('/partidas/generar/cxp',        [PartidasController::class, 'generarCxP']);
 
 ?>
