@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Admin\Empresa;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Suscripcion extends Model
 {
@@ -103,9 +104,15 @@ class Suscripcion extends Model
         return $fechaActual->diffInDays($fechaProximoPago);
     }
 
-    public function diasFaltantes(): int 
+    public function diasFaltantes(): ?int 
     {
-        return $this->calcularDiasFaltantes();
+        if (!$this->exists) {
+            return null;
+        }
+        
+        $diasFaltantes = $this->calcularDiasFaltantes();
+        return $diasFaltantes;
     }
+
 
 }

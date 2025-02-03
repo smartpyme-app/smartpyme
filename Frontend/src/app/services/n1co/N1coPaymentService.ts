@@ -11,11 +11,8 @@ import { environment } from '../../../environments/environment';
       private apiUrl = environment.API_URL + '/api';
   
       constructor(private http: HttpClient) {}
-  
-      // Crear método de pago (payment method)
       
       createPaymentMethod(data: any): Observable<any> {
-        console.log('Datos enviados al backend:', data); // Añade este log
         
         const headers = new HttpHeaders({
             'Content-Type': 'application/json',
@@ -31,8 +28,24 @@ import { environment } from '../../../environments/environment';
         
         return this.http.post(url, data, options);
     }
+
+    updateMethodPayment(data: any): Observable<any> {
+        const url = `${this.apiUrl}/payment/update-method-payment`;
+
+        const headers = new HttpHeaders({
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        });
+    
+        const options = {
+            headers: headers,
+            withCredentials: true
+        };
+    
+
+        return this.http.post(url, data, options);
+    }
   
-      // Procesar el cargo usando el payment method
       createMethodPaymentWithCharge(data: {
           empresa_id: number;
           card_id: string;

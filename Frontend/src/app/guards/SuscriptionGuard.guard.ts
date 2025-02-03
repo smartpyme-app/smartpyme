@@ -13,7 +13,6 @@ export class SubscriptionGuard implements CanActivate {
 
   canActivate(): boolean {
     const userData = this.apiService.auth_user();
-    console.log(userData.dias_faltantes);
     
     if (!userData) {
       this.router.navigate(['/login']);

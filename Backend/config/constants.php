@@ -18,7 +18,7 @@ return [
     'ESTADO_SUSCRIPCION_CANCELADO' => 'Cancelado',
     'ESTADO_SUSCRIPCION_PENDIENTE' => 'Pendiente',
     'ESTADO_SUSCRIPCION_RENOVADO' => 'Renovado',
-    'ESTADO_SUSCRIPCION_EN_PRUEBA' => 'en prueba',
+    'ESTADO_SUSCRIPCION_EN_PRUEBA' => 'n prueba',
 
     'ESTADO_ORDEN_PAGO_PENDIENTE' => 'Pendiente',
     'ESTADO_ORDEN_PAGO_RECHAZADO' => 'Rechazada',

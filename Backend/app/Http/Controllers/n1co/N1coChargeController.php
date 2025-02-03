@@ -106,25 +106,25 @@ class N1coChargeController extends Controller
                     Log::info('Datos de la orden de pago', [
                         'charge_data' => $chargeData
                     ]);
-        
+
                     $chargeResult = $this->n1coGateway->createCharge($chargeData);
-        
+
                     Log::info('Resultado de la creación del cargo', [
                         'charge_result' => $chargeResult
                     ]);
-        
-        
+
+
                     if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
                         $authenticationId = $chargeResult['data']['authentication']['id'];
                         $authenticationUrl = $chargeResult['data']['authentication']['url'];
-        
+
                         $ordenPago->updateStatusAuthentication3DS($authenticationId, $authenticationUrl, config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'));
-        
-        
+
+
                         Log::info('ID de autenticación 3DS', [
                             'authentication_id' => $authenticationId
                         ]);
-        
+
                         return response()->json([
                             'success' => true,
                             'requires_3ds' => true,
@@ -134,8 +134,6 @@ class N1coChargeController extends Controller
                         ]);
                     }
                 }
-
-
             } else {
                 $paymentData = [
                     'customer' => [
@@ -174,11 +172,10 @@ class N1coChargeController extends Controller
                     'es_predeterminado' => true,
                     'esta_activo' => true
                 ]);
-
             }
-            
+
             $plan = Plan::find($request->input('plan.id_plan'));
-            
+
             $order = OrdenPago::create([
                 'id_usuario' => $request->input('customer.id'),
                 'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
@@ -275,6 +272,112 @@ class N1coChargeController extends Controller
         }
     }
 
+    public function updateMethodPayment(Request $request)
+    {
+        try {
+            // Validación de los datos de entrada
+            $validator = Validator::make($request->all(), [
+                'customer.id' => 'required|integer',
+                'customer.name' => 'required|string',
+                'customer.email' => 'required|email',
+                'customer.phoneNumber' => 'required|string',
+                'card.number' => 'required|string|min:13|max:16',
+                'card.expirationMonth' => 'required|string|size:2|in:01,02,03,04,05,06,07,08,09,10,11,12',
+                'card.expirationYear' => 'required|string|size:2',
+                'card.cvv' => 'required|string|min:3|max:4',
+                'card.cardHolder' => 'required|string|min:3',
+                'billingInfo.countryCode' => 'required|string',
+                'billingInfo.stateCode' => 'required|string',
+                'billingInfo.zipCode' => 'required|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Primero crear el nuevo método de pago
+            $paymentData = [
+                'customer' => [
+                    'id' => $request->input('customer.id'),
+                    'name' => $request->input('customer.name'),
+                    'email' => $request->input('customer.email'),
+                    'phoneNumber' => $request->input('customer.phoneNumber')
+                ],
+                'card' => [
+                    'number' => preg_replace('/\s+/', '', $request->input('card.number')),
+                    'expirationMonth' => $request->input('card.expirationMonth'),
+                    'expirationYear' => "20" . $request->input('card.expirationYear'),
+                    'cvv' => $request->input('card.cvv'),
+                    'cardHolder' => $request->input('card.cardHolder')
+                ]
+            ];
+
+            $result = $this->n1coGateway->createPaymentMethod($paymentData);
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al crear nuevo método de pago',
+                    'error' => $result['error']
+                ], 500);
+            }
+
+            // Buscar y actualizar el método de pago existente
+            $customerId = $request->input('customer.id');
+            $metodoPagoAnterior = MetodoPago::where('id_usuario', $customerId)
+                ->where('esta_activo', true)
+                ->where('es_predeterminado', true)
+                ->first();
+
+            // Desactivar método de pago anterior si existe
+            if ($metodoPagoAnterior) {
+                $metodoPagoAnterior->update([
+                    'esta_activo' => false,
+                    'es_predeterminado' => false
+                ]);
+            }
+
+            // Crear nuevo registro de método de pago
+            $metodoPago = MetodoPago::create([
+                'id_usuario' => $customerId,
+                'id_tarjeta' => $result['data']['id'],
+                'marca_tarjeta' => $result['data']['bin']['brand'],
+                'ultimos_cuatro' => substr($request->input('card.number'), -4),
+                'titular_tarjeta' => $request->input('card.cardHolder'),
+                'nombre_emisor' => $result['data']['bin']['issuerName'],
+                'codigo_pais' => $result['data']['bin']['countryCode'],
+                'codigo_estado' => $request->input('billingInfo.stateCode'),
+                'codigo_postal' => $request->input('billingInfo.zipCode'),
+                'es_predeterminado' => true,
+                'esta_activo' => true
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Método de pago actualizado exitosamente',
+                'data' => [
+                    'cardId' => $result['data']['id'],
+                    'brand' => $result['data']['bin']['brand'],
+                    'lastDigits' => substr($request->input('card.number'), -4)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en updateMethodPayment:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el método de pago',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function processCharge(Request $request)
     {

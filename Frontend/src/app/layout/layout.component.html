@@ -9,7 +9,7 @@
   <div class="content p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <div class="container-fluid p-0 m-0">
       <!-- Barra de estado de suscripción -->
-      <ng-container *ngIf="usuario.dias_faltantes !== null">
+      <ng-container *ngIf="usuario.dias_faltantes !== null && usuario.tiene_suscripcion">
         <!-- Período de prueba -->
         <div *ngIf="usuario.estado_suscripcion === ESTADOS_SUSCRIPCION.EN_PRUEBA" 
              class="alert bg-warning text-dark rounded-0 m-0 p-2 text-center">
@@ -66,6 +66,16 @@
           </a>
         </div>
       </ng-container>
+      <ng-container *ngIf="!usuario.tiene_suscripcion">
+        <div class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
+          <a (click)="RedirectSuscripcion()" class="text-decoration-none text-dark">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            No cuentas con una suscripción activa. 
+            <a href="/suscripcion" class="fw-bold text-decoration-none text-dark">Haz clic aquí para activar tu suscripción.</a>
+          </a>
+        </div>
+      </ng-container>
+
     </div>
 
     <app-header></app-header>

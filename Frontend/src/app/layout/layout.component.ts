@@ -29,33 +29,48 @@ export class LayoutComponent  {
     }
 
     getMensajeSuscripcion(): { mensaje: string, tipo: string } {
+        // Verificar si el usuario existe y tiene la propiedad tiene_suscripcion
+        if (!this.usuario || !this.usuario.hasOwnProperty('tiene_suscripcion') || !this.usuario.tiene_suscripcion) {
+            return {
+                mensaje: 'No cuentas con una suscripción activa. Haz clic aquí para activar tu suscripción y acceder a todas las funcionalidades.',
+                tipo: 'error'
+            };
+        }
+
         const diasRestantes = this.usuario.dias_faltantes;
+
+        if (diasRestantes === null || diasRestantes === undefined) {
+            return {
+                mensaje: 'No se pudo determinar el estado de tu suscripción. Por favor, contacta con soporte técnico.',
+                tipo: 'error'
+            };
+        }
 
         if (diasRestantes > 7) {
             return {
-            mensaje: `Tu suscripción vencerá en ${diasRestantes} días`,
-            tipo: 'info'
+                mensaje: `Tu suscripción vencerá en ${diasRestantes} días`,
+                tipo: 'info'
             };
         }
         
         if (diasRestantes <= 7 && diasRestantes > 3) {
             return {
-            mensaje: 'Tu suscripción está por vencer. Por favor, renueva ahora.',
-            tipo: 'warning'
+                mensaje: 'Tu suscripción está por vencer. Por favor, renueva ahora.',
+                tipo: 'warning'
             };
         }
         
         if (diasRestantes <= 3 && diasRestantes > 0) {
             return {
-            mensaje: '¡Atención! Tu suscripción vencerá muy pronto.',
-            tipo: 'error'
+                mensaje: '¡Atención! Tu suscripción vencerá muy pronto.',
+                tipo: 'error'
             };
         }
         
         if (diasRestantes === 0) {
             return {
-            mensaje: 'Tu suscripción ha vencido. Renueva ahora para continuar usando el servicio.',
-            tipo: 'error'
+                mensaje: 'Tu suscripción ha vencido. Renueva ahora para continuar usando el servicio.',
+                tipo: 'error'
             };
         }
 
@@ -63,8 +78,8 @@ export class LayoutComponent  {
         const diasVencidos = Math.abs(diasRestantes);
         if (diasVencidos >= 10) {
             return {
-            mensaje: 'Tu cuenta ha sido desactivada por falta de pago.',
-            tipo: 'error'
+                mensaje: 'Tu cuenta ha sido desactivada por falta de pago.',
+                tipo: 'error'
             };
         }
         
@@ -77,16 +92,16 @@ export class LayoutComponent  {
     mostrarAlertaSuscripcion() {
         const alerta = this.getMensajeSuscripcion();
         if (alerta.tipo === 'error') {
-          this.alertService.error(alerta.mensaje);
+            this.alertService.error(alerta.mensaje);
         } else if (alerta.tipo === 'warning') {
-          this.alertService.warning(alerta.mensaje, true);
+            this.alertService.warning(alerta.mensaje, true);
         } else {
-          this.alertService.info(alerta.mensaje, true);
+            this.alertService.info(alerta.mensaje, true);
         }
-      }
+    }
 
-      shouldShowRenovarButton(): boolean {
-        return this.usuario.dias_faltantes <= 7;
-      }
+    shouldShowRenovarButton(): boolean {
+        return !this.usuario.tiene_suscripcion || this.usuario.dias_faltantes <= 7;
+    }
 
 }

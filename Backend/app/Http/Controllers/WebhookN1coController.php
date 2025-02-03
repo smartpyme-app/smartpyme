@@ -85,6 +85,10 @@ class WebhookN1coController extends Controller
                 case 'ReverseError':
                     return $this->handleReverseError($payload);
 
+                case 'Requires3ds':
+                    return $this->handleRequires3ds($payload);
+    
+
                 case 'ThreeDSecureAuthSucceeded':
                     return $this->handle3DSAuthSuccess($payload);
 
@@ -131,7 +135,7 @@ class WebhookN1coController extends Controller
                 ]);
 
                 $ordenPago->update([
-                    'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'),
+                    'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
                     'item_id' => $metadata['orderDetail'][0]['itemId'] ?? null,
                     'fecha_transaccion' => Carbon::parse($metadata['TransactionDate'])->format('Y-m-d H:i:s'),
                     'payment_id' => $metadata['PaymentId'],
@@ -150,7 +154,8 @@ class WebhookN1coController extends Controller
                             'fecha_ultimo_pago' => now(),
                             'fecha_proximo_pago' => now()->addMonth(),
                             'id_pago' => $metadata['PaymentId'],
-                            'id_orden' => $payload['orderId']
+                            'id_orden' => $payload['orderId'],
+                            'monto' => $ordenPago->monto
                         ]
                     );
 
@@ -220,6 +225,13 @@ class WebhookN1coController extends Controller
     {
         Log::info('N1co Webhook: Payment reversed successfully', ['orderId' => $payload['orderId']]);
         // Implementar lógica para reversión exitosa
+        return response()->json(['status' => 'success']);
+    }
+
+    private function handleRequires3ds($payload)
+    {
+        Log::info('N1co Webhook: Payment requires 3DS', ['orderId' => $payload['orderId']]);
+     
         return response()->json(['status' => 'success']);
     }
 

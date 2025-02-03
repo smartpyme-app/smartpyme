@@ -191,6 +191,11 @@ class N1coGateway extends BasePaymentGateway
             ]);
 
             if ($response->successful()) {
+
+                Log::info('Resultado del cargo', [
+                    'result' => $response->json()
+                ]);
+
                 $result = $response->json();
                 if ($result['status'] === 'SUCCEEDED') {
                     $ordenPago = OrdenPago::where('id_orden', $result['order']['reference'])->first();
