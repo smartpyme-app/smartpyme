@@ -23,7 +23,7 @@ class DocumentosController extends Controller
     {
 
         $documentos = Documento::where('nombre', $request->nombre)
-           ->where('activo', false)
+            ->where('activo', false)
 
             ->orderBy('id_sucursal', 'asc')
             ->paginate($request->paginate);
@@ -50,49 +50,81 @@ class DocumentosController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'nombre'        => 'required|max:255',
             'correlativo'   => 'required|max:255',
             'rangos'        => 'sometimes|max:255',
-            'numero_autorizacion'         => 'sometimes|max:255',
-            'resolucion'         => 'sometimes|max:255',
-            'nota'         => 'sometimes|max:500',
+            'numero_autorizacion' => 'sometimes|max:255',
+            'resolucion'    => 'sometimes|max:255',
+            'nota'          => 'sometimes|max:500',
             'id_empresa'    => 'required|numeric',
-            'id_sucursal'    => 'required|numeric'
+            'id_sucursal'   => 'required|numeric',
+            'nuevaResolucion' => 'sometimes|boolean',
         ]);
 
-        if ($request->id) {
-            $documento = Documento::findOrFail($request->id);
-        } else {
-            $documento = new Documento;
+        try {
+            if ($request->id) {
+                $documento = Documento::findOrFail($request->id);
 
-            $existe = Documento::where('id_sucursal', $request->id_sucursal)->where('nombre', $request->nombre)->first();
+                if ($request->nuevaResolucion) {
 
-            if ($existe)
-                return  Response()->json(['error' => 'Ya ha sido agregado el documento', 'code' => 400], 400);
-        }
+                    $documento->update([
+                        'activo' => false,
+                        'predeterminado' => false
+                    ]);
 
 
-        // Solo colocar un documento predeterminado por sucursal
-        if ($request->id) {
+                    Documento::where('id_sucursal', $request->id_sucursal)
+                        ->where('nombre', $request->nombre)
+                        ->update([
+                            'predeterminado' => false,
+                            'activo' => false
+                        ]);
 
-            $documentos = Documento::where('id_sucursal', $documento->id_sucursal)
-                ->where('predeterminado', true)
-                ->where('id', '!=', $documento->id)
-                ->get();
 
-            foreach ($documentos as $doc) {
-                $doc->predeterminado = false;
-                $doc->save();
+                    $documento = new Documento;
+                    $documento->fill($request->all());
+                    $documento->save();
+                } else {
+
+                    $existe = Documento::where('id_sucursal', $request->id_sucursal)
+                        ->where('nombre', $request->nombre)
+                        ->where('id', '!=', $request->id)
+                        ->first();
+
+                    if ($existe) {
+                        return response()->json([
+                            'error' => 'Ya ha sido agregado el documento',
+                            'code' => 400
+                        ], 400);
+                    }
+
+                    $documento->fill($request->all());
+                    $documento->save();
+                }
+            } else {
+
+                Documento::where('id_sucursal', $request->id_sucursal)
+                    ->where('nombre', $request->nombre)
+                    ->update([
+                        'predeterminado' => false,
+                        'activo' => false
+                    ]);
+
+
+                $documento = new Documento;
+                $documento->fill($request->all());
+                $documento->save();
             }
+
+            return response()->json($documento, 200);
+        } catch (\Exception $e) {
+            Log::error('Error al guardar documento: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al procesar la solicitud',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-
-        $documento->fill($request->all());
-        $documento->save();
-
-        return Response()->json($documento, 200);
     }
 
     public function delete($id)

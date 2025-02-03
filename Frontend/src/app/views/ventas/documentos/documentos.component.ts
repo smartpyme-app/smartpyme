@@ -18,6 +18,8 @@ export class DocumentosComponent implements OnInit {
     public filtro:any = {};
     public filtrado:boolean = false;
 
+    public nuevaResolucion:boolean = false;
+
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
@@ -38,8 +40,10 @@ export class DocumentosComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, documento:any) {
+    public openModal(template: TemplateRef<any>, documento:any, nuevaResolucion:boolean) {
         this.documento = documento;
+      
+        this.nuevaResolucion = nuevaResolucion;
         if (!this.documento.id) {
             this.documento.id_empresa = this.apiService.auth_user().id_empresa;
             this.documento.id_sucursal = this.apiService.auth_user().id_sucursal;
@@ -51,6 +55,16 @@ export class DocumentosComponent implements OnInit {
         }, error => {this.alertService.error(error);});
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+    
+        if (nuevaResolucion) {
+            this.documento.correlativo = '';
+            this.documento.rangos = '';
+            this.documento.numero_autorizacion = '';
+            this.documento.resolucion = '';
+            this.documento.fecha = '';
+            this.documento.activo = true;
+            this.documento.nota = '';
+        }
     }
 
     public setEstado(documento:any){
@@ -60,6 +74,7 @@ export class DocumentosComponent implements OnInit {
 
     public onSubmit(){
         this.loading = true;
+        this.documento.nuevaResolucion = this.nuevaResolucion;
         this.apiService.store('documento', this.documento).subscribe(documento => {
             if (!this.documento.id) {
                 this.documentos.push(documento);

@@ -84,7 +84,7 @@
                              
                             
                             <!-- agregar nueva resolucion -->
-                            <a class="btn btn-light" (click)="openModal(mresolucion, documento)" tooltip="Agregar nueva resolución">
+                            <a class="btn btn-light" (click)="openModal(mresolucion, documento,true)" tooltip="Agregar nueva resolución">
                                 <i class="fa fa-plus"></i>
                             </a>
                         </td>
@@ -191,7 +191,7 @@
           <div class="row">
               <div class="form-group col-md-6">
                   <label for="documento.nombre">Nombre</label>
-                  <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre">
+                  <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre" [disabled]="nuevaResolucion">
                       <option value="Factura">Factura</option>
                       <option value="Crédito fiscal">Crédito fiscal</option>
                       <option value="Ticket">Ticket</option>
@@ -206,7 +206,7 @@
               </div>
               <div class="form-group col-md-6">
                   <label for="id_sucursal">Sucursal</label>
-                  <select name="id_sucursal" [(ngModel)]="documento.id_sucursal" class="form-select">
+                  <select name="id_sucursal" [(ngModel)]="documento.id_sucursal" class="form-select" [disabled]="nuevaResolucion">
                       <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
                           {{ sucursal.nombre }}
                       </option>
