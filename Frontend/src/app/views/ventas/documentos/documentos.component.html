@@ -68,25 +68,33 @@
                             </select>
                         </td> -->
                         <td>
-                            <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}">
+                            <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}" disabled>
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
-                            <a class="btn btn-light" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
-                                <i class="fa fa-pencil-alt"></i>
-                            </a>
 
-                            <a  routerLink="/documento/historial/{{documento.nombre}}" class="btn btn-light" tooltip="Ver historial">
-                                <i class="fa fa-right-left"></i> 
-                            </a>
-                             
-                            
-                            <!-- agregar nueva resolucion -->
-                            <a class="btn btn-light" (click)="openModal(mresolucion, documento,true)" tooltip="Agregar nueva resolución">
-                                <i class="fa fa-plus"></i>
-                            </a>
+                        <td class="text-center" *ngIf="apiService.canEdit()">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+
+                                    <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
+                                        <i class="fa fa-pencil-alt"></i> Ver y editar
+                                    </a>
+
+                                    <a  routerLink="/documento/historial/{{documento.nombre}}" class="list-group-item list-group-item-action border-0 click" tooltip="Ver historial">
+                                        <i class="fa fa-right-left"></i> Ver historial
+                                    </a>
+                                    <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mresolucion, documento,true)" tooltip="Agregar nueva resolución">
+                                        <i class="fa fa-plus"></i> Nueva resolución
+                                    </a>
+
+
+                                </div>
+                            </ng-template>
                         </td>
 
                     </tr>
