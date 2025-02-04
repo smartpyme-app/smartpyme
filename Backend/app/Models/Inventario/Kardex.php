@@ -24,7 +24,7 @@ class Kardex extends Model {
         'id_usuario',
     );
 
-    protected $appends = ['nombre_usuario', 'nombre_producto', 'nombre_bodega', 'modelo', 'modelo_detalle'];
+    protected $appends = ['nombre_usuario', 'nombre_producto', 'modelo', 'modelo_detalle'];
 
     public function getNombreUsuarioAttribute()
     {
@@ -34,11 +34,6 @@ class Kardex extends Model {
     public function getNombreProductoAttribute()
     {
         return  $this->producto()->first() ? $this->producto()->pluck('nombre')->first() : '';
-    }
-
-    public function getNombreBodegaAttribute()
-    {
-        return  $this->inventario()->first() ? $this->inventario()->first()->nombre : '';
     }
 
     public function getModeloDetalleattribute(){
@@ -94,7 +89,7 @@ class Kardex extends Model {
     }
 
     public function inventario(){
-        return $this->belongsTo('App\Models\Inventario\Inventario','id_inventario');
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_inventario');
     }
 
     public function producto(){

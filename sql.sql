@@ -1,27 +1,3 @@
--- Bodegas
-
-CREATE TABLE sucursal_bodegas AS SELECT * FROM sucursales;
-ALTER TABLE sucursal_bodegas ADD PRIMARY KEY(id);
-
-ALTER TABLE `sucursal_bodegas`
-  DROP `telefono`,
-  DROP `correo`,
-  DROP `municipio`,
-  DROP `departamento`,
-  DROP `direccion`;
-
-ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
-UPDATE sucursal_bodegas SET id_sucursal=id;
-
-
-ALTER TABLE ajustes CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-ALTER TABLE traslados CHANGE id_sucursal_de id_bodega_de INT(11) NULL DEFAULT NULL;
-ALTER TABLE traslados CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-
-ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-
-ALTER TABLE devoluciones_compras ADD id_bodega INT NOT NULL after id_sucursal;
-ALTER TABLE devoluciones_ventas ADD id_bodega INT NOT NULL after id_sucursal;
-
-ALTER TABLE users ADD id_bodega INT NOT NULL after id_sucursal;
-UPDATE users SET id_bodega=id_sucursal;
+-- Costo promedio
+ALTER TABLE productos ADD costo_promedio decimal(10,2) NOT NULL default 0 after costo;
+ALTER TABLE empresas ADD valor_inventario varchar(255) NOT NULL default 'ultimo' after vender_sin_stock;

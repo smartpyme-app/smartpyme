@@ -9,7 +9,7 @@ use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\KardexExport;
+use App\Exports\Inventario\KardexExport;
 
 class KardexController extends Controller
 {
