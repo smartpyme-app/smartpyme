@@ -3,11 +3,10 @@
   <!-- <button (click)="openModal(msuscripcion)"  tooltip="Cancelar suscripción" class="btn btn-danger tcla-F4"><i class="fa fa-ban"></i> Cancelar suscripción</button> -->
   <button
     (click)="openModal(mmetodoPago)"
-    tooltip="Actualizar metodo de pago"
+    tooltip="{{usuario?.tiene_suscripcion ? 'Actualizar metodo de pago' : 'Pagar suscripción'}}"
     class="btn btn-sm btn-primary tcla-F3"
-    *ngIf="suscripcion?.suscripcion?.estado == 'Activo'"
   >
-    <i class="fa-regular fa-credit-card"></i> Actualizar Metodo de Pago
+    <i class="fa-regular fa-credit-card"></i> {{usuario?.tiene_suscripcion ? 'Actualizar Metodo de Pago' : 'Pagar suscripción'}}
   </button>
 </section>
 
@@ -131,7 +130,7 @@
 <ng-template #mmetodoPago>
   <div class="modal-header">
     <div class="modal-title">
-      <h4 class="text-center">Actualizar metodo de pago</h4>
+      <h4 class="text-center">{{suscripcion?.metodoPago ? 'Actualizar metodo de pago' : 'Pagar suscripción'}}</h4>
     </div>
     <button
       type="button"
@@ -144,7 +143,7 @@
     <form #updatePaymentForm="ngForm" (ngSubmit)="onUpdatePaymentMethod()">
       <div class="row">
         <app-notificaciones-container></app-notificaciones-container>
-        <div class="col-md-12 mb-4" *ngIf="!showUpdateForm">
+        <div class="col-md-12 mb-4" *ngIf="!showUpdateForm && suscripcion?.metodoPago">
           <h7 class="text-start text-dark fw-bold">Método de pago actual</h7>
           <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
@@ -168,7 +167,7 @@
         </div>
 
         <div class="form-group col-md-12">
-          <div class="payment-form" *ngIf="showUpdateForm">
+          <div class="payment-form" *ngIf="showUpdateForm || !suscripcion?.metodoPago">
             <!-- Número de tarjeta -->
             <div class="mb-3">
               <label class="form-label">Número de Tarjeta</label>
@@ -403,7 +402,7 @@
         </div>
       </div>
 
-      <div class="d-grid gap-2 mt-3" *ngIf="showUpdateForm">
+      <div class="d-grid gap-2 mt-3" *ngIf="showUpdateForm || !suscripcion?.metodoPago">
         <button
           type="submit"
           class="btn btn-primary"
@@ -416,6 +415,7 @@
           type="button"
           class="btn btn-outline-secondary"
           (click)="showUpdateForm = false"
+          *ngIf="suscripcion?.metodoPago"
         >
           Cancelar
         </button>
