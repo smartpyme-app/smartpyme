@@ -68,7 +68,7 @@
                             </select>
                         </td>
                         <td>
-                            <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}" disabled>
+                            <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}" >
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>
