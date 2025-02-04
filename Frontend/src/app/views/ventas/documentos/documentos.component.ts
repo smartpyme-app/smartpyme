@@ -19,6 +19,7 @@ export class DocumentosComponent implements OnInit {
     public filtrado:boolean = false;
 
     public nuevaResolucion:boolean = false;
+    public change:boolean = false;
 
     modalRef!: BsModalRef;
 
@@ -67,8 +68,9 @@ export class DocumentosComponent implements OnInit {
         }
     }
 
-    public setEstado(documento:any){
+    public setEstado(documento:any,change:boolean = false){
         this.documento = documento;
+        this.documento.change = change;
         this.onSubmit();
     }
 

@@ -40,7 +40,7 @@
                         <th>Sucursal</th>
                         <th>Nombre</th>
                         <th>Correlativo</th>
-                        <!-- <th>Predeterminado</th> -->
+                        <th>Predeterminado</th>
                         <th>Estado</th>
                         <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
@@ -61,12 +61,12 @@
                         <td>{{documento.nombre_sucursal}}</td>
                         <td>{{documento.nombre }}</td>
                         <td>{{documento.correlativo}}</td>
-                        <!-- <td>
-                            <select name="predeterminado" [(ngModel)]="documento.predeterminado" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.predeterminado == 0, 'bg-light-success' : documento.predeterminado == 1}">
+                        <td>
+                            <select name="predeterminado" [(ngModel)]="documento.predeterminado" class="form-select w-auto border-0" (change)="setEstado(documento,true)" [ngClass]="{'bg-light-danger' : documento.predeterminado == 0, 'bg-light-success' : documento.predeterminado == 1}">
                                 <option value="1">Si</option>
                                 <option value="0">No</option>
                             </select>
-                        </td> -->
+                        </td>
                         <td>
                             <select name="activo" [(ngModel)]="documento.activo" class="form-select w-auto border-0" (change)="setEstado(documento)" [ngClass]="{'bg-light-danger' : documento.activo == 0, 'bg-light-success' : documento.activo == 1}" disabled>
                                 <option value="1">Activo</option>
