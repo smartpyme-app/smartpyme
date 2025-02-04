@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\SucursalesController;
     Route::post('/sucursal',                [SucursalesController::class, 'store'])->middleware('limite.sucursales');
     Route::get('/sucursal/{id}',            [SucursalesController::class, 'read']);
     Route::delete('/sucursal/{id}',         [SucursalesController::class, 'delete']);
+    Route::get('/marcas/list',              [SucursalesController::class, 'listaMarcas']);
 
 
 ?>

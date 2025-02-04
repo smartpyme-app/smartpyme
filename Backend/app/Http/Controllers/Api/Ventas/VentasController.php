@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Ventas;
 
+use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -152,8 +153,33 @@ class VentasController extends Controller
 
             $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
 
-            // Anular venta y regresar stock
-            if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
+                // Anular venta y regresar stock
+                if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($venta, $detalle->cantidad * -1);
+                    }
+
+                    // Inventario compuestos
+                    foreach ($detalle->composiciones()->get() as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                                    ->where('id_bodega', $venta->id_bodega)->first();
+
+                        if ($inventario) {
+                            $inventario->stock += $detalle->cantidad * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                        }
+                    }
+
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Cancelado';
+                        $abono->save();
+                    }
 
                 if ($inventario) {
                     $inventario->stock += $detalle->cantidad;
@@ -170,7 +196,26 @@ class VentasController extends Controller
                     if ($inventario) {
                         $inventario->stock += $detalle->cantidad * $comp->cantidad;
                         $inventario->save();
-                        $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
+                        $inventario->kardex($venta, $detalle->cantidad);
+                    }
+
+                    // Inventario compuestos
+                    foreach ($detalle->composiciones()->get() as $comp) {
+
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                                    ->where('id_bodega', $venta->id_bodega)->first();
+
+                        if ($inventario) {
+                            $inventario->stock -= $detalle->cantidad * $comp->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($venta, ($detalle->cantidad * $comp->cantidad));
+                        }
+                    }
+
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Confirmado';
+                        $abono->save();
                     }
                 }
 
@@ -886,4 +931,20 @@ class VentasController extends Controller
 
         return Excel::download($ventas, 'ventas-detalles.xlsx');
     }
+
+    public function acumuladoExport(Request $request){
+
+       //enviar id de la empresa en el request
+
+       $user = JWTAuth::parseToken()->authenticate();
+         $request->request->add(['id_empresa' => $user->id_empresa]);
+        $ventas = new VentasAcumuladoExport();
+        $ventas->filter($request);
+
+        return Excel::download($ventas, 'corte.xlsx');
+    }
+
+    
+
+
 }
