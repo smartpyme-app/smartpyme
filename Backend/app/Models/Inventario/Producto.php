@@ -20,6 +20,7 @@ class Producto extends Model {
         'precio',
         'costo',
         'costo_anterior',
+        'costo_promedio',
         'id_categoria',
         'id_subcategoria',
         'marca',

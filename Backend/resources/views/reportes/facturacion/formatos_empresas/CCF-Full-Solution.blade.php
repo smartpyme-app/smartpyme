@@ -39,35 +39,35 @@
 
 
 
-        table   {position: absolute; top: 5.6cm; left: 1cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 5.6cm; left: 1cm; text-align: left; border-collapse: collapse; width: 18cm;}
         table td{height: 0.6cm; text-align: left;}
 
         .codigobarra{ width: 1.7cm; text-align: center;}
         .codigo{ width: 1.7cm; text-align: center;}
         .cantidad{ width: 1.6cm; text-align: center;}
         .producto{ width: 8cm; text-align: left;}
-        .precio{ width: 1cm; text-align: center;}
-        .descuento{ width: 1cm; text-align: center;}
-        .sujetas{ width: 1cm; text-align: center;}
-        .exentas{ width: 1cm; text-align: center;}
+        .precio{ width: 1cm; text-align: right;}
+        .descuento{ width: 1.2cm; text-align: right;}
+        .sujetas{ width: 0.9cm; text-align: right;}
+        .exentas{ width: 0.9cm; text-align: right;}
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {top: 15cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
+        #letras     {font-size:11px; top: 15.1cm; left: 2cm; width: 10cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 12.5cm; left: 18cm; width: 2cm; text-align: right;}
-        #iva        {top: 12.9cm; left: 18cm; width: 2cm; text-align: right;}
-        #subtotal   {top: 13.3cm; left: 18cm; width: 2cm; text-align: right;}
-        #iva_retenido  {top: 13.7cm; left: 18cm; width: 2cm; text-align: right;}
-        #no_sujeta  {top: 14.1cm; left: 18cm; width: 2cm; text-align: right;}
-        #exenta     {top: 14.6cm; left: 18cm; width: 2cm; text-align: right;}
-        #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right;}
+        #suma       {top: 12.9cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
+        #iva        {top: 13.3cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
+        #subtotal   {top: 13.7cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
+        #iva_retenido  {top: 14cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
+        #no_sujeta  {top: 14.3cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
+        #exenta     {top: 14.6cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
+        #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
 
-        #text_suma       {top: 12.5cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva        {top: 12.9cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_subtotal   {top: 13.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva_retenido  {top: 13.7cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_no_sujeta  {top: 14.1cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_suma       {top: 12.9cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva        {top: 13.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_subtotal   {top: 13.7cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva_retenido  {top: 14cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_no_sujeta  {top: 14.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
         #text_exenta     {top: 14.6cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
         #text_total      {top: 15cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
 

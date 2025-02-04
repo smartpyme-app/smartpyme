@@ -293,6 +293,29 @@ class ComprasController extends Controller
                 }
 
                 $detalle->save();
+
+                if (!$request->id) {
+                    $producto = $detalle->producto()->with('inventarios')->first();
+                    if ($producto) {
+                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $det['cantidad'];
+                        $stock_actual = $det['cantidad']; // Cantidad comprada
+                        $stock_total = $stock_anterior + $stock_actual; // Nuevo stock total
+
+                        // Evitar división por cero
+                        if ($stock_total > 0) {
+                            $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $det['costo'])) / $stock_total;
+                        } else {
+                            $costo_promedio = $det['costo'];
+                        }
+
+                        $producto->costo_anterior   = $producto->costo;
+                        $producto->costo            = $det['costo'];
+                        $producto->costo_promedio   = $costo_promedio;
+                        $producto->save();
+                    }
+
+                }
+
             }
             //actualizar orden de compra
             if ($compra->num_orden_compra) {

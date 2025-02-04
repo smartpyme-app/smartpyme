@@ -5,6 +5,8 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Auth;
+
 class Inventario extends Model {
 
     use SoftDeletes;
@@ -117,12 +119,18 @@ class Inventario extends Model {
             // return null;
         }
 
+        $producto = $this->producto()->first();
+
         if (!$precio) {
-            $precio = $this->producto()->pluck('precio')->first();
+            $precio = $producto->precio;
         }
 
         if (!$costo) {
-            $costo = $this->producto()->pluck('costo')->first();
+            if(Auth::user()->empresa->valor_inventario == 'promedio' && $producto->costo_promedio > 0){
+                $costo = $producto->costo_promedio;
+            }else{
+                $costo = $producto->costo;
+            }
         }
 
         Kardex::create([
@@ -131,14 +139,14 @@ class Inventario extends Model {
             'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
             'referencia'        => $modelo->id,
-            'precio_unitario'   => $salidaCantidad ? $precio : null,
-            'costo_unitario'    => $entradaCantidad ? $costo : null,
+            'precio_unitario'   => $precio,
+            'costo_unitario'    => $costo,
             'entrada_cantidad'  => $entradaCantidad,
             'entrada_valor'     => $entradaCantidad ? $entradaCantidad * $costo : null,
             'salida_cantidad'   => $salidaCantidad,
             'salida_valor'      => $salidaCantidad ? $salidaCantidad * $precio : null,
             'total_cantidad'    => $this->stock,
-            'total_valor'       => $this->stock * ($salidaCantidad ? $precio : $costo),
+            'total_valor'       => $this->stock * $costo,
             'id_usuario'        => $modelo->id_usuario,
         ]);
     }
