@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
+use App\Models\Plan;
 use App\Models\Transaccion;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -156,7 +157,8 @@ class EmpresasController extends Controller
         
         $usuario = User::where('id_empresa', $empresa->id)->firstOrFail();
 
-        $plan = $usuario->suscripciones()->first()->plan;
+        $plan = $usuario->suscripciones()->first()->plan ?? Plan::where('nombre',(Empresa::find($usuario->id_empresa)->plan))->first();
+
         $usuario->plan = [
             'id' => $plan->id,
             'nombre' => $plan->nombre,
@@ -172,7 +174,7 @@ class EmpresasController extends Controller
         $dataResponse = [
             'suscripcion' => $suscripcion,
             'pagos' => $pagos,
-            'plan' => $plan,
+            'plan' => $usuario->plan,
             'metodoPago' => $metodoPago
         ];
 

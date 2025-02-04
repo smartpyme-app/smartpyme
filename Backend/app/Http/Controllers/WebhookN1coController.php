@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrdenPago;
+use App\Models\Plan;
 use App\Models\Suscripcion;
 use App\Models\User;
 use Carbon\Carbon;
@@ -144,12 +145,17 @@ class WebhookN1coController extends Controller
 
                 // Buscar el usuario
                 $user = User::find($ordenPago->id_usuario);
+                $plan = Plan::find($ordenPago->id_plan);
+                $tipoPlan = $plan->duracion_dias == 30 ? 'Mensual' : $plan->tipo_plan;
 
                 if ($user) {
                     // Actualizar o crear suscripción
                     Suscripcion::updateOrCreate(
                         ['usuario_id' => $user->id],
                         [
+                            'plan_id' => $plan->id,
+                            'tipo_plan' => $tipoPlan,
+                            'empresa_id' => $user->id_empresa,
                             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                             'fecha_ultimo_pago' => now(),
                             'fecha_proximo_pago' => now()->addMonth(),

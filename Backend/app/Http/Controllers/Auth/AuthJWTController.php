@@ -74,9 +74,10 @@ class AuthJWTController extends Controller
         $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
         $user->tiene_suscripcion = !is_null($suscripcion);
         
-        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : 'No tiene suscripción';
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->nombre;
         $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
-
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->precio;
 
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
@@ -603,8 +604,15 @@ class AuthJWTController extends Controller
         return $this->suscripcionService->createSuscripcion($data);
     }
 
-    private function getPlan($plan_id)
+    private function getPlan($plan_id,$withName = false,$name = null)
     {
-        return Plan::find($plan_id);
+       $plan= null;
+        if ($withName) {
+            $plan= Plan::where('nombre',$name)->first();
+        }else{
+            $plan= Plan::find($plan_id);
+        }
+
+        return $plan;
     }
 }

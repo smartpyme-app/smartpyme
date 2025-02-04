@@ -23,7 +23,8 @@ import { SafeResourceUrl } from '@angular/platform-browser';
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.5);
-      z-index: 1050;
+       z-index: 9999;
+      
     }
     .modal-container {
       position: fixed;
@@ -33,7 +34,7 @@ import { SafeResourceUrl } from '@angular/platform-browser';
       background: white;
       padding: 20px;
       border-radius: 8px;
-      z-index: 1051;
+      z-index: 10000;
       width: 90%;
       max-width: 600px;
     }
