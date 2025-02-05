@@ -171,6 +171,21 @@ class DocumentosController extends Controller
                     if ($request->change && $request->predeterminado) {
                         $this->updatePredeterminado($documento->id_sucursal, $documento->id);
                     }
+
+                    $existe = Documento::where('id_sucursal', $request->id_sucursal)
+                        ->where('nombre', $request->nombre)
+                        ->where('id', '!=', $request->id)
+                        ->where('activo', true)
+                        ->first();
+
+                    if ($existe) {
+                        return response()->json([
+                            'error' => 'Ya existe un documento con el mismo nombre',
+                            'message' => 'Ya existe un documento con el mismo nombre'
+                        ], 500);
+                    }
+
+
                     $documento->update($request->all());
                 }
             } else {
