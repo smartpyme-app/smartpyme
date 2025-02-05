@@ -15,11 +15,9 @@ class CustomMigrate extends Command
     protected $migrationsToExecute = [
         // 'create_users_table', //ejemplo
             // 'create_plans_table',
-            // 'create_suscripciones_table',
-            // 'create_orden_pagos_table',
-            // 'create_metodos_pago_table',
-            // 'create_orden_pago_detalles_table',
-            'add_fecha_suscripcion_actual_temporal_to_empresas_table',
+            'create_suscripciones_table',
+            'create_orden_pagos_table',
+            'create_metodos_pago_table',
 
     ];
 

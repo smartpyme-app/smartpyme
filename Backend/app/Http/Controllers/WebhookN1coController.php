@@ -157,6 +157,7 @@ class WebhookN1coController extends Controller
                             'tipo_plan' => $tipoPlan,
                             'empresa_id' => $user->id_empresa,
                             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+                            'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
                             'fecha_ultimo_pago' => now(),
                             'fecha_proximo_pago' => now()->addMonth(),
                             'id_pago' => $metadata['PaymentId'],
@@ -200,11 +201,11 @@ class WebhookN1coController extends Controller
         $user = User::where('email', $userEmail)->first();
 
         if ($user) {
-            $subscription = $user->subscription;
+            $subscription = $user->suscripcion;
             if ($subscription) {
                 $subscription->update([
-                    'status' => 'payment_failed',
-                    'failed_payment_date' => now()
+                    'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_FALLIDO'),
+                    'fecha_ultimo_pago' => now()
                 ]);
             }
 
@@ -334,6 +335,17 @@ class WebhookN1coController extends Controller
                 'authentication_id' => $payload['metadata']['authenticationId'],
             ]);
 
+            $suscripcion = Suscripcion::where('id_orden', $payload['orderReference'])->first();
+
+            $suscripcion->update([
+                'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_FALLIDO'),
+                'fecha_ultimo_pago' => now()
+            ]);
+
+            Log::info('N1co Webhook: Suscripcion actualizada fail', [
+                'suscripcion' => $suscripcion
+            ]);
+
             Log::info('N1co Webhook: Estado de autenticación 3DS actualizado a fallido', [
                 'orderReference' => $payload['orderReference'],
                 'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
@@ -392,6 +404,19 @@ class WebhookN1coController extends Controller
                 'orderReference' => $payload['orderReference'],
                 'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
             ]);
+
+            
+            $suscripcion = Suscripcion::where('id_orden', $payload['orderReference'])->first();
+
+            Log::info('N1co Webhook: Suscripcion encontrada', [
+                'suscripcion' => $suscripcion
+            ]);
+
+            $suscripcion->update([
+                'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_FALLIDO'),
+                'fecha_ultimo_pago' => now()
+            ]);
+
 
             return response()->json([
                 'status' => 'success',

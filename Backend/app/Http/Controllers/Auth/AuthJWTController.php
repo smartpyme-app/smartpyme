@@ -255,6 +255,7 @@ class AuthJWTController extends Controller
                 'monto' => $request['empresa']['total'],
                 'id_pago' => null,
                 'id_orden' => null,
+                'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => null,
                 'fin_periodo_prueba' => now()->addDays($this->getPlan($request['empresa']['plan'])->duracion_dias),
@@ -579,6 +580,7 @@ class AuthJWTController extends Controller
             
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
+                'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
                 'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
                 'fin_periodo_prueba' => now()->addDays($diasPrueba),

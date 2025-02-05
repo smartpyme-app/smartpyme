@@ -66,7 +66,7 @@
           </a>
         </div>
       </ng-container>
-      <ng-container *ngIf="!usuario.tiene_suscripcion">
+      <ng-container *ngIf="!usuario.tiene_suscripcion && usuario.id_empresa != 2">
         <div class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
           <a (click)="RedirectSuscripcion()" class="text-decoration-none text-dark">
             <i class="fas fa-exclamation-circle me-2"></i>

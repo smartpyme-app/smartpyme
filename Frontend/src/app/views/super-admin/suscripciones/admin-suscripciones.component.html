@@ -1,0 +1,162 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Estado de empresas</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="suscripciones?.total">
+                Mostrando {{ suscripciones?.to }} de {{ suscripciones?.total + ' registros' }}
+            </span>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/admin/suscripciones">Todos</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+            <select name="estado" (change)="filtrarSuscripciones()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="activo">Activo</option>
+                <option value="cancelado">Cancelado</option>
+                <option value="vencido">Vencido</option>
+                <option value="prueba">En Prueba</option>
+                <option value="sin_suscripcion">Sin Suscripción</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Plan</th>
+                        <th>Tipo Plan</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                        <th>Estado Pago</th>
+                        <th>Último Pago</th>
+                        <th>Próximo Pago</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="suscripciones?.total < 1 && !loading">
+                            <span class="badge bg-primary">No hay suscripciones registradas</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor="let empresa of suscripciones?.data">
+                        <td>{{empresa.nombre}}</td>
+                        <td>
+                            <span *ngIf="!empresa.suscripcion" class="text-muted">{{empresa.plan}}</span>
+                            <span *ngIf="empresa.suscripcion">{{empresa.suscripcion.plan.nombre}}</span>
+                        </td>
+                        <td>
+                            <span class="text-muted">{{empresa?.tipo_plan}}</span>
+                        </td>
+                        <td>
+                            <span *ngIf="empresa.suscripcion">{{empresa.suscripcion.monto | currency}}</span>
+                            <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
+                        </td>
+                        <td>
+                            <span *ngIf="empresa.suscripcion" class="badge py-2" style="font-size: 0.8rem;" 
+                                [ngClass]="{
+                                    'bg-success': empresa.suscripcion?.estado.toLowerCase() == 'activo',
+                                    'bg-danger': empresa.suscripcion?.estado.toLowerCase() == 'cancelado',
+                                    'bg-warning': empresa.suscripcion?.estado.toLowerCase() == 'vencido',
+                                    'bg-info': empresa.suscripcion?.estado.toLowerCase() == 'en prueba'
+                                }">
+                                {{ empresa.suscripcion.estado }}
+                            </span>
+                            <span *ngIf="!empresa.suscripcion" class="badge py-2 bg-secondary" style="font-size: 0.8rem;">
+                                Sin suscripción
+                            </span>
+                        </td>
+                        <td>
+                            <span *ngIf="empresa.suscripcion?.estado_ultimo_pago" class="badge py-2">
+                                {{ empresa.suscripcion.estado_ultimo_pago }}
+                            </span>
+                            <span *ngIf="!empresa.suscripcion?.estado_ultimo_pago" class="text-muted">-</span>
+                        </td>
+                        <td>
+                            <span *ngIf="empresa.suscripcion">{{empresa.suscripcion.fecha_ultimo_pago | date:'dd/MM/yyyy'}}</span>
+                            <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
+                        </td>
+                        <td>
+                            <span *ngIf="empresa.suscripcion">{{empresa.suscripcion.fecha_proximo_pago | date:'dd/MM/yyyy'}}</span>
+                            <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a *ngIf="empresa.suscripcion" 
+                                       (click)="openDetalles(mdetalles, empresa.suscripcion)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="empresa.suscripcion && empresa.suscripcion.estado != 'cancelado'" 
+                                       (click)="cancelarSuscripcion(empresa.suscripcion)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i>Cancelar suscripción
+                                    </a>
+                                    <a *ngIf="empresa.suscripcion && empresa.suscripcion.estado == 'cancelado'" 
+                                       (click)="activarSuscripcion(empresa.suscripcion)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i>Activar suscripción
+                                    </a>
+                                    <a *ngIf="!empresa.suscripcion" 
+                                       (click)="crearSuscripcion(empresa)" 
+                                       class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-plus"></i>Crear suscripción
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="suscripciones?.last_page > 1">
+            <app-pagination [items]="suscripciones" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mdetalles>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Detalles de Suscripción</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Empresa:</strong> {{suscripcion?.empresa?.nombre}}</p>
+                <p><strong>Plan:</strong> {{suscripcion?.plan?.nombre ?? suscripcion?.empresa?.plan }}</p>
+                <p><strong>Tipo Plan:</strong> {{suscripcion?.tipo_plan}}</p>
+                <p><strong>Monto:</strong> {{suscripcion?.monto | currency}}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Estado:</strong> {{suscripcion?.estado}}</p>
+                <p><strong>Último Pago:</strong> {{suscripcion?.fecha_ultimo_pago | date:'dd/MM/yyyy'}}</p>
+                <p><strong>Próximo Pago:</strong> {{suscripcion?.fecha_proximo_pago | date:'dd/MM/yyyy'}}</p>
+                <p><strong>Fin Periodo Prueba:</strong> {{suscripcion?.fin_periodo_prueba | date:'dd/MM/yyyy'}}</p>
+            </div>
+            <div class="col-12" *ngIf="suscripcion?.motivo_cancelacion">
+                <p><strong>Motivo Cancelación:</strong> {{suscripcion?.motivo_cancelacion}}</p>
+            </div>
+        </div>
+    </div>
+</ng-template>

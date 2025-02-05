@@ -16,6 +16,7 @@ class SuscripcionService
             'monto' => $suscripcionData['monto'],
             'id_pago' => $suscripcionData['id_pago'] ?? null,
             'id_orden' => $suscripcionData['id_orden'] ?? null,
+            'estado_ultimo_pago' => $suscripcionData['estado_ultimo_pago'] ?? null,
             'fecha_ultimo_pago' => $suscripcionData['fecha_ultimo_pago'] ?? null,
             'fecha_proximo_pago' => $suscripcionData['fecha_proximo_pago'] ?? null,
             'fin_periodo_prueba' => $suscripcionData['fin_periodo_prueba'] ?? null,

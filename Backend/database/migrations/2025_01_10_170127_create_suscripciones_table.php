@@ -45,6 +45,7 @@ class CreateSuscripcionesTable extends Migration
             $table->timestamp('fecha_cancelacion')->nullable();
             
             // Campos adicionales
+            $table->string('estado_ultimo_pago')->nullable();
             $table->text('motivo_cancelacion')->nullable();
             $table->integer('intentos_cobro')->default(0);
             $table->timestamp('ultimo_intento_cobro')->nullable();

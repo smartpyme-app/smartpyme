@@ -41,12 +41,12 @@ class N1coChargeController extends Controller
         ]);
     }
 
-    public function createSuscripcion(Request $request)
-    {
-        $user = User::find($request->input('customer.id'));
-        $empresa = Empresa::find($user->id_empresa);
-        $plan = Plan::find($request->input('plan.id_plan'));
-    }
+    // public function createSuscripcion(Request $request)
+    // {
+    //     $user = User::find($request->input('customer.id'));
+    //     $empresa = Empresa::find($user->id_empresa);
+    //     $plan = Plan::find($request->input('plan.id_plan'));
+    // }
 
     public function createPaymentMethod(Request $request)
     {
@@ -73,22 +73,98 @@ class N1coChargeController extends Controller
 
             $customerId = $request->input('customer.id');
             $metodoPago = MetodoPago::where('id_usuario', $customerId)->where('esta_activo', true)->where('es_predeterminado', true)->first();
-            
+
             if ($metodoPago) {
                 Log::info('Método de pago encontrado', [
                     'metodo_pago' => $metodoPago
                 ]);
-            
+
                 $ordenPago = OrdenPago::where('id_usuario', $customerId)
                     ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'))
                     ->first();
-            
+
                 if ($ordenPago) {
-                    // Lógica existente para orden fallida...
+                    if ($ordenPago) {
+                        // Lógica para orden fallida
+                        $chargeData = [
+                            'customer' => [
+                                'name' => $ordenPago->nombre_cliente,
+                                'email' => $ordenPago->email_cliente,
+                                'phoneNumber' => $ordenPago->telefono_cliente
+                            ],
+                            'cardId' => $metodoPago->id_tarjeta,
+                            'order' => [
+                                'id' => $ordenPago->id_orden,
+                                'lineItems' => [
+                                    [
+                                        'product' => [
+                                            'name' => $ordenPago->plan,
+                                            'price' => floatval($ordenPago->monto)
+                                        ],
+                                        'quantity' => 1
+                                    ]
+                                ],
+                                'description' => 'Reintento de pago - ' . $ordenPago->plan,
+                                'name' => $ordenPago->plan
+                            ],
+                            'billingInfo' => [
+                                'countryCode' => $metodoPago->codigo_pais,
+                                'stateCode' => $request->input('billingInfo.stateCode'),
+                                'zipCode' => $request->input('billingInfo.zipCode')
+                            ]
+                        ];
+
+                        Log::info('Reintentando cargo para orden fallida', [
+                            'orden_id' => $ordenPago->id_orden,
+                            'charge_data' => $chargeData
+                        ]);
+
+                        $chargeResult = $this->n1coGateway->createCharge($chargeData);
+
+                        Log::info('Resultado del reintento de cargo', [
+                            'charge_result' => $chargeResult
+                        ]);
+
+                        if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                            $authenticationId = $chargeResult['data']['authentication']['id'];
+                            $authenticationUrl = $chargeResult['data']['authentication']['url'];
+
+                            $ordenPago->updateStatusAuthentication3DS(
+                                $authenticationId,
+                                $authenticationUrl,
+                                config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+                            );
+
+                            return response()->json([
+                                'success' => true,
+                                'requires_3ds' => true,
+                                'authentication_url' => $authenticationUrl,
+                                'authentication_id' => $authenticationId,
+                                'order_id' => $ordenPago->id_orden
+                            ]);
+                        }
+
+                        if (!$chargeResult['success']) {
+                            Log::error('Error en reintento de cargo', [
+                                'error' => $chargeResult['error']
+                            ]);
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Error al procesar el pago',
+                                'error' => $chargeResult['error']
+                            ], 500);
+                        }
+
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Pago procesado exitosamente',
+                            'data' => $chargeResult['data']
+                        ]);
+                    }
                 } else {
                     // Crear nueva orden con el método de pago existente
                     $plan = Plan::find($request->input('plan.id_plan'));
-                    
+
                     $ordenPago = OrdenPago::create([
                         'id_usuario' => $request->input('customer.id'),
                         'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
@@ -103,7 +179,7 @@ class N1coChargeController extends Controller
                         'monto' => $plan->precio,
                         'estado' => 'pendiente',
                     ]);
-            
+
                     $chargeData = [
                         'customer' => [
                             'name' => $request->input('customer.name'),
@@ -131,23 +207,23 @@ class N1coChargeController extends Controller
                             'zipCode' => $request->input('billingInfo.zipCode')
                         ]
                     ];
-            
+
                     $chargeResult = $this->n1coGateway->createCharge($chargeData);
-            
+
                     Log::info('Resultado de la creación del cargo', [
                         'charge_result' => $chargeResult
                     ]);
-            
+
                     if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
                         $authenticationId = $chargeResult['data']['authentication']['id'];
                         $authenticationUrl = $chargeResult['data']['authentication']['url'];
-            
+
                         $ordenPago->updateStatusAuthentication3DS(
                             $authenticationId,
                             $authenticationUrl,
                             config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
                         );
-            
+
                         return response()->json([
                             'success' => true,
                             'requires_3ds' => true,
@@ -156,7 +232,7 @@ class N1coChargeController extends Controller
                             'order_id' => $ordenPago->id_orden
                         ]);
                     }
-            
+
                     return response()->json([
                         'success' => true,
                         'message' => 'Cargo creado exitosamente',

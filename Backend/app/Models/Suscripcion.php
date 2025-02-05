@@ -20,12 +20,12 @@ class Suscripcion extends Model
         'monto',
         'id_pago',
         'id_orden',
+        'estado_ultimo_pago',
         'fecha_ultimo_pago',
         'fecha_proximo_pago',
         'fin_periodo_prueba',
         'fecha_cancelacion',
         'motivo_cancelacion',
-        'requiere_factura',
         'nit',
         'nombre_factura',
         'direccion_factura',
@@ -47,7 +47,7 @@ class Suscripcion extends Model
     // Relaciones
     public function empresa()
     {
-        return $this->belongsTo(Empresa::class);
+        return $this->belongsTo(Empresa::class, 'empresa_id');
     }
 
     public function usuario()
@@ -58,6 +58,11 @@ class Suscripcion extends Model
     public function plan()
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function ordenesPago()
+    {
+        return $this->hasMany(OrdenPago::class, 'payment_id', 'id_pago');
     }
 
     // Scopes

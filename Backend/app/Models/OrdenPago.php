@@ -12,7 +12,7 @@ class OrdenPago extends Model
     protected $table = 'ordenes_pago';
     protected $fillable = [
         'id_orden',
-        'id_usuario', 
+        'id_usuario',
         'id_orden_n1co',
         'id_autorizacion_3ds',
         'autorizacion_url',
@@ -41,12 +41,12 @@ class OrdenPago extends Model
         return $this->belongsTo(Plan::class, 'id_plan');
     }
 
-    public function detalles()
+    public function suscripcion()
     {
-        return $this->hasMany(OrdenPagoDetalle::class, 'orden_pago_id');
+        return $this->belongsTo(Suscripcion::class, 'id_pago', 'payment_id');
     }
 
-    public function updateStatusAuthentication3DS($authenticationId, $authenticationUrl,$status)
+    public function updateStatusAuthentication3DS($authenticationId, $authenticationUrl, $status)
     {
         return $this->update([
             'estado' => $status,

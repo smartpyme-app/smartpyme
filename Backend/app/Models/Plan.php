@@ -45,6 +45,19 @@ class Plan extends Model
         return $this->activo;
     }
 
+    public function getTipoPlanAttribute()
+    {
+        if ($this->duracion_dias == 30) {
+            return 'Mensual';
+        }
+        if ($this->duracion_dias == 90) {
+            return 'Trimestral';
+        }
+        if ($this->duracion_dias == 180) {
+            return 'Semestral';
+        }
+    }
+
     public function getSkuAttribute()
     {
         return 'PLAN-' . $this->id;
