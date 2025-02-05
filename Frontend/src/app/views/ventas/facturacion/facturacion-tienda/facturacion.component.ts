@@ -126,6 +126,11 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('canales/list').subscribe(canales => {
       this.canales = canales;
+
+      if(this.route.snapshot.queryParamMap.get('cotizacion')){
+        this.venta.id_canal = null;
+        return;
+      }
       this.venta.id_canal = this.canales[0].id;
     }, error => {
       this.alertService.error(error);
@@ -179,10 +184,10 @@ export class FacturacionComponent implements OnInit {
             }
 
             if(this.venta.cotizacion == 1){
-              console.log('entro a cotizacion');
+              //console.log('entro a cotizacion');
               this.documentos = this.documentos
-                // this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
-                // let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
+                this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
+                let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
                 if(documento){
                     this.venta.id_documento = documento.id;
                     this.venta.correlativo = documento.correlativo;
