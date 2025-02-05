@@ -191,7 +191,7 @@ export class PartidasComponent implements OnInit {
   }
 
   public imprimirDiarioAux() {
-    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
+    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga && this.reporte.tipo_cuenta) {
       window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
     } else {
       alert('Por favor, llenar los campos requeridos.');
@@ -207,7 +207,7 @@ export class PartidasComponent implements OnInit {
   }
 
   public imprimirDiarioMayor() {
-    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
+    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga && this.reporte.tipo_cuenta) {
       window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
     } else {
       console.error('Por favor, llenar los campos requeridos.');
@@ -223,7 +223,7 @@ export class PartidasComponent implements OnInit {
   }
 
   public imprimirBalanceComprobacion() {
-    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
+    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga && this.reporte.tipo_cuenta) {
       window.open(this.apiService.baseUrl + '/api/reportes/balance/comprobacion/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
     } else {
       alert('Por favor, llenar los campos requeridos.');
