@@ -19,7 +19,7 @@ export class PartidasComponent implements OnInit {
   public loading: boolean = false;
   public saving: boolean = false;
   public filtros: any = {};
-  public reporte = {month: '', year: null, concepto: '', cuenta: '', tipo_descarga: ''};
+  public reporte = {month: '', year: null, concepto: '', cuenta: '', tipo_descarga: '', tipo_cuenta: ''};
   public catalogo: any = [];
 
   months = [
@@ -192,7 +192,7 @@ export class PartidasComponent implements OnInit {
 
   public imprimirDiarioAux() {
     if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
-      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
+      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
@@ -200,7 +200,7 @@ export class PartidasComponent implements OnInit {
 
   public imprimirMayor() {
     if (this.reporte.month && this.reporte.year && this.reporte.concepto) {
-      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.concepto + '?token=' + this.apiService.auth_token());
+      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' +  this.reporte.concepto + '?token=' + this.apiService.auth_token());
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
@@ -208,7 +208,7 @@ export class PartidasComponent implements OnInit {
 
   public imprimirDiarioMayor() {
     if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
-      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
+      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
     } else {
       console.error('Por favor, llenar los campos requeridos.');
     }
@@ -224,7 +224,7 @@ export class PartidasComponent implements OnInit {
 
   public imprimirBalanceComprobacion() {
     if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
-      window.open(this.apiService.baseUrl + '/api/reportes/balance/comprobacion/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
+      window.open(this.apiService.baseUrl + '/api/reportes/balance/comprobacion/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_cuenta + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
