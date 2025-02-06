@@ -5,7 +5,7 @@
     <title>Balance de comprobación</title>
     <style>
 
-        * {
+* {
             font-size: 13px;
             margin: 0;
             padding: 0;
@@ -15,7 +15,6 @@
             width: 19.5cm;
             height: 20cm;
             font-family: serif;
-            /*            border: 1px solid red;*/
         }
 
         #factura {
@@ -24,60 +23,24 @@
             position: relative;
         }
 
-        .header > *, #totales > * {
-            position: absolute;
-            margin: 10px;
-        }
-
         .header {
-            border: 1px solid black;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            position: relative;
+            padding-top: 70px; /* Increased padding */
         }
-
 
         #logo {
-            top: 0.5cm;
-            left: 0.5cm
+            position: absolute;
+            left: 1cm;
+            top: 20px; /* Adjusted top position */
+            width: 100px;
         }
 
-        #empresa_nombre {
-            top: 0.5cm;
-            left: 8cm;
-            font-weight: bold;
-        }
-
-        #titulo_balance {
-            top: 1cm;
-            left: 8cm;
-        }
-
-        #periodo {
-            top: 1.5cm;
-            left: 8cm;
-        }
-
-        #c_costos {
-            top: 2cm;
-            left: 8cm;
-        }
-
-        #us_doll {
-            top: 2.5cm;
-            left: 8cm;
-        }
-
-        #naturaleza {
-            top: 3cm;
-            left: 8cm;
-        }
-
-        #fecha_actual {
-            top: 0.5cm;
-            left: 17cm;
-        }
-
-        #hora_reporte {
-            top: 1.5cm;
-            left: 17cm;
+        #logo img {
+            max-width: 100%;
+            height: auto;
         }
 
         table {
@@ -136,7 +99,6 @@
 
         .invoice-articles-table {
             padding-bottom: 50px;
-        / / height of your footer
         }
 
         th {
@@ -160,13 +122,14 @@
 
         {{--        al centro del documento --}}
         <p id="empresa_nombre">{{$empresa->nombre}}</p>
-        <p id="titulo_balance">Balance de Comprobación</p>
+        <h2 id="titulo_balance">Balance de Comprobación</h2>
         <p id="periodo">Periodo: {{$month_name}} - {{$year}}</p>
         <p id="c_costos">Todos los Centros de Costos</p>
         <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>
         <p id="naturaleza">ACTIVOS Y GASTOS</p>
     </div>
 
+    
     <div style="page-break-after:auto;">
         <table>
             {{--            titulo de la cuenta--}}
@@ -200,20 +163,31 @@
 
         </table>
         <div class="page-break"></div>
-        <div class="header">
+        <!-- <div class="header">
             {{--        a la derecha del documento --}}
             <p id="logo">{{$empresa->logo}}</p>
 
             {{--        al centro del documento --}}
             <p id="empresa_nombre">{{$empresa->nombre}}</p>
-            <p id="titulo_balance">Balance de Comprobación a finde mes</p>
+            <h2 id="titulo_balance">Balance de Comprobación a finde mes</h2>
             <p id="periodo">Periodo: {{$month_name}} - {{$year}}</p>
             <p id="c_costos">Todos los Centros de Costos</p>
             <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>
             <p id="naturaleza">ACTIVOS Y GASTOS</p>
 
 
+        </div> -->
+
+        <div class="header" >
+            <p id="logo"><img src="{{$empresa->logo}}" /></p>
+            <p id="empresa_nombre">{{$empresa->nombre}}</p>
+            <h2 id="titulo_balance">Balance de Comprobación</h2>
+            <p id="periodo">Periodo: {{$month_name}} - {{$year}}</p>
+            <p id="c_costos">Todos los Centros de Costos</p>
+            <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>
+            <p id="naturaleza">ACTIVOS Y GASTOS</p>
         </div>
+
         <table class="table invoice-articles-table">
 
             {{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
