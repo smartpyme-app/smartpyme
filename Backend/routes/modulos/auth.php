@@ -22,5 +22,3 @@ Route::post('/promocional/validar', [PromocionalesController::class, 'validar'])
 
 // Planes públicos para registro (sin autenticación)
 Route::get('/planes/publicos', [PlanesController::class, 'getPlanesPublicos']);
-
-?>

@@ -22,6 +22,8 @@ class GenerarKardexMasivo implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+
+
     protected $email;
     protected $idEmpresa;
     
@@ -48,6 +50,7 @@ class GenerarKardexMasivo implements ShouldQueue
     {
         $this->email = $email;
         $this->idEmpresa = $idEmpresa;
+        $this->onQueue('smartpyme-daily-reports');
     }
 
     /**
@@ -78,7 +81,7 @@ class GenerarKardexMasivo implements ShouldQueue
 
             // Generar archivo CSV directamente
             $fileName = 'kardex_completo_' . $this->idEmpresa . '_' . date('Ymd_His') . '.csv';
-            $filePath = storage_path('app/temp/' . $fileName);
+            $filePath = '/tmp/app/temp/' . $fileName;
             
             // Crear directorio si no existe
             if (!file_exists(dirname($filePath))) {
@@ -179,23 +182,20 @@ class GenerarKardexMasivo implements ShouldQueue
             Log::info("Archivo generado: {$filePath}");
             Log::info("Total de registros procesados: {$totalProcessed}");
             
-            // Enviar por correo
-            Mail::to($this->email)->send(new KardexMasivoMail($filePath, $fileName));
+            // Enviar por correo usando cola
+            \App\Jobs\SendKardexMasivoEmail::dispatch($this->email, $filePath, $fileName);
             
-            Log::info("Correo enviado exitosamente a: {$this->email}");
-            
-            // Limpiar archivo temporal
-            unlink($filePath);
+            Log::info("Correo encolado exitosamente para: {$this->email}");
             
         } catch (\Exception $e) {
             Log::error("Error al generar kardex masivo: " . $e->getMessage());
             Log::error("Stack trace: " . $e->getTraceAsString());
             
-            // Enviar correo de error si es posible
+            // Enviar correo de error usando cola
             try {
-                Mail::to($this->email)->send(new \App\Mail\KardexMasivoErrorMail($e->getMessage()));
+                \App\Jobs\SendKardexMasivoErrorEmail::dispatch($this->email, $e->getMessage());
             } catch (\Exception $mailError) {
-                Log::error("Error al enviar correo de error: " . $mailError->getMessage());
+                Log::error("Error al encolar correo de error: " . $mailError->getMessage());
             }
         }
     }
@@ -210,11 +210,11 @@ class GenerarKardexMasivo implements ShouldQueue
     {
         Log::error("Job GenerarKardexMasivo falló: " . $exception->getMessage());
         
-        // Intentar enviar correo de error
+        // Intentar enviar correo de error usando cola
         try {
-            Mail::to($this->email)->send(new \App\Mail\KardexMasivoErrorMail($exception->getMessage()));
+            \App\Jobs\SendKardexMasivoErrorEmail::dispatch($this->email, $exception->getMessage());
         } catch (\Exception $mailError) {
-            Log::error("Error al enviar correo de error: " . $mailError->getMessage());
+            Log::error("Error al encolar correo de error: " . $mailError->getMessage());
         }
     }
     

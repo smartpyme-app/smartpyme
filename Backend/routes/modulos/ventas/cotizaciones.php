@@ -20,5 +20,3 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\DetallesController;
     Route::delete('/cotizacion/detalle/{id}',    [DetallesController::class, 'delete']);
     Route::post('/cotizacion/detalle',          [DetallesController::class, 'historial']);
 
-
-?>

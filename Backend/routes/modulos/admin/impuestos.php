@@ -8,4 +8,3 @@ use App\Http\Controllers\Api\Admin\ImpuestosController;
     Route::delete('/impuesto/{id}',              [ImpuestosController::class, 'delete']);
     
 
-?>

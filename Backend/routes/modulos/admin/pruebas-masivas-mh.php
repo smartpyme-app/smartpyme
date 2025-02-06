@@ -12,4 +12,3 @@ Route::group(['middleware' => ['jwt.auth'], 'prefix' => 'mh/pruebas-masivas'], f
 });
 
 
-?>

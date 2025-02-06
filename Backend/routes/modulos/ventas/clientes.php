@@ -43,4 +43,3 @@ use Illuminate\Support\Facades\Route;
     Route::get('/clientes-empresas/exportar',    [ClientesController::class, 'exportEmpresas']);
     Route::get('/clientes-extranjeros/exportar',    [ClientesController::class, 'exportExtranjeros']);
 
-?>

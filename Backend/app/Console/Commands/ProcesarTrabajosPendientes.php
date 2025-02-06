@@ -239,11 +239,9 @@ class ProcesarTrabajosPendientes extends Command
             $imagenesExistentes = \App\Models\Inventario\Imagen::where('id_producto', $productoId)->get();
             
             foreach ($imagenesExistentes as $imagen) {
-                // Eliminar archivo físico si existe
-                $rutaImagen = public_path('img' . $imagen->img);
-                if (file_exists($rutaImagen)) {
-                    unlink($rutaImagen);
-                }
+                // Eliminar archivo de S3 si existe
+                $s3Path = 'img/' . $imagen->img;
+                \Storage::disk('s3-public')->delete($s3Path);
                 
                 // Eliminar registro de la base de datos
                 $imagen->delete();
@@ -273,18 +271,11 @@ class ProcesarTrabajosPendientes extends Command
                 return false;
             }
 
-            // Crear directorio si no existe
-            $directorioProductos = public_path('img/productos');
-            if (!file_exists($directorioProductos)) {
-                mkdir($directorioProductos, 0755, true);
-            }
-
             // Generar nombre único para la imagen
             $extension = pathinfo(parse_url($urlImagen, PHP_URL_PATH), PATHINFO_EXTENSION);
             $extension = $extension ?: 'jpg';
             
-            $nombreArchivo = 'producto_' . $producto->id . '_' . $index . '_' . time() . '.' . $extension;
-            $rutaCompleta = $directorioProductos . '/' . $nombreArchivo;
+            $nombreArchivo = 'img/productos/producto_' . $producto->id . '_' . $index . '_' . time() . '.' . $extension;
 
             // Descargar imagen
             $imagenContenido = $this->descargarImagenDesdeUrl($urlImagen);
@@ -293,16 +284,17 @@ class ProcesarTrabajosPendientes extends Command
                 return false;
             }
 
-            // Guardar archivo
-            if (file_put_contents($rutaCompleta, $imagenContenido) === false) {
-                $this->error("Error guardando archivo de imagen para producto: {$producto->nombre}");
+            // Subir a S3
+            $uploaded = \Storage::disk('s3-public')->put($nombreArchivo, $imagenContenido);
+            if (!$uploaded) {
+                $this->error("Error subiendo imagen a S3 para producto: {$producto->nombre}");
                 return false;
             }
 
             // Guardar en base de datos
             $imagen = new \App\Models\Inventario\Imagen();
             $imagen->id_producto = $producto->id;
-            $imagen->img = '/productos/' . $nombreArchivo;
+            $imagen->img = 'productos/' . basename($nombreArchivo);
             $imagen->shopify_image_id = $imagenShopify['id'] ?? null;
             $imagen->save();
 

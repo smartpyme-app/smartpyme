@@ -8,6 +8,3 @@ use App\Http\Controllers\Api\Inventario\BodegasController;
     Route::post('/bodega',                      [BodegasController::class, 'store']);
     Route::get('/reporte/bodegas/{id}/{cat}',   [BodegasController::class, 'reporte']);
     Route::delete('/bodega/{id}',               [BodegasController::class, 'delete']);
-    
-
-?>

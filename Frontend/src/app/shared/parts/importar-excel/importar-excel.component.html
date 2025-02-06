@@ -1,5 +1,5 @@
 <button *ngIf="tipo == 'button'" (click)="openModal(importar)" class="btn btn-default tcla-F4" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">
-    <img src="/assets/icons/upload.png" class="icon"> 
+    <img src="/assets/icons/upload.png" class="icon">
 </button>
 
 <a role="button" class="btn-link" *ngIf="tipo == 'text'" (click)="openModal(importar)" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">Importar {{ this.nombre.replace('-', ' ') }}</a>
@@ -16,32 +16,32 @@
             <!-- <div class="col-md-12">
               <div class="alert bg-info  text-center">
                 <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
-                Puede descargar la plantilla de Excel acá: 
-                  <a href="{{ apiService.baseUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
+                Puede descargar la plantilla de Excel acá:
+                  <a href="{{ apiService.appUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
                 </p>
               </div>
             </div> -->
             <div class="col-md-12">
               <div class="alert bg-info text-center">
                 <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
-                  
+
                   <!-- Plantilla normal para otros componentes -->
                   <span *ngIf="this.nombre !== 'ventas'">
-                    Puede descargar la plantilla de Excel acá: 
-                    <a [href]="plantillaUrl" target="_blank">Descargar plantilla</a>
+                    Puede descargar la plantilla de Excel acá:
+                    <a href="{{ apiService.appUrl + '/docs/' + nombre.toLowerCase() + '-format.xlsx'}}" target="_blank">Descargar plantilla</a>
                   </span>
-                  
+
                   <!-- Plantillas específicas para ventas -->
                   <span *ngIf="this.nombre === 'ventas'">
                     Puede descargar las plantillas de Excel según el tipo de documento:<br>
-                    <a href="{{ apiService.baseUrl + '/docs/ventas-credito-fiscal-format.xlsx'}}" target="_blank" class="me-3">Descargar plantilla Crédito Fiscal</a>
+                    <a href="{{ apiService.appUrl + '/docs/ventas-credito-fiscal-format.xlsx'}}" target="_blank" class="me-3">Descargar plantilla Crédito Fiscal</a>
                     <br>
-                    <a href="{{ apiService.baseUrl + '/docs/ventas-consumidor-final-format.xlsx'}}" target="_blank">Descargar plantilla Consumidor Final</a>
+                    <a href="{{ apiService.appUrl + '/docs/ventas-consumidor-final-format.xlsx'}}" target="_blank">Descargar plantilla Consumidor Final</a>
                   </span>
                 </p>
               </div>
             </div>
-            
+
               <div class="mb-5 form-group col-md-12 text-center">
                 <input type="file" class="form-control" name="file"  (change)="setFile($event)" required>
               </div>

@@ -33,7 +33,7 @@ return [
         'pusher' => [
             'driver' => 'pusher',
             'key' => env('PUSHER_APP_KEY'),
-            'secret' => env('PUSHER_APP_SECRET'),
+            'secret' => env('AWS_DEFAULT_REGION') && env('PUSHER_SECRET_NAME') ? \App\Helpers\AwsConfigHelper::getSecret(env('PUSHER_SECRET_NAME')) : env('PUSHER_APP_SECRET', ''),
             'app_id' => env('PUSHER_APP_ID'),
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER'),

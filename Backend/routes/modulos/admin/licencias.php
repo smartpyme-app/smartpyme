@@ -14,5 +14,3 @@ use App\Http\Controllers\Api\Licencias\EmpresasController;
 
     Route::get('/licencias/empresas/list',    [EmpresasController::class, 'list']);
     Route::get('/licencias/usuarios',                  [LicenciasController::class, 'usuarios']);
-
-?>

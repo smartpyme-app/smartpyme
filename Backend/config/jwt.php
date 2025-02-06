@@ -25,7 +25,7 @@ return [
     |
     */
 
-    'secret' => env('JWT_SECRET'),
+    'secret' => env('AWS_DEFAULT_REGION') && env('APP_KEY_SECRET_NAME') ? \App\Helpers\AwsConfigHelper::getSecret(env('APP_KEY_SECRET_NAME')) : env('JWT_SECRET', env('APP_KEY')),
 
     /*
     |--------------------------------------------------------------------------

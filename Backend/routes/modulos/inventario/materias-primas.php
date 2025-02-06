@@ -10,5 +10,3 @@ use App\Http\Controllers\Api\Inventario\MateriaPrimaController;
     Route::post('/materia-prima',                     [MateriaPrimaController::class, 'store']);
     Route::delete('/materia-prima/{id}',              [MateriaPrimaController::class, 'delete']);
 
-
-?>

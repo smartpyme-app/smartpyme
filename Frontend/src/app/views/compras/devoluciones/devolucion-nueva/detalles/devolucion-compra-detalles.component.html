@@ -31,7 +31,7 @@
                                (change)="actualizarSeleccion()">
                     </td>
                     <td>
-                        <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                        <img src="{{ apiService.appUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.nombre_producto }}
                         <br>
                         <small class="text-muted" *ngIf="detalle.inventario_por_lotes && isLotesActivo()">

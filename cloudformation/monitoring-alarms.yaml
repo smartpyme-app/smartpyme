@@ -1,0 +1,422 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartPyme General Infrastructure CloudWatch Alarms and Dashboard'
+
+Parameters:
+  DatabaseInstanceId:
+    Type: String
+    Description: RDS instance identifier
+  
+  CloudFrontDistributionId:
+    Type: String
+    Description: CloudFront distribution ID
+    Default: ""
+
+
+
+Resources:
+  # App Runner Web Service Alarms
+  WebAppHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-WebApp-High-CPU
+      AlarmDescription: Alert when web app CPU utilization is high
+      MetricName: CPUUtilization
+      Namespace: AWS/AppRunner
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !ImportValue smartpyme-web-app-WebServiceName
+
+  WebAppHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-WebApp-High-Memory
+      AlarmDescription: Alert when web app memory utilization is high
+      MetricName: MemoryUtilization
+      Namespace: AWS/AppRunner
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 85
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !ImportValue smartpyme-web-app-WebServiceName
+
+  WebAppHighResponseTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-WebApp-High-Response-Time
+      AlarmDescription: Alert when web app response time is high
+      MetricName: ResponseTime
+      Namespace: AWS/AppRunner
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !ImportValue smartpyme-web-app-WebServiceName
+
+  # App Runner Worker Service Alarms
+  WorkerAppHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-WorkerApp-High-CPU
+      AlarmDescription: Alert when worker app CPU utilization is high
+      MetricName: CPUUtilization
+      Namespace: AWS/AppRunner
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !ImportValue smartpyme-worker-app-WorkerServiceName
+
+  WorkerAppHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-WorkerApp-High-Memory
+      AlarmDescription: Alert when worker app memory utilization is high
+      MetricName: MemoryUtilization
+      Namespace: AWS/AppRunner
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 85
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !ImportValue smartpyme-worker-app-WorkerServiceName
+
+  # RDS Database Alarms
+  DatabaseHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-Database-High-CPU
+      AlarmDescription: Alert when database CPU utilization is high
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref DatabaseInstanceId
+
+  DatabaseHighConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-Database-High-Connections
+      AlarmDescription: Alert when database connections are high
+      MetricName: DatabaseConnections
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref DatabaseInstanceId
+
+  DatabaseLowFreeStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-Database-Low-Free-Storage
+      AlarmDescription: Alert when database free storage is low
+      MetricName: FreeStorageSpace
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 2000000000
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref DatabaseInstanceId
+
+  # CloudFront Alarms (conditional)
+  CloudFrontHighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasCloudFront
+    Properties:
+      AlarmName: SmartPyme-CloudFront-High-Error-Rate
+      AlarmDescription: Alert when CloudFront 4xx/5xx error rate is high
+      MetricName: 4xxErrorRate
+      Namespace: AWS/CloudFront
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DistributionId
+          Value: !Ref CloudFrontDistributionId
+
+  CloudFrontHighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasCloudFront
+    Properties:
+      AlarmName: SmartPyme-CloudFront-High-Latency
+      AlarmDescription: Alert when CloudFront origin latency is high
+      MetricName: OriginLatency
+      Namespace: AWS/CloudFront
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 3000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DistributionId
+          Value: !Ref CloudFrontDistributionId
+
+  # CloudWatch Alarms for SQS Queues
+  # Daily Reports Queue High Messages
+  DailyReportsQueueHighMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-DailyReports-Queue-High-Messages
+      AlarmDescription: Alert when daily reports queue has too many messages
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
+
+
+
+  # Shopify Sync Queue High Messages
+  ShopifySyncQueueHighMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-ShopifySync-Queue-High-Messages
+      AlarmDescription: Alert when Shopify sync queue has too many messages
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-queue-name]]
+
+  # Email Notifications Queue High Messages
+  EmailNotificationsQueueHighMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-EmailNotifications-Queue-High-Messages
+      AlarmDescription: Alert when email notifications queue has too many messages
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-queue-name]]
+
+  # DLQ Alarms
+  DailyReportsDLQMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-DailyReports-DLQ-Messages
+      AlarmDescription: Alert when messages appear in daily reports DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
+
+
+
+  EmailQueueDLQMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-Email-DLQ-Messages
+      AlarmDescription: Alert when messages appear in email DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-dlq-name]]
+
+  ShopifyQueueDLQMessagesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: SmartPyme-Shopify-DLQ-Messages
+      AlarmDescription: Alert when messages appear in Shopify DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-dlq-name]]
+
+  # CloudWatch Dashboard
+  SmartPymeDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: SmartPyme-Infrastructure
+      DashboardBody: !Sub 
+        - |
+          {
+            "widgets": [
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 0,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "${WebServiceName}" ],
+                    [ ".", "MemoryUtilization", ".", "." ],
+                    [ ".", "CPUUtilization", ".", "${WorkerServiceName}" ],
+                    [ ".", "MemoryUtilization", ".", "." ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "App Runner - CPU & Memory",
+                  "period": 300,
+                  "yAxis": {
+                    "left": {
+                      "min": 0,
+                      "max": 100
+                    }
+                  }
+                }
+              },
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 0,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/AppRunner", "ResponseTime", "ServiceName", "${WebServiceName}" ],
+                    [ ".", "RequestCount", ".", "." ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "Web App - Response Time & Requests",
+                  "period": 300
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 6,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${DatabaseInstanceId}" ],
+                    [ ".", "DatabaseConnections", ".", "." ],
+                    [ ".", "FreeStorageSpace", ".", "." ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "RDS Database Metrics",
+                  "period": 300
+                }
+              },
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 6,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsQueueName}" ],
+                    [ ".", ".", ".", "${ShopifySyncQueueName}" ],
+                    [ ".", ".", ".", "${EmailNotificationsQueueName}" ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "SQS Queue Messages",
+                  "period": 300
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 12,
+                "width": 24,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsDLQName}" ],
+                    [ ".", ".", ".", "${ShopifySyncDLQName}" ],
+                    [ ".", ".", ".", "${EmailNotificationsDLQName}" ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "Dead Letter Queues",
+                  "period": 300,
+                  "yAxis": {
+                    "left": {
+                      "min": 0
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        - WebServiceName: !ImportValue smartpyme-web-app-WebServiceName
+          WorkerServiceName: !ImportValue smartpyme-worker-app-WorkerServiceName
+          DailyReportsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
+          ShopifySyncQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-queue-name]]
+          EmailNotificationsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-queue-name]]
+          DailyReportsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
+          ShopifySyncDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-dlq-name]]
+          EmailNotificationsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-dlq-name]]
+
+Conditions:
+  HasCloudFront: !Not [!Equals [!Ref CloudFrontDistributionId, ""]]
+
+Outputs:
+  DashboardURL:
+    Description: CloudWatch Dashboard URL
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${SmartPymeDashboard}"
+    Export:
+      Name: smartpyme-dashboard-url

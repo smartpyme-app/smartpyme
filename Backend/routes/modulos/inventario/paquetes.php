@@ -13,4 +13,3 @@ use App\Http\Controllers\Api\Inventario\PaquetesController;
     Route::get('/paquetes/pendientes/clientes',          [PaquetesController::class, 'clientesPaquetesPendientes']);
 
 
-?>

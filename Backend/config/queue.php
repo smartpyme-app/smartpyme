@@ -49,14 +49,22 @@ return [
             'block_for' => 0,
         ],
 
-        'sqs' => [
+        'sqs-email' => [
             'driver' => 'sqs',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'prefix' => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
-            'queue' => env('SQS_QUEUE', 'your-queue-name'),
-            'suffix' => env('SQS_SUFFIX'),
-            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'queue' => env('SQS_EMAIL_QUEUE'),
+            'region' => env('AWS_DEFAULT_REGION'),
+        ],
+
+        'sqs-sync' => [
+            'driver' => 'sqs',
+            'queue' => env('SQS_SYNC_QUEUE'),
+            'region' => env('AWS_DEFAULT_REGION'),
+        ],
+
+        'sqs-reports' => [
+            'driver' => 'sqs',
+            'queue' => env('SQS_REPORTS_QUEUE'),
+            'region' => env('AWS_DEFAULT_REGION'),
         ],
 
         'redis' => [

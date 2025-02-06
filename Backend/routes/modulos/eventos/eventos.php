@@ -10,4 +10,3 @@
 
     Route::post('/evento/facturacion',        [EventosController::class, 'facturacion']);
 
-?>

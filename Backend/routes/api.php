@@ -26,6 +26,76 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
+// EventBridge Cron Endpoints
+Route::prefix('cron')->middleware(\App\Http\Middleware\CronApiKeyMiddleware::class)->group(function () {
+	Route::post('/generate-notificaciones', function () {
+		\Illuminate\Support\Facades\Log::info('EventBridge triggered: generate:notificaciones at ' . now());
+		
+		\Illuminate\Support\Facades\Artisan::call('generate:notificaciones');
+		
+		return response()->json([
+			'status' => 'success',
+			'command' => 'generate:notificaciones',
+			'timestamp' => now(),
+			'output' => \Illuminate\Support\Facades\Artisan::output()
+		]);
+	});
+	
+	Route::post('/suscripciones-verificar', function () {
+		\Illuminate\Support\Facades\Log::info('EventBridge triggered: suscripciones:verificar at ' . now());
+		
+		\Illuminate\Support\Facades\Artisan::call('suscripciones:verificar');
+		
+		return response()->json([
+			'status' => 'success',
+			'command' => 'suscripciones:verificar',
+			'timestamp' => now(),
+			'output' => \Illuminate\Support\Facades\Artisan::output()
+		]);
+	});
+	
+	Route::post('/suscripciones-procesar-cargos', function () {
+		\Illuminate\Support\Facades\Log::info('EventBridge triggered: suscripciones:procesar-cargos at ' . now());
+		
+		\Illuminate\Support\Facades\Artisan::call('suscripciones:procesar-cargos');
+		
+		return response()->json([
+			'status' => 'success',
+			'command' => 'suscripciones:procesar-cargos',
+			'timestamp' => now(),
+			'output' => \Illuminate\Support\Facades\Artisan::output()
+		]);
+	});
+	
+	Route::post('/kardex-procesar-cola', function () {
+		\Illuminate\Support\Facades\Log::info('EventBridge triggered: kardex:procesar-cola at ' . now());
+		
+		\Illuminate\Support\Facades\Artisan::call('kardex:procesar-cola');
+		
+		return response()->json([
+			'status' => 'success',
+			'command' => 'kardex:procesar-cola',
+			'timestamp' => now(),
+			'output' => \Illuminate\Support\Facades\Artisan::output()
+		]);
+	});
+	
+	Route::post('/trabajos-procesar-shopify', function () {
+		\Illuminate\Support\Facades\Log::info('EventBridge triggered: trabajos:procesar --solo-imagenes-shopify --limite=1000 at ' . now());
+		
+		\Illuminate\Support\Facades\Artisan::call('trabajos:procesar', [
+			'--solo-imagenes-shopify' => true,
+			'--limite' => 1000
+		]);
+		
+		return response()->json([
+			'status' => 'success',
+			'command' => 'trabajos:procesar --solo-imagenes-shopify --limite=1000',
+			'timestamp' => now(),
+			'output' => \Illuminate\Support\Facades\Artisan::output()
+		]);
+	});
+});
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');

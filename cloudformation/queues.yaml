@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartPyme Infrastructure - SQS Queues for Laravel Application'
+
+Resources:
+  # Daily Reports Queue
+  DailyReportsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-daily-reports
+      VisibilityTimeout: 3660
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DailyReportsDeadLetterQueue.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  DailyReportsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-daily-reports-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Shopify Sync Queue
+  ShopifySyncQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-shopify-sync
+      VisibilityTimeout: 3660
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ShopifySyncDeadLetterQueue.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  ShopifySyncDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-shopify-sync-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Email Notifications Queue
+  EmailNotificationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-email-notifications
+      VisibilityTimeout: 360
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt EmailNotificationsDeadLetterQueue.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  EmailNotificationsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-email-notifications-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+Outputs:
+  # Queue Name Aliases for Worker App Compatibility
+  EmailQueueName:
+    Description: Email Queue Name (alias for Email Notifications Queue)
+    Value: !Ref EmailNotificationsQueue
+    Export:
+      Name: smartpyme-email-queue-name
+
+  SyncQueueName:
+    Description: Sync Queue Name (alias for Shopify Sync Queue)
+    Value: !Ref ShopifySyncQueue
+    Export:
+      Name: smartpyme-sync-queue-name
+
+  ReportsQueueName:
+    Description: Reports Queue Name (alias for Daily Reports Queue)
+    Value: !Ref DailyReportsQueue
+    Export:
+      Name: smartpyme-reports-queue-name
+
+  # Daily Reports Queue Exports
+  DailyReportsQueueArn:
+    Description: Daily Reports SQS Queue ARN
+    Value: !GetAtt DailyReportsQueue.Arn
+    Export:
+      Name: smartpyme-daily-reports-queue-arn
+
+  DailyReportsQueueName:
+    Description: Daily Reports SQS Queue Name
+    Value: !Ref DailyReportsQueue
+    Export:
+      Name: smartpyme-daily-reports-queue-name
+
+  # Shopify Sync Queue Exports
+  ShopifySyncQueueArn:
+    Description: Shopify Sync SQS Queue ARN
+    Value: !GetAtt ShopifySyncQueue.Arn
+    Export:
+      Name: smartpyme-shopify-sync-queue-arn
+
+  ShopifySyncQueueName:
+    Description: Shopify Sync SQS Queue Name
+    Value: !Ref ShopifySyncQueue
+    Export:
+      Name: smartpyme-shopify-sync-queue-name
+
+  # Email Notifications Queue Exports
+  EmailNotificationsQueueArn:
+    Description: Email Notifications SQS Queue ARN
+    Value: !GetAtt EmailNotificationsQueue.Arn
+    Export:
+      Name: smartpyme-email-notifications-queue-arn
+
+  EmailNotificationsQueueName:
+    Description: Email Notifications SQS Queue Name
+    Value: !Ref EmailNotificationsQueue
+    Export:
+      Name: smartpyme-email-notifications-queue-name
+
+  # DLQ Exports
+  DailyReportsDLQName:
+    Description: Daily Reports DLQ Name
+    Value: !Ref DailyReportsDeadLetterQueue
+    Export:
+      Name: smartpyme-daily-reports-dlq-name
+
+  ShopifySyncDLQName:
+    Description: Shopify Sync DLQ Name
+    Value: !Ref ShopifySyncDeadLetterQueue
+    Export:
+      Name: smartpyme-shopify-sync-dlq-name
+
+  EmailNotificationsDLQName:
+    Description: Email Notifications DLQ Name
+    Value: !Ref EmailNotificationsDeadLetterQueue
+    Export:
+      Name: smartpyme-email-notifications-dlq-name

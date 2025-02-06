@@ -8,5 +8,3 @@ use App\Http\Controllers\Api\Contabilidad\PresupuestosController;
     Route::post('/presupuestos/filtrar',    [PresupuestosController::class, 'filter']);
     Route::delete('/presupuesto/{id}',      [PresupuestosController::class, 'delete']);
 
-
-?>

@@ -29,4 +29,3 @@ use Illuminate\Support\Facades\Route;
     Route::get('compras/nums-ids',    [ComprasController::class, 'getNumerosIdentificacion']);
     Route::get('/compra/impresion/{id}',        [ComprasController::class, 'generarDoc']);
 
-?>
