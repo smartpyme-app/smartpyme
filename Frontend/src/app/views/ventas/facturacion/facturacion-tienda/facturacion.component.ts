@@ -384,6 +384,11 @@ export class FacturacionComponent implements OnInit {
         }
     }
 
+    public setBodega(){
+        this.venta.id_sucursal = this.bodegas.find((item:any) => item.id == this.venta.id_bodega).id_sucursal;
+        console.log(this.venta);
+    }
+
     public updateVenta(venta:any) {
         this.venta = venta;
         this.sumTotal();
