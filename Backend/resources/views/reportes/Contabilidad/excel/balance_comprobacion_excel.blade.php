@@ -41,7 +41,7 @@
             <td class="nombre">{{ $cuenta['nombre'] }}</td>
             <td class="sal_inic">{{ number_format($cuenta['saldo_inicial'], 2) }}</td>
             <td class="cargo">{{ number_format($cuenta['debe'], 2) }}</td>
-            <td class="abono">{{ number_format($cuenta['debe'], 2) }}</td>
+            <td class="abono">{{ number_format($cuenta['haber'], 2) }}</td>
             <td class="sal_fin">{{ number_format($cuenta['saldo_final'], 2) }}</td>
         </tr>
     @endforeach
