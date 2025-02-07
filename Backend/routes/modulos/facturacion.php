@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\CajasController;
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Api\Ventas\GenerarDocumentosController;
 use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionVentasController;
+use Illuminate\Support\Facades\Route;
     
     // Info del Dash
     Route::get('/caja',                      [CajasController::class, 'caja']);
