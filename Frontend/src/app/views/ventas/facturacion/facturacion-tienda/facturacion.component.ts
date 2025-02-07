@@ -789,10 +789,13 @@ export class FacturacionComponent implements OnInit {
   }
 
   public setBodega(bodega: any) {
+
+  //  console.log("bodega", bodega);
     this.venta.id_bodega = bodega;
 
     let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == bodega);
     if (bodegaSeleccionada) {
+     // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
       this.apiService.getAll('documentos/list').subscribe(

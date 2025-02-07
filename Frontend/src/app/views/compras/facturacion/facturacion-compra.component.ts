@@ -264,6 +264,10 @@ export class FacturacionCompraComponent implements OnInit {
         }
     }
 
+    public setBodega(){
+        this.compra.id_sucursal = this.bodegas.find((item:any) => item.id == this.compra.id_bodega).id_sucursal;
+        console.log(this.compra);
+    }
 
     public updatecompra(compra:any) {
         this.compra = compra;
