@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin\Empresa;
 use App\Models\OrdenPago;
 use App\Models\Plan;
 use App\Models\Suscripcion;
@@ -156,6 +157,7 @@ class WebhookN1coController extends Controller
                             'plan_id' => $plan->id,
                             'tipo_plan' => $tipoPlan,
                             'empresa_id' => $user->id_empresa,
+                            'metodo_pago' => config('constants.METODO_PAGO_N1CO'),
                             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                             'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
                             'fecha_ultimo_pago' => now(),
@@ -165,6 +167,19 @@ class WebhookN1coController extends Controller
                             'monto' => $ordenPago->monto
                         ]
                     );
+
+                    $empresa = Empresa::find($user->id_empresa);
+                    Log::info('Empresa encontrada', [
+                        'empresa' => $empresa
+                    ]);
+
+                    $empresa->update([
+                        'metodo_pago' => config('constants.METODO_PAGO_N1CO')
+                    ]);
+
+                    Log::info('Empresa actualizada', [
+                        'empresa' => $empresa->metodo_pago
+                    ]);
 
                     Log::info('Suscripción actualizada', [
                         'user_id' => $user->id,
@@ -208,6 +223,11 @@ class WebhookN1coController extends Controller
                     'fecha_ultimo_pago' => now()
                 ]);
             }
+
+            $empresa = Empresa::find($user->id_empresa);
+            $empresa->update([
+                'metodo_pago' => config('constants.METODO_PAGO_N1CO')
+            ]);
 
             // Enviar notificación al usuario
             // $user->notify(new PaymentFailedNotification());
@@ -316,8 +336,17 @@ class WebhookN1coController extends Controller
 
             $ordenPago->update([
                 'id_orden_n1co' => $payload['orderId'],
+                'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'),
                 'updated_at' => now()
             ]);
+
+            $usuario = User::find($ordenPago->id_usuario);
+            $empresa = Empresa::find($usuario->id_empresa);
+            $empresa->update([
+                'metodo_pago' => config('constants.METODO_PAGO_N1CO')
+            ]);
+
+
 
             if (!$ordenPago) {
                 Log::warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
@@ -335,11 +364,13 @@ class WebhookN1coController extends Controller
                 'authentication_id' => $payload['metadata']['authenticationId'],
             ]);
 
-            $suscripcion = Suscripcion::where('id_orden', $payload['orderReference'])->first();
+
+            $suscripcion = Suscripcion::where('usuario_id', $usuario->id)->first();
 
             $suscripcion->update([
                 'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_FALLIDO'),
-                'fecha_ultimo_pago' => now()
+                'fecha_ultimo_pago' => now(),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')
             ]);
 
             Log::info('N1co Webhook: Suscripcion actualizada fail', [

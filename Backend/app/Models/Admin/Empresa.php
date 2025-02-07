@@ -51,6 +51,7 @@ class Empresa extends Model
         'cobra_iva',
         'tipo_plan',
         'fecha_cancelacion',
+        'metodo_pago',
         'referido',
         'campania',
         'wompi_aplicativo',

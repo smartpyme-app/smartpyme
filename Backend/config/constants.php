@@ -13,12 +13,16 @@ return [
     'TIPO_PAGO_TRANSFERENCIA' => 'Transferencia',
     'TIPO_PAGO_TARJETA' => 'Tarjeta de crédito/débito',
 
+    'METODO_PAGO_N1CO' => 'n1co',
+    'METODO_PAGO_TRANSFERENCIA' => 'Transferencia',
+
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',
     'ESTADO_SUSCRIPCION_INACTIVO' => 'Inactivo',
     'ESTADO_SUSCRIPCION_CANCELADO' => 'Cancelado',
     'ESTADO_SUSCRIPCION_PENDIENTE' => 'Pendiente',
     'ESTADO_SUSCRIPCION_RENOVADO' => 'Renovado',
     'ESTADO_SUSCRIPCION_EN_PRUEBA' => 'En prueba',
+    'ESTADO_SUSCRIPCION_SUSPENDIDO' => 'Suspendido',
 
     'ESTADO_ORDEN_PAGO_PENDIENTE' => 'Pendiente',
     'ESTADO_ORDEN_PAGO_RECHAZADO' => 'Rechazada',

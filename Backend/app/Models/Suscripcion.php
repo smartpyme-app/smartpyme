@@ -20,6 +20,7 @@ class Suscripcion extends Model
         'monto',
         'id_pago',
         'id_orden',
+        'metodo_pago',  // 1: tarjeta, 2: transferencia, 3: efectivo
         'estado_ultimo_pago',
         'fecha_ultimo_pago',
         'fecha_proximo_pago',

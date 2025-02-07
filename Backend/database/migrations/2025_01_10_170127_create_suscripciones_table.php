@@ -21,6 +21,7 @@ class CreateSuscripcionesTable extends Migration
             $table->foreignId('usuario_id')->constrained('users');
             
             // Campos básicos
+            $table->string('metodo_pago')->nullable();
             $table->string('tipo_plan');
             $table->string('estado')
                   ->default(null);

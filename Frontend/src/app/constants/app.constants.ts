@@ -12,7 +12,9 @@ export const AppConstants = {
     PLANES: {
         EMPRENDEDOR: {
             NOMBRE: 'Emprendedor',
-            PRECIO: 19.99,
+            PRECIO: 16.95,
+            DURACION_DIAS: 30,
+            DIAS_PERIODO_PRUEBA: 3,
             CARACTERISTICAS: [
                 'Funciones básicas',
                 'Soporte por correo', 
@@ -22,6 +24,8 @@ export const AppConstants = {
         ESTANDAR: {
             NOMBRE: 'Estándar',
             PRECIO: 28.25,
+            DURACION_DIAS: 30,
+            DIAS_PERIODO_PRUEBA: 3,
             CARACTERISTICAS: [
                 'Todas las funciones básicas',
                 'Soporte prioritario',
@@ -32,11 +36,31 @@ export const AppConstants = {
         AVANZADO: {
             NOMBRE: 'Avanzado',
             PRECIO: 56.50,
+            DURACION_DIAS: 30,
+            DIAS_PERIODO_PRUEBA: 3,
             CARACTERISTICAS: [
                 'Todas las funciones estándar',
                 'Acceso a API',
                 'Soporte 24/7'
             ]
+        },
+        PRO: {
+            NOMBRE: 'Pro',
+            PRECIO: 113.00,
+            DURACION_DIAS: 30,
+            DIAS_PERIODO_PRUEBA: 3,
+            CARACTERISTICAS: [
+                'Todas las funciones avanzadas',
+                'Acceso a API',
+                'Soporte 24/7'
+            ]
         }
+    },
+
+    PLANID: {
+        EMPRENDEDOR: 1,
+        ESTANDAR: 2,
+        AVANZADO: 3,
+        PRO: 4
     }
 };
