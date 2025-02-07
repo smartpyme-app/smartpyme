@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Contabilidad\Catalogo\CuentasController;
+//Route
+use Illuminate\Support\Facades\Route;
 
     Route::get('/catalogo/cuentas',             [CuentasController::class, 'index']);
     Route::get('/catalogo/list',                [CuentasController::class, 'list']);
