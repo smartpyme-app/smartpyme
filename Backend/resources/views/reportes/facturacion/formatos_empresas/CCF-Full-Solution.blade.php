@@ -40,7 +40,7 @@
 
 
         table   {position: absolute; top: 5.6cm; left: 1cm; text-align: left; border-collapse: collapse; width: 18cm;}
-        table td{height: 0.6cm; text-align: left;}
+        table td{height: 0.4cm; text-align: left;}
 
         .codigobarra{ width: 1.7cm; text-align: center;}
         .codigo{ width: 1.7cm; text-align: center;}
@@ -53,7 +53,7 @@
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {font-size:11px; top: 15.1cm; left: 2cm; width: 10cm; word-break: break-all; white-space: normal;}
+        #letras     {font-size:10px; top: 15.1cm; left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
 
         #suma       {top: 12.9cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
         #iva        {top: 13.3cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
@@ -63,13 +63,13 @@
         #exenta     {top: 14.6cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
         #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
 
-        #text_suma       {top: 12.9cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva        {top: 13.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_subtotal   {top: 13.7cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva_retenido  {top: 14cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_no_sujeta  {top: 14.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_exenta     {top: 14.6cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_total      {top: 15cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_suma       {top: 12.9cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva        {top: 13.3cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_subtotal   {top: 13.7cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva_retenido  {top: 14cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_no_sujeta  {top: 14.3cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_exenta     {top: 14.6cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_total      {top: 15cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
 
         .no-print{position: absolute;}
 
