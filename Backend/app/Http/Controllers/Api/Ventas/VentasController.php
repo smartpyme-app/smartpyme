@@ -305,7 +305,7 @@ class VentasController extends Controller
             'correlativo' => 'required|numeric',
             'id_documento' => 'required|max:255',
             //'id_canal' => 'required|max:255',
-           'id_canal' => $request->cotizacion == 1 ? 'nullable' : 'required|max:255',
+            'id_canal' => $request->cotizacion == 1 ? 'nullable' : 'required|max:255',
             'id_cliente' => 'required_if:estado,Pendiente',
             'detalles' => 'required',
             'fecha_expiracion' => 'required_if:cotizacion,1',
@@ -330,7 +330,7 @@ class VentasController extends Controller
             // Guardamos la venta
             if ($request->cotizacion == 1) {
 
-              //  dd($request->all());
+                //  dd($request->all());
                 $quote = $this->saveQuotation($request);
                 return Response()->json($quote, 200);
             }
@@ -528,15 +528,45 @@ class VentasController extends Controller
                 //  $det['remember_token'] = null;
                 $detalle->fill($det);
                 $detalle->save();
+                // if (isset($det["custom_fields"])) {
+                //     //foreach ($det["custom_fields"] as $customField) {
+                //     foreach ($det["custom_fields"] as $key => $customField) {
+
+                //         if (isset($customField["value"])) {
+
+                //             $customFieldId = isset($customField["custom_field"]) ?
+                //                 $customField["custom_field"]["id"] :
+                //                 $customField["custom_field_id"];
+                //             $productCustomField = ProductCustomField::updateOrCreate(
+                //                 [
+                //                     'custom_field_id' => $customFieldId,
+                //                     'cotizacion_venta_detalle_id' => $detalle->id
+                //                 ],
+                //                 [
+                //                     'custom_field_value_id' => isset($customField["id_value"]) ?
+                //                         $customField["id_value"] :
+                //                         $customField["custom_field_value_id"],
+                //                     'value' => $customField["value"]
+                //                 ]
+                //             );
+                //         }
+                //     }
+                // }
+                
                 if (isset($det["custom_fields"])) {
-                    //foreach ($det["custom_fields"] as $customField) {
-                    foreach ($det["custom_fields"] as $key => $customField) {
-                        
+                    $currentCustomFieldIds = collect($det["custom_fields"])->pluck('custom_field.id')->filter()->toArray();
+
+                    ProductCustomField::where('cotizacion_venta_detalle_id', $detalle->id)
+                        ->whereNotIn('custom_field_id', $currentCustomFieldIds)
+                        ->delete();
+
+             
+                    foreach ($det["custom_fields"] as $customField) {
                         if (isset($customField["value"])) {
-                   
                             $customFieldId = isset($customField["custom_field"]) ?
                                 $customField["custom_field"]["id"] :
                                 $customField["custom_field_id"];
+
                             $productCustomField = ProductCustomField::updateOrCreate(
                                 [
                                     'custom_field_id' => $customFieldId,
@@ -566,7 +596,7 @@ class VentasController extends Controller
             $documento->increment('correlativo');
 
             DB::commit();
-        //     return $cotizacion;
+            //     return $cotizacion;
         } catch (\Exception $e) {
             DB::rollback();
             throw $e;
