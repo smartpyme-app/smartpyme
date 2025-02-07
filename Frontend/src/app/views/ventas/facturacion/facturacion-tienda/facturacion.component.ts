@@ -576,6 +576,16 @@ export class FacturacionComponent implements OnInit {
       this.venta.cambio = 0;
     }
 
+    if (this.venta.detalles) {
+      this.venta.detalles.forEach((detalle: any) => {
+        if (detalle.custom_fields) {
+          detalle.custom_fields = detalle.custom_fields.filter((cf: any) => 
+            this.selectedCustomFields.includes(cf.custom_field?.id)
+          );
+        }
+      });
+    }
+
     this.apiService.store('facturacion', this.venta).subscribe(venta => {
 
       // Si es cotización
@@ -694,8 +704,24 @@ export class FacturacionComponent implements OnInit {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
   }
 
+  // updateCustomFields() {
+  //   this.activeCustomFields = this.customFields.data
+  //     .filter((f: any) => this.selectedCustomFields.includes(f.id));
+  // }
+
   updateCustomFields() {
     this.activeCustomFields = this.customFields.data
       .filter((f: any) => this.selectedCustomFields.includes(f.id));
+      
+    // Limpiar campos personalizados que ya no están seleccionados
+    if (this.venta.detalles) {
+      this.venta.detalles.forEach((detalle: any) => {
+        if (detalle.custom_fields) {
+          detalle.custom_fields = detalle.custom_fields.filter((cf: any) => 
+            this.selectedCustomFields.includes(cf.custom_field?.id)
+          );
+        }
+      });
+    }
   }
 }
