@@ -32,6 +32,7 @@ export class FacturacionComponent implements OnInit {
   public recintos:any = [];
   public regimenes:any = [];
   public incoterms:any = [];
+  public editar = false;
 
   // public bancos:any = [];
   public canales: any = [];
@@ -263,6 +264,7 @@ export class FacturacionComponent implements OnInit {
     // }
 
     if (this.route.snapshot.paramMap.get('id')) {
+      this.editar = true;
       const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
       const isCotizacion = this.venta.cotizacion == 1 ? true : false;
       this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!)

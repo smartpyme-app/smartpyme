@@ -1,6 +1,18 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-  <h3 *ngIf="!venta.cotizacion">Nueva venta</h3>
-  <h3 *ngIf="venta.cotizacion">Nueva Cotización</h3>
+  <!-- <h3 *ngIf="!venta.cotizacion && editar ">Nueva venta</h3>
+    <h3 *ngIf="!venta.cotizacion && !editar">Nueva venta</h3>
+
+ 
+  <h3 *ngIf="venta.cotizacion && editar">Editar cotización</h3>
+  <h3 *ngIf="venta.cotizacion && !editar">Nueva cotización</h3> -->
+  <h3>
+    <ng-container *ngIf="!venta.cotizacion">
+      Nueva venta
+    </ng-container>
+    <ng-container *ngIf="venta.cotizacion">
+      {{editar ? 'Editar' : 'Nueva'}} cotización
+    </ng-container>
+   </h3>
   <button *ngIf="venta.cotizacion == 1" class="btn btn-light text-danger" routerLink="/cotizaciones"><i
     class="fa fa-arrow-left"></i> Regresar
   </button>
