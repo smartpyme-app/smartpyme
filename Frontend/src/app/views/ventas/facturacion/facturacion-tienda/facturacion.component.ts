@@ -192,6 +192,10 @@ export class FacturacionComponent implements OnInit {
                     this.venta.id_documento = documento.id;
                     this.venta.correlativo = documento.correlativo;
                 }
+                //si no existe el documento de cotizacion decirle que debe crearlo
+                if(!documento){
+                    this.alertService.error('Debe crear un documento de cotización');
+                }
             }else{
                 this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
             }
