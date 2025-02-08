@@ -346,8 +346,6 @@ class WebhookN1coController extends Controller
                 'metodo_pago' => config('constants.METODO_PAGO_N1CO')
             ]);
 
-
-
             if (!$ordenPago) {
                 Log::warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
                     'orderReference' => $payload['orderReference']

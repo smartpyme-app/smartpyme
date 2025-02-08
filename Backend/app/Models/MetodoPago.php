@@ -23,4 +23,9 @@ class MetodoPago extends Model
         'es_predeterminado',
         'esta_activo',
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'id_usuario');
+    }
 }
