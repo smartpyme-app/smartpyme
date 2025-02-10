@@ -108,7 +108,7 @@
                 <td class="codigo">     {{ $detalle->producto()->pluck('codigo')->first() }}</td>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto">   {{ $detalle->nombre_producto  }}</td>
-                <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
                 <td class="descuento">
                     @if ($detalle->descuento > 0)
                         ${{ number_format($detalle->descuento, 2) }}  
