@@ -20,7 +20,7 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     // Verificar estado de suscripción
-    if (userData.estado_suscripcion === 'en prueba' && userData.dias_faltantes <= 0) {
+    if (userData.estado_suscripcion.toLowerCase() === 'en prueba' && userData.dias_faltantes_prueba <= 0) {
       this.router.navigate(['/paywall']);
       return false;
     }
@@ -36,6 +36,17 @@ export class SubscriptionGuard implements CanActivate {
       return false;
     }
 
+    // Verificar si está pendiente y sin días restantes
+    if (userData.estado_suscripcion.toLowerCase() === 'pendiente' && userData.dias_faltantes <= 0) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
+    // Verificar si está en prueba y sin días restantes
+    if (userData.estado_suscripcion.toLowerCase() === 'en prueba' && userData.dias_faltantes_prueba <= 0) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
 
     return true;
   }

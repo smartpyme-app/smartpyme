@@ -110,7 +110,20 @@ class Suscripcion extends Model
         return $fechaActual->diffInDays($fechaProximoPago);
     }
 
+    public function calcularDiasFaltantesPrueba(): int
+    {
+        $fechaActual = now();
+        $fechaFinPrueba = Carbon::parse($this->fin_periodo_prueba);
+        
+        if ($fechaActual > $fechaFinPrueba) {
+            return -$fechaActual->diffInDays($fechaFinPrueba);
+        }
+
+        return $fechaActual->diffInDays($fechaFinPrueba);
+    }
+
     public function diasFaltantes(): ?int 
+
     {
         if (!$this->exists) {
             return null;
@@ -119,6 +132,17 @@ class Suscripcion extends Model
         $diasFaltantes = $this->calcularDiasFaltantes();
         return $diasFaltantes;
     }
+
+    public function diasFaltantesPrueba(): ?int
+    {
+        if (!$this->exists) {
+            return null;
+        }   
+        
+        $diasFaltantes = $this->calcularDiasFaltantesPrueba();
+        return $diasFaltantes;
+    }
+    
 
 
 }

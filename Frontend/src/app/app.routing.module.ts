@@ -11,15 +11,18 @@ import { LoginComponent }    from './auth/login/login.component';
 import { RegisterComponent }    from './auth/register/register.component';
 import { PagoComponent }    from './auth/register/pago/pago.component';
 import { PaymentSuccessComponent }    from './auth/register/pago/payment-success.component';
+import { PaymentSuccessPaywallComponent }    from './layout/paywall/components/payment-success/payment-success.component';
 import { LockComponent }    from './auth/lock/lock.component';
 import { ForgetComponent }    from './auth/forget/forget.component';
 import { QuicklinkStrategy } from 'ngx-quicklink';
+
 
 const routes: Routes = [
     { path: 'login', component: LoginComponent, title: 'Inicio de sesión' },
     { path: 'registro', component: RegisterComponent, title: 'Registro' },
     { path: 'pago', component: PagoComponent, title: 'Pago' },
     { path: 'pago-exitoso', component: PaymentSuccessComponent, title: 'Pago exitoso' },
+    { path: 'pago-exitoso-paywall', component: PaymentSuccessPaywallComponent, title: 'Pago exitoso' },
     { path: 'restablecer-cuenta', component: ForgetComponent, title: 'Restablecer contraseña' },
     { path: 'lock', component: LockComponent },
 

@@ -29,7 +29,7 @@ class ProcesarCargosAutomaticos extends Command
     public function handle()
     {
         $this->info('Iniciando proceso de cargos automáticos...');
-        Log::channel('suscripciones')->info('Iniciando proceso de cargos automáticos');
+        Log::channel('n1co')->info('Iniciando proceso de cargos automáticos');
 
         try {
             $suscripciones = $this->obtenerSuscripcionesParaCobro();
@@ -39,11 +39,11 @@ class ProcesarCargosAutomaticos extends Command
             }
 
             $this->info('Proceso de cargos automáticos completado');
-            Log::channel('suscripciones')->info('Proceso de cargos automáticos completado');
+            Log::channel('n1co')->info('Proceso de cargos automáticos completado');
 
         } catch (\Exception $e) {
             $this->error("Error en proceso de cargos: {$e->getMessage()}");
-            Log::channel('suscripciones')->error("Error en proceso de cargos: {$e->getMessage()}");
+            Log::channel('n1co')->error("Error en proceso de cargos: {$e->getMessage()}");
         }
     }
 
@@ -63,7 +63,7 @@ class ProcesarCargosAutomaticos extends Command
     private function procesarCargo(Suscripcion $suscripcion)
     {
         $this->info("Procesando cargo para suscripción ID: {$suscripcion->id}");
-        Log::channel('suscripciones')->info("Procesando cargo para suscripción ID: {$suscripcion->id}");
+        Log::channel('n1co')->info("Procesando cargo para suscripción ID: {$suscripcion->id}");
 
         try {
             // Verificar método de pago activo
@@ -161,7 +161,7 @@ class ProcesarCargosAutomaticos extends Command
                 'intentos_cobro' => 0
             ]);
 
-            Log::channel('suscripciones')->info("Cargo exitoso para suscripción {$suscripcion->id}");
+            Log::channel('n1co')->info("Cargo exitoso para suscripción {$suscripcion->id}");
             
             // Notificar al usuario
             // $suscripcion->usuario->notify(new PagoExitosoNotification($ordenPago));
@@ -188,7 +188,7 @@ class ProcesarCargosAutomaticos extends Command
                 $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
             }
 
-            Log::channel('suscripciones')->error("Cargo fallido para suscripción {$suscripcion->id}: {$error}");
+            Log::channel('n1co')->error("Cargo fallido para suscripción {$suscripcion->id}: {$error}");
             
             // Notificar al usuario
             // $suscripcion->usuario->notify(new PagoFallidoNotification($ordenPago));
@@ -197,7 +197,7 @@ class ProcesarCargosAutomaticos extends Command
 
     private function manejarError(Suscripcion $suscripcion, \Exception $e)
     {
-        Log::channel('suscripciones')->error("Error procesando cargo para suscripción {$suscripcion->id}: {$e->getMessage()}");
+        Log::channel('n1co')->error("Error procesando cargo para suscripción {$suscripcion->id}: {$e->getMessage()}");
         
         $suscripcion->increment('intentos_cobro');
         $suscripcion->update([

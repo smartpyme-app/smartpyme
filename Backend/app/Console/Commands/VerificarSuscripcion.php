@@ -89,7 +89,7 @@ class VerificarSuscripcion extends Command
         try {
             // Actualizar estado de la suscripción
             $suscripcion->update([
-                'estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
                 'fin_periodo_prueba' => now()
             ]);
 
@@ -113,9 +113,9 @@ class VerificarSuscripcion extends Command
             ]);
 
             // Desactivar usuario
-            if ($suscripcion->usuario) {
-                $suscripcion->usuario->update(['enable' => false]);
-            }
+            // if ($suscripcion->usuario) {
+            //     $suscripcion->usuario->update(['enable' => false]);
+            // }
 
             // Enviar notificación de desactivación
             $this->enviarNotificacionVencimiento($suscripcion, 'desactivacion');

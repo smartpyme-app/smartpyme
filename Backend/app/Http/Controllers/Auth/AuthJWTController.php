@@ -72,6 +72,7 @@ class AuthJWTController extends Controller
         $user->empresa = $user->empresa()->with('licencia')->first();
         $suscripcion = $user->suscripciones()->first();
         $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
         $user->tiene_suscripcion = !is_null($suscripcion);
         
         $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->nombre;
