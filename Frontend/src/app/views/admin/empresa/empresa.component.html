@@ -44,25 +44,6 @@
                         <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="Escriba aquí">
                     </div>
 
-                    
-                    <!-- PRUEBA BASE -->
-                    <!-- <div class="form-group col-md-6 col-lg-4" >
-                        <label for="departamento">Departamento:</label>
-                        <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
-                            <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
-                                {{ departamento.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-md-6 col-lg-4" >
-                        <label for="municipio">Municipio:</label>
-                        <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
-                            <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':empresa.departamento" [value]="municipio.cod">
-                                {{ municipio.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div> -->
-
                     <!-- si la empresa ES salvadoreña -->
                     <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
                         <label for="departamento">Departamento:</label>
@@ -227,14 +208,14 @@
                     <hr>
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Activará el calculo de IVA por defecto.</p>
+                        <p>Calcular el IVA por defecto.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="cobrar_iva">Cobrar IVA</label>
                           <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
                         </div>
                     </div>
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permite poder vender sin stock, sino solicitará autorización.</p>
+                        <p>Vender sin stock sin autorización.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="vender_sin_stock">Vender sin stock</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
@@ -242,7 +223,7 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Permite cambiar el precio en facturación.</p>
+                        <p>Permitir cambiar el precio en facturación.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="editar_precio_venta">Editar precio</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
@@ -258,7 +239,7 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
-                        <p>Puedes editar las descripciones de los detalles de productos que agregues.</p>
+                        <p>Editar las descripciones de los detalles de productos.</p>
                         <div class="form-switch bg-light-info rounded">
                           <label for="editar_descripcion_venta">Editar descripciones</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
@@ -303,6 +284,16 @@
                           <label for="venta_consigna">Venta a consigna</label>
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
                         </div>
+                    </div>
+                    <hr>
+                    <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
+                    <div class="form-group col-md-6">
+                        <label for="valor_inventario">Valor de inventario:</label>
+                        <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
+                            <option value="anterior">Costo anterior</option>
+                            <option value="promedio">Costo promedio ponderado</option>
+                            <option value="ultimo">Costo última compra</option>
+                        </select>
                     </div>
 
                     <!-- <div class="form-group col-md-12 col-xl-6 without-label">

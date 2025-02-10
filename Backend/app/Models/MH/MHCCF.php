@@ -135,7 +135,7 @@ class MHCCF extends Model
     protected function receptor(){
 
         return [
-              "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL,
+              "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : str_replace('-', '', $this->venta->cliente->dui),
               "nombreComercial" =>  $this->venta->cliente->nombre_empresa,
               "nrc" => str_replace('-', '', $this->venta->cliente->ncr),
               "nombre" => $this->venta->nombre_cliente,

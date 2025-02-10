@@ -6,228 +6,412 @@ import { MHService } from '@services/MH.service';
 
 @Component({
   selector: 'app-ventas',
-  templateUrl: './ventas.component.html'
+  templateUrl: './ventas.component.html',
 })
-
 export class VentasComponent implements OnInit {
+  public ventas: any = [];
+  public venta: any = {};
+  public loading: boolean = false;
+  public saving: boolean = false;
+  public sending: boolean = false;
+  public downloadingDetalles: boolean = false;
+  public downloadingVentas: boolean = false;
 
-    public ventas:any = [];
-    public venta:any = {};
-    public loading:boolean = false;
-    public saving:boolean = false;
-    public sending:boolean = false;
-    public consulting:boolean = false;
-    public downloadingDetalles:boolean = false;
-    public downloadingVentas:boolean = false;
+  public clientes: any = [];
+  public usuario: any = {};
+  public usuarios: any = [];
+  public sucursales: any = [];
+  public formaPagos: any = [];
+  public documentos: any = [];
+  public canales: any = [];
+  public proyectos: any = [];
+  public filtros: any = {};
+  public filtrado: boolean = false;
+  public consulting: boolean = false;
+  public categorias: any[] = [];
+  public marcas: any[] = [];
+  public filtrosAcumulado: any = {
+    inicio: '',
+    fin: '',
+    sucursales: [],
+    categorias: [],
+    marcas: [],
+  };
 
-    public clientes:any = [];
-    public usuario:any = {};
-    public usuarios:any = [];
-    public sucursales:any = [];
-    public formaPagos:any = [];
-    public documentos:any = [];
-    public canales:any = [];
-    public proyectos:any = [];
-    public filtros:any = {};
-    public filtrado:boolean = false;
+  modalRef!: BsModalRef;
+  modalRefDescargar!: BsModalRef;
+  modalRefAcumulado!: BsModalRef;
 
-    modalRef!: BsModalRef;
+  constructor(
+    public apiService: ApiService,
+    private mhService: MHService,
+    private alertService: AlertService,
+    private modalService: BsModalService
+  ) {}
 
-    constructor(public apiService: ApiService, private mhService: MHService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+  ngOnInit() {
+    this.usuario = this.apiService.auth_user();
+    this.loadAll();
 
-    ngOnInit() {
-        this.usuario = this.apiService.auth_user();
-        this.loadAll();
+    this.apiService.getAll('sucursales/list').subscribe(
+      (sucursales) => {
+        this.sucursales = sucursales;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+    this.apiService.getAll('categorias/list').subscribe(
+      (categorias) => {
+        this.categorias = categorias;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    this.apiService.getAll('marcas/list').subscribe(
+      (marcas) => {
+        this.marcas = marcas;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
+  public abrirModalFiltrosAcumulado(template: TemplateRef<any>) {
+    this.modalRefAcumulado = this.modalService.show(template, {
+      class: 'modal-lg',
+    });
+  }
+
+  public setOrden(columna: string) {
+    if (this.filtros.orden === columna) {
+      this.filtros.direccion =
+        this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.filtros.orden = columna;
+      this.filtros.direccion = 'asc';
     }
 
-    public setOrden(columna: string) {
-        if (this.filtros.orden === columna) {
-          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
-        } else {
-          this.filtros.orden = columna;
-          this.filtros.direccion = 'asc';
+    this.filtrarVentas();
+  }
+
+  public loadAll() {
+    this.filtros.id_sucursal = '';
+    this.filtros.id_cliente = '';
+    this.filtros.id_usuario = '';
+    this.filtros.id_vendedor = '';
+    this.filtros.id_canal = '';
+    this.filtros.id_documento = '';
+    this.filtros.id_proyecto = '';
+    this.filtros.dte = '';
+    this.filtros.forma_pago = '';
+    this.filtros.estado = '';
+    this.filtros.buscador = '';
+    this.filtros.orden = 'fecha';
+    this.filtros.direccion = 'desc';
+    this.filtros.paginate = 10;
+
+    if (this.apiService.auth_user().tipo != 'Administrador') {
+      this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+    }
+
+    this.filtrarVentas();
+  }
+
+  public filtrarVentas() {
+    this.loading = true;
+    this.apiService.getAll('ventas', this.filtros).subscribe(
+      (ventas) => {
+        this.ventas = ventas;
+        this.loading = false;
+        if (this.modalRef) {
+          this.modalRef.hide();
         }
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
 
-        this.filtrarVentas();
-    }
-
-    public loadAll() {
-        this.filtros.id_sucursal = '';
-        this.filtros.id_cliente = '';
-        this.filtros.id_usuario = '';
-        this.filtros.id_vendedor = '';
-        this.filtros.id_canal = '';
-        this.filtros.id_documento = '';
-        this.filtros.id_proyecto = '';
-        this.filtros.dte = '';
-        this.filtros.forma_pago = '';
-        this.filtros.estado = '';
-        this.filtros.buscador = '';
-        this.filtros.orden = 'fecha';
-        this.filtros.direccion = 'desc';
-        this.filtros.paginate = 10;
-
-        if(this.apiService.auth_user().tipo != 'Administrador'){
-            this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
-        }
-
-        this.filtrarVentas();
-    }
-
-    public filtrarVentas(){
-        this.loading = true;
-        this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-    public setEstado(venta:any, estado:any){
-        if(estado == 'Pagada'){
-            if(confirm('¿Confirma el pago de la venta?')){
-                this.venta = venta;
-                this.venta.estado = estado;
-                this.onSubmit();
-            }
-        }
-        if(estado == 'Anulada'){
-            if(confirm('¿Confirma la anulación de la venta?')){
-                this.venta = venta;
-                this.venta.estado = estado;
-                this.onSubmit();
-            }
-        }
-
-    }
-    
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('venta/', id) .subscribe(data => {
-                for (let i = 0; i < this.ventas['data'].length; i++) { 
-                    if (this.ventas['data'][i].id == data.id )
-                        this.ventas['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
-        }
-
-    }
-
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-    public reemprimir(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
-    }
-
-    // Editar
-
-    public openModalEdit(template: TemplateRef<any>, venta:any) {
+  public setEstado(venta: any, estado: any) {
+    if (estado == 'Pagada') {
+      if (confirm('¿Confirma el pago de la venta?')) {
         this.venta = venta;
-        
-        if(!this.documentos.length){
-            this.apiService.getAll('documentos/list').subscribe(documentos => {
-                this.documentos = documentos;
-                this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
-            }, error => {this.alertService.error(error);});
-        }
-
-        if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
-                this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
-        }
-
-        if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-                this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
-        }
-
-        if(!this.canales.length){
-            this.apiService.getAll('canales/list').subscribe(canales => { 
-                this.canales = canales;
-            }, error => {this.alertService.error(error); });
-        }
-
-        this.modalRef = this.modalService.show(template);
+        this.venta.estado = estado;
+        this.onSubmit();
+      }
     }
-    
-    public openFilter(template: TemplateRef<any>) {
-        if(!this.clientes.length){
-            this.apiService.getAll('clientes/list').subscribe(clientes => { 
-                this.clientes = clientes;
-            }, error => {this.alertService.error(error); });
-        }
+    if (estado == 'Anulada') {
+      if (confirm('¿Confirma la anulación de la venta?')) {
+        this.venta = venta;
+        this.venta.estado = estado;
+        this.onSubmit();
+      }
+    }
+  }
 
-        if(!this.documentos.length){
-            this.apiService.getAll('documentos/list').subscribe(documentos => {
-                this.documentos = documentos;
-                this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.usuario.id_sucursal);
-            }, error => {this.alertService.error(error);});
+  public delete(id: number) {
+    if (confirm('¿Desea eliminar el Registro?')) {
+      this.apiService.delete('venta/', id).subscribe(
+        (data) => {
+          for (let i = 0; i < this.ventas['data'].length; i++) {
+            if (this.ventas['data'][i].id == data.id)
+              this.ventas['data'].splice(i, 1);
+          }
+        },
+        (error) => {
+          this.alertService.error(error);
         }
+      );
+    }
+  }
 
-        if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
-                this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
+  public setPagination(event: any): void {
+    this.loading = true;
+    this.apiService
+      .paginate(this.ventas.path + '?page=' + event.page, this.filtros)
+      .subscribe(
+        (ventas) => {
+          this.ventas = ventas;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
         }
+      );
+  }
 
-        if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-                this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
-        }
+  public reemprimir(venta: any) {
+    window.open(
+      this.apiService.baseUrl +
+        '/api/reporte/facturacion/' +
+        venta.id +
+        '?token=' +
+        this.apiService.auth_token(),
+      'Impresión',
+      'width=400'
+    );
+  }
 
-        if(!this.canales.length){
-            this.apiService.getAll('canales/list').subscribe(canales => { 
-                this.canales = canales;
-            }, error => {this.alertService.error(error); });
-        }
+  // Editar
 
-        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
-                this.proyectos = proyectos;
-            }, error => {this.alertService.error(error); });
+  public openModalEdit(template: TemplateRef<any>, venta: any) {
+    this.venta = venta;
+
+    if (!this.documentos.length) {
+      this.apiService.getAll('documentos/list').subscribe(
+        (documentos) => {
+          this.documentos = documentos;
+          this.documentos = this.documentos.filter(
+            (x: any) => x.id_sucursal == this.venta.id_sucursal
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-        this.modalRef = this.modalService.show(template);
+      );
     }
 
-    public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+    if (!this.formaPagos.length) {
+      this.apiService.getAll('formas-de-pago/list').subscribe(
+        (formaPagos) => {
+          this.formaPagos = formaPagos;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
     }
 
-    public descargarVentas(){
-        this.downloadingVentas = true; this.saving = true;
-        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ventas.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloadingVentas = false; this.saving = false;
-          }, (error) => {this.alertService.error(error); this.downloadingVentas = false; this.saving = false;}
-        );
+    if (!this.usuarios.length) {
+      this.apiService.getAll('usuarios/list').subscribe(
+        (usuarios) => {
+          this.usuarios = usuarios;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
     }
+
+    if (!this.canales.length) {
+      this.apiService.getAll('canales/list').subscribe(
+        (canales) => {
+          this.canales = canales;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+    this.modalRef = this.modalService.show(template);
+  }
+
+  public openFilter(template: TemplateRef<any>) {
+    if (!this.clientes.length) {
+      this.apiService.getAll('clientes/list').subscribe(
+        (clientes) => {
+          this.clientes = clientes;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+    if (!this.documentos.length) {
+      this.apiService.getAll('documentos/list').subscribe(
+        (documentos) => {
+          this.documentos = documentos;
+          this.documentos = this.documentos.filter(
+            (x: any) => x.id_sucursal == this.usuario.id_sucursal
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+    if (!this.formaPagos.length) {
+      this.apiService.getAll('formas-de-pago/list').subscribe(
+        (formaPagos) => {
+          this.formaPagos = formaPagos;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+    if (!this.usuarios.length) {
+      this.apiService.getAll('usuarios/list').subscribe(
+        (usuarios) => {
+          this.usuarios = usuarios;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+    if (!this.canales.length) {
+      this.apiService.getAll('canales/list').subscribe(
+        (canales) => {
+          this.canales = canales;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+    if (
+      !this.proyectos.length &&
+      this.apiService.auth_user().empresa.modulo_proyectos
+    ) {
+      this.apiService.getAll('proyectos/list').subscribe(
+        (proyectos) => {
+          this.proyectos = proyectos;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+    this.modalRef = this.modalService.show(template);
+  }
+
+  // public openDescargar(template: TemplateRef<any>) {
+  //   this.modalRef = this.modalService.show(template);
+  // }
+  public openDescargar(template: TemplateRef<any>) {
+    this.modalRefDescargar = this.modalService.show(template);
+  }
+
+  public descargarVentas() {
+    this.downloadingVentas = true;
+    this.saving = true;
+    this.apiService.export('ventas/exportar', this.filtros).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ventas.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloadingVentas = false;
+        this.saving = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloadingVentas = false;
+        this.saving = false;
+      }
+    );
+  }
+
+ 
+
+  public descargarAcumulado() {
+    this.downloadingVentas = true;
+    this.saving = true;
+
+    this.apiService.exportAcumulado('ventas-acumulado/exportar', this.filtrosAcumulado).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ventas-acumulado.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Cerrar ambos modales
+        if (this.modalRefAcumulado) {
+          this.modalRefAcumulado.hide();
+        }
+        if (this.modalRefDescargar) {
+          this.modalRefDescargar.hide();
+        }
+
+        this.downloadingVentas = false;
+        this.saving = false;
+
+     
+        this.filtrosAcumulado = {
+          inicio: '',
+          fin: '',
+          sucursales: [],
+          categorias: [],
+          marcas: [],
+        };
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloadingVentas = false;
+        this.saving = false;
+      }
+    );
+  }
+
 
     public descargarDetalles(){
         this.downloadingDetalles = true; this.saving = true;

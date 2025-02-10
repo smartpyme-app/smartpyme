@@ -30,6 +30,7 @@ import { ClientesDashComponent } from '@views/ventas/clientes/dash/clientes-dash
 import { HistorialVentasComponent } from '@views/reportes/ventas/historial/historial-ventas.component';
 import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-ventas.component';
 import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/categorias-ventas.component';
+import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/documento-historial.component';
 
 
 const routes: Routes = [
@@ -55,6 +56,7 @@ const routes: Routes = [
         { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago'},
         { path: 'impuestos', canActivate: [AdminGuard], component: ImpuestosComponent, title: 'Impuestos'},
         { path: 'documentos', canActivate: [AdminGuard], component: DocumentosComponent, title: 'Documentos'},
+        { path: 'documento/historial/:nombre', canActivate: [AdminGuard], component: DocumentoHistorialComponent, title: 'Historial de documentos'},
 
         { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas'},
         { path: 'devolucion/venta/:id', component: DevolucionVentaComponent, title: 'Devolución de venta'},

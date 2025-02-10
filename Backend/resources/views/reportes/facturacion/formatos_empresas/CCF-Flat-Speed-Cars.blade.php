@@ -4,7 +4,7 @@
     <title> Flat Speed Cars {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
-        *{ font-size: 12px; margin: 0; padding: 0;}
+        *{ font-size: 13px; margin: 0; padding: 0;}
 
         #factura{
             font-family: serif;
@@ -32,7 +32,7 @@
 
 
         table   {position: absolute; top: 8.1cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
-        table td{height: 0.4cm; text-align: left;}
+        table td{height: 0.5cm; text-align: left;}
 
         .cantidad{  width: 1cm; text-align: center;}
         .producto{ width: 8.5cm; text-align: left;}

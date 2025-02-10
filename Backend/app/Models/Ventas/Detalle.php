@@ -18,6 +18,7 @@ class Detalle extends Model {
         'exenta',
         'gravada',
         'cuenta_a_terceros',
+        'total_costo',
         'total',
         'id_venta',
         'id_vendedor',

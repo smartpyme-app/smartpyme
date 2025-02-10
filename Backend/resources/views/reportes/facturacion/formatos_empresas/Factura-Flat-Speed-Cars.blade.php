@@ -4,7 +4,7 @@
     <title> Flat Speed Cars {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
-        *{ font-size: 12px; margin: 0; padding: 0;}
+        *{ font-size: 13px; margin: 0; padding: 0;}
         html, body{
             font-family: serif;
         }
@@ -13,7 +13,7 @@
             width: 16.5cm; height: 21.7cm;
 /*            border: 1px solid red;   */
             margin-left: 0cm;
-            margin-top: 0cm;
+            margin-top: 0.3cm;
             position: relative;
         }
 
@@ -34,7 +34,7 @@
 
 
         table   {position: absolute; top: 7.8cm; left: 0.5cm; text-align: left; border-collapse: collapse; }
-        table td{height: 0.4cm; text-align: left;}
+        table td{height: 0.6cm; text-align: left;}
 
         .cantidad{  width: 1.5cm; text-align: center;}
         .producto{ width: 8.8cm; text-align: left;}
@@ -44,7 +44,7 @@
         .gravadas{ width: 1.8cm; text-align: right;} 
 
 
-        #letras     {top: 17.5cm; font-size: 10px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 17.3cm; font-size: 10px; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
 
         #suma       {top: 17.3cm; left: 13.5cm; width: 2cm; text-align: right;}
         #iva_retenido    {top: 17.8cm; left: 13.5cm; width: 2cm; text-align: right;}

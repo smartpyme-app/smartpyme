@@ -55,40 +55,30 @@
                     <thead>
                         <tr>
                             <!-- <th colspan="4"></th> -->
-                            <th rowspan="2">Fecha</th>
-                            <th rowspan="2">Usuario</th>
-                            <th rowspan="2">Detalle</th>
-                            <th rowspan="2">Ref</th>
-                            <th colspan="3" class="text-center">Entradas</th>
-                            <th colspan="3" class="text-center">Salidas</th>
-                            <th colspan="2" class="text-center">Saldo</th>
-                        </tr>
-                        <tr>
-                            <th width="100" class="text-center">Cantidad</th>
-                            <th width="100" class="text-center">Costo U.</th>
-                            <th width="100" class="text-center">Total</th>
-                            
-                            <th width="100" class="text-center">Cantidad</th>
-                            <th width="100" class="text-center">Precio U.</th>
-                            <th width="100" class="text-center">Total</th>
-                            
-                            <th width="100" class="text-center">Cantidad</th>
-                            <th width="100" class="text-end">Total</th>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Detalle</th>
+                            <th>N° de Documento</th>
+                            <th class="text-center">Entrada</th>
+                            <th class="text-center">Salida</th>
+                            <th class="text-center">Stock Final</th>
+                            <th class="text-center">Costo U</th>
+                            <th class="text-right">Costo Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="11" class="text-center" *ngIf="producto?.movimientos?.length < 1 && !loading">
+                            <td colspan="9" class="text-center" *ngIf="producto?.movimientos?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene movimientos registrados</span>
                             </td>
-                            <td colspan="11" class="text-center" *ngIf="loading">
+                            <td colspan="9" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
 
                         <tr *ngFor=" let movimiento of producto?.movimientos">
                             
-                            <td>{{movimiento.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td><span tooltip="{{ movimiento.created_at | date:'hh:mm a'}}">{{movimiento.fecha | date:'dd/MM/yyyy'}}</span></td>
                             <td>{{movimiento.nombre_usuario}}</td>
                             <td>{{movimiento.detalle}}</td>
                             <td>
@@ -97,14 +87,10 @@
                             </td>
 
                             <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_cantidad | number:'1.0') : '' }}</td>
-                            <td class="text-center">{{ movimiento.costo_unitario > 0 ? (movimiento.costo_unitario | currency ): ''  }}</td>
-                            <td class="text-center">{{ movimiento.entrada_valor > 0 ? (movimiento.entrada_valor | currency ): ''  }}</td>
-
                             <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.salida_cantidad | number:'1.0') : '' }}</td>
-                            <td class="text-center">{{ movimiento.precio_unitario > 0 ? (movimiento.precio_unitario | currency ): ''  }}</td>
-                            <td class="text-center">{{ movimiento.salida_valor > 0 ? (movimiento.salida_valor | currency ): ''  }}</td>
-
+                            
                             <td class="text-center">{{ movimiento.total_cantidad > 0 ? (movimiento.total_cantidad | number:'1.0') : '' }}</td>
+                            <td class="text-center">{{ movimiento.costo_unitario > 0 ? (movimiento.costo_unitario | currency ): ''  }}</td>
                             <td class="text-end">{{ movimiento.total_valor > 0 ? (movimiento.total_valor | currency ): ''  }}</td>
                         </tr>
 

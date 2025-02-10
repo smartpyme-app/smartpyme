@@ -41,7 +41,7 @@ class LibrosIVAController extends Controller
             ->where('cotizacion', 0)
             ->orderByDesc('fecha')
             ->get();
-            //Log::info($ventas);
+        //Log::info($ventas);
 
         $ivas = $ventas->map(function ($venta) {
             $documento = $venta->documento;
@@ -67,7 +67,7 @@ class LibrosIVAController extends Controller
 
         // Ordenamos por 'correlativo' de forma descendente y reindexamos
         $ivas = $ivas->sortByDesc('num_documento')->values()->all();
-       // Log::info($ivas);
+        // Log::info($ivas);
 
         return response()->json($ivas, 200);
     }
@@ -116,10 +116,10 @@ class LibrosIVAController extends Controller
                 'ventas_gravadas'       => $venta->sub_total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
                 'debito_fiscal'         => $venta->iva,
-                'ventas_exentas_cuenta_a_terceros'=> 0,
-                'ventas_gravadas_cuenta_a_terceros'=> 0,
-                'debito_fiscal_cuenta_a_terceros'=> 0,
-                'debito_fiscal_cuenta_a_terceros'=> 0,
+                'ventas_exentas_cuenta_a_terceros' => 0,
+                'ventas_gravadas_cuenta_a_terceros' => 0,
+                'debito_fiscal_cuenta_a_terceros' => 0,
+                'debito_fiscal_cuenta_a_terceros' => 0,
                 'iva_retenido'         => $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido,
                 'total'                 => $venta->total,
@@ -150,10 +150,10 @@ class LibrosIVAController extends Controller
                 'ventas_gravadas'       => $venta->sub_total > 0 ? $venta->sub_total * -1 : $venta->sub_total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros > 0 ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
                 'debito_fiscal'         => $venta->iva > 0 ? $venta->iva * -1 : $venta->iva,
-                'ventas_exentas_cuenta_a_terceros'=> 0,
-                'ventas_gravadas_cuenta_a_terceros'=> 0,
-                'debito_fiscal_cuenta_a_terceros'=> 0,
-                'debito_fiscal_cuenta_a_terceros'=> 0,
+                'ventas_exentas_cuenta_a_terceros' => 0,
+                'ventas_gravadas_cuenta_a_terceros' => 0,
+                'debito_fiscal_cuenta_a_terceros' => 0,
+                'debito_fiscal_cuenta_a_terceros' => 0,
                 'iva_retenido'         => $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
@@ -201,30 +201,70 @@ class LibrosIVAController extends Controller
             ->where('cotizacion', 0)
             ->get();
 
+
         // Transformar compras
+        // $comprasData = $compras->map(function ($compra) {
+        //     $proveedor = optional($compra->proveedor);
+
+        //     return [
+        //         'fecha'                 => $compra->fecha,
+        //         'clase_documento'       => 1,
+        //         'tipo_documento'        => $compra->tipo_documento,
+        //         'num_documento'         => $compra->referencia,
+        //         'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
+        //         'nombre_proveedor'      => $compra->nombre_proveedor,
+        //         'compras_exentas'       => $compra->exenta,
+        //         'importaciones_exentas' => 0,
+        //         'compras_gravadas'      => $compra->sub_total,
+        //         'importaciones_gravadas' => 0,
+        //         'credito_fiscal'        => $compra->iva,
+        //         'anticipo_iva_percibido' => $compra->percepcion,
+        //         'compras_cuenta_terceros' => 0,
+        //         'credito_cuenta_terceros' => 0,
+        //         'total'                 => $compra->tipo_documento != 'Sujeto excluido' ? $compra->total : 0,
+        //         'sujeto_excluido'       => $compra->tipo_documento == 'Sujeto excluido' ? $compra->total : 0,
+        //         'no_sujeta'            => $compra->no_sujeta,
+        //         'id_compra'             => $compra->id,
+        //     ];
+        // });
+
         $comprasData = $compras->map(function ($compra) {
             $proveedor = optional($compra->proveedor);
 
-            return [
-                'fecha'                 => $compra->fecha,
-                'clase_documento'       => 1,
-                'tipo_documento'        => $compra->tipo_documento,
-                'num_documento'         => $compra->referencia,
-                'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
-                'nombre_proveedor'      => $compra->nombre_proveedor,
-                'compras_exentas'       => $compra->exenta,
+            $data = [
+                'fecha' => $compra->fecha,
+                'clase_documento' => 1,
+                'tipo_documento' => $compra->tipo_documento,
+                'num_documento' => $compra->referencia,
+                'nit_nrc' => $proveedor->nit ?? $proveedor->ncr,
+                'nombre_proveedor' => $compra->nombre_proveedor,
+                'compras_exentas' => 0,
                 'importaciones_exentas' => 0,
-                'compras_gravadas'      => $compra->sub_total,
+                'compras_gravadas' => 0,
                 'importaciones_gravadas' => 0,
-                'credito_fiscal'        => $compra->iva,
-                'anticipo_iva_percibido' => $compra->percepcion,
+                'credito_fiscal' => 0,
+                'anticipo_iva_percibido' => 0,
                 'compras_cuenta_terceros' => 0,
                 'credito_cuenta_terceros' => 0,
-                'total'                 => $compra->total,
-                'sujeto_excluido'       => 0,
-                'no_sujeta'            => $compra->no_sujeta,
-                'id_compra'             => $compra->id,
+                'total' => 0,
+                'sujeto_excluido' => 0,
+                'no_sujeta' => 0,
+                'id_compra' => $compra->id,
             ];
+
+
+            switch ($compra->tipo_documento) {
+                case 'Sujeto excluido':
+                    $data['sujeto_excluido'] = $compra->total;
+                    break;
+                default:
+                    $data['compras_gravadas'] = $compra->sub_total;
+                    $data['credito_fiscal'] = $compra->iva;
+                    $data['total'] = $compra->total;
+                    break;
+            }
+
+            return $data;
         });
 
         // Obtener los gastos
@@ -240,7 +280,7 @@ class LibrosIVAController extends Controller
         $gastosData = $gastos->map(function ($gasto) {
             $proveedor = optional($gasto->proveedor);
 
-            return [
+            $data = [
                 'fecha'                 => $gasto->fecha,
                 'clase_documento'       => 1, // Por ejemplo, otro tipo de documento para gastos
                 'tipo_documento'        => $gasto->tipo_documento,
@@ -249,15 +289,28 @@ class LibrosIVAController extends Controller
                 'nombre_proveedor'      => $gasto->nombre_proveedor,
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
-                'compras_gravadas'      => $gasto->sub_total,
+                'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,
-                'credito_fiscal'        => $gasto->iva,
+                'credito_fiscal'        => 0,
                 'anticipo_iva_percibido' => $gasto->percepcion,
                 'compras_cuenta_terceros' => 0,
                 'credito_cuenta_terceros' => 0,
-                'total'                 => $gasto->total,
+                'total'                 => 0,
                 'sujeto_excluido'       => 0,
             ];
+
+            switch ($gasto->tipo_documento) {
+                case 'Sujeto excluido':
+                    $data['sujeto_excluido'] = $gasto->total;
+                    break;
+                default:
+                    $data['compras_gravadas'] = $gasto->sub_total;
+                    $data['credito_fiscal'] = $gasto->iva;
+                    $data['total'] = $gasto->total;
+                    break;
+            }
+
+            return $data;
         });
 
         $devoluciones = DevolucionCompra::with(['proveedor'])
@@ -271,7 +324,7 @@ class LibrosIVAController extends Controller
             $proveedor = optional($devolucion->proveedor);
 
 
-            return [
+            $data = [
                 'fecha'                 => $devolucion->fecha,
                 'clase_documento'       => 1,
                 'tipo_documento'        => $devolucion->tipo_documento,
@@ -280,15 +333,28 @@ class LibrosIVAController extends Controller
                 'nombre_proveedor'      => $devolucion->nombre_proveedor,
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
-                'compras_gravadas'      => $devolucion->sub_total * -1,
+                'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,
-                'credito_fiscal'        => $devolucion->iva * -1,
+                'credito_fiscal'        => 0,
                 'anticipo_iva_percibido' => $devolucion->percepcion * -1,
                 'compras_cuenta_terceros' => 0,
                 'credito_cuenta_terceros' => 0,
-                'total'                 => $devolucion->total * -1,
+                'total'                 => 0,
                 'sujeto_excluido'       => 0,
             ];
+
+            switch ($devolucion->tipo_documento) {
+                case 'Sujeto excluido':
+                    $data['sujeto_excluido'] = $devolucion->total * -1;
+                    break;
+                default:
+                    $data['compras_gravadas'] = $devolucion->sub_total * -1;
+                    $data['credito_fiscal'] = $devolucion->iva * -1;
+                    $data['total'] = $devolucion->total * -1;
+                    break;
+            }
+
+            return $data;
         });
 
         // Unir y ordenar ambas colecciones por fecha
@@ -298,6 +364,7 @@ class LibrosIVAController extends Controller
             ->sortBy('fecha')
             ->values()
             ->all();
+
 
 
         return response()->json($libroCompras, 200);

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Bodega;
+use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
 class SucursalesController extends Controller
@@ -38,6 +41,23 @@ class SucursalesController extends Controller
         return Response()->json($sucursales, 200);
 
     }
+
+    //lista de marcas por empresa estan en la tabla productos y el campo marca
+
+    public function listaMarcas() {
+       
+        $marcas = Producto::select('marca as nombre')
+                                ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+                                ->whereNotNull('marca')
+                                ->where('marca', '!=', '')
+                                ->groupBy('marca')
+                                ->get();
+
+        return Response()->json($marcas, 200);
+
+    }
+
+    
     
     public function read($id) {
 
@@ -60,6 +80,14 @@ class SucursalesController extends Controller
         
         $sucursal->fill($request->all());
         $sucursal->save();
+
+        //Crear bodega por defecto
+        Bodega::create([
+            'nombre' => $sucursal->nombre,
+            'activo' => true,
+            'id_sucursal' => $sucursal->id,
+            'id_empresa' => $sucursal->id_empresa
+        ]);
 
         return Response()->json($sucursal, 200);
 
