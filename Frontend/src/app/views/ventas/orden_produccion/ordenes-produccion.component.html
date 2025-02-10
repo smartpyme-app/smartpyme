@@ -63,7 +63,7 @@
           <tr class="animated fadeIn" *ngFor="let orden of ordenes?.data">
             <td>{{orden.codigo}}</td>
             <td>{{orden.fecha | date:'dd/MM/yyyy'}}</td>
-            <td>{{orden.cliente?.nombre}}</td>
+            <td>{{orden.nombre_cliente}}</td>
             <td>{{orden.asesor?.name}}</td>
             <td>
               <select name="estado" class="form-select w-auto border-0" 
