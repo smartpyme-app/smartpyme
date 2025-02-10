@@ -46,20 +46,7 @@
     <div class="bg-white p-4 rounded">
       <h4 class="mb-3">Información de la Orden</h4>
       <div class="row">
-        <!-- <div class="col-md-6 mb-3">
-          <label class="form-label required">Fecha</label>
-          <input type="date" 
-                 class="form-control" 
-                 name="fecha" 
-                 [(ngModel)]="orden.fecha" 
-                 #fecha="ngModel"
-                 required>
-          <div class="invalid-feedback" *ngIf="fecha.invalid && (fecha.dirty || fecha.touched)">
-            La fecha es requerida
-          </div>
-        </div> -->
-        
-        <div class="col-md-6 mb-3">
+        <div class="col-md-12 col-lg-6 mb-3">
           <label class="form-label required">Fecha de Entrega</label>
           <input type="date" 
                  class="form-control" 
@@ -72,11 +59,19 @@
           </div>
         </div>
 
-        <div class="col-12 mb-3">
+        <div class="col-12 col-md-6 mb-3">
           <label class="form-label">Terminos y condiciones </label>
           <textarea class="form-control" 
-                    name="observaciones" 
+                    name="terminos_de_venta" 
                     [(ngModel)]="orden.terminos_de_venta" 
+                    rows="3"
+                    placeholder="Ingrese terminos de cotizacion adicionales para producción"></textarea>
+        </div>
+        <div class="col-12 col-md-6 mb-3">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" 
+                    name="observaciones" 
+                    [(ngModel)]="orden.observaciones" 
                     rows="3"
                     placeholder="Ingrese observaciones adicionales para producción"></textarea>
         </div>
