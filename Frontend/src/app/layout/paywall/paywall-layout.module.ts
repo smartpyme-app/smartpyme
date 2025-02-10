@@ -15,6 +15,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaywallRoutingModule } from './paywall-layout.routing.module';
+import { PaymentSuccessPaywallComponent }    from './components/payment-success/payment-success.component';
 
 import { PaywallComponent }         from './components/paywall.component';
 import { PaywallLayoutComponent }    from './layout/paywall-layout.component';
@@ -40,10 +41,12 @@ import { PaywallLayoutComponent }    from './layout/paywall-layout.component';
   ],
   declarations: [
     PaywallComponent,
-    PaywallLayoutComponent
+    PaywallLayoutComponent,
+    PaymentSuccessPaywallComponent
   ],
   exports: [
     PaywallComponent
   ]
+
 })
 export class PaywallModule { }
