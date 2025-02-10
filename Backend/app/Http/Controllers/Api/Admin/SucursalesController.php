@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Producto;
+use App\Models\Inventario\Bodega;
 use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
@@ -79,6 +80,14 @@ class SucursalesController extends Controller
         
         $sucursal->fill($request->all());
         $sucursal->save();
+
+        //Crear bodega por defecto
+        Bodega::create([
+            'nombre' => $sucursal->nombre,
+            'activo' => true,
+            'id_sucursal' => $sucursal->id,
+            'id_empresa' => $sucursal->id_empresa
+        ]);
 
         return Response()->json($sucursal, 200);
 
