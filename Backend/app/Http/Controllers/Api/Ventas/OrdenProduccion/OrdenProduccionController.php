@@ -21,8 +21,9 @@ class OrdenProduccionController extends Controller
 {
     public function index(Request $request)
     {
-       
+
         $query = OrdenProduccion::with(['cliente', 'usuario', 'asesor'])
+            //  ->where('id_empresa', Auth::user()->id_empresa)
             ->when($request->estado, function ($q, $estado) {
                 return $q->where('estado', $estado);
             })
@@ -31,7 +32,8 @@ class OrdenProduccionController extends Controller
             })
             ->when($request->id_asesor, function ($q, $asesor) {
                 return $q->where('id_asesor', $asesor);
-            });
+            })
+            ->orderBy('id', 'desc');
 
         return response()->json([
             'success' => true,
@@ -53,8 +55,11 @@ class OrdenProduccionController extends Controller
                 'id_asesor' => 'required|exists:users,id',
             ]);
 
+
+
             // Crear la orden
             $cotizacion = CotizacionVenta::find($request->id_cotizacion);
+            $id_empresa = Auth::user()->id_empresa;
 
             $orden = OrdenProduccion::create([
                 'codigo' => $this->generarCodigo(),
@@ -66,7 +71,7 @@ class OrdenProduccionController extends Controller
                 'id_usuario' => Auth::id(),
                 'id_asesor' => $request->id_asesor,
                 'observaciones' => $request->observaciones,
-                'id_empresa' => $cotizacion->id_empresa,
+                'id_empresa' => $id_empresa,
                 'id_bodega' => $cotizacion->id_bodega,
                 'terminos_condiciones' => $cotizacion->terminos_de_venta,
                 'id_vendedor' => $cotizacion->id_vendedor
@@ -104,7 +109,7 @@ class OrdenProduccionController extends Controller
                 'id_usuario' => Auth::id(),
                 'comentarios' => 'Orden creada'
             ]);
-            
+
 
             DB::commit();
 
@@ -135,7 +140,7 @@ class OrdenProduccionController extends Controller
             'vendedor'
         ])->findOrFail($id);
 
-       // Log::info($orden);
+        // Log::info($orden);
 
         return response()->json($orden);
     }
@@ -204,34 +209,34 @@ class OrdenProduccionController extends Controller
 
     public function cambiarEstado(Request $request)
     {
-         try {
-        DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-        $request->validate([
-            'estado' => 'required|in:pendiente,aceptada,en_proceso,completada,entregada,anulada',
-            'comentarios' => 'nullable|string'
-        ]);
+            $request->validate([
+                'estado' => 'required|in:pendiente,aceptada,en_proceso,completada,entregada,anulada',
+                'comentarios' => 'nullable|string'
+            ]);
 
-        $orden = OrdenProduccion::findOrFail($request->id);
-        $estadoAnterior = $orden->estado;
+            $orden = OrdenProduccion::findOrFail($request->id);
+            $estadoAnterior = $orden->estado;
 
-        $orden->update(['estado' => $request->estado]);
+            $orden->update(['estado' => $request->estado]);
 
 
-        $orden->historial()->create([
-            'estado_anterior' => $estadoAnterior,
-            'estado_nuevo' => $request->estado,
-            'id_usuario' => Auth::id(),
-            'comentarios' => 'Estado actualizado a ' . $request->estado
-        ]);
-        
-        DB::commit();
+            $orden->historial()->create([
+                'estado_anterior' => $estadoAnterior,
+                'estado_nuevo' => $request->estado,
+                'id_usuario' => Auth::id(),
+                'comentarios' => 'Estado actualizado a ' . $request->estado
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Estado actualizado exitosamente',
-            'data' => $orden->fresh()
-        ]);
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Estado actualizado exitosamente',
+                'data' => $orden->fresh()
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

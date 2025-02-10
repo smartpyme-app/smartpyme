@@ -10,6 +10,8 @@ use App\Models\CotizacionVenta;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class OrdenProduccion extends Model
 {
@@ -60,7 +62,13 @@ class OrdenProduccion extends Model
     {
         parent::boot();
 
-     
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+
+
         self::created(function ($model) {
             self::crearNotificacion($model, [
                 'titulo' => 'Nueva Orden de Producción',
@@ -68,11 +76,11 @@ class OrdenProduccion extends Model
             ]);
         });
 
-    
+
         self::updated(function ($model) {
             if ($model->isDirty('estado') && $model->estado === 'completada') {
                 self::crearNotificacion($model, [
-                    'titulo' => 'Orden de Producción Completada', 
+                    'titulo' => 'Orden de Producción Completada',
                     'descripcion' => "La orden de producción #{$model->codigo} completada"
                 ]);
             }
@@ -86,7 +94,7 @@ class OrdenProduccion extends Model
             'titulo' => $datos['titulo'],
             'descripcion' => $datos['descripcion'],
             'tipo' => 'Orden de Producción',
-            'categoria' => 'ordenes_produccion', 
+            'categoria' => 'ordenes_produccion',
             'prioridad' => 'Alta',
             'leido' => false,
             'referencia' => 'orden-produccion/detalles',
