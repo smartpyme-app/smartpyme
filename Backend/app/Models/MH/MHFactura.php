@@ -295,7 +295,7 @@ class MHFactura extends Model
                 "tributos" => $tributos,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($detalle->iva,2))
+                "ivaItem" => floatval(number_format($detalle->iva, 2, '.', ''))
               ]);
         }
 
