@@ -62,7 +62,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
           total_costo: this.cotizacion.total_costo,
           descuento: this.cotizacion.descuento,
           total: this.cotizacion.total,
-          terminos_de_venta: this.cotizacion.terminos_de_venta,
+          terminos_de_venta: this.cotizacion.terminos_condiciones,
           correlativo: this.cotizacion.correlativo,
           nombre_cliente: this.cotizacion.nombre_cliente,
           nombre_usuario: this.cotizacion.nombre_usuario,

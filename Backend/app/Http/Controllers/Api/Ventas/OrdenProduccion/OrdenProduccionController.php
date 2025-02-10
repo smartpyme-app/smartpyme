@@ -52,7 +52,7 @@ class OrdenProduccionController extends Controller
                 'fecha' => 'required|date',
                 'fecha_entrega' => 'required|date',
                 'id_cliente' => 'required|exists:clientes,id',
-                'id_asesor' => 'required|exists:users,id',
+              //  'id_asesor' => 'required|exists:users,id',
             ]);
 
 
