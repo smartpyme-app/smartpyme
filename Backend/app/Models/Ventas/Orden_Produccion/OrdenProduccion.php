@@ -39,7 +39,8 @@ class OrdenProduccion extends Model
         'id_empresa',
         'id_bodega',
         'terminos_condiciones',
-        'id_vendedor'
+        'id_vendedor',
+        'cantidad_producida',
     ];
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];
 

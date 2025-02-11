@@ -94,11 +94,13 @@
           <thead>
             <tr>
               <th>Descripción</th>
-              <th class="text-center">Cantidad</th>
               <th class="text-center" *ngFor="let field of customFields"
                   [hidden]="!hasCustomField(field.id)">
                 {{field.name}}
               </th>
+              <th class="text-center">Cantidad</th>
+              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada'">Cantidad Producida</th>
+              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada'">Porcentaje</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +119,6 @@
                   </div>
                 </div>
               </td>
-              <td class="text-center">{{detalle.cantidad}}</td>
               <td class="text-center" *ngFor="let field of customFields"
                   [hidden]="!hasCustomField(field.id)">
                 <span [ngClass]="{
@@ -126,6 +127,19 @@
                 }">
                   {{getCustomFieldValue(detalle, field.id)}}
                 </span>
+              </td>
+              <td class="text-center">{{detalle.cantidad}}</td>
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada'">
+                <input type="number" 
+                       class="form-control form-control-sm" 
+                       [name]="'cantidad_producida_' + detalle.id_producto"
+                       [(ngModel)]="detalle.cantidad_producida" 
+                       min="0" 
+                       [max]="detalle.cantidad" 
+                       (ngModelChange)="updatePorcentaje(detalle)" />
+              </td>
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada'">
+                {{detalle.porcentaje | number:'1.2-2'}}%
               </td>
             </tr>
           </tbody>
@@ -146,6 +160,15 @@
           [disabled]="!ordenForm.form.valid || loading">
     <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
     <span class="ms-2">{{loading ? 'Guardando...' : 'Crear Orden'}}</span>
+  </button>
+  <button *ngIf="isDetalles" 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="!ordenForm.form.valid || loading"
+        >
+    <!--editar orden-->
+    <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+    <span class="ms-2">{{loading ? 'Guardando...' : 'Editar Orden'}}</span>
   </button>
   </div>
 </form>

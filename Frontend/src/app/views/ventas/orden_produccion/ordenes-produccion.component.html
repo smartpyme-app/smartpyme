@@ -94,6 +94,11 @@
               <ng-template #accionesTemplate>
                 <div class="d-flex flex-column align-items-start">
                  
+                  <a *ngIf="orden.estado == 'aceptada' && apiService.canEdit()" 
+                     routerLink="/orden-produccion/editar/{{orden.id}}" 
+                     class="btn">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
                   <a routerLink="/orden-produccion/detalles/{{orden.id}}" class="btn">
                     <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                   </a>
@@ -106,6 +111,7 @@
                      class="btn">
                     <i class="fa fa-fw fa-ban"></i> Anular
                   </a>
+                  
                 </div>
               </ng-template>
             </td>

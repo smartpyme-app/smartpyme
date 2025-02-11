@@ -52,12 +52,29 @@ class OrdenProduccionController extends Controller
                 'fecha' => 'required|date',
                 'fecha_entrega' => 'required|date',
                 'id_cliente' => 'required|exists:clientes,id',
-              //  'id_asesor' => 'required|exists:users,id',
+                //  'id_asesor' => 'required|exists:users,id',
             ]);
 
+            if ($request->id) {
+                $orden = OrdenProduccion::findOrFail($request->id);
+                if ($request->has('detalles')) {
+                    $ordenes = $orden->detalles();
 
+                    foreach ($request->detalles as $detalle) {
 
-            // Crear la orden
+                        if (isset($detalle['id'])) {
+                            $ordenes->where('id', $detalle['id'])->update([
+                                'cantidad_producida' => $detalle['cantidad_producida']
+                            ]);
+                        }
+                    }
+                    DB::commit();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Orden actualizada exitosamente'
+                    ]);
+                }
+            }
             $cotizacion = CotizacionVenta::find($request->id_cotizacion);
             $id_empresa = Auth::user()->id_empresa;
 

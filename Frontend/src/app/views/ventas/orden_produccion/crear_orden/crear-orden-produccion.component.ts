@@ -26,7 +26,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.isDetalles = this.router.url.includes('/detalles/');
+    this.isDetalles = this.router.url.includes('/detalles/') || this.router.url.includes('/editar/');
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       if (this.isDetalles) {
@@ -48,9 +48,10 @@ export class CrearOrdenProduccionComponent implements OnInit {
         this.cotizacion = response
 
         this.orden = {
+          id: response.id,
           fecha: new Date().toISOString().split('T')[0],
           fecha_entrega: new Date(this.cotizacion.fecha_entrega).toISOString().split('T')[0],
-          estado: 'pendiente', 
+          estado: this.cotizacion.estado, 
           id_cotizacion: this.cotizacion.id,
           id_cliente: this.cotizacion.id_cliente,
           id_usuario: this.cotizacion.id_usuario,
@@ -71,6 +72,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
           detalles: this.cotizacion.detalles.map((detalle: any) => ({
             id_producto: detalle.id_producto,
             cantidad: detalle.cantidad,
+            cantidad_producida: detalle.cantidad_producida || 0,
+            porcentaje: detalle.cantidad_producida ? (detalle.cantidad_producida / detalle.cantidad) * 100 : 0,
             descripcion: detalle.descripcion,
             precio: detalle.precio,
             total: detalle.total,
@@ -78,7 +81,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
             descuento: detalle.descuento,
             id_cotizacion_venta: detalle.id_cotizacion_venta,
             custom_fields: detalle.custom_fields || [],
-            producto: detalle.producto
+            producto: detalle.producto,
+            id  : detalle.id
           }))
         };
 
@@ -94,7 +98,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
   cargarCotizacion(id: number) {
 
-    console.log('id', id)
+    //console.log('id', id)
     this.loading = true;
     this.apiService.read('cotizacion/', id).subscribe(
       (response: any) => {
@@ -107,6 +111,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
         }
 
         this.orden = {
+
           fecha: new Date().toISOString().split('T')[0],
           fecha_entrega: new Date().toISOString().split('T')[0],
           estado: 'pendiente',
@@ -131,6 +136,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
           detalles: this.cotizacion.detalles.map((detalle: any) => ({
             id_producto: detalle.id_producto,
             cantidad: detalle.cantidad,
+            cantidad_producida: detalle.cantidad_producida || 0,
+            porcentaje: detalle.cantidad_producida ? (detalle.cantidad_producida / detalle.cantidad) * 100 : 0,
             descripcion: detalle.descripcion,
             precio: detalle.precio,
             total: detalle.total,
@@ -184,7 +191,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
       this.alertService.error('Debe especificar una fecha de entrega');
       return;
     }
-    if (new Date(this.orden.fecha_entrega) < new Date(this.orden.fecha)) {
+    if ((new Date(this.orden.fecha_entrega) < new Date(this.orden.fecha)) && !this.isDetalles) {
       this.alertService.error('La fecha de entrega no puede ser anterior a la fecha actual');
       return;
     }
@@ -214,5 +221,20 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
   formatDate(date: string): string {
     return new Date(date).toISOString().split('T')[0];
+  }
+
+  updatePorcentaje(detalle: any) {
+    if (!detalle.cantidad_producida) {
+      detalle.cantidad_producida = 0;
+      detalle.porcentaje = 0;
+      return;
+    }
+
+    if (detalle.cantidad_producida > detalle.cantidad) {
+      this.alertService.error('La cantidad producida no puede ser mayor a la cantidad solicitada');
+      detalle.cantidad_producida = detalle.cantidad;
+    }
+
+    detalle.porcentaje = (detalle.cantidad_producida / detalle.cantidad) * 100;
   }
 }
