@@ -203,8 +203,15 @@ export class CrearOrdenProduccionComponent implements OnInit {
     this.loading = true;
     this.apiService.store('orden-produccion', this.orden).subscribe(
       response => {
-        this.alertService.success('Orden creada', 'La orden de producción fue creada exitosamente.');
-        this.router.navigate(['/ordenes/produccion']);
+        if (!this.isDetalles) {
+          this.alertService.success('Orden creada', 'La orden de producción fue creada exitosamente.');
+          this.router.navigate(['/ordenes/produccion']);
+        } 
+        this.alertService.success('Orden actualizada', 'La orden de producción fue actualizada exitosamente.');
+        this.loading = false;
+
+        
+
       },
       error => {
         this.alertService.error(error);
@@ -243,9 +250,6 @@ export class CrearOrdenProduccionComponent implements OnInit {
   }
 
   public setEstado(orden: any) {
-    // Agregamos el distintivo
-   // cotizacion.cotizacion_id = 1;
-    
     this.apiService.store('orden-produccion', orden).subscribe(
       response => {
         this.alertService.success('Estado actualizado', 'El estado de la orden de producción fue actualizado.');
