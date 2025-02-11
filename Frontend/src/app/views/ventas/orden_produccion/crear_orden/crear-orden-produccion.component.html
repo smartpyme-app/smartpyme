@@ -2,6 +2,11 @@
   <h2 class="page-heading">
     {{ isDetalles ? 'Detalles de Orden de Producción' : 'Nueva Orden de Producción' }}
   </h2>
+  <div>
+    <button class="btn btn-light text-danger" [routerLink]="isDetalles ? '/ordenes/produccion' : '/cotizaciones'">
+      <i class="fa fa-arrow-left me-2"></i>Regresar
+    </button>
+</div>
 </section>
 
 <div class="row" *ngIf="loading">
@@ -131,9 +136,9 @@
 
   <!-- Botones de Acción -->
   <div class="d-flex justify-content-end gap-2 mb-4">
-    <button type="button" class="btn btn-secondary" (click)="cancelar()">
+    <!-- <button type="button" class="btn btn-secondary" (click)="cancelar()">
       <i class="fa fa-times me-2"></i>Cancelar
-    </button>
+    </button> -->
     
     <button *ngIf="!isDetalles" 
           type="submit" 
