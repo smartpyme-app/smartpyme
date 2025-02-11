@@ -43,7 +43,7 @@ class OrdenProduccionController extends Controller
 
     public function store(Request $request)
     {
-        //dd($request->all());
+        // dd($request->all());
         try {
             DB::beginTransaction();
 
@@ -57,13 +57,17 @@ class OrdenProduccionController extends Controller
 
             if ($request->id) {
                 $orden = OrdenProduccion::findOrFail($request->id);
+                $orden->update([
+                    'estado' => $request->estado,
+                ]);
+
                 if ($request->has('detalles')) {
-                    
+
                     $detallesIds = $orden->detalles()->pluck('id')->toArray();
-                    
+
                     foreach ($request->detalles as $detalle) {
                         if (isset($detalle['id']) && in_array($detalle['id'], $detallesIds)) {
-                         
+
                             $orden->detalles()
                                 ->where('id', $detalle['id'])
                                 ->update([

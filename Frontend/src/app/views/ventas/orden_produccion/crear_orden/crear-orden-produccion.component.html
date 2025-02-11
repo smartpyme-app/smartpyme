@@ -23,7 +23,7 @@
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 *ngIf="!isDetalles">Información de la Cotización #{{cotizacion.correlativo}}</h4>
         <h4 *ngIf="isDetalles">Información de la Orden de Producción #{{cotizacion.codigo}}</h4>
-        <span class="badge bg-success">{{cotizacion.estado}}</span>
+        <!-- <span class="badge bg-success">{{cotizacion.estado}}</span> -->
       </div>
       <div class="row">
         <div class="col-md-3">
@@ -41,6 +41,28 @@
         <div class="col-md-3">
           <label class="form-label fw-bold">Fecha Cotización:</label>
           <p>{{cotizacion.fecha | date:'dd/MM/yyyy'}}</p>
+        </div>
+        <div class="col-md-3">
+          <!-- <label class="form-label fw-bold">Estado:</label>
+          <span class="badge bg-success">{{cotizacion.estado}}</span>
+          <td> -->
+            <label class="form-label fw-bold">Estado:</label>
+            <select name="enable" class="form-select w-auto border-0" 
+                    (change)="setEstado(cotizacion)" 
+                    [(ngModel)]="cotizacion.estado" 
+                    [ngClass]="{
+                      'bg-light-warning': cotizacion?.estado == 'pendiente',
+                      'bg-light-danger': cotizacion?.estado == 'rechazada',
+                      'bg-light-success': cotizacion?.estado == 'aceptada' || cotizacion?.estado == 'completada',
+                      'bg-light-info': cotizacion?.estado == 'entregada'
+                    }">
+              <option value="pendiente">Pendiente</option>
+              <option value="aceptada">Aceptada</option>
+              <option value="en_proceso">En Proceso</option>
+              <option value="completada">Completada</option>
+              <option value="entregada">Entregada</option>
+            </select>
+           <!-- </td> -->
         </div>
       </div>
     </div>
@@ -167,7 +189,7 @@
     <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
     <span class="ms-2">{{loading ? 'Guardando...' : 'Crear Orden'}}</span>
   </button>
-  <button *ngIf="isDetalles && editar" 
+  <button *ngIf="isDetalles && editar && cotizacion.estado?.toLowerCase() === 'aceptada'"
           type="submit" 
           class="btn btn-primary" 
           [disabled]="!ordenForm.form.valid || loading"

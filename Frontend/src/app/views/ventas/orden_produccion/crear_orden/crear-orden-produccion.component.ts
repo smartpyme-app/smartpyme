@@ -241,4 +241,20 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
     detalle.porcentaje = (detalle.cantidad_producida / detalle.cantidad) * 100;
   }
+
+  public setEstado(orden: any) {
+    // Agregamos el distintivo
+   // cotizacion.cotizacion_id = 1;
+    
+    this.apiService.store('orden-produccion', orden).subscribe(
+      response => {
+        this.alertService.success('Estado actualizado', 'El estado de la orden de producción fue actualizado.');
+      }, 
+      error => {
+        this.alertService.error(error);
+      }
+    );
+   }
+
+
 }
