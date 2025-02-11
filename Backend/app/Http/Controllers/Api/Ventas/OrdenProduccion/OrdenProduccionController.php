@@ -58,16 +58,20 @@ class OrdenProduccionController extends Controller
             if ($request->id) {
                 $orden = OrdenProduccion::findOrFail($request->id);
                 if ($request->has('detalles')) {
-                    $ordenes = $orden->detalles();
-
+                    
+                    $detallesIds = $orden->detalles()->pluck('id')->toArray();
+                    
                     foreach ($request->detalles as $detalle) {
-
-                        if (isset($detalle['id'])) {
-                            $ordenes->where('id', $detalle['id'])->update([
-                                'cantidad_producida' => $detalle['cantidad_producida']
-                            ]);
+                        if (isset($detalle['id']) && in_array($detalle['id'], $detallesIds)) {
+                         
+                            $orden->detalles()
+                                ->where('id', $detalle['id'])
+                                ->update([
+                                    'cantidad_producida' => $detalle['cantidad_producida']
+                                ]);
                         }
                     }
+
                     DB::commit();
                     return response()->json([
                         'success' => true,

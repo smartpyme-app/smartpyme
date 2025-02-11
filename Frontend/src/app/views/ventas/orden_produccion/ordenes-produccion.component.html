@@ -45,6 +45,8 @@
             <th>Asesor</th>
             <th>Estado</th>
             <th>Fecha Entrega</th>
+            <th>Avance</th>
+            
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
@@ -87,6 +89,25 @@
               </select>
             </td>
             <td>{{orden.fecha_entrega | date:'dd/MM/yyyy'}}</td>
+            <td style="width: 150px;">
+              <div class="d-flex align-items-center">
+                <div class="progress flex-grow-1" style="height: 8px;">
+                  <div class="progress-bar" 
+                       role="progressbar" 
+                       [style.width]="orden.avance + '%'" 
+                       [ngClass]="{
+                         'bg-danger': orden.avance < 30,
+                         'bg-warning': orden.avance >= 30 && orden.avance < 70,
+                         'bg-success': orden.avance >= 70
+                       }"
+                       [attr.aria-valuenow]="orden.avance" 
+                       aria-valuemin="0" 
+                       aria-valuemax="100">
+                  </div>
+                </div>
+                <span class="ms-2 small">{{orden.avance}}%</span>
+              </div>
+            </td>
             <td class="text-center">
               <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>

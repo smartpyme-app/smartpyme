@@ -42,7 +42,7 @@ class OrdenProduccion extends Model
         'id_vendedor',
         'cantidad_producida',
     ];
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento','avance'];
 
 
     protected $casts = [
@@ -178,6 +178,32 @@ class OrdenProduccion extends Model
     {
         return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'), 2);
     }
+
+    public function getAvanceAttribute()
+    {
+    
+        if ($this->detalles->isEmpty()) {
+            return 0;
+        }
+
+        $total_producido = 0;
+        $total_solicitado = 0;
+
+        foreach ($this->detalles as $detalle) {
+            $total_producido += $detalle->cantidad_producida ?? 0;
+            $total_solicitado += $detalle->cantidad;
+        }
+
+        // Evitar división por cero
+        if ($total_solicitado === 0) {
+            return 0;
+        }
+
+        // Calcular el porcentaje y redondear a 2 decimales
+        return round(($total_producido / $total_solicitado) * 100, 2);
+    }
+
+    
 
     // Relaciones
     public function detalles()
