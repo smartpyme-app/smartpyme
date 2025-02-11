@@ -17,6 +17,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
   public loading: boolean = false;
   public customFields: any = [];
   public isDetalles: boolean = false;
+  public editar : boolean = false;
 
   constructor(
     public apiService: ApiService,
@@ -27,6 +28,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
   ngOnInit() {
     this.isDetalles = this.router.url.includes('/detalles/') || this.router.url.includes('/editar/');
+
+    //si la ruta inclue editar poner en true si no false
+    this.editar = this.router.url.includes('/editar/') ? true : false; 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       if (this.isDetalles) {
