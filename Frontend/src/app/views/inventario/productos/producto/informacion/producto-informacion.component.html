@@ -142,7 +142,12 @@
     <div class="form-group col-md-12 col-lg-3">
       <label for="talla" class="w-100">Talla</label>
       <div class="input-group">
-        <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="talla" [addTag]="true"
+        <!-- <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="talla" [addTag]="true"
+          (change)="addAttribute($event, 'talla')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
+          style="padding-top: 0px; padding-bottom: 0px;">
+        </ng-select> -->
+
+        <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="valor" [addTag]="true"
           (change)="addAttribute($event, 'talla')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
@@ -153,8 +158,8 @@
     <div class="form-group col-md-12 col-lg-3">
       <label for="color" class="w-100">Color</label>
       <div class="input-group">
-        <ng-select [(ngModel)]="producto.color" [items]="colores" bindLabel="color" [addTag]="true"
-          (change)="addAttribute($event, 'color')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
+        <ng-select [(ngModel)]="producto.color" [items]="colores" bindLabel="valor" [addTag]="true"
+          (change)="addAttribute($event, 'color')" class="form-control form-select" placeholder="Selecciona o agrega un color"
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>
@@ -163,9 +168,10 @@
     <div class="form-group col-md-12 col-lg-3">
       <label for="material" class="w-100">Material</label>
       <div class="input-group">
-        <ng-select [(ngModel)]="producto.material" [items]="materiales" bindLabel="material" [addTag]="true"
-          (change)="addAttribute($event, 'material')" class="form-control form-select"
-          placeholder="Selecciona o agrega una talla" style="padding-top: 0px; padding-bottom: 0px;">
+
+        <ng-select [(ngModel)]="producto.material" [items]="materiales" bindLabel="valor" [addTag]="true"
+          (change)="addAttribute($event, 'material')" class="form-control form-select" placeholder="Selecciona o agrega un material"
+          style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>
     </div>

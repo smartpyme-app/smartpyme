@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 use App\Http\Controllers\ComboProductoController;
+use App\Http\Controllers\Api\Inventario\AtributoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/productos',                     [ProductosController::class, 'index']);
@@ -65,6 +66,10 @@ Route::get('promociones',        [PromocionesController::class, 'index']);
 Route::post('promocion',          [PromocionesController::class, 'store']);
 Route::delete('promocion/{id}',   [PromocionesController::class, 'delete']);
 Route::get('promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
+
+Route::get('atributos', [AtributoController::class, 'index']);
+Route::post('atributo', [AtributoController::class, 'store']);
+
 
 // Imagenes
 Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
