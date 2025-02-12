@@ -69,7 +69,7 @@
   </div>
 
   <!-- Información de la Orden -->
-  <div class="col-md-12 mb-3">
+  <!-- <div class="col-md-12 mb-3">
     <div class="bg-white p-4 rounded">
       <h4 class="mb-3">Información de la Orden</h4>
       <div class="row">
@@ -104,8 +104,50 @@
         </div>
       </div>
     </div>
+  </div> -->
+  <div class="col-md-12 mb-3">
+    <div class="bg-white p-4 rounded">
+      <h4 class="mb-3">Información de la Orden</h4>
+      <div class="row">
+        <!-- Fecha de entrega - Siempre arriba y ancho completo -->
+        <div class="col-12 mb-3 col-md-6">
+          <label class="form-label required">Fecha de Entrega</label>
+          <input type="date" 
+                 class="form-control" 
+                 name="fecha_entrega" 
+                 [(ngModel)]="orden.fecha_entrega"
+                 #fechaEntrega="ngModel"
+                 required>
+          <div class="invalid-feedback" *ngIf="fechaEntrega.invalid && (fechaEntrega.dirty || fechaEntrega.touched)">
+            La fecha de entrega es requerida
+          </div>
+        </div>
+  
+        <!-- Container para términos y observaciones -->
+        <div class="row">
+          <!-- En pantallas md+ ocupará la mitad, en pequeñas el ancho completo -->
+          <div class="col-12 col-md-6 mb-3">
+            <label class="form-label">Términos y condiciones</label>
+            <textarea class="form-control" 
+                      name="terminos_de_venta" 
+                      [(ngModel)]="orden.terminos_de_venta" 
+                      rows="3"
+                      placeholder="Ingrese términos de cotización adicionales para producción"></textarea>
+          </div>
+          
+          <!-- En pantallas md+ ocupará la mitad, en pequeñas el ancho completo -->
+          <div class="col-12 col-md-6 mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea class="form-control" 
+                      name="observaciones" 
+                      [(ngModel)]="orden.observaciones" 
+                      rows="3"
+                      placeholder="Ingrese observaciones adicionales para producción"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-
   <!-- Detalles de Producción -->
   <div class="col-md-12 mb-3">
     <div class="bg-white p-4 rounded">
@@ -151,7 +193,7 @@
                 </span>
               </td>
               <td class="text-center">{{detalle.cantidad}}</td>
-              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && editar">
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && editar" style="width: 100px;">
                 <input type="number" 
                        class="form-control form-control-sm" 
                        [name]="'cantidad_producida_' + detalle.id_producto"
@@ -166,8 +208,28 @@
               </td>
 
 
-              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
+              <!-- <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
                 {{detalle.porcentaje | number:'1.2-2'}}%
+              </td> -->
+
+              <td style="width: 150px;" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
+                <div class="d-flex align-items-center">
+                  <div class="progress flex-grow-1" style="height: 8px;">
+                    <div class="progress-bar" 
+                         role="progressbar" 
+                         [style.width]="detalle.porcentaje + '%'" 
+                         [ngClass]="{
+                           'bg-danger': detalle.porcentaje < 30,
+                           'bg-warning': detalle.porcentaje >= 30 && detalle.porcentaje < 70,
+                           'bg-success': detalle.porcentaje >= 70
+                         }"
+                         [attr.aria-valuenow]="detalle.porcentaje" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                  </div>
+                  <span class="ms-2 small">{{detalle.porcentaje | number:'1.2-2'}}%</span>
+                </div>
               </td>
             </tr>
           </tbody>
