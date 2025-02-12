@@ -104,7 +104,7 @@
                                   <a routerLink="/cotizacion/{{venta.id}}" class="btn">
                                       <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                   </a>
-                                  <a *ngIf="venta.estado == 'pendiente'" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
+                                  <a *ngIf="venta.estado == 'aceptada'" routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
                                       <i class="fa fa-fw fa-money-bill"></i> Facturar
                                   </a>
                                   <a (click)="imprimir(venta)" class="btn">
