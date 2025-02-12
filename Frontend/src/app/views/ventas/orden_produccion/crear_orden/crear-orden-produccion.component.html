@@ -42,7 +42,7 @@
           <label class="form-label fw-bold">Fecha Cotización:</label>
           <p>{{cotizacion.fecha | date:'dd/MM/yyyy'}}</p>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3" *ngIf="isDetalles">
           <!-- <label class="form-label fw-bold">Estado:</label>
           <span class="badge bg-success">{{cotizacion.estado}}</span>
           <td> -->
@@ -121,8 +121,8 @@
                 {{field.name}}
               </th>
               <th class="text-center">Cantidad</th>
-              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada'">Cantidad Producida</th>
-              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada'">Porcentaje</th>
+              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada' && isDetalles">Cantidad Producida</th>
+              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada' && isDetalles">Porcentaje</th>
             </tr>
           </thead>
           <tbody>
@@ -161,12 +161,12 @@
                        (ngModelChange)="updatePorcentaje(detalle)" />
               </td>
 
-              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && !editar">
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && !editar && isDetalles">
                 {{detalle.cantidad_producida}}
               </td>
 
 
-              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada'">
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
                 {{detalle.porcentaje | number:'1.2-2'}}%
               </td>
             </tr>
