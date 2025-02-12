@@ -28,14 +28,15 @@
 
         #fecha          {top: 3cm; left: 12.5cm; }
         #giro           {top: 4cm; left: 12.5cm }
-        #nrc            {top: 4.5cm; left: 12.5cm }
+        #nrc            {top: 4.5cm; left: 15cm }
 
         #cliente        {top: 3cm; left: 1.7cm; width: 9cm;}
         #direccion      {top: 3.5cm; left: 1.7cm; width: 15cm;}
         #municipio      {top: 4cm; left: 1.7cm; width: 9cm;}
         #departamento   {top: 4cm; left: 7cm; width: 9cm;}
-        #nit            {top: 4.5cm; left: 7cm; }
+        #nit            {top: 4.5cm; left: 11cm; }
         #condicion      {top: 4.5cm; left: 1.7cm; }
+        #vendedor      {top: 4.5cm; left: 7cm; }
 
 
 
@@ -93,11 +94,12 @@
         @if($venta->estado == 'Pagada')
             <p id="condicion"><b>Condición: </b>CONTADO</p>
         @elseif($venta->estado == 'Pendiente')
-            <p id="condicion"><b>Condición: </b>CREDITO</p>
+            <p id="condicion"><b>Condición: </b>CREDITO a {{ \Carbon\Carbon::parse($venta->fecha)->diffInDays(\Carbon\Carbon::parse($venta->fecha_pago), false) }} días</p>
         @endif
         <p id="nit"><b>NIT:</b> {{ $cliente->nit }}</p>
         <p id="nrc"><b>NRC:</b> {{ $cliente->ncr }}</p>
         <p id="giro"><b>Giro:</b>{{ \Illuminate\Support\Str::limit($cliente->giro, 30, $end = '...') }}</p>
+        <p id="vendedor"><b>Vendedor: </b>{{ $venta->nombre_vendedor }}</p>
     </div>
 
     <table>
