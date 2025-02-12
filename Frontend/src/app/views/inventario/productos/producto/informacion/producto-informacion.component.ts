@@ -295,57 +295,75 @@ export class ProductoInformacionComponent implements OnInit {
     this.variants.splice(index, 1);
   }
 
+  // addAttribute(event: any, tipo: string) {
+  //   console.log('event', event);
+  //   console.log('tipo', tipo);
+  //   switch (tipo) {
+  //     case 'talla': {
+  //       //console.log('talla');
+  //       //if event esta vacio quitar el valor de la talla
+  //       if (event == null || event == '' || event === undefined) {
+  //         this.producto.talla = null;
+  //       } else {
+  //         this.producto.talla = event.valor; // Establecer la talla seleccionada
+  //       }
+  //       //statements;
+  //       // if (event && !this.tallas.includes(event)) {
+  //       //   this.tallas.push(event); // Agregar la nueva talla a la lista
+  //       // }
+  //       //  this.producto.talla = event.valor; // Establecer la talla seleccionada
+  //       break;
+  //     }
+  //     case 'color': {
+  //       //evaluar si no es undefined o vacio
+  //       if (event == null || event == '' || event === undefined) {
+  //         this.producto.colores = null;
+  //       } else {
+  //         this.producto.colores = event.valor; // Establecer la talla seleccionada
+  //       }
+
+  //       //statements;
+  //       // if (event && !this.colores.includes(event)) {
+  //       //   this.colores.push(event); // Agregar la nueva talla a la lista
+  //       // }
+  //       //  this.producto.colores = event.valor; // Establecer la talla seleccionada
+  //       break;
+  //     }
+  //     case 'material': {
+  //       //statements;
+  //       // if (event && !this.materiales.includes(event)) {
+  //       //   this.materiales.push(event); // Agregar la nueva talla a la lista
+  //       // }
+  //       if (event == null || event == '' || event === undefined) {
+  //         this.producto.material = null;
+  //       } else {
+  //         this.producto.material = event.valor; // Establecer la talla seleccionada
+  //       }
+  //       break;
+  //     }
+  //     default: {
+  //       //statements;
+  //       break;
+  //     }
+  //   }
+  // }
+
   addAttribute(event: any, tipo: string) {
-    console.log('event', event);
-    console.log('tipo', tipo);
     switch (tipo) {
       case 'talla': {
-        //console.log('talla');
-        //if event esta vacio quitar el valor de la talla
-        if (event == null || event == '' || event === undefined) {
-          this.producto.talla = null;
-        } else {
-          this.producto.talla = event.valor; // Establecer la talla seleccionada
-        }
-        //statements;
-        // if (event && !this.tallas.includes(event)) {
-        //   this.tallas.push(event); // Agregar la nueva talla a la lista
-        // }
-        //  this.producto.talla = event.valor; // Establecer la talla seleccionada
+        this.producto.talla = event ? event.valor : null;
         break;
       }
       case 'color': {
-        //evaluar si no es undefined o vacio
-        if (event == null || event == '' || event === undefined) {
-          this.producto.colores = null;
-        } else {
-          this.producto.colores = event.valor; // Establecer la talla seleccionada
-        }
-
-        //statements;
-        // if (event && !this.colores.includes(event)) {
-        //   this.colores.push(event); // Agregar la nueva talla a la lista
-        // }
-        //  this.producto.colores = event.valor; // Establecer la talla seleccionada
+        this.producto.color = event ? event.valor : null;
         break;
       }
       case 'material': {
-        //statements;
-        // if (event && !this.materiales.includes(event)) {
-        //   this.materiales.push(event); // Agregar la nueva talla a la lista
-        // }
-        if (event == null || event == '' || event === undefined) {
-          this.producto.material = null;
-        } else {
-          this.producto.material = event.valor; // Establecer la talla seleccionada
-        }
-        break;
-      }
-      default: {
-        //statements;
+        this.producto.material = event ? event.valor : null;
         break;
       }
     }
+    this.cdr.detectChanges();
   }
 
   private loadCategorias() {
@@ -399,8 +417,6 @@ export class ProductoInformacionComponent implements OnInit {
     });
   }
 
- 
-
   guardarAtributo() {
     if (!this.nuevoAtributo.valor) return;
 
@@ -409,7 +425,7 @@ export class ProductoInformacionComponent implements OnInit {
     this.apiService.store('atributos', this.nuevoAtributo).subscribe(
       (response) => {
         this.loadAtributes();
-        
+
         // Asignar el nuevo valor según el tipo
         switch (this.tipoAtributoActual) {
           case 'talla':
@@ -437,5 +453,5 @@ export class ProductoInformacionComponent implements OnInit {
         this.guardandoAtributo = false;
       }
     );
-}
+  }
 }
