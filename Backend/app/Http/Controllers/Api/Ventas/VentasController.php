@@ -416,29 +416,29 @@ class VentasController extends Controller
 
         try {
 
-            $id_empresa = Auth::user()->id_empresa;
+            // $id_empresa = Auth::user()->id_empresa;
 
-            $empresa = Empresa::findOrFail($id_empresa);
+            // $empresa = Empresa::findOrFail($id_empresa);
 
-            $facturacionElectronica = $empresa->facturacion_electronica;
+            // $facturacionElectronica = $empresa->facturacion_electronica;
 
-            if ($facturacionElectronica) {
-                $year = date('Y', strtotime($request->fecha));
-                $existe = Venta::where('correlativo', $request->correlativo)
-                    ->where('id_documento', $request->id_documento)
-                    ->where('id_sucursal', $request->id_sucursal)
-                    ->whereYear('fecha', $year)
-                    ->exists();
-            } else {
-                $existe = Venta::where('correlativo', $request->correlativo)
-                    ->where('id_sucursal', $request->id_sucursal)
-                    ->where('id_documento', $request->id_documento)
-                    ->exists();
-            }
+            // if ($facturacionElectronica) {
+            //     $year = date('Y', strtotime($request->fecha));
+            //     $existe = Venta::where('correlativo', $request->correlativo)
+            //         ->where('id_documento', $request->id_documento)
+            //         ->where('id_sucursal', $request->id_sucursal)
+            //         ->whereYear('fecha', $year)
+            //         ->exists();
+            // } else {
+            //     $existe = Venta::where('correlativo', $request->correlativo)
+            //         ->where('id_sucursal', $request->id_sucursal)
+            //         ->where('id_documento', $request->id_documento)
+            //         ->exists();
+            // }
 
-            if ($existe) {
-                return response()->json(['error' => 'Atención: El correlativo ingresado ya está registrado. Verifica la información proporcionada.'], 400);
-            }
+            // if ($existe) {
+            //     return response()->json(['error' => 'Atención: El correlativo ingresado ya está registrado. Verifica la información proporcionada.'], 400);
+            // }
 
 
             if ($request->id)
