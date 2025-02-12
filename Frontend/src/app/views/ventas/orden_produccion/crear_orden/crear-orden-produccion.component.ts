@@ -108,8 +108,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
       (response: any) => {
         this.cotizacion = response
         
-        if (this.cotizacion.estado !== 'Aprobada') {
-          this.alertService.error('Solo se pueden crear órdenes de producción de cotizaciones aprobadas');
+        if (this.cotizacion.estado !== 'aceptada') {
+          this.alertService.error('Solo se pueden crear órdenes de producción de cotizaciones aceptadas');
           this.router.navigate(['/cotizaciones']);
           return;
         }
