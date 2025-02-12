@@ -116,6 +116,8 @@ class CotizacionesController extends Controller
     public function store(Request $request)
     {
         //  dd($request->all());
+        Log::info('Guardando cotización');
+        Log::info($request->all());
 
         $request->validate([
             'fecha'         => 'required',
