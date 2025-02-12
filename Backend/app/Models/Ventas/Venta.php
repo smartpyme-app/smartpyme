@@ -107,7 +107,7 @@ class Venta extends Model {
 
     public function getNombreVendedorAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        return $this->vendedor()->pluck('name')->first();
     }
 
     public function getNombreSucursalAttribute()
