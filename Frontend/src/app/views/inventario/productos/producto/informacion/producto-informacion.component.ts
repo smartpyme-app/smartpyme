@@ -62,6 +62,7 @@ export class ProductoInformacionComponent implements OnInit {
   }
 
   public setCategoria(categoria: any) {
+    this.loadCategorias();
     if (categoria.subcategoria) {
       this.subcategRes.push(categoria);
       this.producto.id_subcategoria = categoria.id;
@@ -194,5 +195,34 @@ export class ProductoInformacionComponent implements OnInit {
    }
 
   }
+
+  private loadCategorias() {
+    // Cargar categorías principales
+    this.apiService.getAll('categorias/padre').subscribe(categorias => {
+        this.categorias = categorias;
+        
+        // Si ya hay una categoría seleccionada, generar el código
+        if (this.producto.id_categoria) {
+            this.updateInputValue(this.producto.id_categoria);
+        }
+        this.cdr.detectChanges();
+    }, error => { this.alertService.error(error); });
+    
+    // Cargar subcategorías
+    this.apiService.getAll('subcategorias').subscribe(subcategorias => {
+        this.subcategorias = subcategorias;
+        if (this.producto.id_categoria) {
+            this.subcategRes = this.subcategorias.filter((cat: any) => { 
+                return cat.id_cate_padre == this.producto.id_categoria; 
+            });
+            
+            // Si ya hay una subcategoría seleccionada, actualizar el código
+            if (this.producto.id_subcategoria) {
+                this.updateInputValue(this.producto.id_categoria);
+            }
+        }
+        this.cdr.detectChanges();
+    }, error => { this.alertService.error(error); });
+}
 
 }
