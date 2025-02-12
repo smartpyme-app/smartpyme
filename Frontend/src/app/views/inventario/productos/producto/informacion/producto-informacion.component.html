@@ -139,23 +139,34 @@
       <h5 class="my-3 font-weight-bold">Organización</h5>
 
     <!-- talla -->
-    <div class="form-group col-md-12 col-lg-3">
+    <!-- <div class="form-group col-md-12 col-lg-3">
       <label for="talla" class="w-100">Talla</label>
       <div class="input-group">
-        <!-- <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="talla" [addTag]="true"
-          (change)="addAttribute($event, 'talla')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select> -->
+ 
 
         <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="valor" [addTag]="true"
           (change)="addAttribute($event, 'talla')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>
+    </div> -->
+
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="talla" class="w-100">Talla</label>
+      <div class="input-group">
+        <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="valor" 
+          (change)="addAttribute($event, 'talla')" class="form-control form-select" 
+          placeholder="Selecciona o agrega una talla"
+          style="padding-top: 0px; padding-bottom: 0px;">
+        </ng-select>
+        <button type="button" class="btn btn-default" (click)="openModalAtributo('talla')" tooltip="Agregar talla">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
     </div>
 
     <!-- color -->
-    <div class="form-group col-md-12 col-lg-3">
+    <!-- <div class="form-group col-md-12 col-lg-3">
       <label for="color" class="w-100">Color</label>
       <div class="input-group">
         <ng-select [(ngModel)]="producto.color" [items]="colores" bindLabel="valor" [addTag]="true"
@@ -163,9 +174,22 @@
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
       </div>
+    </div> -->
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="color" class="w-100">Color</label>
+      <div class="input-group">
+        <ng-select [(ngModel)]="producto.color" [items]="colores" bindLabel="valor"
+          (change)="addAttribute($event, 'color')" class="form-control form-select" 
+          placeholder="Selecciona o agrega un color"
+          style="padding-top: 0px; padding-bottom: 0px;">
+        </ng-select>
+        <button type="button" class="btn btn-default" (click)="openModalAtributo('color')" tooltip="Agregar color">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
     </div>
     <!-- material -->
-    <div class="form-group col-md-12 col-lg-3">
+    <!-- <div class="form-group col-md-12 col-lg-3">
       <label for="material" class="w-100">Material</label>
       <div class="input-group">
 
@@ -173,6 +197,19 @@
           (change)="addAttribute($event, 'material')" class="form-control form-select" placeholder="Selecciona o agrega un material"
           style="padding-top: 0px; padding-bottom: 0px;">
         </ng-select>
+      </div>
+    </div> -->
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="material" class="w-100">Material</label>
+      <div class="input-group">
+        <ng-select [(ngModel)]="producto.material" [items]="materiales" bindLabel="valor"
+          (change)="addAttribute($event, 'material')" class="form-control form-select" 
+          placeholder="Selecciona o agrega un material"
+          style="padding-top: 0px; padding-bottom: 0px;">
+        </ng-select>
+        <button type="button" class="btn btn-default" (click)="openModalAtributo('material')" tooltip="Agregar material">
+          <i class="fa fa-plus"></i>
+        </button>
       </div>
     </div>
 
@@ -223,3 +260,25 @@
     </div>
   </div>
 </form>
+
+<ng-template #modalAtributo>
+  <div class="modal-header">
+    <h4 class="modal-title">Agregar {{tipoAtributoActual | titlecase}}</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="guardarAtributo()">
+      <div class="form-group">
+        <label [for]="tipoAtributoActual">{{tipoAtributoActual | titlecase}}</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoAtributo.valor" 
+               [name]="tipoAtributoActual" required>
+      </div>
+      <div class="d-grid gap-2 mt-3">
+        <button type="submit" class="btn btn-primary" [disabled]="!nuevoAtributo.valor">
+          <span *ngIf="!guardandoAtributo">Guardar</span>
+          <span *ngIf="guardandoAtributo">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

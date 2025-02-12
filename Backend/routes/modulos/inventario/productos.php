@@ -68,7 +68,7 @@ Route::delete('promocion/{id}',   [PromocionesController::class, 'delete']);
 Route::get('promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
 
 Route::get('atributos', [AtributoController::class, 'index']);
-Route::post('atributo', [AtributoController::class, 'store']);
+Route::post('atributos', [AtributoController::class, 'store']);
 
 
 // Imagenes

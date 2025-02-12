@@ -1,4 +1,11 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  TemplateRef,
+  Input,
+  ViewChild,
+} from '@angular/core';
+
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
@@ -13,6 +20,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoInformacionComponent implements OnInit {
+  @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
+  modalRef?: BsModalRef;
   @Input() producto: any = {};
   public categorias: any = [];
   public subcategorias: any = [];
@@ -29,12 +38,17 @@ export class ProductoInformacionComponent implements OnInit {
   public colores = ['azul', 'Amarillo', 'Blanco', 'Negro'];
   public materiales = ['Madera', 'Papel', 'Metal', 'Plastico', 'Vidrio'];
 
+  tipoAtributoActual: string = '';
+  nuevoAtributo: any = {};
+  guardandoAtributo: boolean = false;
+
   constructor(
     private apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private modalService: BsModalService // Agregar esto
   ) {
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     this.addVariant();
@@ -77,6 +91,23 @@ export class ProductoInformacionComponent implements OnInit {
       }
     );
 
+    // this.apiService.getAll('bodegas').subscribe(
+    //   (bodegas) => {
+    //     this.bodegas = bodegas;
+    //     this.loading = false;
+    //   },
+    //   (error) => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   }
+    // );
+
+    this.loadAtributes();
+
+    this.cdr.detectChanges();
+  }
+
+  public loadAtributes() {
     this.apiService.getAll('atributos').subscribe(
       (atributos) => {
         //this.categorias = categorias;
@@ -97,7 +128,6 @@ export class ProductoInformacionComponent implements OnInit {
         this.alertService.error(error);
       }
     );
-    //this.cdr.detectChanges();
   }
 
   public setCategoria(categoria: any) {
@@ -274,21 +304,21 @@ export class ProductoInformacionComponent implements OnInit {
         //if event esta vacio quitar el valor de la talla
         if (event == null || event == '' || event === undefined) {
           this.producto.talla = null;
-        }else{
+        } else {
           this.producto.talla = event.valor; // Establecer la talla seleccionada
         }
         //statements;
         // if (event && !this.tallas.includes(event)) {
         //   this.tallas.push(event); // Agregar la nueva talla a la lista
         // }
-      //  this.producto.talla = event.valor; // Establecer la talla seleccionada
+        //  this.producto.talla = event.valor; // Establecer la talla seleccionada
         break;
       }
       case 'color': {
         //evaluar si no es undefined o vacio
         if (event == null || event == '' || event === undefined) {
           this.producto.colores = null;
-        }else{
+        } else {
           this.producto.colores = event.valor; // Establecer la talla seleccionada
         }
 
@@ -296,7 +326,7 @@ export class ProductoInformacionComponent implements OnInit {
         // if (event && !this.colores.includes(event)) {
         //   this.colores.push(event); // Agregar la nueva talla a la lista
         // }
-      //  this.producto.colores = event.valor; // Establecer la talla seleccionada
+        //  this.producto.colores = event.valor; // Establecer la talla seleccionada
         break;
       }
       case 'material': {
@@ -306,8 +336,8 @@ export class ProductoInformacionComponent implements OnInit {
         // }
         if (event == null || event == '' || event === undefined) {
           this.producto.material = null;
-        }else{
-        this.producto.material = event.valor; // Establecer la talla seleccionada
+        } else {
+          this.producto.material = event.valor; // Establecer la talla seleccionada
         }
         break;
       }
@@ -356,4 +386,56 @@ export class ProductoInformacionComponent implements OnInit {
       }
     );
   }
+
+  openModalAtributo(tipo: string) {
+    this.tipoAtributoActual = tipo;
+    this.nuevoAtributo = {
+      tipo: tipo,
+      valor: '',
+      // id_empresa: this.usuario.id_empresa,
+    };
+    this.modalRef = this.modalService.show(this.modalAtributo, {
+      class: 'modal-sm',
+    });
+  }
+
+ 
+
+  guardarAtributo() {
+    if (!this.nuevoAtributo.valor) return;
+
+    this.guardandoAtributo = true;
+
+    this.apiService.store('atributos', this.nuevoAtributo).subscribe(
+      (response) => {
+        this.loadAtributes();
+        
+        // Asignar el nuevo valor según el tipo
+        switch (this.tipoAtributoActual) {
+          case 'talla':
+            this.producto.talla = response.valor;
+            break;
+          case 'color':
+            this.producto.colores = response.valor;
+            break;
+          case 'material':
+            this.producto.material = response.valor;
+            break;
+        }
+
+        this.alertService.success(
+          'Atributo guardado',
+          `El ${this.tipoAtributoActual} fue agregado exitosamente.`
+        );
+
+        this.modalRef?.hide();
+        this.guardandoAtributo = false;
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.guardandoAtributo = false;
+      }
+    );
+}
 }
