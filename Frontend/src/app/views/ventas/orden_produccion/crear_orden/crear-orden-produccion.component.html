@@ -2,6 +2,11 @@
   <h2 class="page-heading">
     {{ isDetalles ? 'Detalles de Orden de Producción' : 'Nueva Orden de Producción' }}
   </h2>
+  <div>
+    <button class="btn btn-light text-danger" [routerLink]="isDetalles ? '/ordenes/produccion' : '/cotizaciones'">
+      <i class="fa fa-arrow-left me-2"></i>Regresar
+    </button>
+</div>
 </section>
 
 <div class="row" *ngIf="loading">
@@ -18,7 +23,7 @@
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 *ngIf="!isDetalles">Información de la Cotización #{{cotizacion.correlativo}}</h4>
         <h4 *ngIf="isDetalles">Información de la Orden de Producción #{{cotizacion.codigo}}</h4>
-        <span class="badge bg-success">{{cotizacion.estado}}</span>
+        <!-- <span class="badge bg-success">{{cotizacion.estado}}</span> -->
       </div>
       <div class="row">
         <div class="col-md-3">
@@ -37,29 +42,38 @@
           <label class="form-label fw-bold">Fecha Cotización:</label>
           <p>{{cotizacion.fecha | date:'dd/MM/yyyy'}}</p>
         </div>
+        <div class="col-md-3" *ngIf="isDetalles">
+          <!-- <label class="form-label fw-bold">Estado:</label>
+          <span class="badge bg-success">{{cotizacion.estado}}</span>
+          <td> -->
+            <label class="form-label fw-bold">Estado:</label>
+            <select name="enable" class="form-select w-auto border-0" 
+                    (change)="setEstado(cotizacion)" 
+                    [(ngModel)]="cotizacion.estado" 
+                    [ngClass]="{
+                      'bg-light-warning': cotizacion?.estado == 'pendiente',
+                      'bg-light-danger': cotizacion?.estado == 'rechazada',
+                      'bg-light-success': cotizacion?.estado == 'aceptada' || cotizacion?.estado == 'completada',
+                      'bg-light-info': cotizacion?.estado == 'entregada'
+                    }">
+              <option value="pendiente">Pendiente</option>
+              <option value="aceptada">Aceptada</option>
+              <option value="en_proceso">En Proceso</option>
+              <option value="completada">Completada</option>
+              <option value="entregada">Entregada</option>
+            </select>
+           <!-- </td> -->
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Información de la Orden -->
-  <div class="col-md-12 mb-3">
+  <!-- <div class="col-md-12 mb-3">
     <div class="bg-white p-4 rounded">
       <h4 class="mb-3">Información de la Orden</h4>
       <div class="row">
-        <!-- <div class="col-md-6 mb-3">
-          <label class="form-label required">Fecha</label>
-          <input type="date" 
-                 class="form-control" 
-                 name="fecha" 
-                 [(ngModel)]="orden.fecha" 
-                 #fecha="ngModel"
-                 required>
-          <div class="invalid-feedback" *ngIf="fecha.invalid && (fecha.dirty || fecha.touched)">
-            La fecha es requerida
-          </div>
-        </div> -->
-        
-        <div class="col-md-6 mb-3">
+        <div class="col-md-12 col-lg-6 mb-3">
           <label class="form-label required">Fecha de Entrega</label>
           <input type="date" 
                  class="form-control" 
@@ -72,8 +86,16 @@
           </div>
         </div>
 
-        <div class="col-12 mb-3">
-          <label class="form-label">Observaciones de Producción</label>
+        <div class="col-12 col-md-6 mb-3">
+          <label class="form-label">Terminos y condiciones </label>
+          <textarea class="form-control" 
+                    name="terminos_de_venta" 
+                    [(ngModel)]="orden.terminos_de_venta" 
+                    rows="3"
+                    placeholder="Ingrese terminos de cotizacion adicionales para producción"></textarea>
+        </div>
+        <div class="col-12 col-md-6 mb-3">
+          <label class="form-label">Observaciones</label>
           <textarea class="form-control" 
                     name="observaciones" 
                     [(ngModel)]="orden.observaciones" 
@@ -82,8 +104,50 @@
         </div>
       </div>
     </div>
+  </div> -->
+  <div class="col-md-12 mb-3">
+    <div class="bg-white p-4 rounded">
+      <h4 class="mb-3">Información de la Orden</h4>
+      <div class="row">
+        <!-- Fecha de entrega - Siempre arriba y ancho completo -->
+        <div class="col-12 mb-3 col-md-6">
+          <label class="form-label required">Fecha de Entrega</label>
+          <input type="date" 
+                 class="form-control" 
+                 name="fecha_entrega" 
+                 [(ngModel)]="orden.fecha_entrega"
+                 #fechaEntrega="ngModel"
+                 required>
+          <div class="invalid-feedback" *ngIf="fechaEntrega.invalid && (fechaEntrega.dirty || fechaEntrega.touched)">
+            La fecha de entrega es requerida
+          </div>
+        </div>
+  
+        <!-- Container para términos y observaciones -->
+        <div class="row">
+          <!-- En pantallas md+ ocupará la mitad, en pequeñas el ancho completo -->
+          <div class="col-12 col-md-6 mb-3">
+            <label class="form-label">Términos y condiciones</label>
+            <textarea class="form-control" 
+                      name="terminos_de_venta" 
+                      [(ngModel)]="orden.terminos_de_venta" 
+                      rows="3"
+                      placeholder="Ingrese términos de cotización adicionales para producción"></textarea>
+          </div>
+          
+          <!-- En pantallas md+ ocupará la mitad, en pequeñas el ancho completo -->
+          <div class="col-12 col-md-6 mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea class="form-control" 
+                      name="observaciones" 
+                      [(ngModel)]="orden.observaciones" 
+                      rows="3"
+                      placeholder="Ingrese observaciones adicionales para producción"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-
   <!-- Detalles de Producción -->
   <div class="col-md-12 mb-3">
     <div class="bg-white p-4 rounded">
@@ -94,11 +158,13 @@
           <thead>
             <tr>
               <th>Descripción</th>
-              <th class="text-center">Cantidad</th>
               <th class="text-center" *ngFor="let field of customFields"
                   [hidden]="!hasCustomField(field.id)">
                 {{field.name}}
               </th>
+              <th class="text-center">Cantidad</th>
+              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada' && isDetalles">Cantidad Producida</th>
+              <th class="text-center" *ngIf="cotizacion.estado === 'aceptada' && isDetalles">Porcentaje</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +183,6 @@
                   </div>
                 </div>
               </td>
-              <td class="text-center">{{detalle.cantidad}}</td>
               <td class="text-center" *ngFor="let field of customFields"
                   [hidden]="!hasCustomField(field.id)">
                 <span [ngClass]="{
@@ -126,6 +191,45 @@
                 }">
                   {{getCustomFieldValue(detalle, field.id)}}
                 </span>
+              </td>
+              <td class="text-center">{{detalle.cantidad}}</td>
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && editar" style="width: 100px;">
+                <input type="number" 
+                       class="form-control form-control-sm" 
+                       [name]="'cantidad_producida_' + detalle.id_producto"
+                       [(ngModel)]="detalle.cantidad_producida" 
+                       min="0" 
+                       [max]="detalle.cantidad" 
+                       (ngModelChange)="updatePorcentaje(detalle)" />
+              </td>
+
+              <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && !editar && isDetalles">
+                {{detalle.cantidad_producida}}
+              </td>
+
+
+              <!-- <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
+                {{detalle.porcentaje | number:'1.2-2'}}%
+              </td> -->
+
+              <td style="width: 150px;" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
+                <div class="d-flex align-items-center">
+                  <div class="progress flex-grow-1" style="height: 8px;">
+                    <div class="progress-bar" 
+                         role="progressbar" 
+                         [style.width]="detalle.porcentaje + '%'" 
+                         [ngClass]="{
+                           'bg-danger': detalle.porcentaje < 30,
+                           'bg-warning': detalle.porcentaje >= 30 && detalle.porcentaje < 70,
+                           'bg-success': detalle.porcentaje >= 70
+                         }"
+                         [attr.aria-valuenow]="detalle.porcentaje" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                  </div>
+                  <span class="ms-2 small">{{detalle.porcentaje | number:'1.2-2'}}%</span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -136,9 +240,9 @@
 
   <!-- Botones de Acción -->
   <div class="d-flex justify-content-end gap-2 mb-4">
-    <button type="button" class="btn btn-secondary" (click)="cancelar()">
+    <!-- <button type="button" class="btn btn-secondary" (click)="cancelar()">
       <i class="fa fa-times me-2"></i>Cancelar
-    </button>
+    </button> -->
     
     <button *ngIf="!isDetalles" 
           type="submit" 
@@ -146,6 +250,15 @@
           [disabled]="!ordenForm.form.valid || loading">
     <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
     <span class="ms-2">{{loading ? 'Guardando...' : 'Crear Orden'}}</span>
+  </button>
+  <button *ngIf="isDetalles && editar && cotizacion.estado?.toLowerCase() === 'aceptada'"
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="!ordenForm.form.valid || loading"
+        >
+    <!--editar orden-->
+    <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+    <span class="ms-2">{{loading ? 'Guardando...' : 'Editar Orden'}}</span>
   </button>
   </div>
 </form>

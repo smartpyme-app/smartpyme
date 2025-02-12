@@ -32,6 +32,7 @@ export class FacturacionComponent implements OnInit {
   public recintos:any = [];
   public regimenes:any = [];
   public incoterms:any = [];
+  public editar = false;
 
   // public bancos:any = [];
   public canales: any = [];
@@ -126,6 +127,11 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.getAll('canales/list').subscribe(canales => {
       this.canales = canales;
+
+      if(this.route.snapshot.queryParamMap.get('cotizacion')){
+        this.venta.id_canal = null;
+        return;
+      }
       this.venta.id_canal = this.canales[0].id;
     }, error => {
       this.alertService.error(error);
@@ -179,13 +185,17 @@ export class FacturacionComponent implements OnInit {
             }
 
             if(this.venta.cotizacion == 1){
-              console.log('entro a cotizacion');
+              //console.log('entro a cotizacion');
               this.documentos = this.documentos
-                // this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
-                // let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
+                this.documentos = this.documentos.filter((x:any) => x.nombre == 'Cotización');
+                let documento = this.documentos.find((x:any) => x.nombre == 'Cotización');
                 if(documento){
                     this.venta.id_documento = documento.id;
                     this.venta.correlativo = documento.correlativo;
+                }
+                //si no existe el documento de cotizacion decirle que debe crearlo
+                if(!documento){
+                    this.alertService.error('Debe crear un documento de cotización');
                 }
             }else{
                 this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
@@ -254,6 +264,7 @@ export class FacturacionComponent implements OnInit {
     // }
 
     if (this.route.snapshot.paramMap.get('id')) {
+      this.editar = true;
       const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
       const isCotizacion = this.venta.cotizacion == 1 ? true : false;
       this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!)
@@ -567,6 +578,16 @@ export class FacturacionComponent implements OnInit {
       this.venta.cambio = 0;
     }
 
+    if (this.venta.detalles) {
+      this.venta.detalles.forEach((detalle: any) => {
+        if (detalle.custom_fields) {
+          detalle.custom_fields = detalle.custom_fields.filter((cf: any) => 
+            this.selectedCustomFields.includes(cf.custom_field?.id)
+          );
+        }
+      });
+    }
+
     this.apiService.store('facturacion', this.venta).subscribe(venta => {
 
       // Si es cotización
@@ -685,8 +706,24 @@ export class FacturacionComponent implements OnInit {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
   }
 
+  // updateCustomFields() {
+  //   this.activeCustomFields = this.customFields.data
+  //     .filter((f: any) => this.selectedCustomFields.includes(f.id));
+  // }
+
   updateCustomFields() {
     this.activeCustomFields = this.customFields.data
       .filter((f: any) => this.selectedCustomFields.includes(f.id));
+      
+    // Limpiar campos personalizados que ya no están seleccionados
+    if (this.venta.detalles) {
+      this.venta.detalles.forEach((detalle: any) => {
+        if (detalle.custom_fields) {
+          detalle.custom_fields = detalle.custom_fields.filter((cf: any) => 
+            this.selectedCustomFields.includes(cf.custom_field?.id)
+          );
+        }
+      });
+    }
   }
 }

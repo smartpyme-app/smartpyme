@@ -1,6 +1,18 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
-  <h3 *ngIf="!venta.cotizacion">Nueva venta</h3>
-  <h3 *ngIf="venta.cotizacion">Nueva Cotización</h3>
+  <!-- <h3 *ngIf="!venta.cotizacion && editar ">Nueva venta</h3>
+    <h3 *ngIf="!venta.cotizacion && !editar">Nueva venta</h3>
+
+ 
+  <h3 *ngIf="venta.cotizacion && editar">Editar cotización</h3>
+  <h3 *ngIf="venta.cotizacion && !editar">Nueva cotización</h3> -->
+  <h3>
+    <ng-container *ngIf="!venta.cotizacion">
+      Nueva venta
+    </ng-container>
+    <ng-container *ngIf="venta.cotizacion">
+      {{editar ? 'Editar' : 'Nueva'}} cotización
+    </ng-container>
+   </h3>
   <button *ngIf="venta.cotizacion == 1" class="btn btn-light text-danger" routerLink="/cotizaciones"><i
     class="fa fa-arrow-left"></i> Regresar
   </button>
@@ -265,14 +277,14 @@
       <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion"
              id="fecha_expiracion">
     </div>
-    <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
-      <label for="observaciones">Observaciones:</label><br>
-      <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones"
-                cols="30" rows="3"></textarea>
-    </div>
     <div class="form-group col-md-12 col-lg-12">
       <label for="terminos_de_venta">Términos de venta:</label><br>
       <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.terminos_de_venta" name="terminos_de_venta"
+                cols="30" rows="3"></textarea>
+    </div>
+    <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
+      <label for="observaciones">Observaciones:</label><br>
+      <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones"
                 cols="30" rows="3"></textarea>
     </div>
   </div>

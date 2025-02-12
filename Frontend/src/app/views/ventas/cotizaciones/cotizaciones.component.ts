@@ -74,11 +74,23 @@ export class CotizacionesComponent implements OnInit {
       this.filtros.id_cliente = '';
     }
     this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => {
-      this.ventas = ventas;
+     // this.ventas = ventas;
+
+     if (ventas && ventas.data) {
+      ventas.data = ventas.data.map((venta: any) => ({
+        ...venta,
+        estado: venta.estado ? venta.estado.toLowerCase() : venta.estado
+      }));
+    }
+    
+    this.ventas = ventas;
+    
+    this.ventas = ventas;
+
       this.loading = false;
       if (this.modalRef) {
         this.modalRef.hide();
-      }
+      } 
     }, error => { this.alertService.error(error); });
   }
 

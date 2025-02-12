@@ -251,5 +251,12 @@ export class VentaDetallesComponent implements OnInit {
 
   }
 
+  getColumnCount(): number {
+    let count = 5; // Base columns (Product, Quantity, Price, Discount, Total, Actions)
+    if (this.usuario.empresa.vendedor_detalle_venta) count++;
+    count += this.selectedCustomFields.length;
+    return count;
+  }
+
 
 }

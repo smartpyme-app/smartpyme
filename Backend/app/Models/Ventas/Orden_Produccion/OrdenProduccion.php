@@ -10,6 +10,8 @@ use App\Models\CotizacionVenta;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class OrdenProduccion extends Model
 {
@@ -37,9 +39,10 @@ class OrdenProduccion extends Model
         'id_empresa',
         'id_bodega',
         'terminos_condiciones',
-        'id_vendedor'
+        'id_vendedor',
+        'cantidad_producida',
     ];
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento','avance'];
 
 
     protected $casts = [
@@ -60,7 +63,13 @@ class OrdenProduccion extends Model
     {
         parent::boot();
 
-     
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+
+
         self::created(function ($model) {
             self::crearNotificacion($model, [
                 'titulo' => 'Nueva Orden de Producción',
@@ -68,11 +77,11 @@ class OrdenProduccion extends Model
             ]);
         });
 
-    
+
         self::updated(function ($model) {
             if ($model->isDirty('estado') && $model->estado === 'completada') {
                 self::crearNotificacion($model, [
-                    'titulo' => 'Orden de Producción Completada', 
+                    'titulo' => 'Orden de Producción Completada',
                     'descripcion' => "La orden de producción #{$model->codigo} completada"
                 ]);
             }
@@ -86,7 +95,7 @@ class OrdenProduccion extends Model
             'titulo' => $datos['titulo'],
             'descripcion' => $datos['descripcion'],
             'tipo' => 'Orden de Producción',
-            'categoria' => 'ordenes_produccion', 
+            'categoria' => 'ordenes_produccion',
             'prioridad' => 'Alta',
             'leido' => false,
             'referencia' => 'orden-produccion/detalles',
@@ -169,6 +178,32 @@ class OrdenProduccion extends Model
     {
         return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'), 2);
     }
+
+    public function getAvanceAttribute()
+    {
+    
+        if ($this->detalles->isEmpty()) {
+            return 0;
+        }
+
+        $total_producido = 0;
+        $total_solicitado = 0;
+
+        foreach ($this->detalles as $detalle) {
+            $total_producido += $detalle->cantidad_producida ?? 0;
+            $total_solicitado += $detalle->cantidad;
+        }
+
+        // Evitar división por cero
+        if ($total_solicitado === 0) {
+            return 0;
+        }
+
+        // Calcular el porcentaje y redondear a 2 decimales
+        return round(($total_producido / $total_solicitado) * 100, 2);
+    }
+
+    
 
     // Relaciones
     public function detalles()

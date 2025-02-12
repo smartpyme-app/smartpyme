@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'app-product-specs',
+  selector: 'app-producto-specs',
   template: `
     <ng-container [ngSwitch]="field.field_type">
       <select *ngSwitchCase="'select'"
@@ -20,6 +20,12 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
              class="form-control form-control-sm"
              [(ngModel)]="inputValue"
              (change)="specChanged()">
+      <input *ngSwitchCase="'number'"
+              type="number" 
+              class="form-control form-control-sm"
+              [(ngModel)]="inputValue"
+              (change)="specChanged()">
+              
     </ng-container>
   `
 })
@@ -32,6 +38,7 @@ export class ProductoSpecsComponent implements OnInit {
   inputValue: string | number = '';
 
   ngOnInit() {
+    //console.log('producto', this.producto);
     if (!this.producto.custom_fields) {
       this.producto.custom_fields = [];
     }
@@ -40,6 +47,8 @@ export class ProductoSpecsComponent implements OnInit {
     const existingField = this.producto.custom_fields.find(
       (cf: any) => cf.custom_field?.id === this.field.id
     );
+
+    console.log('existingField', existingField);
 
     if (existingField) {
       if (this.field.field_type === 'select') {

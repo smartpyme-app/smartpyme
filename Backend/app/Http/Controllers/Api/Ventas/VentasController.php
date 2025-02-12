@@ -134,16 +134,18 @@ class VentasController extends Controller
 
 
 
-    public function read($id){
+    public function read($id)
+    {
 
         Log::info('ID: ' . $id);
         $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
-        
+
         return Response()->json($venta, 200);
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
@@ -155,24 +157,24 @@ class VentasController extends Controller
             DB::beginTransaction();
 
             $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
-    
+
             // Ajustar stocks
-            foreach($venta->detalles as $detalle){
+            foreach ($venta->detalles as $detalle) {
                 $producto = Producto::where('id', $detalle->id_producto)->with('composiciones')->firstOrFail();
-    
+
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
                 // Anular venta y regresar stock
-                if(($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
-                    
-                    if($inventario){
+                if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
+
+                    if ($inventario) {
                         $inventario->stock += $detalle->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, $detalle->cantidad * -1);
                     }
                     // Inventario compuestos
-                    foreach($producto->composiciones as $comp){
+                    foreach ($producto->composiciones as $comp) {
                         $inventarioCompuesto = Inventario::where('id_producto', $comp->id_producto)->where('id_bodega', $venta->id_bodega)->first();
-                        if($inventarioCompuesto){
+                        if ($inventarioCompuesto) {
                             $inventarioCompuesto->stock += $detalle->cantidad * $comp->cantidad;
                             $inventarioCompuesto->save();
                             $inventarioCompuesto->kardex($venta, ($detalle->cantidad * $comp->cantidad) * -1);
@@ -185,26 +187,26 @@ class VentasController extends Controller
                     }
                 }
                 // Cancelar anulación de venta y descargar stock
-                if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
+                if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
                     // Aplicar stock
-                    if ($inventario){
+                    if ($inventario) {
                         $inventario->stock -= $detalle->cantidad;
                         $inventario->save();
                         $inventario->kardex($venta, $detalle->cantidad);
                     }
-    
+
                     // Inventario compuestos
                     foreach ($producto->composiciones as $comp) {
-    
+
                         $inventarioCompuesto = Inventario::where('id_producto', $comp->id_producto)->where('id_bodega', $venta->id_bodega)->first();
-    
-                        if($inventarioCompuesto){
+
+                        if ($inventarioCompuesto) {
                             $inventarioCompuesto->stock -= $detalle->cantidad * $comp->cantidad;
                             $inventarioCompuesto->save();
                             $inventarioCompuesto->kardex($venta, ($detalle->cantidad * $comp->cantidad));
                         }
                     }
-    
+
                     // Abonos
                     foreach ($venta->abonos as $abono) {
                         $abono->estado = 'Confirmado';
@@ -212,14 +214,13 @@ class VentasController extends Controller
                     }
                 }
             }
-    
+
             $venta->fill($request->all());
             $venta->save();
 
             DB::commit();
-    
-            return Response()->json($venta, 200);
 
+            return Response()->json($venta, 200);
         } catch (\Throwable $th) {
             //throw $th;
             DB::rollback();
@@ -258,38 +259,78 @@ class VentasController extends Controller
 
     public function facturacion(Request $request)
     {
-        $request->validate([
-            'fecha'             => 'required',
-            'estado'            => 'required|max:255',
-            'correlativo'       => 'required|numeric',
-            'id_documento'      => 'required|max:255',
-            'id_canal'          => 'required|max:255',
-            'id_cliente'        => 'required_if:estado,"Pendiente"',
-            'detalles'          => 'required',
-            'fecha_expiracion'  => 'required_if:cotizacion,1',
-            'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
-            'credito'           => 'required_if:condicion,"Crédito"',
-            'iva'               => 'required|numeric',
-            'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
-            'total_costo'       => 'required|numeric',
-            'sub_total'         => 'required|numeric',
-            'total'             => 'required|numeric',
-            'nota'              => 'max:255',
-            'id_usuario'        => 'required|numeric',
-            'id_bodega'         => 'required|numeric',
-            'id_sucursal'       => 'required|numeric',
-            "forma_pago"        => 'required',
-        ], [
+        // $request->validate([
+        //     'fecha'             => 'required',
+        //     'estado'            => 'required|max:255',
+        //     'correlativo'       => 'required|numeric',
+        //     'id_documento'      => 'required|max:255',
+        //     'id_canal'          => 'required|max:255',
+        //     'id_cliente'        => 'required_if:estado,"Pendiente"',
+        //     'detalles'          => 'required',
+        //     'fecha_expiracion'  => 'required_if:cotizacion,1',
+        //     'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
+        //     'credito'           => 'required_if:condicion,"Crédito"',
+        //     'iva'               => 'required|numeric',
+        //     'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
+        //     'total_costo'       => 'required|numeric',
+        //     'sub_total'         => 'required|numeric',
+        //     'total'             => 'required|numeric',
+        //     'nota'              => 'max:255',
+        //     'id_usuario'        => 'required|numeric',
+        //     'id_bodega'         => 'required|numeric',
+        //     'id_sucursal'       => 'required|numeric',
+        //     "forma_pago"        => 'required',
+        // ], [
+        //     'detalles.required' => 'Tiene que agregar productos',
+        //     //  'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
+        //     'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
+        //     "forma_pago.required" => "La forma de pago es requerida",
+        // ]);
+
+        $messages = [
             'detalles.required' => 'Tiene que agregar productos',
-            'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
             'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
-            "forma_pago.required" => "La forma de pago es requerida",
-        ]);
+            'forma_pago.required' => 'La forma de pago es requerida'
+        ];
+
+        if ($request->cotizacion == 1) {
+            $messages['id_cliente.required_if'] = 'El cliente es requerido para generar una cotización.';
+        } else {
+            $messages['id_cliente.required_if'] = 'El cliente es requerido para los créditos y la facturación.';
+        }
+
+        $request->validate([
+            'fecha' => 'required',
+            'estado' => 'required|max:255',
+            'correlativo' => 'required|numeric',
+            'id_documento' => 'required|max:255',
+            //'id_canal' => 'required|max:255',
+            'id_canal' => $request->cotizacion == 1 ? 'nullable' : 'required|max:255',
+            'id_cliente' => 'required_if:estado,Pendiente',
+            'detalles' => 'required',
+            'fecha_expiracion' => 'required_if:cotizacion,1',
+            'descripcion_impresion' => 'required_if:descripcion_personalizada,1',
+            'credito' => 'required_if:condicion,Crédito',
+            'iva' => 'required|numeric',
+            'forma_pago' => 'required_if:metodo_pago,Crédito',
+            'total_costo' => 'required|numeric',
+            'sub_total' => 'required|numeric',
+            'total' => 'required|numeric',
+            'nota' => 'max:255',
+            'id_usuario' => 'required|numeric',
+            'id_bodega' => 'required|numeric',
+            'id_sucursal' => 'required|numeric',
+            'forma_pago' => 'required'
+        ], $messages);
+
+
 
         try {
             DB::beginTransaction();
             // Guardamos la venta
             if ($request->cotizacion == 1) {
+
+                //  dd($request->all());
                 $quote = $this->saveQuotation($request);
                 return Response()->json($quote, 200);
             }
@@ -487,23 +528,53 @@ class VentasController extends Controller
                 //  $det['remember_token'] = null;
                 $detalle->fill($det);
                 $detalle->save();
+                // if (isset($det["custom_fields"])) {
+                //     //foreach ($det["custom_fields"] as $customField) {
+                //     foreach ($det["custom_fields"] as $key => $customField) {
 
-                if ($det["custom_fields"]) {
+                //         if (isset($customField["value"])) {
+
+                //             $customFieldId = isset($customField["custom_field"]) ?
+                //                 $customField["custom_field"]["id"] :
+                //                 $customField["custom_field_id"];
+                //             $productCustomField = ProductCustomField::updateOrCreate(
+                //                 [
+                //                     'custom_field_id' => $customFieldId,
+                //                     'cotizacion_venta_detalle_id' => $detalle->id
+                //                 ],
+                //                 [
+                //                     'custom_field_value_id' => isset($customField["id_value"]) ?
+                //                         $customField["id_value"] :
+                //                         $customField["custom_field_value_id"],
+                //                     'value' => $customField["value"]
+                //                 ]
+                //             );
+                //         }
+                //     }
+                // }
+                
+                if (isset($det["custom_fields"])) {
+                    $currentCustomFieldIds = collect($det["custom_fields"])->pluck('custom_field.id')->filter()->toArray();
+
+                    ProductCustomField::where('cotizacion_venta_detalle_id', $detalle->id)
+                        ->whereNotIn('custom_field_id', $currentCustomFieldIds)
+                        ->delete();
+
+             
                     foreach ($det["custom_fields"] as $customField) {
-                        Log::info($customField);
                         if (isset($customField["value"])) {
-                            Log::info("customField");
-                            $customFieldId = isset($customField["custom_field"]) ? 
-                                $customField["custom_field"]["id"] : 
+                            $customFieldId = isset($customField["custom_field"]) ?
+                                $customField["custom_field"]["id"] :
                                 $customField["custom_field_id"];
+
                             $productCustomField = ProductCustomField::updateOrCreate(
                                 [
                                     'custom_field_id' => $customFieldId,
                                     'cotizacion_venta_detalle_id' => $detalle->id
                                 ],
                                 [
-                                    'custom_field_value_id' => isset($customField["id_value"]) ? 
-                                        $customField["id_value"] : 
+                                    'custom_field_value_id' => isset($customField["id_value"]) ?
+                                        $customField["id_value"] :
                                         $customField["custom_field_value_id"],
                                     'value' => $customField["value"]
                                 ]
@@ -525,7 +596,7 @@ class VentasController extends Controller
             $documento->increment('correlativo');
 
             DB::commit();
-            return $cotizacion;
+            //     return $cotizacion;
         } catch (\Exception $e) {
             DB::rollback();
             throw $e;
