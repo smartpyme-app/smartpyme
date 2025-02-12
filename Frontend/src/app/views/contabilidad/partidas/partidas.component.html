@@ -250,8 +250,8 @@
                 </div>
                 <div class="form-group col-md-6">
                   <label for="year">Año:</label>
-                  <select class="form-select" name="year" [(ngModel)]="reporte.year">
-                    <option value="">Seleccione un año</option>
+                  <select class="form-select" name="year" [(ngModel)]="reporte.year" (change)="onYearChange()">
+                    <option value="" selected>Seleccione un año</option>
                     <option *ngFor="let year of years" [value]="year">
                       {{ year }}
                     </option>
@@ -260,8 +260,18 @@
                 <div class="form-group col-md-6">
                   <label for="">Tipo de reporte:</label>
                   <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                    <option value="pdf" selected>PDF</option>
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
                     <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de cuenta:</label>
+                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
+                    <option value="all" selected>Todos</option>
+                    <option *ngFor="let cat of catalogo" [value]="cat.id">
+                      {{cat.nombre}}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -327,7 +337,7 @@
                 </div>
                 <div class="form-group col-md-6">
                   <label for="year">Año:</label>
-                  <select class="form-select" name="year" [(ngModel)]="reporte.year">
+                  <select class="form-select" name="year" [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
                     <option *ngFor="let year of years" [value]="year">
                       {{ year }}
@@ -337,8 +347,18 @@
                 <div class="form-group col-md-6">
                   <label for="">Tipo de reporte:</label>
                   <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                    <option value="pdf" selected>PDF</option>
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
                     <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de cuenta:</label>
+                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
+                    <option value="all" selected>Todos</option>
+                    <option *ngFor="let cat of catalogo" [value]="cat.id">
+                      {{cat.nombre}}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -369,7 +389,7 @@
                 </div>
                 <div class="form-group col-md-6">
                   <label for="year">Año:</label>
-                  <select class="form-select" name="year" require [(ngModel)]="reporte.year">
+                  <select class="form-select" name="year" require [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
                     <option *ngFor="let year of years" [value]="year">
                       {{ year }}
@@ -379,8 +399,18 @@
                 <div class="form-group col-md-6">
                   <label for="">Tipo de reporte:</label>
                   <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                    <option value="pdf" selected>PDF</option>
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
                     <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de cuenta:</label>
+                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
+                    <option value="all" selected>Todos</option>
+                    <option *ngFor="let cat of catalogo" [value]="cat.id">
+                      {{cat.nombre}}
+                    </option>
                   </select>
                 </div>
               </div>

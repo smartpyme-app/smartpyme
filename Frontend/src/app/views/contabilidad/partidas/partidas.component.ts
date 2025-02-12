@@ -1,7 +1,7 @@
-import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
-import {BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
-import {AlertService} from '@services/alert.service';
-import {ApiService} from '@services/api.service';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -9,56 +9,101 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-partidas',
   templateUrl: './partidas.component.html',
-  styles: ['.bn_mrgn { margin-left: 10px; }']
+  styles: ['.bn_mrgn { margin-left: 10px; }'],
 })
-
 export class PartidasComponent implements OnInit {
-
   public partidas: any = [];
   public partida: any = {};
   public loading: boolean = false;
   public saving: boolean = false;
   public filtros: any = {};
-  public reporte = {month: '', year: null, concepto: '', cuenta: '', tipo_descarga: ''};
+  public reporte = {
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    concepto: '',
+    cuenta: '',
+    tipo_descarga: 'pdf',
+    tipo_cuenta: 'all',
+  };
   public catalogo: any = [];
 
-  months = [
-    {value: '01', label: 'Enero'},
-    {value: '02', label: 'Febrero'},
-    {value: '03', label: 'Marzo'},
-    {value: '04', label: 'Abril'},
-    {value: '05', label: 'Mayo'},
-    {value: '06', label: 'Junio'},
-    {value: '07', label: 'Julio'},
-    {value: '08', label: 'Agosto'},
-    {value: '09', label: 'Septiembre'},
-    {value: '10', label: 'Octubre'},
-    {value: '11', label: 'Noviembre'},
-    {value: '12', label: 'Diciembre'}
-  ];
+  // months = [
+  //   { value: '01', label: 'Enero' },
+  //   { value: '02', label: 'Febrero' },
+  //   { value: '03', label: 'Marzo' },
+  //   { value: '04', label: 'Abril' },
+  //   { value: '05', label: 'Mayo' },
+  //   { value: '06', label: 'Junio' },
+  //   { value: '07', label: 'Julio' },
+  //   { value: '08', label: 'Agosto' },
+  //   { value: '09', label: 'Septiembre' },
+  //   { value: '10', label: 'Octubre' },
+  //   { value: '11', label: 'Noviembre' },
+  //   { value: '12', label: 'Diciembre' },
+  // ];
+
+  //generar los meses dinamicos
+  // months = [];
+  months: Array<{ value: number; label: string }> = [];
 
   years: number[] = [];
 
   modalRef!: BsModalRef;
 
-  constructor(public apiService: ApiService, private alertService: AlertService,
-              private modalService: BsModalService
-  ) {
-  }
+  constructor(
+    public apiService: ApiService,
+    private alertService: AlertService,
+    private modalService: BsModalService
+  ) {}
 
   ngOnInit() {
-    this.apiService.getAll('catalogo/list').subscribe(catalogo => {
-      this.catalogo = catalogo;
-    }, error => {
-      this.alertService.error(error);
-    });
+    this.apiService.getAll('catalogo/list').subscribe(
+      (catalogo) => {
+        this.catalogo = catalogo;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
 
     this.loadAll();
   }
 
+  generateMonths() {
+    this.months = [];
+    const currentDate = new Date();
+    const selectedYear = this.reporte.year;
+
+
+    let maxMonth =
+      selectedYear < currentDate.getFullYear()
+        ? 12
+        : currentDate.getMonth() + 1;
+
+
+    if (selectedYear <= currentDate.getFullYear()) {
+      for (let month = 1; month <= maxMonth; month++) {
+        this.months.push({
+          value: month,
+          label: moment()
+            .locale('es')
+            .month(month - 1)
+            .format('MMMM'),
+        });
+      }
+    }
+  }
+
+  onYearChange() {
+    this.generateMonths();
+  
+    this.reporte.month = 1;
+  }
+
   public setOrden(columna: string) {
     if (this.filtros.orden === columna) {
-      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+      this.filtros.direccion =
+        this.filtros.direccion === 'asc' ? 'desc' : 'asc';
     } else {
       this.filtros.orden = columna;
       this.filtros.direccion = 'asc';
@@ -76,12 +121,14 @@ export class PartidasComponent implements OnInit {
     this.filtros.estado = '';
     this.filtrarPartidas();
 
-    this.reporte.month = '';
-    this.reporte.year = null;
-    this.reporte.tipo_descarga = '';
+    this.reporte.month = new Date().getMonth() + 1;
+    // console.log('month', this.reporte.month)
+    this.reporte.year = new Date().getFullYear();
+    this.reporte.tipo_descarga = 'pdf';
+    this.reporte.tipo_cuenta = 'all';
     this.reporte.concepto = '';
     this.generateYears();
-
+    this.generateMonths();
   }
 
   generateYears() {
@@ -93,30 +140,37 @@ export class PartidasComponent implements OnInit {
 
   public filtrarPartidas() {
     this.loading = true;
-    this.apiService.getAll('partidas', this.filtros).subscribe(partidas => {
-      this.partidas = partidas;
-      this.loading = false;
-      if (this.modalRef) {
-        this.modalRef.hide();
+    this.apiService.getAll('partidas', this.filtros).subscribe(
+      (partidas) => {
+        this.partidas = partidas;
+        this.loading = false;
+        if (this.modalRef) {
+          this.modalRef.hide();
+        }
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
       }
-    }, error => {
-      this.alertService.error(error);
-      this.loading = false;
-    });
+    );
   }
 
   public openModal(template: TemplateRef<any>, partida: any) {
     this.partida = partida;
     this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
   }
-
 
   public openFilter(template: TemplateRef<any>) {
     this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
   }
-
 
   public setEstado(partida: any, estado: any) {
     this.partida = partida;
@@ -125,74 +179,112 @@ export class PartidasComponent implements OnInit {
   }
 
   public setEstadoChange(partida: any) {
-    this.apiService.store('partida', partida).subscribe(producto => {
-      this.alertService.success('Partida actualizada', 'El estado de la partida fue actualizado.');
-    }, error => {
-      this.alertService.error(error);
-    });
+    this.apiService.store('partida', partida).subscribe(
+      (producto) => {
+        this.alertService.success(
+          'Partida actualizada',
+          'El estado de la partida fue actualizado.'
+        );
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
   }
 
   public setPagination(event: any): void {
     this.loading = true;
-    this.apiService.paginate(this.partidas.path + '?page=' + event.page, this.filtros).subscribe(partidas => {
-      this.partidas = partidas;
-      this.loading = false;
-    }, error => {
-      this.alertService.error(error);
-      this.loading = false;
-    });
+    this.apiService
+      .paginate(this.partidas.path + '?page=' + event.page, this.filtros)
+      .subscribe(
+        (partidas) => {
+          this.partidas = partidas;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
   }
 
   public delete(partida: any) {
-
     Swal.fire({
       title: '¿Estás seguro?',
       text: '¡No podrás revertir esto!',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminarlo',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('partida/', partida.id).subscribe(data => {
-          for (let i = 0; i < this.partidas.data.length; i++) {
-            if (this.partidas.data[i].id == data.id)
-              this.partidas.data.splice(i, 1);
+        this.apiService.delete('partida/', partida.id).subscribe(
+          (data) => {
+            for (let i = 0; i < this.partidas.data.length; i++) {
+              if (this.partidas.data[i].id == data.id)
+                this.partidas.data.splice(i, 1);
+            }
+          },
+          (error) => {
+            this.alertService.error(error);
           }
-        }, error => {
-          this.alertService.error(error);
-        });
-        4
+        );
+        4;
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
       }
     });
-
   }
 
   public onSubmit() {
     this.saving = true;
-    this.apiService.store('partida', this.partida).subscribe(partida => {
-      if (!this.partida.id) {
-        this.loadAll();
-        this.alertService.success('Partida creada', 'El partida fue añadida exitosamente.');
-      } else {
-        this.alertService.success('Partida guardada', 'El partida fue guardada exitosamente.');
+    this.apiService.store('partida', this.partida).subscribe(
+      (partida) => {
+        if (!this.partida.id) {
+          this.loadAll();
+          this.alertService.success(
+            'Partida creada',
+            'El partida fue añadida exitosamente.'
+          );
+        } else {
+          this.alertService.success(
+            'Partida guardada',
+            'El partida fue guardada exitosamente.'
+          );
+        }
+        this.saving = false;
+        if (this.modalRef) {
+          this.modalRef.hide();
+        }
+        this.alertService.modal = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.saving = false;
       }
-      this.saving = false;
-      if (this.modalRef) {
-        this.modalRef.hide();
-      }
-      this.alertService.modal = false;
-    }, error => {
-      this.alertService.error(error);
-      this.saving = false;
-    });
+    );
   }
 
   public imprimirDiarioAux() {
-    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
-      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga &&
+      this.reporte.tipo_cuenta
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/libro/diario/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
@@ -200,15 +292,44 @@ export class PartidasComponent implements OnInit {
 
   public imprimirMayor() {
     if (this.reporte.month && this.reporte.year && this.reporte.concepto) {
-      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.concepto + '?token=' + this.apiService.auth_token());
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/libro/diario/mayor/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.concepto +
+          '?token=' +
+          this.apiService.auth_token()
+      );
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
   }
 
   public imprimirDiarioMayor() {
-    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
-      window.open(this.apiService.baseUrl + '/api/reportes/libro/diario/mayor/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga &&
+      this.reporte.tipo_cuenta
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/libro/diario/mayor/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
     } else {
       console.error('Por favor, llenar los campos requeridos.');
     }
@@ -216,15 +337,42 @@ export class PartidasComponent implements OnInit {
 
   public imprimirMovCuenta() {
     if (this.reporte.month && this.reporte.year && this.reporte.cuenta) {
-      window.open(this.apiService.baseUrl + '/api/reportes/movimiento/cuenta/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.cuenta + '?token=' + this.apiService.auth_token());
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/movimiento/cuenta/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.cuenta +
+          '?token=' +
+          this.apiService.auth_token()
+      );
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
   }
 
   public imprimirBalanceComprobacion() {
-    if (this.reporte.month && this.reporte.year && this.reporte.tipo_descarga) {
-      window.open(this.apiService.baseUrl + '/api/reportes/balance/comprobacion/' + this.reporte.month + '/' + this.reporte.year + '/' + this.reporte.tipo_descarga + '?token=' + this.apiService.auth_token());
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga &&
+      this.reporte.tipo_cuenta
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/balance/comprobacion/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_cuenta +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }

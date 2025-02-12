@@ -15,13 +15,16 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
 use App\Models\Contabilidad\Catalogo\CuentaReporte;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Monolog\Handler\ZendMonitorHandler;
 
 class GenerarReportesController extends Controller
 {
 
-    public function mayorizacion($codigo_c){
+    public function mayorizacion($codigo_c)
+    {
         // la idea es que pueda recibir un codigo de cuenta y buscar durante el mes el general de la cuenta con saldos
 
         //$codigo_c = 110101;
@@ -30,65 +33,80 @@ class GenerarReportesController extends Controller
         $startDate = Carbon::createFromFormat('Y-m-d', '2024-06-18')->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', '2024-06-19')->endOfDay();
 
-        $detalles= Detalle::where('id_cuenta', $codigo_c)->whereBetween('created_at', [$startDate, $endDate])->get(); //colocar la fecha para el balance respectivo del mes
+        $detalles = Detalle::where('id_cuenta', $codigo_c)->whereBetween('created_at', [$startDate, $endDate])->get(); //colocar la fecha para el balance respectivo del mes
 
         //naturaleza de la cuenta
-        $cuenta= Cuenta::where('codigo', $codigo_c)->where('id_empresa', auth()->user()->id_empresa)->first();
+        $cuenta = Cuenta::where('codigo', $codigo_c)->where('id_empresa', auth()->user()->id_empresa)->first();
 
         //debe
-        $debe= $detalles->sum('abono');
+        $debe = $detalles->sum('abono');
 
         //haber
-        $haber=$detalles->sum('cargo');
+        $haber = $detalles->sum('cargo');
 
         //establecer la naturaleza para realizar los calculos de la cuenta segun su saldo
-        if($cuenta->naturaleza == 'Deudor'){
+        if ($cuenta->naturaleza == 'Deudor') {
             $saldo_calc = $debe - $haber;
-        }else{
-            $saldo_calc = $haber - $debe ;
+        } else {
+            $saldo_calc = $haber - $debe;
         }
 
         //si la cuenta de es de una naturaleza se suma el debe y se resta el haber
         // si una cuenta es de una naturaleza se suba el haber y se resta el debe
 
-        $mayorizada= new CuentaMayorizada();
-        $mayorizada->codigo= $codigo_c;
+        $mayorizada = new CuentaMayorizada();
+        $mayorizada->codigo = $codigo_c;
         $mayorizada->nombre = $cuenta->nombre;
-        $mayorizada->saldo= $saldo_calc;
-        $mayorizada->cargo= $haber;
-        $mayorizada->abono= $debe;
-        $mayorizada->naturaleza_saldo= $cuenta->naturaleza;
+        $mayorizada->saldo = $saldo_calc;
+        $mayorizada->cargo = $haber;
+        $mayorizada->abono = $debe;
+        $mayorizada->naturaleza_saldo = $cuenta->naturaleza;
 
         return collect($mayorizada);
-
     }
 
-    public function generarRepLibroDiario($month, $year, $type){
-        if($type === 'pdf'){
-            return $this->generarRepLibroDiarioPDF($month, $year);
-        }else{
-            return $this->generarRepLibroDiarioExcel($month, $year);
+    public function generarRepLibroDiario($month, $year, $cuenta, $type)
+    {
+        if ($type === 'pdf') {
+            return $this->generarRepLibroDiarioPDF($month, $year, $cuenta);
+        } else {
+            return $this->generarRepLibroDiarioExcel($month, $year, $cuenta);
         }
     }
 
-    public function generarRepLibroDiarioPDF($month, $year){
+    public function generarRepLibroDiarioPDF($month, $year, $cuenta = null)
+    {
+       // Log::info(['month' => $month, 'year' => $year, 'cuenta' => $cuenta]);
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        $partidas = Partida::with(['detalles' => function($query) {
+        $query = Partida::with(['detalles' => function ($query) use ($cuenta) {
             $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
+
+            if ($cuenta && $cuenta !== 'all') {
+                $query->where('id_cuenta', $cuenta);
+            }
         }])
             ->where('id_empresa', $empresa_id)
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
-            ->orderBy('fecha', 'asc')
-            ->get();
+            ->orderBy('fecha', 'asc');
+
+
+        if ($cuenta && $cuenta !== 'all') {
+            $query->whereHas('detalles', function ($query) use ($cuenta) {
+               // Log::info('Cuenta: ' . $cuenta);
+                $query->where('id_cuenta', $cuenta);
+            });
+        }
+
+        $partidas = $query->get();
 
         $reporteLibroDiario = $partidas->map(function ($partida) {
             return [
-                'partida_num' => '#'.$partida->id,
+                'partida_num' => '#' . $partida->id,
                 'fecha' => $partida->fecha,
                 'concepto' => $partida->concepto,
                 'detalles' => $partida->detalles->map(function ($detalle) {
@@ -102,30 +120,47 @@ class GenerarReportesController extends Controller
             ];
         });
 
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario', compact('reporteLibroDiario', 'empresa','month_name', 'year'));
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario', compact('reporteLibroDiario', 'empresa', 'month_name', 'year'));
         $pdf->setPaper('US Letter', 'landscape');
 
         return  $pdf->stream();
     }
 
-    public function generarRepLibroDiarioExcel($month, $year){
+    public function generarRepLibroDiarioExcel($month, $year, $cuenta = null)
+    {
+        //Log::info(['month' => $month, 'year' => $year, 'cuenta' => $cuenta]);
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        $partidas = Partida::with(['detalles' => function($query) {
+        $query = Partida::with(['detalles' => function ($query) use ($cuenta) {
             $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
+
+            if ($cuenta && $cuenta !== 'all') {
+                $query->where('id_cuenta', $cuenta);
+            }
         }])
             ->where('id_empresa', $empresa_id)
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
-            ->orderBy('fecha', 'asc')
-            ->get();
+            ->orderBy('fecha', 'asc');
+
+
+        if ($cuenta && $cuenta !== 'all') {
+            $query->whereHas('detalles', function ($query) use ($cuenta) {
+                //Log::info('Cuenta: ' . $cuenta);
+                $query->where('id_cuenta', $cuenta);
+            });
+        }
+
+        $partidas = $query->get();
+
+
 
         $reporteLibroDiario = $partidas->map(function ($partida) {
             return [
-                'partida_num' => '#'.$partida->id,
+                'partida_num' => '#' . $partida->id,
                 'fecha' => $partida->fecha,
                 'concepto' => $partida->concepto,
                 'detalles' => $partida->detalles->map(function ($detalle) {
@@ -149,64 +184,70 @@ class GenerarReportesController extends Controller
         return Excel::download(new DiarioAuxiliarExport($data), 'libro_diario.xlsx');
     }
 
-    public function generarRepLibroDiarioMayor($month, $year, $type){
-        if($type === 'pdf'){
-            return $this->generarRepLibroDiarioMayorPDF($month, $year);
-        }else{
-            return $this->generarRepLibroDiarioMayorExcel($month, $year);
+    public function generarRepLibroDiarioMayor($month, $year, $cuenta, $type)
+    {
+        if ($type === 'pdf') {
+            return $this->generarRepLibroDiarioMayorPDF($month, $year, $cuenta);
+        } else {
+            return $this->generarRepLibroDiarioMayorExcel($month, $year, $cuenta);
         }
     }
 
-    public function generarRepLibroDiarioMayorPDF($month, $year, $concepto = null){
+    public function generarRepLibroDiarioMayorPDF($month, $year, $cuenta = null)
+    {
 
         $cuentas = [];
 
         //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
-        $nivel_datos=2;
+        $nivel_datos = 2;
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
         //cuentas que no aceptan datos segun nivel
-        $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
+        $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-        $partidas= Detalle::whereHas('partida', function($query) use ($empresa_id, $month, $year) {
+        $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
             $query->where('id_empresa', $empresa_id)
+                //->where('id_cuenta', $cuenta)
                 ->whereYear('fecha', $year)
-                ->whereMonth('fecha', $month);})->get();
+                ->whereMonth('fecha', $month);
+
+            if ($cuenta && $cuenta !== 'all') {
+                $query->where('id_cuenta', $cuenta);
+            }
+        })->get();
 
         //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
-        foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
-        {
-            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre){
+        foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
+            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre) {
                 return strpos($detalle->codigo, (string)$cod_padre) === 0;
             });
 
             // Convertir el resultado a una colección nuevamente (opcional)
             $partidasFiltradas = $partidasFiltradas->values();
 
-//            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
+            //            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
 
-            $sum_deb=0;
-            $sum_hab=0;
-            foreach ($partidasFiltradas as $det_part){
+            $sum_deb = 0;
+            $sum_hab = 0;
+            foreach ($partidasFiltradas as $det_part) {
 
-//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+                //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+                //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
 
-                $sum_deb+=$det_part->debe;
-                $sum_hab+=$det_part->haber;
-
+                $sum_deb += $det_part->debe;
+                $sum_hab += $det_part->haber;
             }
 
-            if (count($partidasFiltradas)!=0){
+            if (count($partidasFiltradas) != 0) {
 
                 $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
 
 
-                $cuenta_reporte= new CuentaReporte();
-                $cuenta_reporte->cuenta= $cod_padre;
-                $cuenta_reporte->nombre= $cnt->nombre;
+                $cuenta_reporte = new CuentaReporte();
+                $cuenta_reporte->cuenta = $cod_padre;
+                $cuenta_reporte->nombre = $cnt->nombre;
                 $cuenta_reporte->detalles = $partidasFiltradas;
                 $cuenta_reporte->naturaleza = $cnt->naturaleza;
                 $cuenta_reporte->cargo = $sum_deb;
@@ -215,78 +256,77 @@ class GenerarReportesController extends Controller
                 $cuenta_reporte->saldo_anterior = 0;
 
 
-                array_push($cuentas,$cuenta_reporte);
-
+                array_push($cuentas, $cuenta_reporte);
             }
-
-
         }
 
         $empresa = Empresa::findOrfail($empresa_id);
 
-        if ($concepto!=null){
-            $pdf= PDF::loadView('reportes.contabilidad.libro_mayor', compact('cuentas', 'empresa', 'month_name', 'year', 'concepto'));
-        }else{
-            $pdf= PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'year'));
+        //if ($concepto != null) {
+        //$pdf = PDF::loadView('reportes.contabilidad.libro_mayor', compact('cuentas', 'empresa', 'month_name', 'year', 'concepto'));
+        // } else {
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'year'));
+        //}
 
-        }
-
-        $pdf->setPaper('US Letter', 'portrait' );
+        $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream();
-
     }
 
-    public function generarRepLibroDiarioMayorExcel($month, $year, $concepto = null){
+    public function generarRepLibroDiarioMayorExcel($month, $year, $cuenta = null)
+    {
 
         $cuentas = [];
 
         //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
-        $nivel_datos=2;
+        $nivel_datos = 2;
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
         //cuentas que no aceptan datos segun nivel
-        $cuentas_padre= Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
+        $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-        $partidas= Detalle::whereHas('partida', function($query) use ($empresa_id, $month, $year) {
+        $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
             $query->where('id_empresa', $empresa_id)
                 ->whereYear('fecha', $year)
-                ->whereMonth('fecha', $month);})->get();
+                ->whereMonth('fecha', $month);
+
+            if ($cuenta && $cuenta !== 'all') {
+                $query->where('id_cuenta', $cuenta);
+            }
+        })->get();
 
         //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
-        foreach ($cuentas_padre->pluck('codigo') as $cod_padre)
-        {
-            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre){
+        foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
+            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre) {
                 return strpos($detalle->codigo, (string)$cod_padre) === 0;
             });
 
             // Convertir el resultado a una colección nuevamente (opcional)
             $partidasFiltradas = $partidasFiltradas->values();
 
-//            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
+            //            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
 
-            $sum_deb=0;
-            $sum_hab=0;
-            foreach ($partidasFiltradas as $det_part){
+            $sum_deb = 0;
+            $sum_hab = 0;
+            foreach ($partidasFiltradas as $det_part) {
 
-//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+                //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+                //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
 
-                $sum_deb+=$det_part->debe;
-                $sum_hab+=$det_part->haber;
-
+                $sum_deb += $det_part->debe;
+                $sum_hab += $det_part->haber;
             }
 
-            if (count($partidasFiltradas)!=0){
+            if (count($partidasFiltradas) != 0) {
 
                 $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
 
 
-                $cuenta_reporte= new CuentaReporte();
-                $cuenta_reporte->cuenta= $cod_padre;
-                $cuenta_reporte->nombre= $cnt->nombre;
+                $cuenta_reporte = new CuentaReporte();
+                $cuenta_reporte->cuenta = $cod_padre;
+                $cuenta_reporte->nombre = $cnt->nombre;
                 $cuenta_reporte->detalles = $partidasFiltradas;
                 $cuenta_reporte->naturaleza = $cnt->naturaleza;
                 $cuenta_reporte->cargo = $sum_deb;
@@ -295,11 +335,8 @@ class GenerarReportesController extends Controller
                 $cuenta_reporte->saldo_anterior = 0;
 
 
-                array_push($cuentas,$cuenta_reporte);
-
+                array_push($cuentas, $cuenta_reporte);
             }
-
-
         }
 
         $empresa = Empresa::findOrfail($empresa_id);
@@ -314,24 +351,32 @@ class GenerarReportesController extends Controller
 
         // Exportar a Excel
         return Excel::download(new DiarioMayorExport($data), 'libro_diario_mayor.xlsx');
-
     }
 
-    public function generarRepBalanceComprobacion($month, $year, $type){
-        if($type === 'pdf'){
-            return $this->generarRepBalanceComprobacionPDF($month, $year);
-        }else{
-            return $this->generarRepBalanceComprobacionExcel($month, $year);
+    public function generarRepBalanceComprobacion($month, $year, $cuenta, $type)
+    {
+        if ($type === 'pdf') {
+            return $this->generarRepBalanceComprobacionPDF($month, $year, $cuenta);
+        } else {
+            return $this->generarRepBalanceComprobacionExcel($month, $year, $cuenta);
         }
     }
 
-    public function generarRepBalanceComprobacionPDF($month, $year){
+    public function generarRepBalanceComprobacionPDF($month, $year, $cuenta = null)
+    {
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
+        // $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
+
+        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id);
+        if ($cuenta && $cuenta !== 'all') {
+            $cuentasQuery->where('id', $cuenta);
+        }
+        $cuentas = $cuentasQuery->orderBy('codigo', 'asc')->get();
+
 
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
@@ -339,11 +384,18 @@ class GenerarReportesController extends Controller
             ->whereMonth('fecha', $month)
             ->select(
                 'partida_detalles.id_cuenta',
-                \DB::raw('SUM(partida_detalles.debe) as total_debe'),
-                \DB::raw('SUM(partida_detalles.haber) as total_haber')
+                DB::raw('SUM(partida_detalles.debe) as total_debe'),
+                DB::raw('SUM(partida_detalles.haber) as total_haber')
             )
-            ->groupBy('partida_detalles.id_cuenta')
-            ->get();
+            ->groupBy('partida_detalles.id_cuenta');
+        //  ->get();
+
+
+        if ($cuenta && $cuenta !== 'all') {
+            $partida_detalles->where('partida_detalles.id_cuenta', $cuenta);
+        }
+
+        $partida_detalles = $partida_detalles->get();
 
         $balance = [];
 
@@ -367,19 +419,26 @@ class GenerarReportesController extends Controller
         }
 
         $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
-        $pdf->setPaper('US Letter', 'portrait' );
+        $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream();
-
     }
 
-    public function generarRepBalanceComprobacionExcel($month, $year){
+    public function generarRepBalanceComprobacionExcel($month, $year, $cuenta = null)
+    {
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
+        //$cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
+
+        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id);
+        if ($cuenta && $cuenta !== 'all') {
+            $cuentasQuery->where('id', $cuenta);
+        }
+        $cuentas = $cuentasQuery->orderBy('codigo', 'asc')->get();
+
 
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
@@ -387,11 +446,17 @@ class GenerarReportesController extends Controller
             ->whereMonth('fecha', $month)
             ->select(
                 'partida_detalles.id_cuenta',
-                \DB::raw('SUM(partida_detalles.debe) as total_debe'),
-                \DB::raw('SUM(partida_detalles.haber) as total_haber')
+                DB::raw('SUM(partida_detalles.debe) as total_debe'),
+                DB::raw('SUM(partida_detalles.haber) as total_haber')
             )
-            ->groupBy('partida_detalles.id_cuenta')
-            ->get();
+            ->groupBy('partida_detalles.id_cuenta');
+        //->get();
+
+        if ($cuenta && $cuenta !== 'all') {
+            $partida_detalles->where('partida_detalles.id_cuenta', $cuenta);
+        }
+
+        $partida_detalles = $partida_detalles->get();
 
         $balance = [];
 
@@ -423,69 +488,68 @@ class GenerarReportesController extends Controller
 
         // Exportar a Excel
         return Excel::download(new BalanceComprobacionExport($data), 'balance_comprobacion.xlsx');
-
     }
 
-    public function generarRepMovCuenta($startDate, $endDate, $cuenta_cod){
+    public function generarRepMovCuenta($startDate, $endDate, $cuenta_cod)
+    {
 
-        $empresa_id= auth()->user()->id_empresa;
+        $empresa_id = auth()->user()->id_empresa;
 
-        $cuenta= Cuenta::where('codigo', $cuenta_cod)->where('id_empresa', auth()->user()->id_empresa)->first();
+        $cuenta = Cuenta::where('codigo', $cuenta_cod)->where('id_empresa', auth()->user()->id_empresa)->first();
 
-//        dd($cuenta_cod);
+        //        dd($cuenta_cod);
 
-        $det_agrup= Detalle::whereHas('partida', function($query) use ($empresa_id) {
-            $query->where('id_empresa', $empresa_id);})
+        $det_agrup = Detalle::whereHas('partida', function ($query) use ($empresa_id) {
+            $query->where('id_empresa', $empresa_id);
+        })
             ->whereBetween('created_at', [$startDate, $endDate])->where('codigo', $cuenta_cod)
             ->get();
 
         $empresa = Empresa::findOrfail($empresa_id);
 
-        $month= $startDate;
-        $year= $endDate;
+        $month = $startDate;
+        $year = $endDate;
 
         // Fecha en formato dd/mm/yyyy
         $fecha = date('d/m/Y');
 
-// Hora en formato 12 horas con a.m./p.m.
+        // Hora en formato 12 horas con a.m./p.m.
         $hora = date('h:i:s a');
 
-        $sum_deb=0;
-        $sum_hab=0;
-        foreach ($det_agrup as $detalle){
-//                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-//                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
+        $sum_deb = 0;
+        $sum_hab = 0;
+        foreach ($det_agrup as $detalle) {
+            //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
+            //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
 
-            $sum_deb+=$detalle->debe;
-            $sum_hab+=$detalle->haber;
+            $sum_deb += $detalle->debe;
+            $sum_hab += $detalle->haber;
         }
 
-//        dd($cuenta);
+        //        dd($cuenta);
 
         $cuenta_reporte = new CuentaReporte();
-        $cuenta_reporte->cuenta= $cuenta_cod;
-        $cuenta_reporte->nombre= $cuenta->nombre;
-        $cuenta_reporte->detalles= $det_agrup;
-        $cuenta_reporte->naturaleza= $cuenta->naturaleza;
-        $cuenta_reporte->cargo= $sum_deb;
-        $cuenta_reporte->abono= $sum_hab;
-        $cuenta_reporte->saldo_actual= 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
-        $cuenta_reporte->saldo_anterior= 0;
+        $cuenta_reporte->cuenta = $cuenta_cod;
+        $cuenta_reporte->nombre = $cuenta->nombre;
+        $cuenta_reporte->detalles = $det_agrup;
+        $cuenta_reporte->naturaleza = $cuenta->naturaleza;
+        $cuenta_reporte->cargo = $sum_deb;
+        $cuenta_reporte->abono = $sum_hab;
+        $cuenta_reporte->saldo_actual = 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
+        $cuenta_reporte->saldo_anterior = 0;
 
-        $pdf= PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
+        $pdf = PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
 
-        $pdf->setPaper('US Letter', 'landscape' );
+        $pdf->setPaper('US Letter', 'landscape');
 
         return $pdf->stream();
-
-
     }
 
-    public function generarBalanceGeneral(){
+    public function generarBalanceGeneral()
+    {
 
-        $pdf= PDF::loadView('reportes.contabilidad.balance_general');
+        $pdf = PDF::loadView('reportes.contabilidad.balance_general');
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream();
-
     }
 }
