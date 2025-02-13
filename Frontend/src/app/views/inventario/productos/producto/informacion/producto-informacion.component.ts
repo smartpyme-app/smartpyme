@@ -34,9 +34,9 @@ export class ProductoInformacionComponent implements OnInit {
   public loading = false;
   public guardar = false;
   public variants: Array<{ nombre: string; cantidad: number }> = [];
-  public tallas = ['x', 'm', 'l', 'xl'];
-  public colores = ['azul', 'Amarillo', 'Blanco', 'Negro'];
-  public materiales = ['Madera', 'Papel', 'Metal', 'Plastico', 'Vidrio'];
+  public tallas: any = [];
+  public colores: any = [];
+  public materiales: any = [];
 
   tipoAtributoActual: string = '';
   nuevoAtributo: any = {};
