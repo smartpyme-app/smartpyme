@@ -188,7 +188,7 @@ export class ProductoInformacionComponent implements OnInit {
     this.apiService.store('producto', this.producto).subscribe(
       (producto) => {
         this.guardar = false;
-        this.loading = false;
+       // this.loading = false;
         if (!this.producto.id) {
           this.producto = producto;
         }
