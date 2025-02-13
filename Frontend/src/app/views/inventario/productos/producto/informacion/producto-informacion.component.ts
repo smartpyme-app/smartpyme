@@ -309,6 +309,8 @@ export class ProductoInformacionComponent implements OnInit {
 
 
   addAttribute(event: any, tipo: string) {
+    // console.log('event', event);
+    // console.log('tipo', tipo);
     switch (tipo) {
       case 'talla': {
         this.producto.talla = event ? event.valor : null;

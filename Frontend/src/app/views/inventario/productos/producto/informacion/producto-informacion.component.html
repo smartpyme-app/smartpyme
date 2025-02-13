@@ -154,18 +154,11 @@
     <div class="form-group col-md-12 col-lg-3">
       <label for="talla" class="w-100">Talla</label>
       <div class="input-group">
-        <!-- <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="valor" 
-          (change)="addAttribute($event, 'talla')" class="form-control form-select" 
-          placeholder="Selecciona o agrega una talla"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select> -->
-
-        <select [(ngModel)]="producto.talla" class="form-select" name="producto.talla">
-          <option value="">Selecciona una talla</option>
-          <option *ngFor="let talla of tallas" [value]="talla.valor">
+        <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" name="producto.talla" placeholder="Selecciona o agrega una talla">
+          <ng-option *ngFor="let talla of tallas" [value]="talla.valor">
             {{ talla.valor }}
-          </option>
-        </select>
+          </ng-option>
+        </ng-select>
         <button type="button" class="btn btn-default" (click)="openModalAtributo('talla')" tooltip="Agregar talla">
           <i class="fa fa-plus"></i>
         </button>
@@ -185,22 +178,11 @@
     <div class="form-group col-md-12 col-lg-3">
       <label for="color" class="w-100">Color</label>
       <div class="input-group">
-        <!-- <ng-select 
-        [(ngModel)]="producto.color"
-         [items]="colores" 
-         bindValue="valor"
-        bindLabel="valor"
-          (change)="addAttribute($event, 'color')" 
-          class="form-control form-select" 
-          placeholder="Selecciona o agrega un color"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select> -->
-        <select [(ngModel)]="producto.color" class="form-select" name="producto.color">
-          <option value="">Selecciona un color</option>
-          <option *ngFor="let color of colores" [value]="color.valor">
-              {{ color.valor }}
-          </option>
-      </select>
+      <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" name="producto.color" placeholder="Selecciona o agrega un color">
+        <ng-option *ngFor="let color of colores" [value]="color.valor">
+          {{ color.valor }}
+        </ng-option>
+      </ng-select>
         <button type="button" class="btn btn-default" (click)="openModalAtributo('color')" tooltip="Agregar color">
           <i class="fa fa-plus"></i>
         </button>
@@ -220,17 +202,11 @@
     <div class="form-group col-md-12 col-lg-3">
       <label for="material" class="w-100">Material</label>
       <div class="input-group">
-        <!-- <ng-select [(ngModel)]="producto.material" [items]="materiales" bindLabel="valor"
-          (change)="addAttribute($event, 'material')" class="form-control form-select"
-          placeholder="Selecciona o agrega un material"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select> -->
-        <select [(ngModel)]="producto.material" class="form-select" name="producto.material">
-          <option value="">Selecciona un material</option>
-          <option *ngFor="let material of materiales" [value]="material.valor">
-              {{ material.valor }}
-          </option>
-      </select>
+      <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" name="producto.material" placeholder="Selecciona o agrega un material">
+        <ng-option *ngFor="let material of materiales" [value]="material.valor">
+          {{ material.valor }}
+        </ng-option>
+      </ng-select>
         <button type="button" class="btn btn-default" (click)="openModalAtributo('material')" tooltip="Agregar material">
           <i class="fa fa-plus"></i>
         </button>
