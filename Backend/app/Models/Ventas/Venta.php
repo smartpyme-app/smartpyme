@@ -24,7 +24,7 @@ class Venta extends Model {
         'forma_pago',
         'tipo_documento',
         'num_cotizacion',
-        // 'condicion',
+        'condicion',
         'referencia',
         // 'nombre',
         'fecha_pago',

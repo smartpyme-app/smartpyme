@@ -242,7 +242,7 @@
                     <td width="50%">
                         <b>Condición de la operación: </b>
                         @if ($DTE['resumen']['condicionOperacion'] == 2)
-                            Crédito
+                            Crédito a {{ \Carbon\Carbon::parse($registro->fecha)->diffInDays(\Carbon\Carbon::parse($registro->fecha_pago), false) }} días
                         @else
                             Contado
                         @endif
