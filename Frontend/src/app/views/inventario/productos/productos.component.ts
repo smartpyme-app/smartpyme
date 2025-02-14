@@ -14,7 +14,7 @@ export class ProductosComponent implements OnInit {
     public downloading:boolean = false;
     public filtros:any = {};
     public producto:any = {};
-    public sucursales:any = [];
+    public bodegas:any = [];
     public categorias:any = [];
     public proveedores:any = [];
 
@@ -35,14 +35,14 @@ export class ProductosComponent implements OnInit {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+            this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
         
     }
 
     public loadAll() {
-        this.filtros.id_sucursal = '';
+        this.filtros.id_bodega = '';
         this.filtros.id_categoria = '';
         this.filtros.id_proveedor = '';
         this.filtros.estado = '';
@@ -151,7 +151,7 @@ export class ProductosComponent implements OnInit {
     public openModalAjuste(template: TemplateRef<any>, producto:any) {
        this.ajuste = {};
        this.producto = producto;
-       this.inventario = this.producto.inventarios.find((item:any) => item.id_sucursal == this.filtros.id_sucursal);
+       this.inventario = this.producto.inventarios.find((item:any) => item.id_bodega == this.filtros.id_bodega);
        console.log(this.filtros);
        console.log(this.producto);
        this.ajuste.stock_actual = this.inventario.stock;
@@ -166,12 +166,12 @@ export class ProductosComponent implements OnInit {
     public onSubmitAjuste() {
         this.loading = true;
         this.ajuste.id_producto = this.producto.id;
-        this.ajuste.id_sucursal = this.inventario.id_sucursal;
+        this.ajuste.id_bodega = this.inventario.id_bodega;
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
-            // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_sucursal == this.filtros.id_sucursal)].stock = ajuste.stock_real;
+            // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_bodega == this.filtros.id_bodega)].stock = ajuste.stock_real;
             this.filtrarProductos();
             this.modalRef.hide();
             this.alertService.modal = false;

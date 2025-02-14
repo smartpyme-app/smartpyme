@@ -255,25 +255,12 @@ class ComprasController extends Controller
                 $det['id_compra'] = $compra->id;
                 
                 $detalle->fill($det);
-                
-                if ($request->cotizacion == 0) {
-                    // Actualizar inventario
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
-
-                    if ($inventario) {
-                        $inventario->stock += $det['cantidad'];
-                        $inventario->save();
-                        $inventario->kardex($compra, $det['cantidad'], null, $det['costo']);
-                    }
-
-                }
-
                 $detalle->save();
 
                 if (!$request->id) {
                     $producto = $detalle->producto()->with('inventarios')->first();
                     if ($producto) {
-                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $det['cantidad'];
+                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0);
                         $stock_actual = $det['cantidad']; // Cantidad comprada
                         $stock_total = $stock_anterior + $stock_actual; // Nuevo stock total
 
@@ -291,6 +278,20 @@ class ComprasController extends Controller
                     }
 
                 }
+
+                if ($request->cotizacion == 0) {
+                    // Actualizar inventario
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
+
+                    if ($inventario) {
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($compra, $det['cantidad']);
+                    }
+
+                }
+
+
 
             }
 

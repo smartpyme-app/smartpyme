@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\Inventario\ServiciosController;
 
     Route::post('/servicios/analisis',          [ServiciosController::class, 'analisis']);
     Route::get('/servicio/precios/historicos/{id}', [ServiciosController::class, 'precios']);
+
+    Route::post('/servicios/importar',          [ServiciosController::class, 'import']);
     Route::get('/servicios/exportar',          [ServiciosController::class, 'export']);
 
 

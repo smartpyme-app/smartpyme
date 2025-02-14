@@ -34,6 +34,7 @@
         #departamento   {top: 4cm; left: 7cm; width: 9cm;}
         #nit            {top: 4cm; left: 13cm; }
         #condicion      {top: 4.5cm; left: 1.7cm; }
+        #vendedor      {top: 4.5cm; left: 7cm; }
 
 
         table   {position: absolute; top: 5.6cm; left: 1cm; text-align: left; border-collapse: collapse; width: 18cm; }
@@ -89,11 +90,12 @@
         @if($venta->estado == 'Pagada')
             <p id="condicion"><b>Condición: </b>CONTADO</p>
         @elseif($venta->estado == 'Pendiente')
-            <p id="condicion"><b>Condición: </b>CREDITO</p>
+            <p id="condicion"><b>Condición: </b>CREDITO a {{ \Carbon\Carbon::parse($venta->fecha)->diffInDays(\Carbon\Carbon::parse($venta->fecha_pago), false) }} días</p>
         @endif
         @if ($venta->id_cliente)
             <p id="nit"><b>DUI:</b> {{ $cliente->dui }}</p>
         @endif
+            <p id="vendedor"><b>Vendedor: </b>{{ $venta->nombre_vendedor }}</p>
     </div>
 
     <table>

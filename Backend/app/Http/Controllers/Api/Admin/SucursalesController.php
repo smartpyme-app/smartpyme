@@ -82,12 +82,14 @@ class SucursalesController extends Controller
         $sucursal->save();
 
         //Crear bodega por defecto
-        Bodega::create([
-            'nombre' => $sucursal->nombre,
-            'activo' => true,
-            'id_sucursal' => $sucursal->id,
-            'id_empresa' => $sucursal->id_empresa
-        ]);
+        if (!$request->id) {
+            Bodega::create([
+                'nombre' => $sucursal->nombre,
+                'activo' => true,
+                'id_sucursal' => $sucursal->id,
+                'id_empresa' => $sucursal->id_empresa
+            ]);
+        }
 
         return Response()->json($sucursal, 200);
 
