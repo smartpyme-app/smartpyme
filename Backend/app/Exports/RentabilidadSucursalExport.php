@@ -88,7 +88,7 @@ class RentabilidadSucursalExport implements FromCollection, WithHeadings, WithMa
     {
         return [
             [
-                'Reporte de Rentabilidad por Sucursal'
+                'Reporte de Rentabilidad - Compras'
             ],
             [
                 'Período: ' . $this->fecha_inicio . ' al ' . $this->fecha_fin
