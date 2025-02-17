@@ -339,6 +339,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.id_documento = null;
             this.venta.correlativo = null;
             this.venta.estado = 'Pagada';
+            this.venta.condicion = 'Contado';
             this.venta.observaciones = '';
             this.venta.cotizacion = 0;
             this.venta.num_cotizacion = this.venta.id;
