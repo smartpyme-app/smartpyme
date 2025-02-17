@@ -94,13 +94,17 @@ class PartidasController extends Controller
         $partida->save();
 
             foreach ($request->detalles as $det) {
-                if(isset($det['id']))
+                if(isset($det['id'])) {
                     $detalle = Detalle::findOrFail($det['id']);
-                else
+                    $cuenta = Cuenta::findOrFail($det['id_cuenta']);
+                }else {
                     $detalle = new Detalle;
+                }
 
                 $detalle['id_partida'] = $partida->id;
                 $detalle->fill($det);
+                $detalle['codigo'] = $cuenta->codigo;
+                $detalle['nombre_cuenta'] = $cuenta->nombre;
                 $detalle->save();
 
                 $debe = $detalle->debe ? $detalle->debe : 0;
@@ -130,7 +134,7 @@ class PartidasController extends Controller
                     }
                 }
             }
-            
+
 
             DB::commit();
             return Response()->json($partida, 200);
@@ -183,11 +187,11 @@ class PartidasController extends Controller
             $cuenta_costos = Cuenta::where('id', $configuracion->id_cuenta_costo_venta)->first();
             $cuenta_inventarios = Cuenta::where('id', $configuracion->id_cuenta_inventario)->first();
             $cuenta_cxc = Cuenta::where('id', $configuracion->id_cuenta_cxc)->first();
-            
+
             foreach ($ingresos as $ingreso) {
-                
+
                 $formapago = FormaDePago::with('banco')->where('nombre', $ingreso->forma_pago)->first();
-                
+
                 if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
                     return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable.', 'error' => 'Venta: ' . $ingreso->nombre_documento . ' #' . $ingreso->correlativo, 'code' => 400], 400);
                 }
@@ -212,13 +216,13 @@ class PartidasController extends Controller
                         $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                         if($id_categoria){
                             $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $ingreso->id_sucursal)->first();
-                            
+
                             if(!$cuenta_categoria_sucursal){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                             }
 
                             $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
-                            
+
                             if(!$cuenta){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                             }
@@ -293,13 +297,13 @@ class PartidasController extends Controller
                         $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                         if($id_categoria){
                             $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $ingreso->id_sucursal)->first();
-                            
+
                             if(!$cuenta_categoria_sucursal){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                             }
-                            
+
                             $cuenta_costos = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_costo)->first();
-                            
+
                             if(!$cuenta_costos){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta de costo contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                             }
@@ -391,7 +395,7 @@ class PartidasController extends Controller
             $cuenta_inventarios = Cuenta::where('id', $configuracion->id_cuenta_inventario)->first();
 
             foreach ($ventas as $venta) {
-                
+
                 $detalles[] = [
                     'id_cuenta' => $cuenta_cxc->id,
                     'codigo' => $cuenta_cxc->codigo,
@@ -408,13 +412,13 @@ class PartidasController extends Controller
                     $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                     if($id_categoria){
                         $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->first();
-                        
+
                         if(!$cuenta_categoria_sucursal){
                             return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                         }
 
                         $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
-                        
+
                         if(!$cuenta){
                             return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                         }
@@ -476,13 +480,13 @@ class PartidasController extends Controller
                         $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                         if($id_categoria){
                             $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $venta->id_sucursal)->first();
-                            
+
                             if(!$cuenta_categoria_sucursal){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                             }
-                            
+
                             $cuenta_costos = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_costo)->first();
-                            
+
                             if(!$cuenta_costos){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta de costo contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria, 'code' => 400], 400);
                             }
@@ -586,9 +590,9 @@ class PartidasController extends Controller
             $cuenta_cxp = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
 
             foreach ($egresos as $egreso) {
-                
+
                 $formapago = FormaDePago::with('banco')->where('nombre', $egreso->forma_pago)->first();
-                
+
                 if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
                     return  Response()->json(['titulo' => 'La forma de pago ' . $venta->forma_pago . ' no tiene cuenta contable.', 'error' => 'Venta: ' . $venta->nombre_documento . ' #' . $venta->correlativo, 'code' => 400], 400);
                 }
@@ -613,13 +617,13 @@ class PartidasController extends Controller
                         $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                         if($id_categoria){
                             $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $egreso->id_sucursal)->first();
-                            
+
                             if(!$cuenta_categoria_sucursal){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $egreso->correlativo, 'code' => 400], 400);
                             }
 
                             $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
-                            
+
                             if(!$cuenta){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $egreso->correlativo, 'code' => 400], 400);
                             }
@@ -739,7 +743,7 @@ class PartidasController extends Controller
             $cuenta_renta_retenida = Cuenta::where('id', $configuracion->id_cuenta_renta_retenida_compras)->firstOrFail();
 
             foreach ($compras as $compra) {
-                
+
                 $detalles[] = [
                     'id_cuenta'         => $cuenta_cxp->id,
                     'codigo'            => $cuenta_cxp->codigo,
@@ -756,13 +760,13 @@ class PartidasController extends Controller
                     $id_categoria = isset($detalle->producto) ? $detalle->producto->id_categoria : null;
                     if($id_categoria){
                         $cuenta_categoria_sucursal = CuentaCategoria::where('id_categoria', $id_categoria)->where('id_sucursal', $compra->id_sucursal)->first();
-                        
+
                         if(!$cuenta_categoria_sucursal){
                             return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $compra->correlativo, 'code' => 400], 400);
                         }
 
                         $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
-                        
+
                         if(!$cuenta){
                             return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $compra->correlativo, 'code' => 400], 400);
                         }
