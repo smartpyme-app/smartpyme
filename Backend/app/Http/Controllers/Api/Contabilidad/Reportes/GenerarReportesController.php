@@ -76,7 +76,7 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioPDF($month, $year, $cuenta = null)
     {
-       // Log::info(['month' => $month, 'year' => $year, 'cuenta' => $cuenta]);
+        // Log::info(['month' => $month, 'year' => $year, 'cuenta' => $cuenta]);
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
@@ -90,14 +90,15 @@ class GenerarReportesController extends Controller
             }
         }])
             ->where('id_empresa', $empresa_id)
+            ->where('estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
-            ->orderBy('fecha', 'asc');
+            ->orderBy('fecha', 'desc');
 
 
         if ($cuenta && $cuenta !== 'all') {
             $query->whereHas('detalles', function ($query) use ($cuenta) {
-               // Log::info('Cuenta: ' . $cuenta);
+                // Log::info('Cuenta: ' . $cuenta);
                 $query->where('id_cuenta', $cuenta);
             });
         }
@@ -142,9 +143,10 @@ class GenerarReportesController extends Controller
             }
         }])
             ->where('id_empresa', $empresa_id)
+            ->where('estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
-            ->orderBy('fecha', 'asc');
+            ->orderBy('fecha', 'desc');
 
 
         if ($cuenta && $cuenta !== 'all') {
@@ -209,6 +211,7 @@ class GenerarReportesController extends Controller
 
         $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
             $query->where('id_empresa', $empresa_id)
+                ->where('estado', 'Aplicada')
                 //->where('id_cuenta', $cuenta)
                 ->whereYear('fecha', $year)
                 ->whereMonth('fecha', $month);
@@ -289,6 +292,7 @@ class GenerarReportesController extends Controller
 
         $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
             $query->where('id_empresa', $empresa_id)
+                ->where('estado', 'Aplicada')
                 ->whereYear('fecha', $year)
                 ->whereMonth('fecha', $month);
 
@@ -362,22 +366,82 @@ class GenerarReportesController extends Controller
         }
     }
 
+//    public function generarRepBalanceComprobacionPDF($month, $year, $cuenta = null)
+//    {
+//
+//        $empresa_id = auth()->user()->id_empresa;
+//        $empresa = Empresa::findOrfail($empresa_id);
+//        $month_name = Carbon::createFromDate($year, $month)->monthName;
+//
+//        // $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
+//
+//        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id);
+//        if ($cuenta && $cuenta !== 'all') {
+//            $cuentasQuery->where('id', $cuenta);
+//        }
+//        $cuentas = $cuentasQuery->get();
+//
+//
+//        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
+//            ->where('partidas.id_empresa', $empresa_id)
+//            ->where('partidas.estado', 'Aplicada')
+//            ->whereYear('fecha', $year)
+//            ->whereMonth('fecha', $month)
+//            ->select(
+//                'partida_detalles.id_cuenta',
+//                DB::raw('SUM(partida_detalles.debe) as total_debe'),
+//                DB::raw('SUM(partida_detalles.haber) as total_haber')
+//            )
+//            ->groupBy('partida_detalles.id_cuenta');
+//        //  ->get();
+//
+//        if ($cuenta && $cuenta !== 'all') {
+//            $partida_detalles->where('partida_detalles.id_cuenta', $cuenta);
+//        }
+//
+//        $partida_detalles = $partida_detalles->get();
+//
+//        $balance = [];
+//
+//        foreach ($cuentas as $cuenta) {
+//            $detalle = $partida_detalles->firstWhere('id_cuenta', $cuenta->id);
+//
+//            $debe = $detalle ? $detalle->total_debe : 0;
+//            $haber = $detalle ? $detalle->total_haber : 0;
+//
+//            $saldoInicial = $cuenta->saldo_inicial; // Saldo inicial de la cuenta
+//            $saldoFinal = $saldoInicial + ($debe - $haber);
+//
+//            $balance[] = [
+//                'codigo' => $cuenta->codigo,
+//                'nombre' => $cuenta->nombre,
+//                'saldo_inicial' => $saldoInicial,
+//                'debe' => $debe,
+//                'haber' => $haber,
+//                'saldo_final' => $saldoFinal,
+//            ];
+//        }
+//
+//        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
+//        $pdf->setPaper('US Letter', 'portrait');
+//
+//        return $pdf->stream();
+//    }
+
     public function generarRepBalanceComprobacionPDF($month, $year, $cuenta = null)
     {
-
         $empresa_id = auth()->user()->id_empresa;
-        $empresa = Empresa::findOrfail($empresa_id);
+        $empresa = Empresa::findOrFail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        // $cuentas = Cuenta::where('id_empresa', $empresa_id)->get();
-
+        // Obtener todas las cuentas manteniendo el orden original
         $cuentasQuery = Cuenta::where('id_empresa', $empresa_id);
         if ($cuenta && $cuenta !== 'all') {
             $cuentasQuery->where('id', $cuenta);
         }
-        $cuentas = $cuentasQuery->orderBy('codigo', 'asc')->get();
+        $cuentas = $cuentasQuery->get();
 
-
+        // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereYear('fecha', $year)
@@ -387,41 +451,59 @@ class GenerarReportesController extends Controller
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
                 DB::raw('SUM(partida_detalles.haber) as total_haber')
             )
-            ->groupBy('partida_detalles.id_cuenta');
-        //  ->get();
+            ->groupBy('partida_detalles.id_cuenta')
+            ->get()
+            ->keyBy('id_cuenta'); // Indexado por id_cuenta
 
+        // Inicializamos un array para almacenar los saldos por cuenta
+        $cuentas_saldos = [];
 
-        if ($cuenta && $cuenta !== 'all') {
-            $partida_detalles->where('partida_detalles.id_cuenta', $cuenta);
-        }
-
-        $partida_detalles = $partida_detalles->get();
-
-        $balance = [];
-
+        // Asignamos los valores iniciales obtenidos de la consulta de partidas
         foreach ($cuentas as $cuenta) {
-            $detalle = $partida_detalles->firstWhere('id_cuenta', $cuenta->id);
-
-            $debe = $detalle ? $detalle->total_debe : 0;
-            $haber = $detalle ? $detalle->total_haber : 0;
-
-            $saldoInicial = $cuenta->saldo_inicial; // Saldo inicial de la cuenta
-            $saldoFinal = $saldoInicial + $debe - $haber;
-
-            $balance[] = [
-                'codigo' => $cuenta->codigo,
-                'nombre' => $cuenta->nombre,
-                'saldo_inicial' => $saldoInicial,
-                'debe' => $debe,
-                'haber' => $haber,
-                'saldo_final' => $saldoFinal,
+            $id = $cuenta->id;
+            $codigo = $cuenta->codigo;
+            $cuentas_saldos[$codigo] = [
+                'padre' => $cuenta->id_cuenta_padre ?? 0,
+                'debe' => $partida_detalles[$id]->total_debe ?? 0,
+                'haber' => $partida_detalles[$id]->total_haber ?? 0,
+                'saldoFinal' => ($partida_detalles[$id]->total_debe ?? 0) - ($partida_detalles[$id]->total_haber ?? 0),
             ];
         }
 
-        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
-        $pdf->setPaper('US Letter', 'portrait');
+// Ahora sumamos los valores a las cuentas padre
+        foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
+            if($cuenta->id_cuenta_padre) {
+                $id_padre = $cuenta->id_cuenta_padre;
+                $cuentas_saldos[$id_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
+                $cuentas_saldos[$id_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
+                $cuentas_saldos[$id_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
 
-        return $pdf->stream();
+            }
+        }
+
+        $balance = [];
+        foreach ($cuentas as $cuenta) {
+            $codigo = $cuenta->codigo;
+            $balance[] = [
+                'codigo' => $codigo,
+                'nombre' => $cuenta->nombre,
+                'nivel' => $cuenta->nivel,
+                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
+                'debe' => $cuentas_saldos[$codigo]['debe'] ?? 0,
+                'haber' => $cuentas_saldos[$codigo]['haber'] ?? 0,
+                'saldo_final' => $cuentas_saldos[$codigo]['saldoFinal'] ?? 0,
+            ];
+        }
+
+// Verificamos los resultados
+        //dd($cuentas_saldos);
+
+        return view('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
+
+//        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
+//        $pdf->setPaper('US Letter', 'portrait');
+//
+//        return $pdf->stream();
     }
 
     public function generarRepBalanceComprobacionExcel($month, $year, $cuenta = null)
@@ -437,11 +519,12 @@ class GenerarReportesController extends Controller
         if ($cuenta && $cuenta !== 'all') {
             $cuentasQuery->where('id', $cuenta);
         }
-        $cuentas = $cuentasQuery->orderBy('codigo', 'asc')->get();
+        $cuentas = $cuentasQuery->get();
 
 
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
+            ->where('partidas.estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -467,7 +550,7 @@ class GenerarReportesController extends Controller
             $haber = $detalle ? $detalle->total_haber : 0;
 
             $saldoInicial = $cuenta->saldo_inicial; // Saldo inicial de la cuenta
-            $saldoFinal = $saldoInicial + $debe - $haber;
+            $saldoFinal = $saldoInicial + ($debe - $haber);
 
             $balance[] = [
                 'codigo' => $cuenta->codigo,
