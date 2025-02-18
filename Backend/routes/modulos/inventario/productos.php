@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 // Precios
     Route::post('/producto/precio',        [PreciosController::class, 'store']);
     Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
+    Route::post('/precios/importar',          [PreciosController::class, 'import']);
 
 // Proveedor
     Route::post('/producto/proveedor',        [ProveedorController::class, 'store']);
