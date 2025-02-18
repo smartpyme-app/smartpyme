@@ -42,7 +42,7 @@ export class DevolucionesVentasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.filtros.inicio = null;
+        this.filtros.inicio = this.apiService.date();
         this.filtros.fin = this.apiService.date();
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
