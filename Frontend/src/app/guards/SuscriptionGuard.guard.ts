@@ -19,6 +19,10 @@ export class SubscriptionGuard implements CanActivate {
       return false;
     }
 
+    if (userData.id_empresa == 2) {
+      return true;
+    }
+
     // Verificar estado de suscripción
     if (userData.estado_suscripcion.toLowerCase() === 'en prueba' && userData.dias_faltantes_prueba <= 0) {
       this.router.navigate(['/paywall']);

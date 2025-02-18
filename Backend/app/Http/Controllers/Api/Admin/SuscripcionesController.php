@@ -18,7 +18,7 @@ class SuscripcionesController extends Controller
 
     public function index(Request $request)
     {
-        try {
+        // try {
             $query = Empresa::with(['suscripcion', 'suscripcion.plan' => function ($query) {
                 $query->select('id', 'nombre', 'precio', 'slug', 'duracion_dias');
             }]);
@@ -85,10 +85,10 @@ class SuscripcionesController extends Controller
             });
             
             return response()->json($empresas, 200);
-        } catch (\Exception $e) {
-            Log::error('Error en SuscripcionesController@index: ' . $e->getMessage());
-            return response()->json(['error' => 'Error al obtener datos'], 500);
-        }
+        // } catch (\Exception $e) {
+        //     Log::error('Error en SuscripcionesController@index: ' . $e->getMessage());
+        //     return response()->json(['error' => 'Error al obtener datos'], 500);
+        // }
     }
 
     public function list()

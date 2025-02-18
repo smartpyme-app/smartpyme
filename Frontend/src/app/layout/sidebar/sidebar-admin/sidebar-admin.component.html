@@ -46,7 +46,7 @@
                 </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/admin/facturaciones']" tooltip="Facturación" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/admin/ventas']" tooltip="Facturación" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/archive.png" class="icon me-2">Facturación
                 </a>
             </li>
@@ -59,18 +59,18 @@
     </div>
     <div style="min-height: 37vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
-   <!--          <li class="mb-1">
+            <li class="mb-1">
                 <button (click)="togglePreferencias()" tooltip="Preferencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Preferencias
                 </button>
                 <div [collapse]="preferenciasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-plus.png" class="icon me-2">Usuarios</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/admin/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/admin/configuracion']" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-plus.png" class="icon me-2">Usuarios</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" tooltip="Documentos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file.png" class="icon me-2">Documentos</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
                   </ul>
                 </div>
-            </li> -->
+            </li>
             <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión

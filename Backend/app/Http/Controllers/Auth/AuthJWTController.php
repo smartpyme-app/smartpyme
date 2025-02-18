@@ -70,15 +70,18 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
-        $suscripcion = $user->suscripciones()->first();
-        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
-        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
-        $user->tiene_suscripcion = !is_null($suscripcion);
         
-        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->nombre;
-        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
-        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->id;
-        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->precio;
+        if ($user->id_empresa != 2) {
+            $suscripcion = $user->suscripciones()->first();
+            $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+            $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+            $user->tiene_suscripcion = !is_null($suscripcion);
+            
+            $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->nombre;
+            $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+            $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->id;
+            $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->precio;
+        }
 
         return response()->json(['token' => $token, 'user' => $user], 200);
     }

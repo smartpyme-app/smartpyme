@@ -30,7 +30,8 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 
-import { AdminFacturacionesComponent } from './facturaciones/admin-facturaciones.component';
+import { AdminVentasComponent } from '@views/super-admin/facturaciones/admin-ventas.component';
+import { AdminVentaComponent } from '@views/super-admin/facturaciones/venta/admin-venta.component';
 import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-facturacion.component';
 
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
@@ -60,7 +61,8 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     AdminUsuariosComponent,
     DashboardsComponent,
     DashboardComponent,
-    AdminFacturacionesComponent,
+    AdminVentasComponent,
+    AdminVentaComponent,
     AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
@@ -75,7 +77,8 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     AdminUsuariosComponent,
     DashboardsComponent,
     DashboardComponent,
-    AdminFacturacionesComponent,
+    AdminVentasComponent,
+    AdminVentaComponent,
     AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
