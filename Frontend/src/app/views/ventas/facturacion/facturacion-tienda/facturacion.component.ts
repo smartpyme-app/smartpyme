@@ -435,7 +435,7 @@ export class FacturacionComponent implements OnInit {
     if (this.venta.cobrar_impuestos && (!this.venta.impuestos || this.venta.impuestos.length === 0)) {
       this.alertService.warning(
         'Configuración requerida', 
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder cobrar IVA'
+        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
       );
       this.venta.cobrar_impuestos = false;
       return;
@@ -560,7 +560,7 @@ export class FacturacionComponent implements OnInit {
 
     if (this.venta.cobrar_impuestos && (!this.venta.impuestos || this.venta.impuestos.length === 0)) {
       this.alertService.error(
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder cobrar IVA'
+        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
       );
       return;
     }
