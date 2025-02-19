@@ -450,19 +450,19 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0;
     this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0;
 
-    // this.venta.impuestos.forEach((impuesto: any) => {
-    //   if (this.venta.cobrar_impuestos) {
-    //     impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
-    //   } else {
-    //     impuesto.monto = 0;
-    //   }
-    // });
-
-    if (this.venta.cobrar_impuestos && this.venta.impuestos) {
-      this.venta.impuestos.forEach((impuesto: any) => {
+    this.venta.impuestos.forEach((impuesto: any) => {
+      if (this.venta.cobrar_impuestos) {
         impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
-      });
-    }
+      } else {
+        impuesto.monto = 0;
+      }
+    });
+
+    // if (this.venta.cobrar_impuestos && this.venta.impuestos) {
+    //   this.venta.impuestos.forEach((impuesto: any) => {
+    //     impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
+    //   });
+    // }
 
     this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto'))).toFixed(4);
     this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(4);
