@@ -377,6 +377,23 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Usuario Administrador:</label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="nuevaSuscripcion.usuario_id" 
+            name="usuario_id" 
+            required>
+            <option value="">Seleccione un usuario</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{user.name}}
+            </option>
+          </select>
+          <small class="text-muted">
+            Seleccione el usuario administrador para esta suscripción
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
             <span class="input-group-text">$</span>
