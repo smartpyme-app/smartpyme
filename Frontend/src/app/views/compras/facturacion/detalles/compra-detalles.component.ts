@@ -42,10 +42,7 @@ export class CompraDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
-        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
+        detalle.total  = (parseFloat((detalle.cantidad ?? 0)) * parseFloat((detalle.costo ?? 0)) - parseFloat((detalle.descuento ?? 0))).toFixed(2);
         this.update.emit(this.compra);
     }
 
