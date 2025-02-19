@@ -99,6 +99,7 @@ class PartidasController extends Controller
                     $cuenta = Cuenta::findOrFail($det['id_cuenta']);
                 }else {
                     $detalle = new Detalle;
+                    $cuenta = Cuenta::findOrFail($det['id_cuenta']);
                 }
 
                 $detalle['id_partida'] = $partida->id;
