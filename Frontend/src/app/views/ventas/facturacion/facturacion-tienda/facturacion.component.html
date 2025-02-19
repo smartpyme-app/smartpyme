@@ -84,8 +84,8 @@
     </div>
   </div>
 </section>
-<!--vamos a mostrar los campos personalizados solo si es una cotizacion-->
-<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion == 1">
+<!--vamos a mostrar los campos personalizados solo si es una cotizacion y que haya campos personalizados-->
+<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion == 1 && customFields.data.length > 0">
   <h6>Campos personalizados a utilizar</h6>
   <div class="row">
     <div class="col-md-12">
