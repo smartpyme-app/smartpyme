@@ -111,8 +111,7 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.nombre_producto = producto.nombre;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
-        // this.detalle.costo          = parseFloat(producto.costo);
-        this.detalle.costo          = null;
+        this.detalle.costo          = parseFloat(producto.costo);
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.compra.id_sucursal);
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
@@ -126,8 +125,7 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.nombre_producto = producto.nombre;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
-        // this.detalle.costo          = parseFloat(producto.costo);
-        this.detalle.costo          = null;
+        this.detalle.costo          = parseFloat(producto.costo);
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_sucursal == this.compra.id_sucursal);
         this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         this.detalle.cantidad       = 1;
