@@ -1,0 +1,47 @@
+<div id="login-box" class="bg-white vh-100">
+  <div class="container-fluid h-100">
+    <div class="row d-flex align-items-center h-100">
+      <!-- <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/icon-bg.png'); background-size: 40%; background-position: bottom -100px right -100px; background-color: rgba(23,117,229,0.35)!important; height: 100vh;"> -->
+      <div
+        class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative"
+        style="
+          background-image: url('/assets/img/login.jpg');
+          background-size: cover;
+          background-repeat: no-repeat;
+          height: 100vh;
+        "
+      ></div>
+      <div class="col-12 col-md-6">
+        
+        <div class="success-container">
+            <div class="success-card">
+              <div class="success-icon">
+                <i class="fas fa-check-circle" *ngIf="paymentResponse?.success"></i>
+                <i class="fas fa-times-circle" *ngIf="!paymentResponse?.success"></i>
+              </div>
+              
+              <h2 *ngIf="paymentResponse?.success">¡Pago Exitoso!</h2>
+              <h2 *ngIf="!paymentResponse?.success">¡Pago Rechazado!</h2>
+              
+              <div class="payment-details" *ngIf="paymentResponse">
+                <p>{{ paymentResponse.message }}</p>
+                <div class="amount">
+                  <strong>Monto:</strong> 
+                  {{ paymentResponse.amount | currency:paymentResponse.currency:'symbol':'1.2-2' }}
+                </div>
+              </div>
+              
+              <div class="countdown">
+                Serás redirigido al inicio de sesión en {{ countdown }} segundos...
+              </div>
+              
+              <button class="btn btn-primary" (click)="goToLogin()">
+                Ir al Inicio de Sesión
+              </button>
+            </div>
+          </div>
+
+      </div>
+    </div>
+  </div>
+</div>

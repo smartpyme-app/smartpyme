@@ -11,6 +11,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Exports\ServiciosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\Servicios;
 
 class ServiciosController extends Controller
 {
@@ -199,6 +200,21 @@ class ServiciosController extends Controller
                                 ->orderBy('id','desc')->paginate(5);
         
         return Response()->json($ventas, 200);
+
+    }
+
+    public function import(Request $request){
+        
+        $request->validate([
+            'file'          => 'required',
+        ],[
+            'file.required' => 'El documento es obligatorio.'
+        ]);
+
+        $import = new Servicios();
+        Excel::import($import, $request->file);
+        
+        return Response()->json($import->getRowCount(), 200);
 
     }
 

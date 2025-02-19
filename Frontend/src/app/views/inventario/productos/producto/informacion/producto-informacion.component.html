@@ -56,25 +56,32 @@
                 <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-2">
-            <label for="costo">Costo</label>
+        <div *ngIf="apiService.auth_user().empresa.valor_inventario != 'promedio'" class="form-group col-md-4 col-lg-2">
+            <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Última compra)</small></label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
                 <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="Escribe aquí" required>
+                <input *ngIf="apiService.auth_user().empresa.valor_inventario == 'promedio'" type="number" class="form-control" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="Escribe aquí" required>
             </div>
-            <span style="font-size: 10px;" class="text-muted" *ngIf="producto.id && producto.costo_anterior > 0">Anterior: {{ producto.costo_anterior | currency }} &nbsp; Promedio: {{ producto.costo_promedio | currency }}</span>
+        </div>
+        <div *ngIf="apiService.auth_user().empresa.valor_inventario == 'promedio'" class="form-group col-md-4 col-lg-2">
+            <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="Escribe aquí" required>
+            </div>
         </div>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="tipo_impuesto">Ganancia</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo).toFixed(2)}}">
+                <input type="number" class="form-control" disabled value="{{ (producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)).toFixed(2)}}">
             </div>
         </div>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="impuesto">Margen</label>
             <div class="input-group">
-                <input type="number" class="form-control" disabled value="{{ ((producto.precio - producto.costo) / producto.precio * 100).toFixed(2) }}">
+                <input type="number" class="form-control" disabled value="{{ ((producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)) / producto.precio * 100).toFixed(2) }}">
                 <span class="input-group-text">%</span>
             </div>
         </div>

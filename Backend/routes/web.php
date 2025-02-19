@@ -14,7 +14,8 @@
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthJWTController;
 
-Route::get('/pago-wompi', [App\Http\Controllers\WompiController::class, 'pagoWompi'])->name('pagoWompi');
+
+// Route::get('/pago-wompi', [App\Http\Controllers\WompiController::class, 'pagoWompi'])->name('pagoWompi');
 
 Route::get('/payment/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('payment.n1co');
 Route::get('/registro/{id}', [AuthJWTController::class, 'pagoFinish'])->name('payment.finish');
@@ -23,6 +24,8 @@ Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])
 
 
 use App\Exports\TrasladosCombosExport;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 
 Route::get('/traslados', function(){

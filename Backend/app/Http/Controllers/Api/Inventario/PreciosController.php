@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Precios\Precio;
 use App\Models\Inventario\Precios\Usuario;
 use Illuminate\Support\Facades\Crypt;
+use App\Imports\Precios;
+use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 
 class PreciosController extends Controller
@@ -49,4 +51,20 @@ class PreciosController extends Controller
 
         return Response()->json($precio, 201);
     }
+
+    public function import(Request $request){
+        
+        $request->validate([
+            'file'          => 'required',
+        ],[
+            'file.required' => 'El documento es obligatorio.'
+        ]);
+
+        $import = new Precios();
+        Excel::import($import, $request->file);
+        
+        return Response()->json($import->getRowCount(), 200);
+
+    }
+
 }

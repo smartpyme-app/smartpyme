@@ -22,7 +22,7 @@ export class ProductoInformacionComponent implements OnInit {
     public guardar = false;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        public apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };

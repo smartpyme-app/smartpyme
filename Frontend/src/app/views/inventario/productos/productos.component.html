@@ -20,6 +20,7 @@
 
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar" >
             <div class="d-flex gap-2">
+                <app-importar-excel (loadAll)="loadAll()" [nombre]="'precios'"></app-importar-excel>
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
@@ -50,10 +51,10 @@
                     {{categoria.nombre}}
                 </ng-option>
             </ng-select>
-            <select name="id_sucursal" (change)="filtrarProductos()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
-                <option value="">Sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                    {{sucursal.nombre}}
+            <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega" class="form-select bg-default w-auto">
+                <option value="">Bodega</option>
+                <option *ngFor="let bodega of bodegas" [value]="bodega.id">
+                    {{bodega.nombre}}
                 </option>
             </select>
         </div>
@@ -102,10 +103,10 @@
                         <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_sucursal" (click)="openModalAjuste(majuste, producto)">
+                            <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega" (click)="openModalAjuste(majuste, producto)">
                                 {{ producto.inventarios | sum:'stock' }}
                             </div>
-                            <div *ngIf="!filtros.id_sucursal">
+                            <div *ngIf="!filtros.id_bodega">
                                 <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                     {{ producto.inventarios | sum:'stock' }}
                                 </span>
@@ -208,16 +209,16 @@
                 <ng-select name="id_proveedor" [(ngModel)]="filtros.id_proveedor" class="form-select p-0">
                     <ng-option value="">Todos</ng-option>
                     <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{proveedor.nombre}}
+                        {{ proveedor.nombre_empresa ?? proveedor.nombre }}
                     </ng-option>
                 </ng-select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtros.id_proveedor">Sucursal:</label>
-                <select name="id_sucursal" (change)="filtrarProductos()" [(ngModel)]="filtros.id_sucursal" class="form-select">
+                <label for="filtros.id_proveedor">Bodega:</label>
+                <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega" class="form-select">
                     <option value="">Todas</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{sucursal.nombre}}
+                    <option *ngFor="let bodega of bodegas" [value]="bodega.id">
+                        {{bodega.nombre}}
                     </option>
                 </select>
             </div>
