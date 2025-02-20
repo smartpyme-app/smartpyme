@@ -33,6 +33,7 @@ export class AdminSuscripcionesComponent implements OnInit {
   public suscripcion: any = {};
   public usuario: any = {};
   public empresa: any = {};
+  public users: any[] = [];
   public filtros: any = {};
   public loading: boolean = false;
   public saving: boolean = false;
@@ -199,30 +200,37 @@ export class AdminSuscripcionesComponent implements OnInit {
       this.alertService.error('No se proporcionaron datos de la empresa');
       return;
     }
-  
 
-    this.nuevaSuscripcion = {
-      empresa_id: empresa.id,
-      usuario_id: empresa.usuario_id,
-      plan_id: '',
-      nombre_factura: empresa.nombre,
-      direccion_factura: empresa.direccion,
-      nit: empresa.nit,
-      tipo_plan: '',
-      estado: 'En prueba',
-      monto: 0,
-      fecha_proximo_pago: this.formatearFecha(new Date().toISOString()),
-      fin_periodo_prueba: this.formatearFecha(
-        new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-      ),
-      requiere_factura: Boolean(empresa.nit),
-    };
+    this.apiService.getAll('suscripcion/getUsersSelect', { 
+      id_empresa: empresa.id 
+    }).subscribe({
+      next: (response: any) => {
+        this.users = response;
+        this.nuevaSuscripcion = {
+          empresa_id: empresa.id,
+          usuario_id: '',
+          plan_id: '',
+          nombre_factura: empresa.nombre,
+          direccion_factura: empresa.direccion,
+          nit: empresa.nit,
+          tipo_plan: '',
+          estado: 'En prueba',
+          monto: 0,
+          fecha_proximo_pago: this.formatearFecha(new Date().toISOString()),
+          fin_periodo_prueba: this.formatearFecha(
+            new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+          ),
+          requiere_factura: Boolean(empresa.nit),
+        };
 
-    console.log(this.nuevaSuscripcion);
-    console.log(empresa);
-
-    this.modalRef = this.modalService.show(template);
+        this.modalRef = this.modalService.show(template);
+      },
+      error: (error) => {
+        this.alertService.error('Error al cargar usuarios: ' + error);
+      }
+    });
   }
+  
 
 
   public selectPlan(planId: number) {

@@ -357,4 +357,15 @@ class SuscripcionesController extends Controller
             ->orderBy('fecha_transaccion', 'desc')
             ->get();
     }
+
+    public function getUsersSelect(Request $request)
+    {
+        return User::select('id', 'name')
+            ->where('enable', true)
+            // ->where('id_sucursal', $request->id_sucursal)
+            ->where('id_empresa', $request->id_empresa)
+            ->where('tipo', config('constants.TIPO_USUARIO_ADMINISTRADOR'))
+            ->orderBy('name', 'asc')
+            ->get();
+    }
 }

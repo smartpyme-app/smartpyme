@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\SuscripcionesController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/suscripciones',               [SuscripcionesController::class, 'index']);
+    Route::get('/suscripcion/getUsersSelect',  [SuscripcionesController::class, 'getUsersSelect']);
     Route::get('/suscripciones/list',          [SuscripcionesController::class, 'list']);
     Route::post('/suscripcion/create',         [SuscripcionesController::class, 'createSuscription']);
     Route::post('/suscripcion/edit',           [SuscripcionesController::class, 'editSuscription']);
@@ -13,4 +14,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/suscripcion/activar',        [SuscripcionesController::class, 'activateSystem']);
     Route::post('/suscripcion/suspender',      [SuscripcionesController::class, 'suspendSystem']);
     Route::get('/suscripciones/{id}/pagos',      [SuscripcionesController::class, 'getHistorialPagos']);
+    
 ?>
