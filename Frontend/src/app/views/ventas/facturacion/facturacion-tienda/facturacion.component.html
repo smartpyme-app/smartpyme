@@ -84,8 +84,8 @@
     </div>
   </div>
 </section>
-<!--vamos a mostrar los campos personalizados solo si es una cotizacion-->
-<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion == 1">
+<!--vamos a mostrar los campos personalizados solo si es una cotizacion y que haya campos personalizados-->
+<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion == 1 && customField" >
   <h6>Campos personalizados a utilizar</h6>
   <div class="row">
     <div class="col-md-12">
@@ -352,11 +352,25 @@
         <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
       </select>
     </div>
-    <div class="form-group col-md-6 col-lg-3 without-label">
+    <!-- <div class="form-group col-md-6 col-lg-3 without-label">
       <div class="form-switch bg-light-info rounded">
         <label for="cobrar_impuestos">Con IVA</label>
         <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
                [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
+      </div>
+    </div> -->
+    <!-- En facturacion.component.html -->
+    <div class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="cobrar_impuestos">Con IVA</label>
+        <input class="form-check-input float-end" 
+              type="checkbox" 
+              role="switch" 
+              (change)="sumTotal()"
+              [(ngModel)]="venta.cobrar_impuestos" 
+              name="venta.cobrar_impuestos"
+              [disabled]="!venta.impuestos || venta.impuestos.length === 0"
+              [title]="!venta.impuestos || venta.impuestos.length === 0 ? 'Configure los impuestos en el módulo de finanzas' : ''">
       </div>
     </div>
     <div class="form-group col-md-6 col-lg-3 without-label">
