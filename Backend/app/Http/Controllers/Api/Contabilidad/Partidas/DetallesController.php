@@ -35,6 +35,7 @@ class DetallesController extends Controller
             $cuenta = Cuenta::findOrFail($request->id_cuenta);
         }else {
             $detalle = new Detalle;
+            $cuenta = Cuenta::findOrFail($request->id_cuenta);
         }
 
         $detalle->fill($request->all());
