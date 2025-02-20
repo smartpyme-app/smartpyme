@@ -73,21 +73,17 @@ export class CompraDetallesComponent implements OnInit {
                 this.detalle = detalle;
                 this.detalle.cantidad += producto.cantidad;
             }
-            this.detalle.total_costo = ((this.detalle.costo ?? 0) * this.detalle.cantidad);
-            this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat((this.detalle.costo ?? 0)) - parseFloat(this.detalle.descuento)).toFixed(2);
+            this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
+            this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
             
             
             if(!detalle)
                 this.compra.detalles.push(this.detalle);
 
             this.update.emit(this.compra);
-            
+            console.log(this.compra);
             this.detalle = {};
             if (this.modalRef) { this.modalRef.hide() }
-
-            setTimeout(() => {
-                document.getElementById('costo-' + (this.compra.detalles.length - 1))?.focus();
-            }, 200);
 
         }
 
