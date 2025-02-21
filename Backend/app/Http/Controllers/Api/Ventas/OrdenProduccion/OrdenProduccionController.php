@@ -218,10 +218,12 @@ class OrdenProduccionController extends Controller
             if ($request->hasFile('documento_pdf')) {
                 $file = $request->file('documento_pdf');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('ordenes_produccion', $fileName, 'public');
+                //almacenar en storage Storage::disk('public')->put('ordenes_produccion/' . $fileName, file_get_contents($file));
+                $path = 'ordenes_produccion/' . $fileName;
+                Storage::disk('public')->put($path, file_get_contents($file));
 
 
-    
+
                 DB::table('orden_produccion_documentos')->insert([
                     'id_orden_produccion' => $orden->id,
                     'nombre_archivo' => $file->getClientOriginalName(),
@@ -233,7 +235,7 @@ class OrdenProduccionController extends Controller
                 ]);
             }
 
-     
+
             $cotizacion = CotizacionVenta::with('detalles.customFields.customFieldValue')->find($cotizacion->id);
 
             foreach ($cotizacion->detalles as $detalle) {
@@ -301,10 +303,8 @@ class OrdenProduccionController extends Controller
                     'message' => 'Documento no encontrado'
                 ], 404);
             }
-
-            // Similar a como manejas el PDF de impresión
-            // $path = storage_path('app/public/' . $documento->ruta_archivo);
             $path = public_path('img/' . $documento->ruta_archivo);
+            //$path = storage_path('app/public/' . $documento->ruta_archivo);
 
             Log::info($path);
 
