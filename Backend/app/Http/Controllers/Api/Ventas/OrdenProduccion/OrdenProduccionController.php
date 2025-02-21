@@ -159,12 +159,12 @@ class OrdenProduccionController extends Controller
         try {
             DB::beginTransaction();
 
-            // Decodificar los datos de la orden
+       
             $ordenData = json_decode($request->datos_orden, true);
 
-            // Validar request
+    
             $request->validate([
-                'documento_pdf' => 'nullable|file|mimes:pdf|max:5120', // 5MB max
+               // 'documento_pdf' => 'nullable|file|mimes:pdf|max:5120', // 5MB max
                 'datos_orden' => 'required|json'
             ]);
 
