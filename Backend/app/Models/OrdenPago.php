@@ -29,6 +29,7 @@ class OrdenPago extends Model
         'divisa',
         'codigo_autorizacion',
         'fecha_transaccion',
+        'id_venta',
     ];
 
     public function usuario()
@@ -44,6 +45,11 @@ class OrdenPago extends Model
     public function suscripcion()
     {
         return $this->belongsTo(Suscripcion::class, 'id_pago', 'payment_id');
+    }
+
+    public function venta()
+    {
+        return $this->hasOne(Venta::class, 'id_venta');
     }
 
     public function updateStatusAuthentication3DS($authenticationId, $authenticationUrl, $status)

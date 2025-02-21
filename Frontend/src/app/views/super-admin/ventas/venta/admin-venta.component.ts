@@ -40,7 +40,7 @@ export class AdminVentaComponent implements OnInit {
         this.venta.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
 
-        this.apiService.read('transaccion/', this.venta.id).subscribe(venta => {
+        this.apiService.read('venta/', this.venta.id).subscribe(venta => {
         this.venta = venta;
 
         if(this.venta.id_proyecto){

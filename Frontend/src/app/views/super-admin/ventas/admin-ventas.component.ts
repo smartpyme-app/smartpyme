@@ -124,7 +124,7 @@ export class AdminVentasComponent implements OnInit {
 
   public filtrarVentas() {
     this.loading = true;
-    this.apiService.getAll('transacciones', this.filtros).subscribe(
+    this.apiService.getAll('ventas', this.filtros).subscribe(
       (ventas) => {
         this.ventas = ventas;
         this.loading = false;
