@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Ventas\Clientes\ClientesController;
 use App\Http\Controllers\Api\Ventas\Clientes\DocumentosController;
 use App\Http\Controllers\Api\Ventas\VentasController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/clientes',                         [ClientesController::class, 'index']);
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
