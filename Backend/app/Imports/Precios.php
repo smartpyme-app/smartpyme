@@ -62,7 +62,7 @@ class Precios implements ToModel, WithHeadingRow, WithValidation
     public function rules(): array
     {
         return [
-            'codigo' => 'required|string',
+            'codigo' => 'required',
             'precio' => 'required|numeric',
         ];
     }
