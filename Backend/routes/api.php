@@ -91,6 +91,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 });
 
 
+// Webhook
+require base_path('routes/modulos/webhook/webhook.php');
+
+
 Route::get('/prueba/factura', function () { 
 	return view('reportes/pruebas/factura');	
 });
