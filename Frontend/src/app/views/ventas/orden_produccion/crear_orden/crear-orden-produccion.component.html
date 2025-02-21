@@ -237,14 +237,13 @@
           <div class="form-group">
             <label class="form-label">Documento Adjunto</label>
             <div class="d-flex align-items-center gap-2">
-              <a
-                [href]="cotizacion.documento_adjunto"
-                target="_blank"
+              <button
+                (click)="verDocumento($event)"
                 class="btn btn-outline-primary"
               >
                 <i class="fas fa-file-pdf me-2"></i>
                 {{ cotizacion.nombre_documento || "Ver documento" }}
-              </a>
+              </button>
             </div>
           </div>
         </div>

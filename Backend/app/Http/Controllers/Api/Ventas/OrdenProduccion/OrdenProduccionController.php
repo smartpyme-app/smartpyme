@@ -214,15 +214,14 @@ class OrdenProduccionController extends Controller
                 'id_vendedor' => $cotizacion->id_vendedor
             ]);
 
-            // Procesar documento PDF si existe
+
             if ($request->hasFile('documento_pdf')) {
                 $file = $request->file('documento_pdf');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-
-                // Guardar el archivo
                 $path = $file->storeAs('ordenes_produccion', $fileName, 'public');
 
-                // Registrar documento
+
+    
                 DB::table('orden_produccion_documentos')->insert([
                     'id_orden_produccion' => $orden->id,
                     'nombre_archivo' => $file->getClientOriginalName(),
@@ -234,7 +233,7 @@ class OrdenProduccionController extends Controller
                 ]);
             }
 
-            // Resto del código igual...
+     
             $cotizacion = CotizacionVenta::with('detalles.customFields.customFieldValue')->find($cotizacion->id);
 
             foreach ($cotizacion->detalles as $detalle) {
@@ -261,7 +260,7 @@ class OrdenProduccionController extends Controller
 
             $this->calcularTotales($orden);
 
-            // Registrar historial
+
             $orden->historial()->create([
                 'estado_nuevo' => 'pendiente',
                 'id_usuario' => Auth::id(),
@@ -289,12 +288,11 @@ class OrdenProduccionController extends Controller
             ], 500);
         }
     }
-
-    public function getDocumento($id)
+    public function getDocumento(Request $request)
     {
         try {
             $documento = DB::table('orden_produccion_documentos')
-                ->where('id_orden_produccion', $id)
+                ->where('id_orden_produccion', $request->id)
                 ->first();
 
             if (!$documento) {
@@ -304,13 +302,22 @@ class OrdenProduccionController extends Controller
                 ], 404);
             }
 
-            $url = Storage::url($documento->ruta_archivo);
-            $nombreArchivo = $documento->nombre_archivo;
+            // Similar a como manejas el PDF de impresión
+            // $path = storage_path('app/public/' . $documento->ruta_archivo);
+            $path = public_path('img/' . $documento->ruta_archivo);
 
-            return response()->json([
-                'success' => true,
-                'url' => $url,
-                'nombre' => $nombreArchivo
+            Log::info($path);
+
+            if (!file_exists($path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo no encontrado'
+                ], 404);
+            }
+
+            return response()->file($path, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $documento->nombre_archivo . '"'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -320,7 +327,6 @@ class OrdenProduccionController extends Controller
             ], 500);
         }
     }
-
 
 
     public function read($id)

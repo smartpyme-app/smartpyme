@@ -20,6 +20,10 @@ export class CrearOrdenProduccionComponent implements OnInit {
   public isDetalles: boolean = false;
   public editar: boolean = false;
   selectedFile: File | null = null;
+  downloading: boolean = false;
+  filtros: any = {
+    id: null,
+  };
 
   constructor(
     private fileService: FileService,
@@ -56,8 +60,10 @@ export class CrearOrdenProduccionComponent implements OnInit {
         this.cotizacion = response;
 
         if (this.isDetalles && response.has_documento) {
-          this.cotizacion.documento_adjunto = response.documento_orden.nombre_archivo;
-          this.cotizacion.nombre_documento = response.documento_orden.nombre_archivo;
+          this.cotizacion.documento_adjunto =
+            response.documento_orden.nombre_archivo;
+          this.cotizacion.nombre_documento =
+            response.documento_orden.nombre_archivo;
         }
 
         this.orden = {
@@ -304,7 +310,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
   }
 
   public setEstado(orden: any) {
-    this.apiService.store('orden-produccion', orden).subscribe(
+    //emviar en formData
+    const formData = this.fileService.prepareFormData(orden, this.selectedFile);
+    this.apiService.store('orden-produccion', formData).subscribe(
       (response) => {
         this.alertService.success(
           'Estado actualizado',
@@ -336,5 +344,38 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
       this.selectedFile = file;
     }
+  }
+
+
+  public verDocumento(event?: any) {
+    if (event) {
+      event.preventDefault(); // Prevenir cualquier acción por defecto
+    }
+    this.filtros = {
+      id: this.orden.id,
+    };
+    this.downloading = true;
+    this.apiService
+      .export('ordenes-produccion/exportar/documento', this.filtros)
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/pdf',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download =  this.cotizacion.nombre_documento;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.downloading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.downloading = false;
+        }
+      );
   }
 }
