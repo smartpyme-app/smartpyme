@@ -12,7 +12,7 @@
 
         #factura{
             width: 21.3cm; height: 26cm;
-            border: 1px solid red;
+/*            border: 1px solid red;*/
             margin-left: 0cm;
             margin-top: 0cm;
             position: relative;
@@ -22,38 +22,38 @@
             position: absolute;
             margin: 0px;
         }
-        #cliente        {top: 4.5cm; left: 2cm; width: 8cm; overflow: hidden;}
-        #direccion      {top: 5cm; left: 2cm; width: 7cm;}
-        #municipio      {top: 6cm; left: 2cm; width: 5cm;}
-        #departamento   {top: 6.5cm; left: 2cm; width: 5cm;}
+        #cliente        {top: 4cm; left: 2cm; width: 8cm; overflow: hidden;}
+        #direccion      {top: 4.5cm; left: 2.5cm; width: 7cm;}
+        #municipio      {top: 5cm; left: 3cm; width: 5cm;}
+        #departamento   {top: 5.5cm; left: 3cm; width: 5cm;}
         
-        #fecha          {top: 4.5cm; left: 14cm; }
-        #nrc            {top: 5cm; left: 14cm;}
-        #nit            {top: 5.5cm; left: 14cm; }
-        #giro            {top: 6cm; left: 14cm;}
-        #condicion      {top: 7cm; left: 15cm; }
+        #fecha          {top: 4cm; left: 14cm; }
+        #nrc            {top: 4.5cm; left: 14cm;}
+        #nit            {top: 5cm; left: 14cm; }
+        #giro            {top: 5.5cm; left: 14cm;}
+        #condicion      {top: 6cm; left: 15cm; }
 
-        table   {position: absolute; top: 7.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; width: 19.5cm;}
+        table   {position: absolute; top: 8.5cm; left: 0.5cm; text-align: left; border-collapse: collapse; width: 19.5cm;}
         table td{height: 0.5cm; text-align: left;}
 
-        .cantidad{ width: 1.5cm; text-align: center;}
-        .producto{ width: 10cm; text-align: left;}
-        .precio{ width: 1.5cm; text-align: center;}
-        .sujetas{ width: 1.5cm; text-align: center;}
-        .exentas{ width: 1.5cm; text-align: center;}
+        .cantidad{ width: 2cm; text-align: center;}
+        .producto{ width: 9.5cm; text-align: left;}
+        .precio{ width: 2cm; text-align: left;}
+        .sujetas{ width: 1.5cm; text-align: left;}
+        .exentas{ width: 1.5cm; text-align: left;}
         .gravadas{ width: 1.5cm; text-align: right;}
 
 
-        #letras     {top: 18cm; left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 19cm; left: 2.5cm; width: 11cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 18cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #iva        {top: 18.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 19cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #sub_total  {top: 19.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #no_sujeta  {top: 20cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #exenta     {top: 20.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #cuenta_a_terceros {top: 21cm; left: 18.5cm; width: 1.5cm; text-align: right;}
-        #total      {top: 21.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 19cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #iva        {top: 19.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #iva_retenido  {top: 20cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #sub_total  {top: 20.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #no_sujeta  {top: 21cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #exenta     {top: 21.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #cuenta_a_terceros {top: 22cm; left: 18.5cm; width: 1.5cm; text-align: right;}
+        #total      {top: 22.5cm; left: 18.5cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;} 
 
