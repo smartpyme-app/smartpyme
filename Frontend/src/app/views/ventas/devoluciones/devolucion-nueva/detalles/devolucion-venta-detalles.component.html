@@ -3,6 +3,11 @@
         <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
             <thead>
                 <tr>
+                    <th style="width: 30px">
+                        <input type="checkbox" 
+                               (change)="seleccionarTodos($event)"
+                               [checked]="todosSeleccionados">
+                    </th>
                     <th>Producto</th>
                     <th style="width: 150px;">Cantidad</th>
                     <th style="width: 150px;">Precio</th>
@@ -20,6 +25,11 @@
                     </td>
                 </tr>
                 <tr *ngFor="let detalle of devolucion?.detalles; let i = index">
+                    <td>
+                        <input type="checkbox"
+                               [(ngModel)]="detalle.seleccionado"
+                               (change)="actualizarSeleccion()">
+                    </td>
                     <td>
                         <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.descripcion }}
@@ -48,6 +58,14 @@
                 </tr>
             </tbody>
         </table>
+        <div class="d-flex justify-content-end mt-3" *ngIf="haySeleccionados()">
+            <!-- <button class="btn btn-danger" (click)="eliminarSeleccionados()">
+                Eliminar productos seleccionados
+            </button> -->
+            <button class="btn btn-light text-danger" (click)="eliminarSeleccionados($event)" tooltip="Eliminar seleccionados" >
+                Eliminar productos seleccionados <i class="fa fa-trash"></i>
+            </button>
+        </div>
     </div>
 </div>
 
