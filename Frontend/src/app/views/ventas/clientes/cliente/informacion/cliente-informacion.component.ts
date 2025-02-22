@@ -5,15 +5,15 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-cliente-informacion',
   templateUrl: './cliente-informacion.component.html',
 })
 export class ClienteInformacionComponent implements OnInit {
-
   public cliente: any = {
-    contactos: [] // Inicializar el array de contactos
+    contactos: [], // Inicializar el array de contactos
   };
   public loading = false;
   public saving = false;
@@ -57,8 +57,8 @@ export class ClienteInformacionComponent implements OnInit {
             this.loading = false;
             // Asegurarse que contactos existe
             if (!this.cliente.contactos) {
-                this.cliente.contactos = [];
-              }
+              this.cliente.contactos = [];
+            }
           },
           (error) => {
             this.alertService.error(error);
@@ -141,16 +141,28 @@ export class ClienteInformacionComponent implements OnInit {
     this.saving = true;
     console.log('Cliente', this.cliente);
 
-    this.apiService.store('cliente', this.cliente).subscribe(cliente => {
+    this.apiService.store('cliente', this.cliente).subscribe(
+      (cliente) => {
         if (!this.cliente.id) {
-            this.alertService.success('Cliente guardado', 'El cliente fue guardado exitosamente.');
-        }else{
-            this.alertService.success('Cliente creado', 'El cliente fue añadido exitosamente.');
+          this.alertService.success(
+            'Cliente guardado',
+            'El cliente fue guardado exitosamente.'
+          );
+        } else {
+          this.alertService.success(
+            'Cliente creado',
+            'El cliente fue añadido exitosamente.'
+          );
         }
-       this.router.navigate(['/clientes']);
+        this.router.navigate(['/clientes']);
         this.cliente = cliente;
         this.saving = false;
-    }, error => {this.alertService.error(error); this.saving = false;});
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.saving = false;
+      }
+    );
   }
 
   public verificarSiExiste() {
@@ -193,9 +205,26 @@ export class ClienteInformacionComponent implements OnInit {
 
   submit(event: Event) {
     event.preventDefault();
-    
+
     if (!this.cliente.contactos) {
       this.cliente.contactos = [];
+    }
+
+    if (!this.contacto.nombre && !this.contacto.apellido) {
+      Swal.fire(
+        '🚨 Alerta',
+        'Debes ingresar al menos un nombre o apellido.',
+        'warning'
+      );
+      return;
+    }
+    if (!this.contacto.telefono && !this.contacto.correo) {
+      Swal.fire(
+        '🚨 Alerta',
+        'Debes ingresar al menos un telefono o correo.',
+        'warning'
+      );
+      return;
     }
 
     const nuevoContacto = {
@@ -208,32 +237,44 @@ export class ClienteInformacionComponent implements OnInit {
       fecha_nacimiento: this.contacto.fecha_nacimiento,
       red_social: this.contacto.red_social,
       nota: this.contacto.nota,
-      sexo: this.contacto.sexo
+      sexo: this.contacto.sexo,
     };
 
-    const index = this.cliente.contactos.findIndex((c: any) => c.id === nuevoContacto.id);
-    
+    const index = this.cliente.contactos.findIndex(
+      (c: any) => c.id === nuevoContacto.id
+    );
+
     if (index !== -1) {
-      // Actualizar contacto existente
       this.cliente.contactos[index] = { ...nuevoContacto };
     } else {
-      // Agregar nuevo contacto
       this.cliente.contactos.push(nuevoContacto);
     }
 
-    // Limpiar el formulario
     this.contacto = {};
-    
-    // Cerrar modal
+
     if (this.modalRef) {
       this.modalRef.hide();
     }
   }
   eliminarContacto(contacto: any) {
-    const index = this.cliente.contactos.findIndex((c: any) => c.id === contacto.id);
-    if (index !== -1) {
-      this.cliente.contactos.splice(index, 1);
-    }
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: '¡No podrás revertir esto!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Si, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const index = this.cliente.contactos.findIndex(
+          (c: any) => c.id === contacto.id
+        );
+        if (index !== -1) {
+          this.cliente.contactos.splice(index, 1);
+        }
+      }
+    });
   }
-
 }

@@ -112,14 +112,13 @@ class ClientesController extends Controller
         $cliente->fill($request->except('contactos'));
         $cliente->save();
 
-        // Procesar contactos si existen
+
         if ($request->has('contactos') && is_array($request->contactos)) {
-            // Eliminar contactos anteriores si es una actualización
             if ($request->id) {
                 ContactoCliente::where('id_cliente', $cliente->id)->delete();
             }
 
-            // Crear nuevos contactos
+    
             foreach ($request->contactos as $contactoData) {
                 ContactoCliente::create([
                     'id_cliente' => $cliente->id,
