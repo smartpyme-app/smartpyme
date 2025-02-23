@@ -55,7 +55,6 @@ export class ClienteInformacionComponent implements OnInit {
           (cliente) => {
             this.cliente = cliente;
             this.loading = false;
-            // Asegurarse que contactos existe
             if (!this.cliente.contactos) {
               this.cliente.contactos = [];
             }
@@ -153,10 +152,10 @@ export class ClienteInformacionComponent implements OnInit {
             'Cliente creado',
             'El cliente fue añadido exitosamente.'
           );
+          this.router.navigate(['/clientes']);
+          this.cliente = cliente;
+          this.saving = false;
         }
-        this.router.navigate(['/clientes']);
-        this.cliente = cliente;
-        this.saving = false;
       },
       (error) => {
         this.alertService.error(error);
