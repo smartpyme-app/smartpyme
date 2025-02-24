@@ -5,64 +5,65 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
+use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
 use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
 class SucursalesController extends Controller
 {
-    
 
-    public function index(Request $request) {
-       
+
+    public function index(Request $request)
+    {
+
         $sucursales = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->when($request->estado !== null, function($q) use ($request){
-                                    $q->where('activo', !!$request->estado);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('telefono', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                // ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('activo', !!$request->estado);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('telefono', 'like', "%" . $request->buscador . "%");
+            })
+            // ->orderBy('enable', 'desc')
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
 
         return Response()->json($sucursales, 200);
-
     }
 
-    public function list() {
-       
+    public function list()
+    {
+
         $sucursales = Sucursal::orderby('nombre')
-                                ->where('activo', true)
-                                ->get();
+            ->where('activo', true)
+            ->get();
 
         return Response()->json($sucursales, 200);
-
     }
 
     //lista de marcas por empresa estan en la tabla productos y el campo marca
 
-    public function listaMarcas() {
-       
+    public function listaMarcas()
+    {
+
         $marcas = Producto::select('marca as nombre')
-                                ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->whereNotNull('marca')
-                                ->where('marca', '!=', '')
-                                ->groupBy('marca')
-                                ->get();
+            ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+            ->whereNotNull('marca')
+            ->where('marca', '!=', '')
+            ->groupBy('marca')
+            ->get();
 
         return Response()->json($marcas, 200);
-
     }
 
-    
-    
-    public function read($id) {
+
+
+    public function read($id)
+    {
 
         $sucursal = Sucursal::where('id', $id)->firstOrFail();
         return Response()->json($sucursal, 200);
-
     }
 
     public function store(Request $request)
@@ -72,16 +73,26 @@ class SucursalesController extends Controller
             'id_empresa'    => 'required|numeric',
         ]);
 
-        if($request->id)
+        if ($request->id)
             $sucursal = Sucursal::findOrFail($request->id);
         else
             $sucursal = new Sucursal;
-        
+
         $sucursal->fill($request->all());
         $sucursal->save();
+        //crear bodega automatica para no crearla manualmente
+
+        if ($request->id == null) {
+            $bodega = new Bodega();
+            $bodega->nombre = $request->nombre;
+            $bodega->id_sucursal = $sucursal->id;
+            $bodega->id_empresa = $sucursal->id_empresa;
+            $bodega->activo = true;
+           // $bodega->descripcion = 'Bodega principal';
+            $bodega->save();
+        }
 
         return Response()->json($sucursal, 200);
-
     }
 
     public function delete($id)
@@ -90,7 +101,5 @@ class SucursalesController extends Controller
         $sucursal->delete();
 
         return Response()->json($sucursal, 201);
-
     }
-
 }

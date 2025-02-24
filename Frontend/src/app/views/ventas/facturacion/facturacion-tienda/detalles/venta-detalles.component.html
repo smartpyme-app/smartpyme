@@ -211,7 +211,7 @@
               </option>
             </select>
           </td>
-          <td style="width: 150px">
+          <!-- <td style="width: 150px">
             <div class="input-group">
               <span class="input-group-text">%</span>
               <input
@@ -223,7 +223,14 @@
                 name="descuento"
               />
             </div>
-          </td>
+          </td> -->
+          <td style="width: 150px;">
+            <div class="input-group">
+                <span class="input-group-text">%</span>
+                <input type="number" [(ngModel)]="detalle.descuento_porcentaje" (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+            </div>
+        </td>
+
           <td style="width: 100px" class="text-right">
             {{ detalle.total | currency }}
           </td>

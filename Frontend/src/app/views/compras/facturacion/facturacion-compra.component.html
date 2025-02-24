@@ -233,11 +233,24 @@
       <input type="number" class="form-control" [(ngModel)]="compra.num_serie" name="num_serie"
         placeholder="Escribe aquí">
     </div>
-    <div class="form-group col-md-6 col-lg-3 without-label">
+    <!-- <div class="form-group col-md-6 col-lg-3 without-label">
       <div class="form-switch bg-light-info rounded">
         <label for="cobrar_impuestos">Con IVA</label>
         <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
           [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
+      </div>
+    </div> -->
+    <div class="form-group col-md-6 col-lg-3 without-label">
+      <div class="form-switch bg-light-info rounded">
+        <label for="cobrar_impuestos">Con IVA</label>
+        <input class="form-check-input float-end" 
+              type="checkbox" 
+              role="switch" 
+              (change)="sumTotal()"
+              [(ngModel)]="compra.cobrar_impuestos" 
+              name="compra.cobrar_impuestos"
+              [disabled]="!compra.impuestos || compra.impuestos.length === 0"
+              [title]="!compra.impuestos || compra.impuestos.length === 0 ? 'Configure los impuestos en el módulo de finanzas' : ''">
       </div>
     </div>
     <div class="form-group col-md-6 col-lg-3 without-label">

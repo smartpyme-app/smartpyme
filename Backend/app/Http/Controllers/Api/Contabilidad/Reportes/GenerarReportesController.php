@@ -90,9 +90,10 @@ class GenerarReportesController extends Controller
             }
         }])
             ->where('id_empresa', $empresa_id)
+            ->where('estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
-            ->orderBy('fecha', 'asc');
+            ->orderBy('fecha', 'desc');
 
 
         if ($cuenta && $cuenta !== 'all') {
@@ -142,9 +143,10 @@ class GenerarReportesController extends Controller
             }
         }])
             ->where('id_empresa', $empresa_id)
+            ->where('estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
-            ->orderBy('fecha', 'asc');
+            ->orderBy('fecha', 'desc');
 
 
         if ($cuenta && $cuenta !== 'all') {
@@ -209,6 +211,7 @@ class GenerarReportesController extends Controller
 
         $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
             $query->where('id_empresa', $empresa_id)
+                ->where('estado', 'Aplicada')
                 //->where('id_cuenta', $cuenta)
                 ->whereYear('fecha', $year)
                 ->whereMonth('fecha', $month);
@@ -289,6 +292,7 @@ class GenerarReportesController extends Controller
 
         $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
             $query->where('id_empresa', $empresa_id)
+                ->where('estado', 'Aplicada')
                 ->whereYear('fecha', $year)
                 ->whereMonth('fecha', $month);
 
@@ -380,6 +384,7 @@ class GenerarReportesController extends Controller
 
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
+            ->where('partidas.estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -442,6 +447,7 @@ class GenerarReportesController extends Controller
 
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
+            ->where('partidas.estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(

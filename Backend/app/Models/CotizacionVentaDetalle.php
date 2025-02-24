@@ -29,8 +29,10 @@ class CotizacionVentaDetalle extends Model
         "id_producto",
         "id_cotizacion_venta",
         "id_vendedor",
-     //   "remember_token"
+        //   "remember_token"
     ];
+    //apend descuento_porcentaje
+    protected $appends = ['descuento_porcentaje'];
 
     public function producto()
     {
@@ -50,5 +52,15 @@ class CotizacionVentaDetalle extends Model
     public function customFields()
     {
         return $this->hasMany(ProductCustomField::class, 'cotizacion_venta_detalle_id');
+    }
+
+    public function getDescuentoPorcentajeAttribute()
+    {
+        if ($this->subtotal == 0) {
+            return 0;
+        }
+        $porcentaje = ($this->descuento / $this->subtotal) * 100;
+
+        return round($porcentaje, 2);
     }
 }

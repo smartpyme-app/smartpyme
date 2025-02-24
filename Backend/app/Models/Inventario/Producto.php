@@ -33,6 +33,7 @@ class Producto extends Model {
         'color',
         'dimension',
         'material',
+        'dimensiones'
     );
 
     protected $appends = ['nombre_categoria', 'img'];
