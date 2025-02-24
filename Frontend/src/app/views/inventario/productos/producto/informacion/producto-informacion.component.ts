@@ -138,13 +138,16 @@ export class ProductoInformacionComponent implements OnInit {
 
   public setCategoria(categoria: any) {
     this.loadCategorias();
+    console.log('entro');
     if (categoria.subcategoria) {
       this.subcategRes.push(categoria);
       this.producto.id_subcategoria = categoria.id;
+      this.producto.id_categoria = categoria.subcategoria ? categoria.id_cate_padre : categoria.id;
       this.subcategorias.push(categoria);
     } else {
       this.categorias.push(categoria);
-      this.producto.id_categoria = categoria.id;
+       this.producto.id_categoria = categoria.id;
+     // this.producto.id_categoria = categoria.subcategoria ? categoria.id_cate_padre : categoria.id;
     }
   }
 
