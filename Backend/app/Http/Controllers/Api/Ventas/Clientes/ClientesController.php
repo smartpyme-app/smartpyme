@@ -113,12 +113,12 @@ class ClientesController extends Controller
         $cliente->save();
 
 
-        if ($request->has('contactos') && is_array($request->contactos)) {
+        if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
             if ($request->id) {
                 ContactoCliente::where('id_cliente', $cliente->id)->delete();
             }
 
-    
+
             foreach ($request->contactos as $contactoData) {
                 ContactoCliente::create([
                     'id_cliente' => $cliente->id,
@@ -135,7 +135,29 @@ class ClientesController extends Controller
             }
         }
 
+        ///return Response()->json($cliente, 200);
+        $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
         return Response()->json($cliente, 200);
+    }
+
+    //storeContacto
+
+    public function storeContacto(Request $request)
+    {
+        //$contacto = ContactoCliente::create($request->all()); actualizar o crear
+        $contacto = ContactoCliente::updateOrCreate(
+            ['id' => $request->id],
+            $request->all()
+        );
+        return Response()->json($contacto, 200);
+    }
+
+    public function deleteContacto($id)
+    {
+        $contacto = ContactoCliente::findOrFail($id);
+        $contacto->delete();
+
+        return Response()->json($contacto, 201);
     }
 
     public function delete($id)

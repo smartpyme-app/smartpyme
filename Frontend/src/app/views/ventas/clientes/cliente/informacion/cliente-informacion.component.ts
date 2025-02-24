@@ -25,6 +25,7 @@ export class ClienteInformacionComponent implements OnInit {
   public contacto: any = {};
   //loading
   public loading_contacto = false;
+  public esNuevo = false;
 
   modalRef?: BsModalRef;
 
@@ -50,6 +51,7 @@ export class ClienteInformacionComponent implements OnInit {
   public loadAll() {
     this.route.params.subscribe((params: any) => {
       if (params.id) {
+        this.esNuevo = false;
         this.loading = true;
         this.apiService.read('cliente/', params.id).subscribe(
           (cliente) => {
@@ -65,6 +67,7 @@ export class ClienteInformacionComponent implements OnInit {
           }
         );
       } else {
+        this.esNuevo = true;
         this.cliente = {};
         this.cliente.tipo = 'Persona';
         this.cliente.contactos = [];
@@ -136,32 +139,58 @@ export class ClienteInformacionComponent implements OnInit {
     this.cliente.cod_distrito = '';
   }
 
+  //   public onSubmit(): void {
+  //     this.saving = true;
+  //     console.log('Cliente', this.cliente);
+
+  //     this.apiService.store('cliente', this.cliente).subscribe(
+  //       (cliente) => {
+  //         if (!this.cliente.id) {
+  //           this.alertService.success(
+  //             'Cliente guardado',
+  //             'El cliente fue guardado exitosamente.'
+  //           );
+  //         } else {
+  //           this.alertService.success(
+  //             'Cliente creado',
+  //             'El cliente fue añadido exitosamente.'
+  //           );
+  //           this.router.navigate(['/clientes']);
+  //           this.cliente = cliente;
+  //           this.saving = false;
+  //         }
+  //       },
+  //       (error) => {
+  //         this.alertService.error(error);
+  //         this.saving = false;
+  //       }
+  //     );
+  //   }
+
   public onSubmit(): void {
     this.saving = true;
-    console.log('Cliente', this.cliente);
 
-    this.apiService.store('cliente', this.cliente).subscribe(
-      (cliente) => {
-        if (!this.cliente.id) {
-          this.alertService.success(
-            'Cliente guardado',
-            'El cliente fue guardado exitosamente.'
-          );
-        } else {
-          this.alertService.success(
-            'Cliente creado',
-            'El cliente fue añadido exitosamente.'
-          );
+    this.apiService.store('cliente', this.cliente).subscribe({
+      next: (cliente) => {
+        const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
+        const mensaje = this.esNuevo
+          ? 'El cliente fue creado exitosamente.'
+          : 'El cliente fue actualizado exitosamente.';
+
+        this.alertService.success(titulo, mensaje);
+
+        this.cliente = cliente;
+        if (this.esNuevo) {
           this.router.navigate(['/clientes']);
-          this.cliente = cliente;
-          this.saving = false;
         }
+
+        this.saving = false;
       },
-      (error) => {
+      error: (error) => {
         this.alertService.error(error);
         this.saving = false;
-      }
-    );
+      },
+    });
   }
 
   public verificarSiExiste() {
@@ -217,17 +246,17 @@ export class ClienteInformacionComponent implements OnInit {
       );
       return;
     }
+
     if (!this.contacto.telefono && !this.contacto.correo) {
       Swal.fire(
         '🚨 Alerta',
-        'Debes ingresar al menos un telefono o correo.',
+        'Debes ingresar al menos un teléfono o correo.',
         'warning'
       );
       return;
     }
-
     const nuevoContacto = {
-      id: this.contacto.id || Date.now(), // Generar ID temporal si es nuevo
+      id: this.contacto.id || Date.now(),
       nombre: this.contacto.nombre,
       apellido: this.contacto.apellido,
       correo: this.contacto.correo,
@@ -237,24 +266,63 @@ export class ClienteInformacionComponent implements OnInit {
       red_social: this.contacto.red_social,
       nota: this.contacto.nota,
       sexo: this.contacto.sexo,
+      id_cliente: this.cliente.id,
     };
 
-    const index = this.cliente.contactos.findIndex(
-      (c: any) => c.id === nuevoContacto.id
-    );
+    if (this.cliente.id) {
+      this.loading_contacto = true;
 
-    if (index !== -1) {
-      this.cliente.contactos[index] = { ...nuevoContacto };
+      this.apiService.store('cliente/contacto', nuevoContacto).subscribe({
+        next: (contactoGuardado) => {
+          const index = this.cliente.contactos.findIndex(
+            (c: any) => c.id === contactoGuardado.id
+          );
+
+          if (index !== -1) {
+            this.cliente.contactos[index] = contactoGuardado;
+          } else {
+            this.cliente.contactos.push(contactoGuardado);
+          }
+
+          this.alertService.success(
+            'Contacto guardado',
+            'El contacto fue guardado exitosamente.'
+          );
+
+          this.contacto = {};
+          this.loading_contacto = false;
+          if (this.modalRef) {
+            this.modalRef.hide();
+          }
+        },
+        error: (error) => {
+          this.alertService.error('Error al guardar el contacto: ' + error);
+          this.loading_contacto = false;
+        },
+      });
     } else {
-      this.cliente.contactos.push(nuevoContacto);
-    }
+      const index = this.cliente.contactos.findIndex(
+        (c: any) => c.id === nuevoContacto.id
+      );
 
-    this.contacto = {};
+      if (index !== -1) {
+        this.cliente.contactos[index] = { ...nuevoContacto };
+      } else {
+        this.cliente.contactos.push(nuevoContacto);
+      }
 
-    if (this.modalRef) {
-      this.modalRef.hide();
+      this.contacto = {};
+      if (this.modalRef) {
+        this.modalRef.hide();
+      }
+
+      this.alertService.success(
+        'Contacto agregado',
+        'El contacto fue agregado a la lista. Se guardará cuando guarde el cliente.'
+      );
     }
   }
+
   eliminarContacto(contacto: any) {
     Swal.fire({
       title: '¿Estás seguro?',
@@ -263,15 +331,46 @@ export class ClienteInformacionComponent implements OnInit {
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Si, eliminar',
+      confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        const index = this.cliente.contactos.findIndex(
-          (c: any) => c.id === contacto.id
-        );
-        if (index !== -1) {
-          this.cliente.contactos.splice(index, 1);
+        if (contacto.id && this.cliente.id) {
+          this.loading = true;
+
+          this.apiService.delete('cliente/contacto/', contacto.id).subscribe({
+            next: () => {
+              const index = this.cliente.contactos.findIndex(
+                (c: any) => c.id === contacto.id
+              );
+              if (index !== -1) {
+                this.cliente.contactos.splice(index, 1);
+              }
+
+              this.alertService.success(
+                'Contacto eliminado',
+                'El contacto fue eliminado exitosamente.'
+              );
+              this.loading = false;
+            },
+            error: (error) => {
+              this.alertService.error(
+                'Error al eliminar el contacto: ' + error
+              );
+              this.loading = false;
+            },
+          });
+        } else {
+          const index = this.cliente.contactos.findIndex(
+            (c: any) => c.id === contacto.id
+          );
+          if (index !== -1) {
+            this.cliente.contactos.splice(index, 1);
+            this.alertService.success(
+              'Contacto eliminado',
+              'El contacto fue eliminado de la lista.'
+            );
+          }
         }
       }
     });

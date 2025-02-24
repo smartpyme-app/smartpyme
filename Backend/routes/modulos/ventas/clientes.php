@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);
     Route::post('/cliente',                         [ClientesController::class, 'store']);
+    //storeContacto
+    Route::post('/cliente/contacto',                [ClientesController::class, 'storeContacto']);
+    Route::delete('/cliente/contacto/{id}',         [ClientesController::class, 'deleteContacto']);
     Route::delete('/cliente/{id}',                  [ClientesController::class, 'delete']);
     Route::post('/cliente/datos',                   [ClientesController::class, 'datos']);
 
