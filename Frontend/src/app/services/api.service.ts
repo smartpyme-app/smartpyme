@@ -25,6 +25,8 @@ export class ApiService {
     read(url:string, id: number) {return this.http.get<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
 
     filter(url:string, filter: any) {return this.http.get<any>(this.apiUrl + url + filter).pipe(retry(0), catchError(this.handleError) )}
+    
+    get(url:string) {return this.http.get<any>(this.apiUrl + url).pipe(retry(0), catchError(this.handleError) )}
 
     store(url:string, model:any) {return this.http.post<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError) )}
     update(url: string, id: number, model: any) {return this.http.put<any>(`${this.apiUrl}${url}/${id}`, model).pipe(retry(0), catchError(this.handleError))}
