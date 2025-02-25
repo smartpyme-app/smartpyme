@@ -22,6 +22,7 @@ export class SuscripcionComponent implements OnInit {
   public loading = false;
   public saving = false;
   public showUpdateForm = false;
+  public showPaymentForm = false;
 
   public processingPayment = false;
   public mostrar3DSModal = false;
@@ -65,7 +66,7 @@ export class SuscripcionComponent implements OnInit {
     this.apiService.getAll('suscripcion').subscribe(
       (suscripcion) => {
         this.suscripcion = suscripcion;
-        console.log(this.suscripcion);
+        // console.log(this.suscripcion);
         this.loading = false;
       },
       (error) => {
@@ -73,8 +74,8 @@ export class SuscripcionComponent implements OnInit {
           localStorage.getItem('SP_auth_user') || '{}'
         );
 
-        console.log('authUser', authUser.tiene_suscripcion);
-        console.log('error', error.status);
+        // console.log('authUser', authUser.tiene_suscripcion);
+        // console.log('error', error.status);
         if (
           error.status === 404 ||
           (error.status === 500 && !authUser.tiene_suscripcion)
@@ -87,6 +88,62 @@ export class SuscripcionComponent implements OnInit {
         this.loading = false;
       }
     );
+  }
+
+  public async payWithSavedMethod() {
+    this.saving = true;
+    try {
+      const chargeData = {
+        metodo_pago_id: this.suscripcion.metodoPago.id,
+        id_usuario: this.usuario.id,
+        empresa_id: this.usuario.empresa.id,
+        plan_id: this.suscripcion.plan.id,
+        amount: this.usuario.plan.precio,
+        customer_name: this.usuario.name,
+        customer_email: this.usuario.email,
+        customer_phone: this.usuario.telefono || this.usuario.empresa.telefono,
+        description: `Suscripción plan ${this.usuario.plan}`,
+      };
+
+      const chargeResult = await firstValueFrom(
+        this.n1coPaymentService.createChargewithMethodPayment(chargeData)
+      );
+
+      if (chargeResult.requires_3ds) {
+        this.handleThreeDSAuthentication(chargeResult);
+        return;
+      }
+
+      if (chargeResult.success) {
+        this.alertService.success('Éxito', 'Suscripción pagada exitosamente');
+        this.modalRef?.hide();
+        this.loadAll();
+      } else {
+        this.alertService.error(
+          chargeResult.message || 'Error al procesar el pago'
+        );
+      }
+    } catch (error: any) {
+      this.alertService.error(
+        'Error: ' +
+          (error.error?.message || error.message || 'Error desconocido')
+      );
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  // Método para pagar con nueva tarjeta
+  public async onPaySubscription() {
+    setTimeout(() => {
+      if (!this.isFormValid()) {
+        this.alertService.error('Complete todos los campos correctamente');
+        return;
+      }
+
+      this.saving = true;
+      this.createNewSubscriptionPayment();
+    });
   }
 
   public onSubmit() {
@@ -135,11 +192,11 @@ export class SuscripcionComponent implements OnInit {
       }
 
       this.saving = true;
-      if (this.usuario.tiene_suscripcion) {
+      // if (this.suscripcion.metodoPago) {
         this.updatePayment();
-      } else {
-        this.createNewSubscriptionPayment();
-      }
+      // } else {
+
+      // }
     });
   }
 
@@ -153,7 +210,7 @@ export class SuscripcionComponent implements OnInit {
           id: this.usuario.id.toString(),
           name: this.usuario.name,
           email: this.usuario.email,
-          phoneNumber: this.usuario.telefono || '',
+          phoneNumber: this.usuario.telefono || this.usuario.empresa.telefono,
         },
         card: {
           number: cardNumber,
@@ -301,7 +358,7 @@ export class SuscripcionComponent implements OnInit {
           id: this.usuario.id.toString(),
           name: this.usuario.name,
           email: this.usuario.email,
-          phoneNumber: this.usuario.telefono || '',
+          phoneNumber: this.usuario.telefono || this.usuario.empresa.telefono,
         },
         card: {
           number: cardNumber,
@@ -483,7 +540,7 @@ export class SuscripcionComponent implements OnInit {
       );
 
       if (result.requires_3ds) {
-        console.log('Resultado 3DS:', result);
+        // console.log('Resultado 3DS:', result);
         this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
           result.authentication_url
         );
