@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-class WooCommerceTransformer 
+class WooCommerceTransformer
 {
     /**
      * Transforma datos de cliente de WooCommerce al formato de tu sistema
@@ -50,7 +50,7 @@ class WooCommerceTransformer
             'id_cliente' => $clienteId,
             'correlativo' => $wooData['number'],
             'id_documento' => null, // asignar según configuración
-           'id_bodega' => $wooData['id_bodega'],
+            'id_bodega' => $wooData['id_bodega'],
             'id_empresa' => $wooData['id_empresa'],
             'id_usuario' => $wooData['id_usuario'],
             'id_sucursal' => $wooData['id_sucursal'],

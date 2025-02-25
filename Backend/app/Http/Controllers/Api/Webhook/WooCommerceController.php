@@ -22,23 +22,32 @@ class WooCommerceController extends Controller
         $this->transformer = $transformer;
     }
 
-    public function procesarVenta(Request $request)
+    // public function procesarVenta(Request $request)
+    public function procesarVenta($tokenUsuario, Request $request)
     {
-      //  dd($request->all());
-        Log::info('Webhook de WooCommerce recibido', $request->all());
+        Log::info("Webhook recibido para token: {$tokenUsuario}");
 
-       // try {
+        if ($request->webhook_id != null) {
+            return response()->json(['message' => 'Webhook válido'], 200);
+        }
+
+        $usuario = User::where('woocommerce_api_key', $tokenUsuario)->first();
+
+        if (!$usuario) {
+            Log::error("Token de usuario no válido: {$tokenUsuario}");
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Token de acceso no válido'
+            ], 401);
+        }
+        try {
             DB::beginTransaction();
-            $id_empresa = 234;
-            $id_usuario = 664;
-            $usuario = User::find($id_usuario);
-            //agregar al request el id de la empresa
-            $request->merge(['id_empresa' => $id_empresa, 'id_usuario' => $id_usuario,'id_bodega' => $usuario->id_bodega,'id_sucursal' => $usuario->id_sucursal]);
 
-            // 1. Procesar Cliente
+            $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal]);
+
             $clienteData = $this->transformer->transformarCliente($request->all());
             $cliente = Cliente::updateOrCreate(
-                ['correo' => $clienteData['correo'], 'id_empresa' => $id_empresa],
+                ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
 
@@ -48,13 +57,13 @@ class WooCommerceController extends Controller
 
             // 3. Procesar detalles y actualizar inventario
             foreach ($request->line_items as $item) {
-                $producto = Producto::where('barcode', $item['sku'])->where('id_empresa', $id_empresa)->first();
-                
+                $producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
+
                 if (!$producto) {
-                   // throw new \Exception("Producto no encontrado: {$item['sku']}");
-                   //crear el producto
-                   $productoData = $this->transformer->transformarProducto($item, $id_empresa, $id_usuario, $usuario->id_sucursal);
-                   $producto = Producto::create($productoData);
+                    // throw new \Exception("Producto no encontrado: {$item['sku']}");
+                    //crear el producto
+                    $productoData = $this->transformer->transformarProducto($item, $usuario->id_empresa, $usuario->id, $usuario->id_sucursal);
+                    $producto = Producto::create($productoData);
                 }
 
                 // Crear detalle
@@ -62,7 +71,6 @@ class WooCommerceController extends Controller
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
-                // Actualizar inventario
                 $inventarioData = $this->transformer->actualizarInventario(
                     $producto->id,
                     $item['quantity'],
@@ -81,16 +89,15 @@ class WooCommerceController extends Controller
                 'mensaje' => 'Venta procesada correctamente',
                 'venta_id' => $venta->id
             ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error procesando venta de WooCommerce: ' . $e->getMessage());
 
-        // } catch (\Exception $e) {
-        //     DB::rollBack();
-        //     Log::error('Error procesando venta de WooCommerce: ' . $e->getMessage());
-
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'mensaje' => 'Error al procesar la venta',
-        //         'error' => $e->getMessage()
-        //     ], 500);
-        // }
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al procesar la venta',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

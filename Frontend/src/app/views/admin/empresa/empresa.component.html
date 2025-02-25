@@ -380,4 +380,74 @@
             </div>
         </div>
     </tab>
+    <!--Integraciones api key para webhooks-->
+    <tab heading="Integraciones">
+        <section class="bg-white rounded p-4 mb-4">
+            <!-- Alerta informativa -->
+            <div class="alert alert-info mb-4">
+                <i class="fa fa-info-circle me-2"></i> 
+                En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
+            </div>
+
+            <div class="row">
+                <!-- API Key Section -->
+                <div class="col-12 mb-5">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">API Key General</h6>
+                            <div class="form-group">
+                                <label for="key_webhook" class="form-label">API Key (Para cualquier integración):</label>
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           [(ngModel)]="empresa.woocommerce_api_key" 
+                                           name="key_webhook" 
+                                           placeholder="API Key para integraciones" 
+                                           readonly>
+                                    <button class="btn btn-secondary" 
+                                            type="button" 
+                                            (click)="copyToClipboard(empresa.woocommerce_api_key)" 
+                                            tooltip="Copiar API Key">
+                                        <i class="fa fa-copy"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    Esta es su clave única para autenticar integraciones con sistemas externos
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WooCommerce Integration Section -->
+                <div class="col-12">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">Integración WooCommerce</h6>
+                            <div class="form-group">
+                                <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           [(ngModel)]="empresa.woocommerce_api_url" 
+                                           name="url_webhook_woocomerce" 
+                                           placeholder="URL del Webhook para WooCommerce" 
+                                           readonly>
+                                    <button class="btn btn-secondary" 
+                                            type="button" 
+                                            (click)="copyToClipboard(empresa.woocommerce_api_url)" 
+                                            tooltip="Copiar URL">
+                                        <i class="fa fa-copy"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </tab>
 </tabset>
