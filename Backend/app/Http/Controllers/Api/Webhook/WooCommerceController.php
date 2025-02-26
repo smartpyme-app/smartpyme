@@ -8,10 +8,13 @@ use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
+use App\Services\WooCommerceApiClient;
 use Illuminate\Http\Request;
 use App\Services\WooCommerceTransformer;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class WooCommerceController extends Controller
 {
@@ -22,7 +25,6 @@ class WooCommerceController extends Controller
         $this->transformer = $transformer;
     }
 
-    // public function procesarVenta(Request $request)
     public function procesarVenta($tokenUsuario, Request $request)
     {
         Log::info("Webhook recibido para token: {$tokenUsuario}");
@@ -55,11 +57,15 @@ class WooCommerceController extends Controller
             $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id);
             $venta = Venta::create($ventaData);
 
-            // 3. Procesar detalles y actualizar inventario
             foreach ($request->line_items as $item) {
                 $producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
 
                 if (!$producto) {
+                    //terminar el
+                    return response()->json([
+                        'status' => 'error',
+                        'mensaje' => 'Producto no encontrado: ' . $item['sku']
+                    ], 500);
                     // throw new \Exception("Producto no encontrado: {$item['sku']}");
                     //crear el producto
                     $productoData = $this->transformer->transformarProducto($item, $usuario->id_empresa, $usuario->id, $usuario->id_sucursal);
@@ -100,4 +106,51 @@ class WooCommerceController extends Controller
             ], 500);
         }
     }
+
+
+    // public function saveCredentials(Request $request)
+    // {
+    //     $request->validate([
+    //         'store_url' => 'required|url',
+    //         'consumer_key' => 'required|string',
+    //         'consumer_secret' => 'required|string'
+    //     ]);
+
+    //     $id_usuario = 664;
+    //     $usuario = User::findOrFail($id_usuario);
+
+    //     if (empty($usuario->woocommerce_api_key)) {
+    //         $usuario->woocommerce_api_key = Str::random(64);
+    //     }
+
+    //     $usuario->woocommerce_store_url = $request->store_url;
+    //     $usuario->woocommerce_consumer_key = $request->consumer_key;
+    //     $usuario->woocommerce_consumer_secret = $request->consumer_secret;
+
+    //     $usuario->save();
+    //     try {
+
+    //         $client = new WooCommerceApiClient(
+    //             $usuario->woocommerce_store_url,
+    //             $usuario->woocommerce_consumer_key,
+    //             $usuario->woocommerce_consumer_secret
+    //         );
+
+    //         $response = $client->get('products');
+    //         //contar cuantos productos hay y devolver
+    //         $count = count($response['body']);
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'mensaje' => 'Credenciales guardadas correctamente',
+    //             'count' => $count
+    //         ], 200);
+
+            
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 }

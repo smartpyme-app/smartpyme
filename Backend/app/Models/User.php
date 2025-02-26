@@ -15,7 +15,6 @@ use Mail;
 class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable;
-
     protected $fillable = [
         'name',
         'email',
@@ -31,6 +30,10 @@ class User extends Authenticatable implements JWTSubject
         'codigo_autorizacion',
         'editar_precio_venta',
         'woocommerce_api_key',
+        'woocommerce_api_secret',
+        'woocommerce_store_url',
+        'woocommerce_consumer_key',
+        'woocommerce_consumer_secret',
     ];
 
     protected $hidden = ['password', 'remember_token'];

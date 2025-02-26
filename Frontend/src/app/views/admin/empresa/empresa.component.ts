@@ -247,4 +247,24 @@ export class EmpresaComponent implements OnInit {
         this.alertService.success('Copiado', 'Texto copiado al portapapeles');
     }
 
+    public saveCredentials() {
+        this.saving = true;
+        const credentials = {
+            store_url: this.empresa.woocommerce_store_url,
+            consumer_key: this.empresa.woocommerce_consumer_key,
+            consumer_secret: this.empresa.woocommerce_consumer_secret
+        };
+
+        this.apiService.store('usuario/save-credentials', credentials).subscribe(
+            response => {
+                this.saving = false;
+                this.alertService.success('Éxito', 'Credenciales guardadas correctamente');
+            },
+            error => {
+                this.saving = false;
+                this.alertService.error('No se pudieron guardar las credenciales');
+            }
+        );
+    }
+
 }

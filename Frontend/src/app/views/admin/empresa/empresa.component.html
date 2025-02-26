@@ -424,7 +424,9 @@
                     <div class="card border-0 bg-light">
                         <div class="card-body">
                             <h6 class="card-title mb-3">Integración WooCommerce</h6>
-                            <div class="form-group">
+                            
+                            <!-- URL del Webhook -->
+                            <div class="form-group mb-3">
                                 <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
                                 <div class="input-group">
                                     <input type="text" 
@@ -443,6 +445,46 @@
                                 <small class="text-muted d-block mt-2">
                                     Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
                                 </small>
+                            </div>
+
+                            <!-- URL de la tienda -->
+                            <div class="form-group mb-3">
+                                <label for="woocommerce_store_url" class="form-label">URL de la Tienda WooCommerce:</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       [(ngModel)]="empresa.woocommerce_store_url" 
+                                       name="woocommerce_store_url" 
+                                       placeholder="Ej: https://mitienda.com">
+                            </div>
+
+                            <!-- Consumer Key -->
+                            <div class="form-group mb-3">
+                                <label for="woocommerce_consumer_key" class="form-label">Consumer Key:</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       [(ngModel)]="empresa.woocommerce_consumer_key" 
+                                       name="woocommerce_consumer_key" 
+                                       placeholder="Ingrese su Consumer Key de WooCommerce">
+                            </div>
+
+                            <!-- Consumer Secret -->
+                            <div class="form-group mb-3">
+                                <label for="woocommerce_consumer_secret" class="form-label">Consumer Secret:</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       [(ngModel)]="empresa.woocommerce_consumer_secret" 
+                                       name="woocommerce_consumer_secret" 
+                                       placeholder="Ingrese su Consumer Secret de WooCommerce">
+                            </div>
+
+                            <!-- Botón Guardar -->
+                            <div class="text-end mt-4">
+                                <button class="btn btn-primary" 
+                                        type="button" 
+                                        (click)="saveCredentials()">
+                                    <i class="fa fa-save me-2"></i>
+                                    Guardar Credenciales
+                                </button>
                             </div>
                         </div>
                     </div>

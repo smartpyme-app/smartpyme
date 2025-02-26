@@ -86,7 +86,10 @@ class Empresa extends Model
         'facturacion_electronica' => 'boolean',
     ];
     //url webhook woocommerce
-    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url'];
+//     woocommerce_store_url
+// woocommerce_consumer_key 
+// woocommerce_consumer_secret 
+    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret'];
 
     public function limiteUsuarios()
     {
@@ -278,5 +281,32 @@ class Empresa extends Model
         }
 
         return url('/api/webhook/woocommerce/' . $this->user()->woocommerce_api_key);
+    }
+
+    public function getWooCommerceStoreUrlAttribute()
+    {
+        if (empty($this->user()->woocommerce_store_url)) {
+            return null;
+        }
+
+        return $this->user()->woocommerce_store_url;
+    }
+
+    public function getWooCommerceConsumerKeyAttribute()
+    {
+        if (empty($this->user()->woocommerce_consumer_key)) {
+            return null;
+        }
+
+        return $this->user()->woocommerce_consumer_key;
+    }
+
+    public function getWooCommerceConsumerSecretAttribute()
+    {
+        if (empty($this->user()->woocommerce_consumer_secret)) {
+            return null;
+        }
+
+        return $this->user()->woocommerce_consumer_secret;
     }
 }
