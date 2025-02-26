@@ -33,7 +33,7 @@
         #giro            {top: 6.3cm; left: 14cm;}
         #condicion      {top: 7cm; left: 15cm; }
 
-        table   {position: absolute; top: 8.5cm; left: 0.2cm; text-align: left; border-collapse: collapse; width: 20cm;}
+        table   {position: absolute; top: 9cm; left: 0.2cm; text-align: left; border-collapse: collapse; width: 20cm;}
         table td{height: 0.7cm; text-align: left;}
 
         .cantidad{ width: 2.5cm; text-align: center;}
@@ -44,16 +44,16 @@
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {top: 19.5cm; left: 2.5cm; width: 11cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 19.9cm; left: 2.5cm; width: 11cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 19.5cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #iva        {top: 20.2cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 20.9cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #sub_total  {top: 21.6cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #no_sujeta  {top: 22.3cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #exenta     {top: 23cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 19.9cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #iva        {top: 20.6cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #iva_retenido  {top: 21.3cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #sub_total  {top: 22cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #no_sujeta  {top: 22.7cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #exenta     {top: 23.4cm; left: 18.7cm; width: 1.5cm; text-align: right;}
         #cuenta_a_terceros {top: 23.7cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #total      {top: 24.4cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #total      {top: 24cm; left: 18.7cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;} 
 
@@ -66,7 +66,7 @@
 
 {{--<section id="factura" style="border:1px solid #ffffff00;background-image: url('C:\Users\josep\Documents\smartpyme\smartpyme\Backend\public\img\CCF-norbin.jpg'); background-repeat: no-repeat; background-size: 100% 100%; height: 29cm; width: 22cm;">--}}
 <section id="factura">
-    <div id="header">
+    <div id="header" style="margin-top: -0.5cm;">
         <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
         <p id="cliente">{{ $venta->nombre_cliente }}</p>
         <p id="direccion">{{ $cliente->empresa_direccion ?? $cliente->direccion }}</p>
