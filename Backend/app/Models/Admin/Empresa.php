@@ -89,7 +89,7 @@ class Empresa extends Model
 //     woocommerce_store_url
 // woocommerce_consumer_key 
 // woocommerce_consumer_secret 
-    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret'];
+    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret','woocommerce_status'];
 
     public function limiteUsuarios()
     {
@@ -308,5 +308,14 @@ class Empresa extends Model
         }
 
         return $this->user()->woocommerce_consumer_secret;
+    }
+
+    public function getWooCommerceStatusAttribute()
+    {
+        if (empty($this->user()->woocommerce_status)) {
+            return null;
+        }
+
+        return $this->user()->woocommerce_status;
     }
 }

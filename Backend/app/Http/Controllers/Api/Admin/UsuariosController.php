@@ -15,6 +15,7 @@ use JWTAuth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 class UsuariosController extends Controller
 {
@@ -184,27 +185,81 @@ class UsuariosController extends Controller
     }
 
 
+    // public function saveCredentials(Request $request)
+    // {
+    //     $request->validate([
+    //         'store_url' => 'required|url',
+    //         'consumer_key' => 'required|string',
+    //         'consumer_secret' => 'required|string'
+    //     ]);
+
+    //     $id_usuario = Auth::user()->id;
+    //     $usuario = User::findOrFail($id_usuario);
+
+    //     if (empty($usuario->woocommerce_api_key)) {
+    //         $usuario->woocommerce_api_key = Str::random(64);
+    //     }
+
+    //     $usuario->woocommerce_store_url = $request->store_url;
+    //     $usuario->woocommerce_consumer_key = $request->consumer_key;
+    //     $usuario->woocommerce_consumer_secret = $request->consumer_secret;
+
+    //     $usuario->save();
+    //     try {
+
+    //         $client = new WooCommerceApiClient(
+    //             $usuario->woocommerce_store_url,
+    //             $usuario->woocommerce_consumer_key,
+    //             $usuario->woocommerce_consumer_secret
+    //         );
+
+    //         $response = $client->get('products');
+    //         if ($response['status'] !== 'success') {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce'
+    //             ], 500);
+    //         } else {
+    //             return response()->json([
+    //                 'status' => 'success',
+    //                 'mensaje' => 'Credenciales guardadas correctamente. Conexión con WooCommerce establecida.'
+    //             ], 200);
+    //         }
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function saveCredentials(Request $request)
     {
-        $request->validate([
-            'store_url' => 'required|url',
-            'consumer_key' => 'required|string',
-            'consumer_secret' => 'required|string'
-        ]);
-
-        $id_usuario = Auth::user()->id;
-        $usuario = User::findOrFail($id_usuario);
-
-        if (empty($usuario->woocommerce_api_key)) {
-            $usuario->woocommerce_api_key = Str::random(64);
-        }
-
-        $usuario->woocommerce_store_url = $request->store_url;
-        $usuario->woocommerce_consumer_key = $request->consumer_key;
-        $usuario->woocommerce_consumer_secret = $request->consumer_secret;
-
-        $usuario->save();
         try {
+            $request->validate([
+                'store_url' => 'required|url',
+                'consumer_key' => 'required|string',
+                'consumer_secret' => 'required|string'
+            ], [
+                'store_url.required' => 'La URL de la tienda es obligatoria',
+                'store_url.url' => 'La URL de la tienda debe ser una dirección válida',
+                'consumer_key.required' => 'La Consumer Key es obligatoria',
+                'consumer_secret.required' => 'El Consumer Secret es obligatorio'
+            ]);
+
+            $id_usuario = Auth::user()->id;
+            $usuario = User::findOrFail($id_usuario);
+
+            if (empty($usuario->woocommerce_api_key)) {
+                $usuario->woocommerce_api_key = Str::random(64);
+            }
+
+            $usuario->woocommerce_store_url = $request->store_url;
+            $usuario->woocommerce_consumer_key = $request->consumer_key;
+            $usuario->woocommerce_consumer_secret = $request->consumer_secret;
+            $usuario->woocommerce_status = 'connecting'; // Estado temporal
+            $usuario->save();
+
 
             $client = new WooCommerceApiClient(
                 $usuario->woocommerce_store_url,
@@ -212,22 +267,39 @@ class UsuariosController extends Controller
                 $usuario->woocommerce_consumer_secret
             );
 
-            $response = $client->get('products');
-            if ($response['status'] !== 'success') {
-                return response()->json([
-                    'status' => 'error',
-                    'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce'
-                ], 500);
-            } else {
-                return response()->json([
-                    'status' => 'success',
-                    'mensaje' => 'Credenciales guardadas correctamente. Conexión con WooCommerce establecida.'
-                ], 200);
-            }
-        } catch (\Exception $e) {
+            $response = $client->get('products', ['per_page' => 1]);
+
+
+            $usuario->woocommerce_status = 'connected';
+            $usuario->save();
+
+
+            Log::info('Conexión exitosa con WooCommerce', [
+                'user_id' => $usuario->id,
+                'store_url' => $usuario->woocommerce_store_url
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Credenciales guardadas correctamente. Conexión con WooCommerce establecida.',
+                'connection_status' => 'connected'
+            ], 200);
+        } catch (ValidationException $e) {
             return response()->json([
                 'status' => 'error',
-                'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce: ' . $e->getMessage()
+                'mensaje' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+
+            if (isset($usuario)) {
+                $usuario->woocommerce_status = 'disconnected';
+                $usuario->save();
+            }
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce: ' . $e->getMessage(),
+                'connection_status' => 'disconnected'
             ], 500);
         }
     }

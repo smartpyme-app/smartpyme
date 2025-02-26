@@ -247,22 +247,98 @@ export class EmpresaComponent implements OnInit {
         this.alertService.success('Copiado', 'Texto copiado al portapapeles');
     }
 
+    // public saveCredentials() {
+    //     this.saving = true;
+
+    //     if (!this.empresa.woocommerce_store_url || !this.empresa.woocommerce_consumer_key || !this.empresa.woocommerce_consumer_secret) {
+    //         this.saving = false;
+      
+    //         Swal.fire({
+    //             title: 'Error',
+    //             text: 'Todos los campos son requeridos',
+    //             icon: 'error',
+    //             confirmButtonText: 'Aceptar'
+    //         });
+    //         return;
+    //     }
+
+    //     const credentials = {
+    //         store_url: this.empresa.woocommerce_store_url,
+    //         consumer_key: this.empresa.woocommerce_consumer_key,
+    //         consumer_secret: this.empresa.woocommerce_consumer_secret
+    //     };
+
+    //     this.apiService.store('usuario/save-credentials', credentials).subscribe(
+    //         response => {
+    //             this.saving = false;
+    //             this.alertService.success('Éxito', 'Credenciales guardadas correctamente');
+    //         },
+    //         error => {
+    //             this.saving = false;
+    //             this.alertService.error('No se pudieron guardar las credenciales');
+    //         }
+    //     );
+    // }
+
     public saveCredentials() {
         this.saving = true;
+        
+        if (!this.empresa.woocommerce_store_url || !this.empresa.woocommerce_consumer_key || !this.empresa.woocommerce_consumer_secret) {
+            this.saving = false;
+            
+            Swal.fire({
+                title: 'Error',
+                text: 'Todos los campos son requeridos',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+        
         const credentials = {
             store_url: this.empresa.woocommerce_store_url,
             consumer_key: this.empresa.woocommerce_consumer_key,
             consumer_secret: this.empresa.woocommerce_consumer_secret
         };
-
+        
+        // Mostrar indicador de que se está validando la conexión
+        Swal.fire({
+            title: 'Conectando...',
+            text: 'Verificando conexión con WooCommerce',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
         this.apiService.store('usuario/save-credentials', credentials).subscribe(
             response => {
                 this.saving = false;
-                this.alertService.success('Éxito', 'Credenciales guardadas correctamente');
+                
+                // Cerrar loading modal
+                Swal.close();
+                
+                // Mostrar mensaje específico basado en la respuesta
+                Swal.fire({
+                    title: 'Conexión Exitosa',
+                    text: 'Credenciales guardadas y conexión con WooCommerce establecida',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
             },
             error => {
                 this.saving = false;
-                this.alertService.error('No se pudieron guardar las credenciales');
+                
+                // Cerrar loading modal
+                Swal.close();
+                
+                // Mensaje de error más detallado
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudieron guardar las credenciales',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
             }
         );
     }

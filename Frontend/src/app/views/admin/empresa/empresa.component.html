@@ -486,6 +486,15 @@
                                     Guardar Credenciales
                                 </button>
                             </div>
+                            <!-- Añadir después del botón Guardar -->
+                            <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret" 
+                            class="alert mt-3" 
+                            [ngClass]="{'alert-success': empresa.woocommerce_status === 'connected', 'alert-warning': empresa.woocommerce_status === 'disconnected', 'alert-info': !empresa.woocommerce_status}">
+                            <i class="fa" [ngClass]="{'fa-check-circle': empresa.woocommerce_status === 'connected', 'fa-exclamation-circle': empresa.woocommerce_status === 'disconnected', 'fa-info-circle': !empresa.woocommerce_status}"></i>
+                            <span *ngIf="empresa.woocommerce_status === 'connected'"> Conexión establecida con WooCommerce</span>
+                            <span *ngIf="empresa.woocommerce_status === 'disconnected'"> Sin conexión con WooCommerce</span>
+                            <span *ngIf="!empresa.woocommerce_status"> Estado de conexión desconocido</span>
+                            </div>
                         </div>
                     </div>
                 </div>
