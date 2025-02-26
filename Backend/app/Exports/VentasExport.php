@@ -126,7 +126,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $row->nombre_canal,
             round($row->total_costo, 2),
             round($row->cuenta_a_terceros, 2),
-            round($row->sub_total, 2),
+            round($row->sub_total + $row->descuento, 2),
             round($row->descuento, 2),
             round($row->iva, 2),
             round($row->total - $row->total_costo - $row->iva, 2), // Utilidad
