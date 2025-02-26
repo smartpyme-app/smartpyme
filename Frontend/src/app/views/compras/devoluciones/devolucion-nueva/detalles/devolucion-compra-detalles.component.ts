@@ -16,6 +16,7 @@ export class DevolucionCompraDetallesComponent implements OnInit {
     @Input() devolucion: any = {};
     public detalle:any = {};
     public supervisor:any = {};
+    public todosSeleccionados:boolean = false;
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
@@ -90,6 +91,48 @@ export class DevolucionCompraDetallesComponent implements OnInit {
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+
+    seleccionarTodos(event: any) {
+        this.todosSeleccionados = event.target.checked;
+        this.devolucion.detalles.forEach((detalle: any) => {
+            detalle.seleccionado = this.todosSeleccionados;
+        });
+    }
+    actualizarSeleccion() {
+        this.todosSeleccionados = this.devolucion.detalles.every(
+            (detalle: any) => detalle.seleccionado
+        );
+    }
+
+    haySeleccionados(): boolean {
+        return this.devolucion.detalles.some(
+            (detalle: any) => detalle.seleccionado
+        );
+    }
+
+    eliminarSeleccionados(event?: any) {
+
+        if (event) {
+            event.preventDefault(); // Prevenir cualquier acción por defecto
+        }
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Se eliminarán todos los productos seleccionados',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.devolucion.detalles = this.devolucion.detalles.filter(
+                    (detalle: any) => !detalle.seleccionado
+                );
+                this.todosSeleccionados = false;
+                this.update.emit(this.devolucion);
+                this.sumTotal.emit();
+            }
+        });
     }
 
 
