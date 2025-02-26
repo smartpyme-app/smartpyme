@@ -1,0 +1,35 @@
+.floating-speed-dial {
+    position: fixed !important; /* Forzar con !important para evitar sobrescritura */
+    right: 2rem !important;
+    bottom: 2rem !important;
+    z-index: 9999 !important; /* Valor muy alto para estar por encima de todo */
+    
+    .btn {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+      
+      i {
+        font-size: 1.5rem;
+      }
+      
+      &:hover {
+        transform: scale(1.05);
+        transition: transform 0.2s ease;
+      }
+    }
+  }
+  
+  /* Asegurarse de que no hay otros estilos que afecten */
+  :host {
+    display: block;
+    position: static;
+    pointer-events: none; /* Permite que los clics pasen a través del contenedor */
+  }
+  
+  :host .floating-speed-dial {
+    pointer-events: all; /* Pero el botón sí recibe los eventos de clic */
+  }
