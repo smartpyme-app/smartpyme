@@ -476,9 +476,14 @@
                                        name="woocommerce_consumer_secret" 
                                        placeholder="Ingrese su Consumer Secret de WooCommerce">
                             </div>
-
-                            <!-- Botón Guardar -->
                             <div class="text-end mt-4">
+                                <button class="btn btn-danger me-2" 
+                                        type="button"
+                                        *ngIf="empresa.woocommerce_status === 'connected'"
+                                        (click)="disconnectWooCommerce()">
+                                    <i class="fa fa-unlink me-2"></i>
+                                    Desconectar WooCommerce
+                                </button>
                                 <button class="btn btn-primary" 
                                         type="button" 
                                         (click)="saveCredentials()">
@@ -486,7 +491,8 @@
                                     Guardar Credenciales
                                 </button>
                             </div>
-                            <!-- Añadir después del botón Guardar -->
+
+                            <!-- Estado de conexión -->
                             <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret" 
                             class="alert mt-3" 
                             [ngClass]="{'alert-success': empresa.woocommerce_status === 'connected', 'alert-warning': empresa.woocommerce_status === 'disconnected', 'alert-info': !empresa.woocommerce_status}">

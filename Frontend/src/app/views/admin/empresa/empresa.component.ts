@@ -247,39 +247,6 @@ export class EmpresaComponent implements OnInit {
         this.alertService.success('Copiado', 'Texto copiado al portapapeles');
     }
 
-    // public saveCredentials() {
-    //     this.saving = true;
-
-    //     if (!this.empresa.woocommerce_store_url || !this.empresa.woocommerce_consumer_key || !this.empresa.woocommerce_consumer_secret) {
-    //         this.saving = false;
-      
-    //         Swal.fire({
-    //             title: 'Error',
-    //             text: 'Todos los campos son requeridos',
-    //             icon: 'error',
-    //             confirmButtonText: 'Aceptar'
-    //         });
-    //         return;
-    //     }
-
-    //     const credentials = {
-    //         store_url: this.empresa.woocommerce_store_url,
-    //         consumer_key: this.empresa.woocommerce_consumer_key,
-    //         consumer_secret: this.empresa.woocommerce_consumer_secret
-    //     };
-
-    //     this.apiService.store('usuario/save-credentials', credentials).subscribe(
-    //         response => {
-    //             this.saving = false;
-    //             this.alertService.success('Éxito', 'Credenciales guardadas correctamente');
-    //         },
-    //         error => {
-    //             this.saving = false;
-    //             this.alertService.error('No se pudieron guardar las credenciales');
-    //         }
-    //     );
-    // }
-
     public saveCredentials() {
         this.saving = true;
         
@@ -301,7 +268,6 @@ export class EmpresaComponent implements OnInit {
             consumer_secret: this.empresa.woocommerce_consumer_secret
         };
         
-        // Mostrar indicador de que se está validando la conexión
         Swal.fire({
             title: 'Conectando...',
             text: 'Verificando conexión con WooCommerce',
@@ -314,11 +280,8 @@ export class EmpresaComponent implements OnInit {
         this.apiService.store('usuario/save-credentials', credentials).subscribe(
             response => {
                 this.saving = false;
-                
-                // Cerrar loading modal
+                this.loadAll();
                 Swal.close();
-                
-                // Mostrar mensaje específico basado en la respuesta
                 Swal.fire({
                     title: 'Conexión Exitosa',
                     text: 'Credenciales guardadas y conexión con WooCommerce establecida',
@@ -328,11 +291,8 @@ export class EmpresaComponent implements OnInit {
             },
             error => {
                 this.saving = false;
-                
-                // Cerrar loading modal
                 Swal.close();
-                
-                // Mensaje de error más detallado
+                this.loadAll();
                 Swal.fire({
                     title: 'Error de Conexión',
                     text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudieron guardar las credenciales',
@@ -342,5 +302,40 @@ export class EmpresaComponent implements OnInit {
             }
         );
     }
+
+    public disconnectWooCommerce() {
+        this.saving = true;
+
+        this.empresa.woocommerce_store_url = '';
+        this.empresa.woocommerce_consumer_key = '';
+        this.empresa.woocommerce_consumer_secret = '';
+        
+        this.apiService.store('usuario/disconnect-woocommerce', {}).subscribe(
+            response => {
+                this.saving = false;
+                this.loadAll();
+                Swal.fire({
+                    title: 'Desconexión Exitosa',
+                    text: 'Desconectado de WooCommerce',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+
+            }, error => {
+                this.saving = false;
+                this.loadAll();
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo desconectar de WooCommerce',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        );
+
+
+    }
+
+
 
 }

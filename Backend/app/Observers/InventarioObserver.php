@@ -31,6 +31,7 @@ class InventarioObserver
                                      ->whereNotNull('woocommerce_store_url')
                                      ->whereNotNull('woocommerce_consumer_key')
                                      ->whereNotNull('woocommerce_consumer_secret')
+                                     ->where('woocommerce_status', 'connected')
                                      ->get();
             
             if ($usuarios->isEmpty()) {
@@ -69,6 +70,7 @@ class InventarioObserver
                                  ->whereNotNull('woocommerce_store_url')
                                  ->whereNotNull('woocommerce_consumer_key')
                                  ->whereNotNull('woocommerce_consumer_secret')
+                                 ->where('woocommerce_status', 'connected')
                                  ->get();
         
         if ($usuarios->isEmpty()) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Empresa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User as Usuario;
@@ -273,22 +274,24 @@ class UsuariosController extends Controller
             $usuario->woocommerce_status = 'connected';
             $usuario->save();
 
-
             Log::info('Conexión exitosa con WooCommerce', [
                 'user_id' => $usuario->id,
                 'store_url' => $usuario->woocommerce_store_url
             ]);
 
+
             return response()->json([
                 'status' => 'success',
                 'mensaje' => 'Credenciales guardadas correctamente. Conexión con WooCommerce establecida.',
-                'connection_status' => 'connected'
+                'connection_status' => 'connected',
             ], 200);
         } catch (ValidationException $e) {
+
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Error de validación',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
+
             ], 422);
         } catch (\Exception $e) {
 
@@ -299,7 +302,43 @@ class UsuariosController extends Controller
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce: ' . $e->getMessage(),
-                'connection_status' => 'disconnected'
+                'connection_status' => 'disconnected',
+
+            ], 500);
+        }
+    }
+
+    //disconnectWooCommerce
+    public function disconnectWooCommerce(Request $request)
+    {
+        try {
+            $id_usuario = Auth::user()->id;
+            $usuario = User::find($id_usuario);
+            if (!$usuario) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            if (empty($usuario->woocommerce_api_key)) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no tiene API key de WooCommerce'
+                ], 422);
+            }
+
+            $usuario->woocommerce_status = 'disconnected';
+            $usuario->save();
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Conexión con WooCommerce desactivada'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al desactivar la conexión con WooCommerce: ' . $e->getMessage()
             ], 500);
         }
     }
