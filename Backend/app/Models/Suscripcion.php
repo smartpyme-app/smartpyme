@@ -102,23 +102,47 @@ class Suscripcion extends Model
         $fechaActual = now();
         $fechaProximoPago = Carbon::parse($this->fecha_proximo_pago);
         
+        // Si es el mismo día, verificar la hora
+        if ($fechaActual->isSameDay($fechaProximoPago)) {
+            // Si aún no ha pasado la hora límite, considerar que falta 0 días (mismo día)
+            if ($fechaActual < $fechaProximoPago) {
+                return 0;
+            } else {
+                // Si ya pasó la hora límite, considerar vencido recién
+                return 0;
+            }
+        }
+        
+        // Si es un día diferente
         if ($fechaActual > $fechaProximoPago) {
-            // Si está vencida, retorna días negativos para indicar días de vencimiento
+            // Si está vencida, retorna días negativos
             return -$fechaActual->diffInDays($fechaProximoPago);
         }
-
+        
         return $fechaActual->diffInDays($fechaProximoPago);
     }
-
+    
     public function calcularDiasFaltantesPrueba(): int
     {
         $fechaActual = now();
         $fechaFinPrueba = Carbon::parse($this->fin_periodo_prueba);
         
+        // Si es el mismo día, verificar la hora
+        if ($fechaActual->isSameDay($fechaFinPrueba)) {
+            // Si aún no ha pasado la hora límite, considerar que falta 0 días (mismo día)
+            if ($fechaActual < $fechaFinPrueba) {
+                return 0;
+            } else {
+                // Si ya pasó la hora límite, considerar vencido recién
+                return 0;
+            }
+        }
+        
+        // Si es un día diferente
         if ($fechaActual > $fechaFinPrueba) {
             return -$fechaActual->diffInDays($fechaFinPrueba);
         }
-
+        
         return $fechaActual->diffInDays($fechaFinPrueba);
     }
 

@@ -70,15 +70,23 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
-        $suscripcion = $user->suscripciones()->first();
+        $suscripcion = $user->empresa->suscripcion()
+        ->whereNotIn('estado', [
+            config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+            config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+        ])
+        ->latest()
+        ->first();
         $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
         $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
         $user->tiene_suscripcion = !is_null($suscripcion);
-        
-        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->nombre;
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
         $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
-        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->id;
-        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->precio;
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
@@ -208,10 +216,10 @@ class AuthJWTController extends Controller
             if (!$request->id) {
                 // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
-            // Crear bodega
+                // Crear bodega
                 $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-           // Crear canales
-               Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
+                // Crear canales
+                Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
 
                 // Crear impuesto
                 Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
@@ -227,14 +235,14 @@ class AuthJWTController extends Controller
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
             }
 
-        if ($request->id) {
-            $usuario = User::findOrFail($request->id);
-        }else{
-            $usuario = new User();
-            $usuario->id_sucursal  = $sucursal->id;
-            $usuario->id_bodega    = $bodega->id;
-            $usuario->id_empresa   = $empresa->id;
-        }
+            if ($request->id) {
+                $usuario = User::findOrFail($request->id);
+            } else {
+                $usuario = new User();
+                $usuario->id_sucursal  = $sucursal->id;
+                $usuario->id_bodega    = $bodega->id;
+                $usuario->id_empresa   = $empresa->id;
+            }
 
             $usuario->name         = $request->name;
             $usuario->email        = $request->email;
@@ -299,22 +307,22 @@ class AuthJWTController extends Controller
             //     $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
             //     Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
             // } else {
-                // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
-                // Usar URLs por defecto como fallback
-                switch ($empresa->plan) {
-                    case config('constants.PLAN_EMPRENDEDOR'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
-                        break;
-                    case config('constants.PLAN_ESTANDAR'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
-                        break;
-                    case config('constants.PLAN_AVANZADO'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
-                        break;
-                    case config('constants.PLAN_PRO'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_PRO');
-                        break;
-                }
+            // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
+            // Usar URLs por defecto como fallback
+            switch ($empresa->plan) {
+                case config('constants.PLAN_EMPRENDEDOR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
+                    break;
+                case config('constants.PLAN_ESTANDAR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
+                    break;
+                case config('constants.PLAN_AVANZADO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
+                    break;
+                case config('constants.PLAN_PRO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+                    break;
+            }
             // }
 
             $usuario->plan = $empresa->plan;
@@ -524,7 +532,7 @@ class AuthJWTController extends Controller
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                
+
                 DB::table('ordenes_pagos')->insert([
                     'id_orden' => $responseData['orderId'],
                     'order_code' => $responseData['orderCode'],
@@ -558,7 +566,6 @@ class AuthJWTController extends Controller
                 'success' => false,
                 'error' => 'Error al crear enlace de pago: ' . ($response->json()['title'] ?? 'Error desconocido')
             ];
-
         } catch (\Exception $e) {
             Log::error('N1co Payment Link Exception', [
                 'message' => $e->getMessage(),
@@ -572,13 +579,13 @@ class AuthJWTController extends Controller
         }
     }
 
-    private function createSuscripcion(array $data): array 
+    private function createSuscripcion(array $data): array
     {
         $plan = Plan::find($data['plan_id']);
-        
+
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
-            
+
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
                 'estado_ultimo_pago' => null,
@@ -603,17 +610,17 @@ class AuthJWTController extends Controller
                 'fin_periodo_prueba' => null
             ]);
         }
-    
+
         return $this->suscripcionService->createSuscripcion($data);
     }
 
-    private function getPlan($plan_id,$withName = false,$name = null)
+    private function getPlan($plan_id, $withName = false, $name = null)
     {
-       $plan= null;
+        $plan = null;
         if ($withName) {
-            $plan= Plan::where('nombre',$name)->first();
-        }else{
-            $plan= Plan::find($plan_id);
+            $plan = Plan::where('nombre', $name)->first();
+        } else {
+            $plan = Plan::find($plan_id);
         }
 
         return $plan;

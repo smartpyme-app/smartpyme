@@ -58,6 +58,20 @@ import { environment } from '../../../environments/environment';
           return this.http.post(`${this.apiUrl}/api/payment/process`, data);
       }
 
+      createChargewithMethodPayment(data: {
+        metodo_pago_id: number;
+        id_usuario: number;
+        empresa_id: number;
+        plan_id: number;
+        amount: number;
+        customer_name: string;
+        customer_email: string;
+        customer_phone: string;
+        description?: string;
+    }): Observable<any> {
+        return this.http.post(`${this.apiUrl}/payment/process-ready`, data);
+    }
+
       processDirectPayment3DS(data: {
         authentication_id: string;
         order_id: string;

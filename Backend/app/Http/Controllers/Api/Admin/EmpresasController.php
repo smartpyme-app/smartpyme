@@ -152,33 +152,95 @@ class EmpresasController extends Controller
 
     // }
 
-    public function suscripcion(){
+    public function suscripcion()
+    {
         $empresa = Empresa::with('pagos')->where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->firstOrFail();
+        $suscripcion = $empresa->suscripcion()->where('estado', 'activo')
+            ->latest()
+            ->first([
+                'estado', 
+                'fecha_proximo_pago', 
+                'fecha_ultimo_pago', 
+                'fin_periodo_prueba', 
+                'tipo_plan', 
+                'created_at', 
+                'monto',
+                'fecha_ultimo_pago', 
+                'fecha_proximo_pago', 
+                'fin_periodo_prueba'
+            ]);
         
-        $usuario = User::where('id_empresa', $empresa->id)->firstOrFail();
-
-        $plan = $usuario->suscripciones()->first()->plan ?? Plan::where('nombre',(Empresa::find($usuario->id_empresa)->plan))->first();
-
-        $usuario->plan = [
-            'id' => $plan->id,
-            'nombre' => $plan->nombre,
-            'precio' => $plan->precio
-        ];
-
-        $suscripcion = $usuario->suscripciones()->first(['estado', 'fecha_proximo_pago', 'fecha_ultimo_pago', 'fin_periodo_prueba', 'tipo_plan', 'created_at', 'monto','fecha_ultimo_pago', 'fecha_proximo_pago', 'fin_periodo_prueba']);
-        $usuario->suscripcion = $suscripcion;
-
-        $pagos = $usuario->ordenesPago()->select('plan', 'divisa', 'monto','estado', 'fecha_transaccion')->get();
-        $metodoPago = $usuario->metodoPago()->where('es_predeterminado', true)->where('esta_activo', true)->first(['marca_tarjeta', 'ultimos_cuatro']);
-
+        if (!$suscripcion) {
+            $suscripcion = $empresa->suscripcion()
+                ->latest()
+                ->first([
+                    'estado', 
+                    'fecha_proximo_pago', 
+                    'fecha_ultimo_pago', 
+                    'fin_periodo_prueba', 
+                    'tipo_plan', 
+                    'created_at', 
+                    'monto',
+                    'fecha_ultimo_pago', 
+                    'fecha_proximo_pago', 
+                    'fin_periodo_prueba'
+                ]);
+        }
+        
+        // Obtener el plan desde la suscripción o desde la empresa
+        $plan = null;
+        if ($suscripcion && $suscripcion->plan_id) {
+            $plan = Plan::find($suscripcion->plan_id);
+        } else {
+            $plan = Plan::where('nombre', $empresa->plan)->first();
+        }
+        
+        $planData = null;
+        if ($plan) {
+            $planData = [
+                'id' => $plan->id,
+                'nombre' => $plan->nombre,
+                'precio' => $plan->precio
+            ];
+        }
+        
+        // Obtener todos los pagos de la empresa
+        $pagos = [];
+        
+        // Buscar todos los usuarios de la empresa
+        $usuarios = User::where('id_empresa', $empresa->id)->get();
+        
+        // Recopilar los pagos de todos los usuarios de la empresa
+        foreach ($usuarios as $usuario) {
+            $pagosPorUsuario = $usuario->ordenesPago()
+                ->select('plan', 'divisa', 'monto', 'estado', 'fecha_transaccion')
+                ->get()
+                ->toArray();
+            
+            $pagos = array_merge($pagos, $pagosPorUsuario);
+        }
+        
+        // Obtener métodos de pago asociados a la empresa
+        $metodoPago = null;
+        foreach ($usuarios as $usuario) {
+            $metodo = $usuario->metodoPago()
+                ->where('es_predeterminado', true)
+                ->where('esta_activo', true)
+                ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
+            
+            if ($metodo) {
+                $metodoPago = $metodo;
+                break;
+            }
+        }
+        
         $dataResponse = [
             'suscripcion' => $suscripcion,
             'pagos' => $pagos,
-            'plan' => $usuario->plan,
+            'plan' => $planData,
             'metodoPago' => $metodoPago
         ];
-
-
+        
         return Response()->json($dataResponse, 201);
     }
 
