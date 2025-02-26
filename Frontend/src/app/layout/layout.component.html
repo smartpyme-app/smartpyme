@@ -1,6 +1,7 @@
 <div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
   <!-- Sidebars sin cambios -->
   <app-sidebar-admin *ngIf="usuario.id_empresa == 2 && !usuario.empresa.licencia"></app-sidebar-admin>
+  
   <app-sidebar *ngIf="usuario.id_empresa != 2 && !usuario.empresa.licencia && apiService.isAdmin()"></app-sidebar>
   <app-sidebar-ventas *ngIf="usuario.id_empresa != 2 && !usuario.empresa.licencia && usuario.tipo == 'Ventas'"></app-sidebar-ventas>
   <app-sidebar-servicios *ngIf="usuario.id_empresa != 2 && !usuario.empresa.licencia && usuario.tipo == 'Citas'"></app-sidebar-servicios>

@@ -30,10 +30,6 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 
-import { AdminVentasComponent } from '@views/super-admin/ventas/admin-ventas.component';
-import { AdminVentaComponent } from '@views/super-admin/ventas/venta/admin-venta.component';
-// import { AdminFacturacionComponent } from '@views/super-admin/ventas/facturacion/admin-facturacion.component';
-
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
 
 @NgModule({
@@ -61,9 +57,6 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     AdminUsuariosComponent,
     DashboardsComponent,
     DashboardComponent,
-    AdminVentasComponent,
-    AdminVentaComponent,
-    //AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent
@@ -77,9 +70,6 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     AdminUsuariosComponent,
     DashboardsComponent,
     DashboardComponent,
-    AdminVentasComponent,
-    AdminVentaComponent,
-    //AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent

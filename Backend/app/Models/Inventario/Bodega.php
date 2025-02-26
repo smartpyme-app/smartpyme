@@ -26,12 +26,11 @@ class Bodega extends Model {
         parent::boot();
 
         if (Auth::check()) {
-            if (Auth::user()->id_empresa != 2) {
-                static::addGlobalScope('empresa', function (Builder $builder) {
-                    $builder->where('id_empresa', Auth::user()->id_empresa);
-                });
-            }
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
         }
+        
     }
     
     public function getNombreSucursalAttribute()

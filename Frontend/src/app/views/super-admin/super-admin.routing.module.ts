@@ -9,9 +9,6 @@ import { LicenciaComponent }     from '@views/super-admin/licencias/licencia/lic
 import { AdminUsuariosComponent }     from '@views/super-admin/usuarios/admin-usuarios.component';
 import { DashboardsComponent }     from '@views/super-admin/dashboards/dashboards.component';
 import { DashboardComponent }     from '@views/super-admin/dashboards/dashboard/dashboard.component';
-import { AdminVentasComponent } from '@views/super-admin/ventas/admin-ventas.component';
-import { AdminVentaComponent } from '@views/super-admin/ventas/venta/admin-venta.component';
-// import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-facturacion.component';
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
@@ -33,10 +30,6 @@ const routes: Routes = [
 
         { path: 'sucursales', component: AdminSucursalesComponent, title: 'Sucursales' },
         { path: 'sucursal/:id', component: AdminSucursalComponent, title: 'Sucursal' },
-
-        { path: 'ventas', component: AdminVentasComponent, title: 'Facturacion' },
-        // { path: 'facturacion/crear', component: AdminFacturacionComponent, title: 'Facturacion' },
-        { path: 'venta/:id', component: AdminVentaComponent, title: 'Venta' },
 
         { path: 'suscripciones', component: AdminSuscripcionesComponent, title: 'Suscripciones' },
     ]
