@@ -49,7 +49,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
               $row->codigo,
               $row->barcode,
               $row->marca,
-              number_format($row->costo, 2),
+              $row->empresa()->pluck('valor_inventario')->first() == 'promedio' ? number_format($row->costo_promedio, 2) : number_format($row->costo, 2),
               number_format($row->precio, 2),
               number_format($row->precio - $row->costo, 2),
               number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),

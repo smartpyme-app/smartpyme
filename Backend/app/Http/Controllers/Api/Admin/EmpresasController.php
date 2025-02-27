@@ -258,10 +258,11 @@ class EmpresasController extends Controller
     public function eliminarDatos(Request $request){
         $empresa = Empresa::where('id', $request->id)->firstOrFail();
         $sucursales = $empresa->sucursales()->pluck('id')->toArray();
+        $bodegas = $empresa->bodegas()->pluck('id')->toArray();
 
         if ($request->m_inventario) {
             DB::table('productos')->where('id_empresa', $empresa->id)->update(['deleted_at' => Carbon::now()]);
-            DB::table('inventario')->whereIn('id_sucursal', $sucursales)->update(['deleted_at' => Carbon::now()]);
+            DB::table('inventario')->whereIn('id_bodega', $bodegas)->update(['deleted_at' => Carbon::now()]);
             DB::table('ajustes')->where('id_empresa', $empresa->id)->delete();
             DB::table('traslados')->where('id_empresa', $empresa->id)->delete();
         }
