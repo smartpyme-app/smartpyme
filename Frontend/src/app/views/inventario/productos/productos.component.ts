@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-productos',
@@ -178,6 +179,24 @@ export class ProductosComponent implements OnInit {
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
 
+    }
+
+    public exportarWooCommerce(){
+       //preguntar si esta seguro de migrar todos sus productos a woocommerce esto sera asincronico se hara desde el backend directamente
+       //agregar que solo se van a migrar los productos que esten relacionados con el usuario que tiene la session en woocommerce y con la sucursal que tenga la session
+       Swal.fire({
+        title: 'Está seguro de migrar todos sus productos a woocommerce?',
+        text: "Esta accion no se puede revertir!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, migrar!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          
+        }
+      })
     }
 
 

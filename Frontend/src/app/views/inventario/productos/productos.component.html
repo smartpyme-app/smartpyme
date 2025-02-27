@@ -24,6 +24,10 @@
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
+                <!--exportar productos a woocommerce-->
+                <button tooltip="Exportar productos a WooCommerce" (click)="exportarWooCommerce()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/woocommerce.png" class="icon">
+                </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">
