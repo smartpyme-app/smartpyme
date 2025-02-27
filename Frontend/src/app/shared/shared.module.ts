@@ -40,6 +40,7 @@ import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
+import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
 
 @NgModule({
   imports: [
@@ -79,7 +80,8 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    VerHistorialButtonComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -107,7 +109,8 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    VerHistorialButtonComponent
   ],
   providers: [AlertService],
 })

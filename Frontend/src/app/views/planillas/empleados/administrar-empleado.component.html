@@ -1,0 +1,837 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">{{ empleado.id ? "Editar" : "Nuevo" }} Empleado</h2>
+  <button class="btn btn-light text-danger" routerLink="/planilla/empleados">
+    <i class="fa fa-arrow-left"></i> Regresar
+  </button>
+</section>
+
+<div class="card mb-5">
+  <div class="card-body">
+    <!-- Pestañas -->
+    <ul class="nav nav-tabs mb-4">
+      <li class="nav-item">
+        <a
+          class="nav-link cursor-pointer"
+          [class.active]="activeTab === 'informacion'"
+          (click)="activeTab = 'informacion'"
+        >
+          <i class="fa fa-user me-2"></i>Información Empleado
+        </a>
+      </li>
+      <li class="nav-item" *ngIf="empleado.id">
+        <a
+          class="nav-link cursor-pointer"
+          [class.active]="activeTab === 'historiales'"
+          (click)="setActiveTab('historiales')"
+        >
+          <i class="fa fa-history me-2"></i>Historiales
+        </a>
+      </li>
+      <li class="nav-item" *ngIf="empleado.id">
+        <a
+          class="nav-link cursor-pointer"
+          [class.active]="activeTab === 'documentos'"
+          (click)="setActiveTab('documentos')"
+        >
+          <i class="fa fa-file me-2"></i>Documentos
+        </a>
+      </li>
+    </ul>
+
+    <!-- Contenido de la pestaña Información -->
+    <div *ngIf="activeTab === 'informacion'">
+      <form name="form" (ngSubmit)="onSubmit()">
+        <!-- Tu formulario existente -->
+        <div class="row">
+          <div class="card mb-5">
+            <div class="card-body">
+              <!-- <app-notificaciones-container></app-notificaciones-container> -->
+              <form name="form" (ngSubmit)="onSubmit()">
+                <div class="row">
+                  <!-- Información Personal -->
+                  <h6 class="col-12 pb-2 mb-2">Información Personal</h6>
+                  <div class="form-group col-md-2">
+                    <label for="codigo">Código:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.codigo"
+                      name="codigo"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="form-group col-md-5">
+                    <label for="nombres">Nombres:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.nombres"
+                      (change)="verificarSiExiste()"
+                      name="nombres"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="form-group col-md-5">
+                    <label for="apellidos">Apellidos:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.apellidos"
+                      (change)="verificarSiExiste()"
+                      name="apellidos"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <!-- Documentos -->
+                  <h6 class="col-12 pb-2 mb-2 mt-4">Documentos</h6>
+                  <div class="form-group col-md-3">
+                    <label for="dui">DUI:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.dui"
+                      name="dui"
+                      class="form-control"
+                      required
+                      mask="00000000-0"
+                      [dropSpecialCharacters]="false"
+                      placeholder="00000000-0"
+                    />
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label for="nit">NIT:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.nit"
+                      name="nit"
+                      class="form-control"
+                      required
+                      mask="0000-000000-000-0"
+                      [dropSpecialCharacters]="false"
+                      placeholder="0000-000000-000-0"
+                    />
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label for="isss">Número ISSS:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.isss"
+                      name="isss"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label for="afp">Número AFP:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.afp"
+                      name="afp"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <!-- Información Laboral -->
+                  <h6 class="col-12 pb-2 mb-2 mt-4">Información Laboral</h6>
+                  <div class="form-group col-md-4">
+                    <label for="id_departamento">Departamento:</label>
+                    <div class="input-group">
+                      <select
+                        [(ngModel)]="empleado.id_departamento"
+                        (ngModelChange)="onDepartamentoChange($event)"
+                        name="id_departamento"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">Seleccione...</option>
+                        <option
+                          *ngFor="let departamento of departamentos"
+                          [value]="departamento.id"
+                        >
+                          {{ departamento.nombre }}
+                        </option>
+                      </select>
+                      <button
+                        class="btn btn-default"
+                        type="button"
+                        tooltip="Agregar departamento"
+                        (click)="openModal(mdepartamento)"
+                      >
+                        <i class="fa fa-plus"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="id_cargo">Cargo:</label>
+                    <div class="input-group">
+                      <select
+                        [(ngModel)]="empleado.id_cargo"
+                        name="id_cargo"
+                        class="form-select"
+                        [disabled]="!empleado.id_departamento"
+                        required
+                      >
+                        <option value="">Seleccione...</option>
+                        <option
+                          *ngFor="let cargo of cargosFiltrados"
+                          [value]="cargo.id"
+                        >
+                          {{ cargo.nombre }}
+                        </option>
+                      </select>
+                      <button
+                        class="btn btn-default"
+                        type="button"
+                        tooltip="Agregar cargo"
+                        (click)="openModal(mcargo)"
+                        [disabled]="!empleado.id_departamento"
+                      >
+                        <i class="fa fa-plus"></i>
+                      </button>
+                    </div>
+                    <small class="text-muted" *ngIf="!empleado.id_departamento">
+                      Seleccione un departamento primero
+                    </small>
+                  </div>
+
+                  <!-- Salario y Fechas -->
+                  <h6 class="col-12 pb-2 mb-2 mt-4">Salario y Fechas</h6>
+                  <div class="form-group col-md-4">
+                    <label for="salario_base">Salario Base:</label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        [(ngModel)]="empleado.salario_base"
+                        name="salario_base"
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                    <input
+                      type="date"
+                      [(ngModel)]="empleado.fecha_nacimiento"
+                      name="fecha_nacimiento"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="fecha_ingreso">Fecha de Ingreso:</label>
+                    <input
+                      type="date"
+                      [(ngModel)]="empleado.fecha_ingreso"
+                      name="fecha_ingreso"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <!-- Tipo de Jornada -->
+                  <div class="form-group col-md-4">
+                    <label for="tipo_jornada">Tipo de Jornada:</label>
+                    <select
+                      [(ngModel)]="empleado.tipo_jornada"
+                      name="tipo_jornada"
+                      class="form-select"
+                      required
+                    >
+                      <option value="">Seleccione...</option>
+                      <option *ngFor="let tipo of tiposJornada" [value]="tipo.id">
+                        {{ tipo.nombre }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Tipo de contrato -->
+                  <div class="form-group col-md-4">
+                    <label for="tipo_contrato">Tipo de Contrato:</label>
+                    <select
+                      [(ngModel)]="empleado.tipo_contrato"
+                      name="tipo_contrato"
+                      class="form-select"
+                      required
+                    >
+                      <option value="">Seleccione...</option>
+                      <option
+                        *ngFor="let tipo of tiposContrato"
+                        [value]="tipo.id"
+                      >
+                        {{ tipo.nombre }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Estado -->
+                  <div class="form-group col-md-4">
+                    <label for="estado">Estado:</label>
+                    <select
+                      [(ngModel)]="empleado.estado"
+                      name="estado"
+                      class="form-select"
+                      required
+                    >
+                      <option value="">Seleccione...</option>
+                      <option *ngFor="let estado of estadosEmpleado" [value]="estado.id">
+                        {{ estado.nombre }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Contacto -->
+                  <h6 class="col-12 pb-2 mb-2 mt-4">Información de Contacto</h6>
+                  <div class="form-group col-md-12">
+                    <label for="direccion">Dirección:</label>
+                    <textarea
+                      [(ngModel)]="empleado.direccion"
+                      name="direccion"
+                      class="form-control"
+                      rows="2"
+                      required
+                    ></textarea>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="telefono">Teléfono:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.telefono"
+                      name="telefono"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="email">Correo Electrónico:</label>
+                    <input
+                      type="email"
+                      [(ngModel)]="empleado.email"
+                      name="email"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <!-- Contacto de Emergencia -->
+                  <h6 class="col-12 pb-2 mb-2 mt-4">Contacto de Emergencia</h6>
+                  <div class="form-group col-md-12">
+                    <label for="nombre_contacto">Nombre del Contacto:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.contacto_emergencia.nombre"
+                      name="nombre_contacto"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-group col-md-6">
+                    <label for="relacion_contacto">Relación:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.contacto_emergencia.relacion"
+                      name="relacion_contacto"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-group col-md-6">
+                    <label for="telefono_contacto"
+                      >Teléfono del Contacto:</label
+                    >
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.contacto_emergencia.telefono"
+                      name="telefono_contacto"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-group col-md-12">
+                    <label for="direccion_contacto"
+                      >Dirección del Contacto:</label
+                    >
+                    <textarea
+                      [(ngModel)]="empleado.contacto_emergencia.direccion"
+                      name="direccion_contacto"
+                      class="form-control"
+                      rows="2"
+                      required
+                    ></textarea>
+                  </div>
+
+                  <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button
+                      [disabled]="
+                        saving ||
+                        !empleado.nombres ||
+                        !empleado.apellidos ||
+                        !empleado.dui
+                      "
+                      class="btn btn-primary btn-lg"
+                    >
+                      <span *ngIf="!saving">
+                        <i class="fa fa-save"></i>
+                        {{ empleado.id ? "Actualizar" : "Guardar" }} Empleado
+                      </span>
+                      <span *ngIf="saving">
+                        <i class="fa fa-spinner fa-spin"></i>
+                        {{ empleado.id ? "Actualizando..." : "Guardando..." }}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Contenido de la pestaña Historiales -->
+    <div
+      *ngIf="activeTab === 'historiales'"
+      class="animate__animated animate__fadeIn"
+    >
+      <!-- Historial de Contratos -->
+      <div class="mb-4">
+        <h5 class="mb-3">Historial de Contratos</h5>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Tipo Contrato</th>
+                <th>Cargo</th>
+                <th>Salario</th>
+                <th>Estado</th>
+                <th>Documento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let contrato of historialContratos">
+                <td>{{ contrato.fecha_inicio | date : "dd/MM/yyyy" }}</td>
+                <td>
+                  {{
+                    contrato.fecha_fin
+                      ? (contrato.fecha_fin | date : "dd/MM/yyyy")
+                      : "Vigente"
+                  }}
+                </td>
+                <td>{{ getNombreTipoContrato(contrato.tipo_contrato) }}</td>
+                <td>{{ contrato.cargo?.nombre }}</td>
+                <td>${{ contrato.salario | number : "1.2-2" }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [ngClass]="{
+                      'bg-success': contrato.estado === 1,
+                      'bg-secondary': contrato.estado !== 1
+                    }"
+                  >
+                    {{ contrato.estado === 1 ? "Activo" : "Inactivo" }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button
+                    *ngIf="contrato.documento_empleado"
+                    class="btn btn-sm btn-link"
+                    (click)="
+                      descargarDocumento(contrato.documento_empleado?.id, true)
+                    "
+                  >
+                    <i class="fa fa-download"></i> Descargar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Historial de Bajas -->
+      <div>
+        <h5 class="mb-3">Historial de Bajas</h5>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Fecha Baja</th>
+                <th>Tipo Baja</th>
+                <th>Motivo</th>
+                <th>Estado</th>
+                <th>Documento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let baja of historialBajas">
+                <td>{{ baja.fecha_baja | date : "dd/MM/yyyy" }}</td>
+                <td>{{ getNombreTipoBaja(baja.tipo_baja) }}</td>
+                <td>{{ baja.motivo }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [ngClass]="{
+                      'bg-success': baja.estado === 1,
+                      'bg-secondary': baja.estado !== 1
+                    }"
+                  >
+                    {{ baja.estado === 1 ? "Activo" : "Inactivo" }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    *ngIf="baja.documento_respaldo"
+                    class="btn btn-sm btn-link"
+                    (click)="descargarDocumento(baja.documento_respaldo)"
+                  >
+                    <i class="fa fa-download"></i> Descargar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido de la pestaña Documentos -->
+    <div
+      *ngIf="activeTab === 'documentos'"
+      class="animate__animated animate__fadeIn"
+    >
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Documentos del Empleado</h5>
+        <button
+          class="btn btn-primary"
+          (click)="openModalDocumento(mDocumento)"
+        >
+          <i class="fa fa-plus me-2"></i>Agregar Documento
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th
+                (click)="setOrdenDocumentos('tipo_documento')"
+                class="cursor-pointer"
+              >
+                Tipo
+                <i class="fa" [ngClass]="getOrdenClass('tipo_documento')"></i>
+              </th>
+              <th
+                (click)="setOrdenDocumentos('fecha_documento')"
+                class="cursor-pointer"
+              >
+                Fecha Documento
+                <i class="fa" [ngClass]="getOrdenClass('fecha_documento')"></i>
+              </th>
+              <th
+                (click)="setOrdenDocumentos('fecha_vencimiento')"
+                class="cursor-pointer"
+              >
+                Fecha Vencimiento
+                <i
+                  class="fa"
+                  [ngClass]="getOrdenClass('fecha_vencimiento')"
+                ></i>
+              </th>
+              <th>Archivo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="5" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+              </td>
+            </tr>
+            <tr
+              *ngIf="
+                !loading &&
+                (!documentosFiltrados || documentosFiltrados.length === 0)
+              "
+            >
+              <td colspan="5" class="text-center">
+                No hay documentos registrados
+              </td>
+            </tr>
+            <tr *ngFor="let doc of documentosFiltrados">
+              <td>{{ getTipoDocumento(doc.tipo_documento) }}</td>
+              <td>{{ doc.fecha_documento | date : "dd/MM/yyyy" }}</td>
+              <td>
+                <span
+                  *ngIf="doc.fecha_vencimiento"
+                  [class.text-danger]="isDocumentoVencido(doc)"
+                >
+                  {{ doc.fecha_vencimiento | date : "dd/MM/yyyy" }}
+                </span>
+                <span *ngIf="!doc.fecha_vencimiento">-</span>
+              </td>
+              <td>{{ doc.nombre_archivo }}</td>
+              <td>
+                <div class="btn-group">
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="descargarDocumento(doc)"
+                  >
+                    <i class="fa fa-download"></i>
+                  </button>
+                  <!-- <button class="btn btn-sm btn-outline-danger" (click)="eliminarDocumento(doc)">
+                    <i class="fa fa-trash"></i>
+                  </button> -->
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div
+        class="d-flex justify-content-center mt-3"
+        *ngIf="documentos?.last_page > 1"
+      >
+        <app-pagination
+          [items]="documentos"
+          (setPagination)="onPageChange($event.page)"
+        >
+        </app-pagination>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #mdepartamento>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      {{ departamento.id ? "Editar" : "Nuevo" }} Departamento
+    </h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form name="form" (ngSubmit)="guardarDepartamento()">
+      <div class="row">
+        <div class="form-group col-12 mb-3">
+          <label for="nombre">Nombre:</label>
+          <input
+            type="text"
+            [(ngModel)]="departamento.nombre"
+            name="nombre"
+            class="form-control"
+            required
+          />
+        </div>
+        <div class="form-group col-12 mb-3">
+          <label for="descripcion">Descripción:</label>
+          <textarea
+            [(ngModel)]="departamento.descripcion"
+            name="descripcion"
+            class="form-control"
+            rows="2"
+          ></textarea>
+        </div>
+        <div class="form-group col-12">
+          <button
+            type="submit"
+            [disabled]="saving"
+            class="btn btn-primary w-100"
+          >
+            <span *ngIf="!saving">Guardar departamento</span>
+            <span *ngIf="saving">Guardando...</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Modal para cargos -->
+<ng-template #mcargo>
+  <div class="modal-header">
+    <h4 class="modal-title">{{ cargo.id ? "Editar" : "Nuevo" }} Cargo</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form name="form" (ngSubmit)="guardarCargo()">
+      <div class="row">
+        <!-- Selector de departamento independiente -->
+        <div class="form-group col-12 mb-3">
+          <label for="id_departamento">Departamento:</label>
+          <select
+            [(ngModel)]="cargo.id_departamento"
+            name="id_departamento"
+            class="form-select"
+            required
+          >
+            <option [ngValue]="null">Seleccione un departamento</option>
+            <option *ngFor="let dept of departamentos" [ngValue]="dept.id">
+              {{ dept.nombre }}
+            </option>
+          </select>
+          <small class="text-muted d-block mt-1" *ngIf="cargo.id_departamento">
+            El cargo será asignado al departamento:
+            <strong>{{ getNombreDepartamento(cargo.id_departamento) }}</strong>
+          </small>
+        </div>
+
+        <div class="form-group col-12 mb-3">
+          <label for="nombre">Nombre:</label>
+          <input
+            type="text"
+            [(ngModel)]="cargo.nombre"
+            name="nombre"
+            class="form-control"
+            placeholder="Ingrese el nombre del cargo"
+            required
+          />
+        </div>
+
+        <div class="form-group col-12 mb-3">
+          <label for="descripcion">Descripción:</label>
+          <textarea
+            [(ngModel)]="cargo.descripcion"
+            name="descripcion"
+            class="form-control"
+            rows="2"
+            placeholder="Describa las funciones principales del cargo"
+          ></textarea>
+        </div>
+
+        <div class="form-group col-12 mb-3">
+          <label for="salario_base">Salario Base:</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              step="0.01"
+              [(ngModel)]="cargo.salario_base"
+              name="salario_base"
+              class="form-control"
+              placeholder="0.00"
+              min="0"
+            />
+          </div>
+        </div>
+
+        <div class="form-group col-12">
+          <button
+            type="submit"
+            [disabled]="saving || !cargo.nombre || !cargo.id_departamento"
+            class="btn btn-primary w-100"
+          >
+            <i
+              class="fa"
+              [ngClass]="{ 'fa-save': !saving, 'fa-spinner fa-spin': saving }"
+            ></i>
+            <span *ngIf="!saving"> Guardar cargo</span>
+            <span *ngIf="saving"> Guardando...</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Modal para agregar documento -->
+<ng-template #mDocumento>
+  <div class="modal-header">
+    <h4 class="modal-title">Agregar Documento</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="guardarDocumento()">
+      <div class="mb-3">
+        <label class="form-label">Tipo de Documento</label>
+        <select
+          class="form-select"
+          [(ngModel)]="nuevoDocumento.tipo_documento"
+          name="tipo_documento"
+          required
+        >
+          <option value="">Seleccione...</option>
+          <option value="1">Renuncia</option>
+          <option value="2">Despido</option>
+          <option value="3">Terminación de contrato</option>
+          <option value="4">Alta</option>
+          <option value="5">DUI</option>
+          <option value="6">NIT</option>
+          <option value="7">ISSS</option>
+          <option value="8">AFP</option>
+          <option value="9">Título</option>
+          <option value="10">Certificaciones</option>
+          <option value="11">Otro</option>
+          <!-- Agregar más tipos según necesites -->
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Documento</label>
+        <input
+          type="file"
+          class="form-control"
+          (change)="onFileSelected($event)"
+          accept=".pdf,.doc,.docx"
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Fecha del Documento</label>
+        <input
+          type="date"
+          class="form-control"
+          [(ngModel)]="nuevoDocumento.fecha_documento"
+          name="fecha_documento"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Fecha de Vencimiento (Opcional)</label>
+        <input
+          type="date"
+          class="form-control"
+          [(ngModel)]="nuevoDocumento.fecha_vencimiento"
+          name="fecha_vencimiento"
+        />
+      </div>
+
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+          <span *ngIf="!saving">Guardar Documento</span>
+          <span *ngIf="saving"
+            ><i class="fa fa-spinner fa-spin me-2"></i>Guardando...</span
+          >
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
