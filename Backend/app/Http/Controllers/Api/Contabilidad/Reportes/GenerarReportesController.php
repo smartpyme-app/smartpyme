@@ -471,7 +471,7 @@ class GenerarReportesController extends Controller
             ];
         }
 
-// Ahora sumamos los valores a las cuentas padre
+        // Ahora sumamos los valores a las cuentas padre
         foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
             if($cuenta->id_cuenta_padre) {
                 $id_padre = $cuenta->id_cuenta_padre;
@@ -496,15 +496,10 @@ class GenerarReportesController extends Controller
             ];
         }
 
-// Verificamos los resultados
-        //dd($cuentas_saldos);
+        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
+        $pdf->setPaper('US Letter', 'portrait');
 
-        return view('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
-
-//        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
-//        $pdf->setPaper('US Letter', 'portrait');
-//
-//        return $pdf->stream();
+        return $pdf->stream();
     }
 
     public function generarRepBalanceComprobacionExcel($month, $year, $cuenta = null)
