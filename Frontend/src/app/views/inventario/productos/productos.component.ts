@@ -182,21 +182,47 @@ export class ProductosComponent implements OnInit {
     }
 
     public exportarWooCommerce(){
-       //preguntar si esta seguro de migrar todos sus productos a woocommerce esto sera asincronico se hara desde el backend directamente
-       //agregar que solo se van a migrar los productos que esten relacionados con el usuario que tiene la session en woocommerce y con la sucursal que tenga la session
-       Swal.fire({
-        title: 'Está seguro de migrar todos sus productos a woocommerce?',
-        text: "Esta accion no se puede revertir!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Si, migrar!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          
-        }
-      })
+        Swal.fire({
+            title: '¿Está seguro de exportar sus productos a WooCommerce?',
+            html: `
+                <p>Esta acción iniciará una migración asincrónica de productos a WooCommerce:</p>
+                <ul style="text-align: left; margin-top: 1em;">
+                    <li>Solo se migrarán los productos relacionados con su usuario y sucursal actual</li>
+                    <li>Los productos vinculados a otras sucursales no serán exportados</li>
+                    <li>El proceso se ejecutará en segundo plano y puede tomar varios minutos</li>
+                    <li>Esta acción no se puede revertir</li>
+                </ul>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, iniciar exportación',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Iniciando exportación...',
+                    text: 'La migración de productos ha comenzado y continuará en segundo plano',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+                this.apiService.store('producto/exportar-woocommerce', {}).subscribe(
+                    response => {
+                        Swal.fire({
+                            title: 'Proceso iniciado',
+                            text: 'La migración de productos a WooCommerce se está ejecutando en segundo plano',
+                            icon: 'success'
+                        });
+                    },
+                    error => {
+                        this.alertService.error(error);
+                    }
+                );
+            }
+        });
     }
 
 
