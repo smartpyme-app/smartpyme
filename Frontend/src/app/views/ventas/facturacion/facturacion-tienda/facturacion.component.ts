@@ -395,52 +395,159 @@ export class FacturacionComponent implements OnInit {
     }
 
     // Facturar cotizacion
-    if (
-      this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
-      this.route.snapshot.queryParamMap.get('id_venta')!
-    ) {
-      this.facturarCotizacion = true;
-      this.apiService
-        .read(
-          'cotizacionVentas/',
-          +this.route.snapshot.queryParamMap.get('id_venta')!
-        )
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            this.venta.cobrar_impuestos = this.venta.cobrar_impuestos;
-            this.venta.retencion = this.venta.aplicar_retencion;
-            this.venta.fecha = this.apiService.date();
-            this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.estado = 'Pagada';
-            this.venta.observaciones = '';
-            this.venta.terminos_de_venta = '';
-            this.venta.cotizacion = 0;
-            this.venta.num_cotizacion = this.venta.id;
-            this.venta.id = null;
-            this.venta.detalles.forEach((detalle: any) => {
-              if (detalle.codigo_combo) {
-                detalle.descripcion = detalle.combo.nombre;
-                detalle.detalles = detalle.combo.detalles;
-              } else {
-                detalle.descripcion = detalle.producto.nombre;
-              }
-              detalle.id = null;
-            });
+    // if (
+    //   this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
+    //   this.route.snapshot.queryParamMap.get('id_venta')!
+    // ) {
+    //   this.facturarCotizacion = true;
+    //   this.apiService
+    //     .read(
+    //       'cotizacionVentas/',
+    //       +this.route.snapshot.queryParamMap.get('id_venta')!
+    //     )
+    //     .subscribe(
+    //       (venta) => {
+    //         this.venta = venta;
+    //         this.venta.cobrar_impuestos = this.venta.cobrar_impuestos;
+    //         this.venta.retencion = this.venta.aplicar_retencion;
+    //         this.venta.fecha = this.apiService.date();
+    //         this.venta.fecha_pago = this.apiService.date();
+    //         this.venta.id_documento = null;
+    //         this.venta.correlativo = null;
+    //         this.venta.estado = 'Pagada';
+    //         this.venta.observaciones = '';
+    //         this.venta.terminos_de_venta = '';
+    //         this.venta.cotizacion = 0;
+    //         this.venta.num_cotizacion = this.venta.id;
+    //         this.venta.id = null;
+    //         this.venta.detalles.forEach((detalle: any) => {
+    //           if (detalle.codigo_combo) {
+    //             detalle.descripcion = detalle.combo.nombre;
+    //             detalle.detalles = detalle.combo.detalles;
+    //           } else {
+    //             detalle.descripcion = detalle.producto.nombre;
+    //           }
+    //           detalle.id = null;
+    //         });
 
-            // Para proyectos
-            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-              this.venta.detalles = [];
-            }
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
+    //         // Para proyectos
+    //         if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+    //           this.venta.detalles = [];
+    //         }
+    //       },
+    //       (error) => {
+    //         this.alertService.error(error);
+    //         this.loading = false;
+    //       }
+    //     );
+    // }
+
+    // Facturar cotizacion
+if (
+  this.route.snapshot.queryParamMap.get('facturar_cotizacion') &&
+  this.route.snapshot.queryParamMap.get('id_venta')
+) {
+  this.facturarCotizacion = true;
+
+  console.log('facturar cotizacion');
+  
+
+  this.apiService.getAll('impuestos').subscribe(
+    (impuestos) => {
+      this.impuestos = impuestos;
+      
+
+      this.apiService.read(
+        'cotizacionVentas/',
+        +this.route.snapshot.queryParamMap.get('id_venta')!
+      ).subscribe(
+        (venta) => {
+          this.venta = venta;
+          this.venta.cobrar_impuestos = venta.cobrar_impuestos;
+          this.venta.retencion = venta.aplicar_retencion;
+          this.venta.fecha = this.apiService.date();
+          this.venta.fecha_pago = this.apiService.date();
+          this.venta.estado = 'Pagada';
+          this.venta.cotizacion = 0;
+          this.venta.num_cotizacion = this.venta.id;
+          this.venta.id = null;
+          
+
+          if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
+            this.venta.impuestos = this.impuestos;
           }
-        );
+          
+  
+          this.venta.detalles.forEach((detalle: any) => {
+            if (detalle.codigo_combo) {
+              detalle.descripcion = detalle.combo.nombre;
+              detalle.detalles = detalle.combo.detalles;
+            } else {
+              detalle.descripcion = detalle.producto.nombre;
+            }
+            detalle.id = null;
+          });
+          
+   
+          if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
+            this.venta.detalles = [];
+          }
+          
+          // Cargar los documentos y buscar una factura
+          this.apiService.getAll('documentos/list').subscribe(
+            (documentos) => {
+              this.documentos = documentos;
+              this.documentos = this.documentos.filter(
+                (x: any) => x.id_sucursal == this.venta.id_sucursal
+              );
+              
+              // Filtrar solo documentos tipo factura
+              const docsFiltrados = this.documentos.filter(
+                (x: any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra'
+              );
+              
+              // Buscar documento predeterminado o tomar el primero
+              let documentoFactura = docsFiltrados.find(
+                (doc: any) => doc.predeterminado == 1
+              );
+              
+              if (documentoFactura) {
+                this.venta.id_documento = documentoFactura.id;
+                this.venta.correlativo = documentoFactura.correlativo;
+                this.venta.nombre_documento = documentoFactura.nombre;
+              } else if (docsFiltrados.length > 0) {
+                this.venta.id_documento = docsFiltrados[0].id;
+                this.venta.correlativo = docsFiltrados[0].correlativo;
+                this.venta.nombre_documento = docsFiltrados[0].nombre;
+              }
+              
+              // Actualizar la lista de documentos
+              this.documentos = docsFiltrados;
+              
+              // Calcular totales
+              this.sumTotal();
+              
+              // Completar carga de otros datos
+              this.loadData();
+            },
+            (error) => {
+              this.alertService.error(error);
+            }
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+    },
+    (error) => {
+      this.alertService.error(error);
     }
+  );
+  
+  return; 
+}
 
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
