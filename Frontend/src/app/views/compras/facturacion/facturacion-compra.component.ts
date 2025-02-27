@@ -230,6 +230,15 @@ export class FacturacionCompraComponent implements OnInit {
   }
 
   public sumTotal() {
+
+    if (this.compra.cobrar_impuestos && (!this.compra.impuestos || this.compra.impuestos.length === 0)) {
+      this.alertService.warning(
+        'Configuración requerida', 
+        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+      );
+      this.compra.cobrar_impuestos = false;
+      return;
+    }
     this.compra.sub_total = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total'))).toFixed(2);
     this.compra.percepcion = this.compra.cobrar_percepcion ? this.compra.sub_total * 0.01 : 0;
     this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
@@ -240,6 +249,9 @@ export class FacturacionCompraComponent implements OnInit {
     } else {
       this.compra.iva = 0;
     }
+
+
+   
 
     this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
     this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
@@ -306,6 +318,14 @@ export class FacturacionCompraComponent implements OnInit {
   }
 
   async onFacturar() {
+
+    if (this.compra.cobrar_impuestos && (!this.compra.impuestos || this.compra.impuestos.length === 0)) {
+      this.alertService.error(
+        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+      );
+      return;
+    }
+      
     let confirm = await Swal.fire({
       title: '¿Estás seguro de procesar la compra?',
       text: 'Se procesara la compra',

@@ -444,6 +444,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
+            ->where('partidas.estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
