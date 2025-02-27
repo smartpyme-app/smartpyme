@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Webhook;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ExportProductsToWooCommerce;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
@@ -108,6 +109,35 @@ class WooCommerceController extends Controller
     }
 
 
+    public function exportarWooCommerce(Request $request)
+    {
+        // Verificar que el usuario tiene configuración de WooCommerce
+        $user = Auth::user();
+        
+        if (empty($user->woocommerce_api_key) || 
+            empty($user->woocommerce_store_url) || 
+            empty($user->woocommerce_consumer_key) || 
+            empty($user->woocommerce_consumer_secret)) {
+            
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'No tienes configurada la integración con WooCommerce'
+            ], 400);
+        }
+
+        // Obtener la sucursal actual del usuario
+        $sucursalId = $user->id_sucursal;
+
+        // Encolar el trabajo
+        ExportProductsToWooCommerce::dispatch($user->id, $sucursalId);
+
+        return response()->json([
+            'status' => 'success',
+            'mensaje' => 'Exportación de productos iniciada. Este proceso puede tomar varios minutos.'
+        ]);
+    }
+
+
     // public function saveCredentials(Request $request)
     // {
     //     $request->validate([
@@ -145,7 +175,7 @@ class WooCommerceController extends Controller
     //             'count' => $count
     //         ], 200);
 
-            
+
     //     } catch (\Exception $e) {
     //         return response()->json([
     //             'status' => 'error',

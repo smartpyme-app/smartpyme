@@ -34,7 +34,10 @@ class User extends Authenticatable implements JWTSubject
         'woocommerce_store_url',
         'woocommerce_consumer_key',
         'woocommerce_consumer_secret',
-        'woocommerce_status'
+        'woocommerce_status',
+        'woocommerce_sync_status',
+        'woocommerce_last_sync',
+        'woocommerce_error'
     ];
 
     protected $hidden = ['password', 'remember_token'];
