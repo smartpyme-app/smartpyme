@@ -390,9 +390,9 @@
             </div>
 
             <div class="row">
-                <!-- API Key Section -->
+              
                 <div class="col-12 mb-5">
-                    <div class="card border-0 bg-light">
+                    <div class="card border-0">
                         <div class="card-body">
                             <h6 class="card-title mb-3">API Key General</h6>
                             <div class="form-group">
@@ -421,7 +421,7 @@
 
                 <!-- WooCommerce Integration Section -->
                 <div class="col-12">
-                    <div class="card border-0 bg-light">
+                    <div class="card border-0">
                         <div class="card-body">
                             <h6 class="card-title mb-3">Integración WooCommerce</h6>
                             
@@ -477,14 +477,14 @@
                                        placeholder="Ingrese su Consumer Secret de WooCommerce">
                             </div>
                             <div class="text-end mt-4">
-                                <button class="btn btn-danger me-2" 
+                                <button class="btn btn-light text-danger" 
                                         type="button"
                                         *ngIf="empresa.woocommerce_status === 'connected'"
                                         (click)="disconnectWooCommerce()">
                                     <i class="fa fa-unlink me-2"></i>
                                     Desconectar WooCommerce
                                 </button>
-                                <button class="btn btn-primary" 
+                                <button class="btn btn-light text-success" 
                                         type="button" 
                                         (click)="saveCredentials()">
                                     <i class="fa fa-save me-2"></i>

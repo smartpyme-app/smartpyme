@@ -33,13 +33,13 @@ class WooCommerceController extends Controller
             return response()->json(['message' => 'Webhook válido'], 200);
         }
 
-        $usuario = User::where('woocommerce_api_key', $tokenUsuario)->first();
+        $usuario = User::where('woocommerce_api_key', $tokenUsuario)->where('woocommerce_status', 'connected')->first();
 
         if (!$usuario) {
             Log::error("Token de usuario no válido: {$tokenUsuario}");
             return response()->json([
                 'status' => 'error',
-                'mensaje' => 'Token de acceso no válido'
+                'mensaje' => 'Token de acceso no válido o no conectado'
             ], 401);
         }
         try {
