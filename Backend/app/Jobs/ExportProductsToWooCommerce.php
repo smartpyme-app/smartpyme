@@ -18,10 +18,14 @@ class ExportProductsToWooCommerce implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 3; // Número de reintentos si falla el job
+    public $timeout = 3600; // 1 hora
+    public $maxExceptions = 3;
+
     protected $userId;
     protected $sucursalId;
-    public $timeout = 3600; // 1 hora máximo de ejecución
-
+    protected $chunkSize = 100; // Aumentamos el tamaño del chunk para mejor rendimiento
+    protected $batchSize = 10; // Productos por lote en cada petición a WooCommerce
 
     /**
      * Create a new job instance.
@@ -34,11 +38,12 @@ class ExportProductsToWooCommerce implements ShouldQueue
 
     public function handle(WooCommerceExportService $exportService)
     {
-        set_time_limit(300);
+        set_time_limit(3600); // Aumentamos el tiempo límite a 1 hora
+
         try {
             $user = User::findOrFail($this->userId);
-
             $user->woocommerce_sync_status = 'syncing';
+            $user->woocommerce_error = null; // Limpiamos errores anteriores
             $user->save();
 
             $bodegas = Bodega::where('id_sucursal', $this->sucursalId)->pluck('id')->toArray();
@@ -47,48 +52,62 @@ class ExportProductsToWooCommerce implements ShouldQueue
                 throw new \Exception("No se encontraron bodegas para la sucursal {$this->sucursalId}");
             }
 
-            Log::info("Bodegas encontradas para la sucursal", [
-                'sucursal_id' => $this->sucursalId,
-                'bodegas' => $bodegas
-            ]);
-
-            $productosConInventario = Inventario::whereIn('id_bodega', $bodegas)
+            // Procesamos en chunks para mejor manejo de memoria
+            Inventario::whereIn('id_bodega', $bodegas)
                 ->where('stock', '>', 0)
-                ->pluck('id_producto')
-                ->toArray();
+                ->select('id_producto')
+                ->distinct()
+                ->orderBy('id_producto')
+                ->chunk($this->chunkSize, function ($inventarioChunk) use ($exportService, $user, $bodegas) {
+                    $productIds = $inventarioChunk->pluck('id_producto')->toArray();
 
-            $totalProductos = count($productosConInventario);
-            $batchSize = 5; // Procesar solo 5 productos a la vez
+                    // Procesamos los productos en lotes más pequeños
+                    foreach (array_chunk($productIds, $this->batchSize) as $batch) {
+                        $productos = Producto::whereIn('id', $batch)
+                            ->where('enable', 1)
+                            ->whereNotNull('codigo')
+                            ->get();
 
+                        if ($productos->isEmpty()) {
+                            continue;
+                        }
 
+                        try {
+                            $result = $exportService->exportarProductos($user, $productos, $bodegas);
 
-            Log::info("Total productos a procesar: {$totalProductos}");
+                            Log::info("Lote procesado exitosamente", [
+                                'productos_procesados' => $productos->count(),
+                                'result' => $result
+                            ]);
 
-            for ($i = 0; $i < $totalProductos; $i += $batchSize) {
-                $idsBatch = array_slice($productosConInventario, $i, $batchSize);
+                            // Liberamos memoria
+                            unset($productos);
+                            gc_collect_cycles();
+                        } catch (\Exception $e) {
+                            Log::error("Error procesando lote de productos", [
+                                'error' => $e->getMessage(),
+                                'productos_ids' => $batch
+                            ]);
 
-                $productos = Producto::whereIn('id', $idsBatch)
-                    ->where('enable', 1)
-                    ->whereNotNull('codigo')
-                    ->get();
+                            // Continuamos con el siguiente lote en caso de error
+                            continue;
+                        }
 
-                Log::info("Procesando lote " . ($i / $batchSize + 1) . " de " . ceil($totalProductos / $batchSize), [
-                    'productos_en_lote' => $productos->count()
-                ]);
-
-                if ($productos->count() > 0) {
-                    $result = $exportService->exportarProductos($user, $productos, $bodegas);
-                    Log::info("Lote procesado", $result);
-                }
-            }
+                        // Pequeña pausa para no sobrecargar la API de WooCommerce
+                        usleep(500000); // 0.5 segundos
+                    }
+                });
 
             $user->woocommerce_sync_status = 'completed';
             $user->woocommerce_last_sync = now();
             $user->save();
 
-            Log::info("Exportación completada");
+            Log::info("Exportación completada exitosamente", [
+                'user_id' => $this->userId,
+                'sucursal_id' => $this->sucursalId
+            ]);
         } catch (\Exception $e) {
-            Log::error("Error en exportación de productos: " . $e->getMessage(), [
+            Log::error("Error fatal en exportación de productos", [
                 'user_id' => $this->userId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -99,6 +118,8 @@ class ExportProductsToWooCommerce implements ShouldQueue
                 $user->woocommerce_error = "Error en exportación: " . $e->getMessage();
                 $user->save();
             }
+
+            throw $e; // Relanzamos la excepción para que el job pueda reintentarse
         }
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class WooCommerceExportService
@@ -17,6 +18,14 @@ class WooCommerceExportService
             $user->woocommerce_consumer_secret
         );
 
+        // Precalcular stocks para todos los productos de una vez
+        $stocks = Inventario::whereIn('id_producto', $productos->pluck('id'))
+            ->whereIn('id_bodega', $bodegas)
+            ->select('id_producto', DB::raw('SUM(stock) as total_stock'))
+            ->groupBy('id_producto')
+            ->pluck('total_stock', 'id_producto')
+            ->toArray();
+
         $resultados = [
             'total' => count($productos),
             'creados' => 0,
@@ -27,101 +36,103 @@ class WooCommerceExportService
 
         foreach ($productos as $producto) {
             try {
-                $stock = Inventario::whereIn('id_bodega', $bodegas)
-                    ->where('id_producto', $producto->id)
-                    ->sum('stock');
-
-
-                $existente = $this->buscarProductoPorSku($client, $producto->codigo);
-                Log::info("Producto existente: " . json_encode($existente));
-
-
+                $stock = $stocks[$producto->id] ?? 0;
                 $productData = $this->prepararDatosProducto($producto, $stock, $client);
 
-
+                // Intentar actualizar primero si tenemos woocommerce_id
                 if (!empty($producto->woocommerce_id)) {
-                    try {
-                        $response = $client->put("products/{$producto->woocommerce_id}", $productData);
-
-                        $resultados['actualizados']++;
-                        $resultados['detalles'][] = [
-                            'producto_id' => $producto->id,
-                            'accion' => 'actualizado',
-                            'woocommerce_id' => $producto->woocommerce_id
-                        ];
-
+                    if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
                         continue;
-                    } catch (\Exception $e) {
-                        Log::warning("Error actualizando producto por ID en WooCommerce, intentando búsqueda por SKU: " . $e->getMessage());
                     }
                 }
 
-
+                // Buscar por SKU solo si no se pudo actualizar por ID
+                $existente = $this->buscarProductoPorSku($client, $producto->codigo);
 
                 if ($existente) {
-                    $response = $client->put("products/{$existente['id']}", $productData);
-
-                    $producto->woocommerce_id = $existente['id'];
-                    $producto->save();
-                    $wooId = null;
-                    if (isset($response['status']) && $response['status'] === 'success') {
-                        if (isset($response['body']['id'])) {
-                            $wooId = $response['body']['id'];
-                        } elseif (isset($response['id'])) {
-                            $wooId = $response['id'];
-                        }
-                    }
-
-                    if (!$wooId) {
-                        throw new \Exception("No se pudo obtener el ID del producto actualizado en WooCommerce");
-                    }
-
-                    $resultados['actualizados']++;
-                    $resultados['detalles'][] = [
-                        'producto_id' => $producto->id,
-                        'accion' => 'actualizado',
-                        'woocommerce_id' => $wooId
-                    ];
+                    $this->actualizarProductoPorSku($client, $producto, $existente, $productData, $resultados);
                 } else {
-                    // Crear nuevo producto
-                    $response = $client->post('products', $productData);
-                    $wooId = null;
-                    if (isset($response['status']) && $response['status'] === 'success') {
-                        if (isset($response['body']['id'])) {
-                            $wooId = $response['body']['id'];
-                        } elseif (isset($response['id'])) {
-                            $wooId = $response['id'];
-                        }
-                    }
-
-                    if ($wooId) {
-                        $producto->woocommerce_id = $wooId;
-                        $producto->save();
-
-                        $resultados['creados']++;
-                        $resultados['detalles'][] = [
-                            'producto_id' => $producto->id,
-                            'accion' => 'creado',
-                            'woocommerce_id' => $wooId
-                        ];
-                    } else {
-                        throw new \Exception("No se pudo obtener el ID del producto creado en WooCommerce");
-                    }
+                    $this->crearNuevoProducto($client, $producto, $productData, $resultados);
                 }
             } catch (\Exception $e) {
-                Log::error("Error procesando producto {$producto->id}: " . $e->getMessage());
-                $resultados['errores']++;
-                $resultados['detalles'][] = [
-                    'producto_id' => $producto->id,
-                    'accion' => 'error',
-                    'error' => $e->getMessage()
-                ];
+                $this->registrarError($producto, $e, $resultados);
             }
         }
 
         return $resultados;
     }
 
+    private function actualizarProductoExistente($client, $producto, $productData, &$resultados)
+    {
+        try {
+            $client->put("products/{$producto->woocommerce_id}", $productData);
+            $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
+            return true;
+        } catch (\Exception $e) {
+            Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function actualizarProductoPorSku($client, $producto, $existente, $productData, &$resultados)
+    {
+        $response = $client->put("products/{$existente['id']}", $productData);
+        $wooId = $this->extraerWooId($response);
+
+        if (!$wooId) {
+            throw new \Exception("No se pudo obtener el ID del producto actualizado en WooCommerce");
+        }
+
+        $producto->woocommerce_id = $existente['id'];
+        $producto->save();
+
+        $this->registrarExito($resultados, $producto, 'actualizado', $wooId);
+    }
+
+    private function crearNuevoProducto($client, $producto, $productData, &$resultados)
+    {
+        $response = $client->post('products', $productData);
+        $wooId = $this->extraerWooId($response);
+
+        if (!$wooId) {
+            throw new \Exception("No se pudo obtener el ID del producto creado en WooCommerce");
+        }
+
+        $producto->woocommerce_id = $wooId;
+        $producto->save();
+
+        $this->registrarExito($resultados, $producto, 'creado', $wooId);
+    }
+
+    private function extraerWooId($response)
+    {
+        if (!isset($response['status']) || $response['status'] !== 'success') {
+            return null;
+        }
+
+        return $response['body']['id'] ?? $response['id'] ?? null;
+    }
+
+    private function registrarExito(&$resultados, $producto, $accion, $wooId)
+    {
+        $resultados[$accion . 's']++;
+        $resultados['detalles'][] = [
+            'producto_id' => $producto->id,
+            'accion' => $accion,
+            'woocommerce_id' => $wooId
+        ];
+    }
+
+    private function registrarError($producto, $e, &$resultados)
+    {
+        Log::error("Error procesando producto {$producto->id}: " . $e->getMessage());
+        $resultados['errores']++;
+        $resultados['detalles'][] = [
+            'producto_id' => $producto->id,
+            'accion' => 'error',
+            'error' => $e->getMessage()
+        ];
+    }
 
     private function buscarProductoPorSku($client, $sku)
     {
@@ -150,7 +161,6 @@ class WooCommerceExportService
             return null;
         }
     }
-
 
     private function prepararDatosProducto($producto, $stock, $client)
     {
