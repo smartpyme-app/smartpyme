@@ -42,7 +42,7 @@ class OrdenProduccion extends Model
         'id_vendedor',
         'cantidad_producida',
     ];
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento','avance'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento','avance','has_documento'];
 
 
     protected $casts = [
@@ -245,5 +245,15 @@ class OrdenProduccion extends Model
         return $this->belongsTo(User::class, 'id_vendedor');
     }
 
-    //cliente
+    //documento
+    public function documentoOrden()
+    {
+        return $this->hasOne(OrdenProduccionDocumento::class, 'id_orden_produccion');
+    }
+
+    //has documento
+    public function getHasDocumentoAttribute()
+    {
+        return $this->documentoOrden()->exists();
+    }
 }

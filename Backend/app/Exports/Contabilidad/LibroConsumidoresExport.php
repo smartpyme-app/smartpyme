@@ -39,7 +39,7 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->when($request->tipo_documento, function($query) {
@@ -52,7 +52,7 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
                         ->orderByDesc('fecha')
                         ->get();
         return $ventas;
-        
+
     }
 
     public function map($venta): array{
@@ -63,7 +63,6 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
         return [
             $this->index++,
             $venta->fecha,
-            $venta->correlativo,
             $venta->correlativo,
             $venta->exenta,
             $venta->sub_total,
