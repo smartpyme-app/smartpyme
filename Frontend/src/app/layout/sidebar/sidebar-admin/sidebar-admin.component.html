@@ -100,13 +100,18 @@
             </li>
             <li class="mb-1">
                 <button (click)="toggleAdmin()" tooltip="Admin" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!adminIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/codesandbox.png" class="icon me-2">Super Admin
+                    <img src="/assets/icons/3-layers.png" class="icon me-2">Super Admin
                 </button>
                 <div [collapse]="adminIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                    <!-- <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                         <a [routerLink]="['/admin/empresas']" tooltip="Empresas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                             <img src="/assets/icons/briefcase.png" class="icon me-2">Empresas
+                        </a>
+                    </li> -->
+                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                        <a [routerLink]="['/admin/suscripciones']" tooltip="Suscripciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                            <img src="/assets/icons/device-desktop-dollar.png" class="icon me-2">Suscripciones
                         </a>
                     </li>
                     <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
@@ -122,11 +127,6 @@
                     <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                         <a [routerLink]="['/admin/dashboards']" tooltip="Dashboards" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                             <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
-                        </a>
-                    </li>
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/suscripciones']" tooltip="Suscripciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/device-desktop-dollar.png" class="icon me-2">Suscripciones
                         </a>
                     </li>
                   </ul>

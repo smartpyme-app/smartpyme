@@ -78,6 +78,9 @@ class Empresa extends Model
         'cod_estable_mh',
         'cod_estable',
 
+        // Facturación admin 
+        'id_cliente',
+
         //Permiso para vendedores
         'vendedor_inventario',
     ];
@@ -148,6 +151,11 @@ class Empresa extends Model
     public function clientes()
     {
         return $this->hasMany('App\Models\Ventas\Clientes\Cliente', 'id_empresa');
+    }
+
+    public function cliente()
+    {
+        return $this->hasMany('App\Models\Ventas\Clientes\Cliente', 'id_cliente');
     }
 
     public function productos()

@@ -1,5 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-  <h2 class="page-heading">Estado de empresas</h2>
+  <h2 class="page-heading">Empresas</h2>
+  <button routerLink="/admin/empresa/crear"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -58,29 +59,31 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
-            <th>Empresa</th>
+            <th (click)="setOrden('id')" [ngClass]="{'sorted-asc': filtros.orden == 'id' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id' && filtros.direccion == 'desc'}" class="click">ID</th>
+            <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
             <th>Plan</th>
             <th>Tipo Plan</th>
             <th class="text-center">Metodo de pago</th>
             <th>Monto</th>
             <th class="text-center">Estado suscripción</th>
             <th class="text-center">Estado pago</th>
-            <th>Último pago</th>
+            <th (click)="setOrden('fecha_ultimo_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_ultimo_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_ultimo_pago' && filtros.direccion == 'desc'}" class="click">Último pago</th>
             <th>Próximo pago</th>
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="8" class="text-center" *ngIf="suscripciones?.total < 1 && !loading">
+            <td colspan="11" class="text-center" *ngIf="suscripciones?.total < 1 && !loading">
               <span class="badge bg-primary">No hay suscripciones registradas</span>
             </td>
-            <td colspan="8" class="text-center" *ngIf="loading">
+            <td colspan="11" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
 
           <tr *ngFor="let empresa of suscripciones?.data">
+            <td>{{ empresa.id }}</td>
             <td>{{ empresa.nombre }}</td>
             <td>
               <span *ngIf="!empresa.suscripcion" class="text-muted">{{
@@ -152,13 +155,19 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
+                  <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <!-- <a routerLink="/admin/facturacion/crear" [queryParams]="{ id_empresa: empresa.id }"  class="list-group-item list-group-item-action border-0 click">
+                      <i class="fas fa-fw fa-credit-card"></i> Facturar
+                  </a> -->
                   <a *ngIf="empresa.suscripcion" (click)="openDetalles(mdetalles, empresa.suscripcion)"
                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                    <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
                   </a>
                   <a *ngIf="empresa.suscripcion" (click)="openEditar(meditar, empresa.suscripcion)"
                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-edit"></i>Editar suscripcion
+                    <i class="fa fa-fw fa-edit"></i> Editar suscripcion
                   </a>
                   <a *ngIf="
                       empresa.suscripcion &&
@@ -166,20 +175,20 @@
                       empresa.suscripcion.estado.toLowerCase() != 'suspendido'
                     " (click)="openCancelar(mcancelar, empresa.suscripcion)"
                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-ban"></i>Cancelar suscripción
+                    <i class="fa fa-fw fa-ban"></i> Cancelar suscripción
                   </a>
                   <a *ngIf="!empresa.suscripcion" (click)="openCrearSuscripcion(mcrear, empresa)"
                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-plus me-2"></i>Crear suscripción
+                    <i class="fa fa-fw fa-plus"></i> Crear suscripción
                   </a>
                   <a *ngIf="empresa.suscripcion?.estado.toLowerCase() != 'suspendido'"
                     (click)="suspenderSistema(empresa)" class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-ban me-2"></i>Suspender sistema
+                    <i class="fa fa-fw fa-ban"></i> Suspender sistema
                   </a>
 
                   <a *ngIf="empresa.suscripcion" (click)="openHistorialPagos(mhistorialPagos, empresa.suscripcion, empresa)"
                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-history me-2"></i>Historial de pagos
+                    <i class="fa fa-fw fa-history"></i> Historial de pagos
                   </a>
 
                 </div>

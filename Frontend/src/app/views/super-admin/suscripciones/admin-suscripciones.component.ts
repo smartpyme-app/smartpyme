@@ -74,6 +74,17 @@ export class AdminSuscripcionesComponent implements OnInit {
     this.filtrarSuscripciones();
   }
 
+  public setOrden(columna: string) {
+      if (this.filtros.orden === columna) {
+        this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.filtros.orden = columna;
+        this.filtros.direccion = 'asc';
+      }
+
+      this.filtrarSuscripciones();
+  }
+
   public filtrarSuscripciones() {
     this.loading = true;
     
