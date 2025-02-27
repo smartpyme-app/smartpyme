@@ -448,6 +448,8 @@ if (
   this.route.snapshot.queryParamMap.get('id_venta')
 ) {
   this.facturarCotizacion = true;
+
+  console.log('facturar cotizacion');
   
 
   this.apiService.getAll('impuestos').subscribe(
