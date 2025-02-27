@@ -69,6 +69,15 @@ export class ProductoInformacionComponent implements OnInit {
 
     public onSubmit() {
         this.guardar = true;
+        if(!this.producto.id){
+            if(!this.producto.costo){
+                this.producto.costo = this.producto.costo_promedio;
+            }
+            if(!this.producto.costo_promedio){
+                this.producto.costo_promedio = this.producto.costo;
+            }
+        }
+
         this.apiService.store('producto', this.producto).subscribe(producto => {
             this.guardar = false;
             if(!this.producto.id) {
