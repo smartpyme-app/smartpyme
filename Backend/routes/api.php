@@ -87,6 +87,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/super-admin/usuarios.php');
 		require base_path('routes/modulos/super-admin/transacciones.php');
 
+		//Chatbot
+		require base_path('routes/modulos/chat/chat.php');
+
 		
 });
 
