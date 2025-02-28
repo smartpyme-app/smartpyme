@@ -19,13 +19,13 @@
         </div>
 
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar" >
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 justify-content-end">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <!--exportar productos a woocommerce-->
-                <button tooltip="Exportar productos a WooCommerce" (click)="exportarWooCommerce()" class="btn btn-default tcla-F6">
+                <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/upload-cloud.png" class="icon">
                 </button>
                 <!--Agregar boton para descargar productos para importar en woocomerce (F7)-->

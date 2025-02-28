@@ -228,9 +228,26 @@ export class ProductosComponent implements OnInit {
     public descargarWooCommerce() {
         console.log('descargarWooCommerce');
         this.downloading = true;
+
+        Swal.fire({
+            title: 'Exportando productos a WooCommerce',
+            text: 'Estamos preparando el archivo CSV con los productos de WooCommerce',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
             (data: Blob) => {
+                Swal.close();
+
+                Swal.fire({
+                    title: 'Exportando productos a WooCommerce',
+                    text: 'El archivo CSV está listo para descargar',
+                    icon: 'success',
+                    showConfirmButton: true
+                });
                 const blob = new Blob([data], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
                 
