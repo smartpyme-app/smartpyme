@@ -35,7 +35,7 @@ class WooCommerceStockService
             }
 
 
-            $producto = Producto::find($productoId);
+            $producto = Producto::with('imagenes')->find($productoId);
 
             if (!$producto) {
                 Log::error("Producto no encontrado", ['producto_id' => $productoId]);
@@ -239,13 +239,13 @@ class WooCommerceStockService
                 'id' => $this->obtenerCategoria($producto->id_categoria, $client)
             ];
         }
-
-        // // Preparar imagen si existe
-        // $images = [];
-        // if (!empty($producto->img)) {
-        //     $images[] = [
-        //         'src' => url('/img/' . $producto->img)
-        //     ];
+        $images = [];
+        // if (!empty($producto->imagenes)) {
+        //     foreach ($producto->imagenes as $imagen) {
+        //         $images[] = [
+        //             'src' => url('/img' . $imagen->img)
+        //         ];
+        //     }
         // }
 
 
