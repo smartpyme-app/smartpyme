@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Compras\Gastos\Categoria;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
