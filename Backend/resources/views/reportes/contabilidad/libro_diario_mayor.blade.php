@@ -210,7 +210,7 @@
                     <th>Total por cuenta:</th>
                     <th>{{number_format($cuenta->cargo,2)}}</th>
                     <th> {{number_format($cuenta->abono,2)}}</th>
-                    <th>{{number_format($cuenta->saldo_actual,2)}}</th>
+                    <th>{{$cuenta->saldo_actual}}</th>
                 </tr>
             </table>
         @endforeach

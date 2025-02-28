@@ -59,6 +59,7 @@
                 <th>Concepto</th>
                 <th>Código Cuenta</th>
                 <th>Nombre Cuenta</th>
+                <th>Concepto Detalle</th>
                 <th>Debe</th>
                 <th>Haber</th>
             </tr>
@@ -68,7 +69,7 @@
                 <tr>
                     <td class="id_partida"> PART-{{$partida['partida_num'] }}</td>
                     <td class="fecha_partida">{{ $partida['fecha'] }}</td>
-                    <td class="concepto" colspan="5"><strong>{{ $partida['concepto'] }}</strong></td>
+                    <td class="concepto" colspan="6"><strong>{{ $partida['concepto'] }}</strong></td>
                     </td>
                 </tr>
                 <!-- Detalles de la partida -->
@@ -78,7 +79,8 @@
                         <td></td>
                         <td></td>
                         <td>{{ $detalle['codigo'] }}</td>
-                        <td class="concepto">{{ $detalle['nombre_cuenta'] }}</td>
+                        <td>{{ $detalle['nombre_cuenta'] }}</td>
+                        <td class="concepto">{{ $detalle['concepto'] }}</td>
                         <td class="text-right">{{ number_format($detalle['debe'], 2) }}</td>
                         <td class="text-right">{{ number_format($detalle['haber'], 2) }}</td>
                     </tr>
