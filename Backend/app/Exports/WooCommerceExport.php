@@ -97,14 +97,14 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
 
     public function map($row): array
     {
-        // Obtener el stock sumando todos los inventarios relacionados
+ 
         $stockSum = $row->inventarios->sum('stock');
         $inStock = ($stockSum > 0) ? 1 : 0;
 
-        // Preparar la URL de la imagen
+
         $imagenUrl = '';
-        if (!empty($row->img)) {
-            $imagenUrl = url('/img/' . $row->img);
+        if (!empty($row->imagenes) && $row->imagenes->count() > 0 && $row->imagenes->first() !== null) {
+            $imagenUrl = url('/img' . $row->imagenes->first()->img);
         }
 
         // Obtener categoría
@@ -115,7 +115,7 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
         $ancho = $row->ancho ?? '';
         $alto = $row->alto ?? '';
 
-        // Formatear el precio sin usar number_format (para evitar comas)
+ 
         $precio = $row->precio ? number_format($row->precio, 2, '.', '') : '';
 
         return [
@@ -172,14 +172,14 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
                 ]);
             }
 
-            // Obtener id_empresa del request
+          
             $idEmpresa = $this->request->id_empresa;
 
             if (!$idEmpresa) {
                 throw new \Exception("ID de empresa no proporcionado");
             }
 
-            // Obtener bodegas relacionadas con la sucursal del usuario
+      
             $bodegas = [];
             if ($user && $user->id_sucursal) {
                 $bodegas = Bodega::where('id_sucursal', $user->id_sucursal)
@@ -188,8 +188,8 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
                     ->toArray();
             }
 
-            // Consulta base de productos
-            $query = Producto::with(['inventarios' => function ($q) use ($bodegas) {
+
+            $query = Producto::with(['imagenes', 'inventarios' => function ($q) use ($bodegas) {
                 if (!empty($bodegas)) {
                     $q->whereIn('id_bodega', $bodegas);
                 }
@@ -198,7 +198,7 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
                 ->where('enable', 1)
                 ->whereNotNull('codigo');
 
-            // Si hay bodegas, filtrar por inventario en esas bodegas
+
             if (!empty($bodegas)) {
                 $query->whereHas('inventarios', function ($q) use ($bodegas) {
                     $q->whereIn('id_bodega', $bodegas)
