@@ -6,18 +6,26 @@
     <title>Balance de Comprobación</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; }
+        .header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            position: relative;
+        }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid black; padding: 5px; text-align: right; }
         th { background-color: #f2f2f2; text-align: center; }
-        .nivel-0 { font-weight: bold; font-size: 14px; background-color: #d1e7fd; }
-        .nivel-1 { font-weight: bold; background-color: #f8f9fa; }
-        .nivel-2 { font-style: italic; }
-        .nivel-3, .nivel-4 { padding-left: 20px; }
     </style>
 </head>
 <body>
-<h2>Balance de Comprobación - {{ $month_name }} {{ $year }}</h2>
-<h4>Empresa: {{ $empresa->nombre }}</h4>
+<div class="header">
+    <p id="empresa_nombre">{{$empresa->nombre}}</p>
+    <h2 id="titulo_balance">Balance de Comprobación</h2>
+    <p id="periodo">Periodo: {{$month_name}} - {{$year}}</p>
+    <p id="c_costos">Todos los Centros de Costos</p>
+    <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>
+    <p id="naturaleza">ACTIVOS Y GASTOS</p>
+</div>
 
 <table>
     <thead>
