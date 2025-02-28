@@ -224,6 +224,34 @@ export class ProductosComponent implements OnInit {
             }
         });
     }
+    //descargarWooCommerce
+    public descargarWooCommerce() {
+        console.log('descargarWooCommerce');
+        this.downloading = true;
+        
+        this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
+            (data: Blob) => {
+                const blob = new Blob([data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                
+                this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
+            },
+            (error) => { 
+                this.alertService.error('Error en la exportación: ' + error); 
+                this.downloading = false; 
+            }
+        );
+    }
 
 
 }
