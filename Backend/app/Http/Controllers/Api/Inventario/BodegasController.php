@@ -88,7 +88,7 @@ class BodegasController extends Controller
 
     // }
 
-    //se Cambio porque me esta dando problema con el webhook
+    //Lo cambie porque me estaba dando problemas con el webhook de woocommerce
     public function store(Request $request)
     {
         $request->validate([
@@ -106,14 +106,14 @@ class BodegasController extends Controller
         $bodega->fill($request->all());
         $bodega->save();
 
+  
         if (!$request->id) {
-      
+
             $productoIds = DB::table('productos')
                 ->whereIn('tipo', ['Producto', 'Compuesto'])
                 ->where('id_empresa', $request->id_empresa) 
                 ->pluck('id')
                 ->toArray();
-
             $batchSize = 500;
             $batches = array_chunk($productoIds, $batchSize);
 
@@ -133,8 +133,6 @@ class BodegasController extends Controller
 
                 if (!empty($placeholders)) {
                     $placeholdersString = implode(', ', $placeholders);
-
-                    // Ejecutar consulta SQL directa
                     DB::statement(
                         "INSERT INTO inventario (id_bodega, stock, id_producto, created_at, updated_at) VALUES " .
                             $placeholdersString,

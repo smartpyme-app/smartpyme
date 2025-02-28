@@ -61,39 +61,39 @@ class InventarioObserver
         }
     }
     
-    public function created(Inventario $inventario)
-    {
-        Log::info("Nuevo inventario creado", [
-            'producto_id' => $inventario->id_producto,
-            'bodega_id' => $inventario->id_bodega,
-            'stock' => $inventario->stock
-        ]);
+    // public function created(Inventario $inventario)
+    // {
+    //     Log::info("Nuevo inventario creado", [
+    //         'producto_id' => $inventario->id_producto,
+    //         'bodega_id' => $inventario->id_bodega,
+    //         'stock' => $inventario->stock
+    //     ]);
 
-        $bodegas = Bodega::where('id', $inventario->id_bodega)->get();
+    //     $bodegas = Bodega::where('id', $inventario->id_bodega)->get();
 
 
         
-        $usuarios = User::where('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
-                                 ->whereNotNull('woocommerce_api_key')
-                                 ->whereNotNull('woocommerce_store_url')
-                                 ->whereNotNull('woocommerce_consumer_key')
-                                 ->whereNotNull('woocommerce_consumer_secret')
-                                 ->where('woocommerce_status', 'connected')
-                                 ->get();
+    //     $usuarios = User::where('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
+    //                              ->whereNotNull('woocommerce_api_key')
+    //                              ->whereNotNull('woocommerce_store_url')
+    //                              ->whereNotNull('woocommerce_consumer_key')
+    //                              ->whereNotNull('woocommerce_consumer_secret')
+    //                              ->where('woocommerce_status', 'connected')
+    //                              ->get();
         
-        if ($usuarios->isEmpty()) {
-            return;
-        }
+    //     if ($usuarios->isEmpty()) {
+    //         return;
+    //     }
         
-        foreach ($usuarios as $usuario) {
-            try {
-                $this->stockService->actualizarStockEnWooCommerce(
-                    $inventario->id_producto,
-                    $usuario->id
-                );
-            } catch (\Exception $e) {
-                Log::error("Error al sincronizar stock para nuevo inventario: " . $e->getMessage());
-            }
-        }
-    }
+    //     foreach ($usuarios as $usuario) {
+    //         try {
+    //             $this->stockService->actualizarStockEnWooCommerce(
+    //                 $inventario->id_producto,
+    //                 $usuario->id
+    //             );
+    //         } catch (\Exception $e) {
+    //             Log::error("Error al sincronizar stock para nuevo inventario: " . $e->getMessage());
+    //         }
+    //     }
+    // }
 }
