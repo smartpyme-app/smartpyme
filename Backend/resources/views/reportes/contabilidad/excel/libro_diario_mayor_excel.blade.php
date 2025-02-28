@@ -219,7 +219,7 @@
                 <th></th>
                 <th><strong>Total por cuenta:</strong></th>
                 <th><strong>{{number_format($cuenta->cargo,2)}}</strong></th>
-                <th><strong>{{number_format($cuenta->saldo_actual,2)}}</strong></th>
+                <th><strong>{{$cuenta->saldo_actual}}</strong></th>
             </tr>
             <tr></tr>
         </table>

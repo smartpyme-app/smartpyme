@@ -114,6 +114,7 @@ class GenerarReportesController extends Controller
                     return [
                         'codigo' => $detalle->codigo,
                         'nombre_cuenta' => $detalle->nombre_cuenta,
+                        'concepto' => $detalle->concepto,
                         'debe' => $detalle->debe,
                         'haber' => $detalle->haber,
                     ];
@@ -169,6 +170,7 @@ class GenerarReportesController extends Controller
                     return [
                         'codigo' => $detalle->codigo,
                         'nombre_cuenta' => $detalle->nombre_cuenta,
+                        'concepto' => $detalle->concepto,
                         'debe' => $detalle->debe,
                         'haber' => $detalle->haber,
                     ];
