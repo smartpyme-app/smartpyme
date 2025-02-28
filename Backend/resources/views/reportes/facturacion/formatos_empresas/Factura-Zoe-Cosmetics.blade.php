@@ -33,25 +33,25 @@
         #condicion      {top: 5.5cm; left: 13cm; }
 
 
-        table   {position: absolute; top: 7cm; left: 0.1cm; text-align: left; border-collapse: collapse; width: 15cm; }
+        table   {position: absolute; top: 7cm; left: 0.1cm; text-align: left; border-collapse: collapse; width: 14.8cm; }
         table td{height: 0.5cm; text-align: left;}
 
         .cantidad{ width: 1.5cm; text-align: center;}
         .producto{ width: 7cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
-        .sujetas{ width: 1.5cm; text-align: center;}
-        .exentas{ width: 1.5cm; text-align: center;}
+        .sujetas{ width: 1.2cm; text-align: center;}
+        .exentas{ width: 1.2cm; text-align: center;}
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {top: 16cm; left: 1cm; width: 8.5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 15.3cm; left: 1cm; width: 8.5cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 16cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 16.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #subtotal  {top: 17cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #no_sujeta  {top: 17.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #exenta     {top: 18cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #total      {top: 18.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 15.3cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #iva_retenido  {top: 15.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #subtotal  {top: 16cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #no_sujeta  {top: 16.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #exenta     {top: 17cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #total      {top: 17.8cm; left: 13.5cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;}
 
@@ -63,7 +63,7 @@
 <body>
 {{--<section id="factura" style="border:1px solid #ffffff00;background-image: url('C:\Users\josep\Documents\smartpyme\smartpyme\Backend\public\img\factura-norbin.jpg'); background-repeat: no-repeat; background-size: 100% 100%; height: 29cm; width: 22cm;">--}}
 <section id="factura">
-    <div id="header" style="margin-top: -1cm;">
+    <div id="header">
         <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
         <p id="cliente">{{ $venta->nombre_cliente }}</p>
         @if ($venta->id_cliente)
