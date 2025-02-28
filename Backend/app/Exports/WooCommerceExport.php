@@ -119,7 +119,7 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
         $precio = $row->precio ? number_format($row->precio, 2, '.', '') : '';
 
         return [
-            '', // ID (vacío para nuevos)
+            $row->woocommerce_id ?? '',
             'simple', // Type
             $row->codigo, // SKU
             $row->nombre, // Name
@@ -163,7 +163,6 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
     public function collection()
     {
         try {
-            // Obtener usuario y verificar si tiene configuración de WooCommerce
             $user = User::find($this->userId);
 
             if (!$user) {
@@ -213,7 +212,6 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
                 ->orderBy('codigo')
                 ->get();
 
-            //contar los productos
         } catch (\Exception $e) {
             Log::error("Error al exportar productos para WooCommerce: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
