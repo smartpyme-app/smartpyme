@@ -213,6 +213,103 @@ class WooCommerceExportService
         return $productData;
     }
 
+
+    public function precargarCategorias($client)
+    {
+        static $categoriasWoo = null;
+
+        if ($categoriasWoo !== null) {
+            return $categoriasWoo;
+        }
+
+        try {
+            // Cargar todas las categorías de WooCommerce de una sola vez (con paginación si hay muchas)
+            $categoriasWoo = [];
+            $page = 1;
+            $perPage = 100;
+
+            do {
+                $response = $client->get('products/categories', [
+                    'per_page' => $perPage,
+                    'page' => $page
+                ]);
+
+                if (
+                    !isset($response['status']) || $response['status'] !== 'success' ||
+                    !isset($response['body']) || !is_array($response['body'])
+                ) {
+                    break;
+                }
+
+                $categorias = $response['body'];
+                foreach ($categorias as $cat) {
+                    $categoriasWoo[strtolower($cat['name'])] = $cat['id'];
+                }
+
+                $page++;
+            } while (count($categorias) === $perPage);
+
+            return $categoriasWoo;
+        } catch (\Exception $e) {
+            Log::error("Error al precargar categorías: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // private function obtenerCategoria($categoriaId, $client = null)
+    // {
+    //     static $categoriasCache = [];
+
+    //     if (isset($categoriasCache[$categoriaId])) {
+    //         return $categoriasCache[$categoriaId];
+    //     }
+
+    //     try {
+    //         $categoria = Categoria::find($categoriaId);
+
+    //         if (!$categoria) {
+    //             return 9;
+    //         }
+
+    //         $response = $client->get('products/categories', [
+    //             'search' => $categoria->nombre
+    //         ]);
+
+    //         if (
+    //             isset($response['status']) && $response['status'] === 'success' &&
+    //             isset($response['body']) && is_array($response['body'])
+    //         ) {
+
+    //             foreach ($response['body'] as $cat) {
+    //                 if (strtolower($cat['name']) === strtolower($categoria->nombre)) {
+    //                     $categoriasCache[$categoriaId] = $cat['id'];
+    //                     return $cat['id'];
+    //                 }
+    //             }
+    //         }
+
+    //         $categoryData = [
+    //             'name' => $categoria->nombre,
+    //             'slug' => $this->generarSlug($categoria->nombre)
+    //         ];
+
+    //         $response = $client->post('products/categories', $categoryData);
+    //         if (
+    //             isset($response['status']) && $response['status'] === 'success' &&
+    //             isset($response['body']) && isset($response['body']['id'])
+    //         ) {
+    //             $categoriasCache[$categoriaId] = $response['body']['id'];
+    //             return $response['body']['id'];
+    //         }
+
+    //         return 9;
+    //     } catch (\Exception $e) {
+    //         Log::error("Error al obtener/crear categoría en WooCommerce: " . $e->getMessage());
+    //         return 9;
+    //     }
+    // }
+
+
     private function obtenerCategoria($categoriaId, $client = null)
     {
         static $categoriasCache = [];
@@ -228,23 +325,17 @@ class WooCommerceExportService
                 return 9;
             }
 
-            $response = $client->get('products/categories', [
-                'search' => $categoria->nombre
-            ]);
+            // Usar las categorías precargadas
+            $categoriasWoo = $this->precargarCategorias($client);
 
-            if (
-                isset($response['status']) && $response['status'] === 'success' &&
-                isset($response['body']) && is_array($response['body'])
-            ) {
-
-                foreach ($response['body'] as $cat) {
-                    if (strtolower($cat['name']) === strtolower($categoria->nombre)) {
-                        $categoriasCache[$categoriaId] = $cat['id'];
-                        return $cat['id'];
-                    }
-                }
+            // Buscar en las categorías precargadas
+            if (isset($categoriasWoo[strtolower($categoria->nombre)])) {
+                $wooId = $categoriasWoo[strtolower($categoria->nombre)];
+                $categoriasCache[$categoriaId] = $wooId;
+                return $wooId;
             }
 
+            // Si no existe, crear la categoría
             $categoryData = [
                 'name' => $categoria->nombre,
                 'slug' => $this->generarSlug($categoria->nombre)
@@ -255,8 +346,14 @@ class WooCommerceExportService
                 isset($response['status']) && $response['status'] === 'success' &&
                 isset($response['body']) && isset($response['body']['id'])
             ) {
-                $categoriasCache[$categoriaId] = $response['body']['id'];
-                return $response['body']['id'];
+
+                $wooId = $response['body']['id'];
+                $categoriasCache[$categoriaId] = $wooId;
+
+                // Actualizar también la lista de categorías precargadas
+                $categoriasWoo[strtolower($categoria->nombre)] = $wooId;
+
+                return $wooId;
             }
 
             return 9;

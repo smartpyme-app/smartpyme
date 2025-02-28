@@ -37,7 +37,10 @@ class User extends Authenticatable implements JWTSubject
         'woocommerce_status',
         'woocommerce_sync_status',
         'woocommerce_last_sync',
-        'woocommerce_error'
+        'woocommerce_error',
+        'woocommerce_sync_progress',
+        'woocommerce_sync_total_batches',
+        'woocommerce_sync_processed_batches'
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -59,37 +62,43 @@ class User extends Authenticatable implements JWTSubject
         }
     }
 
-    public function bienvenida(){
+    public function bienvenida()
+    {
         $usuario = User::where('id', $this->id)->with('empresa')->first();
-        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario ], function ($m) use ($usuario) {
+        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($usuario) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-            ->to($this->email)
-            ->subject('¡Bienvenido a SmartPyme!');
+                ->to($this->email)
+                ->subject('¡Bienvenido a SmartPyme!');
         });
     }
 
-    public function getNombreSucursalAttribute(){
+    public function getNombreSucursalAttribute()
+    {
         return $this->sucursal()->pluck('nombre')->first();
     }
 
-    public function empresa(){
+    public function empresa()
+    {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
-    public function sucursal(){
+    public function sucursal()
+    {
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
-    public function accesos(){
+    public function accesos()
+    {
         return $this->hasMany('App\Models\Admin\Acceso', 'id_usuario');
     }
 
-    public function getJWTIdentifier() {
-      return $this->getKey();
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
     }
 
-    public function getJWTCustomClaims() {
-      return [];
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
-
 }
