@@ -27,9 +27,10 @@ class InventarioObserver
                 'stock_nuevo' => $inventario->stock
             ]);
 
-            $bodega = Bodega::where('id', $inventario->id_bodega)->first();
+           // $bodega = Bodega::where('id', $inventario->id_bodega)->first();
+           $bodegas = Bodega::where('id', $inventario->id_bodega)->get();
             
-            $usuarios = User::where('id_sucursal', $bodega->id_sucursal)
+            $usuarios = User::whereIn('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
                                      ->whereNotNull('woocommerce_api_key')
                                      ->whereNotNull('woocommerce_store_url')
                                      ->whereNotNull('woocommerce_consumer_key')
@@ -67,8 +68,12 @@ class InventarioObserver
             'bodega_id' => $inventario->id_bodega,
             'stock' => $inventario->stock
         ]);
+
+        $bodegas = Bodega::where('id', $inventario->id_bodega)->get();
+
+
         
-        $usuarios = User::where('id_bodega', $inventario->id_bodega)
+        $usuarios = User::where('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
                                  ->whereNotNull('woocommerce_api_key')
                                  ->whereNotNull('woocommerce_store_url')
                                  ->whereNotNull('woocommerce_consumer_key')
