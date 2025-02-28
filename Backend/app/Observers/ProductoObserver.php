@@ -28,8 +28,6 @@ class ProductoObserver
      */
     public function updated(Producto $producto)
     {
-
-
         // No sincronizar si el producto está deshabilitado
         if (!$producto->enable) {
             Log::info("Producto deshabilitado, no se sincronizará", [
@@ -37,19 +35,13 @@ class ProductoObserver
             ]);
             return;
         }
-        $inventarios = Inventario::where('id_producto', $producto->id)->get();
 
-        if ($inventarios->isEmpty()) {
-            Log::info("No se encontraron inventarios para este producto", [
-                'producto_id' => $producto->id
-            ]);
+        $empresa = Empresa::where('id', $producto->id_empresa)->first();
+
+        if (!$empresa) {
             return;
         }
-
-        $bodegas = Bodega::whereIn('id', $inventarios->pluck('id_bodega')->toArray())->get();
-
-        // Buscar usuarios con WooCommerce configurado que estén relacionados con la sucursal
-        $usuarios = User::whereIn('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
+        $usuarios = User::where('id_empresa', $empresa->id)
             ->whereNotNull('woocommerce_api_key')
             ->whereNotNull('woocommerce_store_url')
             ->whereNotNull('woocommerce_consumer_key')

@@ -55,7 +55,7 @@ class WooCommerceStockService
 
             $stock = Inventario::where('id_producto', $productoId)
                 ->whereIn('id_bodega', $bodegas->pluck('id'))
-                ->value('stock');
+                ->sum('stock');
 
             if ($stock === null) {
                 Log::warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
