@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
@@ -49,9 +50,10 @@ class WooCommerceStockService
             }
 
             $sku = $producto->codigo;
+            $bodegas = Bodega::where('id_sucursal', $usuario->id_sucursal)->get();
 
             $stock = Inventario::where('id_producto', $productoId)
-                ->where('id_bodega', $usuario->id_bodega)
+                ->whereIn('id_bodega', $bodegas->pluck('id'))
                 ->value('stock');
 
             if ($stock === null) {

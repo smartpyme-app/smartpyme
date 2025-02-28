@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
 use App\Services\WooCommerceStockService;
@@ -25,8 +26,10 @@ class InventarioObserver
                 'stock_anterior' => $inventario->getOriginal('stock'),
                 'stock_nuevo' => $inventario->stock
             ]);
+
+            $bodega = Bodega::where('id', $inventario->id_bodega)->first();
             
-            $usuarios = User::where('id_bodega', $inventario->id_bodega)
+            $usuarios = User::where('id_sucursal', $bodega->id_sucursal)
                                      ->whereNotNull('woocommerce_api_key')
                                      ->whereNotNull('woocommerce_store_url')
                                      ->whereNotNull('woocommerce_consumer_key')
