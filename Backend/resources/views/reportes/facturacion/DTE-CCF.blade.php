@@ -170,8 +170,8 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
-                    <td class="bg-light" colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 2 : 2 }}"><b>Suma de ventas:</b> </td>
+                    <td colspan="4"></td>
+                    <td class="bg-light" colspan="2"><b>Suma de ventas:</b> </td>
                     @if ($DTE['resumen']['totalNoGravado'] > 0)
                         <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalNoGravado'], 2) }}</td>
                     @endif
@@ -180,22 +180,22 @@
                     <td class="bg-light text-right">${{ number_format($DTE['resumen']['totalGravada'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Suma total de operaciones: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['subTotalVentas'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas no sujetas: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['descuNoSuj'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas exentas: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['descuExenta'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas gravadas: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['descuGravada'], 2) }}</td>
                 </tr>
@@ -203,46 +203,46 @@
                 @if (isset($DTE['resumen']['tributos']))
                     @foreach ($DTE['resumen']['tributos'] as $tributo)
                     <tr>
-                        <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                        <td colspan="4"></td>
                         <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">{{ $tributo['descripcion'] }}: </td>
                         <td class="text-right">${{ number_format($tributo['valor'], 2) }}</td>
                     </tr>
                     @endforeach
                 @endif
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Sub-Total: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['subTotal'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">IVA Percibido: (+) </td>
                     <td class="text-right">${{ number_format(0, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">IVA Retenido: (-) </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Retención de Renta: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Monto Total de la Operación: </td>
                     <td class="text-right">${{ number_format($DTE['resumen']['montoTotalOperacion'], 2) }}</td>
                 </tr>
                 @if ($DTE['resumen']['totalNoGravado'] > 0)
                     <tr>
-                        <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                        <td colspan="4"></td>
                         <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}">Total Otros montos no afectos: </td>
                         <td class="text-right">${{ number_format($DTE['resumen']['totalNoGravado'], 2) }}</td>
                     </tr>
                 @endif
                 <tr>
-                    <td colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 4 : 4 }}"></td>
+                    <td colspan="4"></td>
                     <td class="bg-light" colspan="{{ $DTE['resumen']['totalNoGravado'] > 0 ? 5 : 4 }}"><b>Total a pagar:</b></td>
                     <td class="bg-light text-right"><b>${{ number_format($DTE['resumen']['totalPagar'], 2) }}</b></td>
                 </tr>
