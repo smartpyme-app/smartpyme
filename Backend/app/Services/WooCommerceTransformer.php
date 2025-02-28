@@ -30,12 +30,12 @@ class WooCommerceTransformer
     /**
      * Transforma datos de venta de WooCommerce
      */
-    public function transformarVenta($wooData, $clienteId)
+    public function transformarVenta($wooData, $clienteId, $documentoId)
     {
         return [
             'codigo_generacion' => null, // para DTE si es necesario
-            'estado' => $this->mapearEstado($wooData['status']),
-            'forma_pago' => $wooData['payment_method'],
+            'estado' => 'Pagada',
+            'forma_pago' => 'Tarjeta de crédito/débito',
             'observaciones' => $wooData['customer_note'],
             'fecha' => $wooData['date_created'],
             'total_costo' => 0, // calcular basado en detalles
@@ -49,7 +49,7 @@ class WooCommerceTransformer
             'descuento' => $wooData['discount_total'],
             'id_cliente' => $clienteId,
             'correlativo' => $wooData['number'],
-            'id_documento' => null, // asignar según configuración
+            'id_documento' => $documentoId,
             'id_bodega' => $wooData['id_bodega'],
             'id_empresa' => $wooData['id_empresa'],
             'id_usuario' => $wooData['id_usuario'],

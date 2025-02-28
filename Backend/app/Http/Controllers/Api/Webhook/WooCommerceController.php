@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Webhook;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ExportProductsToWooCommerce;
+use App\Models\Admin\Documento;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use League\CommonMark\Block\Element\Document;
 
 class WooCommerceController extends Controller
 {
@@ -43,6 +46,16 @@ class WooCommerceController extends Controller
                 'mensaje' => 'Token de acceso no válido o no conectado'
             ], 401);
         }
+        $empresa = Empresa::find($usuario->id_empresa);
+
+        //si empresa tiene facturacion_electronica buscar en Documentos factura de la sucursal
+
+        if ($empresa->facturacion_electronica) {
+            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)->where('nombre', 'Factura')->where('activo', true)->first();
+        } else {
+            //Buscar Ticket
+            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)->where('nombre', 'Ticket')->where('activo', true)->first();
+        }
         try {
             DB::beginTransaction();
 
@@ -55,7 +68,7 @@ class WooCommerceController extends Controller
             );
 
             // 2. Crear Venta
-            $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id);
+            $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id, $documento->id);
             $venta = Venta::create($ventaData);
 
             foreach ($request->line_items as $item) {
@@ -89,6 +102,9 @@ class WooCommerceController extends Controller
                     ->decrement('stock', $item['quantity']);
             }
 
+            $documento = Documento::findOrfail($venta->id_documento);
+            $documento->increment('correlativo');
+
             DB::commit();
 
             return response()->json([
@@ -113,12 +129,14 @@ class WooCommerceController extends Controller
     {
         // Verificar que el usuario tiene configuración de WooCommerce
         $user = Auth::user();
-        
-        if (empty($user->woocommerce_api_key) || 
-            empty($user->woocommerce_store_url) || 
-            empty($user->woocommerce_consumer_key) || 
-            empty($user->woocommerce_consumer_secret)) {
-            
+
+        if (
+            empty($user->woocommerce_api_key) ||
+            empty($user->woocommerce_store_url) ||
+            empty($user->woocommerce_consumer_key) ||
+            empty($user->woocommerce_consumer_secret)
+        ) {
+
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'No tienes configurada la integración con WooCommerce'
