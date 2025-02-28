@@ -29,26 +29,25 @@ class ChatController extends Controller
                 'topP' => 'nullable|numeric|min:0|max:1',
                 'topK' => 'nullable|integer|min:0',
             ]);
-
+    
             // Obtener o crear la conversación (placeholder para integración de BD)
             $conversationId = $validated['conversationId'] ?? null;
-            $inferenceProfileArn = config('services.bedrock.inference_profile_arn');
-
-
+            $inferenceProfileArn = config('bedrock.inference_profile_arn_haiku');
+    
             // Crear cliente de BedrockRuntime
             $client = new BedrockRuntimeClient([
                 'version' => 'latest',
-                'region' => config('services.bedrock.region', 'us-east-2'),
+                'region' => config('bedrock.region'),
                 'credentials' => [
-                    'key'    => config('services.bedrock.key'),
-                    'secret' => config('services.bedrock.secret'),
+                    'key'    => config('bedrock.key'),
+                    'secret' => config('bedrock.secret'),
                 ],
             ]);
-
-            Log::debug('Usando región de Bedrock:', ['region' => $client->getRegion()]);
-
+    
+            // Log::debug('Usando región de Bedrock:', ['region' => $client->getRegion()]);
+    
             // Obtener el modelo desde la configuración
-            $modelId = config('services.bedrock.model_id', 'anthropic.claude-3-5-haiku-20241022-v1:0');
+            $modelId = config('bedrock.model_id_haiku');
             
             // Preparar mensajes en el formato correcto para Claude 3.5
             $formattedMessages = [];
@@ -80,10 +79,10 @@ class ChatController extends Controller
             ];
             
             // Configurar los parámetros de generación
-            $maxTokens = $validated['maxTokens'] ?? config('services.bedrock.max_tokens', 500);
-            $temperature = $validated['temperature'] ?? config('services.bedrock.temperature', 0.7);
-            $topP = $validated['topP'] ?? config('services.bedrock.top_p', 0.9);
-            $topK = $validated['topK'] ?? config('services.bedrock.top_k', 250);
+            $maxTokens = $validated['maxTokens'] ?? config('bedrock.max_tokens_haiku');
+            $temperature = $validated['temperature'] ?? config('bedrock.temperature_haiku');
+            $topP = $validated['topP'] ?? config('bedrock.top_p_haiku');
+            $topK = $validated['topK'] ?? config('bedrock.top_k_haiku');
             
             // Crear cuerpo de la solicitud para Claude 3.5
             $requestBody = [
@@ -93,7 +92,7 @@ class ChatController extends Controller
                 'temperature' => (float)$temperature,     // Convertir a decimal
                 'top_p' => (float)$topP,                 // Convertir a decimal
                 'top_k' => (int)$topK,                   // Convertir a entero
-                'system' => config('services.bedrock.system_prompt')
+                'system' => config('bedrock.system_prompt_haiku')
             ];
             
             // Para debug, guardar la solicitud completa
@@ -101,7 +100,7 @@ class ChatController extends Controller
                 'modelId' => $modelId,
                 'body' => $requestBody
             ]);
-
+    
             // Invocar al modelo
             $response = $client->invokeModel([
                 'body' => json_encode($requestBody),
@@ -109,7 +108,7 @@ class ChatController extends Controller
                 'accept' => 'application/json',
                 'modelId' => $inferenceProfileArn, // Usa el ARN del perfil de inferencia aquí
             ]);
-
+    
             // Procesar la respuesta
             $result = json_decode($response->get('body')->getContents(), true);
             Log::debug('Respuesta de Bedrock:', ['result' => $result]);

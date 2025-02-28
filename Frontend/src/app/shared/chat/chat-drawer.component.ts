@@ -1,27 +1,43 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {  Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked  } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ChatService, ChatMessage } from '@services/chat/chat.service';
 
 @Component({
   selector: 'app-chat-drawer',
   templateUrl: './chat-drawer.component.html',
-  styleUrls: ['./chat-drawer.component.css']
+  styleUrls: ['./chat-drawer.component.css'],
 })
-export class ChatDrawerComponent implements OnInit, OnDestroy {
+
+export class ChatDrawerComponent implements OnInit, OnDestroy, AfterViewChecked {
+  @ViewChild('chatContainer') private chatContainer!: ElementRef;
   isOpen = false;
   messages: ChatMessage[] = [];
   newMessage = '';
-  
+  isLoading = false;
+
+  private shouldScrollToBottom = false;
+
   private subscriptions: Subscription[] = [];
-  
-  constructor(private chatService: ChatService) { }
+
+  constructor(private chatService: ChatService) {}
 
   ngOnInit(): void {
     // Suscribirse al estado del drawer
+
     this.subscriptions.push(
-      this.chatService.drawerOpen$.subscribe(isOpen => {
+      this.chatService.loading$.subscribe((isLoading) => {
+        this.isLoading = isLoading;
+
+        if (isLoading) {
+          this.shouldScrollToBottom = true;
+        }
+      })
+    );
+
+    this.subscriptions.push(
+      this.chatService.drawerOpen$.subscribe((isOpen) => {
         this.isOpen = isOpen;
-        
+
         // Manipulación del offcanvas de Bootstrap mediante JavaScript
         if (isOpen) {
           this.showOffcanvas();
@@ -30,27 +46,48 @@ export class ChatDrawerComponent implements OnInit, OnDestroy {
         }
       })
     );
-    
+
     // Suscribirse a los mensajes
     this.subscriptions.push(
-      this.chatService.messages$.subscribe(messages => {
+      this.chatService.messages$.subscribe((messages) => {
+        if (messages.length > this.messages.length) {
+          this.shouldScrollToBottom = true;
+        }
+
         this.messages = messages;
       })
     );
   }
-  
+
   ngOnDestroy(): void {
     // Limpiar suscripciones
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
   toggle() {
     this.chatService.toggleDrawer();
   }
 
+  ngAfterViewChecked() {
+    // Después de que Angular renderice la vista, scrollear si es necesario
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
+  }
+
+  scrollToBottom(): void {
+    try {
+      this.chatContainer.nativeElement.scrollTop =
+        this.chatContainer.nativeElement.scrollHeight;
+    } catch (err) {
+      console.error('Error al hacer scroll:', err);
+    }
+  }
+
   sendMessage() {
     if (this.newMessage.trim() === '') return;
-    
+
     this.chatService.sendMessage(this.newMessage);
     this.newMessage = '';
   }
@@ -59,13 +96,19 @@ export class ChatDrawerComponent implements OnInit, OnDestroy {
   private showOffcanvas() {
     const offcanvasElement = document.getElementById('chatOffcanvas');
     if (offcanvasElement) {
-      const bsOffcanvas = new (window as any).bootstrap.Offcanvas(offcanvasElement);
+      const bsOffcanvas = new (window as any).bootstrap.Offcanvas(
+        offcanvasElement
+      );
       bsOffcanvas.show();
-      
+
       // Agregar listener para cuando se cierre manualmente
-      offcanvasElement.addEventListener('hidden.bs.offcanvas', () => {
-        this.chatService.closeDrawer();
-      }, { once: true });
+      offcanvasElement.addEventListener(
+        'hidden.bs.offcanvas',
+        () => {
+          this.chatService.closeDrawer();
+        },
+        { once: true }
+      );
     }
   }
 
@@ -73,7 +116,9 @@ export class ChatDrawerComponent implements OnInit, OnDestroy {
   private hideOffcanvas() {
     const offcanvasElement = document.getElementById('chatOffcanvas');
     if (offcanvasElement) {
-      const bsOffcanvas = (window as any).bootstrap.Offcanvas.getInstance(offcanvasElement);
+      const bsOffcanvas = (window as any).bootstrap.Offcanvas.getInstance(
+        offcanvasElement
+      );
       if (bsOffcanvas) {
         bsOffcanvas.hide();
       }

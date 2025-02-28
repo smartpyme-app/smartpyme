@@ -2,7 +2,7 @@
     position: fixed !important; /* Forzar con !important para evitar sobrescritura */
     right: 2rem !important;
     bottom: 2rem !important;
-    z-index: 9999 !important; /* Valor muy alto para estar por encima de todo */
+    z-index: 9998 !important; /* Valor muy alto para estar por encima de todo */
     
     .btn {
       width: 60px;
