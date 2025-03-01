@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Auth;
 
 class Empresa extends Model
 {
-
-    // use SoftDeletes;
     protected $table = 'empresas';
     protected $fillable = [
         'nombre',
@@ -80,25 +78,24 @@ class Empresa extends Model
         //Permiso para vendedores
         'vendedor_inventario',
         'woocommerce_api_key',
-        'woocommerce_api_url',
         'woocommerce_store_url',
         'woocommerce_consumer_key',
         'woocommerce_consumer_secret',
         'woocommerce_status',
         'woocommerce_sync_progress',
         'woocommerce_sync_total_batches',
-        'woocommerce_sync_processed_batches'
+        'woocommerce_sync_processed_batches',
+        'woocommerce_sync_status',
+        'woocommerce_last_sync',
+        'woocommerce_error'
     ];
 
     protected $casts = [
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
     ];
-    //url webhook woocommerce
-    //     woocommerce_store_url
-    // woocommerce_consumer_key 
-    // woocommerce_consumer_secret 
-    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
+    // protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
+    protected $appends = ['estado_plan','woocommerce_api_url'];
 
     public function limiteUsuarios()
     {
@@ -274,57 +271,14 @@ class Empresa extends Model
         return $user;
     }
 
-    public function getWooCommerceApiKeyAttribute()
-    {
-        if (empty($this->user()->woocommerce_api_key)) {
-            return null;
-        }
-
-        return $this->user()->woocommerce_api_key;
-    }
-
     public function getWooCommerceApiUrlAttribute()
     {
-        if (empty($this->user()->woocommerce_api_key)) {
+        if (empty($this->woocommerce_api_key)) {
             return null;
         }
 
-        return url('/api/webhook/woocommerce/' . $this->user()->woocommerce_api_key);
+        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
     }
 
-    public function getWooCommerceStoreUrlAttribute()
-    {
-        if (empty($this->user()->woocommerce_store_url)) {
-            return null;
-        }
 
-        return $this->user()->woocommerce_store_url;
-    }
-
-    public function getWooCommerceConsumerKeyAttribute()
-    {
-        if (empty($this->user()->woocommerce_consumer_key)) {
-            return null;
-        }
-
-        return $this->user()->woocommerce_consumer_key;
-    }
-
-    public function getWooCommerceConsumerSecretAttribute()
-    {
-        if (empty($this->user()->woocommerce_consumer_secret)) {
-            return null;
-        }
-
-        return $this->user()->woocommerce_consumer_secret;
-    }
-
-    public function getWooCommerceStatusAttribute()
-    {
-        if (empty($this->user()->woocommerce_status)) {
-            return null;
-        }
-
-        return $this->user()->woocommerce_status;
-    }
 }
