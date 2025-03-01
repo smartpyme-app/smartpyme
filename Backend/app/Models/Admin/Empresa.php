@@ -95,7 +95,7 @@ class Empresa extends Model
         'facturacion_electronica' => 'boolean',
     ];
     // protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
-    protected $appends = ['estado_plan','woocommerce_api_url'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
 
     public function limiteUsuarios()
     {
@@ -279,6 +279,19 @@ class Empresa extends Model
 
         return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
     }
+    public function getStatusConexionWoocommerceAttribute()
+    {
+        $connected_users = $this->usuarios->where('woocommerce_status', 'connected');
 
+        if ($connected_users->count() > 0) {
+            return 'connected';
+        }
 
+        return 'disconnected';
+    }
+    public function getIsCurrentUserConnectedToWooCommerceAttribute()
+    {
+        $current_user = Auth::user();
+        return $current_user && $current_user->woocommerce_status === 'connected';
+    }
 }

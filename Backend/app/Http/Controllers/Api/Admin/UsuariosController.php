@@ -328,6 +328,7 @@ class UsuariosController extends Controller
         try {
             $id_usuario = Auth::user()->id;
             $usuario = User::find($id_usuario);
+            $empresa = Empresa::find($usuario->id_empresa);
             if (!$usuario) {
                 return response()->json([
                     'status' => 'error',
@@ -335,15 +336,18 @@ class UsuariosController extends Controller
                 ], 404);
             }
 
-            if (empty($usuario->woocommerce_api_key)) {
+            if (empty($empresa->woocommerce_api_key)) {
                 return response()->json([
                     'status' => 'error',
-                    'mensaje' => 'Usuario no tiene API key de WooCommerce'
+                    'mensaje' => 'No tienes configurada la integración con WooCommerce'
                 ], 422);
             }
 
             $usuario->woocommerce_status = 'disconnected';
             $usuario->save();
+
+            $empresa->woocommerce_status = 'disconnected';
+            $empresa->save();
 
             return response()->json([
                 'status' => 'success',
