@@ -506,9 +506,9 @@
                                     <i class="fa fa-unlink me-2"></i>
                                     Desconectar WooCommerce
                                 </button>
-                                
                                 <button class="btn btn-light text-success" 
                                         type="button" 
+                                        *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
                                         [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
                                         (click)="saveCredentials()">
                                     <i class="fa fa-save me-2"></i>
