@@ -268,12 +268,12 @@ export class EmpresaComponent implements OnInit {
             return;
         }
 
-        if (!this.empresa.woocommerce_canal_id) {
+        //verificar que el canal no vaya vacio o nulo
+        if (!this.empresa.woocommerce_canal_id || this.empresa.woocommerce_canal_id == 0 || this.empresa.woocommerce_canal_id == '0') {
             this.saving = false;
-            
             Swal.fire({
                 title: 'Error',
-                text: 'El canal para WooCommerce es requerido',
+                text: 'Selecciona un canal',
                 icon: 'error',
                 confirmButtonText: 'Aceptar'
             });

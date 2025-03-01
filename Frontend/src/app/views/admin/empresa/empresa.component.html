@@ -487,8 +487,8 @@
                                         <select class="form-select" 
                                                 [(ngModel)]="empresa.woocommerce_canal_id" 
                                                 name="woocommerce_canal"
-                                                [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce">
-                                            <option [value]="null" selected>Seleccione un canal</option>
+                                                [disabled]="empresa.status_conexion_woocommerce === 'connected'">
+                                            <option [value]="0" selected>Seleccione un canal</option>
                                             <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
                                         </select>
                                         <small class="text-muted">
