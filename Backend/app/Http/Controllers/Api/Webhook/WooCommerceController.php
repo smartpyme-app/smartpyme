@@ -129,12 +129,13 @@ class WooCommerceController extends Controller
     {
         // Verificar que el usuario tiene configuración de WooCommerce
         $user = Auth::user();
+        $empresa = Empresa::find($user->id_empresa);
 
         if (
-            empty($user->woocommerce_api_key) ||
-            empty($user->woocommerce_store_url) ||
-            empty($user->woocommerce_consumer_key) ||
-            empty($user->woocommerce_consumer_secret)
+            empty($empresa->woocommerce_api_key) ||
+            empty($empresa->woocommerce_store_url) ||
+            empty($empresa->woocommerce_consumer_key) ||
+            empty($empresa->woocommerce_consumer_secret)
         ) {
 
             return response()->json([
@@ -144,7 +145,7 @@ class WooCommerceController extends Controller
         }
 
         // Obtener la sucursal actual del usuario
-        $sucursalId = $user->id_sucursal;
+        $sucursalId = $user->id_bodega;
 
         // Encolar el trabajo
         ExportProductsToWooCommerce::dispatch($user->id, $sucursalId);

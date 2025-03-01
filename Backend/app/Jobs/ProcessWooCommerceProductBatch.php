@@ -19,7 +19,7 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
     protected $userId;
     protected $sucursalId;
     protected $productIds;
-    protected $bodegas;
+    protected $bodegaId;
     protected $batchNumber;
     protected $totalBatches;
 
@@ -29,12 +29,12 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($userId, $sucursalId, $productIds, $bodegas, $batchNumber, $totalBatches)
+    public function __construct($userId, $sucursalId, $productIds, $bodegaId, $batchNumber, $totalBatches)
     {
         $this->userId = $userId;
         $this->sucursalId = $sucursalId;
         $this->productIds = $productIds;
-        $this->bodegas = $bodegas;
+        $this->bodegaId = $bodegaId;
         $this->batchNumber = $batchNumber;
         $this->totalBatches = $totalBatches;
     }
@@ -70,14 +70,13 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
 
             // Procesar en mini-lotes de 5 productos
             $miniBatchSize = 5;
-          //  foreach (array_chunk($productos->toArray(), $miniBatchSize) as $miniBatch) {
             foreach ($productos->chunk($miniBatchSize) as $productosMiniBatch) {
                 try {
                     // Convertir array a colección
                     $productosMiniBatch = collect($productosMiniBatch);
 
                     // Procesar mini-lote
-                    $result = $exportService->exportarProductos($user, $productosMiniBatch, $this->bodegas);
+                    $result = $exportService->exportarProductos($user, $productosMiniBatch, $this->bodegaId);
 
                     Log::info("Mini-lote procesado", [
                         'lote' => $this->batchNumber,

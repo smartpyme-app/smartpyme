@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Producto;
@@ -18,6 +19,8 @@ class WooCommerceStockService
 
             $usuario = User::find($userId);
 
+            $empresa = Empresa::where('id', $usuario->id_empresa)->first();
+
             if (!$usuario || empty($usuario->woocommerce_api_key)) {
                 Log::error("Usuario no encontrado o sin API key de WooCommerce", ['user_id' => $userId]);
                 return false;
@@ -25,12 +28,12 @@ class WooCommerceStockService
 
 
             if (
-                empty($usuario->woocommerce_store_url) ||
-                empty($usuario->woocommerce_consumer_key) ||
-                empty($usuario->woocommerce_consumer_secret)
+                empty($empresa->woocommerce_store_url) ||
+                empty($empresa->woocommerce_consumer_key) ||
+                empty($empresa->woocommerce_consumer_secret)
             ) {
 
-                Log::error("Usuario sin credenciales completas de WooCommerce", ['user_id' => $userId]);
+                Log::error("Empresa no encontrada o sin credenciales completas de WooCommerce", ['empresa_id' => $empresa->id]);
                 return false;
             }
 
@@ -51,11 +54,11 @@ class WooCommerceStockService
             }
 
             $sku = $producto->codigo;
-            $bodegas = Bodega::where('id_sucursal', $usuario->id_sucursal)->get();
+            //  $bodegas = Bodega::where('id_sucursal', $usuario->id_sucursal)->get();
 
             $stock = Inventario::where('id_producto', $productoId)
-                ->whereIn('id_bodega', $bodegas->pluck('id'))
-                ->sum('stock');
+                ->where('id_bodega', $usuario->id_bodega)
+                ->value('stock');
 
             if ($stock === null) {
                 Log::warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
@@ -63,9 +66,9 @@ class WooCommerceStockService
             }
 
             $wooClient = new WooCommerceApiClient(
-                $usuario->woocommerce_store_url,
-                $usuario->woocommerce_consumer_key,
-                $usuario->woocommerce_consumer_secret
+                $empresa->woocommerce_store_url,
+                $empresa->woocommerce_consumer_key,
+                $empresa->woocommerce_consumer_secret
             );
 
             $productData = $this->prepararDatosProducto($producto, $stock, $wooClient);

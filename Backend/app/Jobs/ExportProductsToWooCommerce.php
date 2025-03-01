@@ -49,31 +49,31 @@ class ExportProductsToWooCommerce implements ShouldQueue
             ]);
 
             // Obtener bodegas
-            $bodegas = Bodega::where('id_sucursal', $this->sucursalId)
-                             ->pluck('id')
-                             ->toArray();
+            $bodega = Bodega::where('id', $this->sucursalId)
+                ->first();
+                
 
-            if (empty($bodegas)) {
+            if (!$bodega) {
                 throw new \Exception("No se encontraron bodegas para la sucursal {$this->sucursalId}");
             }
 
             // Obtener IDs de productos con inventario
-            $productosIds = Inventario::whereIn('id_bodega', $bodegas)
-                                     ->where('stock', '>', 0)
-                                     ->select('id_producto')
-                                     ->distinct()
-                                     ->pluck('id_producto')
-                                     ->toArray();
+            $productosIds = Inventario::where('id_bodega', $bodega->id)
+                ->where('stock', '>', 0)
+                ->select('id_producto')
+                ->distinct()
+                ->pluck('id_producto')
+                ->toArray();
 
             $totalProductos = count($productosIds);
-            
+
             Log::info("Total de productos a procesar: {$totalProductos}");
-            
+
             if ($totalProductos == 0) {
                 $user->woocommerce_sync_status = 'completed';
                 $user->woocommerce_last_sync = now();
                 $user->save();
-                
+
                 Log::info("No hay productos para sincronizar");
                 return;
             }
@@ -81,7 +81,7 @@ class ExportProductsToWooCommerce implements ShouldQueue
             // Dividir en lotes
             $lotes = array_chunk($productosIds, $this->limit);
             $totalLotes = count($lotes);
-            
+
             Log::info("Dividiendo exportación en {$totalLotes} lotes");
 
             // Crear un job para cada lote de productos
@@ -89,18 +89,16 @@ class ExportProductsToWooCommerce implements ShouldQueue
                 // Retrasar cada job para que no se ejecuten todos a la vez
                 // Inicio escalonado: el primer lote inicia inmediatamente, los siguientes cada 30 segundos
                 $delay = now()->addSeconds($index * 30);
-                
+
                 // Encolar job trabajador
                 ProcessWooCommerceProductBatch::dispatch(
                     $this->userId,
                     $this->sucursalId,
                     $loteIds,
-                    $bodegas,
+                    $bodega->id,
                     $index + 1,
                     $totalLotes
                 )->delay($delay);
-                
-                
             }
 
             // Registrar que los jobs han sido encolados
@@ -108,22 +106,21 @@ class ExportProductsToWooCommerce implements ShouldQueue
             $user->woocommerce_sync_total_batches = $totalLotes;
             $user->woocommerce_sync_processed_batches = 0;
             $user->save();
-            
-            Log::info("Todos los lotes han sido programados");
 
+            Log::info("Todos los lotes han sido programados");
         } catch (\Exception $e) {
             if (isset($user)) {
                 $user->woocommerce_sync_status = 'error';
                 $user->woocommerce_error = "Error en exportación: " . $e->getMessage();
                 $user->save();
             }
-            
+
             Log::error("Error iniciando exportación a WooCommerce", [
                 'user_id' => $this->userId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             throw $e;
         }
     }

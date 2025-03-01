@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
@@ -27,40 +28,53 @@ class InventarioObserver
                 'stock_nuevo' => $inventario->stock
             ]);
 
-           // $bodega = Bodega::where('id', $inventario->id_bodega)->first();
-           $bodegas = Bodega::where('id', $inventario->id_bodega)->get();
-            
-            $usuarios = User::whereIn('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
-                                     ->whereNotNull('woocommerce_api_key')
-                                     ->whereNotNull('woocommerce_store_url')
-                                     ->whereNotNull('woocommerce_consumer_key')
-                                     ->whereNotNull('woocommerce_consumer_secret')
-                                     ->where('woocommerce_status', 'connected')
-                                     ->get();
-            
-            if ($usuarios->isEmpty()) {
-                Log::info("No se encontraron usuarios con integración WooCommerce para esta bodega", [
+            $bodega = Bodega::where('id', $inventario->id_bodega)->first();
+            $empresa = Empresa::where('id', $bodega->id_empresa)
+                ->whereNotNull('woocommerce_api_key')
+                ->whereNotNull('woocommerce_store_url')
+                ->whereNotNull('woocommerce_consumer_key')
+                ->whereNotNull('woocommerce_consumer_secret')
+                ->where('woocommerce_status', 'connected')
+                ->first();
+
+            if (!$empresa) {
+                Log::info("No se encontró empresa con integración WooCommerce para esta bodega", [
                     'bodega_id' => $inventario->id_bodega
                 ]);
                 return;
             }
-            
-            foreach ($usuarios as $usuario) {
-                try {
-                    $this->stockService->actualizarStockEnWooCommerce(
-                        $inventario->id_producto,
-                        $usuario->id
-                    );
-                } catch (\Exception $e) {
-                    Log::error("Error al sincronizar stock para usuario: " . $e->getMessage(), [
-                        'usuario_id' => $usuario->id,
-                        'producto_id' => $inventario->id_producto
-                    ]);
-                }
+
+
+            $usuario = User::where('id_empresa', $empresa->id)
+                ->where('woocommerce_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                Log::info("No se encontró usuario con integración WooCommerce para esta empresa", [
+                    'empresa_id' => $empresa->id
+                ]);
+                return;
+            }
+
+            if ($inventario->id_bodega != $usuario->id_bodega) {
+                return;
+            }
+
+
+            try {
+                $this->stockService->actualizarStockEnWooCommerce(
+                    $inventario->id_producto,
+                    $usuario->id
+                );
+            } catch (\Exception $e) {
+                Log::error("Error al sincronizar stock para usuario: " . $e->getMessage(), [
+                    'usuario_id' => $usuario->id,
+                    'producto_id' => $inventario->id_producto
+                ]);
             }
         }
     }
-    
+
     // public function created(Inventario $inventario)
     // {
     //     Log::info("Nuevo inventario creado", [
@@ -72,7 +86,7 @@ class InventarioObserver
     //     $bodegas = Bodega::where('id', $inventario->id_bodega)->get();
 
 
-        
+
     //     $usuarios = User::where('id_sucursal', $bodegas->pluck('id_sucursal')->toArray())
     //                              ->whereNotNull('woocommerce_api_key')
     //                              ->whereNotNull('woocommerce_store_url')
@@ -80,11 +94,11 @@ class InventarioObserver
     //                              ->whereNotNull('woocommerce_consumer_secret')
     //                              ->where('woocommerce_status', 'connected')
     //                              ->get();
-        
+
     //     if ($usuarios->isEmpty()) {
     //         return;
     //     }
-        
+
     //     foreach ($usuarios as $usuario) {
     //         try {
     //             $this->stockService->actualizarStockEnWooCommerce(

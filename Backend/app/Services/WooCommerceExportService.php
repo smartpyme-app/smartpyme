@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class WooCommerceExportService
 {
-    public function exportarProductos(User $user, $productos, $bodegas)
+    public function exportarProductos(User $user, $productos, $bodega)
     {
         $client = new WooCommerceApiClient(
             $user->woocommerce_store_url,
@@ -20,7 +20,7 @@ class WooCommerceExportService
 
         // Precalcular stocks para todos los productos de una vez
         $stocks = Inventario::whereIn('id_producto', $productos->pluck('id'))
-            ->whereIn('id_bodega', $bodegas)
+            ->where('id_bodega', $bodega)
             ->select('id_producto', DB::raw('SUM(stock) as total_stock'))
             ->groupBy('id_producto')
             ->pluck('total_stock', 'id_producto')

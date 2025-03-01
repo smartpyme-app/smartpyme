@@ -36,40 +36,34 @@ class ProductoObserver
             return;
         }
 
-        $empresa = Empresa::where('id', $producto->id_empresa)->first();
-
-        if (!$empresa) {
-            return;
-        }
-        $usuarios = User::where('id_empresa', $empresa->id)
+        $empresa = Empresa::where('id', $producto->id_empresa)
             ->whereNotNull('woocommerce_api_key')
             ->whereNotNull('woocommerce_store_url')
             ->whereNotNull('woocommerce_consumer_key')
             ->whereNotNull('woocommerce_consumer_secret')
-            ->get();
+            ->where('woocommerce_status', 'connected')
+            ->first();
 
-        if ($usuarios->isEmpty()) {
-            Log::info("No se encontraron usuarios con integración WooCommerce para este producto", [
-                'producto_id' => $producto->id,
-                'sucursal_id' => $producto->id_sucursal
-            ]);
+        if (!$empresa) {
             return;
         }
+        $usuario = User::where('id_empresa', $empresa->id)
+            ->where('woocommerce_status', 'connected')
+            ->first();
 
-        // Sincronizar con WooCommerce para cada usuario
-        foreach ($usuarios as $usuario) {
-            try {
-                // Si existe este servicio, si no debes crearlo
-                $this->stockService->actualizarStockEnWooCommerce(
-                    $producto->id,
-                    $usuario->id
-                );
-            } catch (\Exception $e) {
-                Log::error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
-                    'usuario_id' => $usuario->id,
-                    'producto_id' => $producto->id
-                ]);
-            }
+        if (!$usuario) {
+            return;
+        }
+        try {
+            $this->stockService->actualizarStockEnWooCommerce(
+                $producto->id,
+                $usuario->id
+            );
+        } catch (\Exception $e) {
+            Log::error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
+                'usuario_id' => $usuario->id,
+                'producto_id' => $producto->id
+            ]);
         }
     }
 

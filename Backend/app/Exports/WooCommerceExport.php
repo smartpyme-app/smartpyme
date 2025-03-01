@@ -179,18 +179,16 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
             }
 
       
-            $bodegas = [];
-            if ($user && $user->id_sucursal) {
-                $bodegas = Bodega::where('id_sucursal', $user->id_sucursal)
+            if ($user && $user->id_bodega) {
+                $bodega = Bodega::where('id', $user->id_bodega)
                     ->where('id_empresa', $idEmpresa)
-                    ->pluck('id')
-                    ->toArray();
+                    ->first();
             }
 
 
-            $query = Producto::with(['imagenes', 'inventarios' => function ($q) use ($bodegas) {
-                if (!empty($bodegas)) {
-                    $q->whereIn('id_bodega', $bodegas);
+            $query = Producto::with(['imagenes', 'inventarios' => function ($q) use ($bodega) {
+                if ($bodega) {
+                    $q->where('id_bodega', $bodega->id);
                 }
             }, 'categoria'])
                 ->where('id_empresa', $idEmpresa)
@@ -198,9 +196,9 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
                 ->whereNotNull('codigo');
 
 
-            if (!empty($bodegas)) {
-                $query->whereHas('inventarios', function ($q) use ($bodegas) {
-                    $q->whereIn('id_bodega', $bodegas)
+            if ($bodega) {
+                $query->whereHas('inventarios', function ($q) use ($bodega) {
+                    $q->where('id_bodega', $bodega->id)
                         ->where('stock', '>', 0);
                 });
             }

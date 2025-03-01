@@ -79,6 +79,15 @@ class Empresa extends Model
 
         //Permiso para vendedores
         'vendedor_inventario',
+        'woocommerce_api_key',
+        'woocommerce_api_url',
+        'woocommerce_store_url',
+        'woocommerce_consumer_key',
+        'woocommerce_consumer_secret',
+        'woocommerce_status',
+        'woocommerce_sync_progress',
+        'woocommerce_sync_total_batches',
+        'woocommerce_sync_processed_batches'
     ];
 
     protected $casts = [
@@ -86,10 +95,10 @@ class Empresa extends Model
         'facturacion_electronica' => 'boolean',
     ];
     //url webhook woocommerce
-//     woocommerce_store_url
-// woocommerce_consumer_key 
-// woocommerce_consumer_secret 
-    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret','woocommerce_status'];
+    //     woocommerce_store_url
+    // woocommerce_consumer_key 
+    // woocommerce_consumer_secret 
+    protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
 
     public function limiteUsuarios()
     {
