@@ -477,13 +477,6 @@
                                        placeholder="Ingrese su Consumer Secret de WooCommerce">
                             </div>
                             <div class="text-end mt-4">
-                                <!-- <button class="btn btn-light text-danger" 
-                                        type="button"
-                                        *ngIf="empresa.woocommerce_status === 'connected'"
-                                        (click)="disconnectWooCommerce()">
-                                    <i class="fa fa-unlink me-2"></i>
-                                    Desconectar WooCommerce
-                                </button> -->
                                 <button class="btn btn-light text-danger" 
                                         type="button"
                                         *ngIf="empresa.is_current_user_connected_to_woocommerce"
@@ -496,12 +489,6 @@
                                     <i class="fa fa-info-circle me-2"></i>
                                     Hay otros usuarios conectados a WooCommerce. Solo el usuario que estableció la conexión puede desconectarla.
                                 </div>
-                                <!-- <button class="btn btn-light text-success" 
-                                        type="button" 
-                                        (click)="saveCredentials()">
-                                    <i class="fa fa-save me-2"></i>
-                                    Guardar Credenciales
-                                </button> -->
                                 <button class="btn btn-light text-success" 
                                         type="button" 
                                         [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
