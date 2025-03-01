@@ -6,6 +6,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
+
 @Component({
   selector: 'app-empresa',
   templateUrl: './empresa.component.html'
@@ -20,6 +21,7 @@ export class EmpresaComponent implements OnInit {
     public distritos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
+    public canales: any[] = [];
 
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
@@ -30,6 +32,9 @@ export class EmpresaComponent implements OnInit {
     ) { }
 
     ngOnInit() {
+        this.apiService.getAll('canales').subscribe(canales => { 
+            this.canales = canales;
+        }, error => {this.alertService.error(error); });
         this.loadAll();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
@@ -45,6 +50,7 @@ export class EmpresaComponent implements OnInit {
             this.empresa = empresa;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
+
     }
 
     public onSubmit(): Promise<any> {
@@ -261,11 +267,25 @@ export class EmpresaComponent implements OnInit {
             });
             return;
         }
+
+        if (!this.empresa.woocommerce_canal_id) {
+            this.saving = false;
+            
+            Swal.fire({
+                title: 'Error',
+                text: 'El canal para WooCommerce es requerido',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
         
         const credentials = {
             store_url: this.empresa.woocommerce_store_url,
             consumer_key: this.empresa.woocommerce_consumer_key,
-            consumer_secret: this.empresa.woocommerce_consumer_secret
+            consumer_secret: this.empresa.woocommerce_consumer_secret,
+            canal_id: this.empresa.woocommerce_canal_id,
         };
         
         Swal.fire({

@@ -55,7 +55,6 @@ class WooCommerceController extends Controller
             ], 401);
         }
 
-        //si empresa tiene facturacion_electronica buscar en Documentos factura de la sucursal
 
         if ($empresa->facturacion_electronica) {
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)->where('nombre', 'Factura')->where('activo', true)->first();
@@ -79,10 +78,16 @@ class WooCommerceController extends Controller
             $venta = Venta::create($ventaData);
 
             foreach ($request->line_items as $item) {
-                $producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
+                //$producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
+                //primero buscar por woocommerce_id si no por sku
+
+                $producto = Producto::where('woocommerce_id', $item['id'])->where('id_empresa', $usuario->id_empresa)->first();
 
                 if (!$producto) {
-                    //terminar el
+                    $producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
+                }
+
+                if (!$producto) {
                     return response()->json([
                         'status' => 'error',
                         'mensaje' => 'Producto no encontrado: ' . $item['sku']
@@ -93,7 +98,6 @@ class WooCommerceController extends Controller
                     $producto = Producto::create($productoData);
                 }
 
-                // Crear detalle
                 $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);

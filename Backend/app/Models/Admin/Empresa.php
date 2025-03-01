@@ -87,7 +87,9 @@ class Empresa extends Model
         'woocommerce_sync_processed_batches',
         'woocommerce_sync_status',
         'woocommerce_last_sync',
-        'woocommerce_error'
+        'woocommerce_error',
+        'woocommerce_canal_id',
+
     ];
 
     protected $casts = [
@@ -293,5 +295,10 @@ class Empresa extends Model
     {
         $current_user = Auth::user();
         return $current_user && $current_user->woocommerce_status === 'connected';
+    }
+
+    public function canal()
+    {
+        return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
     }
 }

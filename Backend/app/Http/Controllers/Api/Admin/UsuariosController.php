@@ -240,12 +240,15 @@ class UsuariosController extends Controller
             $request->validate([
                 'store_url' => 'required|url',
                 'consumer_key' => 'required|string',
-                'consumer_secret' => 'required|string'
+                'consumer_secret' => 'required|string',
+                'canal_id' => 'required|numeric'
             ], [
                 'store_url.required' => 'La URL de la tienda es obligatoria',
                 'store_url.url' => 'La URL de la tienda debe ser una dirección válida',
                 'consumer_key.required' => 'La Consumer Key es obligatoria',
-                'consumer_secret.required' => 'El Consumer Secret es obligatorio'
+                'consumer_secret.required' => 'El Consumer Secret es obligatorio',
+                'canal_id.required' => 'El Canal es obligatorio',
+                'canal_id.numeric' => 'El Canal debe ser numérico'
             ]);
 
             $id_usuario = Auth::user()->id;
@@ -267,6 +270,7 @@ class UsuariosController extends Controller
             $empresa->woocommerce_consumer_key = $request->consumer_key;
             $empresa->woocommerce_consumer_secret = $request->consumer_secret;
             $empresa->woocommerce_status = 'connecting'; // Estado temporal
+            $empresa->woocommerce_canal_id = $request->canal_id;
             $empresa->save();
 
 
