@@ -25,11 +25,11 @@
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <!--exportar productos a woocommerce-->
-                <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()" class="btn btn-default tcla-F6">
+                <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()" class="btn btn-default tcla-F6" *ngIf="connected">
                     <img src="/assets/icons/upload-cloud.png" class="icon">
                 </button>
                 <!--Agregar boton para descargar productos para importar en woocomerce (F7)-->
-                <button tooltip="Descargar productos para importar en WooCommerce (F7)" (click)="descargarWooCommerce()" class="btn btn-default tcla-F7">
+                <button tooltip="Descargar productos para importar en WooCommerce (F7)" (click)="descargarWooCommerce()" class="btn btn-default tcla-F7" *ngIf="connected">
                     <img src="/assets/icons/woocommerce.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">

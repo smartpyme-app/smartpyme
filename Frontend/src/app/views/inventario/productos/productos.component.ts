@@ -18,6 +18,7 @@ export class ProductosComponent implements OnInit {
     public bodegas:any = [];
     public categorias:any = [];
     public proveedores:any = [];
+    public connected:boolean = false;
 
     public ajuste:any = {};
     public inventario:any = {};
@@ -31,6 +32,7 @@ export class ProductosComponent implements OnInit {
     ngOnInit() {
 
         this.loadAll();
+        this.getUser();
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
@@ -41,6 +43,17 @@ export class ProductosComponent implements OnInit {
         }, error => {this.alertService.error(error); });
         
     }
+
+    public getUser() {
+   
+        let user =JSON.parse(localStorage.getItem('SP_auth_user')!);
+ 
+        if(user.woocommerce_status === 'connected'){
+            this.connected = true;
+           
+        }
+ 
+     }
 
     public loadAll() {
         this.filtros.id_bodega = '';
