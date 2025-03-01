@@ -65,7 +65,7 @@ class WooCommerceController extends Controller
         try {
             DB::beginTransaction();
 
-            $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal]);
+            $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal, 'id_documento' => $documento->id,'id_canal' => $empresa->woocommerce_canal_id]);
 
             $clienteData = $this->transformer->transformarCliente($request->all());
             $cliente = Cliente::updateOrCreate(

@@ -54,6 +54,7 @@ class WooCommerceTransformer
             'id_empresa' => $wooData['id_empresa'],
             'id_usuario' => $wooData['id_usuario'],
             'id_sucursal' => $wooData['id_sucursal'],
+            'id_canal' => $wooData['id_canal'],
         ];
     }
 
