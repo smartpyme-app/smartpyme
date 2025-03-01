@@ -454,6 +454,7 @@
                                        class="form-control" 
                                        [(ngModel)]="empresa.woocommerce_store_url" 
                                        name="woocommerce_store_url" 
+                                       [readonly]="empresa.status_conexion_woocommerce === 'connected'"
                                        placeholder="Ej: https://mitienda.com">
                             </div>
 
@@ -464,6 +465,7 @@
                                        class="form-control" 
                                        [(ngModel)]="empresa.woocommerce_consumer_key" 
                                        name="woocommerce_consumer_key" 
+                                       [readonly]="empresa.status_conexion_woocommerce === 'connected'"
                                        placeholder="Ingrese su clave de API de WooCommerce">
                             </div>
 
@@ -474,6 +476,7 @@
                                        class="form-control" 
                                        [(ngModel)]="empresa.woocommerce_consumer_secret" 
                                        name="woocommerce_consumer_secret" 
+                                       [readonly]="empresa.status_conexion_woocommerce === 'connected'"
                                        placeholder="Ingrese su clave secreta de WooCommerce">
                             </div>
                             <div class="text-end mt-4">
