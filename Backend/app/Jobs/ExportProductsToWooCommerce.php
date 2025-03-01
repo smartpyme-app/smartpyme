@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use Illuminate\Bus\Queueable;
@@ -39,9 +40,10 @@ class ExportProductsToWooCommerce implements ShouldQueue
         try {
             // Actualizar estado del usuario
             $user = User::findOrFail($this->userId);
-            $user->woocommerce_sync_status = 'syncing';
-            $user->woocommerce_error = null;
-            $user->save();
+            $empresa = Empresa::find($user->id_empresa);
+            $empresa->woocommerce_sync_status = 'syncing';
+            $empresa->woocommerce_error = null;
+            $empresa->save();
 
             Log::info("Iniciando exportación a WooCommerce", [
                 'user_id' => $this->userId,
@@ -51,7 +53,7 @@ class ExportProductsToWooCommerce implements ShouldQueue
             // Obtener bodegas
             $bodega = Bodega::where('id', $this->sucursalId)
                 ->first();
-                
+
 
             if (!$bodega) {
                 throw new \Exception("No se encontraron bodegas para la sucursal {$this->sucursalId}");
@@ -70,9 +72,9 @@ class ExportProductsToWooCommerce implements ShouldQueue
             Log::info("Total de productos a procesar: {$totalProductos}");
 
             if ($totalProductos == 0) {
-                $user->woocommerce_sync_status = 'completed';
-                $user->woocommerce_last_sync = now();
-                $user->save();
+                $empresa->woocommerce_sync_status = 'completed';
+                $empresa->woocommerce_last_sync = now();
+                $empresa->save();
 
                 Log::info("No hay productos para sincronizar");
                 return;
@@ -102,17 +104,17 @@ class ExportProductsToWooCommerce implements ShouldQueue
             }
 
             // Registrar que los jobs han sido encolados
-            $user->woocommerce_sync_progress = 0; // Progreso inicial
-            $user->woocommerce_sync_total_batches = $totalLotes;
-            $user->woocommerce_sync_processed_batches = 0;
-            $user->save();
+            $empresa->woocommerce_sync_progress = 0; // Progreso inicial
+            $empresa->woocommerce_sync_total_batches = $totalLotes;
+            $empresa->woocommerce_sync_processed_batches = 0;
+            $empresa->save();
 
             Log::info("Todos los lotes han sido programados");
         } catch (\Exception $e) {
-            if (isset($user)) {
-                $user->woocommerce_sync_status = 'error';
-                $user->woocommerce_error = "Error en exportación: " . $e->getMessage();
-                $user->save();
+            if (isset($empresa)) {
+                $empresa->woocommerce_sync_status = 'error';
+                $empresa->woocommerce_error = "Error en exportación: " . $e->getMessage();
+                $empresa->save();
             }
 
             Log::error("Error iniciando exportación a WooCommerce", [
