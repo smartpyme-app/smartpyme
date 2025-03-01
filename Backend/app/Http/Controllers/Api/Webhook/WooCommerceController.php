@@ -156,6 +156,13 @@ class WooCommerceController extends Controller
             ], 400);
         }
 
+        if ($empresa->woocommerce_status != 'connected') {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'La empresa debe estar activa con integración de WooCommerce'
+            ], 400);
+        }
+
         // Obtener la sucursal actual del usuario
         $sucursalId = $user->id_bodega;
 
