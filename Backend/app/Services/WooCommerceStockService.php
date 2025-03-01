@@ -21,7 +21,7 @@ class WooCommerceStockService
 
             $empresa = Empresa::where('id', $usuario->id_empresa)->first();
 
-            if (!$usuario || empty($usuario->woocommerce_api_key)) {
+            if (!$usuario || empty($empresa->woocommerce_api_key)) {
                 Log::error("Usuario no encontrado o sin API key de WooCommerce", ['user_id' => $userId]);
                 return false;
             }
