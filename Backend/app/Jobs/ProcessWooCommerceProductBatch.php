@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Services\WooCommerceExportService;
@@ -45,6 +46,7 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
     public function handle(WooCommerceExportService $exportService)
     {
         $user = User::find($this->userId);
+        $empresa = Empresa::find($user->id_empresa);
 
         if (!$user) {
             Log::error("Usuario no encontrado", ['user_id' => $this->userId]);
@@ -64,7 +66,7 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
 
             if ($productos->isEmpty()) {
                 Log::info("No hay productos válidos en el lote {$this->batchNumber}");
-                $this->updateProgress($user);
+                $this->updateProgress($user, $empresa);
                 return;
             }
 
@@ -101,7 +103,7 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
                 }
             }
 
-            $this->updateProgress($user);
+            $this->updateProgress($user, $empresa);
 
             Log::info("Lote {$this->batchNumber} completado");
         } catch (\Exception $e) {
@@ -114,28 +116,28 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
         }
     }
 
-    private function updateProgress($user)
+    private function updateProgress($user, $empresa)
     {
-        $user->woocommerce_sync_processed_batches++;
+        $empresa->woocommerce_sync_processed_batches++;
 
         // Si este es el último lote, marcar como completado
-        if ($user->woocommerce_sync_processed_batches >= $user->woocommerce_sync_total_batches) {
-            $user->woocommerce_sync_status = 'completed';
-            $user->woocommerce_last_sync = now();
+        if ($empresa->woocommerce_sync_processed_batches >= $empresa->woocommerce_sync_total_batches) {
+            $empresa->woocommerce_sync_status = 'completed';
+            $empresa->woocommerce_last_sync = now();
 
             Log::info("Exportación a WooCommerce completada", [
-                'user_id' => $user->id
+                'empresa_id' => $empresa->id
             ]);
         }
 
         // Verificar que total_batches no sea cero antes de calcular el porcentaje
-        if ($user->woocommerce_sync_total_batches > 0) {
-            $user->woocommerce_sync_progress =
-                intval(($user->woocommerce_sync_processed_batches / $user->woocommerce_sync_total_batches) * 100);
+        if ($empresa->woocommerce_sync_total_batches > 0) {
+            $empresa->woocommerce_sync_progress =
+                intval(($empresa->woocommerce_sync_processed_batches / $empresa->woocommerce_sync_total_batches) * 100);
         } else {
-            $user->woocommerce_sync_progress = 100; // Si no hay lotes, considerar como 100% completado
+            $empresa->woocommerce_sync_progress = 100; // Si no hay lotes, considerar como 100% completado
         }
 
-        $user->save();
+        $empresa->save();
     }
 }

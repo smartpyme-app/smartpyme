@@ -29,24 +29,31 @@ class WooCommerceController extends Controller
         $this->transformer = $transformer;
     }
 
-    public function procesarVenta($tokenUsuario, Request $request)
+    public function procesarVenta($tokenEmpresa, Request $request)
     {
-        Log::info("Webhook recibido para token: {$tokenUsuario}");
+        Log::info("Webhook recibido para token: {$tokenEmpresa}");
 
         if ($request->webhook_id != null) {
             return response()->json(['message' => 'Webhook válido'], 200);
         }
 
-        $usuario = User::where('woocommerce_api_key', $tokenUsuario)->where('woocommerce_status', 'connected')->first();
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)->where('woocommerce_status', 'connected')->first();
 
-        if (!$usuario) {
-            Log::error("Token de usuario no válido: {$tokenUsuario}");
+        if (!$empresa) {
+            Log::error("Token de empresa no válido: {$tokenEmpresa}");
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Token de acceso no válido o no conectado'
             ], 401);
         }
-        $empresa = Empresa::find($usuario->id_empresa);
+        $usuario = User::where('id_empresa', $empresa->id)->where('woocommerce_status', 'connected')->first();
+
+        if (!$usuario) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Usuario no encontrado'
+            ], 401);
+        }
 
         //si empresa tiene facturacion_electronica buscar en Documentos factura de la sucursal
 
@@ -97,9 +104,14 @@ class WooCommerceController extends Controller
                     $venta->id_bodega
                 );
 
-                Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $venta->id_bodega)
-                    ->decrement('stock', $item['quantity']);
+                // Inventario::where('id_producto', $producto->id)
+                //     ->where('id_bodega', $venta->id_bodega)
+                //     ->decrement('stock', $item['quantity']);
+
+                Inventario::updateOrCreate(
+                    ['id_producto' => $producto->id, 'id_bodega' => $venta->id_bodega],
+                    ['stock' => $inventarioData['stock']]
+                );
             }
 
             $documento = Documento::findOrfail($venta->id_documento);

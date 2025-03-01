@@ -249,34 +249,45 @@ class UsuariosController extends Controller
             ]);
 
             $id_usuario = Auth::user()->id;
+
+            $empresa = Empresa::find(Auth::user()->id_empresa);
+            if (!$empresa) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no tiene empresa asociada'
+                ], 422);
+            }
             $usuario = User::findOrFail($id_usuario);
 
-            if (empty($usuario->woocommerce_api_key)) {
-                $usuario->woocommerce_api_key = Str::random(64);
+            if (empty($empresa->woocommerce_api_key)) {
+                $empresa->woocommerce_api_key = Str::random(64);
             }
 
-            $usuario->woocommerce_store_url = $request->store_url;
-            $usuario->woocommerce_consumer_key = $request->consumer_key;
-            $usuario->woocommerce_consumer_secret = $request->consumer_secret;
-            $usuario->woocommerce_status = 'connecting'; // Estado temporal
-            $usuario->save();
+            $empresa->woocommerce_store_url = $request->store_url;
+            $empresa->woocommerce_consumer_key = $request->consumer_key;
+            $empresa->woocommerce_consumer_secret = $request->consumer_secret;
+            $empresa->woocommerce_status = 'connecting'; // Estado temporal
+            $empresa->save();
 
 
             $client = new WooCommerceApiClient(
-                $usuario->woocommerce_store_url,
-                $usuario->woocommerce_consumer_key,
-                $usuario->woocommerce_consumer_secret
+                $empresa->woocommerce_store_url,
+                $empresa->woocommerce_consumer_key,
+                $empresa->woocommerce_consumer_secret
             );
 
             $response = $client->get('products', ['per_page' => 1]);
 
 
+            $empresa->woocommerce_status = 'connected';
+            $empresa->save();
+
             $usuario->woocommerce_status = 'connected';
             $usuario->save();
 
             Log::info('Conexión exitosa con WooCommerce', [
-                'user_id' => $usuario->id,
-                'store_url' => $usuario->woocommerce_store_url
+                'empresa_id' => $empresa->id,
+                'store_url' => $empresa->woocommerce_store_url
             ]);
 
 
@@ -295,7 +306,10 @@ class UsuariosController extends Controller
             ], 422);
         } catch (\Exception $e) {
 
-            if (isset($usuario)) {
+            if (isset($empresa)) {
+                $empresa->woocommerce_status = 'disconnected';
+                $empresa->save();
+
                 $usuario->woocommerce_status = 'disconnected';
                 $usuario->save();
             }
