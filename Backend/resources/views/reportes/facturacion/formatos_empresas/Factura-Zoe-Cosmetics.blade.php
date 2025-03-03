@@ -23,12 +23,12 @@
             margin: 0px;
         }
 
-        #cliente        {top: 3.5cm; left: 2cm; width: 8cm; overflow: hidden;}
-        #direccion      {top: 4cm; left: 2cm; width: 15cm; overflow: hidden;}
-        #municipio      {top: 4.5cm; left: 2cm; width: 5cm;}
+        #cliente        {top: 3cm; left: 2cm; width: 8cm; overflow: hidden;}
+        #direccion      {top: 3.6cm; left: 2cm; width: 15cm; overflow: hidden;}
+        #municipio      {top: 4.3cm; left: 2cm; width: 5cm;}
         
-        #fecha          {top: 3.5cm; left: 10cm; }
-        #departamento   {top: 4.5cm; left: 10cm; width: 5cm;}
+        #fecha          {top: 3cm; left: 10cm; }
+        #departamento   {top: 4.3cm; left: 10cm; width: 5cm;}
         #nit            {top: 5cm; left: 11cm; }
         #condicion      {top: 5.5cm; left: 13cm; }
 
@@ -44,14 +44,14 @@
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {top: 15.3cm; left: 1cm; width: 8.5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 15.6cm; left: 1cm; width: 8.5cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 15.3cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 15.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #subtotal  {top: 16cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #no_sujeta  {top: 16.5cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #exenta     {top: 17cm; left: 13.5cm; width: 1.5cm; text-align: right;}
-        #total      {top: 17.8cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 15cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #iva_retenido  {top: 15.6cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #sub_total  {top: 16.2cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #no_sujeta  {top: 16.8cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #exenta     {top: 17.4cm; left: 13.5cm; width: 1.5cm; text-align: right;}
+        #total      {top: 18cm; left: 13.5cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;}
 
@@ -94,7 +94,7 @@
         {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
         <p id="suma"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>
-{{--        <p id="sub_total"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>--}}
+        <p id="sub_total"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>
         {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
         @if($venta->no_sujeta > 0)
             <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
