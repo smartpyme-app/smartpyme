@@ -181,7 +181,9 @@ export class ClienteInformacionComponent implements OnInit {
 
         this.cliente = cliente;
         if (this.esNuevo) {
-          this.router.navigate(['/clientes']);
+          //this.router.navigate(['/clientes']);
+          //cliente/editar
+          this.router.navigate(['/cliente/editar', cliente.id]);
         }
 
         this.saving = false;
