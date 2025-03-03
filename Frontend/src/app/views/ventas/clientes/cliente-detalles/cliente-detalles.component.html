@@ -73,9 +73,104 @@
                     </div>
                     
                 </div>
+                <div class="row mt-4" *ngIf="cliente.tipo == 'Empresa'">
+                    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">Contactos adicionales</h6>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="table-responsive">
+                            <table class="table table-borderless table-hover" *ngIf="cliente.contactos?.length > 0">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Correo</th>
+                                        <th>Teléfono</th>
+                                        <th>Cargo</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let contacto of cliente.contactos">
+                                        <td>{{contacto.nombre}} {{contacto.apellido}}</td>
+                                        <td>{{contacto.correo}}</td>
+                                        <td>{{contacto.telefono}}</td>
+                                        <td>{{contacto.cargo}}</td>
+                                        <!-- En la tabla de contactos -->
+                                        <td class="text-center">
+                                            <!--Ver detalles-->
+                                            <button type="button" class="btn btn-light btn-sm me-2" (click)="openModal(mcontacto,contacto)">
+                                                <i class="fa fa-eye"></i>
+                                            </button>
+                                          
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="text-center py-3" *ngIf="!cliente.contactos?.length">
+                                <span class="badge bg-primary">No hay contactos registrados</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<ng-template #mcontacto>
+    <div class="modal-header">
+        <h4 class="modal-title text-center">Detalles del contacto</h4>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+      </div>
+    <div class="modal-body">
+      <form (ngSubmit)="submit($event)">
+      <div class="row">
+          
+          <div class="form-group col-md-6">
+              <label for="nombre">Nombre:</label>
+              <input type="text" class="form-control" name="nombre" [(ngModel)]="contacto.nombre">
+          </div>
+          <div class="form-group col-md-6">
+              <label for="apellido">Apellido:</label>
+              <input type="text" class="form-control" name="apellido" [(ngModel)]="contacto.apellido">
+          </div>
+          <div class="form-group col-md-6">
+              <label for="correo">Correo:</label>
+              <input type="email" class="form-control" name="correo" [(ngModel)]="contacto.correo">
+          </div>
+          <div class="form-group col-6 col-md-6">
+              <label for="sexo">Sexo:</label>
+              <select class="form-control" name="sexo" [(ngModel)]="contacto.sexo">
+                  <option value="Hombre">Hombre</option>
+                  <option value="Mujer">Mujer</option>
+                  <option value="Otro">Otro</option>
+              </select>
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="telefono">Teléfono:</label>
+              <input type="text" class="form-control" name="telefono" [(ngModel)]="contacto.telefono">
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="cargo">Cargo:</label>
+              <input type="text" class="form-control" name="cargo" [(ngModel)]="contacto.cargo">
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="red_social">Red social:</label>
+              <input type="text" class="form-control" name="red_social" [(ngModel)]="contacto.red_social">
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="fecha_nacimiento">Fecha nacimiento:</label>
+              <input type="date" class="form-control" name="fecha_nacimiento" [(ngModel)]="contacto.fecha_nacimiento">
+          </div>
+          <div class="form-group col-12">
+              <label for="nota">Nota:</label>
+              <textarea class="form-control" name="nota" [(ngModel)]="contacto.nota" cols="30" rows="2"></textarea>
+          </div>
+                      
+      </div>
+      </form>
+    </div>
+  </ng-template>
 
 
