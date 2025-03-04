@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin;
 
+use App\Models\Suscripcion;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 
 class Empresa extends Model
 {
+
+    // use SoftDeletes;
     protected $table = 'empresas';
     protected $fillable = [
         'nombre',
@@ -49,6 +52,7 @@ class Empresa extends Model
         'cobra_iva',
         'tipo_plan',
         'fecha_cancelacion',
+        'metodo_pago',
         'referido',
         'campania',
         'wompi_aplicativo',
@@ -190,8 +194,11 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Admin\Canal', 'id_empresa');
     }
 
-    public function sucursales()
-    {
+    public function bodegas(){
+        return $this->hasMany('App\Models\Inventario\Bodega', 'id_empresa');
+    }
+
+    public function sucursales(){
         return $this->hasMany('App\Models\Admin\Sucursal', 'id_empresa');
     }
 
@@ -300,5 +307,15 @@ class Empresa extends Model
     public function canal()
     {
         return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
+    }
+
+    public function suscripcion()
+    {
+        return $this->hasOne(Suscripcion::class, 'empresa_id');
+    }
+
+    public function suscripcionActiva()
+    {
+        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
     }
 }

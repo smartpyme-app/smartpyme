@@ -30,17 +30,6 @@ class User extends Authenticatable implements JWTSubject
         'codigo_autorizacion',
         'editar_precio_venta',
         'woocommerce_status',
-        // 'woocommerce_api_key',
-        // 'woocommerce_api_secret',
-        // 'woocommerce_store_url',
-        // 'woocommerce_consumer_key',
-        // 'woocommerce_consumer_secret',
-        // 'woocommerce_sync_status',
-        // 'woocommerce_last_sync',
-        // 'woocommerce_error',
-        // 'woocommerce_sync_progress',
-        // 'woocommerce_sync_total_batches',
-        // 'woocommerce_sync_processed_batches'
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -101,4 +90,20 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    public function suscripciones()
+    {
+        return $this->hasMany(Suscripcion::class, 'usuario_id');
+    }
+
+    public function ordenesPago()
+    {
+        return $this->hasMany(OrdenPago::class, 'id_usuario');
+    }
+
+    public function metodoPago()
+    {
+        return $this->hasMany(MetodoPago::class, 'id_usuario');
+    }
+
 }
