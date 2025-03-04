@@ -31,12 +31,19 @@ export class UsuariosComponent implements OnInit {
         private modalService: BsModalService ){}
 
 	ngOnInit() {
-        this.filtros.id_sucursal = '';
-        this.filtros.estado = '';
-        this.filtros.buscador = '';
-        this.filtros.orden = 'name';
-        this.filtros.direccion = 'desc';
-        this.filtros.paginate = 30;
+        // Recuperar filtros del localStorage si existen
+        const savedFilters = localStorage.getItem('usuarios_filtros');
+        if (savedFilters) {
+            this.filtros = JSON.parse(savedFilters);
+        } else {
+            // Valores por defecto si no hay filtros guardados
+            this.filtros.id_sucursal = '';
+            this.filtros.estado = '';
+            this.filtros.buscador = '';
+            this.filtros.orden = 'name';
+            this.filtros.direccion = 'desc';
+            this.filtros.paginate = 30;
+        }
 
         this.loadAll();
 
@@ -47,8 +54,6 @@ export class UsuariosComponent implements OnInit {
         this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
-
-
     }
 
     public loadAll(){
@@ -56,6 +61,9 @@ export class UsuariosComponent implements OnInit {
         if(!this.filtros.id_sucursal){
             this.filtros.id_sucursal = '';
         }      
+        // Guardar filtros en localStorage
+        localStorage.setItem('usuarios_filtros', JSON.stringify(this.filtros));
+        
         this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.contarActivos();
@@ -129,14 +137,31 @@ export class UsuariosComponent implements OnInit {
 
     onFiltrar(){
         this.loading = true;
+        // Guardar filtros en localStorage antes de aplicarlos
+        localStorage.setItem('usuarios_filtros', JSON.stringify(this.filtros));
+        
         this.apiService.store('usuarios/filtrar', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;;
             this.modalRef?.hide();
         }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
+    public limpiarFiltros() {
 
+        this.filtros = {
+            id_sucursal: '',
+            estado: '',
+            buscador: '',
+            orden: 'name',
+            direccion: 'desc',
+            paginate: 30
+        };
+        
+
+        localStorage.removeItem('usuarios_filtros');
+        
+
+        this.loadAll();
+    }
 }
-
