@@ -49,7 +49,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
               $row->codigo,
               $row->barcode,
               $row->marca,
-              number_format($row->costo, 2),
+              $row->empresa()->pluck('valor_inventario')->first() == 'promedio' ? number_format($row->costo_promedio, 2) : number_format($row->costo, 2),
               number_format($row->precio, 2),
               number_format($row->precio - $row->costo, 2),
               number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),
@@ -66,10 +66,8 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
         return Producto::with(['inventarios' => function ($q) use ($request) {
-                        if ($request->id_sucursal) {
-                            $q->whereHas('bodega', function ($bodegaQuery) use ($request) {
-                                $bodegaQuery->where('id_sucursal', $request->id_sucursal);
-                            });
+                        if ($request->id_bodega) {
+                            $q->where('id_bodega', $request->id_bodega);
                         }
                     }, 'precios'])
                     ->when($request->id_categoria, function($query) use ($request){

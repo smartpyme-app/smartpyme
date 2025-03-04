@@ -24,6 +24,7 @@ class Venta extends Model
         'forma_pago',
         'tipo_documento',
         'num_cotizacion',
+        'condicion',
         'referencia',
         'fecha_pago',
         'fecha_expiracion',
@@ -106,7 +107,7 @@ class Venta extends Model
 
     public function getNombreVendedorAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        return $this->vendedor()->pluck('name')->first();
     }
 
     public function getNombreSucursalAttribute()

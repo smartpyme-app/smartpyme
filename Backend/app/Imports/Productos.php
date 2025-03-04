@@ -93,6 +93,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $producto->nombre = $row['nombre'];
         $producto->precio = $row['precio'];
         $producto->costo = $row['costo'];
+        $producto->costo_promedio = $row['costo'];
         $producto->stock = $row['sucursal_1_stock'];
         $producto->id_categoria = $id_categoria;
         $producto->id_subcategoria = $id_subcategoria ?? null;

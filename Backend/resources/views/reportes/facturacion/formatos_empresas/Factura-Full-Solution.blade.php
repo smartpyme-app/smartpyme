@@ -34,10 +34,11 @@
         #departamento   {top: 4cm; left: 7cm; width: 9cm;}
         #nit            {top: 4cm; left: 13cm; }
         #condicion      {top: 4.5cm; left: 1.7cm; }
+        #vendedor      {top: 4.5cm; left: 7cm; }
 
 
-        table   {position: absolute; top: 6cm; left: 1cm; text-align: left; border-collapse: collapse; width: 18cm; }
-        table td{height: 0.6cm; text-align: left;}
+        table   {position: absolute; top: 5.6cm; left: 1cm; text-align: left; border-collapse: collapse; width: 18cm; }
+        table td{height: 0.4cm; text-align: left;}
 
         .codigobarra{ width: 1.5cm; text-align: center;}
         .codigo{ width: 1.5cm; text-align: center;}
@@ -50,7 +51,7 @@
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {font-size:11px; top: 15.1cm;  left: 2cm; width: 10cm; word-break: break-all; white-space: normal;}
+        #letras     {font-size:10px; top: 15.1cm;  left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
 
         #suma       {top: 13.6cm; left: 18cm; width: 2cm; text-align: right; font-size: 10px;}
         #iva_retenido  {top: 13.9cm; left: 18cm; width: 2cm; text-align: right; font-size: 10px;}
@@ -59,12 +60,12 @@
         #exenta     {top: 14.8cm; left: 18cm; width: 2cm; text-align: right; font-size: 10px;}
         #total      {top: 15.1cm; left: 18cm; width: 2cm; text-align: right; font-size: 10px;}
 
-        #text_suma       {top: 13.6cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva_retenido  {top: 13.9cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_subtotal   {top: 14.2cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_no_sujeta  {top: 14.5cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_exenta     {top: 14.8cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_total      {top: 15.1cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_suma       {top: 13.6cm; left: 14.3cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva_retenido  {top: 13.9cm; left: 14.3cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_subtotal   {top: 14.2cm; left: 14.3cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_no_sujeta  {top: 14.5cm; left: 14.3cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_exenta     {top: 14.8cm; left: 14.3cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_total      {top: 15.1cm; left: 14.3cm; width: 2.5cm; text-align: right; font-size: 10px;}
 
 
         .no-print{position: absolute;}
@@ -89,11 +90,12 @@
         @if($venta->estado == 'Pagada')
             <p id="condicion"><b>Condición: </b>CONTADO</p>
         @elseif($venta->estado == 'Pendiente')
-            <p id="condicion"><b>Condición: </b>CREDITO</p>
+            <p id="condicion"><b>Condición: </b>CREDITO a {{ \Carbon\Carbon::parse($venta->fecha)->diffInDays(\Carbon\Carbon::parse($venta->fecha_pago), false) }} días</p>
         @endif
         @if ($venta->id_cliente)
             <p id="nit"><b>DUI:</b> {{ $cliente->dui }}</p>
         @endif
+            <p id="vendedor"><b>Vendedor: </b>{{ $venta->nombre_vendedor }}</p>
     </div>
 
     <table>
@@ -139,7 +141,7 @@
     </div>
 </section>
 
-<section id="factura" style="margin-top: -0.5cm;">
+<section id="factura" style="margin-top: -0.7cm;">
     <div id="header">
         <p id="fecha"><b>Fecha:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
         <p id="cliente"><b>Cliente:</b> {{ $venta->nombre_cliente }}</p>

@@ -28,19 +28,20 @@
 
         #fecha          {top: 3cm; left: 12.5cm; }
         #giro           {top: 4cm; left: 12.5cm }
-        #nrc            {top: 4.5cm; left: 12.5cm }
+        #nrc            {top: 4.5cm; left: 15cm }
 
         #cliente        {top: 3cm; left: 1.7cm; width: 9cm;}
         #direccion      {top: 3.5cm; left: 1.7cm; width: 15cm;}
         #municipio      {top: 4cm; left: 1.7cm; width: 9cm;}
         #departamento   {top: 4cm; left: 7cm; width: 9cm;}
-        #nit            {top: 4.5cm; left: 7cm; }
+        #nit            {top: 4.5cm; left: 11cm; }
         #condicion      {top: 4.5cm; left: 1.7cm; }
+        #vendedor      {top: 4.5cm; left: 7cm; }
 
 
 
         table   {position: absolute; top: 5.6cm; left: 1cm; text-align: left; border-collapse: collapse; width: 18cm;}
-        table td{height: 0.6cm; text-align: left;}
+        table td{height: 0.4cm; text-align: left;}
 
         .codigobarra{ width: 1.7cm; text-align: center;}
         .codigo{ width: 1.7cm; text-align: center;}
@@ -53,7 +54,7 @@
         .gravadas{ width: 2cm; text-align: right;}
 
 
-        #letras     {font-size:11px; top: 15.1cm; left: 2cm; width: 10cm; word-break: break-all; white-space: normal;}
+        #letras     {font-size:10px; top: 15.1cm; left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
 
         #suma       {top: 12.9cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
         #iva        {top: 13.3cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
@@ -63,13 +64,13 @@
         #exenta     {top: 14.6cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
         #total      {top: 15cm; left: 18cm; width: 2cm; text-align: right; font-size: 11px;}
 
-        #text_suma       {top: 12.9cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva        {top: 13.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_subtotal   {top: 13.7cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_iva_retenido  {top: 14cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_no_sujeta  {top: 14.3cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_exenta     {top: 14.6cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
-        #text_total      {top: 15cm; left: 14.5cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_suma       {top: 12.9cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva        {top: 13.3cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_subtotal   {top: 13.7cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_iva_retenido  {top: 14cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_no_sujeta  {top: 14.3cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_exenta     {top: 14.6cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
+        #text_total      {top: 15cm; left: 14.2cm; width: 2.5cm; text-align: right; font-size: 10px;}
 
         .no-print{position: absolute;}
 
@@ -93,11 +94,12 @@
         @if($venta->estado == 'Pagada')
             <p id="condicion"><b>Condición: </b>CONTADO</p>
         @elseif($venta->estado == 'Pendiente')
-            <p id="condicion"><b>Condición: </b>CREDITO</p>
+            <p id="condicion"><b>Condición: </b>CREDITO a {{ \Carbon\Carbon::parse($venta->fecha)->diffInDays(\Carbon\Carbon::parse($venta->fecha_pago), false) }} días</p>
         @endif
         <p id="nit"><b>NIT:</b> {{ $cliente->nit }}</p>
         <p id="nrc"><b>NRC:</b> {{ $cliente->ncr }}</p>
         <p id="giro"><b>Giro:</b>{{ \Illuminate\Support\Str::limit($cliente->giro, 30, $end = '...') }}</p>
+        <p id="vendedor"><b>Vendedor: </b>{{ $venta->nombre_vendedor }}</p>
     </div>
 
     <table>
@@ -108,7 +110,7 @@
                 <td class="codigo">     {{ $detalle->producto()->pluck('codigo')->first() }}</td>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto">   {{ $detalle->nombre_producto  }}</td>
-                <td class="precio">     ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
                 <td class="descuento">
                     @if ($detalle->descuento > 0)
                         ${{ number_format($detalle->descuento, 2) }}  

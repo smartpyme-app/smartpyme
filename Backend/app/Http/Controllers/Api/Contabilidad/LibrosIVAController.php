@@ -27,21 +27,14 @@ class LibrosIVAController extends Controller
 
         $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', '!=', 'Anulada')
-            // ->whereHas('documento', function($q) {
-            //     $q->where('nombre', 'Factura')
-            //         ->orWhere('nombre', 'Factura de exportación');
-
-            // })
             ->whereHas('documento', function ($q) {
                 $q->where('nombre', 'Factura')
                     ->orWhere('nombre', 'Factura de exportación');
             })
-
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->orderByDesc('fecha')
             ->get();
-        //Log::info($ventas);
 
         $ivas = $ventas->map(function ($venta) {
             $documento = $venta->documento;
@@ -52,11 +45,9 @@ class LibrosIVAController extends Controller
                 'correlativo'           => $venta->correlativo,
                 'num_control_interno'   => $venta->correlativo,
                 'ventas_exentas'        => $venta->exenta,
-                // 'ventas_gravadas'       => $venta->total,
-                'ventas_gravadas' => $venta->documento->nombre === 'Factura de exportación' ? 0 : $venta->total,
-                //'exportaciones'         => 0,
-                'exportaciones' => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : 0,
-                'total'                 => $venta->total,
+                'ventas_gravadas'       => $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->sub_total,
+                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->sub_total : '0',
+                'total'                 => $venta->sub_total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
                 'no_sujeta'            => $venta->no_sujeta,
                 'id_venta'              => $venta->id,
