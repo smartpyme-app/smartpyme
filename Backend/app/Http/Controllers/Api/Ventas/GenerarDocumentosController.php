@@ -175,8 +175,12 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Vape-Store', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 154 || Auth::user()->id_empresa == 396 || Auth::user()->id_empresa == 397 || Auth::user()->id_empresa == 398 || Auth::user()->id_empresa == 397 ){ //154
+            elseif(Auth::user()->id_empresa == 154 || Auth::user()->id_empresa == 397 || Auth::user()->id_empresa == 398 || Auth::user()->id_empresa == 397 ){ //154
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 396 ){ //154
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon-SA-CV', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 367 ){ //367
