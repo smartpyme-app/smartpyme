@@ -172,12 +172,12 @@ class WooCommerceExportService
         }
 
         // // Preparar imagen si existe
-        // $images = [];
-        // if (!empty($producto->img)) {
-        //     $images[] = [
-        //         'src' => url('/img/' . $producto->img)
-        //     ];
-        // }
+        $images = [];
+        if (!empty($producto->img)) {
+            $images[] = [
+                'src' => url('/img/' . $producto->img)
+            ];
+        }
 
 
         $productData = [
@@ -206,9 +206,9 @@ class WooCommerceExportService
         }
 
         // Añadir imágenes si existen
-        // if (!empty($images)) {
-        //     $productData['images'] = $images;
-        // }
+        if (!empty($images)) {
+            $productData['images'] = $images;
+        }
 
         return $productData;
     }

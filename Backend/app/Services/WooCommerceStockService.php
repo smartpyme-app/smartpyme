@@ -243,13 +243,13 @@ class WooCommerceStockService
             ];
         }
         $images = [];
-        // if (!empty($producto->imagenes)) {
-        //     foreach ($producto->imagenes as $imagen) {
-        //         $images[] = [
-        //             'src' => url('/img' . $imagen->img)
-        //         ];
-        //     }
-        // }
+        if (!empty($producto->imagenes)) {
+            foreach ($producto->imagenes as $imagen) {
+                $images[] = [
+                    'src' => url('/img' . $imagen->img)
+                ];
+            }
+        }
 
 
         $productData = [
@@ -278,9 +278,9 @@ class WooCommerceStockService
         }
 
         // Añadir imágenes si existen
-        // if (!empty($images)) {
-        //     $productData['images'] = $images;
-        // }
+        if (!empty($images)) {
+            $productData['images'] = $images;
+        }
 
         return $productData;
     }
