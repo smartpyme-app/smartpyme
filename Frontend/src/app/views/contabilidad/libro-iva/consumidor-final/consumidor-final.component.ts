@@ -126,4 +126,9 @@ export class ConsumidorFinalComponent implements OnInit {
         );
     }
 
+    public setSucursal(id: number) {
+        this.filtros.id_sucursal = id;
+        this.loadAll();
+    }
+
 }

@@ -124,4 +124,9 @@ export class ContribuyentesComponent implements OnInit {
           this.downloading = false;
         }, (error) => {this.alertService.error(error); this.downloading = false; });
     }
+
+    public setSucursal(id: number) {
+        this.filtros.id_sucursal = id;
+        this.loadAll();
+    }
 }

@@ -21,7 +21,7 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="setSucursal($event.target.value)">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
             </select>
