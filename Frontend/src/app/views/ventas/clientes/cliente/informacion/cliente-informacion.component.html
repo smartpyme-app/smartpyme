@@ -227,12 +227,11 @@
                             <td>{{contacto.correo}}</td>
                             <td>{{contacto.telefono}}</td>
                             <td>{{contacto.cargo}}</td>
-                            <!-- En la tabla de contactos -->
                             <td class="text-center">
-                                <button type="button" class="btn btn-light btn-sm me-2" (click)="openModal(mcontacto,contacto)">
+                                <button type="button" class="btn btn-light btn-sm me-2" tooltip="Editar contacto (F2)" (click)="openModal(mcontacto,contacto)">
                                     <i class="fa fa-pencil"></i>
                                 </button>
-                                <button type="button" class="btn btn-light btn-sm" (click)="eliminarContacto(contacto)">
+                                <button type="button" class="btn btn-light btn-sm" tooltip="Eliminar contacto (F4)" (click)="eliminarContacto(contacto)">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </td>
