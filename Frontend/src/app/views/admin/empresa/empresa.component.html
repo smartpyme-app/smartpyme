@@ -383,7 +383,7 @@
     <!--Integraciones api key para webhooks-->
     <tab heading="Integraciones">
         <section class="bg-white rounded p-4 mb-4">
-            <!-- Alerta informativa -->
+
             <div class="alert alert-info mb-4">
                 <i class="fa fa-info-circle me-2"></i> 
                 En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
@@ -415,12 +415,12 @@
                     </div>
                 </div>
 
-                <!-- WooCommerce Integration Section -->
+    
                 <div class="col-12">
                     <h5 class="mb-3">Integración WooCommerce</h5>
                     
                     <div class="row g-3">
-                        <!-- URL del Webhook -->
+    
                         <div class="col-12">
                             <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
                             <div class="input-group">
@@ -442,7 +442,7 @@
                             </small>
                         </div>
 
-                        <!-- Credenciales WooCommerce -->
+
                         <div class="col-md-6">
                             <label for="woocommerce_store_url" class="form-label">URL de la Tienda:</label>
                             <input type="text" 
@@ -487,7 +487,7 @@
                             </small>
                         </div>
 
-                        <!-- Estado y Acciones -->
+       
                         <div class="col-12">
                             <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret" 
                                 class="alert mt-3" 
@@ -499,6 +499,22 @@
                             </div>
 
                             <div class="text-end mt-3">
+                                <button tooltip="importar productos a WooCommerce" 
+                                        (click)="exportarWooCommerce()" 
+                                        class="btn btn-light me-2" 
+                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
+                                    Importar productos
+                                </button>
+                                
+                                <button tooltip="Descargar productos para importar en WooCommerce (F7)" 
+                                        (click)="descargarWooCommerce()" 
+                                        class="btn btn-light me-2" 
+                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
+                                    Descargar productos
+                                </button>
+
                                 <button class="btn btn-light text-danger me-2" 
                                         type="button"
                                         *ngIf="empresa.is_current_user_connected_to_woocommerce"

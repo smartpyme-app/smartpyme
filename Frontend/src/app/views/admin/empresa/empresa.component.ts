@@ -22,6 +22,8 @@ export class EmpresaComponent implements OnInit {
     public municipios:any = [];
     public actividad_economicas:any = [];
     public canales: any[] = [];
+    public downloading:boolean = false;
+    public filtros:any = {};
 
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
@@ -354,6 +356,96 @@ export class EmpresaComponent implements OnInit {
         );
 
 
+    }
+
+
+    public exportarWooCommerce(){
+        Swal.fire({
+            title: '¿Está seguro de exportar sus productos a WooCommerce?',
+            html: `
+                <p>Esta acción iniciará una migración asincrónica de productos a WooCommerce:</p>
+                <ul style="text-align: left; margin-top: 1em;">
+                    <li>Solo se migrarán los productos relacionados con su usuario y sucursal actual</li>
+                    <li>Los productos vinculados a otras sucursales no serán exportados</li>
+                    <li>El proceso se ejecutará en segundo plano y puede tomar varios minutos</li>
+                    <li>Esta acción no se puede revertir</li>
+                </ul>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, iniciar exportación',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Iniciando exportación...',
+                    text: 'La migración de productos ha comenzado y continuará en segundo plano',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+                this.apiService.store('producto/exportar-woocommerce', {}).subscribe(
+                    response => {
+                        Swal.fire({
+                            title: 'Proceso iniciado',
+                            text: 'La migración de productos a WooCommerce se está ejecutando en segundo plano',
+                            icon: 'success'
+                        });
+                    },
+                    error => {
+                        this.alertService.error(error);
+                    }
+                );
+            }
+        });
+    }
+    //descargarWooCommerce
+    public descargarWooCommerce() {
+        console.log('descargarWooCommerce');
+        this.downloading = true;
+
+        Swal.fire({
+            title: 'Exportando productos a WooCommerce',
+            text: 'Estamos preparando el archivo CSV con los productos de WooCommerce',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
+            (data: Blob) => {
+                Swal.close();
+
+                Swal.fire({
+                    title: 'Exportando productos a WooCommerce',
+                    text: 'El archivo CSV está listo para descargar',
+                    icon: 'success',
+                    showConfirmButton: true
+                });
+                const blob = new Blob([data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                
+                this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
+            },
+            (error) => { 
+                this.alertService.error('Error en la exportación: ' + error); 
+                this.downloading = false; 
+            }
+        );
     }
 
 
