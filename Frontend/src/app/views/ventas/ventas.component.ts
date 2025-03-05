@@ -100,29 +100,41 @@ export class VentasComponent implements OnInit {
   }
 
   public loadAll() {
-    this.filtros.id_sucursal = '';
-    this.filtros.id_cliente = '';
-    this.filtros.id_usuario = '';
-    this.filtros.id_vendedor = '';
-    this.filtros.id_canal = '';
-    this.filtros.id_documento = '';
-    this.filtros.id_proyecto = '';
-    this.filtros.dte = '';
-    this.filtros.forma_pago = '';
-    this.filtros.estado = '';
-    this.filtros.buscador = '';
-    this.filtros.orden = 'fecha';
-    this.filtros.direccion = 'desc';
-    this.filtros.paginate = 10;
+    const filtrosGuardados = localStorage.getItem('ventasFiltros');
+    
+    if (filtrosGuardados) {
+      this.filtros = JSON.parse(filtrosGuardados);
+      console.log(this.filtros);
+    } else {
+      
+      this.filtros = {
+        id_sucursal: '',
+        id_cliente: '',
+        id_usuario: '',
+        id_vendedor: '',
+        id_canal: '',
+        id_documento: '',
+        id_proyecto: '',
+        dte: '',
+        forma_pago: '',
+        estado: '',
+        buscador: '',
+        orden: 'fecha',
+        direccion: 'desc',
+        paginate: 10
+      };
 
-    if (this.apiService.auth_user().tipo != 'Administrador') {
-      this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+      // Aplicar filtro de sucursal para usuarios no administradores
+      if (this.apiService.auth_user().tipo != 'Administrador') {
+        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+      }
     }
 
     this.filtrarVentas();
   }
 
   public filtrarVentas() {
+    localStorage.setItem('ventasFiltros', JSON.stringify(this.filtros));
     this.loading = true;
     this.apiService.getAll('ventas', this.filtros).subscribe(
       (ventas) => {
@@ -614,6 +626,20 @@ export class VentasComponent implements OnInit {
                 this.alertService.warning('Hubo un problema', error);
             });
         },1000);
+    }
+
+    public limpiarFiltros() {
+      localStorage.removeItem('ventasFiltros');
+      this.loadAll();
+    }
+
+    public filtrosActivos(): boolean {
+      return Object.values(this.filtros).some(valor => {
+        if (Array.isArray(valor)) {
+          return valor.length > 0;
+        }
+        return valor !== '' && valor !== null && valor !== undefined;
+      });
     }
 
 

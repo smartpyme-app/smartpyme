@@ -6,7 +6,6 @@ import { formatDate } from '@angular/common';
 import Swal from 'sweetalert2';
 import { AppConstants } from '../../../../app/constants/app.constants';
 
-
 interface Plan {
   id: number;
   nombre: string;
@@ -15,14 +14,13 @@ interface Plan {
 
 interface OrdenPago {
   id_orden: string;
-  fecha_transaccion: string; 
+  fecha_transaccion: string;
   monto: string;
   metodo_pago?: string;
   estado: string;
   codigo_autorizacion?: string;
   comprobante_url?: string;
 }
-
 
 @Component({
   selector: 'app-admin-suscripciones',
@@ -33,20 +31,38 @@ export class AdminSuscripcionesComponent implements OnInit {
   public suscripcion: any = {};
   public usuario: any = {};
   public empresa: any = {};
+  public users: any[] = [];
   public filtros: any = {};
   public loading: boolean = false;
   public saving: boolean = false;
   public nuevaSuscripcion: any = {};
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
+  public editando: boolean = false;
 
   public historialPagos: OrdenPago[] = [];
   public loadingHistorial: boolean = false;
 
   public planes: Plan[] = [
-    { id: AppConstants.PLANID.EMPRENDEDOR, nombre: AppConstants.PLANES.EMPRENDEDOR.NOMBRE, monto: AppConstants.PLANES.EMPRENDEDOR.PRECIO },
-    { id: AppConstants.PLANID.ESTANDAR, nombre: AppConstants.PLANES.ESTANDAR.NOMBRE, monto: AppConstants.PLANES.ESTANDAR.PRECIO },
-    { id: AppConstants.PLANID.AVANZADO, nombre: AppConstants.PLANES.AVANZADO.NOMBRE, monto: AppConstants.PLANES.AVANZADO.PRECIO },
-    { id: AppConstants.PLANID.PRO, nombre: AppConstants.PLANES.PRO.NOMBRE, monto: AppConstants.PLANES.PRO.PRECIO }
+    {
+      id: AppConstants.PLANID.EMPRENDEDOR,
+      nombre: AppConstants.PLANES.EMPRENDEDOR.NOMBRE,
+      monto: AppConstants.PLANES.EMPRENDEDOR.PRECIO,
+    },
+    {
+      id: AppConstants.PLANID.ESTANDAR,
+      nombre: AppConstants.PLANES.ESTANDAR.NOMBRE,
+      monto: AppConstants.PLANES.ESTANDAR.PRECIO,
+    },
+    {
+      id: AppConstants.PLANID.AVANZADO,
+      nombre: AppConstants.PLANES.AVANZADO.NOMBRE,
+      monto: AppConstants.PLANES.AVANZADO.PRECIO,
+    },
+    {
+      id: AppConstants.PLANID.PRO,
+      nombre: AppConstants.PLANES.PRO.NOMBRE,
+      monto: AppConstants.PLANES.PRO.PRECIO,
+    },
   ];
 
   modalRef!: BsModalRef;
@@ -76,7 +92,7 @@ export class AdminSuscripcionesComponent implements OnInit {
 
   public filtrarSuscripciones() {
     this.loading = true;
-    
+
     this.apiService.getAll('suscripciones', this.filtros).subscribe(
       (suscripciones) => {
         this.suscripciones = suscripciones;
@@ -114,13 +130,23 @@ export class AdminSuscripcionesComponent implements OnInit {
   }
 
   public openEditar(template: TemplateRef<any>, suscripcion: any) {
-    this.suscripcion = {
-      ...suscripcion,
-      fecha_proximo_pago: this.formatearFecha(suscripcion.fecha_proximo_pago),
-      fin_periodo_prueba: this.formatearFecha(suscripcion.fin_periodo_prueba),
-    };
-
-    this.modalRef = this.modalService.show(template);
+    this.getUsersForSelect(suscripcion.empresa_id)
+      .then(() => {
+        this.editando = true;
+        this.suscripcion = {
+          ...suscripcion,
+          fecha_proximo_pago: this.formatearFecha(
+            suscripcion.fecha_proximo_pago
+          ),
+          fin_periodo_prueba: this.formatearFecha(
+            suscripcion.fin_periodo_prueba
+          ),
+        };
+        this.modalRef = this.modalService.show(template);
+      })
+      .catch((error) => {
+        this.alertService.error('No se pudo obtener usuarios');
+      });
   }
 
   private formatearFecha(fecha: string): string {
@@ -160,7 +186,7 @@ export class AdminSuscripcionesComponent implements OnInit {
         }
       );
   }
-  
+
   public onSubmitEditSuscription() {
     if (!this.suscripcion.id) {
       this.alertService.error('ID de suscripción no válido');
@@ -171,6 +197,7 @@ export class AdminSuscripcionesComponent implements OnInit {
 
     const datosSuscripcion = {
       ...this.suscripcion,
+      usuario_id: this.suscripcion.usuario_id,
       fecha_proximo_pago: new Date(this.suscripcion.fecha_proximo_pago),
       fin_periodo_prueba: new Date(this.suscripcion.fin_periodo_prueba),
     };
@@ -194,39 +221,64 @@ export class AdminSuscripcionesComponent implements OnInit {
     );
   }
 
+  private getUsersForSelect(id_empresa: number) {
+    return new Promise<any[]>((resolve, reject) => {
+      const params = {
+        id_empresa: id_empresa,
+      };
+
+      this.apiService
+        .store('suscripcion/getUsersSelect', { params })
+        .subscribe({
+          next: (response: any) => {
+            this.users = response;
+            resolve(response);
+          },
+          error: (error) => {
+            this.alertService.error('Error al cargar usuarios: ' + error);
+            reject(error);
+          },
+        });
+    });
+  }
+
   public openCrearSuscripcion(template: TemplateRef<any>, empresa: any) {
     if (!empresa) {
       this.alertService.error('No se proporcionaron datos de la empresa');
       return;
     }
-  
 
-    this.nuevaSuscripcion = {
-      empresa_id: empresa.id,
-      usuario_id: empresa.usuario_id,
-      plan_id: '',
-      nombre_factura: empresa.nombre,
-      direccion_factura: empresa.direccion,
-      nit: empresa.nit,
-      tipo_plan: '',
-      estado: 'En prueba',
-      monto: 0,
-      fecha_proximo_pago: this.formatearFecha(new Date().toISOString()),
-      fin_periodo_prueba: this.formatearFecha(
-        new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-      ),
-      requiere_factura: Boolean(empresa.nit),
-    };
+    this.getUsersForSelect(empresa.id)
+      .then(() => {
+        (this.editando = false),
+          (this.nuevaSuscripcion = {
+            empresa_id: empresa.id,
+            usuario_id: '',
+            plan_id: '',
+            nombre_factura: empresa.nombre,
+            direccion_factura: empresa.direccion,
+            nit: empresa.nit,
+            tipo_plan: '',
+            estado: 'En prueba',
+            monto: 0,
+            fecha_proximo_pago: this.formatearFecha(new Date().toISOString()),
+            fin_periodo_prueba: this.formatearFecha(
+              new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+            ),
+            requiere_factura: Boolean(empresa.nit),
+          });
 
-    console.log(this.nuevaSuscripcion);
-    console.log(empresa);
-
-    this.modalRef = this.modalService.show(template);
+        this.modalRef = this.modalService.show(template);
+      })
+      .catch((error) => {
+        this.alertService.error('No se pudo obtener usuarios');
+      });
   }
 
-
   public selectPlan(planId: number) {
-    const planSeleccionado = this.planes.find(plan => plan.id === Number(planId));
+    const planSeleccionado = this.planes.find(
+      (plan) => plan.id === Number(planId)
+    );
     if (planSeleccionado) {
       this.nuevaSuscripcion.plan_id = planSeleccionado.id;
       this.nuevaSuscripcion.monto = planSeleccionado.monto;
@@ -234,7 +286,9 @@ export class AdminSuscripcionesComponent implements OnInit {
   }
 
   public selectPlanEdit(planId: number) {
-    const planSeleccionado = this.planes.find(plan => plan.id === Number(planId));
+    const planSeleccionado = this.planes.find(
+      (plan) => plan.id === Number(planId)
+    );
     if (planSeleccionado) {
       if (!this.suscripcion.plan) {
         this.suscripcion.plan = {};
@@ -287,15 +341,15 @@ export class AdminSuscripcionesComponent implements OnInit {
     Swal.fire({
       title: '¿Está seguro?',
       text: '¿Desea suspender el acceso al sistema ?',
-      icon: 'warning', 
+      icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Sí, suspender',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.store('suscripcion/suspender', {empresa}).subscribe({
+        this.apiService.store('suscripcion/suspender', { empresa }).subscribe({
           next: () => {
             Swal.fire(
               '¡Suspendido!',
@@ -305,12 +359,9 @@ export class AdminSuscripcionesComponent implements OnInit {
             this.filtrarSuscripciones();
           },
           error: (error) => {
-            Swal.fire(
-              'No se pudo suspender el sistema.',
-              'error'
-            );
+            Swal.fire('No se pudo suspender el sistema.', 'error');
             this.filtrarSuscripciones();
-          }
+          },
         });
       }
     });
@@ -318,17 +369,17 @@ export class AdminSuscripcionesComponent implements OnInit {
 
   public activarSistema(empresa: any) {
     Swal.fire({
-      title: '¿Está seguro?', 
+      title: '¿Está seguro?',
       text: '¿Desea activar el acceso al sistema?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Sí, activar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.store('suscripcion/activar', {empresa}).subscribe({
+        this.apiService.store('suscripcion/activar', { empresa }).subscribe({
           next: () => {
             Swal.fire(
               '¡Activado!',
@@ -338,18 +389,19 @@ export class AdminSuscripcionesComponent implements OnInit {
             this.filtrarSuscripciones();
           },
           error: (error) => {
-            Swal.fire(
-              'No se pudo activar el sistema.',
-              'error'  
-            );
+            Swal.fire('No se pudo activar el sistema.', 'error');
             this.filtrarSuscripciones();
-          }
+          },
         });
       }
     });
   }
 
-  public openHistorialPagos(template: TemplateRef<any>, suscripcion: any, empresa: any) {
+  public openHistorialPagos(
+    template: TemplateRef<any>,
+    suscripcion: any,
+    empresa: any
+  ) {
     this.loadingHistorial = true;
     this.suscripcion = suscripcion;
     this.suscripcion.empresa = empresa;
@@ -365,7 +417,7 @@ export class AdminSuscripcionesComponent implements OnInit {
         console.error('Error cargando historial:', error); // Para debug
         this.alertService.error('Error al cargar el historial de pagos');
         this.loadingHistorial = false;
-      }
+      },
     });
 
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
@@ -375,20 +427,17 @@ export class AdminSuscripcionesComponent implements OnInit {
     if (!this.historialPagos || !Array.isArray(this.historialPagos)) {
       return [];
     }
-    
-    return this.historialPagos.filter(pago => {
+
+    return this.historialPagos.filter((pago) => {
       if (tipo === 'n1co') {
-        
-        return pago.metodo_pago === 'n1co' || 
-               pago.metodo_pago === 'tarjeta' || 
-               !pago.metodo_pago; 
+        return (
+          pago.metodo_pago === 'n1co' ||
+          pago.metodo_pago === 'tarjeta' ||
+          !pago.metodo_pago
+        );
       } else {
-        
         return pago.metodo_pago === 'transferencia';
       }
     });
   }
-
-  
-
 }

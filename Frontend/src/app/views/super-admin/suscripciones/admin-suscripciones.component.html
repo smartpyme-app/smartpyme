@@ -15,31 +15,56 @@
         <!-- <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSuscripciones()" autocomplete="off">
               <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
           </form> -->
-        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSuscripciones()" autocomplete="off">
+        <form
+          class="d-flex input-group"
+          name="form"
+          (ngSubmit)="filtrarSuscripciones()"
+          autocomplete="off"
+        >
           <div class="input-group">
             <div class="input-group-text bg-white border-end-0">
               <i class="fa fa-search text-muted"></i>
             </div>
-            <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar"
-              [(ngModel)]="filtros.buscador">
+            <input
+              type="search"
+              name="buscador"
+              class="form-control pull-right border-start-0"
+              placeholder="Buscar"
+              [(ngModel)]="filtros.buscador"
+            />
           </div>
         </form>
-        <button tooltip="Filtrar (F3)" (click)="openFilter(mfilterSuscriptions)" class="btn btn-default tcla-F3"> <img
-            src="/assets/icons/filter.png" class="icon"> </button>
+        <button
+          tooltip="Filtrar (F3)"
+          (click)="openFilter(mfilterSuscriptions)"
+          class="btn btn-default tcla-F3"
+        >
+          <img src="/assets/icons/filter.png" class="icon" />
+        </button>
       </div>
     </div>
   </div>
 
   <div class="d-flex">
     <div class="col-md-6 d-flex gap-2 mb-3">
-      <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
-        [routerLinkActiveOptions]="{ exact: true }" (click)="loadAll()" routerLink="/admin/suscripciones">
+      <button
+        class="tcla-F5 btn"
+        tooltip="Actualizar (F5)"
+        routerLinkActive="btn-primary"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="loadAll()"
+        routerLink="/admin/suscripciones"
+      >
         Todos
       </button>
     </div>
     <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
-      <select name="estado" (change)="filtrarSuscripciones()" [(ngModel)]="filtros.estado"
-        class="form-select bg-default w-auto">
+      <select
+        name="estado"
+        (change)="filtrarSuscripciones()"
+        [(ngModel)]="filtros.estado"
+        class="form-select bg-default w-auto"
+      >
         <option value="">Estado</option>
         <option value="activo">Activo</option>
         <option value="cancelado">Cancelado</option>
@@ -72,8 +97,14 @@
         </thead>
         <tbody>
           <tr>
-            <td colspan="8" class="text-center" *ngIf="suscripciones?.total < 1 && !loading">
-              <span class="badge bg-primary">No hay suscripciones registradas</span>
+            <td
+              colspan="8"
+              class="text-center"
+              *ngIf="suscripciones?.total < 1 && !loading"
+            >
+              <span class="badge bg-primary"
+                >No hay suscripciones registradas</span
+              >
             </td>
             <td colspan="8" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
@@ -85,25 +116,29 @@
             <td>
               <span *ngIf="!empresa.suscripcion" class="text-muted">{{
                 empresa.plan
-                }}</span>
+              }}</span>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.plan.nombre
-                }}</span>
+              }}</span>
             </td>
             <td>
               <span class="text-muted">{{ empresa?.tipo_plan }}</span>
             </td>
             <td class="text-center">
-              <span class="text-muted">{{ empresa?.metodo_pago ?? '-' }}</span>
+              <span class="text-muted">{{ empresa?.metodo_pago ?? "-" }}</span>
             </td>
             <td>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.monto | currency
-                }}</span>
+              }}</span>
               <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
             </td>
             <td class="text-center">
-              <span *ngIf="empresa.suscripcion" class="badge py-2 text-center" style="font-size: 0.8rem" [ngClass]="{
+              <span
+                *ngIf="empresa.suscripcion"
+                class="badge py-2 text-center"
+                style="font-size: 0.8rem"
+                [ngClass]="{
                   'bg-success':
                     empresa.suscripcion?.estado.toLowerCase() == 'activo',
                   'bg-danger':
@@ -114,74 +149,126 @@
                     empresa.suscripcion?.estado.toLowerCase() == 'en prueba',
                   'bg-dark':
                     empresa.suscripcion?.estado.toLowerCase() == 'inactivo',
-                    'bg-danger':
-                    empresa.suscripcion?.estado.toLowerCase() == 'suspendido'
-                }">
+                  'bg-danger':
+                    empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
+                  'bg-secondary':
+                    empresa.suscripcion?.estado.toLowerCase() == 'pendiente'
+                }"
+              >
                 {{ empresa.suscripcion.estado }}
               </span>
-              <span *ngIf="!empresa.suscripcion" class="badge py-2 bg-secondary" style="font-size: 0.8rem">
+              <span
+                *ngIf="!empresa.suscripcion"
+                class="badge py-2 bg-secondary"
+                style="font-size: 0.8rem"
+              >
                 Sin suscripción
               </span>
             </td>
             <td class="text-center">
-              <span *ngIf="empresa.suscripcion?.estado_ultimo_pago" class="badge py-2" [ngClass]="{
-                  'bg-success': empresa.suscripcion.estado_ultimo_pago.toLowerCase() === 'completado',
-                  'bg-secondary': empresa.suscripcion.estado_ultimo_pago.toLowerCase() === 'pendiente',
-                  'bg-danger': empresa.suscripcion.estado_ultimo_pago.toLowerCase() === 'rechazada' || empresa.suscripcion.estado_ultimo_pago.toLowerCase() === 'fallido'
-                  
-                }">
+              <span
+                *ngIf="empresa.suscripcion?.estado_ultimo_pago"
+                class="badge py-2"
+                [ngClass]="{
+                  'bg-success':
+                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                    'completado',
+                  'bg-secondary':
+                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                    'pendiente',
+                  'bg-danger':
+                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                      'rechazada' ||
+                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                      'fallido'
+                }"
+              >
                 {{ empresa.suscripcion.estado_ultimo_pago }}
               </span>
-              <span *ngIf="!empresa.suscripcion?.estado_ultimo_pago" class="text-muted">-</span>
+              <span
+                *ngIf="!empresa.suscripcion?.estado_ultimo_pago"
+                class="text-muted"
+                >-</span
+              >
             </td>
             <td>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.fecha_ultimo_pago | date : "dd/MM/yyyy"
-                }}</span>
+              }}</span>
               <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
             </td>
             <td>
               <span *ngIf="empresa.suscripcion">{{
                 empresa.suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
-                }}</span>
+              }}</span>
               <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
             </td>
             <td class="text-center">
-              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+              <span
+                class="btn"
+                [popover]="accionesTemplate"
+                [outsideClick]="true"
+                tooltip="Acciones"
+              >
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
-                  <a *ngIf="empresa.suscripcion" (click)="openDetalles(mdetalles, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click">
+                  <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="openDetalles(mdetalles, empresa.suscripcion)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
                     <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                   </a>
-                  <a *ngIf="empresa.suscripcion" (click)="openEditar(meditar, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click">
+                  <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="openEditar(meditar, empresa.suscripcion)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
                     <i class="fa fa-fw fa-edit"></i>Editar suscripcion
                   </a>
-                  <a *ngIf="
+                  <a
+                    *ngIf="
                       empresa.suscripcion &&
                       empresa.suscripcion.estado.toLowerCase() != 'cancelado' &&
                       empresa.suscripcion.estado.toLowerCase() != 'suspendido'
-                    " (click)="openCancelar(mcancelar, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click">
+                    "
+                    (click)="openCancelar(mcancelar, empresa.suscripcion)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
                     <i class="fa fa-fw fa-ban"></i>Cancelar suscripción
                   </a>
-                  <a *ngIf="!empresa.suscripcion" (click)="openCrearSuscripcion(mcrear, empresa)"
-                    class="list-group-item list-group-item-action border-0 click">
+                  <a
+                    *ngIf="!empresa.suscripcion"
+                    (click)="openCrearSuscripcion(mcrear, empresa)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
                     <i class="fa fa-fw fa-plus me-2"></i>Crear suscripción
                   </a>
-                  <a *ngIf="empresa.suscripcion?.estado.toLowerCase() != 'suspendido'"
-                    (click)="suspenderSistema(empresa)" class="list-group-item list-group-item-action border-0 click">
+                  <a
+                    *ngIf="
+                      empresa.suscripcion?.estado.toLowerCase() != 'suspendido'
+                    "
+                    (click)="suspenderSistema(empresa)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
                     <i class="fa fa-fw fa-ban me-2"></i>Suspender sistema
                   </a>
 
-                  <a *ngIf="empresa.suscripcion" (click)="openHistorialPagos(mhistorialPagos, empresa.suscripcion, empresa)"
-                    class="list-group-item list-group-item-action border-0 click">
+                  <a
+                    *ngIf="empresa.suscripcion"
+                    (click)="
+                      openHistorialPagos(
+                        mhistorialPagos,
+                        empresa.suscripcion,
+                        empresa
+                      )
+                    "
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
                     <i class="fa fa-fw fa-history me-2"></i>Historial de pagos
                   </a>
-
                 </div>
               </ng-template>
             </td>
@@ -191,7 +278,10 @@
     </div>
 
     <div class="col-12" *ngIf="suscripciones?.last_page > 1">
-      <app-pagination [items]="suscripciones" (setPagination)="setPagination($event)"></app-pagination>
+      <app-pagination
+        [items]="suscripciones"
+        (setPagination)="setPagination($event)"
+      ></app-pagination>
     </div>
   </div>
 </section>
@@ -199,7 +289,12 @@
 <ng-template #mdetalles>
   <div class="modal-header">
     <h4 class="modal-title text-center">Detalles de Suscripción</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -241,7 +336,12 @@
 <ng-template #meditar>
   <div class="modal-header">
     <h4 class="modal-title text-center">Editar Suscripción</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -249,22 +349,28 @@
       <div class="row">
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Plan:</label>
-          <select 
-            class="form-select" 
-            [(ngModel)]="suscripcion.plan.id" 
-            name="plan" 
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.plan.id"
+            name="plan"
             required
-            (change)="selectPlanEdit($event.target.value)">
+            (change)="selectPlanEdit($event.target.value)"
+          >
             <option value="">Seleccione un plan</option>
             <option *ngFor="let plan of planes" [value]="plan.id">
-              {{plan.nombre}}
+              {{ plan.nombre }}
             </option>
           </select>
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado:</label>
-          <select class="form-select" [(ngModel)]="suscripcion.estado" name="estado" required>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.estado"
+            name="estado"
+            required
+          >
             <option value="">Seleccione un estado</option>
             <option value="Activo">Activo</option>
             <option value="Inactivo">Inactivo</option>
@@ -277,49 +383,127 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Usuario Administrador:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.usuario_id"
+            name="usuario_id"
+            required
+          >
+            <option value="">Seleccione un usuario</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.name }}
+            </option>
+          </select>
+          <small class="text-muted">
+            Seleccione el usuario administrador para esta suscripción
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Estado de Pago:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.estado_ultimo_pago"
+            name="estado_ultimo_pago"
+            required
+          >
+            <option value="">Seleccione un estado</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Rechazada">Rechazada</option>
+            <option value="Completado">Completado</option>
+            <option value="Fallido">Fallido</option>
+          </select>
+          <small class="text-muted"> Estado actual del proceso de pago </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
             <span class="input-group-text">$</span>
-            <input type="number" class="form-control" [(ngModel)]="suscripcion.monto" name="monto" step="0.01" min="0"
-              required />
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="suscripcion.monto"
+              name="monto"
+              step="0.01"
+              min="0"
+              required
+            />
           </div>
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fecha Próximo Pago:</label>
-          <input type="date" class="form-control" [(ngModel)]="suscripcion.fecha_proximo_pago" name="fecha_proximo_pago"
-            required />
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="suscripcion.fecha_proximo_pago"
+            name="fecha_proximo_pago"
+            required
+          />
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fin Periodo Prueba:</label>
-          <input type="date" class="form-control" [(ngModel)]="suscripcion.fin_periodo_prueba" name="fin_periodo_prueba"
-            required />
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="suscripcion.fin_periodo_prueba"
+            name="fin_periodo_prueba"
+            required
+          />
         </div>
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">NIT:</label>
-          <input type="text" class="form-control" [(ngModel)]="suscripcion.nit" name="nit" />
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="suscripcion.nit"
+            name="nit"
+          />
         </div>
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Nombre Factura:</label>
-          <input type="text" class="form-control" [(ngModel)]="suscripcion.nombre_factura" name="nombre_factura" />
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="suscripcion.nombre_factura"
+            name="nombre_factura"
+          />
         </div>
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Dirección Factura:</label>
-          <textarea class="form-control" [(ngModel)]="suscripcion.direccion_factura" name="direccion_factura"
-            rows="2"></textarea>
+          <textarea
+            class="form-control"
+            [(ngModel)]="suscripcion.direccion_factura"
+            name="direccion_factura"
+            rows="2"
+          ></textarea>
         </div>
 
-        <div class="form-group col-12 mb-3" *ngIf="suscripcion.estado === 'Cancelado'">
+        <div
+          class="form-group col-12 mb-3"
+          *ngIf="suscripcion.estado === 'Cancelado'"
+        >
           <label class="form-label">Motivo Cancelación:</label>
-          <textarea class="form-control" [(ngModel)]="suscripcion.motivo_cancelacion" name="motivo_cancelacion" rows="3"
-            required></textarea>
+          <textarea
+            class="form-control"
+            [(ngModel)]="suscripcion.motivo_cancelacion"
+            name="motivo_cancelacion"
+            rows="3"
+            required
+          ></textarea>
         </div>
 
         <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-primary" [disabled]="saving || !suscripcionForm.form.valid">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="saving || !suscripcionForm.form.valid"
+          >
             <i class="fas fa-save me-2"></i>
             <span *ngIf="!saving">Guardar Cambios</span>
             <span *ngIf="saving">
@@ -336,7 +520,12 @@
 <ng-template #mcrear>
   <div class="modal-header">
     <h4 class="modal-title text-center">Crear Nueva Suscripción</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -344,18 +533,28 @@
       <div class="row">
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Plan:</label>
-          <select class="form-select" [(ngModel)]="nuevaSuscripcion.plan_id" name="plan" required
-            (change)="selectPlan($event.target.value)">
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.plan_id"
+            name="plan"
+            required
+            (change)="selectPlan($event.target.value)"
+          >
             <option value="">Seleccione un plan</option>
             <option *ngFor="let plan of planes" [value]="plan.id">
-              {{plan.nombre}}
+              {{ plan.nombre }}
             </option>
           </select>
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Tipo pago:</label>
-          <select class="form-select" [(ngModel)]="nuevaSuscripcion.tipo_plan" name="tipo_plan" required>
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.tipo_plan"
+            name="tipo_plan"
+            required
+          >
             <option value="">Seleccione tipo de pago</option>
             <option value="Mensual">Mensual</option>
             <option value="Anual">Anual</option>
@@ -364,9 +563,14 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado:</label>
-          <select class="form-select" [(ngModel)]="nuevaSuscripcion.estado" name="estado" required>
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.estado"
+            name="estado"
+            required
+          >
             <option value="">Seleccione un estado</option>
-            <option value="Activo">Activo</option>
+            <option value="Activo" selected>Activo</option>
             <option value="En prueba">En prueba</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Renovado">Renovado</option>
@@ -377,31 +581,92 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Estado de Pago:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.estado_pago"
+            name="estado_pago"
+            required
+          >
+            <option value="" selected>Seleccione un estado</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Rechazada">Rechazada</option>
+            <option value="Completado">Completado</option>
+            <option value="Fallido">Fallido</option>
+          </select>
+          <small class="text-muted"> Estado actual del proceso de pago </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Usuario Administrador:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.usuario_id"
+            name="usuario_id"
+            required
+          >
+            <option value="">Seleccione un usuario</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.name }}
+            </option>
+          </select>
+          <small class="text-muted">
+            Seleccione el usuario administrador para esta suscripción
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
           <label class="form-label">Monto:</label>
           <div class="input-group">
             <span class="input-group-text">$</span>
-            <input type="number" class="form-control" [(ngModel)]="nuevaSuscripcion.monto" name="monto" step="0.01"
-              min="0" required [class.bg-light]="true" />
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="nuevaSuscripcion.monto"
+              name="monto"
+              step="0.01"
+              min="0"
+              required
+              [class.bg-light]="true"
+            />
           </div>
-          <small class="text-muted">El monto se establece automáticamente según el plan seleccionado</small>
+          <small class="text-muted"
+            >El monto se establece automáticamente según el plan
+            seleccionado</small
+          >
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fecha Próximo Pago:</label>
-          <input type="date" class="form-control" [(ngModel)]="nuevaSuscripcion.fecha_proximo_pago"
-            name="fecha_proximo_pago" required />
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="nuevaSuscripcion.fecha_proximo_pago"
+            name="fecha_proximo_pago"
+            required
+          />
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fin Periodo Prueba:</label>
-          <input type="date" class="form-control" [(ngModel)]="nuevaSuscripcion.fin_periodo_prueba"
-            name="fin_periodo_prueba" required />
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="nuevaSuscripcion.fin_periodo_prueba"
+            name="fin_periodo_prueba"
+            required
+          />
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">NIT:</label>
-          <input type="text" class="form-control" [(ngModel)]="nuevaSuscripcion.nit" name="nit"
-             [class.bg-light]="nuevaSuscripcion.nit" />
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="nuevaSuscripcion.nit"
+            name="nit"
+            [class.bg-light]="nuevaSuscripcion.nit"
+          />
           <small class="text-muted" *ngIf="nuevaSuscripcion.nit">
             NIT de la empresa
           </small>
@@ -409,8 +674,13 @@
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Nombre Factura:</label>
-          <input type="text" class="form-control" [(ngModel)]="nuevaSuscripcion.nombre_factura" name="nombre_factura"
-             [class.bg-light]="nuevaSuscripcion.nombre_factura" />
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="nuevaSuscripcion.nombre_factura"
+            name="nombre_factura"
+            [class.bg-light]="nuevaSuscripcion.nombre_factura"
+          />
           <small class="text-muted" *ngIf="nuevaSuscripcion.nombre_factura">
             Nombre de la empresa
           </small>
@@ -418,16 +688,24 @@
 
         <div class="form-group col-md-12 mb-3">
           <label class="form-label">Dirección Factura:</label>
-          <textarea class="form-control" [(ngModel)]="nuevaSuscripcion.direccion_factura" name="direccion_factura"
-            rows="2" 
-            [class.bg-light]="nuevaSuscripcion.direccion_factura"></textarea>
+          <textarea
+            class="form-control"
+            [(ngModel)]="nuevaSuscripcion.direccion_factura"
+            name="direccion_factura"
+            rows="2"
+            [class.bg-light]="nuevaSuscripcion.direccion_factura"
+          ></textarea>
           <small class="text-muted" *ngIf="nuevaSuscripcion.direccion_factura">
             Dirección registrada de la empresa
           </small>
         </div>
 
         <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-primary" [disabled]="saving || !suscripcionForm.form.valid">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="saving || !suscripcionForm.form.valid"
+          >
             <i class="fas fa-save me-2"></i>
             <span *ngIf="!saving">Crear Suscripción</span>
             <span *ngIf="saving">
@@ -441,22 +719,36 @@
   </div>
 </ng-template>
 
-
 <ng-template #mcancelar>
   <div class="modal-header">
     <h4 class="modal-title text-center">Cancelar Suscripción</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
     <form #cancelForm="ngForm" (ngSubmit)="cancelarSuscripcion()">
       <div class="form-group mb-3">
         <label class="form-label">Motivo de Cancelación:</label>
-        <textarea class="form-control" [(ngModel)]="suscripcion.motivo_cancelacion" name="motivo_cancelacion" rows="4"
-          required placeholder="Por favor indique el motivo de la cancelación"></textarea>
+        <textarea
+          class="form-control"
+          [(ngModel)]="suscripcion.motivo_cancelacion"
+          name="motivo_cancelacion"
+          rows="4"
+          required
+          placeholder="Por favor indique el motivo de la cancelación"
+        ></textarea>
       </div>
       <div class="d-grid gap-2">
-        <button type="submit" class="btn btn-danger" [disabled]="!cancelForm.form.valid || saving">
+        <button
+          type="submit"
+          class="btn btn-danger"
+          [disabled]="!cancelForm.form.valid || saving"
+        >
           <i class="fas fa-ban me-2"></i>
           <span *ngIf="!saving">Confirmar Cancelación</span>
           <span *ngIf="saving">
@@ -464,7 +756,11 @@
             Procesando...
           </span>
         </button>
-        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="modalRef.hide()"
+        >
           <i class="fas fa-times me-2"></i>
           Cancelar
         </button>
@@ -473,13 +769,17 @@
   </div>
 </ng-template>
 
-
 <ng-template #mfilterSuscriptions>
   <div class="modal-header">
     <div class="modal-title text-center">
       <h2 class="text-center">Filtrar</h2>
     </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -489,14 +789,26 @@
           <label for="">Fecha de suscripción:</label>
           <div class="row">
             <div class="col-6">
-              <label class="form-label" for="filtros.suscripcion_inicio">Desde</label>
-              <input type='date' class="form-control" name="filtros.suscripcion_inicio"
-                [(ngModel)]="filtros.suscripcion_inicio" />
+              <label class="form-label" for="filtros.suscripcion_inicio"
+                >Desde</label
+              >
+              <input
+                type="date"
+                class="form-control"
+                name="filtros.suscripcion_inicio"
+                [(ngModel)]="filtros.suscripcion_inicio"
+              />
             </div>
             <div class="col-6">
-              <label class="form-label" for="filtros.suscripcion_fin">Hasta</label>
-              <input type='date' class="form-control" name="filtros.suscripcion_fin"
-                [(ngModel)]="filtros.suscripcion_fin" />
+              <label class="form-label" for="filtros.suscripcion_fin"
+                >Hasta</label
+              >
+              <input
+                type="date"
+                class="form-control"
+                name="filtros.suscripcion_fin"
+                [(ngModel)]="filtros.suscripcion_fin"
+              />
             </div>
           </div>
         </div>
@@ -505,16 +817,30 @@
           <div class="row">
             <div class="col-6">
               <label class="form-label" for="filtros.pago_inicio">Desde</label>
-              <input type='date' class="form-control" name="filtros.pago_inicio" [(ngModel)]="filtros.pago_inicio" />
+              <input
+                type="date"
+                class="form-control"
+                name="filtros.pago_inicio"
+                [(ngModel)]="filtros.pago_inicio"
+              />
             </div>
             <div class="col-6">
               <label class="form-label" for="filtros.pago_fin">Hasta</label>
-              <input type='date' class="form-control" name="filtros.pago_fin" [(ngModel)]="filtros.pago_fin" />
+              <input
+                type="date"
+                class="form-control"
+                name="filtros.pago_fin"
+                [(ngModel)]="filtros.pago_fin"
+              />
             </div>
           </div>
         </div>
         <div class="form-group col-sm-12">
-          <select class="form-select" name="filtros.plan" [(ngModel)]="filtros.plan">
+          <select
+            class="form-select"
+            name="filtros.plan"
+            [(ngModel)]="filtros.plan"
+          >
             <option value="">Selecciona aquí</option>
             <option value="Emprendedor">Emprendedor</option>
             <option value="Estándar">Estándar</option>
@@ -524,7 +850,11 @@
         </div>
         <div class="form-group col-sm-12">
           <label for="filtros.forma_pago">Forma de pago:</label>
-          <select class="form-select" [(ngModel)]="filtros.forma_pago" name="forma_pago">
+          <select
+            class="form-select"
+            [(ngModel)]="filtros.forma_pago"
+            name="forma_pago"
+          >
             <option value="">Seleccione aquí</option>
             <option value="Transferencia">Transferencia</option>
             <option value="N1co">N1co</option>
@@ -532,7 +862,11 @@
         </div>
         <div class="form-group col-sm-12">
           <label for="filtros.estado">Estado:</label>
-          <select name="estado" [(ngModel)]="filtros.estado" class="form-select">
+          <select
+            name="estado"
+            [(ngModel)]="filtros.estado"
+            class="form-select"
+          >
             <option value="">Seleccione aquí</option>
             <option value="activo">Activo</option>
             <option value="cancelado">Cancelado</option>
@@ -569,7 +903,12 @@
 <ng-template #mhistorialPagos>
   <div class="modal-header">
     <h4 class="modal-title text-center">Historial de Pagos</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -578,20 +917,32 @@
         <!-- Información de la suscripción -->
         <div class="mb-4">
           <h5>Detalles de la Suscripción</h5>
-          <p class="mb-1"><strong>Empresa:</strong> {{suscripcion?.empresa?.nombre}}</p>
-          <p class="mb-1"><strong>Plan:</strong> {{suscripcion?.plan?.nombre}}</p>
-          <p class="mb-0"><strong>Estado:</strong> {{suscripcion?.estado}}</p>
+          <p class="mb-1">
+            <strong>Empresa:</strong> {{ suscripcion?.empresa?.nombre }}
+          </p>
+          <p class="mb-1">
+            <strong>Plan:</strong> {{ suscripcion?.plan?.nombre }}
+          </p>
+          <p class="mb-0"><strong>Estado:</strong> {{ suscripcion?.estado }}</p>
         </div>
 
         <!-- Tabs de métodos de pago -->
         <ul class="nav nav-tabs mb-3">
           <li class="nav-item">
-            <a class="nav-link cursor-pointer" [class.active]="tabActivo === 'n1co'" (click)="tabActivo = 'n1co'">
+            <a
+              class="nav-link cursor-pointer"
+              [class.active]="tabActivo === 'n1co'"
+              (click)="tabActivo = 'n1co'"
+            >
               <i class="fas fa-credit-card me-2"></i>N1co
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link cursor-pointer" [class.active]="tabActivo === 'transferencia'" (click)="tabActivo = 'transferencia'">
+            <a
+              class="nav-link cursor-pointer"
+              [class.active]="tabActivo === 'transferencia'"
+              (click)="tabActivo = 'transferencia'"
+            >
               <i class="fas fa-university me-2"></i>Transferencia
             </a>
           </li>
@@ -617,28 +968,47 @@
                     <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
                   </td>
                 </tr>
-                <tr *ngIf="!loadingHistorial && getPagosFiltrados('n1co').length === 0">
+                <tr
+                  *ngIf="
+                    !loadingHistorial && getPagosFiltrados('n1co').length === 0
+                  "
+                >
                   <td colspan="5" class="text-center">
                     No hay registros de pagos con N1co
                   </td>
                 </tr>
-                <ng-container *ngIf="!loadingHistorial && getPagosFiltrados('n1co').length > 0">
+                <ng-container
+                  *ngIf="
+                    !loadingHistorial && getPagosFiltrados('n1co').length > 0
+                  "
+                >
                   <tr *ngFor="let pago of getPagosFiltrados('n1co')">
-                    <td>{{pago.fecha_transaccion | date:'dd/MM/yyyy HH:mm'}}</td>
-                    <td>{{pago.id_orden}}</td>
-                    <td>{{pago.monto | currency:'USD'}}</td>
                     <td>
-                      <span class="badge" [ngClass]="{
-                        'bg-success': pago.estado.toLowerCase() === 'completado',
-                        'bg-danger': pago.estado.toLowerCase() === 'fallido' || pago.estado.toLowerCase() === 'rechazado',
-                        'bg-warning': pago.estado.toLowerCase() === 'pendiente',
-                        'bg-info': pago.estado.toLowerCase() === 'procesando'
-                      }">
-                        {{pago.estado}}
+                      {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
+                    </td>
+                    <td>{{ pago.id_orden }}</td>
+                    <td>{{ pago.monto | currency : "USD" }}</td>
+                    <td>
+                      <span
+                        class="badge"
+                        [ngClass]="{
+                          'bg-success':
+                            pago.estado.toLowerCase() === 'completado',
+                          'bg-danger':
+                            pago.estado.toLowerCase() === 'fallido' ||
+                            pago.estado.toLowerCase() === 'rechazado',
+                          'bg-warning':
+                            pago.estado.toLowerCase() === 'pendiente',
+                          'bg-info': pago.estado.toLowerCase() === 'procesando'
+                        }"
+                      >
+                        {{ pago.estado }}
                       </span>
                     </td>
                     <td>
-                      <small class="text-muted">{{pago.codigo_autorizacion || '-'}}</small>
+                      <small class="text-muted">{{
+                        pago.codigo_autorizacion || "-"
+                      }}</small>
                     </td>
                   </tr>
                 </ng-container>
@@ -664,40 +1034,67 @@
                     <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
                   </td>
                 </tr>
-                <tr *ngIf="!loadingHistorial && getPagosFiltrados('transferencia').length === 0">
+                <tr
+                  *ngIf="
+                    !loadingHistorial &&
+                    getPagosFiltrados('transferencia').length === 0
+                  "
+                >
                   <td colspan="5" class="text-center">
                     No hay registros de pagos por transferencia
                   </td>
                 </tr>
-                <ng-container *ngIf="!loadingHistorial && getPagosFiltrados('transferencia').length > 0">
+                <ng-container
+                  *ngIf="
+                    !loadingHistorial &&
+                    getPagosFiltrados('transferencia').length > 0
+                  "
+                >
                   <tr *ngFor="let pago of getPagosFiltrados('transferencia')">
-                    <td>{{pago.fecha_transaccion | date:'dd/MM/yyyy HH:mm'}}</td>
-                    <td>{{pago.monto | currency:'USD'}}</td>
                     <td>
-                      <a *ngIf="pago.comprobante_url" [href]="pago.comprobante_url" target="_blank" class="btn btn-sm btn-link">
+                      {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
+                    </td>
+                    <td>{{ pago.monto | currency : "USD" }}</td>
+                    <td>
+                      <a
+                        *ngIf="pago.comprobante_url"
+                        [href]="pago.comprobante_url"
+                        target="_blank"
+                        class="btn btn-sm btn-link"
+                      >
                         <i class="fas fa-eye me-1"></i>Ver comprobante
                       </a>
                       <span *ngIf="!pago.comprobante_url">-</span>
                     </td>
                     <td>
-                      <span class="badge" [ngClass]="{
-                        'bg-success': pago.estado.toLowerCase() === 'completado',
-                        'bg-danger': pago.estado.toLowerCase() === 'rechazado',
-                        'bg-warning': pago.estado.toLowerCase() === 'pendiente',
-                        'bg-info': pago.estado.toLowerCase() === 'verificando'
-                      }">
-                        {{pago.estado}}
+                      <span
+                        class="badge"
+                        [ngClass]="{
+                          'bg-success':
+                            pago.estado.toLowerCase() === 'completado',
+                          'bg-danger':
+                            pago.estado.toLowerCase() === 'rechazado',
+                          'bg-warning':
+                            pago.estado.toLowerCase() === 'pendiente',
+                          'bg-info': pago.estado.toLowerCase() === 'verificando'
+                        }"
+                      >
+                        {{ pago.estado }}
                       </span>
                     </td>
                     <td>
-                      <button *ngIf="pago.estado.toLowerCase() === 'pendiente'" 
-                              class="btn btn-sm btn-success me-1" 
-                              (click)="aprobarTransferencia(pago)">
+                      <button
+                        *ngIf="pago.estado.toLowerCase() === 'pendiente'"
+                        class="btn btn-sm btn-success me-1"
+                        (click)="aprobarTransferencia(pago)"
+                      >
                         <i class="fas fa-check me-1"></i>Aprobar
                       </button>
-                      <button *ngIf="pago.estado.toLowerCase() === 'pendiente'" 
-                              class="btn btn-sm btn-danger" 
-                              (click)="rechazarTransferencia(pago)">
+                      <button
+                        *ngIf="pago.estado.toLowerCase() === 'pendiente'"
+                        class="btn btn-sm btn-danger"
+                        (click)="rechazarTransferencia(pago)"
+                      >
                         <i class="fas fa-times me-1"></i>Rechazar
                       </button>
                     </td>

@@ -32,18 +32,13 @@
                     <td>{{ precio.precio | currency }}</td>
                     <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                     <td>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <span class="badge bg-default text-dark" *ngFor=" let usuario of precio.usuarios">
-                                <img src="{{ apiService.baseUrl }}/img/{{usuario.avatar}}" class="rounded-circle" width="25px">
-                                {{ usuario.nombre }}
-                            </span> 
-                        </div>
+                        Todos
                     </td>
                     <td width="100" class="text-center">
-                        <div class="btn-group">
+                        <!-- <div class="d-flex gap-2"> -->
                             <a (click)="delete(precio)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
-                            <!-- <a (click)="openModal(mPrecio, precio)" class="btn btn-default"><i class="fa fa-pencil-alt"></i></a> -->
-                        </div>
+                            <!-- <a (click)="openModal(mPrecio, precio)" class="btn btn-light"><i class="fa fa-pencil-alt"></i></a> -->
+                        <!-- </div> -->
                     </td>
                 </tr>
             </tbody>

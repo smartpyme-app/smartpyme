@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 })
 export class ImportarExcelComponent implements OnInit {
 
+    @Input() tipo:string = 'button';
     @Input() nombre:string = '';
     @Output() loadAll = new EventEmitter();
     public loading:boolean = false;

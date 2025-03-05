@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
+use App\Models\OrdenPago;
 use App\Models\Plan;
 use App\Models\Suscripcion;
 use App\Models\User;
@@ -148,6 +149,8 @@ class SuscripcionesController extends Controller
             $suscripcion->usuario_id = $validated['usuario_id'];
             $suscripcion->tipo_plan = $validated['tipo_plan'];
             $suscripcion->estado = $validated['estado'];
+            $suscripcion->estado_ultimo_pago = $request->input('estado_ultimo_pago');
+            $suscripcion->fecha_ultimo_pago = $request->input('estado_ultimo_pago') === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO') ? now() : null;
             $suscripcion->monto = $validated['monto'];
             $suscripcion->fecha_proximo_pago = $validated['fecha_proximo_pago'];
             $suscripcion->fin_periodo_prueba = $validated['fin_periodo_prueba'];
@@ -201,6 +204,7 @@ class SuscripcionesController extends Controller
         try {
             $validated = $request->validate([
                 'id' => 'required|exists:suscripciones,id',
+                'usuario_id' => 'required|exists:users,id',
                 'fecha_proximo_pago' => 'required|date',
                 'fin_periodo_prueba' => 'required|date',
                 'estado' => 'required|string',
@@ -230,13 +234,19 @@ class SuscripcionesController extends Controller
 
             $suscripcion->update([
                 'fecha_proximo_pago' => $validated['fecha_proximo_pago'],
+                'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
+                'usuario_id' => $validated['usuario_id'],
                 'fin_periodo_prueba' => $validated['fin_periodo_prueba'],
                 'nit' => $request->input('nit'),
                 'nombre_factura' => $request->input('nombre_factura'),
                 'direccion_factura' => $request->input('direccion_factura'),
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
             ]);
+
+            // if ($request->input('estado_ultimo_pago') === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO')) {
+            //    $this->addOrderPayment($suscripcion);
+            // }
 
             return response()->json([
                 'success' => true,
@@ -356,5 +366,34 @@ class SuscripcionesController extends Controller
             ])
             ->orderBy('fecha_transaccion', 'desc')
             ->get();
+    }
+
+    public function getUsersSelect(Request $request)
+    {
+        return User::select('id', 'name')
+            ->where('enable', true)
+            // ->where('id_sucursal', $request->id_sucursal)
+            ->where('id_empresa', $request->input('params.id_empresa'))
+            ->where('tipo', config('constants.TIPO_USUARIO_ADMINISTRADOR'))
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    private function addOrderPayment(Suscripcion $suscripcion){
+        try {
+            $ordenPago = new OrdenPago();
+            $ordenPago->id_usuario = $suscripcion->usuario_id;
+            $ordenPago->id_plan = $suscripcion->plan_id;
+            $ordenPago->monto = $suscripcion->monto;
+            $ordenPago->estado = config('constants.ESTADO_ORDEN_PAGO_COMPLETADO');
+            $ordenPago->save();
+
+            return $ordenPago;
+
+        } catch (\Throwable $th) {
+            Log::error('Error en SuscripcionesController@addOrderPayment: ' . $th->getMessage());
+            return null;
+        }
+       
     }
 }

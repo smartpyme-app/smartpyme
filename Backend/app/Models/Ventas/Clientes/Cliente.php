@@ -105,4 +105,10 @@ class Cliente extends Model {
     {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
+
+    public function contactos()
+    {
+        return $this->hasMany(ContactoCliente::class, 'id_cliente')
+                    ->where('estado', 1);
+    }
 }

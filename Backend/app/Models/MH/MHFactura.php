@@ -215,8 +215,8 @@ class MHFactura extends Model
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
                   "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido, 2, '.', '')),
-                  "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
+                  "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
+                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
                   "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
@@ -224,7 +224,7 @@ class MHFactura extends Model
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
+                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
                       "referencia" => NULL,
                       "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
                       "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL
@@ -295,7 +295,7 @@ class MHFactura extends Model
                 "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
                 "tributos" => $tributos,
                 "psv" => 0,
-                "noGravado" => 0,
+                "noGravado" => floatval(number_format($detalle->cuenta_a_terceros,2, '.', '')),
                 "ivaItem" => floatval(number_format($detalle->iva, 2, '.', ''))
               ]);
         }
