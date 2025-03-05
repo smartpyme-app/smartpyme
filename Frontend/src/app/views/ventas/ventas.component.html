@@ -225,6 +225,13 @@
                     <span *ngIf="downloadingDetalles">Descargando...</span>
                 </button>
             </div>
+            <div class="d-grid mt-4">
+                <p>Descargar los detalles de ventas por producto diario.</p>
+                <button [disabled]="saving" (click)="descargarDetallesDiario()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
+                    <span *ngIf="downloadingDetalles">Descargando...</span>
+                </button>
+            </div>
             <div class="d-grid my-4">
                 <p>Descargar los detalles de ventas totales.</p>
                 <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
