@@ -25,6 +25,16 @@ export class ComprasComponent implements OnInit {
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingCompras: boolean = false;
+  public modalRefAcumulado!: BsModalRef;
+  public modalRefRentabilidad!: BsModalRef;
+  public filtrosRentabilidad: any = {
+    inicio: '',
+    fin: '',
+    sucursales: [],
+    categorias: [],
+    marcas: [],
+  };
+  public downloadingRentabilidad: boolean = false;
 
   public filtros: any = {};
 
@@ -524,6 +534,71 @@ export class ComprasComponent implements OnInit {
         this.onSubmit();
       }
     }
+  }
+
+  public abrirModalFiltrosRentabilidad(template: TemplateRef<any>) {
+    this.apiService.getAll('sucursales/list').subscribe(
+      (sucursales) => {
+        this.sucursales = sucursales;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    this.modalRefRentabilidad = this.modalService.show(template, {
+      class: 'modal-lg',
+    });
+  }
+
+  public descargarReporteRentabilidad() {
+    this.downloadingRentabilidad = true;
+    this.saving = true;
+
+    this.apiService
+      .exportAcumulado(
+        'compras-rentabilidad/exportar',
+        this.filtrosRentabilidad
+      )
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'compras-rentabilidad.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+
+          // Cerrar ambos modales
+          if (this.modalRefRentabilidad) {
+            this.modalRefRentabilidad.hide();
+          }
+          if (this.modalRefRentabilidad) {
+            this.modalRefRentabilidad.hide();
+          }
+
+          this.downloadingRentabilidad = false;
+          this.saving = false;
+
+          this.filtrosRentabilidad = {
+            inicio: '',
+            fin: '',
+            sucursales: [],
+            categorias: [],
+            marcas: [],
+          };
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.downloadingRentabilidad = false;
+          this.saving = false;
+        }
+      );
   }
 
   public limpiarFiltros() {
