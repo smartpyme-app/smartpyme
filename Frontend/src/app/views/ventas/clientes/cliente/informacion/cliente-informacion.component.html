@@ -202,9 +202,15 @@
         </div>
     </div>
     <div class="row mt-4" *ngIf="cliente.tipo == 'Empresa'">
-        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+        <!-- <div class="col-12 d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0">Contactos adicionales</h6>
             <button type="button" class="btn btn-default tcla-F1" tooltip="Agregar contacto (F1)" (click)="openModal(mcontacto, contacto)">
+                <i class="fa fa-plus"></i> Agregar contacto
+            </button>
+        </div> -->
+        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Contactos adicionales</h6>
+            <button type="button" class="btn btn-default tcla-F1" tooltip="Agregar contacto (F1)" (click)="agregarContacto(mcontacto)">
                 <i class="fa fa-plus"></i> Agregar contacto
             </button>
         </div>

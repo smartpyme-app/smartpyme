@@ -225,8 +225,33 @@ export class ClienteInformacionComponent implements OnInit {
     }
   }
 
+  // openModal(template: TemplateRef<any>, contacto: any) {
+  //   this.contacto = contacto;
+  //   this.modalRef = this.modalService.show(template, {
+  //     class: 'modal-lg',
+  //     backdrop: 'static',
+  //   });
+  // }
+
   openModal(template: TemplateRef<any>, contacto: any) {
-    this.contacto = contacto;
+
+    if (!contacto || contacto === null) {
+      
+      this.contacto = {};
+    } else {
+      
+      this.contacto = { ...contacto };
+    }
+
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
+  }
+
+  
+  agregarContacto(template: TemplateRef<any>) {
+    this.contacto = {};
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
