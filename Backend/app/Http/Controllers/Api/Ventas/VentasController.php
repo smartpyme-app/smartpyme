@@ -1242,7 +1242,7 @@ class VentasController extends Controller
     {
         try {
             $fecha = Carbon::today()->format('Y-m-d');
-            $export = new VentasPorVendedorExport($fecha);
+            $export = new VentasPorVendedorExport($fecha, $configuracion->id_empresa);
             $filename = "ventas-por-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
 
 
