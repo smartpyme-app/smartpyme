@@ -238,8 +238,8 @@
         >
           <option value="" disabled>Seleccione un tipo de reporte</option>
           <option value="ventas-por-vendedor">Ventas por Vendedor</option>
-          <option value="ventas-diarias">Ventas Diarias</option>
-          <option value="productos-vendidos">Productos Vendidos</option>
+          <!-- <option value="ventas-diarias">Ventas Diarias</option>
+          <option value="productos-vendidos">Productos Vendidos</option> -->
         </select>
       </div>
 
@@ -263,7 +263,7 @@
       <!-- Opciones específicas por frecuencia -->
       <div class="mb-3" [ngSwitch]="configuracionActual.frecuencia">
         <!-- Opciones para frecuencia semanal -->
-        <div *ngSwitchCase="'semanal'" class="p-3 bg-light rounded border">
+        <div *ngSwitchCase="'semanal'" class="p-3">
           <label class="form-label fw-bold">Días de la semana</label>
           <div class="row">
             <div
@@ -287,7 +287,7 @@
         </div>
 
         <!-- Opciones para frecuencia mensual -->
-        <div *ngSwitchCase="'mensual'" class="p-3 bg-light rounded border">
+        <div *ngSwitchCase="'mensual'" class="p-3">
           <label for="dia_mes" class="form-label fw-bold">Día del mes</label>
           <select
             name="dia_mes"
