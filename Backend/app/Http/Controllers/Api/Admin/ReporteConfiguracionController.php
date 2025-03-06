@@ -14,12 +14,6 @@ use Illuminate\Support\Facades\Mail;
 
 class ReporteConfiguracionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
         $id_empresa = Auth::user()->id_empresa;
@@ -45,12 +39,7 @@ class ReporteConfiguracionController extends Controller
         return $query->paginate($paginate);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -64,7 +53,7 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        // Validaciones específicas según frecuencia
+
         if ($request->frecuencia === 'semanal' && empty($request->dias_semana)) {
             return response()->json(['error' => 'Debe seleccionar al menos un día de la semana'], 422);
         }
@@ -73,16 +62,16 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'Debe seleccionar un día del mes'], 422);
         }
 
-        // Validar horarios
+
         if (!$request->envio_matutino && !$request->envio_mediodia && !$request->envio_nocturno) {
             return response()->json(['error' => 'Debe seleccionar al menos un horario de envío'], 422);
         }
 
-        // Preparar datos para guardar
+
         $datos = $request->all();
         $datos['id_empresa'] = Auth::user()->id_empresa;
 
-        // Crear o actualizar
+
         if (isset($datos['id']) && $datos['id']) {
             $configuracion = ReporteConfiguracion::findOrFail($datos['id']);
             $configuracion->update($datos);
@@ -93,17 +82,11 @@ class ReporteConfiguracionController extends Controller
         return response()->json($configuracion, 200);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
 
-        // Verificar que pertenezca a la empresa del usuario
+
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para ver esta configuración'], 403);
         }
@@ -111,18 +94,9 @@ class ReporteConfiguracionController extends Controller
         return response()->json($configuracion, 200);
     }
 
-    /**
-     * Update the activation status of the specified resource.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function updateEstado(Request $request, $id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
-
-        // Verificar que pertenezca a la empresa del usuario
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para modificar esta configuración'], 403);
         }
@@ -141,17 +115,12 @@ class ReporteConfiguracionController extends Controller
         return response()->json($configuracion, 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy($id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
 
-        // Verificar que pertenezca a la empresa del usuario
+
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para eliminar esta configuración'], 403);
         }
@@ -161,12 +130,7 @@ class ReporteConfiguracionController extends Controller
         return response()->json(['message' => 'Configuración eliminada correctamente'], 200);
     }
 
-    /**
-     * Enviar un reporte de prueba.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+
     public function enviarPrueba(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -180,28 +144,26 @@ class ReporteConfiguracionController extends Controller
 
         $configuracion = ReporteConfiguracion::findOrFail($request->id_configuracion);
 
-        // Verificar que pertenezca a la empresa del usuario
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
         try {
-            // Determinar qué tipo de reporte generar
             switch ($configuracion->tipo_reporte) {
                 case 'ventas-por-vendedor':
                     $controller = new VentasController();
 
-                    // Usar el email de prueba o los destinatarios configurados
+
                     $destinatarios = $request->email_prueba
                         ? [$request->email_prueba]
                         : $configuracion->destinatarios;
 
-                    // Generar y enviar el reporte
+
                     $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios);
 
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
 
-                    // Agregar más casos según los tipos de reportes disponibles
+
 
                 default:
                     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

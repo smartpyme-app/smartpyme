@@ -1245,10 +1245,10 @@ class VentasController extends Controller
             $export = new VentasPorVendedorExport($fecha);
             $filename = "ventas-por-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
 
-            // Definir la ruta relativa para el archivo
+
             $relativePath = "reportes/{$filename}";
 
-            // Crear el directorio si no existe
+
             $directory = public_path('img/reportes');
             if (!file_exists($directory)) {
                 mkdir($directory, 0755, true);
@@ -1291,7 +1291,6 @@ class VentasController extends Controller
                 ->distinct('id_vendedor')
                 ->count('id_vendedor');
 
-            // Preparar datos para el correo
             $datos = [
                 'fecha' => Carbon::today()->format('d/m/Y'),
                 'ventasDelDia' => $ventasDelDia,
