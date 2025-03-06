@@ -15,7 +15,7 @@ export class ReportesAutomaticosComponent implements OnInit {
     buscador: '',
     paginate: 10,
     orden: 'created_at',
-    direccion: 'desc'
+    direccion: 'desc',
   };
   public loading: boolean = false;
   public saving: boolean = false;
@@ -30,7 +30,7 @@ export class ReportesAutomaticosComponent implements OnInit {
     { id: 4, nombre: 'Jueves', seleccionado: false },
     { id: 5, nombre: 'Viernes', seleccionado: false },
     { id: 6, nombre: 'Sábado', seleccionado: false },
-    { id: 7, nombre: 'Domingo', seleccionado: false }
+    { id: 7, nombre: 'Domingo', seleccionado: false },
   ];
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -88,55 +88,42 @@ export class ReportesAutomaticosComponent implements OnInit {
       const date = new Date();
       date.setHours(parseInt(hours, 10));
       date.setMinutes(parseInt(minutes, 10));
-      
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } catch (e) {
       return hora;
     }
   }
 
-//   public openModalConfigurar(template: TemplateRef<any>) {
-//     this.configuracionActual = {
-//       activo: true,
-//       tipo_reporte: '',
-//       frecuencia: 'diario',
-//       destinatarios: [],
-//       envio_matutino: true,
-//       hora_matutino: '08:00',
-//       envio_mediodia: false,
-//       hora_mediodia: '13:00',
-//       envio_nocturno: false,
-//       hora_nocturno: '19:00',
-//       dia_mes: 1,
-//       asunto_correo: ''
-//     };
-    
-//     // Reiniciar días de la semana
-//     this.diasSemana.forEach(dia => dia.seleccionado = false);
-    
-//     this.modalRef = this.modalService.show(template, { 
-//       class: 'modal-lg',
-//       ignoreBackdropClick: true
-//     });
-//   }
 
-openModalConfigurar(template: TemplateRef<any>) {
-    this.configuracionActual = {};
+  openModalConfigurar(template: TemplateRef<any>) {
+    this.configuracionActual = {
+      activo: true,
+      tipo_reporte: '',
+      frecuencia: 'diario',
+      destinatarios: [],
+      envio_matutino: true,
+      hora_matutino: '08:00',
+      envio_mediodia: false,
+      hora_mediodia: '13:00',
+      envio_nocturno: false,
+      hora_nocturno: '19:00',
+      dia_mes: 1,
+      asunto_correo: '',
+    };
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
     });
   }
 
-
-
   openModal(template: TemplateRef<any>, configuracion: any) {
-
     if (!configuracion || configuracion === null) {
-      
       this.configuracionActual = {};
     } else {
-      
       this.configuracionActual = { ...configuracion };
     }
 
@@ -146,69 +133,86 @@ openModalConfigurar(template: TemplateRef<any>) {
     });
   }
 
-
   public guardarConfiguracion() {
     // Validar que haya al menos un horario seleccionado
-    if (!this.configuracionActual.envio_matutino && 
-        !this.configuracionActual.envio_mediodia && 
-        !this.configuracionActual.envio_nocturno) {
-      this.alertService.warning('Error', 'Debe seleccionar al menos un horario de envío');
+    if (
+      !this.configuracionActual.envio_matutino &&
+      !this.configuracionActual.envio_mediodia &&
+      !this.configuracionActual.envio_nocturno
+    ) {
+      this.alertService.warning(
+        'Error',
+        'Debe seleccionar al menos un horario de envío'
+      );
       return;
     }
-    
+
     // Validar que haya al menos un destinatario
     if (this.configuracionActual.destinatarios.length === 0) {
-      this.alertService.warning('Error', 'Debe agregar al menos un destinatario');
+      this.alertService.warning(
+        'Error',
+        'Debe agregar al menos un destinatario'
+      );
       return;
     }
-    
+
     // Recopilar los días de la semana seleccionados si la frecuencia es semanal
     if (this.configuracionActual.frecuencia === 'semanal') {
       this.configuracionActual.dias_semana = this.diasSemana
-        .filter(dia => dia.seleccionado)
-        .map(dia => dia.id);
-      
+        .filter((dia) => dia.seleccionado)
+        .map((dia) => dia.id);
+
       // Validar que haya al menos un día seleccionado
       if (this.configuracionActual.dias_semana.length === 0) {
-        this.alertService.warning('Error', 'Debe seleccionar al menos un día de la semana');
+        this.alertService.warning(
+          'Error',
+          'Debe seleccionar al menos un día de la semana'
+        );
         return;
       }
     }
-    
+
     this.saving = true;
-    this.apiService.store('reportes-configuracion', this.configuracionActual).subscribe(
-      (response) => {
-        this.saving = false;
-        this.loadAll();
-        this.modalRef?.hide();
-        this.alertService.success(
-          this.configuracionActual.id ? 'Configuración actualizada' : 'Configuración creada', 
-          'La configuración de reportes ha sido guardada exitosamente.'
-        );
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+    this.apiService
+      .store('reportes-configuracion', this.configuracionActual)
+      .subscribe(
+        (response) => {
+          this.saving = false;
+          this.loadAll();
+          this.modalRef?.hide();
+          this.alertService.success(
+            this.configuracionActual.id
+              ? 'Configuración actualizada'
+              : 'Configuración creada',
+            'La configuración de reportes ha sido guardada exitosamente.'
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.saving = false;
+        }
+      );
   }
 
   public agregarEmail() {
     if (!this.emailInput) return;
-    
+
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.emailInput)) {
-      this.alertService.warning('Error', 'Ingrese un correo electrónico válido');
+      this.alertService.warning(
+        'Error',
+        'Ingrese un correo electrónico válido'
+      );
       return;
     }
-    
+
     // Comprobar si ya existe
     if (this.configuracionActual.destinatarios.includes(this.emailInput)) {
       this.alertService.warning('Error', 'Este correo ya ha sido agregado');
       return;
     }
-    
+
     this.configuracionActual.destinatarios.push(this.emailInput);
     this.emailInput = '';
   }
@@ -220,25 +224,31 @@ openModalConfigurar(template: TemplateRef<any>) {
   public cambiarEstado(config: any) {
     const nuevoEstado = !config.activo;
     const configId = config.id;
-    
-    this.apiService.update('reportes-configuracion/estado', configId, { activo: nuevoEstado }).subscribe(
-      (response) => {
-        this.loadAll();
-        this.alertService.success(
-          'Estado actualizado', 
-          `La configuración ha sido ${nuevoEstado ? 'activada' : 'desactivada'} exitosamente.`
-        );
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+
+    this.apiService
+      .update('reportes-configuracion/estado', configId, {
+        activo: nuevoEstado,
+      })
+      .subscribe(
+        (response) => {
+          this.loadAll();
+          this.alertService.success(
+            'Estado actualizado',
+            `La configuración ha sido ${
+              nuevoEstado ? 'activada' : 'desactivada'
+            } exitosamente.`
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
   }
 
   public enviarReportePrueba(template: TemplateRef<any>, config?: any) {
     this.configuracionEliminar = config;
     this.emailPrueba = '';
-    
+
     this.modalRefPrueba = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
@@ -247,31 +257,33 @@ openModalConfigurar(template: TemplateRef<any>) {
 
   public confirmarEnvioPrueba() {
     this.enviandoPrueba = true;
-    
+
     const data = {
       id_configuracion: this.configuracionEliminar.id,
-      email_prueba: this.emailPrueba
+      email_prueba: this.emailPrueba,
     };
-    
-    this.apiService.store('reportes-configuracion/enviar-prueba', data).subscribe(
-      (response) => {
-        this.enviandoPrueba = false;
-        this.modalRefPrueba?.hide();
-        this.alertService.success(
-          'Reporte enviado', 
-          'El reporte de prueba ha sido enviado correctamente.'
-        );
-      },
-      (error) => {
-        this.enviandoPrueba = false;
-        this.alertService.error(error);
-      }
-    );
+
+    this.apiService
+      .store('reportes-configuracion/enviar-prueba', data)
+      .subscribe(
+        (response) => {
+          this.enviandoPrueba = false;
+          this.modalRefPrueba?.hide();
+          this.alertService.success(
+            'Reporte enviado',
+            'El reporte de prueba ha sido enviado correctamente.'
+          );
+        },
+        (error) => {
+          this.enviandoPrueba = false;
+          this.alertService.error(error);
+        }
+      );
   }
 
-  public eliminarConfiguracion( template: TemplateRef<any>,config: any) {
+  public eliminarConfiguracion(template: TemplateRef<any>, config: any) {
     this.configuracionEliminar = config;
-    
+
     this.modalRefEliminar = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
@@ -280,21 +292,23 @@ openModalConfigurar(template: TemplateRef<any>) {
 
   public confirmarEliminacion() {
     this.eliminando = true;
-    
-    this.apiService.delete('reportes-configuracion/', this.configuracionEliminar.id).subscribe(
-      (response) => {
-        this.eliminando = false;
-        this.modalRefEliminar?.hide();
-        this.loadAll();
-        this.alertService.success(
-          'Configuración eliminada', 
-          'La configuración de reportes ha sido eliminada exitosamente.'
-        );
-      },
-      (error) => {
-        this.eliminando = false;
-        this.alertService.error(error);
-      }
-    );
+
+    this.apiService
+      .delete('reportes-configuracion/', this.configuracionEliminar.id)
+      .subscribe(
+        (response) => {
+          this.eliminando = false;
+          this.modalRefEliminar?.hide();
+          this.loadAll();
+          this.alertService.success(
+            'Configuración eliminada',
+            'La configuración de reportes ha sido eliminada exitosamente.'
+          );
+        },
+        (error) => {
+          this.eliminando = false;
+          this.alertService.error(error);
+        }
+      );
   }
 }
