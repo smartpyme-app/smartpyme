@@ -40,6 +40,49 @@ class ReporteConfiguracionController extends Controller
     }
 
 
+    // public function store(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'tipo_reporte' => 'required|string',
+    //         'frecuencia' => 'required|in:diario,semanal,mensual',
+    //         'destinatarios' => 'required|array|min:1',
+    //         'destinatarios.*' => 'email',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['error' => $validator->errors()], 422);
+    //     }
+
+
+    //     if ($request->frecuencia === 'semanal' && empty($request->dias_semana)) {
+    //         return response()->json(['error' => 'Debe seleccionar al menos un día de la semana'], 422);
+    //     }
+
+    //     if ($request->frecuencia === 'mensual' && !$request->dia_mes) {
+    //         return response()->json(['error' => 'Debe seleccionar un día del mes'], 422);
+    //     }
+
+
+    //     if (!$request->envio_matutino && !$request->envio_mediodia && !$request->envio_nocturno) {
+    //         return response()->json(['error' => 'Debe seleccionar al menos un horario de envío'], 422);
+    //     }
+
+
+    //     $datos = $request->all();
+    //     $datos['id_empresa'] = Auth::user()->id_empresa;
+
+
+    //     if (isset($datos['id']) && $datos['id']) {
+    //         $configuracion = ReporteConfiguracion::findOrFail($datos['id']);
+    //         $configuracion->update($datos);
+    //     } else {
+    //         $configuracion = ReporteConfiguracion::create($datos);
+    //     }
+
+    //     return response()->json($configuracion, 200);
+    // }
+
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -67,10 +110,29 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'Debe seleccionar al menos un horario de envío'], 422);
         }
 
-
         $datos = $request->all();
         $datos['id_empresa'] = Auth::user()->id_empresa;
 
+
+        if (isset($datos['activo']) && $datos['activo']) {
+
+            $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
+                ->where('tipo_reporte', $datos['tipo_reporte'])
+                ->where('activo', true);
+
+
+            if (isset($datos['id']) && $datos['id']) {
+                $existeConfiguracionActiva->where('id', '!=', $datos['id']);
+            }
+
+            $configuracionExistente = $existeConfiguracionActiva->first();
+
+            if ($configuracionExistente) {
+
+                $configuracionExistente->activo = false;
+                $configuracionExistente->save();
+            }
+        }
 
         if (isset($datos['id']) && $datos['id']) {
             $configuracion = ReporteConfiguracion::findOrFail($datos['id']);
@@ -81,7 +143,6 @@ class ReporteConfiguracionController extends Controller
 
         return response()->json($configuracion, 200);
     }
-
     public function show($id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
@@ -93,6 +154,28 @@ class ReporteConfiguracionController extends Controller
 
         return response()->json($configuracion, 200);
     }
+
+    // public function updateEstado(Request $request, $id)
+    // {
+    //     $configuracion = ReporteConfiguracion::findOrFail($id);
+    //     if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
+    //         return response()->json(['error' => 'No tiene permiso para modificar esta configuración'], 403);
+    //     }
+
+    //     $validator = Validator::make($request->all(), [
+    //         'activo' => 'required|boolean',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['error' => $validator->errors()], 422);
+    //     }
+
+    //     $configuracion->activo = $request->activo;
+    //     $configuracion->save();
+
+    //     return response()->json($configuracion, 200);
+    // }
+
 
     public function updateEstado(Request $request, $id)
     {
@@ -107,6 +190,22 @@ class ReporteConfiguracionController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
+        }
+
+
+        if ($request->activo) {
+
+            $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
+                ->where('tipo_reporte', $configuracion->tipo_reporte)
+                ->where('activo', true)
+                ->where('id', '!=', $id)
+                ->first();
+
+            if ($existeConfiguracionActiva) {
+
+                $existeConfiguracionActiva->activo = false;
+                $existeConfiguracionActiva->save();
+            }
         }
 
         $configuracion->activo = $request->activo;

@@ -34,6 +34,7 @@ export class ReportesAutomaticosComponent implements OnInit {
     { id: 7, nombre: 'Domingo', seleccionado: false },
   ];
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
+  public tiposReporteActivos: string[] = [];
 
   modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
@@ -56,12 +57,26 @@ export class ReportesAutomaticosComponent implements OnInit {
       (configuraciones) => {
         this.configuraciones = configuraciones;
         this.loading = false;
+        
+        // Obtener los tipos de reporte activos para validación
+        this.actualizarTiposReporteActivos();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
       }
     );
+  }
+
+  private actualizarTiposReporteActivos() {
+    this.tiposReporteActivos = [];
+    if (this.configuraciones && this.configuraciones.data) {
+      this.configuraciones.data.forEach((config: any) => {
+        if (config.activo) {
+          this.tiposReporteActivos.push(config.tipo_reporte);
+        }
+      });
+    }
   }
 
   public filtrarConfiguraciones() {
@@ -76,6 +91,7 @@ export class ReportesAutomaticosComponent implements OnInit {
         (configuraciones) => {
           this.configuraciones = configuraciones;
           this.loading = false;
+          this.actualizarTiposReporteActivos();
         },
         (error) => {
           this.alertService.error(error);
@@ -115,6 +131,10 @@ export class ReportesAutomaticosComponent implements OnInit {
       dia_mes: 1,
       asunto_correo: '',
     };
+    
+    // Restablecer los días de la semana seleccionados
+    this.diasSemana.forEach(dia => dia.seleccionado = false);
+    
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
@@ -126,6 +146,19 @@ export class ReportesAutomaticosComponent implements OnInit {
       this.configuracionActual = {};
     } else {
       this.configuracionActual = { ...configuracion };
+      
+      // Si es semanal, configurar los días seleccionados
+      if (this.configuracionActual.frecuencia === 'semanal' && this.configuracionActual.dias_semana) {
+        // Reiniciar todos los días
+        this.diasSemana.forEach(dia => dia.seleccionado = false);
+        
+        // Seleccionar los días guardados
+        this.diasSemana.forEach(dia => {
+          if (this.configuracionActual.dias_semana.includes(dia.id)) {
+            dia.seleccionado = true;
+          }
+        });
+      }
     }
 
     this.modalRef = this.modalService.show(template, {
@@ -141,10 +174,6 @@ export class ReportesAutomaticosComponent implements OnInit {
       !this.configuracionActual.envio_mediodia &&
       !this.configuracionActual.envio_nocturno
     ) {
-      // this.alertService.warning(
-      //   'Error',
-      //   'Debe seleccionar al menos un horario de envío'
-      // );
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -155,10 +184,6 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     // Validar que haya al menos un destinatario
     if (this.configuracionActual.destinatarios.length === 0) {
-      // this.alertService.warning(
-      //   'Error',
-      //   'Debe agregar al menos un destinatario'
-      // );
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -175,14 +200,57 @@ export class ReportesAutomaticosComponent implements OnInit {
 
       // Validar que haya al menos un día seleccionado
       if (this.configuracionActual.dias_semana.length === 0) {
-        // this.alertService.warning(
-        //   'Error',
-        //   'Debe seleccionar al menos un día de la semana'
-        // );
         Swal.fire({
           icon: 'error',
           title: 'Error',
           text: 'Debe seleccionar al menos un día de la semana',
+        });
+        return;
+      }
+    }
+
+    // Verificar si ya existe un reporte activo del mismo tipo
+    if (this.configuracionActual.activo) {
+      const existeReporteActivo = this.tiposReporteActivos.includes(this.configuracionActual.tipo_reporte) &&
+        (!this.configuracionActual.id || 
+         this.configuraciones.data.some((c: any) => 
+           c.tipo_reporte === this.configuracionActual.tipo_reporte && 
+           c.activo && 
+           c.id !== this.configuracionActual.id
+         ));
+
+      if (existeReporteActivo) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Advertencia',
+          text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
+          showCancelButton: true,
+          confirmButtonText: 'Continuar y desactivar la existente',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // El usuario decidió continuar y desactivar la configuración existente
+            this.saving = true;
+            this.apiService
+              .store('reportes-configuracion', this.configuracionActual)
+              .subscribe(
+                (response) => {
+                  this.saving = false;
+                  this.loadAll();
+                  this.modalRef?.hide();
+                  this.alertService.success(
+                    this.configuracionActual.id
+                      ? 'Configuración actualizada'
+                      : 'Configuración creada',
+                    'La configuración de reportes ha sido guardada exitosamente.'
+                  );
+                },
+                (error) => {
+                  this.alertService.error(error);
+                  this.saving = false;
+                }
+              );
+          }
         });
         return;
       }
@@ -241,6 +309,33 @@ export class ReportesAutomaticosComponent implements OnInit {
     const nuevoEstado = !config.activo;
     const configId = config.id;
 
+    // Si se está activando, verificar si ya existe otro reporte activo del mismo tipo
+    if (nuevoEstado) {
+      const existeReporteActivo = this.tiposReporteActivos.includes(config.tipo_reporte);
+      
+      if (existeReporteActivo) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Advertencia',
+          text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
+          showCancelButton: true,
+          confirmButtonText: 'Continuar y desactivar la existente',
+          cancelButtonText: 'Cancelar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // El usuario decidió continuar y desactivar la configuración existente
+            this.ejecutarCambioEstado(configId, nuevoEstado);
+          }
+        });
+        return;
+      }
+    }
+
+    // Si no hay conflicto o se está desactivando, proceder normalmente
+    this.ejecutarCambioEstado(configId, nuevoEstado);
+  }
+
+  private ejecutarCambioEstado(configId: number, nuevoEstado: boolean) {
     this.apiService
       .update('reportes-configuracion/estado', configId, {
         activo: nuevoEstado,
@@ -327,23 +422,33 @@ export class ReportesAutomaticosComponent implements OnInit {
         }
       );
   }
+  
   private obtenerEmpresa(): number {
     const empresa = localStorage.getItem('SP_auth_user');
     if (empresa) {
-      const empresaObj = JSON.parse(empresa);;
+      const empresaObj = JSON.parse(empresa);
       return empresaObj.empresa.nombre;
     }
     return 0;
   }
 
   public tipoReporteChanged(value: string) {
-    
     value = value.replace(/-/g, ' ');
     value = value.replace(/\s+/g, ' ');
     value = value.trim();
     const empresa = this.obtenerEmpresa();
     
-
     this.configuracionActual.asunto_correo = `Reporte diario de ${value}` + ' ' + empresa;
+    
+    // Verificar si ya existe una configuración activa para este tipo de reporte
+    if (this.tiposReporteActivos.includes(value)) {
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'info',
+          title: 'Información',
+          text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte. Si continúa, la configuración existente será desactivada.',
+        });
+      }, 100);
+    }
   }
 }
