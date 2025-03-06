@@ -203,7 +203,7 @@
   </div>
 </ng-template>
 
-<!-- Modal para configurar reporte -->
+
 <ng-template #mconfigurarReporte>
   <div class="modal-header justify-content-between">
     <h4 class="modal-title">
@@ -299,86 +299,76 @@
       </div>
 
       <!-- Horarios de Envío -->
-      <div class="card mb-3">
-        <div class="card-header bg-light">
-          <h6 class="mb-0">Horarios de Envío</h6>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <!-- Envío Matutino -->
-            <div class="col-md-4">
-              <div class="mb-3">
-                <div class="form-check mb-2">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="envio_matutino"
-                    name="envio_matutino"
-                    [(ngModel)]="configuracionActual.envio_matutino"
-                  />
-                  <label class="form-check-label fw-bold" for="envio_matutino">
-                    Envío Matutino
-                  </label>
-                </div>
-                <input
-                  type="time"
-                  class="form-control"
-                  id="hora_matutino"
-                  name="hora_matutino"
-                  [(ngModel)]="configuracionActual.hora_matutino"
-                />
-              </div>
+      <div class="mb-4">
+        <label class="form-label fw-bold d-block mb-3">Horarios de Envío</label>
+        <div class="row g-3">
+          <!-- Envío Matutino -->
+          <div class="col-md-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="envio_matutino"
+                name="envio_matutino"
+                [(ngModel)]="configuracionActual.envio_matutino"
+              />
+              <label class="form-check-label" for="envio_matutino">
+                Envío Matutino
+              </label>
             </div>
+            <input
+              type="time"
+              class="form-control"
+              id="hora_matutino"
+              name="hora_matutino"
+              [(ngModel)]="configuracionActual.hora_matutino"
+            />
+          </div>
 
-            <!-- Envío Mediodía -->
-            <div class="col-md-4">
-              <div class="mb-3">
-                <div class="form-check mb-2">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="envio_mediodia"
-                    name="envio_mediodia"
-                    [(ngModel)]="configuracionActual.envio_mediodia"
-                  />
-                  <label class="form-check-label fw-bold" for="envio_mediodia">
-                    Envío Mediodía
-                  </label>
-                </div>
-                <input
-                  type="time"
-                  class="form-control"
-                  id="hora_mediodia"
-                  name="hora_mediodia"
-                  [(ngModel)]="configuracionActual.hora_mediodia"
-                />
-              </div>
+          <!-- Envío Mediodía -->
+          <div class="col-md-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="envio_mediodia"
+                name="envio_mediodia"
+                [(ngModel)]="configuracionActual.envio_mediodia"
+              />
+              <label class="form-check-label" for="envio_mediodia">
+                Envío Mediodía
+              </label>
             </div>
+            <input
+              type="time"
+              class="form-control"
+              id="hora_mediodia"
+              name="hora_mediodia"
+              [(ngModel)]="configuracionActual.hora_mediodia"
+            />
+          </div>
 
-            <!-- Envío Nocturno -->
-            <div class="col-md-4">
-              <div class="mb-3">
-                <div class="form-check mb-2">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="envio_nocturno"
-                    name="envio_nocturno"
-                    [(ngModel)]="configuracionActual.envio_nocturno"
-                  />
-                  <label class="form-check-label fw-bold" for="envio_nocturno">
-                    Envío Nocturno
-                  </label>
-                </div>
-                <input
-                  type="time"
-                  class="form-control"
-                  id="hora_nocturno"
-                  name="hora_nocturno"
-                  [(ngModel)]="configuracionActual.hora_nocturno"
-                />
-              </div>
+          <!-- Envío Nocturno -->
+          <div class="col-md-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="envio_nocturno"
+                name="envio_nocturno"
+                [(ngModel)]="configuracionActual.envio_nocturno"
+              />
+              <label class="form-check-label" for="envio_nocturno">
+                Envío Nocturno
+              </label>
             </div>
+            <input
+              type="time"
+              class="form-control"
+              id="hora_nocturno"
+              name="hora_nocturno"
+              [(ngModel)]="configuracionActual.hora_nocturno"
+            />
           </div>
         </div>
       </div>
