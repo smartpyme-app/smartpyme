@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\Compras\ComprasController;
 use App\Http\Controllers\Api\Compras\SalidasController;
+//use Route;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/compras',         		    [ComprasController::class, 'index']);
     Route::get('/compras/buscar/{txt}',     [ComprasController::class, 'search']);
@@ -19,5 +21,7 @@ use App\Http\Controllers\Api\Compras\SalidasController;
 
     Route::get('/compras/exportar',    [ComprasController::class, 'export']);
     Route::get('/compras-detalles/exportar',    [ComprasController::class, 'exportDetalles']);
+    //compras-rentabilidad/exportar post
+    Route::post('/compras-rentabilidad/exportar',    [ComprasController::class, 'exportRentabilidad']);
 
 ?>
