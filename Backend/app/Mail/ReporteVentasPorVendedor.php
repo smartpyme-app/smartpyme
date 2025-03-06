@@ -28,7 +28,8 @@ class ReporteVentasPorVendedor extends Mailable
             throw new \Exception("No se puede adjuntar el archivo: {$filePath}");
         }
 
-        return $this->subject('Reporte de Ventas por Vendedor - ' . $this->datos['fecha'])
+        // return $this->subject('Reporte de Ventas por Vendedor - ' . $this->datos['fecha'])
+        return $this->subject($this->datos['asunto'])
             ->view('reportes.ventas-por-vendedor')
             ->attach($filePath, [
                 'as' => $this->datos['nombreArchivo'],

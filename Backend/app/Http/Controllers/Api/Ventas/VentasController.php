@@ -1105,7 +1105,7 @@ class VentasController extends Controller
             $filePath = public_path('img/' . $relativePath);
 
             if (!file_exists($filePath)) {
-    
+
                 Log::error("Archivo no encontrado en: {$filePath}");
 
                 $alternativePath = storage_path('app/public/' . $relativePath);
@@ -1150,6 +1150,174 @@ class VentasController extends Controller
         } catch (\Exception $e) {
             Log::error('Error al enviar reporte diario: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
+    public function enviarReporteProgramado($configuracion)
+    {
+        try {
+            $fecha = Carbon::today()->format('Y-m-d');
+            $export = new VentasPorVendedorExport($fecha);
+            $filename = "ventas-por-vendedor-{$fecha}.xlsx";
+
+            // Definir la ruta relativa para el archivo
+            $relativePath = "reportes/{$filename}";
+
+            // Crear el directorio si no existe
+            $directory = public_path('img/reportes');
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            Storage::disk('public')->put($relativePath, '');
+
+            Excel::store($export, $relativePath, 'public');
+
+            $filePath = public_path('img/' . $relativePath);
+
+            if (!file_exists($filePath)) {
+                Log::error("Archivo no encontrado en: {$filePath}");
+                $alternativePath = storage_path('app/public/' . $relativePath);
+                Log::info("Intentando ruta alternativa: {$alternativePath}");
+
+                if (file_exists($alternativePath)) {
+                    $filePath = $alternativePath;
+                } else {
+                    throw new \Exception("El archivo no fue generado correctamente. No se encuentra en ninguna de las rutas esperadas.");
+                }
+            }
+
+            // Obtener estadísticas para incluir en el correo
+            $ventasDelDia = Venta::where('fecha', $fecha)
+                ->where('cotizacion', 0)
+                ->count();
+
+            $totalVentas = Venta::where('fecha', $fecha)
+                ->where('cotizacion', 0)
+                ->sum('total');
+
+            $vendedoresConVentas = Venta::where('fecha', $fecha)
+                ->where('cotizacion', 0)
+                ->distinct('id_vendedor')
+                ->count('id_vendedor');
+
+            // Preparar datos para el correo
+            $datos = [
+                'fecha' => Carbon::today()->format('d/m/Y'),
+                'ventasDelDia' => $ventasDelDia,
+                'totalVentas' => $totalVentas,
+                'vendedoresConVentas' => $vendedoresConVentas,
+                'archivoPath' => $filePath,
+                'nombreArchivo' => basename($filePath),
+                'asunto' => $configuracion->asunto_correo ?: "Reporte de Ventas por Vendedor - " . Carbon::today()->format('d/m/Y'),
+                'automatico' => true
+            ];
+
+            // Obtener destinatarios de la configuración
+            $destinatarios = $configuracion->destinatarios;
+
+            // Enviar el correo
+            Mail::to($destinatarios)->send(new ReporteVentasPorVendedor($datos));
+
+            // Registrar que se envió el reporte
+            Log::info("Reporte enviado: {$configuracion->tipo_reporte}", [
+                'configuracion_id' => $configuracion->id,
+                'destinatarios' => $destinatarios,
+                'fecha' => $fecha
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar reporte programado: ' . $e->getMessage(), [
+                'configuracion_id' => $configuracion->id ?? null,
+                'tipo_reporte' => $configuracion->tipo_reporte ?? null
+            ]);
+            throw $e;
+        }
+    }
+
+    public function enviarReporteProgramadoTest($configuracion, $destinatarios)
+    {
+        try {
+            $fecha = Carbon::today()->format('Y-m-d');
+            $export = new VentasPorVendedorExport($fecha);
+            $filename = "ventas-por-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
+
+            // Definir la ruta relativa para el archivo
+            $relativePath = "reportes/{$filename}";
+
+            // Crear el directorio si no existe
+            $directory = public_path('img/reportes');
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+
+            Storage::disk('public')->put($relativePath, '');
+
+            Excel::store($export, $relativePath, 'public');
+
+
+            $filePath = public_path('img/' . $relativePath);
+
+
+            if (!file_exists($filePath)) {
+
+                Log::error("Archivo no encontrado en: {$filePath}");
+
+                $alternativePath = storage_path('app/public/' . $relativePath);
+                Log::info("Intentando ruta alternativa: {$alternativePath}");
+
+                if (file_exists($alternativePath)) {
+                    $filePath = $alternativePath;
+                } else {
+                    throw new \Exception("El archivo no fue generado correctamente. No se encuentra en ninguna de las rutas esperadas.");
+                }
+            }
+
+            // Obtener estadísticas para incluir en el correo
+            $ventasDelDia = Venta::where('fecha', $fecha)
+                ->where('cotizacion', 0)
+                ->count();
+
+            $totalVentas = Venta::where('fecha', $fecha)
+                ->where('cotizacion', 0)
+                ->sum('total');
+
+            $vendedoresConVentas = Venta::where('fecha', $fecha)
+                ->where('cotizacion', 0)
+                ->distinct('id_vendedor')
+                ->count('id_vendedor');
+
+            // Preparar datos para el correo
+            $datos = [
+                'fecha' => Carbon::today()->format('d/m/Y'),
+                'ventasDelDia' => $ventasDelDia,
+                'totalVentas' => $totalVentas,
+                'vendedoresConVentas' => $vendedoresConVentas,
+                'archivoPath' => $filePath,
+                'nombreArchivo' => basename($filePath),
+                'asunto' => $configuracion->asunto_correo ?: "Reporte de Prueba: Ventas por Vendedor - " . Carbon::today()->format('d/m/Y'),
+                'esPrueba' => true
+            ];
+
+            Mail::to($destinatarios)->send(new ReporteVentasPorVendedor($datos));
+
+            Log::info("Reporte de prueba enviado: {$configuracion->tipo_reporte}", [
+                'configuracion_id' => $configuracion->id,
+                'destinatarios' => $destinatarios,
+                'fecha' => $fecha
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar reporte de prueba: ' . $e->getMessage(), [
+                'configuracion_id' => $configuracion->id ?? null,
+                'tipo_reporte' => $configuracion->tipo_reporte ?? null
+            ]);
+            throw $e;
         }
     }
 }
