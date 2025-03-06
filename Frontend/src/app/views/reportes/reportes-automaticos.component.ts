@@ -95,65 +95,57 @@ export class ReportesAutomaticosComponent implements OnInit {
     }
   }
 
-  public openModalConfigurar(template: TemplateRef<any>) {
-    this.configuracionActual = {
-      activo: true,
-      tipo_reporte: '',
-      frecuencia: 'diario',
-      destinatarios: [],
-      envio_matutino: true,
-      hora_matutino: '08:00',
-      envio_mediodia: false,
-      hora_mediodia: '13:00',
-      envio_nocturno: false,
-      hora_nocturno: '19:00',
-      dia_mes: 1,
-      asunto_correo: ''
-    };
+//   public openModalConfigurar(template: TemplateRef<any>) {
+//     this.configuracionActual = {
+//       activo: true,
+//       tipo_reporte: '',
+//       frecuencia: 'diario',
+//       destinatarios: [],
+//       envio_matutino: true,
+//       hora_matutino: '08:00',
+//       envio_mediodia: false,
+//       hora_mediodia: '13:00',
+//       envio_nocturno: false,
+//       hora_nocturno: '19:00',
+//       dia_mes: 1,
+//       asunto_correo: ''
+//     };
     
-    // Reiniciar días de la semana
-    this.diasSemana.forEach(dia => dia.seleccionado = false);
+//     // Reiniciar días de la semana
+//     this.diasSemana.forEach(dia => dia.seleccionado = false);
     
-    this.modalRef = this.modalService.show(template, { 
+//     this.modalRef = this.modalService.show(template, { 
+//       class: 'modal-lg',
+//       ignoreBackdropClick: true
+//     });
+//   }
+
+openModalConfigurar(template: TemplateRef<any>) {
+    this.configuracionActual = {};
+    this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
-      ignoreBackdropClick: true
+      backdrop: 'static',
     });
   }
 
-  public editarConfiguracion(config: any) {
-    this.loading = true;
-    this.apiService.read('reportes-configuracion/', config.id).subscribe(
-      (configuracion) => {
-        this.loading = false;
-        this.configuracionActual = {...configuracion};
-        
-        // Manejar días de la semana
-        this.diasSemana.forEach(dia => {
-          dia.seleccionado = this.configuracionActual.dias_semana?.includes(dia.id) || false;
-        });
-        
-        // Asegurar que las horas estén en formato correcto
-        if (!this.configuracionActual.hora_matutino) this.configuracionActual.hora_matutino = '08:00';
-        if (!this.configuracionActual.hora_mediodia) this.configuracionActual.hora_mediodia = '13:00';
-        if (!this.configuracionActual.hora_nocturno) this.configuracionActual.hora_nocturno = '19:00';
-        
-        // Asegurar que tengamos un arreglo de destinatarios
-        if (!Array.isArray(this.configuracionActual.destinatarios)) {
-          this.configuracionActual.destinatarios = [];
-        }
-        
-        // Abrir el modal
-        this.modalRef = this.modalService.show(document.getElementById('mconfigurarReporte') as any, { 
-          class: 'modal-lg',
-          ignoreBackdropClick: true
-        });
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+
+
+  openModal(template: TemplateRef<any>, configuracion: any) {
+
+    if (!configuracion || configuracion === null) {
+      
+      this.configuracionActual = {};
+    } else {
+      
+      this.configuracionActual = { ...configuracion };
+    }
+
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
   }
+
 
   public guardarConfiguracion() {
     // Validar que haya al menos un horario seleccionado
@@ -243,15 +235,14 @@ export class ReportesAutomaticosComponent implements OnInit {
     );
   }
 
-  public enviarReportePrueba(config: any, template?: TemplateRef<any>) {
+  public enviarReportePrueba(template: TemplateRef<any>, config?: any) {
     this.configuracionEliminar = config;
     this.emailPrueba = '';
     
-    if (template) {
-      this.modalRefPrueba = this.modalService.show(template);
-    } else {
-      this.modalRefPrueba = this.modalService.show(document.getElementById('mEnvioPrueba') as any);
-    }
+    this.modalRefPrueba = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
   }
 
   public confirmarEnvioPrueba() {
@@ -278,14 +269,13 @@ export class ReportesAutomaticosComponent implements OnInit {
     );
   }
 
-  public eliminarConfiguracion(config: any, template?: TemplateRef<any>) {
+  public eliminarConfiguracion( template: TemplateRef<any>,config: any) {
     this.configuracionEliminar = config;
     
-    if (template) {
-      this.modalRefEliminar = this.modalService.show(template);
-    } else {
-      this.modalRefEliminar = this.modalService.show(document.getElementById('mEliminar') as any);
-    }
+    this.modalRefEliminar = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
   }
 
   public confirmarEliminacion() {

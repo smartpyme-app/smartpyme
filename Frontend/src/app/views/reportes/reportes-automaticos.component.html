@@ -98,17 +98,17 @@
 <!-- Template de acciones -->
 <ng-template #accionesTemplate let-config="config">
     <div class="list-group border-0">
-        <a (click)="editarConfiguracion(config)" class="list-group-item list-group-item-action border-0 click">
+        <a (click)="openModal(mconfigurarReporte,config)" class="list-group-item list-group-item-action border-0 click">
             <i class="fa fa-fw fa-edit"></i> Editar
         </a>
         <a (click)="cambiarEstado(config)" class="list-group-item list-group-item-action border-0 click">
             <i class="fa fa-fw" [ngClass]="{'fa-toggle-on': config.activo, 'fa-toggle-off': !config.activo}"></i> 
             {{ config.activo ? 'Desactivar' : 'Activar' }}
         </a>
-        <a (click)="enviarReportePrueba(config)" class="list-group-item list-group-item-action border-0 click">
+        <a (click)="enviarReportePrueba(mEnvioPrueba,config)" class="list-group-item list-group-item-action border-0 click">
             <i class="fa fa-fw fa-paper-plane"></i> Enviar prueba
         </a>
-        <a (click)="eliminarConfiguracion(config)" class="list-group-item list-group-item-action border-0 click text-danger">
+        <a (click)="eliminarConfiguracion(mEliminar,config)" class="list-group-item list-group-item-action border-0 click text-danger">
             <i class="fa fa-fw fa-trash"></i> Eliminar
         </a>
     </div>
