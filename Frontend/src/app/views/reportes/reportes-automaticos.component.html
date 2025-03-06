@@ -267,11 +267,8 @@
                 <div class="form-text">Si deja este campo vacío, se usará un asunto predeterminado.</div>
             </div>
             
-            <!-- Botones de acción -->
-            <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" (click)="enviarReportePrueba(configuracionActual)">
-                    <i class="fa fa-paper-plane"></i> Probar Envío
-                </button>
+            <!-- Botones de acción end -->
+            <div class="d-flex justify-content-end mt-4">
                 <button type="submit" class="btn btn-primary" [disabled]="saving">
                     <span *ngIf="!saving"><i class="fa fa-save"></i> Guardar Configuración</span>
                     <span *ngIf="saving">Guardando...</span>
