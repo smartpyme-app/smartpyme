@@ -61,18 +61,15 @@ class EnviarReportesAutomaticos extends Command
         $reportesEnviados = 0;
         
         foreach ($configuraciones as $configuracion) {
-            // Verificar si debe enviarse hoy según la frecuencia
             if (!$configuracion->debeEnviarseHoy()) {
                 continue;
             }
             
-            // Verificar cada horario de envío
             foreach (['envio_matutino', 'envio_mediodia', 'envio_nocturno'] as $horario) {
                 if ($configuracion->$horario) {
-                    $horaAtributo = 'hora_' . substr($horario, 6); // Extrae 'matutino', 'mediodia' o 'nocturno'
+                    $horaAtributo = 'hora_' . substr($horario, 6); 
                     $horaConfiguracion = $configuracion->$horaAtributo;
                     
-                    // Comparar la hora actual con la configurada (con 5 minutos de tolerancia)
                     $horaEnvio = Carbon::createFromFormat('H:i', substr($horaConfiguracion, 0, 5));
                     $diferenciaMinutos = abs($now->diffInMinutes($horaEnvio));
                     
@@ -92,7 +89,6 @@ class EnviarReportesAutomaticos extends Command
                             ]);
                         }
                         
-                        // Salir del bucle de horarios para esta configuración
                         break;
                     }
                 }
@@ -104,9 +100,6 @@ class EnviarReportesAutomaticos extends Command
         return 0;
     }
     
-    /**
-     * Envía el reporte según el tipo configurado
-     */
     private function enviarReporte(ReporteConfiguracion $configuracion)
     {
         switch ($configuracion->tipo_reporte) {

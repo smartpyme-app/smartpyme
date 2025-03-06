@@ -38,9 +38,7 @@ class ReporteConfiguracion extends Model
         'dias_semana' => 'array',
     ];
 
-    /**
-     * Verifica si el reporte debe ser enviado hoy según su configuración
-     */
+  
     public function debeEnviarseHoy()
     {
         $hoy = Carbon::today();
@@ -50,12 +48,10 @@ class ReporteConfiguracion extends Model
                 return true;
                 
             case 'semanal':
-                // Los días de la semana son 1 (lunes) a 7 (domingo)
                 $diaSemana = $hoy->dayOfWeekIso;
                 return in_array($diaSemana, $this->dias_semana ?? []);
                 
             case 'mensual':
-                // El día del mes (1-31)
                 $diaMes = $hoy->day;
                 return $diaMes == $this->dia_mes;
                 
