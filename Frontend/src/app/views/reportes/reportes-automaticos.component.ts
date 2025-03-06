@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-reportes-automaticos',
@@ -46,6 +47,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
   ngOnInit() {
     this.loadAll();
+    this.obtenerEmpresa();
   }
 
   public loadAll() {
@@ -98,7 +100,6 @@ export class ReportesAutomaticosComponent implements OnInit {
     }
   }
 
-
   openModalConfigurar(template: TemplateRef<any>) {
     this.configuracionActual = {
       activo: true,
@@ -140,19 +141,29 @@ export class ReportesAutomaticosComponent implements OnInit {
       !this.configuracionActual.envio_mediodia &&
       !this.configuracionActual.envio_nocturno
     ) {
-      this.alertService.warning(
-        'Error',
-        'Debe seleccionar al menos un horario de envío'
-      );
+      // this.alertService.warning(
+      //   'Error',
+      //   'Debe seleccionar al menos un horario de envío'
+      // );
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debe seleccionar al menos un horario de envío',
+      });
       return;
     }
 
     // Validar que haya al menos un destinatario
     if (this.configuracionActual.destinatarios.length === 0) {
-      this.alertService.warning(
-        'Error',
-        'Debe agregar al menos un destinatario'
-      );
+      // this.alertService.warning(
+      //   'Error',
+      //   'Debe agregar al menos un destinatario'
+      // );
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debe agregar al menos un destinatario',
+      });
       return;
     }
 
@@ -164,10 +175,15 @@ export class ReportesAutomaticosComponent implements OnInit {
 
       // Validar que haya al menos un día seleccionado
       if (this.configuracionActual.dias_semana.length === 0) {
-        this.alertService.warning(
-          'Error',
-          'Debe seleccionar al menos un día de la semana'
-        );
+        // this.alertService.warning(
+        //   'Error',
+        //   'Debe seleccionar al menos un día de la semana'
+        // );
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Debe seleccionar al menos un día de la semana',
+        });
         return;
       }
     }
@@ -310,5 +326,24 @@ export class ReportesAutomaticosComponent implements OnInit {
           this.alertService.error(error);
         }
       );
+  }
+  private obtenerEmpresa(): number {
+    const empresa = localStorage.getItem('SP_auth_user');
+    if (empresa) {
+      const empresaObj = JSON.parse(empresa);;
+      return empresaObj.empresa.nombre;
+    }
+    return 0;
+  }
+
+  public tipoReporteChanged(value: string) {
+    
+    value = value.replace(/-/g, ' ');
+    value = value.replace(/\s+/g, ' ');
+    value = value.trim();
+    const empresa = this.obtenerEmpresa();
+    
+
+    this.configuracionActual.asunto_correo = `Reporte diario de ${value}` + ' ' + empresa;
   }
 }

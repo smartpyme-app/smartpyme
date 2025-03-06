@@ -227,11 +227,13 @@
         <label for="tipo_reporte" class="form-label fw-bold"
           >Tipo de Reporte</label
         >
+        <!--change en el select-->
         <select
           name="tipo_reporte"
           id="tipo_reporte"
           class="form-select"
           [(ngModel)]="configuracionActual.tipo_reporte"
+          (ngModelChange)="tipoReporteChanged($event)"
           required
         >
           <option value="" disabled>Seleccione un tipo de reporte</option>
@@ -431,7 +433,7 @@
           id="asunto_correo"
           name="asunto_correo"
           [(ngModel)]="configuracionActual.asunto_correo"
-          placeholder="Ej: Reporte diario de ventas - Estilos Salin"
+          placeholder="Ej: Reporte diario de ventas"
         />
         <div class="form-text">
           Si deja este campo vacío, se usará un asunto predeterminado.
