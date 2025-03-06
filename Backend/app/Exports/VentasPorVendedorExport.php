@@ -21,10 +21,12 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
      */
     public $request;
     public $fecha;
+    public $id_empresa;
 
-    public function __construct($fecha = null)
+    public function __construct($fecha = null, $id_empresa = null)
     {
         $this->fecha = $fecha ?? Carbon::today()->format('Y-m-d');
+        $this->id_empresa = $id_empresa;
     }
 
     public function filter(Request $request)
@@ -80,9 +82,12 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
     public function collection()
     {
 
+
+
         $detalles = Detalle::whereHas('venta', function ($query) {
             $query->where('fecha', $this->fecha)
                 ->where('cotizacion', 0)
+                ->where('id_empresa', $this->id_empresa)
                 ->orderBy('id_vendedor', 'asc')
                 ->orderBy('id', 'asc');
         })->get();

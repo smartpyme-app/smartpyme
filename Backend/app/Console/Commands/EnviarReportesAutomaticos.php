@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\Api\Ventas\VentasController;
 use Illuminate\Console\Command;
 use App\Http\Controllers\Reportes\VentasPorVendedorController;
+use App\Models\Admin\Empresa;
 use App\Models\Admin\ReporteConfiguracion;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -111,7 +112,8 @@ class EnviarReportesAutomaticos extends Command
         switch ($configuracion->tipo_reporte) {
             case 'ventas-por-vendedor':
                 $controller = new VentasController();
-                return $controller->enviarReporteProgramado($configuracion);
+                $empresa = Empresa::find($configuracion->id_empresa);
+                return $controller->enviarReporteProgramado($configuracion, $empresa);
                 
             // Implementar otros tipos de reportes aquí
                 

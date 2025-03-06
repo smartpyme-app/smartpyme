@@ -1155,11 +1155,11 @@ class VentasController extends Controller
 
 
 
-    public function enviarReporteProgramado($configuracion)
+    public function enviarReporteProgramado($configuracion, $empresa)
     {
         try {
             $fecha = Carbon::today()->format('Y-m-d');
-            $export = new VentasPorVendedorExport($fecha);
+            $export = new VentasPorVendedorExport($fecha, $empresa->id);
             $filename = "ventas-por-vendedor-{$fecha}.xlsx";
 
             // Definir la ruta relativa para el archivo
@@ -1191,19 +1191,21 @@ class VentasController extends Controller
 
             // Obtener estadísticas para incluir en el correo
             $ventasDelDia = Venta::where('fecha', $fecha)
+                ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
                 ->count();
 
             $totalVentas = Venta::where('fecha', $fecha)
+                ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
                 ->sum('total');
 
             $vendedoresConVentas = Venta::where('fecha', $fecha)
+                ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
                 ->distinct('id_vendedor')
                 ->count('id_vendedor');
 
-            // Preparar datos para el correo
             $datos = [
                 'fecha' => Carbon::today()->format('d/m/Y'),
                 'ventasDelDia' => $ventasDelDia,
@@ -1215,10 +1217,8 @@ class VentasController extends Controller
                 'automatico' => true
             ];
 
-            // Obtener destinatarios de la configuración
             $destinatarios = $configuracion->destinatarios;
 
-            // Enviar el correo
             Mail::to($destinatarios)->send(new ReporteVentasPorVendedor($datos));
 
             // Registrar que se envió el reporte
