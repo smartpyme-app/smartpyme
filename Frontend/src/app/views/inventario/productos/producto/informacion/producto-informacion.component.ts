@@ -52,6 +52,14 @@ export class ProductoInformacionComponent implements OnInit {
         }
     }
 
+    public actualizarCostoPromedio(){
+        this.producto.costo_promedio = this.producto.costo;
+    }
+
+    public actualizarCosto(){
+        this.producto.costo = this.producto.costo_promedio;
+    }
+
     public calPrecioBase(){
         if(this.usuario.empresa.iva > 0){
             this.producto.impuesto = this.usuario.empresa.iva / 100;
@@ -69,6 +77,15 @@ export class ProductoInformacionComponent implements OnInit {
 
     public onSubmit() {
         this.guardar = true;
+        if(!this.producto.id){
+            if(!this.producto.costo){
+                this.producto.costo = this.producto.costo_promedio;
+            }
+            if(!this.producto.costo_promedio){
+                this.producto.costo_promedio = this.producto.costo;
+            }
+        }
+
         this.apiService.store('producto', this.producto).subscribe(producto => {
             this.guardar = false;
             if(!this.producto.id) {
