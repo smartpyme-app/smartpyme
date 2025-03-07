@@ -79,6 +79,9 @@
         <p>Este reporte es generado automáticamente. Si tiene alguna pregunta o requiere información adicional, no dude en contactar al departamento de sistemas.</p>
         
         <p>Saludos cordiales,</p>
+        <p>Si necesita ayuda adicional o tiene alguna pregunta, por favor no dude en contactar a nuestro equipo de soporte al +503 7732 5932.</p>
+        
+
     </div>
 </body>
 </html>
