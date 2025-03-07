@@ -1162,10 +1162,10 @@ class VentasController extends Controller
             $export = new VentasPorVendedorExport($fecha, $empresa->id);
             $filename = "ventas-por-vendedor-{$fecha}.xlsx";
 
-            // Definir la ruta relativa para el archivo
+          
             $relativePath = "reportes/{$filename}";
 
-            // Crear el directorio si no existe
+          
             $directory = public_path('img/reportes');
             if (!file_exists($directory)) {
                 mkdir($directory, 0755, true);
@@ -1189,7 +1189,7 @@ class VentasController extends Controller
                 }
             }
 
-            // Obtener estadísticas para incluir en el correo
+         
             $ventasDelDia = Venta::where('fecha', $fecha)
                 ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
@@ -1228,7 +1228,7 @@ class VentasController extends Controller
                 'fecha' => $fecha
             ]);
 
-            //Eliminar el archivo generado
+       
             unlink($filePath);
 
 
@@ -1313,7 +1313,7 @@ class VentasController extends Controller
                 'destinatarios' => $destinatarios,
                 'fecha' => $fecha
             ]);
-            //Eliminar el archivo
+         
             unlink($filePath);
 
             return true;
