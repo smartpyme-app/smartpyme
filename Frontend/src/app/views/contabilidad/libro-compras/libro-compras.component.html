@@ -21,7 +21,7 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-compras">Compras</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="setSucursal($event.target.value)">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
             </select>
@@ -52,6 +52,9 @@
                 <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
             <!-- </div> -->
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
+            <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                <i class="fa fa-refresh"></i>
+              </button>
         </div>
     </div>
 

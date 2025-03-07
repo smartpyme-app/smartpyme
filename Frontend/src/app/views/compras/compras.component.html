@@ -25,6 +25,9 @@
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+                <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                    <i class="fa fa-refresh"></i>
+                  </button>
             </div>
         </div>
     </div>
@@ -172,6 +175,12 @@
                 <button [disabled]="saving" (click)="descargarCompras()" class="btn btn-primary btn-block">
                     <span *ngIf="!downloadingCompras">Descargar Compras</span>
                     <span *ngIf="downloadingCompras">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <p>Descarga rentabilidad por producto</p>
+                <button [disabled]="saving" (click)="abrirModalFiltrosRentabilidad(mfiltrosAcumulado)" class="btn btn-primary btn-block">
+                  Descargar rentabilidad por producto
                 </button>
             </div>
         </div>
@@ -346,3 +355,48 @@
         </div>
   </div>
 </ng-template>
+
+<ng-template #mfiltrosAcumulado>
+    <div class="modal-header">
+      <h4 class="modal-title text-center">Filtros para Reporte de rentabilidad</h4>
+      <button type="button" class="btn-close" (click)="modalRefRentabilidad.hide()" aria-label="Close"></button>
+      <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+    </div>
+    <div class="modal-body">
+      <app-notificaciones-container></app-notificaciones-container>
+      
+      <form (ngSubmit)="descargarReporteRentabilidad()">
+        <div class="row">
+          <!-- Fechas -->
+          <div class="form-group col-sm-6">
+            <label>Del:</label>
+            <input type="date" class="form-control" [(ngModel)]="filtrosRentabilidad.inicio" name="inicio">
+          </div>
+          <div class="form-group col-sm-6">
+            <label>Al:</label>
+            <input type="date" class="form-control" [(ngModel)]="filtrosRentabilidad.fin" name="fin">
+          </div>
+  
+          <!-- Sucursales -->
+          <div class="form-group col-12 mt-3">
+            <label>Sucursales:</label>
+            <ng-select [multiple]="true"
+                      [items]="sucursales"
+                      [(ngModel)]="filtrosRentabilidad.sucursales"
+                      bindLabel="nombre"
+                      bindValue="id"
+                      placeholder="Seleccione sucursales"
+                      name="sucursales">
+            </ng-select>
+          </div>
+        </div>
+  
+        <div class="d-grid mt-4">
+          <button type="submit" class="btn btn-primary" [disabled]="downloadingRentabilidad">
+            <span *ngIf="!downloadingRentabilidad">Descargar Reporte</span>
+            <span *ngIf="downloadingRentabilidad">Descargando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </ng-template>
