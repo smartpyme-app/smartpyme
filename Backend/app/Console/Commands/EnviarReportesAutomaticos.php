@@ -69,7 +69,7 @@ class EnviarReportesAutomaticos extends Command
                 if ($configuracion->$horario) {
                     $horaAtributo = 'hora_' . substr($horario, 6); 
                     $horaConfiguracion = $configuracion->$horaAtributo;
-                    
+                     // Comparar la hora actual con la configurada (con 5 minutos de tolerancia)
                     $horaEnvio = Carbon::createFromFormat('H:i', substr($horaConfiguracion, 0, 5));
                     $diferenciaMinutos = abs($now->diffInMinutes($horaEnvio));
                     
