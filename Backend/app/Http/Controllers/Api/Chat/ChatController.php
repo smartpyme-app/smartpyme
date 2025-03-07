@@ -5,17 +5,35 @@ namespace App\Http\Controllers\Api\Chat;
 use App\Http\Controllers\Controller;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
+use App\Services\AIService;
+use App\Services\ContextService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Aws\Bedrock\BedrockClient;
-use Aws\Credentials\CredentialProvider;
-use Aws\BedrockRuntime\BedrockRuntimeClient;
-use Aws\Credentials\Credentials;
-use Aws\Exception\AwsException;
 
 class ChatController extends Controller
 {
+    protected $aiService;
+    protected $contextService;
+
+    /**
+     * Constructor
+     * 
+     * @param AIService $aiService
+     */
+    public function __construct(AIService $aiService, ContextService $contextService)
+    {
+        $this->aiService = $aiService;
+        $this->contextService = $contextService;
+    }
+
+    /**
+     * Procesa las solicitudes de chat usando Bedrock
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function bedrockChat(Request $request)
     {
         try {
@@ -29,138 +47,81 @@ class ChatController extends Controller
                 'topP' => 'nullable|numeric|min:0|max:1',
                 'topK' => 'nullable|integer|min:0',
             ]);
-    
-            // Obtener o crear la conversación (placeholder para integración de BD)
+
+            // Obtener o verificar la conversación si existe
             $conversationId = $validated['conversationId'] ?? null;
-            $inferenceProfileArn = config('bedrock.inference_profile_arn_haiku');
-    
-            // Crear cliente de BedrockRuntime
-            $client = new BedrockRuntimeClient([
-                'version' => 'latest',
-                'region' => config('bedrock.region'),
-                'credentials' => [
-                    'key'    => config('bedrock.key'),
-                    'secret' => config('bedrock.secret'),
-                ],
+            if ($conversationId) {
+                $conversation = Conversation::findOrFail($conversationId);
+            }
+
+            // Configurar el tipo de modelo si se especifica
+            if (isset($validated['modelType'])) {
+                $this->aiService->useModel($validated['modelType']);
+            }
+
+            // Opciones adicionales para la generación
+            $options = array_filter([
+                'maxTokens' => $validated['maxTokens'] ?? null,
+                'temperature' => $validated['temperature'] ?? null,
+                'topP' => $validated['topP'] ?? null,
+                'topK' => $validated['topK'] ?? null
             ]);
-    
-            // Log::debug('Usando región de Bedrock:', ['region' => $client->getRegion()]);
-    
-            // Obtener el modelo desde la configuración
-            $modelId = config('bedrock.model_id_haiku');
+
+
+            $empresaId = $request->user()->id_empresa ?? null;
+            $empresa = null;
+            $metricas = null;
             
-            // Preparar mensajes en el formato correcto para Claude 3.5
-            $formattedMessages = [];
-            
-            // Si hay historial, procesarlo
-            if (!empty($validated['history'])) {
-                foreach ($validated['history'] as $message) {
-                    $formattedMessages[] = [
-                        'role' => $message['role'],
-                        'content' => [
-                            [
-                                'type' => 'text',
-                                'text' => $message['content']
-                            ]
-                        ]
-                    ];
-                }
+            if ($empresaId) {
+                $empresa = $this->contextService->obtenerInformacionEmpresa($empresaId);
+                $metricas = $this->contextService->obtenerMetricasRecientes($empresaId);
             }
+
+            $basePrompt = config('bedrock.system_prompt_haiku');
+            $systemPrompt = $this->contextService->generateSystemPrompt($empresa, $metricas, $basePrompt);
+            $systemPrompt = $this->contextService->enrichContextWithQueryData($systemPrompt, $empresa, $validated['prompt']);
             
-            // Añadir el mensaje actual del usuario
-            $formattedMessages[] = [
-                'role' => 'user',
-                'content' => [
-                    [
-                        'type' => 'text',
-                        'text' => $validated['prompt']
-                    ]
-                ]
-            ];
-            
-            // Configurar los parámetros de generación
-            $maxTokens = $validated['maxTokens'] ?? config('bedrock.max_tokens_haiku');
-            $temperature = $validated['temperature'] ?? config('bedrock.temperature_haiku');
-            $topP = $validated['topP'] ?? config('bedrock.top_p_haiku');
-            $topK = $validated['topK'] ?? config('bedrock.top_k_haiku');
-            
-            // Crear cuerpo de la solicitud para Claude 3.5
-            $requestBody = [
-                'anthropic_version' => 'bedrock-2023-05-31',
-                'max_tokens' => (int)$maxTokens,         // Convertir a entero
-                'messages' => $formattedMessages,
-                'temperature' => (float)$temperature,     // Convertir a decimal
-                'top_p' => (float)$topP,                 // Convertir a decimal
-                'top_k' => (int)$topK,                   // Convertir a entero
-                'system' => config('bedrock.system_prompt_haiku')
-            ];
-            
-            // Para debug, guardar la solicitud completa
-            Log::debug('Solicitud a Bedrock:', [
-                'modelId' => $modelId,
-                'body' => $requestBody
-            ]);
-    
-            // Invocar al modelo
-            $response = $client->invokeModel([
-                'body' => json_encode($requestBody),
-                'contentType' => 'application/json',
-                'accept' => 'application/json',
-                'modelId' => $inferenceProfileArn, // Usa el ARN del perfil de inferencia aquí
-            ]);
-    
-            // Procesar la respuesta
-            $result = json_decode($response->get('body')->getContents(), true);
-            Log::debug('Respuesta de Bedrock:', ['result' => $result]);
-            
-            // Extraer el texto de la respuesta de Claude 3.5
-            $botResponse = '';
-            
-            if (isset($result['content']) && is_array($result['content'])) {
-                foreach ($result['content'] as $content) {
-                    if ($content['type'] === 'text') {
-                        $botResponse .= $content['text'];
-                    }
-                }
+            $this->aiService->setSystemPrompt($systemPrompt);
+
+            $botResponse = $this->aiService->generateResponse(
+                $validated['prompt'],
+                $validated['history'] ?? [],
+                $options
+            );
+
+            // Si tenemos una conversación, guardar mensajes
+            if ($conversationId && isset($conversation)) {
+                // Guardar mensaje del usuario
+                $userMessage = new Message([
+                    'conversation_id' => $conversationId,
+                    'sender' => 'user',
+                    'content' => $validated['prompt'],
+                    'metadata' => []
+                ]);
+                $userMessage->save();
+
+                // Guardar respuesta del bot
+                $botMessage = new Message([
+                    'conversation_id' => $conversationId,
+                    'sender' => 'bot',
+                    'content' => $botResponse,
+                    'metadata' => []
+                ]);
+                $botMessage->save();
             }
-            
-            if (empty($botResponse) && isset($result['error'])) {
-                throw new \Exception('Error en la respuesta del modelo: ' . $result['error']);
-            }
-            
-            // Si hay un error al extraer el texto, mostrar toda la respuesta para debug
-            if (empty($botResponse)) {
-                Log::warning('No se pudo extraer texto de la respuesta:', ['response' => $result]);
-                $botResponse = 'No se pudo obtener una respuesta clara. Por favor, intenta de nuevo.';
-            }
-            
-            // Aquí puedes guardar los mensajes en la base de datos si lo necesitas
-            
+
+            // Devolver respuesta
             return response()->json([
                 'message' => $botResponse,
-                'conversationId' => $conversationId ?? 1, // Placeholder para demo
-                'modelUsed' => $modelId
+                'conversationId' => $conversationId ?? null,
+                'modelUsed' => config('bedrock.model_id_haiku')
             ]);
-            
-        } catch (AwsException $e) {
-            // Registrar errores específicos de AWS
-            Log::error('Error en AWS Bedrock:', [
-                'message' => $e->getMessage(),
-                'awsErrorType' => $e->getAwsErrorType(),
-                'awsErrorCode' => $e->getAwsErrorCode(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'error' => 'Error en el servicio de AWS Bedrock',
-                'message' => config('app.debug') ? $e->getMessage() : 'Error al conectar con el servicio de IA'
-            ], 500);
         } catch (\Exception $e) {
-            Log::error('Error en Bedrock API:', [
+            Log::error('Error en procesamiento de chat:', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'error' => 'Error al procesar la solicitud',
                 'message' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
@@ -168,13 +129,55 @@ class ChatController extends Controller
         }
     }
 
+    private function generateSystemPrompt($empresa, $metricas)
+    {
+        $basePrompt = config('bedrock.system_prompt_haiku');
+
+        if (!$empresa) {
+            return $basePrompt;
+        }
+
+        $contextInfo = "Información sobre la empresa:
+                        Nombre: {$empresa->nombre}
+                        Industria: {$empresa->industria}
+                        ";
+
+        if ($metricas && count($metricas) > 0) {
+            $contextInfo .= "\nMétricas de la empresa:\n";
+
+            foreach ($metricas as $index => $metrica) {
+                $fecha = Carbon::parse($metrica->fecha)->format('Y-m');
+                $contextInfo .= "- Período {$fecha}:\n";
+                $contextInfo .= "  * Ventas: $" . number_format($metrica->ventas_con_iva, 2) . "\n";
+                $contextInfo .= "  * Egresos: $" . number_format($metrica->egresos_con_iva, 2) . "\n";
+                $contextInfo .= "  * Rentabilidad: " . number_format($metrica->rentabilidad_porcentaje, 2) . "%\n";
+
+                // Limitar a los últimos 3 meses para no sobrecargar el prompt
+                if ($index >= 2) break;
+            }
+        }
+
+        // Añadir instrucciones específicas para el asistente
+        $customPrompt = $basePrompt . "\n\nTienes acceso a la siguiente información contextual sobre la empresa del usuario. Utiliza esta información para proporcionar respuestas más precisas y personalizadas sobre su situación financiera:\n\n" . $contextInfo;
+
+        // Añadir instrucción para no revelar directamente los datos a menos que se soliciten
+        $customPrompt .= "\n\nNo menciones explícitamente que tienes esta información a menos que el usuario la solicite. Usa estos datos para contextualizar tus respuestas y dar mejores consejos financieros.";
+
+        return $customPrompt;
+    }
+
+    /**
+     * Crea una nueva conversación
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function newConversation(Request $request)
     {
         try {
             // Validar la solicitud
             $validated = $request->validate([
                 'title' => 'nullable|string|max:255',
-                'userId' => 'nullable|string', // Si tienes autenticación
             ]);
 
             // Generar un título si no se proporcionó uno
@@ -186,6 +189,15 @@ class ChatController extends Controller
             $conversation->user_id = $request->user()->id ?? null; // Si tienes autenticación
             $conversation->created_at = now();
             $conversation->save();
+
+            // Guardar mensaje inicial del bot si lo deseas
+            $welcomeMessage = new Message([
+                'conversation_id' => $conversation->id,
+                'sender' => 'bot',
+                'content' => '¡Hola! ¿En qué puedo ayudarte hoy?',
+                'metadata' => []
+            ]);
+            $welcomeMessage->save();
 
             return response()->json([
                 'id' => $conversation->id,
@@ -282,12 +294,6 @@ class ChatController extends Controller
         }
     }
 
-    /**
-     * Vista para administración del chat (opcional)
-     *
-     * @param Request $request
-     * @return \Illuminate\View\View
-     */
     public function adminDashboard(Request $request)
     {
         // Estadísticas de uso del chat

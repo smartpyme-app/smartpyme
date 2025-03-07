@@ -50,6 +50,19 @@ export class ChatService {
     this.drawerOpenSubject.next(false);
   }
 
+  resetChat() {
+    this.closeDrawer();
+    this.currentConversationId = null;
+    this.messagesSubject.next([
+      {
+        sender: 'bot',
+        text: '¡Hola! ¿En qué puedo ayudarte hoy?',
+        timestamp: new Date(),
+      },
+    ]);
+    this.loadingSubject.next(false);
+  }
+
   // Preparar el historial de conversación en formato para Bedrock
   private prepareConversationHistory(
     messages: ChatMessage[]
