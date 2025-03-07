@@ -1228,6 +1228,10 @@ class VentasController extends Controller
                 'fecha' => $fecha
             ]);
 
+            //Eliminar el archivo generado
+            unlink($filePath);
+
+
             return true;
         } catch (\Exception $e) {
             Log::error('Error al enviar reporte programado: ' . $e->getMessage(), [
@@ -1309,6 +1313,8 @@ class VentasController extends Controller
                 'destinatarios' => $destinatarios,
                 'fecha' => $fecha
             ]);
+            //Eliminar el archivo
+            unlink($filePath);
 
             return true;
         } catch (\Exception $e) {
