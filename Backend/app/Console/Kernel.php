@@ -28,6 +28,11 @@ class Kernel extends ConsoleKernel
     {
         // Comandos existentes
         $schedule->command('generate:notificaciones')->daily();
+        // $schedule->command('reporte:ventas-por-vendedor')
+        //      ->dailyAt('23:59');
+        $schedule->command('reportes:enviar')
+             ->everyFiveMinutes()
+             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
         // Agregar el nuevo comando de verificación de suscripciones
         $schedule->command('suscripciones:verificar')
