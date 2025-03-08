@@ -19,58 +19,58 @@ use JWTAuth;
 
 class EmpresasController extends Controller
 {
-    
 
-    public function index(Request $request) {
-       
-        $empresas = Empresa::when($request->activo !== null, function($q) use ($request){
-                                    $q->where('activo', !!$request->activo);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('correo', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                ->when($request->pago_inicio, function($query) use ($request){
-                                    return $query->where('fecha_ultimo_pago', '>=', $request->pago_inicio);
-                                })
-                                ->when($request->pago_fin, function($query) use ($request){
-                                    return $query->where('fecha_ultimo_pago', '<=', $request->pago_fin);
-                                })
-                                ->when($request->suscripcion_inicio, function($query) use ($request){
-                                    return $query->where('created_at', '>=', $request->suscripcion_inicio);
-                                })
-                                ->when($request->suscripcion_fin, function($query) use ($request){
-                                    return $query->where('created_at', '<=', $request->suscripcion_fin);
-                                })
-                                ->when($request->forma_pago, function($query) use ($request){
-                                    return $query->where('forma_pago', $request->forma_pago);
-                                })
-                                ->when($request->plan, function($query) use ($request){
-                                    return $query->where('plan', $request->plan);
-                                })
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+
+    public function index(Request $request)
+    {
+
+        $empresas = Empresa::when($request->activo !== null, function ($q) use ($request) {
+            $q->where('activo', !!$request->activo);
+        })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('correo', 'like', "%" . $request->buscador . "%");
+            })
+            ->when($request->pago_inicio, function ($query) use ($request) {
+                return $query->where('fecha_ultimo_pago', '>=', $request->pago_inicio);
+            })
+            ->when($request->pago_fin, function ($query) use ($request) {
+                return $query->where('fecha_ultimo_pago', '<=', $request->pago_fin);
+            })
+            ->when($request->suscripcion_inicio, function ($query) use ($request) {
+                return $query->where('created_at', '>=', $request->suscripcion_inicio);
+            })
+            ->when($request->suscripcion_fin, function ($query) use ($request) {
+                return $query->where('created_at', '<=', $request->suscripcion_fin);
+            })
+            ->when($request->forma_pago, function ($query) use ($request) {
+                return $query->where('forma_pago', $request->forma_pago);
+            })
+            ->when($request->plan, function ($query) use ($request) {
+                return $query->where('plan', $request->plan);
+            })
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
 
         return Response()->json($empresas, 200);
-
     }
 
-    public function list() {
-       
+    public function list()
+    {
+
         $empresas = Empresa::orderby('nombre')
-                                ->where('activo', true)
-                                ->get();
+            ->where('activo', true)
+            ->get();
 
         return Response()->json($empresas, 200);
-
     }
 
 
-    public function read($id) {
+    public function read($id)
+    {
 
         $empresa = Empresa::findOrFail($id);
         return Response()->json($empresa, 200);
-
     }
 
     public function store(Request $request)
@@ -80,24 +80,37 @@ class EmpresasController extends Controller
             'iva'       => 'required|numeric',
         ]);
 
-        if($request->id)
+        if ($request->id)
             $empresa = Empresa::findOrFail($request->id);
         else
             $empresa = new Empresa;
-        
+
         //Bloquear usuarios
-        if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
+        if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')) {
             foreach ($empresa->usuarios()->get() as $usuario) {
                 $usuario->enable = false;
                 $usuario->save();
             }
         }
         //Des bloquear usuario Administrador
-        if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')){
+        if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')) {
             foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
                 $usuario->enable = true;
                 $usuario->save();
             }
+        }
+
+        $woocommerceFields = [
+            'woocommerce_api_key',
+            'woocommerce_store_url',
+            'woocommerce_consumer_key',
+            'woocommerce_consumer_secret',
+            'woocommerce_status'
+        ];
+
+        $woocommerceValues = [];
+        foreach ($woocommerceFields as $field) {
+            $woocommerceValues[$field] = $empresa->$field;
         }
 
         $empresa->fill($request->all());
@@ -107,24 +120,27 @@ class EmpresasController extends Controller
                 Storage::delete($empresa->logo);
             }
             $path   = $request->file('file');
-            $resize = Image::make($path)->resize(350,350)->encode('jpg', 75);
+            $resize = Image::make($path)->resize(350, 350)->encode('jpg', 75);
             $hash = md5($resize->__toString());
             $path = "empresas/{$hash}.jpg";
-            $resize->save(public_path('img/'.$path), 50);
+            $resize->save(public_path('img/' . $path), 50);
             $empresa->logo = "/" . $path;
+        }
+
+        foreach ($woocommerceFields as $field) {
+            $empresa->$field = $woocommerceValues[$field];
         }
 
 
         $empresa->save();
 
         //Crear sucursal
-            if(!$request->id){
-                $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
-                Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-            }
+        if (!$request->id) {
+            $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+            Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+        }
 
         return Response()->json($empresa, 200);
-
     }
 
     public function delete($id)
@@ -133,7 +149,6 @@ class EmpresasController extends Controller
         $empresa->delete();
 
         return Response()->json($empresa, 201);
-
     }
 
     // public function suscripcion()
@@ -244,18 +259,20 @@ class EmpresasController extends Controller
         return Response()->json($dataResponse, 201);
     }
 
-    public function printRecibo($id){
+    public function printRecibo($id)
+    {
 
         $recibo = Transaccion::where('id', $id)->firstOrFail();
         // return $recibo;
         $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
-        $pdf->setPaper('US Letter', 'portrait');  
+        $pdf->setPaper('US Letter', 'portrait');
 
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
     }
 
-    public function eliminarDatos(Request $request){
+    public function eliminarDatos(Request $request)
+    {
         $empresa = Empresa::where('id', $request->id)->firstOrFail();
         $sucursales = $empresa->sucursales()->pluck('id')->toArray();
         $bodegas = $empresa->bodegas()->pluck('id')->toArray();
@@ -298,7 +315,7 @@ class EmpresasController extends Controller
         if ($request->m_gastos) {
             DB::table('egresos')->where('id_empresa', $empresa->id)->delete();
         }
-        
+
         if ($request->m_presupuestos) {
             DB::table('presupuestos')->where('id_empresa', $empresa->id)->delete();
         }
@@ -306,5 +323,4 @@ class EmpresasController extends Controller
 
         return Response()->json($empresa, 200);
     }
-
 }

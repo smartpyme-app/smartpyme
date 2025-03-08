@@ -380,4 +380,167 @@
             </div>
         </div>
     </tab>
+    <!--Integraciones api key para webhooks-->
+    <tab heading="Integraciones">
+        <section class="bg-white rounded p-4 mb-4">
+
+            <div class="alert alert-info mb-4">
+                <i class="fa fa-info-circle me-2"></i> 
+                En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
+            </div>
+
+            <div class="row">
+                <!-- API Key Section -->
+                <div class="col-12 mb-5">
+                    <h5 class="mb-3">Clave de API</h5>
+                    <div class="form-group">
+                        <label for="key_webhook" class="form-label">Clave Api para integraciones:</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.woocommerce_api_key" 
+                                   name="key_webhook" 
+                                   placeholder="API Key para integraciones" 
+                                   readonly>
+                            <button class="btn btn-secondary" 
+                                    type="button" 
+                                    (click)="copyToClipboard(empresa.woocommerce_api_key)" 
+                                    tooltip="Copiar API Key">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            Esta es su clave única para autenticar integraciones con sistemas externos
+                        </small>
+                    </div>
+                </div>
+
+    
+                <div class="col-12">
+                    <h5 class="mb-3">Integración WooCommerce</h5>
+                    
+                    <div class="row g-3">
+    
+                        <div class="col-12">
+                            <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       [(ngModel)]="empresa.woocommerce_api_url" 
+                                       name="url_webhook_woocomerce" 
+                                       placeholder="URL del Webhook para WooCommerce" 
+                                       readonly>
+                                <button class="btn btn-secondary" 
+                                        type="button" 
+                                        (click)="copyToClipboard(empresa.woocommerce_api_url)" 
+                                        tooltip="Copiar URL">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
+                            </small>
+                        </div>
+
+
+                        <div class="col-md-6">
+                            <label for="woocommerce_store_url" class="form-label">URL de la Tienda:</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.woocommerce_store_url" 
+                                   name="woocommerce_store_url" 
+                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                                   placeholder="Ej: https://mitienda.com">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="woocommerce_consumer_key" class="form-label">Clave de API:</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.woocommerce_consumer_key" 
+                                   name="woocommerce_consumer_key" 
+                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                                   placeholder="Ingrese su clave de API de WooCommerce">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="woocommerce_consumer_secret" class="form-label">Clave Secreta:</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.woocommerce_consumer_secret" 
+                                   name="woocommerce_consumer_secret" 
+                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                                   placeholder="Ingrese su clave secreta de WooCommerce">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="woocommerce_canal" class="form-label">Canal de ventas:</label>
+                            <select class="form-select" 
+                                    [(ngModel)]="empresa.woocommerce_canal_id" 
+                                    name="woocommerce_canal"
+                                    [disabled]="empresa.status_conexion_woocommerce === 'connected'">
+                                <option [value]="0" selected>Seleccione un canal</option>
+                                <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
+                            </select>
+                            <small class="text-muted">
+                                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce.
+                            </small>
+                        </div>
+
+       
+                        <div class="col-12">
+                            <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret" 
+                                class="alert mt-3" 
+                                [ngClass]="{'alert-success': empresa.woocommerce_status === 'connected', 'alert-warning': empresa.woocommerce_status === 'disconnected', 'alert-info': !empresa.woocommerce_status}">
+                                <i class="fa" [ngClass]="{'fa-check-circle': empresa.woocommerce_status === 'connected', 'fa-exclamation-circle': empresa.woocommerce_status === 'disconnected', 'fa-info-circle': !empresa.woocommerce_status}"></i>
+                                <span *ngIf="empresa.woocommerce_status === 'connected'"> Conexión establecida con WooCommerce</span>
+                                <span *ngIf="empresa.woocommerce_status === 'disconnected'"> Sin conexión con WooCommerce</span>
+                                <span *ngIf="!empresa.woocommerce_status"> Estado de conexión desconocido</span>
+                            </div>
+
+                            <div class="text-end mt-3">
+                                <button tooltip="importar productos a WooCommerce" 
+                                        (click)="exportarWooCommerce()" 
+                                        class="btn btn-light me-2" 
+                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
+                                    Importar productos
+                                </button>
+                                
+                                <button tooltip="Descargar productos para importar en WooCommerce (F7)" 
+                                        (click)="descargarWooCommerce()" 
+                                        class="btn btn-light me-2" 
+                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
+                                    Descargar productos
+                                </button>
+
+                                <button class="btn btn-light text-danger me-2" 
+                                        type="button"
+                                        *ngIf="empresa.is_current_user_connected_to_woocommerce"
+                                        (click)="disconnectWooCommerce()">
+                                    <i class="fa fa-unlink me-2"></i>
+                                    Desconectar WooCommerce
+                                </button>
+                                <button class="btn btn-light text-success" 
+                                        type="button" 
+                                        *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
+                                        [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
+                                        (click)="saveCredentials()">
+                                    <i class="fa fa-save me-2"></i>
+                                    Guardar Credenciales
+                                </button>
+                            </div>
+
+                            <div class="alert alert-info mt-3" 
+                                *ngIf="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce">
+                                <i class="fa fa-info-circle me-2"></i>
+                                Hay otros usuarios conectados a WooCommerce. Solo el usuario que estableció la conexión puede desconectarla.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </tab>
 </tabset>

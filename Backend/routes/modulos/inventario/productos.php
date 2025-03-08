@@ -10,6 +10,10 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
+//use WooCommerceController
+use App\Http\Controllers\Api\Webhook\WooCommerceController;
+//use Route;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
@@ -74,5 +78,10 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
+    //producto/exportar-woocommerce post
+    Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    //productos/exportar/woocommerce
+    Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
+    
 
 ?>

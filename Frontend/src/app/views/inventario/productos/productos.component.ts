@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-productos',
@@ -16,7 +17,7 @@ export class ProductosComponent implements OnInit {
   public bodegas: any = [];
   public categorias: any = [];
   public proveedores: any = [];
-
+    public connected:boolean = false;
   public ajuste: any = {};
   public inventario: any = {};
 
