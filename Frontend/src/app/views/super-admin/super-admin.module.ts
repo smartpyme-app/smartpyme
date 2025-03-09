@@ -24,6 +24,8 @@ import { LicenciasComponent } from './licencias/licencias.component';
 import { LicenciaComponent } from './licencias/licencia/licencia.component';
 import { LicenciaEmpresasComponent } from './licencias/licencia/empresas/licencia-empresas.component';
 import { AdminUsuariosComponent } from './usuarios/admin-usuarios.component';
+import { AdminPlanesComponent } from './planes/admin-planes.component';
+import { AdminPagosComponent } from './pagos/admin-pagos.component';
 import { DashboardsComponent } from './dashboards/dashboards.component';
 import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 
@@ -55,6 +57,8 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     LicenciaComponent,
     LicenciaEmpresasComponent,
     AdminUsuariosComponent,
+    AdminPlanesComponent,
+    AdminPagosComponent,
     DashboardsComponent,
     DashboardComponent,
     AdminSucursalesComponent,
@@ -68,6 +72,8 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     LicenciaComponent,
     LicenciaEmpresasComponent,
     AdminUsuariosComponent,
+    AdminPlanesComponent,
+    AdminPagosComponent,
     DashboardsComponent,
     DashboardComponent,
     AdminSucursalesComponent,

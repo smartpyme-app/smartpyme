@@ -80,6 +80,7 @@ class Empresa extends Model
 
         // Facturación admin 
         'id_cliente',
+        'id_documento',
 
         //Permiso para vendedores
         'vendedor_inventario',

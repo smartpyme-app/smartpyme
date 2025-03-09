@@ -14,6 +14,7 @@ export class CrearEmpresaComponent implements OnInit {
 
     public empresa:any = {};
     public clientes:any = [];
+    public documentos:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
     public licencia:boolean = false;
@@ -37,6 +38,11 @@ export class CrearEmpresaComponent implements OnInit {
 
         this.apiService.getAll('clientes/list').subscribe((clientes) => {
             this.clientes = clientes;
+            this.loading = false;
+        }, (error) => {this.alertService.error(error); this.loading = false; } );
+
+        this.apiService.getAll('documentos/list').subscribe((documentos) => {
+            this.documentos = documentos;
             this.loading = false;
         }, (error) => {this.alertService.error(error); this.loading = false; } );
 

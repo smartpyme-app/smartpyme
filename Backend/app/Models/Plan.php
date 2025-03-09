@@ -18,6 +18,7 @@ class Plan extends Model
         'precio',
         'duracion_dias',
         'activo',
+        'id_producto',
         'enlace_n1co',
         'caracteristicas',
         'id_enlace_pago_n1co',
@@ -62,4 +63,9 @@ class Plan extends Model
     {
         return 'PLAN-' . $this->id;
     }
+
+    public function plan(){
+        return $this->belongsTo(Producto::class, 'id_producto');
+    }
+
 }

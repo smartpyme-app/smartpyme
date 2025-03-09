@@ -120,6 +120,16 @@
                         </a>
                     </li>
                     <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                        <a [routerLink]="['/admin/planes']" tooltip="Planes" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                            <img src="/assets/icons/list.png" class="icon me-2">Planes
+                        </a>
+                    </li>
+                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                        <a [routerLink]="['/admin/pagos']" tooltip="Pagos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                            <img src="/assets/icons/credit-card.png" class="icon me-2">Ordenes de Pagos
+                        </a>
+                    </li>
+                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                         <a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                             <img src="/assets/icons/user.png" class="icon me-2">Usuarios
                         </a>

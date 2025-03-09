@@ -7,6 +7,8 @@ import { CrearEmpresaComponent }     from '@views/super-admin/empresas/empresa/c
 import { LicenciasComponent }     from '@views/super-admin/licencias/licencias.component';
 import { LicenciaComponent }     from '@views/super-admin/licencias/licencia/licencia.component';
 import { AdminUsuariosComponent }     from '@views/super-admin/usuarios/admin-usuarios.component';
+import { AdminPlanesComponent }     from '@views/super-admin/planes/admin-planes.component';
+import { AdminPagosComponent }     from '@views/super-admin/pagos/admin-pagos.component';
 import { DashboardsComponent }     from '@views/super-admin/dashboards/dashboards.component';
 import { DashboardComponent }     from '@views/super-admin/dashboards/dashboard/dashboard.component';
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
@@ -27,6 +29,8 @@ const routes: Routes = [
         { path: 'usuarios', component: AdminUsuariosComponent, title: 'Usuarios' },
         { path: 'dashboards', component: DashboardsComponent, title: 'Dashboards' },
         { path: 'dashboard/:id', component: DashboardComponent, title: 'Dashboard' },
+        { path: 'planes', component: AdminPlanesComponent, title: 'Planes' },
+        { path: 'pagos', component: AdminPagosComponent, title: 'Planes' },
 
         { path: 'sucursales', component: AdminSucursalesComponent, title: 'Sucursales' },
         { path: 'sucursal/:id', component: AdminSucursalComponent, title: 'Sucursal' },
