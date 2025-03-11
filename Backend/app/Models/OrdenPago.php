@@ -32,6 +32,7 @@ class OrdenPago extends Model
         'estado',
         'divisa',
         'codigo_autorizacion',
+        'tipo_pago',
         'fecha_transaccion',
         'id_venta',
     ];

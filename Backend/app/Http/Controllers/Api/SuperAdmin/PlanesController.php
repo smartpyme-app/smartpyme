@@ -54,6 +54,15 @@ class PlanesController extends Controller
 
     }
 
+    public function getPlanesforSelect()
+    {
+        $planes = Plan::select('id', 'nombre', 'precio', 'duracion_dias')
+            ->orderBy('precio', 'asc')
+            ->get();
+        
+        return response()->json($planes);
+    }
+
 
 
 }

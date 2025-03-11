@@ -109,6 +109,10 @@ class Empresa extends Model
 
     public function getEstadoPlanAttribute()
     {
+        if (!$this->created_at) {
+            return ['estado' => 'Sin fecha de creación', 'dias_faltantes' => null];
+        }
+        
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());

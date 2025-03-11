@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Ordenes de Pagos</h2>
-    <!-- <button (click)="openModal(mpagos, {})"  tooltip="Crear pagos (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir pagos</button> -->
+    <button (click)="openModal(mpagos, {})"  tooltip="Crear pago (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir pago</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -47,6 +47,7 @@
                         <th>Cliente</th>
                         <th>Plan</th>
                         <th>Estado</th>
+                        <th>Tipo de pago</th>
                         <th class="text-end">Total</th>
                         <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
@@ -65,6 +66,7 @@
                         <td>{{ pago.nombre_cliente }}</td>
                         <td>{{ pago.plan }}</td>
                         <td>{{ pago.estado }}</td>
+                        <td>{{ pago.tipo_pago ?? 'N/A' }}</td>
                         <td class="text-end">{{ pago.monto | currency }}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -86,43 +88,131 @@
             </table>
         </div>
     </div>
+    <div class="col-12" *ngIf="pagos?.last_page > 1">
+        <app-pagination
+          [items]="pagos"
+          (setPagination)="setPagination($event)"
+        ></app-pagination>
+      </div>
 </section>
 
 <ng-template #mpagos>
-  <div class="modal-header">
-    <div class="modal-title">
+    <div class="modal-header">
+      <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="pago.id">Editar </span>
-            <span *ngIf="!pago.id">Crear </span>
-            pago
+          <span *ngIf="pago.id">Editar </span>
+          <span *ngIf="!pago.id">Crear </span>
+          pago manual
         </h2>
+      </div>
+      <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
     </div>
-    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="modal-body">
+      <form name="pagoManual" autocomplete="off" (ngSubmit)="onSubmit()" #pagoForm="ngForm">
         <app-notificaciones-container></app-notificaciones-container>
+        
+        <!-- Información básica del pago -->
         <div class="row">
-            <div class="form-group col-lg-12">
-                <label for="">Nombre:</label>
-                <input type="text" class="form-control" name="pago.nombre" [(ngModel)]="pago.nombre" focus="true"/>
+          <div class="col-md-12 mb-3">
+            <label class="form-label">Empresa/Cliente:</label>
+            <select class="form-select" name="empresaId" [(ngModel)]="pago.empresa_id" required>
+              <option value="">Seleccionar empresa</option>
+              <option *ngFor="let empresa of empresas" [value]="empresa.id">{{empresa.nombre}}</option>
+            </select>
+          </div>
+        </div>
+  
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Método de pago:</label>
+            <select class="form-select" name="metodoPago" [(ngModel)]="pago.metodo_pago" required>
+              <option value="">Seleccionar método</option>
+              <option value="transferencia">Transferencia bancaria</option>
+              <option value="cheque">Cheque</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Plan:</label>
+            <select class="form-select" name="planId" [(ngModel)]="pago.plan_id" required (change)="onPlanSelected($event.target.value)">
+              <option value="">Seleccionar plan</option>
+              <option *ngFor="let plan of planes" [value]="plan.id">{{plan.nombre}} - {{plan.precio | currency}}</option>
+            </select>
+          </div>
+        </div>
+  
+        <!-- Datos del pago -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Monto:</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input 
+                type="number" 
+                class="form-control" 
+                name="monto" 
+                [(ngModel)]="pago.monto" 
+                required 
+                [readOnly]="pago.plan_id"
+                min="0" 
+                step="0.01">
             </div>
-            <div class="form-group col-lg-12">
-                <label for="">Descripción:</label>
-                <input type="text" class="form-control" name="pago.descripcion" [(ngModel)]="pago.descripcion" focus="true"/>
-            </div>
-            <div class="form-group col-lg-6">
-                <label for="">Precio:</label>
-                <input type="tel" class="form-control" name="pago.precio" [(ngModel)]="pago.precio"/>
-            </div>
+            <small class="text-muted" *ngIf="pago.plan_id">El monto se establece según el plan seleccionado</small>
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Estado:</label>
+            <select class="form-select" name="estado" [(ngModel)]="pago.estado" required>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Completado">Completado</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
+          </div>
         </div>
         
-        <div class="d-grid mt-4">
-            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
-            </button>
+        <!-- Fechas del pago -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Fecha de transacción:</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              name="fechaTransaccion" 
+              [(ngModel)]="pago.fecha_transaccion" 
+              required
+              [max]="maxDate">
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Fecha próximo pago:</label>
+            <input 
+              type="date" 
+              class="form-control" 
+              name="fechaProximoPago" 
+              [(ngModel)]="pago.fecha_proximo_pago" 
+              required>
+          </div>
         </div>
-    </form>
-  </div>
-</ng-template>
+        
+        <!-- Botones de acción -->
+        <div class="d-grid gap-2 mt-4">
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            [disabled]="saving || !pagoForm.form.valid">
+            <i class="fa" [ngClass]="saving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            <span *ngIf="!saving"> Guardar pago</span>
+            <span *ngIf="saving"> Procesando...</span>
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary" 
+            (click)="closeModal()">
+            <i class="fa fa-times"></i> Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </ng-template>

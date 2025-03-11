@@ -16,6 +16,9 @@ return [
     'METODO_PAGO_N1CO' => 'n1co',
     'METODO_PAGO_TRANSFERENCIA' => 'Transferencia',
 
+    'TIPO_PAGO_AUTOMATICO' => 'Automatico',
+    'TIPO_PAGO_MANUAL' => 'Manual',
+
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',
     'ESTADO_SUSCRIPCION_INACTIVO' => 'Inactivo',
     'ESTADO_SUSCRIPCION_CANCELADO' => 'Cancelado',
