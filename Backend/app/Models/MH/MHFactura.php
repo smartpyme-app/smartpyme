@@ -315,7 +315,7 @@ class MHFactura extends Model
                     "ventaNoSuj" => 0,
                     "ventaExenta" => 0,
                     "ventaGravada" => 0,
-                    "tributos" => $tributos,
+                    "tributos" => null,
                     "psv" => 0,
                     "noGravado" => floatval(number_format($detalle->cuenta_a_terceros,2, '.', '')),
                     "ivaItem" => 0
@@ -338,7 +338,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => 0
+                    "ivaItem" => floatval(number_format($detalle->iva, 2, '.', ''))
                   ]);
             }
         }

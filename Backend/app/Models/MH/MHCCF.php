@@ -278,7 +278,7 @@ class MHCCF extends Model
                        "ventaNoSuj" => 0,
                        "ventaExenta" => 0,
                        "ventaGravada" => 0,
-                       "tributos" => ['20'],
+                       "tributos" => NULL,
                        "psv" => 0,
                        "noGravado" => floatval(number_format($detalle->cuenta_a_terceros,2, '.', '')),
                        // "ivaItem" => floatval($detalle->iva)
