@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddMetodoPagoToEmpresasTable extends Migration
+class AddPagoRecurrenteToEmpresasTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class AddMetodoPagoToEmpresasTable extends Migration
     public function up()
     {
         Schema::table('empresas', function (Blueprint $table) {
-            $table->string('metodo_pago')->nullable()->after('fecha_cancelacion');
+            $table->boolean('pago_recurrente')->default(false)->after('metodo_pago');
         });
     }
 
@@ -26,7 +26,7 @@ class AddMetodoPagoToEmpresasTable extends Migration
     public function down()
     {
         Schema::table('empresas', function (Blueprint $table) {
-            $table->dropColumn('metodo_pago');
+            $table->dropColumn('pago_recurrente');
         });
     }
 }
