@@ -134,28 +134,6 @@ export class AdminPagosComponent implements OnInit {
         }
     }
 
-    // public onFileSelected(event: any) {
-    //     this.selectedFile = event.target.files[0] ?? null;
-    // }
-
-    // public uploadFile() {
-    //     if (!this.selectedFile) return;
-        
-    //     const formData = new FormData();
-    //     formData.append('comprobante', this.selectedFile);
-        
-    //     this.apiService.upload('pagos/comprobante', formData).subscribe(
-    //         response => {
-    //             this.pago.comprobante_url = response.url;
-    //             this.alertService.success('Exito','Comprobante subido exitosamente');
-    //             this.selectedFile = null;
-    //         },
-    //         error => {
-    //             this.alertService.error('Error al subir comprobante: ' + error);
-    //         }
-    //     );
-    // }
-
     public delete(id: number) {
         if (confirm('¿Desea eliminar este pago?')) {
             this.apiService.delete('pago/', id).subscribe(data => {
@@ -180,23 +158,26 @@ export class AdminPagosComponent implements OnInit {
                 } else {
                     this.alertService.success('Pago actualizado', 'El pago fue guardado exitosamente.');
                 }
-              this.pago = {};
-              this.saving = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
-          },error => {this.alertService.error(error); this.saving = false; });
+                this.resetForm();
+                this.saving = false;
+                this.closeModal();
+                this.loadAll(); // Recargar la lista de pagos
+            },
+            error => {
+                this.alertService.error('Error al guardar pago: ' + error);
+                this.saving = false;
+            }
+        );
     }
-
 
     public generarVenta(pago:any) {
-          this.saving = true;
-          this.apiService.read('pago/generar-venta/', pago.id).subscribe(venta => {
-            this.alertService.success('Venta generada', 'La venta fue generada exitosamente.');
-              this.pago.venta = venta;
-              this.saving = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
-          },error => {this.alertService.error(error); this.saving = false; });
-    }
-
+        this.saving = true;
+        this.apiService.read('pago/generar-venta/', pago.id).subscribe(venta => {
+          this.alertService.success('Venta generada', 'La venta fue generada exitosamente.');
+            this.pago.venta = venta;
+            this.saving = false;
+          this.modalRef.hide();
+          this.alertService.modal = false;
+        },error => {this.alertService.error(error); this.saving = false; });
+  }
 }
