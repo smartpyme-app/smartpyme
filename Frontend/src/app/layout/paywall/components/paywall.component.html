@@ -1,0 +1,157 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-4">
+      <div class="card mb-4 rounded-3">
+        <div class="card-body text-center">
+          <h4 class="alert-heading">{{getMensajeSuscripcion()}}</h4>
+          <p class="text-muted mx-4">Para continuar disfrutando de todos los beneficios, renueva tu suscripción ahora.</p>
+          
+          <div class="list-group mt-3 mb-4">
+            <div class="list-group-item border mb-2 rounded-3 hover-highlight" 
+                 *ngFor="let plan of [PLANES.EMPRENDEDOR, PLANES.ESTANDAR, PLANES.AVANZADO]"
+                 (click)="setPlanFeatures(plan.NOMBRE)"
+                 [class.active]="planName === plan.NOMBRE">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">Plan {{plan.NOMBRE}}</h6>
+                  <p class="mb-1 text-muted small">{{plan.CARACTERISTICAS[0]}}</p>
+                </div>
+                <span class="badge bg-primary rounded-pill">${{plan.PRECIO}}/mes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="d-grid gap-2 mb-4" *ngIf="!showCardForm">
+            <button 
+              class="btn btn-lg btn-primary rounded-3"
+              (click)="togglePaymentForm()"
+              [disabled]="!planName">
+              <i class="fas fa-credit-card me-2"></i>
+              Realizar Pago
+            </button>
+            
+            <!-- <button 
+              class="btn btn-lg btn-outline-primary rounded-3"
+              (click)="renewSubscription()"
+              [disabled]="!planName">
+              <i class="fas fa-external-link-alt me-2"></i>
+              Pagar con n1co
+            </button> -->
+          </div>
+
+          <!-- Formulario de tarjeta -->
+          <div *ngIf="showCardForm" class="payment-form">
+            <form (ngSubmit)="processPayment()" #paymentForm="ngForm">
+              <!-- Número de tarjeta -->
+              <div class="mb-3">
+                <label class="form-label">Número de Tarjeta</label>
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="paymentData.cardNumber"
+                    name="cardNumber"
+                    required
+                    pattern="[0-9\s]{13,19}"
+                    maxlength="19"
+                    placeholder="0000 0000 0000 0000">
+                  <span class="input-group-text">
+                    <i class="fas fa-credit-card"></i>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Nombre del titular -->
+              <div class="mb-3">
+                <label class="form-label">Nombre del Titular</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="paymentData.cardHolder"
+                  name="cardHolder"
+                  required
+                  placeholder="Como aparece en la tarjeta">
+              </div>
+
+              <div class="row">
+                <!-- Mes de expiración -->
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Mes</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="paymentData.expirationMonth"
+                    name="expirationMonth"
+                    required
+                    pattern="(0[1-9]|1[0-2])"
+                    maxlength="2"
+                    placeholder="MM">
+                </div>
+
+                <!-- Año de expiración -->
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Año</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="paymentData.expirationYear"
+                    name="expirationYear"
+                    required
+                    pattern="[0-9]{2}"
+                    maxlength="2"
+                    placeholder="YY">
+                </div>
+
+                <!-- CVV -->
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">CVV</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="paymentData.cvv"
+                    name="cvv"
+                    required
+                    pattern="[0-9]{3,4}"
+                    maxlength="4"
+                    placeholder="123">
+                </div>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button 
+                  type="submit" 
+                  class="btn btn-primary"
+                  [disabled]="!paymentForm.form.valid || loading">
+                  <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                  Procesar Pago
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-outline-secondary"
+                  (click)="togglePaymentForm()">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <button class="btn btn-sm btn-link px-4 rounded-3 cursor-pointer text-decoration-none" (click)="logout()"><p class="text-muted">Cerrar sesión</p></button>
+        </div>
+        <div class="text-center mt-2 mb-4">
+          <button class="btn btn-sm btn-link text-muted">
+            Si tienes alguna duda o problema, contáctanos.
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3DS -->
+<app-threeds-modal 
+  *ngIf="mostrar3DSModal"
+  [authUrl]="urlAutenticacion"
+  (close)="mostrar3DSModal = false">
+</app-threeds-modal>

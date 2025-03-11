@@ -1,0 +1,57 @@
+import { Injectable } from '@angular/core';
+import { Router, CanActivate } from '@angular/router';
+import { ApiService } from '@services/api.service';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class SubscriptionGuard implements CanActivate {
+  constructor(
+    private router: Router, 
+    private apiService: ApiService
+  ) {}
+
+  canActivate(): boolean {
+    const userData = this.apiService.auth_user();
+    
+    if (!userData) {
+      this.router.navigate(['/login']);
+      return false;
+    }
+
+    if (userData.id_empresa == 2) {
+      return true;
+    }
+
+    // Verificar estado de suscripción
+    if (userData.estado_suscripcion.toLowerCase() === 'en prueba' && userData.dias_faltantes_prueba <= 0) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
+    if (['inactivo', 'cancelado'].includes(userData.estado_suscripcion)) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
+    // Verificar si han pasado más de 10 días desde el vencimiento
+    if (userData.dias_faltantes < 0 && Math.abs(userData.dias_faltantes) >= 10) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
+    // Verificar si está pendiente y sin días restantes
+    if (userData.estado_suscripcion.toLowerCase() === 'pendiente' && userData.dias_faltantes <= 0) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
+    // Verificar si está en prueba y sin días restantes
+    if (userData.estado_suscripcion.toLowerCase() === 'en prueba' && userData.dias_faltantes_prueba <= 0) {
+      this.router.navigate(['/paywall']);
+      return false;
+    }
+
+    return true;
+  }
+}

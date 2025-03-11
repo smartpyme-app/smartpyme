@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Transaccion;
+use App\Models\OrdenPago as Transaccion;
 
 class TransaccionesController extends Controller
 {
@@ -12,7 +12,7 @@ class TransaccionesController extends Controller
 
     public function index() {
        
-        $transacciones = Transaccion::orderBy('id','desc')->paginate(10);
+        $transacciones = Transaccion::with('usuario.empresa')->orderBy('id','desc')->paginate(10);
 
         return Response()->json($transacciones, 200);
 

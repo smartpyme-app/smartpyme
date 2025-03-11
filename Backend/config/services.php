@@ -31,9 +31,9 @@ return [
     ],
 
     'google' => [
-       'client_id'     => env('GOOGLE_ID'), 
-       'client_secret' => env('GOOGLE_SECRET'),
-       'redirect'      => env('GOOGLE_REDIRECT')
+        'client_id'     => env('GOOGLE_ID'),
+        'client_secret' => env('GOOGLE_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT')
     ],
 
     'facebook' => [
@@ -45,6 +45,22 @@ return [
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET')
+    ],
+
+    'payment' => [
+        'default_gateway' => env('PAYMENT_GATEWAY', 'n1co'),
+        'sandbox_mode' => env('PAYMENT_SANDBOX_MODE', true),
+    ],
+
+    'nico' => [
+        'api_key' => env('NICO_API_KEY'),
+        'client_id' => env('NICO_CLIENT_ID'),
+        'client_secret' => env('NICO_CLIENT_SECRET'),
+        'sandbox_api_key' => env('NICO_SANDBOX_API_KEY'),
+        'base_url' => env('NICO_BASE_URL', 'https://api.n1co.com/api/v2'),
+        'sandbox_url' => env('NICO_SANDBOX_URL', 'https://api-sandbox.n1co.shop/api/v2'),
+        'webhook_secret' => env('NICO_WEBHOOK_SECRET'),
+        'sandbox_mode' => env('APP_ENV') !== 'production',
     ],
 
 ];

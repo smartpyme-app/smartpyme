@@ -1,0 +1,125 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Ordenes de Pagos</h2>
+    <!-- <button (click)="openModal(mpagos, {})"  tooltip="Crear pagos (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir pagos</button> -->
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="pagos?.total">
+                Mostrando {{ pagos?.to }} de {{ pagos?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group" name="form" (ngSubmit)="loadAll()" autocomplete="off">
+                    <div class="input-group">
+                        <div class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-search text-muted"></i>
+                        </div>
+                        <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                    </div>
+                </form>
+                <!-- <button tooltip="Filtrar (F3)" class="btn btn-default tcla-F3"><i class="fa fa-filter"></i></button> -->
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
+        </div>
+        <!-- <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado" (change)="loadAll()"  [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div> -->
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Plan</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <th *ngIf="apiService.canEdit()" width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="pagos?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene pagos registradas</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let pago of pagos.data">
+                        <td>{{ pago.fecha_transaccion | date:'dd/MM/yyyy'}}</td>
+                        <td>{{ pago.nombre_cliente }}</td>
+                        <td>{{ pago.plan }}</td>
+                        <td>{{ pago.estado }}</td>
+                        <td class="text-end">{{ pago.monto | currency }}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mpago, pago)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<ng-template #mpagos>
+  <div class="modal-header">
+    <div class="modal-title">
+        <h2 class="text-center">
+            <span *ngIf="pago.id">Editar </span>
+            <span *ngIf="!pago.id">Crear </span>
+            pago
+        </h2>
+    </div>
+    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
+        <app-notificaciones-container></app-notificaciones-container>
+        <div class="row">
+            <div class="form-group col-lg-12">
+                <label for="">Nombre:</label>
+                <input type="text" class="form-control" name="pago.nombre" [(ngModel)]="pago.nombre" focus="true"/>
+            </div>
+            <div class="form-group col-lg-12">
+                <label for="">Descripción:</label>
+                <input type="text" class="form-control" name="pago.descripcion" [(ngModel)]="pago.descripcion" focus="true"/>
+            </div>
+            <div class="form-group col-lg-6">
+                <label for="">Precio:</label>
+                <input type="tel" class="form-control" name="pago.precio" [(ngModel)]="pago.precio"/>
+            </div>
+        </div>
+        
+        <div class="d-grid mt-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                <span *ngIf="!saving">Guardar</span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

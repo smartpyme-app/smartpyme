@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
+use App\Models\Plan;
 use App\Models\Transaccion;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
@@ -134,20 +136,50 @@ class EmpresasController extends Controller
 
     }
 
-    public function suscripcion()
-    {
+    // public function suscripcion()
+    // {
+    //     $empresa = Empresa::with('pagos')->where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->firstOrFail();
+    //     $empresa->next_pay  = $empresa->getNextPayAttribute();
+    //     $empresa->total  = $empresa->total;
+
+    //     if ($empresa->next_pay >= date('Y-m-d')) {
+    //         $empresa->estado  = 'Activo';
+    //     }else{
+    //         $empresa->estado  = 'Vencido';
+    //     }
+
+    //     return Response()->json($empresa, 201);
+
+    // }
+
+    public function suscripcion(){
         $empresa = Empresa::with('pagos')->where('id', JWTAuth::parseToken()->authenticate()->id_empresa)->firstOrFail();
-        $empresa->next_pay  = $empresa->getNextPayAttribute();
-        $empresa->total  = $empresa->total;
+        
+        $usuario = User::where('id_empresa', $empresa->id)->firstOrFail();
 
-        if ($empresa->next_pay >= date('Y-m-d')) {
-            $empresa->estado  = 'Activo';
-        }else{
-            $empresa->estado  = 'Vencido';
-        }
+        $plan = $usuario->suscripciones()->first()->plan ?? Plan::where('nombre',(Empresa::find($usuario->id_empresa)->plan))->first();
 
-        return Response()->json($empresa, 201);
+        $usuario->plan = [
+            'id' => $plan->id,
+            'nombre' => $plan->nombre,
+            'precio' => $plan->precio
+        ];
 
+        $suscripcion = $usuario->suscripciones()->first(['estado', 'fecha_proximo_pago', 'fecha_ultimo_pago', 'fin_periodo_prueba', 'tipo_plan', 'created_at', 'monto','fecha_ultimo_pago', 'fecha_proximo_pago', 'fin_periodo_prueba']);
+        $usuario->suscripcion = $suscripcion;
+
+        $pagos = $usuario->ordenesPago()->select('plan', 'divisa', 'monto','estado', 'fecha_transaccion')->get();
+        $metodoPago = $usuario->metodoPago()->where('es_predeterminado', true)->where('esta_activo', true)->first(['marca_tarjeta', 'ultimos_cuatro']);
+
+        $dataResponse = [
+            'suscripcion' => $suscripcion,
+            'pagos' => $pagos,
+            'plan' => $usuario->plan,
+            'metodoPago' => $metodoPago
+        ];
+
+
+        return Response()->json($dataResponse, 201);
     }
 
     public function printRecibo($id){
@@ -156,6 +188,7 @@ class EmpresasController extends Controller
         // return $recibo;
         $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
         $pdf->setPaper('US Letter', 'portrait');  
+
 
         return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
     }
