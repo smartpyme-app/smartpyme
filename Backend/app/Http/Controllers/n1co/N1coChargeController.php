@@ -7,6 +7,7 @@ use App\Models\Admin\Empresa;
 use App\Models\MetodoPago;
 use App\Models\OrdenPago;
 use App\Models\Plan;
+use App\Models\Suscripcion;
 use App\Models\User;
 use App\Services\PaymentGateways\N1coGateway;
 use Illuminate\Http\Request;
@@ -479,6 +480,178 @@ class N1coChargeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el método de pago',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function processChargeReady(Request $request) {
+        try {
+            $validator = Validator::make($request->all(), [
+                'metodo_pago_id' => 'required|integer',
+                'id_usuario' => 'required|integer',
+                'empresa_id' => 'required|integer',
+                'plan_id' => 'required|integer',
+                'customer_name' => 'required|string',
+                'customer_email' => 'required|email',
+                'customer_phone' => 'nullable|string'
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $validator->errors()
+                ], 400);
+            }
+    
+            // Obtener el método de pago
+            $metodoPago = MetodoPago::where('id', $request->metodo_pago_id)
+                ->where('id_usuario', $request->id_usuario)
+                ->where('esta_activo', true)
+                ->first();
+    
+            if (!$metodoPago) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Método de pago no encontrado o no está activo'
+                ], 404);
+            }
+    
+            // Obtener el plan
+            $plan = Plan::find($request->plan_id);
+            if (!$plan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Plan no encontrado'
+                ], 404);
+            }
+    
+            // Crear orden de pago
+            $ordenPago = OrdenPago::create([
+                'id_usuario' => $request->id_usuario,
+                'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
+                'id_orden_n1co' => null,
+                'id_autorizacion_3ds' => null,
+                'autorizacion_url' => null,
+                'id_plan' => $plan->id,
+                'nombre_cliente' => $request->customer_name,
+                'email_cliente' => $request->customer_email,
+                'telefono_cliente' => $request->customer_phone,
+                'plan' => $plan->nombre,
+                'monto' => $plan->precio,
+                'estado' => 'pendiente',
+                'divisa' => 'USD'
+            ]);
+    
+            // Preparar datos para el cargo
+            $chargeData = [
+                'customer' => [
+                    'name' => $request->customer_name,
+                    'email' => $request->customer_email,
+                    'phoneNumber' => $request->customer_phone
+                ],
+                'cardId' => $metodoPago->id_tarjeta,
+                'order' => [
+                    'id' => $ordenPago->id_orden,
+                    'lineItems' => [
+                        [
+                            'product' => [
+                                'name' => $plan->nombre,
+                                'price' => $plan->precio
+                            ],
+                            'quantity' => 1
+                        ]
+                    ],
+                    'description' => $plan->descripcion ?? "Pago de suscripción del plan {$plan->nombre}",
+                    'name' => $plan->nombre
+                ],
+                'billingInfo' => [
+                    'countryCode' => $metodoPago->codigo_pais,
+                    'stateCode' => $metodoPago->codigo_estado,
+                    'zipCode' => $metodoPago->codigo_postal
+                ]
+            ];
+    
+            // Realizar el cargo
+            $chargeResult = $this->n1coGateway->createCharge($chargeData);
+    
+            Log::info('Resultado de la creación del cargo', [
+                'charge_result' => $chargeResult
+            ]);
+    
+            // Si requiere autenticación 3DS
+            if (isset($chargeResult['data']['status']) && $chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                $authenticationId = $chargeResult['data']['authentication']['id'];
+                $authenticationUrl = $chargeResult['data']['authentication']['url'];
+    
+                $ordenPago->updateStatusAuthentication3DS(
+                    $authenticationId,
+                    $authenticationUrl,
+                    config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+                );
+    
+                return response()->json([
+                    'success' => true,
+                    'requires_3ds' => true,
+                    'authentication_url' => $authenticationUrl,
+                    'authentication_id' => $authenticationId,
+                    'order_id' => $ordenPago->id_orden
+                ]);
+            }
+    
+            // Si el cargo fue exitoso
+            if ($chargeResult['success']) {
+                // Actualizar la orden de pago
+                $ordenPago->update([
+                    'id_orden_n1co' => $chargeResult['data']['id'],
+                    'estado' => 'completado',
+                    'fecha_transaccion' => now()
+                ]);
+                
+                // Crear o actualizar suscripción
+                $empresa = Empresa::find($request->empresa_id);
+                if ($empresa) {
+                    $suscripcion = Suscripcion::updateOrCreate(
+                        ['id_empresa' => $empresa->id, 'estado' => 'activo'],
+                        [
+                            'id_plan' => $plan->id,
+                            'tipo_plan' => 'mensual', // O el valor que corresponda
+                            'monto' => $plan->precio,
+                            'fecha_inicio' => now(),
+                            'fecha_ultimo_pago' => now(),
+                            'fecha_proximo_pago' => now()->addMonth(),
+                            'estado' => 'activo'
+                        ]
+                    );
+                }
+    
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pago procesado exitosamente',
+                    'data' => $chargeResult['data']
+                ]);
+            } else {
+                // Si hubo un error en el cargo
+                $ordenPago->update([
+                    'estado' => 'fallido'
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al procesar el pago',
+                    'error' => $chargeResult['error'] ?? 'Error desconocido'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error en processChargeReady:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar el pago',
                 'error' => $e->getMessage()
             ], 500);
         }

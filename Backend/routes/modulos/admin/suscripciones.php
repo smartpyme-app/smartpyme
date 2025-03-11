@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/suscripcion/{id}',            [SuscripcionesController::class, 'read']);
     Route::post('/suscripcion/cancel',         [SuscripcionesController::class, 'cancelSuscription']);
     Route::delete('/suscripcion/{id}',         [SuscripcionesController::class, 'delete']);
+    Route::post('/suscripcion/getUsersSelect',  [SuscripcionesController::class, 'getUsersSelect']);
     Route::post('/suscripcion/activar',        [SuscripcionesController::class, 'activateSystem']);
     Route::post('/suscripcion/suspender',      [SuscripcionesController::class, 'suspendSystem']);
     Route::get('/suscripciones/{id}/pagos',      [SuscripcionesController::class, 'getHistorialPagos']);

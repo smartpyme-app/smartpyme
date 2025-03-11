@@ -1,13 +1,24 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading" (click)="loadAll()">Suscripción</h2>
   <!-- <button (click)="openModal(msuscripcion)"  tooltip="Cancelar suscripción" class="btn btn-danger tcla-F4"><i class="fa fa-ban"></i> Cancelar suscripción</button> -->
-  <button
-    (click)="openModal(mmetodoPago)"
-    tooltip="{{usuario?.tiene_suscripcion ? 'Actualizar metodo de pago' : 'Pagar suscripción'}}"
-    class="btn btn-sm btn-primary tcla-F3"
-  >
-    <i class="fa-regular fa-credit-card"></i> {{usuario?.tiene_suscripcion ? 'Actualizar Metodo de Pago' : 'Pagar suscripción'}}
-  </button>
+
+  <div class="d-flex justify-content-end gap-2">
+    <button
+      *ngIf="suscripcion?.metodoPago"
+      (click)="openModal(mmetodoPago)"
+      tooltip="Actualizar metodo de pago"
+      class="btn btn-sm btn-primary tcla-F3"
+    >
+      <i class="fa-regular fa-credit-card"></i> Actualizar Metodo de Pago
+    </button>
+    <button
+      (click)="openModal(mmPagar)"
+      tooltip="Pagar suscripción"
+      class="btn btn-sm btn-primary tcla-F2"
+    >
+      <i class="fa-regular fa-credit-card"></i> Pagar suscripción
+    </button>
+  </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -106,7 +117,12 @@
                 class="badge"
                 [ngClass]="{
                   'bg-success': pago.estado.toLowerCase() === 'completado',
-                  'bg-warning': pago.estado.toLowerCase() === 'pendiente'
+                  'bg-warning': pago.estado.toLowerCase() === 'pendiente',
+                  'bg-danger': pago.estado.toLowerCase() === 'cancelado',
+                  'bg-info': pago.estado.toLowerCase() === 'autenticacion_pendiente',
+                  'bg-primary': pago.estado.toLowerCase() === 'autenticacion_completado',
+                  'bg-danger': pago.estado.toLowerCase() === 'autenticacion_fallida',
+
                 }"
               >
                 {{ pago.estado | titlecase }}
@@ -130,7 +146,7 @@
 <ng-template #mmetodoPago>
   <div class="modal-header">
     <div class="modal-title">
-      <h4 class="text-center">{{suscripcion?.metodoPago && usuario?.tiene_suscripcion ? 'Actualizar metodo de pago' : 'Pagar suscripción'}}</h4>
+      <h4 class="text-center">Actualizar método de pago</h4>
     </div>
     <button
       type="button"
@@ -140,19 +156,13 @@
     ></button>
   </div>
   <div class="modal-body">
-    <div class="row mb-4" *ngIf="!usuario?.tiene_suscripcion">
-      <div class="col-md-12">
-        <h7><strong>Plan: </strong>{{usuario.plan}}</h7>
-      </div>
-      <div class="col-md-12">
-        <h7><strong>Monto: </strong>{{usuario.monto_plan}}</h7>
-      </div>
-    </div>
-    
     <form #updatePaymentForm="ngForm" (ngSubmit)="onUpdatePaymentMethod()">
       <div class="row">
         <app-notificaciones-container></app-notificaciones-container>
-        <div class="col-md-12 mb-4" *ngIf="!showUpdateForm && suscripcion?.metodoPago && usuario?.tiene_suscripcion">
+        <div
+          class="col-md-12 mb-4"
+          *ngIf="!showUpdateForm && suscripcion?.metodoPago"
+        >
           <h7 class="text-start text-dark fw-bold">Método de pago actual</h7>
           <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
@@ -168,7 +178,7 @@
             <button
               class="btn btn-outline-primary btn-sm"
               (click)="showUpdateForm = true"
-              *ngIf="!showUpdateForm && usuario?.tiene_suscripcion"
+              *ngIf="!showUpdateForm"
             >
               <i class="fas fa-edit me-1"></i> Cambiar método de pago
             </button>
@@ -176,7 +186,11 @@
         </div>
 
         <div class="form-group col-md-12">
-          <div class="payment-form" *ngIf="showUpdateForm || !suscripcion?.metodoPago || (!usuario?.tiene_suscripcion && suscripcion?.metodoPago)">
+          <div
+            class="payment-form"
+            *ngIf="showUpdateForm || !suscripcion?.metodoPago"
+          >
+            <!-- Formulario de tarjeta (igual que el original) -->
             <!-- Número de tarjeta -->
             <div class="mb-3">
               <label class="form-label">Número de Tarjeta</label>
@@ -210,6 +224,9 @@
                 Por favor, ingrese un número de tarjeta válido
               </div>
             </div>
+
+            <!-- Resto del formulario (igual que el original) -->
+            <!-- ... -->
 
             <!-- Nombre del titular -->
             <div class="mb-3">
@@ -405,20 +422,21 @@
                 </div>
               </div>
             </div>
-
-            <!-- Botones de acción -->
           </div>
         </div>
       </div>
 
-      <div class="d-grid gap-2 mt-3" *ngIf="showUpdateForm || !suscripcion?.metodoPago || (!usuario?.tiene_suscripcion && suscripcion?.metodoPago)">
+      <div
+        class="d-grid gap-2 mt-3"
+        *ngIf="showUpdateForm || !suscripcion?.metodoPago"
+      >
         <button
           type="submit"
           class="btn btn-primary"
           [disabled]="!updatePaymentForm?.valid || saving"
         >
           <i class="fas fa-save me-2"></i>
-          {{ saving ? "Guardando..." : (usuario.tiene_suscripcion ? "Guardar cambios" : "Pagar suscripción") }}
+          {{ saving ? "Guardando..." : "Guardar cambios" }}
         </button>
         <button
           type="button"
@@ -433,13 +451,342 @@
   </div>
 </ng-template>
 
-<app-threeds-modal 
-    *ngIf="mostrar3DSModal"
-    [authUrl]="urlAutenticacion"
-    (close)="mostrar3DSModal = false">
+<ng-template #mmPagar>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h4 class="text-center">Pagar suscripción</h4>
+    </div>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <h7><strong>Plan: </strong>{{ usuario.plan }}</h7>
+      </div>
+      <div class="col-md-12">
+        <h7><strong>Monto: </strong>{{ suscripcion.plan.precio }}</h7>
+      </div>
+    </div>
+
+    <form #paymentForm="ngForm" (ngSubmit)="onPaySubscription()">
+      <div class="row">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <!-- Mostrar método de pago actual si existe -->
+        <div
+          class="col-md-12 mb-4"
+          *ngIf="!showPaymentForm && suscripcion?.metodoPago"
+        >
+          <h7 class="text-start text-dark fw-bold">Método de pago guardado</h7>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <span
+                class="d-flex align-items-center me-2"
+                [innerHTML]="getCardSvg(suscripcion?.metodoPago)"
+              ></span>
+              <p class="mb-0">
+                {{ suscripcion?.metodoPago?.marca_tarjeta }} ****
+                {{ suscripcion?.metodoPago?.ultimos_cuatro }}
+              </p>
+            </div>
+            <button
+              class="btn btn-outline-primary btn-sm"
+              (click)="showPaymentForm = true"
+              *ngIf="!showPaymentForm"
+            >
+              <i class="fas fa-edit me-1"></i> Usar otra tarjeta
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group col-md-12">
+          <div
+            class="payment-form"
+            *ngIf="showPaymentForm || !suscripcion?.metodoPago"
+          >
+            <!-- Formulario de tarjeta (igual que el original) -->
+            <!-- Número de tarjeta -->
+            <div class="mb-3">
+              <label class="form-label">Número de Tarjeta</label>
+              <div class="input-group">
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="paymentData.cardNumber"
+                  name="cardNumber"
+                  required
+                  [ngClass]="{
+                    'is-invalid':
+                      cardNumber.invalid &&
+                      (cardNumber.dirty || cardNumber.touched)
+                  }"
+                  pattern="[0-9\s]{13,19}"
+                  maxlength="19"
+                  placeholder="0000 0000 0000 0000"
+                  #cardNumber="ngModel"
+                />
+                <span class="input-group-text">
+                  <i class="fas fa-credit-card"></i>
+                </span>
+              </div>
+              <div
+                class="invalid-feedback"
+                *ngIf="
+                  cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)
+                "
+              >
+                Por favor, ingrese un número de tarjeta válido
+              </div>
+            </div>
+
+            <!-- Resto del formulario (igual que el original) -->
+            <!-- Nombre del titular -->
+            <div class="mb-3">
+              <label class="form-label">Nombre del Titular</label>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="paymentData.cardHolder"
+                name="cardHolder"
+                required
+                [ngClass]="{
+                  'is-invalid':
+                    cardHolder.invalid &&
+                    (cardHolder.dirty || cardHolder.touched)
+                }"
+                placeholder="Como aparece en la tarjeta"
+                #cardHolder="ngModel"
+              />
+              <div
+                class="invalid-feedback"
+                *ngIf="
+                  cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)
+                "
+              >
+                El nombre del titular es requerido
+              </div>
+            </div>
+
+            <div class="row">
+              <!-- Mes de expiración -->
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Mes de expiración</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="paymentData.expirationMonth"
+                  name="expirationMonth"
+                  required
+                  [ngClass]="{
+                    'is-invalid':
+                      expMonth.invalid && (expMonth.dirty || expMonth.touched)
+                  }"
+                  pattern="(0[1-9]|1[0-2])"
+                  maxlength="2"
+                  placeholder="MM"
+                  #expMonth="ngModel"
+                />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="
+                    expMonth.invalid && (expMonth.dirty || expMonth.touched)
+                  "
+                >
+                  Mes inválido (01-12)
+                </div>
+              </div>
+
+              <!-- Año de expiración -->
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Año de expiración</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="paymentData.expirationYear"
+                  name="expirationYear"
+                  required
+                  [ngClass]="{
+                    'is-invalid':
+                      expYear.invalid && (expYear.dirty || expYear.touched)
+                  }"
+                  pattern="[0-9]{2}"
+                  maxlength="2"
+                  placeholder="YY"
+                  #expYear="ngModel"
+                />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="expYear.invalid && (expYear.dirty || expYear.touched)"
+                >
+                  Año inválido
+                </div>
+              </div>
+
+              <!-- CVV -->
+              <div class="col-md-4 mb-3">
+                <label class="form-label">CVV</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="paymentData.cvv"
+                  name="cvv"
+                  required
+                  [ngClass]="{
+                    'is-invalid': cvv.invalid && (cvv.dirty || cvv.touched)
+                  }"
+                  pattern="[0-9]{3,4}"
+                  maxlength="4"
+                  placeholder="123"
+                  #cvv="ngModel"
+                />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="cvv.invalid && (cvv.dirty || cvv.touched)"
+                >
+                  CVV inválido
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <!-- País -->
+              <div class="col-md-4 mb-3">
+                <label class="form-label">País</label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="billingInfo.countryCode"
+                  name="countryCode"
+                  required
+                  [ngClass]="{
+                    'is-invalid':
+                      countryCode.invalid &&
+                      (countryCode.dirty || countryCode.touched)
+                  }"
+                  #countryCode="ngModel"
+                >
+                  <option value="" disabled selected>Seleccione un país</option>
+                  <option value="SV">El Salvador</option>
+                  <option value="US">Estados Unidos</option>
+                  <option value="MX">México</option>
+                  <!-- Agregar más opciones según sea necesario -->
+                </select>
+                <div
+                  class="invalid-feedback"
+                  *ngIf="
+                    countryCode.invalid &&
+                    (countryCode.dirty || countryCode.touched)
+                  "
+                >
+                  País inválido
+                </div>
+              </div>
+
+              <!-- Código de Estado -->
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Código de Estado</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="billingInfo.stateCode"
+                  name="stateCode"
+                  required
+                  [ngClass]="{
+                    'is-invalid':
+                      stateCode.invalid &&
+                      (stateCode.dirty || stateCode.touched)
+                  }"
+                  maxlength="2"
+                  placeholder="SS"
+                  #stateCode="ngModel"
+                />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="
+                    stateCode.invalid && (stateCode.dirty || stateCode.touched)
+                  "
+                >
+                  Código de estado inválido
+                </div>
+              </div>
+
+              <!-- Código ZIP -->
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Código ZIP</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="billingInfo.zipCode"
+                  name="zipCode"
+                  required
+                  [ngClass]="{
+                    'is-invalid':
+                      zipCode.invalid && (zipCode.dirty || zipCode.touched)
+                  }"
+                  maxlength="5"
+                  placeholder="1101"
+                  #zipCode="ngModel"
+                />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)"
+                >
+                  Código ZIP inválido
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2 mt-3">
+        <!-- Si hay método de pago guardado y no se está mostrando el formulario -->
+        <button
+          type="button"
+          class="btn btn-primary"
+          *ngIf="!showPaymentForm && suscripcion?.metodoPago"
+          (click)="payWithSavedMethod()"
+          [disabled]="saving"
+        >
+          <i class="fas fa-credit-card me-2"></i>
+          {{ saving ? "Procesando..." : "Pagar con tarjeta guardada" }}
+        </button>
+
+        <!-- Si se está mostrando el formulario o no hay método guardado -->
+        <button
+          type="submit"
+          class="btn btn-primary"
+          *ngIf="showPaymentForm || !suscripcion?.metodoPago"
+          [disabled]="!paymentForm?.valid || saving"
+        >
+          <i class="fas fa-save me-2"></i>
+          {{ saving ? "Procesando..." : "Pagar con nueva tarjeta" }}
+        </button>
+
+        <!-- Botón para cancelar y volver a mostrar la tarjeta guardada -->
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="showPaymentForm = false"
+          *ngIf="showPaymentForm && suscripcion?.metodoPago"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<app-threeds-modal
+  *ngIf="mostrar3DSModal"
+  [authUrl]="urlAutenticacion"
+  (close)="mostrar3DSModal = false"
+>
 </app-threeds-modal>
-
-
 
 <!-- 
 <section class="bg-white p-4 rounded mb-3">

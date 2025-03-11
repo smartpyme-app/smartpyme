@@ -20,7 +20,7 @@ use App\Models\Transaccion;
 use App\Models\User;
 use Carbon\Carbon;
 use JWTAuth;
-use Mail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
 use App\Models\Plan;
@@ -70,18 +70,23 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
-        
-        if ($user->id_empresa != 2) {
-            $suscripcion = $user->suscripciones()->first();
-            $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
-            $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
-            $user->tiene_suscripcion = !is_null($suscripcion);
-            
-            $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->nombre;
-            $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
-            $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->id;
-            $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan,true, $user->empresa->plan)->precio;
-        }
+        $suscripcion = $user->empresa->suscripcion()
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
         return response()->json(['token' => $token, 'user' => $user], 200);
     }
@@ -620,5 +625,39 @@ class AuthJWTController extends Controller
         }
 
         return $plan;
+    }
+
+    public function me($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return Response()->json(['message' => 'Usuario no encontrado', 'code' => 404], 404);
+        }
+
+        $user->ultimo_login = Carbon::now();
+        $user->save();
+
+        $user->empresa = $user->empresa()->with('licencia')->first();
+        $suscripcion = $user->empresa->suscripcion()
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
+
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+
+        return response()->json(['user' => $user], 200);
     }
 }

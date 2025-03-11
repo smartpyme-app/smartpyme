@@ -200,4 +200,17 @@ export class ApiService {
     private handleError(error: HttpErrorResponse) {
       return throwError(error);
     };
+
+    getUserData(userId: number) {
+        return this.http.get<any>(`${this.apiUrl}me/${userId}`).pipe(
+            map((response: any) => {
+              if (response && response.user) {
+                localStorage.setItem('SP_auth_user', JSON.stringify(response.user));
+                return response.user;
+              }
+              return null;
+            }),
+            catchError(this.handleError)
+          );
+        }
 }
