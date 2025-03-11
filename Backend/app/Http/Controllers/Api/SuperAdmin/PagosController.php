@@ -11,16 +11,16 @@ class PagosController extends Controller
 
     public function index(Request $request) {
        
-        $planes = Pago::paginate();
+        $pagos = Pago::paginate();
 
-        return Response()->json($planes, 200);
+        return Response()->json($pagos, 200);
 
     }
 
     public function read($id) {
         
-        $plan = Pago::where('id', $id)->firstOrFail();
-        return Response()->json($plan, 200);
+        $pago = Pago::where('id', $id)->firstOrFail();
+        return Response()->json($pago, 200);
     }
 
 
@@ -33,24 +33,34 @@ class PagosController extends Controller
         ]);
 
         if($request->id)
-            $plan = Pago::findOrFail($request->id);
+            $pago = Pago::findOrFail($request->id);
         else
-            $plan = new Pago;
+            $pago = new Pago;
 
-        $plan->fill($request->all());
-        $plan->save();
+        $pago->fill($request->all());
+        $pago->save();
 
-        return Response()->json($plan, 200);
+        return Response()->json($pago, 200);
+
+    }
+
+
+    public function generarVenta($id)
+    {
+        $pago = Pago::where('id', $id)->firstOrFail();
+        $venta = $pago->generarVenta();
+
+        return Response()->json($venta, 200);
 
     }
 
     public function delete($id)
     {
        
-        $plan = Pago::findOrFail($id);
-        $plan->delete();
+        $pago = Pago::findOrFail($id);
+        $pago->delete();
 
-        return Response()->json($plan, 201);
+        return Response()->json($pago, 201);
 
     }
 

@@ -199,6 +199,9 @@ class WebhookN1coController extends Controller
                         'user_id' => $user->id,
                         'order_id' => $payload['orderId']
                     ]);
+
+                    $ordenPago->generarVenta();
+
                 } else {
                     Log::error('Usuario no encontrado', [
                         'user_id' => $ordenPago->id_usuario,

@@ -83,6 +83,18 @@ export class AdminPagosComponent implements OnInit {
             this.modalRef.hide();
             this.alertService.modal = false;
           },error => {this.alertService.error(error); this.saving = false; });
-      }
+    }
+
+
+    public generarVenta(pago:any) {
+          this.saving = true;
+          this.apiService.read('pago/generar-venta/', pago.id).subscribe(venta => {
+            this.alertService.success('Venta generada', 'La venta fue generada exitosamente.');
+              this.pago.venta = venta;
+              this.saving = false;
+            this.modalRef.hide();
+            this.alertService.modal = false;
+          },error => {this.alertService.error(error); this.saving = false; });
+    }
 
 }

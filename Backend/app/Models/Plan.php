@@ -64,8 +64,8 @@ class Plan extends Model
         return 'PLAN-' . $this->id;
     }
 
-    public function plan(){
-        return $this->belongsTo(Producto::class, 'id_producto');
+    public function producto(){
+        return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
 }

@@ -48,7 +48,7 @@
                         <th>Plan</th>
                         <th>Estado</th>
                         <th class="text-end">Total</th>
-                        <th *ngIf="apiService.canEdit()" width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,8 +72,11 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mpago, pago)" class="list-group-item list-group-item-action border-0 click">
+                                    <a (click)="openModalEdit(mpago, pago)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a (click)="generarVenta(pago)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-credit-card"></i> Generar venta
                                     </a>
                                 </div>
                             </ng-template>

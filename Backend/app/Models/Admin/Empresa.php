@@ -81,6 +81,9 @@ class Empresa extends Model
 
         //Permiso para vendedores
         'vendedor_inventario',
+
+        //Para facturación
+        'id_cliente'
     ];
 
     protected $casts = [
