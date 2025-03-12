@@ -52,6 +52,14 @@ export class ProductoInformacionComponent implements OnInit {
         }
     }
 
+    public actualizarCostoPromedio(){
+        this.producto.costo_promedio = this.producto.costo;
+    }
+
+    public actualizarCosto(){
+        this.producto.costo = this.producto.costo_promedio;
+    }
+
     public calPrecioBase(){
         if(this.usuario.empresa.iva > 0){
             this.producto.impuesto = this.usuario.empresa.iva / 100;
