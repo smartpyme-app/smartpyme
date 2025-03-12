@@ -138,7 +138,7 @@ class PlanillasController extends Controller
         $request->validate([
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date',
-            'tipo_planilla' => 'required|in:quincenal,mensual',
+            'tipo_planilla' => 'required|in:quincenal,mensual,semanal',
             'planillaTemplate' => 'nullable|exists:planillas,id'
         ]);
 
@@ -249,7 +249,7 @@ class PlanillasController extends Controller
         $request->validate([
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-            'tipo_planilla' => 'required|in:quincenal,mensual'
+            'tipo_planilla' => 'required|in:quincenal,mensual,semanal'
         ]);
 
         try {
@@ -310,20 +310,20 @@ class PlanillasController extends Controller
 
     private function calcularISSSyAFP($salarioDevengado)
     {
-        // Cálculo ISSS
+        // Cálculo ISSS - el tope es de $1000 sin importar el período
         $baseISSSEmpleado = min($salarioDevengado, 1000);
         $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
         $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
 
-        // Cálculo AFP
+        // Cálculo AFP - no tiene tope
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
 
         return [
-            'isss_empleado' => $isssEmpleado,
-            'isss_patronal' => $isssPatronal,
-            'afp_empleado' => $afpEmpleado,
-            'afp_patronal' => $afpPatronal
+            'isss_empleado' => round($isssEmpleado, 2),
+            'isss_patronal' => round($isssPatronal, 2),
+            'afp_empleado' => round($afpEmpleado, 2),
+            'afp_patronal' => round($afpPatronal, 2)
         ];
     }
 
@@ -357,49 +357,57 @@ class PlanillasController extends Controller
 
     private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
     {
-        // Calcular días laborados
-        $diasLaborados = $tipoPlanilla === 'quincenal' ? 15 : 30;
+        // Determinar días de referencia según tipo de planilla
+        $diasReferencia = 30; // Por defecto, mensual
+        $factorAjuste = 1;
 
-        // Calcular salario devengado
-        $salarioDevengado = $this->calcularSalarioDevengado($empleado->salario_base, $diasLaborados);
+        if ($tipoPlanilla === 'quincenal') {
+            $diasReferencia = 15;
+            $factorAjuste = 2; // 2 quincenas por mes
+        } elseif ($tipoPlanilla === 'semanal') {
+            $diasReferencia = 7;
+            $factorAjuste = 4.33; // ~4.33 semanas por mes (promedio)
+        }
 
-        // Inicializar valores base
-        $bonificaciones = 0;
-        $comisiones = 0;
-        $horasExtra = 0;
-        $montoHorasExtra = 0;
-        $otrosIngresos = 0;
-        $prestamos = 0;
-        $anticipos = 0;
-        $descuentosJudiciales = 0;
-        $otrosDescuentos = 0;
+        // Calcular días laborados según tipo de planilla
+        $diasLaborados = $diasReferencia; // Por defecto, todos los días del período
 
-        // Calcular total ingresos bruto
-        $totalIngresos = $salarioDevengado +
-            $bonificaciones +
-            $comisiones +
-            $montoHorasExtra +
-            $otrosIngresos;
+        // Obtener salario base mensual
+        $salarioBaseMensual = $empleado->salario_base;
+
+        // Ajustar el salario base según el tipo de planilla
+        $salarioBaseAjustado = $salarioBaseMensual;
+        if ($tipoPlanilla !== 'mensual') {
+            // Si no es mensual, ajustar según el factor correspondiente
+            $salarioBaseAjustado = $salarioBaseMensual / $factorAjuste;
+        }
+
+        // Calcular salario devengado según días laborados
+        $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
 
         // Calcular ISSS y AFP
-        $descuentosLey = $this->calcularISSSyAFP($totalIngresos);
+        $descuentosLey = $this->calcularISSSyAFP($salarioDevengado);
 
-        // Calcular ISR (Renta)
-        $baseImponible = $totalIngresos - $descuentosLey['isss_empleado'] - $descuentosLey['afp_empleado'];
-        $renta = $this->calcularRenta(
-            $baseImponible,
-            $descuentosLey['isss_empleado'],
-            $descuentosLey['afp_empleado']
-        );
+        // Calcular Renta - se debe ajustar para planilla no mensual
+        $baseRenta = $salarioDevengado - $descuentosLey['isss_empleado'] - $descuentosLey['afp_empleado'];
 
-        // Calcular total deducciones
-        $totalDeducciones = $descuentosLey['isss_empleado'] +
+        // Para planillas no mensuales, ajustar la base para el cálculo de renta
+        $baseRentaAnualizada = $baseRenta;
+        if ($tipoPlanilla !== 'mensual') {
+            // Multiplicamos por el factor para obtener el valor mensual equivalente
+            $baseRentaAnualizada = $baseRenta * $factorAjuste;
+        }
+
+        $renta = $this->calcularRentaAjustada($baseRentaAnualizada, $tipoPlanilla, $factorAjuste);
+
+        // Calcular total de deducciones
+        $totalDeducciones =
+            $descuentosLey['isss_empleado'] +
             $descuentosLey['afp_empleado'] +
-            $renta +
-            $prestamos +
-            $anticipos +
-            $descuentosJudiciales +
-            $otrosDescuentos;
+            $renta;
+
+        // Calcular total de ingresos (por ahora solo salario devengado)
+        $totalIngresos = $salarioDevengado;
 
         // Calcular sueldo neto
         $sueldoNeto = $totalIngresos - $totalDeducciones;
@@ -407,29 +415,57 @@ class PlanillasController extends Controller
         return new PlanillaDetalle([
             'id_planilla' => $planillaId,
             'id_empleado' => $empleado->id,
-            'salario_base' => $empleado->salario_base,
+            'salario_base' => $empleado->salario_base, // Guardamos el salario base mensual completo
             'salario_devengado' => $salarioDevengado,
             'dias_laborados' => $diasLaborados,
             'horas_extra' => 0,
-            'monto_horas_extra' => $montoHorasExtra,
-            'comisiones' => $comisiones,
-            'bonificaciones' => $bonificaciones,
-            'otros_ingresos' => $otrosIngresos,
+            'monto_horas_extra' => 0,
+            'comisiones' => 0,
+            'bonificaciones' => 0,
+            'otros_ingresos' => 0,
             'isss_empleado' => $descuentosLey['isss_empleado'],
             'isss_patronal' => $descuentosLey['isss_patronal'],
             'afp_empleado' => $descuentosLey['afp_empleado'],
             'afp_patronal' => $descuentosLey['afp_patronal'],
             'renta' => $renta,
-            'prestamos' => $prestamos,
-            'anticipos' => $anticipos,
-            'otros_descuentos' => $otrosDescuentos,
-            'descuentos_judiciales' => $descuentosJudiciales,
+            'prestamos' => 0,
+            'anticipos' => 0,
+            'otros_descuentos' => 0,
+            'descuentos_judiciales' => 0,
             'total_ingresos' => $totalIngresos,
             'total_descuentos' => $totalDeducciones,
             'sueldo_neto' => $sueldoNeto,
-            'detalle_otras_deducciones' => '',
             'estado' => PlanillaConstants::PLANILLA_BORRADOR
         ]);
+    }
+
+    private function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
+    {
+        // Calcular renta según tabla de El Salvador
+        $renta = 0;
+
+        if ($baseRenta <= PlanillaConstants::RENTA_MINIMA) {
+            return 0;
+        } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
+            $renta = (($baseRenta - PlanillaConstants::RENTA_MINIMA) *
+                PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) +
+                PlanillaConstants::IMPUESTO_PRIMER_TRAMO;
+        } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
+            $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) *
+                PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) +
+                PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO;
+        } else {
+            $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) *
+                PlanillaConstants::PORCENTAJE_TERCER_TRAMO) +
+                PlanillaConstants::IMPUESTO_TERCER_TRAMO;
+        }
+
+        // Si no es mensual, dividir la renta calculada por el factor de ajuste
+        if ($tipoPlanilla !== 'mensual') {
+            $renta = $renta / $factorAjuste;
+        }
+
+        return round($renta, 2);
     }
 
     private function updatePayrollTotals($id_planilla)
@@ -437,10 +473,18 @@ class PlanillasController extends Controller
         try {
             $planilla = Planilla::findOrFail($id_planilla);
 
-            // Obtener solo los detalles activos
+            // Obtener los detalles activos
             $detalles = $planilla->detalles()
-                ->where('estado', 1)
+                ->where('estado', PlanillaConstants::PLANILLA_BORRADOR)
                 ->get();
+
+            // Determinar factor de ajuste según tipo de planilla
+            $factorAjuste = 1;
+            if ($planilla->tipo_planilla === 'quincenal') {
+                $factorAjuste = 2;
+            } elseif ($planilla->tipo_planilla === 'semanal') {
+                $factorAjuste = 4.33;
+            }
 
             // Inicializar totales
             $total_salarios = 0;
@@ -449,51 +493,31 @@ class PlanillasController extends Controller
             $total_aportes_patronales = 0;
             $bonificaciones_total = 0;
             $comisiones_total = 0;
+            $total_isss = 0;
+            $total_afp = 0;
+            $total_isr = 0;
 
             foreach ($detalles as $detalle) {
-                // Convertir valores nulos a 0 y asegurar que son números
-                $salario_base = floatval($detalle->salario_base ?? 0);
-                $horas_extra = floatval($detalle->monto_horas_extra ?? 0);
-                $comisiones = floatval($detalle->comisiones ?? 0);
-                $bonificaciones = floatval($detalle->bonificaciones ?? 0);
-                $otros_ingresos = floatval($detalle->otros_ingresos ?? 0);
-
-                // Total salarios
-                $total_salarios += $salario_base +
-                    $horas_extra +
-                    $comisiones +
-                    $bonificaciones +
-                    $otros_ingresos;
+                // Agregar al total de salarios devengados
+                $total_salarios += $detalle->salario_devengado;
 
                 // Acumular bonificaciones y comisiones
-                $bonificaciones_total += $bonificaciones;
-                $comisiones_total += $comisiones;
+                $bonificaciones_total += $detalle->bonificaciones;
+                $comisiones_total += $detalle->comisiones;
 
-                // Deducciones de ley y otras deducciones
-                $isss_empleado = floatval($detalle->isss_empleado ?? 0);
-                $afp_empleado = floatval($detalle->afp_empleado ?? 0);
-                $renta = floatval($detalle->renta ?? 0);
-                $prestamos = floatval($detalle->prestamos ?? 0);
-                $anticipos = floatval($detalle->anticipos ?? 0);
-                $otros_descuentos = floatval($detalle->otros_descuentos ?? 0);
-                $descuentos_judiciales = floatval($detalle->descuentos_judiciales ?? 0);
+                // Acumular deducciones
+                $total_isss += $detalle->isss_empleado;
+                $total_afp += $detalle->afp_empleado;
+                $total_isr += $detalle->renta;
 
-                // Total deducciones
-                $total_deducciones += $isss_empleado +
-                    $afp_empleado +
-                    $renta +
-                    $prestamos +
-                    $anticipos +
-                    $otros_descuentos +
-                    $descuentos_judiciales;
+                $total_deducciones += $detalle->total_descuentos;
 
-                // Aportes patronales
-                $total_aportes_patronales += floatval($detalle->isss_patronal ?? 0) +
-                    floatval($detalle->afp_patronal ?? 0);
+                // Acumular neto
+                $total_neto += $detalle->sueldo_neto;
+
+                // Acumular aportes patronales
+                $total_aportes_patronales += $detalle->isss_patronal + $detalle->afp_patronal;
             }
-
-            // Calcular neto
-            $total_neto = $total_salarios - $total_deducciones;
 
             // Actualizar planilla con todos los totales
             $planilla->update([
@@ -504,9 +528,9 @@ class PlanillasController extends Controller
                 'bonificaciones_total' => round($bonificaciones_total, 2),
                 'comisiones_total' => round($comisiones_total, 2),
                 'total_ingresos' => round($total_salarios, 2), // Total de ingresos es igual al total de salarios
-                'total_iss' => round($detalles->sum('isss_empleado'), 2), // Total ISSS empleado
-                'total_afp' => round($detalles->sum('afp_empleado'), 2), // Total AFP empleado
-                'total_isr' => round($detalles->sum('renta'), 2) // Total ISR
+                'total_iss' => round($total_isss, 2), // Total ISSS empleado
+                'total_afp' => round($total_afp, 2), // Total AFP empleado
+                'total_isr' => round($total_isr, 2) // Total ISR
             ]);
 
             return true;
@@ -525,18 +549,10 @@ class PlanillasController extends Controller
             'bonificaciones' => 'nullable|numeric|min:0',
             'otros_ingresos' => 'nullable|numeric|min:0',
             'dias_laborados' => 'nullable|numeric|min:0|max:31',
-            'isss_empleado' => 'nullable|numeric|min:0',
-            'isss_patronal' => 'nullable|numeric|min:0',
-            'afp_empleado' => 'nullable|numeric|min:0',
-            'afp_patronal' => 'nullable|numeric|min:0',
-            'renta' => 'nullable|numeric|min:0',
             'prestamos' => 'nullable|numeric|min:0',
             'anticipos' => 'nullable|numeric|min:0',
             'otros_descuentos' => 'nullable|numeric|min:0',
             'descuentos_judiciales' => 'nullable|numeric|min:0',
-            'total_ingresos' => 'nullable|numeric|min:0',
-            'total_descuentos' => 'nullable|numeric|min:0',
-            'sueldo_neto' => 'nullable|numeric|min:0',
             'detalle_otras_deducciones' => 'nullable|string'
         ]);
 
@@ -544,50 +560,79 @@ class PlanillasController extends Controller
             DB::beginTransaction();
 
             $detalle = PlanillaDetalle::findOrFail($id);
+            $planilla = $detalle->planilla;
 
-            // Verificar estado de planilla
-            if ($detalle->planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
+            // Verificar que la planilla esté en estado editable
+            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 return response()->json([
                     'error' => 'No se puede modificar una planilla aprobada o pagada'
                 ], 422);
             }
 
-            $salarioDevengado = ($detalle->salario_base / 30) * ($request->dias_laborados ?? 30);
+            // Determinar días de referencia y factor de ajuste según tipo de planilla
+            $diasReferencia = 30;
+            $factorAjuste = 1;
+
+            if ($planilla->tipo_planilla === 'quincenal') {
+                $diasReferencia = 15;
+                $factorAjuste = 2;
+            } elseif ($planilla->tipo_planilla === 'semanal') {
+                $diasReferencia = 7;
+                $factorAjuste = 4.33;
+            }
 
             // Actualizar campos básicos
-            $detalle->dias_laborados = $request->dias_laborados ?? 30;
-            $detalle->salario_devengado = $salarioDevengado;
+            $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
             $detalle->horas_extra = $request->horas_extra ?? 0;
-            $detalle->monto_horas_extra = $request->monto_horas_extra ?? 0;
             $detalle->comisiones = $request->comisiones ?? 0;
             $detalle->bonificaciones = $request->bonificaciones ?? 0;
             $detalle->otros_ingresos = $request->otros_ingresos ?? 0;
+            $detalle->prestamos = $request->prestamos ?? 0;
+            $detalle->anticipos = $request->anticipos ?? 0;
+            $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
+            $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
+            $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
+
+            // Calcular salario devengado según días laborados
+            $salarioBaseMensual = $detalle->salario_base;
+            $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
+                $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
+            $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+            $detalle->salario_devengado = $salarioDevengado;
+
+            // Calcular monto de horas extra si aplica
+            if ($detalle->horas_extra > 0) {
+                $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
+                $detalle->monto_horas_extra = $detalle->horas_extra * ($valorHoraNormal * 1.25);
+            } else {
+                $detalle->monto_horas_extra = 0;
+            }
 
             // Calcular total de ingresos
-            $detalle->total_ingresos = $salarioDevengado +
+            $detalle->total_ingresos = $detalle->salario_devengado +
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +
                 $detalle->otros_ingresos;
 
-            // Calcular deducciones de ley
+            // Recalcular deducciones de ley
             $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
             $detalle->isss_empleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
             $detalle->isss_patronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
             $detalle->afp_empleado = $detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
             $detalle->afp_patronal = $detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
 
-            // Calcular base para renta
+            // Calcular renta ajustada
             $baseRenta = $detalle->total_ingresos - $detalle->isss_empleado - $detalle->afp_empleado;
-            $detalle->renta = $this->calcularRenta($baseRenta, $detalle->isss_empleado, $detalle->afp_empleado);
+            $baseRentaAnualizada = $baseRenta;
 
-            // Otros descuentos
-            $detalle->prestamos = $request->prestamos ?? 0;
-            $detalle->anticipos = $request->anticipos ?? 0;
-            $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
-            $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
+            if ($planilla->tipo_planilla !== 'mensual') {
+                $baseRentaAnualizada = $baseRenta * $factorAjuste;
+            }
 
-            // Calcular total deducciones
+            $detalle->renta = $this->calcularRentaAjustada($baseRentaAnualizada, $planilla->tipo_planilla, $factorAjuste);
+
+            // Calcular total de deducciones
             $detalle->total_descuentos = $detalle->isss_empleado +
                 $detalle->afp_empleado +
                 $detalle->renta +
@@ -599,27 +644,22 @@ class PlanillasController extends Controller
             // Calcular sueldo neto
             $detalle->sueldo_neto = $detalle->total_ingresos - $detalle->total_descuentos;
 
-            // Detalles adicionales
-            $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
-
-            // Guardar detalle
+            // Guardar cambios
             $detalle->save();
 
-            // Actualizar totales de la planilla usando el método del modelo
-            $planilla = $detalle->planilla;
-            $planilla->actualizarTotales();
+            // Actualizar totales de la planilla
+            $this->updatePayrollTotals($planilla->id);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Detalle actualizado exitosamente',
                 'detalle' => $detalle->fresh(['empleado']),
-                'planilla' => $planilla->fresh(),
-                'empleado' => $detalle->empleado
+                'planilla' => $planilla->fresh()
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error actualizando detalle de planilla: ' . $e->getMessage());
+            Log::error($e->getMessage());
             return response()->json([
                 'error' => 'Error al actualizar el detalle: ' . $e->getMessage()
             ], 500);

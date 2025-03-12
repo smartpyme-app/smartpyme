@@ -306,78 +306,58 @@
 <ng-template #mNuevaPlanilla>
   <div class="modal-header">
     <div class="modal-title">
-      <h4 class="mb-0">
-        {{ modoDuplicacion ? "Duplicar Planilla" : "Generar Nueva Planilla" }}
-      </h4>
+      <h4 class="mb-0">Generar Nueva Planilla</h4>
     </div>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="generarPlanilla()">
       <div class="row">
         <div class="form-group col-12 mb-3">
           <label>Tipo de Planilla:</label>
-          <select
-            [(ngModel)]="planilla.tipo_planilla"
-            name="tipo_planilla"
-            class="form-select"
-            required
-          >
-            <option value="semanal">Semanal</option>
-            <option value="quincenal">Quincenal</option>
+          <select 
+            [(ngModel)]="planilla.tipo_planilla" 
+            name="tipo_planilla" 
+            class="form-select" 
+            required>
             <option value="mensual">Mensual</option>
+            <option value="quincenal">Quincenal</option>
+            <option value="semanal">Semanal</option>
           </select>
+          <small class="form-text text-muted" *ngIf="planilla.tipo_planilla === 'semanal'">
+            Planilla semanal: El salario base se dividirá entre 4.33 (semanas promedio por mes).
+          </small>
+          <small class="form-text text-muted" *ngIf="planilla.tipo_planilla === 'quincenal'">
+            Planilla quincenal: El salario base se dividirá entre 2.
+          </small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label>Fecha Inicio:</label>
-          <input
-            type="date"
-            [(ngModel)]="planilla.fecha_inicio"
-            name="fecha_inicio"
-            class="form-control"
-            required
-          />
+          <input 
+            type="date" 
+            [(ngModel)]="planilla.fecha_inicio" 
+            name="fecha_inicio" 
+            class="form-control" 
+            required>
         </div>
 
         <div class="form-group col-md-6 mb-3">
           <label>Fecha Fin:</label>
-          <input
-            type="date"
-            [(ngModel)]="planilla.fecha_fin"
-            name="fecha_fin"
-            class="form-control"
-            required
-          />
-        </div>
-        <div class="form-group col-12 mb-3" *ngIf="!modoDuplicacion">
-          <label>Ocupar plantilla de planilla existente:</label>
-          <select
-            [(ngModel)]="planilla.planillaTemplate"
-            name="planilla"
-            class="form-select"
-            required
-          >
-            <option value="">Seleccione...</option>
-            <option
-              *ngFor="let planilla of planillas.data"
-              [value]="planilla.id"
-            >
-              {{ planilla.codigo }} -
-              {{ planilla.fecha_inicio | date : "dd/MM/yyyy" }} -
-              {{ planilla.fecha_fin | date : "dd/MM/yyyy" }}
-            </option>
-          </select>
+          <input 
+            type="date" 
+            [(ngModel)]="planilla.fecha_fin" 
+            name="fecha_fin" 
+            class="form-control" 
+            required>
         </div>
       </div>
-
+      
       <div class="d-grid mt-3">
-        <button type="submit" [disabled]="saving" class="btn btn-primary">
+        <button 
+          type="submit" 
+          [disabled]="saving" 
+          class="btn btn-primary">
           <span *ngIf="!saving">
             <i class="fa fa-save"></i> Generar Planilla
           </span>

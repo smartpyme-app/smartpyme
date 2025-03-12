@@ -109,6 +109,8 @@
   </div>
 
   <!-- Tabla de Detalles -->
+
+  <!-- Tabla de Detalles -->
   <div class="table-responsive">
     <table class="table table-borderless table-hover">
       <thead>
@@ -116,14 +118,20 @@
           <th>Empleado</th>
           <th>Estado</th>
           <th class="text-end">Salario Base</th>
-          <th class="text-end">Bonificaciones</th>
-          <th class="text-end">Comisiones</th>
+          <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
+            S. Quincenal
+          </th>
+          <th class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
+            S. Semanal
+          </th>
+          <th class="text-end">S. Devengado</th>
+          <th class="text-end">Ingresos Adicionales</th>
           <th class="text-end">Total Ingresos</th>
           <th class="text-end">ISSS</th>
           <th class="text-end">AFP</th>
           <th class="text-end">ISR</th>
           <th class="text-end">Total Neto</th>
-          <th class="text-center" *ngIf="planilla.estado === 1">Acciones</th>
+          <th class="text-center">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -143,10 +151,23 @@
           <td class="text-end">
             ${{ detalle.salario_base | number : "1.2-2" }}
           </td>
-          <td class="text-end">
-            ${{ detalle.bonificaciones | number : "1.2-2" }}
+          <td class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
+            ${{ detalle.salario_base / 2 | number : "1.2-2" }}
           </td>
-          <td class="text-end">${{ detalle.comisiones | number : "1.2-2" }}</td>
+          <td class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
+            ${{ detalle.salario_base / 4.33 | number : "1.2-2" }}
+          </td>
+          <td class="text-end">
+            ${{ detalle.salario_devengado | number : "1.2-2" }}
+          </td>
+          <td class="text-end">
+            ${{
+              detalle.bonificaciones +
+                detalle.comisiones +
+                detalle.monto_horas_extra +
+                detalle.otros_ingresos | number : "1.2-2"
+            }}
+          </td>
           <td class="text-end">
             ${{ detalle.total_ingresos | number : "1.2-2" }}
           </td>
@@ -195,16 +216,16 @@
                   (click)="downloadInvoice(detalle)"
                   *ngIf="detalle.estado != 0"
                   class="list-group-item list-group-item-action border-0 click"
-                  [class.disabled]="saving"
+                  [class.disabled]="procesando"
                 >
                   <i
                     class="fa"
                     [ngClass]="{
-                      'fa-money-bill': !saving,
-                      'fa-spinner fa-spin': saving
+                      'fa-money-bill': !procesando,
+                      'fa-spinner fa-spin': procesando
                     }"
                   ></i>
-                  {{ saving ? "Generando..." : "Descargar Boleta de Pago" }}
+                  {{ procesando ? "Generando..." : "Descargar Boleta de Pago" }}
                 </a>
               </div>
             </ng-template>
@@ -218,11 +239,20 @@
           <th class="text-end">
             ${{ planilla.total_salarios | number : "1.2-2" }}
           </th>
-          <th class="text-end">
-            ${{ planilla.bonificaciones_total | number : "1.2-2" }}
+          <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
+            ${{ planilla.total_salarios / 2 | number : "1.2-2" }}
+          </th>
+          <th class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
+            ${{ planilla.total_salarios / 4.33 | number : "1.2-2" }}
           </th>
           <th class="text-end">
-            ${{ planilla.comisiones_total | number : "1.2-2" }}
+            ${{ planilla.total_salarios | number : "1.2-2" }}
+          </th>
+          <th class="text-end">
+            ${{
+              planilla.bonificaciones_total + planilla.comisiones_total
+                | number : "1.2-2"
+            }}
           </th>
           <th class="text-end">
             ${{ planilla.total_ingresos | number : "1.2-2" }}
@@ -233,6 +263,7 @@
           <th class="text-end">
             ${{ planilla.total_neto | number : "1.2-2" }}
           </th>
+          <th></th>
         </tr>
       </tfoot>
     </table>
@@ -268,6 +299,7 @@
 
           <div class="row">
             <!-- Sección de Ingresos -->
+            <!-- Sección de Ingresos (Actualizada con soporte semanal) -->
             <div class="col-md-6">
               <div class="card mb-3">
                 <div
@@ -279,18 +311,34 @@
                 </div>
                 <div class="card-body">
                   <div class="mb-3">
-                    <label>Salario Base:</label>
+                    <label>Salario Base Mensual:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
                       <input
                         type="number"
                         class="form-control"
                         [(ngModel)]="detalleSeleccionado.salario_base"
-                        (input)="calcularTotales()"
                         name="salario_base"
                         disabled
                       />
                     </div>
+                    <small
+                      class="text-info"
+                      *ngIf="planilla.tipo_planilla === 'quincenal'"
+                    >
+                      Salario quincenal: ${{
+                        detalleSeleccionado.salario_base / 2 | number : "1.2-2"
+                      }}
+                    </small>
+                    <small
+                      class="text-info"
+                      *ngIf="planilla.tipo_planilla === 'semanal'"
+                    >
+                      Salario semanal: ${{
+                        detalleSeleccionado.salario_base / 4.33
+                          | number : "1.2-2"
+                      }}
+                    </small>
                   </div>
 
                   <div class="mb-3">
@@ -309,6 +357,35 @@
                       />
                       <span class="input-group-text">días</span>
                     </div>
+                    <small class="text-muted">
+                      De
+                      <span *ngIf="planilla.tipo_planilla === 'mensual'"
+                        >30 días mensuales</span
+                      >
+                      <span *ngIf="planilla.tipo_planilla === 'quincenal'"
+                        >15 días quincenales</span
+                      >
+                      <span *ngIf="planilla.tipo_planilla === 'semanal'"
+                        >7 días semanales</span
+                      >
+                    </small>
+                  </div>
+
+                  <div class="mb-3">
+                    <label>Salario Devengado:</label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      <input
+                        type="number"
+                        class="form-control"
+                        [(ngModel)]="detalleSeleccionado.salario_devengado"
+                        name="salario_devengado"
+                        disabled
+                      />
+                    </div>
+                    <small class="text-muted">
+                      Calculado en base a días laborados
+                    </small>
                   </div>
 
                   <div class="mb-3">

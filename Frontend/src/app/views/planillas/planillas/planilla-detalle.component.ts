@@ -270,14 +270,14 @@ export class PlanillaDetalleComponent implements OnInit {
           if (index !== -1) {
             this.detalles[index] = {
               ...response.detalle,
-              empleado: response.empleado
+              empleado: response.empleado,
             };
           }
-  
+
           if (response.planilla) {
             this.planilla = response.planilla;
           }
-  
+
           this.calcularTotalesPlanilla();
           this.detalleSeleccionado = null;
           this.saving = false;
@@ -378,7 +378,34 @@ export class PlanillaDetalleComponent implements OnInit {
   public calcularTotales() {
     if (!this.detalleSeleccionado) return;
 
-    const salarioBase = parseFloat(this.detalleSeleccionado.salario_base) || 0;
+    // Obtener el salario base mensual
+    const salarioBaseMensual =
+      parseFloat(this.detalleSeleccionado.salario_base) || 0;
+
+    // Ajustar el salario base según el tipo de planilla
+    let salarioBaseAjustado = salarioBaseMensual;
+    let diasReferencia = 30; // Por defecto, mensual
+
+    if (this.planilla.tipo_planilla === 'quincenal') {
+      // Si es quincenal, el salario base para cálculos es la mitad del mensual
+      salarioBaseAjustado = salarioBaseMensual / 2;
+      diasReferencia = 15;
+    } else if (this.planilla.tipo_planilla === 'semanal') {
+      // Si es semanal, el salario base es una cuarta parte del mensual aproximadamente
+      salarioBaseAjustado = salarioBaseMensual / 4.33; // 4.33 semanas por mes en promedio
+      diasReferencia = 7;
+    }
+
+    const diasLaborados =
+      parseFloat(this.detalleSeleccionado.dias_laborados) || diasReferencia;
+
+    // Calcular salario devengado según días trabajados
+    const salarioDevengado =
+      (salarioBaseAjustado / diasReferencia) * diasLaborados;
+    this.detalleSeleccionado.salario_devengado = Number(
+      salarioDevengado.toFixed(2)
+    );
+
     const horasExtra = parseFloat(this.detalleSeleccionado.horas_extra) || 0;
     const comisiones = parseFloat(this.detalleSeleccionado.comisiones) || 0;
     const bonificaciones =
@@ -387,10 +414,14 @@ export class PlanillaDetalleComponent implements OnInit {
       parseFloat(this.detalleSeleccionado.otros_ingresos) || 0;
     const prestamos = parseFloat(this.detalleSeleccionado.prestamos) || 0;
     const anticipos = parseFloat(this.detalleSeleccionado.anticipos) || 0;
+    const otrosDescuentos =
+      parseFloat(this.detalleSeleccionado.otros_descuentos) || 0;
+    const descuentosJudiciales =
+      parseFloat(this.detalleSeleccionado.descuentos_judiciales) || 0;
 
     let montoHorasExtra = 0;
     if (horasExtra > 0) {
-      const valorHoraNormal = salarioBase / 30 / 8;
+      const valorHoraNormal = salarioBaseAjustado / diasReferencia / 8;
       montoHorasExtra = Number(
         (horasExtra * (valorHoraNormal * 1.25)).toFixed(2)
       );
@@ -399,7 +430,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
     const totalIngresos = Number(
       (
-        salarioBase +
+        salarioDevengado +
         montoHorasExtra +
         comisiones +
         bonificaciones +
@@ -408,23 +439,28 @@ export class PlanillaDetalleComponent implements OnInit {
     );
     this.detalleSeleccionado.total_ingresos = totalIngresos;
 
+    // Calcular ISSS (3%) - tope $1000
     const baseISSSEmpleado = Math.min(totalIngresos, 1000);
     this.detalleSeleccionado.isss_empleado = Number(
       (baseISSSEmpleado * 0.03).toFixed(2)
     );
 
+    // Calcular ISSS patronal (7.5%) - tope $1000
     this.detalleSeleccionado.isss_patronal = Number(
       (baseISSSEmpleado * 0.075).toFixed(2)
     );
 
+    // Calcular AFP empleado (7.25%)
     this.detalleSeleccionado.afp_empleado = Number(
       (totalIngresos * 0.0725).toFixed(2)
     );
 
+    // Calcular AFP patronal (7.75%)
     this.detalleSeleccionado.afp_patronal = Number(
       (totalIngresos * 0.0775).toFixed(2)
     );
 
+    // Calcular base para renta
     const baseRenta = Number(
       (
         totalIngresos -
@@ -433,29 +469,56 @@ export class PlanillaDetalleComponent implements OnInit {
       ).toFixed(2)
     );
 
+    // Calcular ISR según tabla de El Salvador
     let renta = 0;
-    if (baseRenta <= 472.0) {
-      renta = 0;
-    } else if (baseRenta <= 895.24) {
-      renta = (baseRenta - 472.0) * 0.1 + 17.67;
-    } else if (baseRenta <= 2038.1) {
-      renta = (baseRenta - 895.24) * 0.2 + 60.0;
-    } else {
-      renta = (baseRenta - 2038.1) * 0.3 + 288.57;
+
+    // Ajustar el cálculo de renta según tipo de planilla
+    let baseRentaAnualizada = baseRenta;
+    let factorAjuste = 1;
+
+    if (this.planilla.tipo_planilla === 'quincenal') {
+      // Para quincena, multiplicamos por 2 para obtener el valor mensual equivalente
+      factorAjuste = 2;
+      baseRentaAnualizada = baseRenta * factorAjuste;
+    } else if (this.planilla.tipo_planilla === 'semanal') {
+      // Para semanal, multiplicamos por 4.33 para obtener el valor mensual equivalente
+      factorAjuste = 4.33;
+      baseRentaAnualizada = baseRenta * factorAjuste;
     }
+
+    // Aplicar tabla de renta
+    if (baseRentaAnualizada <= 472.0) {
+      renta = 0;
+    } else if (baseRentaAnualizada <= 895.24) {
+      renta = (baseRentaAnualizada - 472.0) * 0.1 + 17.67;
+    } else if (baseRentaAnualizada <= 2038.1) {
+      renta = (baseRentaAnualizada - 895.24) * 0.2 + 60.0;
+    } else {
+      renta = (baseRentaAnualizada - 2038.1) * 0.3 + 288.57;
+    }
+
+    // Ajustamos el resultado según el tipo de planilla
+    if (this.planilla.tipo_planilla !== 'mensual') {
+      renta = renta / factorAjuste;
+    }
+
     this.detalleSeleccionado.renta = Number(renta.toFixed(2));
 
+    // Calcular total de descuentos
     const totalDescuentos = Number(
       (
         this.detalleSeleccionado.isss_empleado +
         this.detalleSeleccionado.afp_empleado +
         this.detalleSeleccionado.renta +
         prestamos +
-        anticipos
+        anticipos +
+        otrosDescuentos +
+        descuentosJudiciales
       ).toFixed(2)
     );
     this.detalleSeleccionado.total_descuentos = totalDescuentos;
 
+    // Calcular sueldo neto
     this.detalleSeleccionado.sueldo_neto = Number(
       (totalIngresos - totalDescuentos).toFixed(2)
     );
@@ -484,9 +547,33 @@ export class PlanillaDetalleComponent implements OnInit {
 
     this.notValue = false;
 
+    // Determinar valores según tipo de planilla
+    let diasReferencia = 30; // Por defecto, mensual
+    let factorAjuste = 1;
+
+    if (this.planilla.tipo_planilla === 'quincenal') {
+      diasReferencia = 15;
+      factorAjuste = 2; // 2 quincenas por mes
+    } else if (this.planilla.tipo_planilla === 'semanal') {
+      diasReferencia = 7;
+      factorAjuste = 4.33; // ~4.33 semanas por mes
+    }
+
     detallesActivos.forEach((detalle) => {
-      // Salarios base
-      this.planilla.total_salarios += Number(detalle.salario_base) || 0;
+      const salarioBase = Number(detalle.salario_base) || 0;
+      const salarioBaseAjustado =
+        this.planilla.tipo_planilla !== 'mensual'
+          ? salarioBase / factorAjuste
+          : salarioBase;
+
+      const diasLaborados = Number(detalle.dias_laborados) || diasReferencia;
+
+      // Calcular salario devengado según días laborados
+      const salarioDevengado =
+        (salarioBaseAjustado / diasReferencia) * diasLaborados;
+
+      // Acumular salarios base (en realidad es el salario devengado)
+      this.planilla.total_salarios += salarioDevengado;
 
       // Bonificaciones
       this.planilla.bonificaciones_total += Number(detalle.bonificaciones) || 0;
@@ -494,9 +581,9 @@ export class PlanillaDetalleComponent implements OnInit {
       // Comisiones
       this.planilla.comisiones_total += Number(detalle.comisiones) || 0;
 
-      // Total ingresos (incluye salario base, horas extra, bonificaciones, comisiones y otros ingresos)
+      // Total ingresos (incluye salario devengado, horas extra, bonificaciones, comisiones y otros ingresos)
       const totalIngresosEmpleado =
-        Number(detalle.salario_base) +
+        salarioDevengado +
           Number(detalle.monto_horas_extra) +
           Number(detalle.bonificaciones) +
           Number(detalle.comisiones) +
@@ -515,16 +602,31 @@ export class PlanillaDetalleComponent implements OnInit {
 
       // ISR (Renta)
       const baseRenta = totalIngresosEmpleado - isssEmpleado - afpEmpleado;
-      let renta = 0;
-      if (baseRenta <= 472.0) {
-        renta = 0;
-      } else if (baseRenta <= 895.24) {
-        renta = (baseRenta - 472.0) * 0.1 + 17.67;
-      } else if (baseRenta <= 2038.1) {
-        renta = (baseRenta - 895.24) * 0.2 + 60.0;
-      } else {
-        renta = (baseRenta - 2038.1) * 0.3 + 288.57;
+
+      // Ajustar el cálculo de renta según tipo de planilla
+      let baseRentaAnualizada = baseRenta;
+
+      if (this.planilla.tipo_planilla !== 'mensual') {
+        // Multiplicamos por el factor de ajuste para obtener el valor mensual equivalente
+        baseRentaAnualizada = baseRenta * factorAjuste;
       }
+
+      let renta = 0;
+      if (baseRentaAnualizada <= 472.0) {
+        renta = 0;
+      } else if (baseRentaAnualizada <= 895.24) {
+        renta = (baseRentaAnualizada - 472.0) * 0.1 + 17.67;
+      } else if (baseRentaAnualizada <= 2038.1) {
+        renta = (baseRentaAnualizada - 895.24) * 0.2 + 60.0;
+      } else {
+        renta = (baseRentaAnualizada - 2038.1) * 0.3 + 288.57;
+      }
+
+      // Ajustamos el resultado según el tipo de planilla
+      if (this.planilla.tipo_planilla !== 'mensual') {
+        renta = renta / factorAjuste;
+      }
+
       this.planilla.total_isr += renta;
 
       // Total Neto (después de todas las deducciones)
@@ -562,8 +664,6 @@ export class PlanillaDetalleComponent implements OnInit {
   getTotalRegistros(): string {
     return `${this.planilla?.detalles?.total ?? 0} registros`;
   }
-
-  // En el componente planilla-detalle.component.ts
 
   withdrawPayroll(detalle: any) {
     if (this.planilla.estado !== 2) {
@@ -665,35 +765,37 @@ export class PlanillaDetalleComponent implements OnInit {
       allowOutsideClick: false,
       didOpen: () => {
         Swal.showLoading();
-      }
+      },
     });
 
-    this.apiService.download(`planillas/detalles/${detalle.id}/boleta`).subscribe({
-      next: (response) => {
-        // Crear blob y descargar
-        const blob = new Blob([response], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `boleta_${this.planilla.codigo}_${detalle.empleado.codigo}.pdf`;
-        link.click();
-        window.URL.revokeObjectURL(url);
-        
-        Swal.fire({
-          title: '¡Éxito!',
-          text: 'Boleta generada correctamente',
-          icon: 'success',
-          timer: 1500
-        });
-      },
-      error: (error) => {
-        Swal.fire({
-          title: 'Error',
-          text: 'Error al generar la boleta de pago',
-          icon: 'error'
-        });
-        this.alertService.error(error);
-      }
-    });
-}
+    this.apiService
+      .download(`planillas/detalles/${detalle.id}/boleta`)
+      .subscribe({
+        next: (response) => {
+          // Crear blob y descargar
+          const blob = new Blob([response], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `boleta_${this.planilla.codigo}_${detalle.empleado.codigo}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+
+          Swal.fire({
+            title: '¡Éxito!',
+            text: 'Boleta generada correctamente',
+            icon: 'success',
+            timer: 1500,
+          });
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error',
+            text: 'Error al generar la boleta de pago',
+            icon: 'error',
+          });
+          this.alertService.error(error);
+        },
+      });
+  }
 }
