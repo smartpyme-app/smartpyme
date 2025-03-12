@@ -94,6 +94,9 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
             $ajuste->id_producto = $idProducto;
             $ajuste->id_bodega = $idBodega;
             $ajuste->id_usuario = Auth::id();
+            $ajuste->stock_actual = $stockActual;
+            $ajuste->stock_real = $stockNuevo;
+            $ajuste->ajuste = $diferencia;
             $ajuste->id_empresa = Auth::user()->id_empresa;
             $ajuste->save();
             
