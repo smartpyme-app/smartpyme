@@ -7,6 +7,11 @@
   z-index: 9999 !important;
 }
 
+.header-chat {
+  background-color: #0073E1 !important;
+  color: white !important;
+}
+
 /* Para asegurar que el estilo se aplique correctamente */
 .offcanvas.offcanvas-bottom.custom-chat-height {
   height: 520px !important;
