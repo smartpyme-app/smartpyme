@@ -201,7 +201,7 @@ export class AjusteMasivoComponent implements OnInit {
             id_empresa: this.apiService.auth_user().id_empresa
         };
 
-        this.apiService.store('ajuste-masivo', datos).subscribe(
+        this.apiService.store('productos/ajuste-masivo', datos).subscribe(
             respuesta => {
                 this.alertService.success('Ajuste masivo realizado', 'Se han actualizado ' + respuesta.actualizados + ' productos exitosamente.');
                 this.modalRef.hide();

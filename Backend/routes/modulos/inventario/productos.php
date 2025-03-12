@@ -80,5 +80,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);
     //productos/ajuste-masivo/importar
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
+    //productos/ajuste-masivo
+    Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
 
 ?>
