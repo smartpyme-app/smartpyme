@@ -12,10 +12,10 @@
                 <button tooltip="Ajuste en tabla" class="btn btn-primary active" id="tablaBtn">
                     <i class="fa fa-table me-1"></i> Ajuste en tabla
                 </button>
-                <button tooltip="Exportar plantilla" (click)="exportarPlantilla()" [disabled]="downloading" class="btn btn-outline-primary" id="exportarBtn">
+                <button tooltip="Exportar plantilla" (click)="exportarPlantilla()" [disabled]="downloading" class="btn btn-default tcla-F6 text-dark" id="exportarBtn">
                     <i class="fa fa-download me-1"></i> Exportar plantilla
                 </button>
-                <button tooltip="Importar plantilla" (click)="openModalImportar(mImportar)" class="btn btn-outline-primary" id="importarBtn">
+                <button tooltip="Importar plantilla" (click)="openModalImportar(mImportar)" class="btn btn-default tcla-F6 text-dark" id="importarBtn">
                     <i class="fa fa-upload me-1"></i> Importar plantilla
                 </button>
             </div>
@@ -51,7 +51,7 @@
             </select>
         </div>
         <div class="col-12 col-md-4">
-            <button class="btn btn-success w-100 mt-md-4" (click)="openModalConfirmar(mConfirmar)" [disabled]="seleccionados.length === 0">
+            <button class="btn btn-primary tcla-F6 w-100 mt-md-4" (click)="openModalConfirmar(mConfirmar)" [disabled]="seleccionados.length === 0">
                 <i class="fa fa-save me-1"></i> Guardar cambios <span *ngIf="seleccionados.length > 0">({{seleccionados.length}})</span>
             </button>
         </div>
@@ -144,7 +144,7 @@
         <div class="mb-3">
             <label for="detalle" class="form-label">Descripción del ajuste:</label>
             <input type="text" class="form-control" [(ngModel)]="ajusteMasivo.detalle" 
-                placeholder="Ej: Inventario físico abril 2025" required>
+                placeholder="Ej: Ajuste masivo de inventario" required>
         </div>
         
         <div class="alert alert-info">
