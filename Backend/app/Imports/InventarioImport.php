@@ -8,7 +8,6 @@ use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Maatwebsite\Excel\Concerns\Importable;
 use Illuminate\Support\Facades\Auth;
@@ -26,12 +25,10 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
         $this->detalleAjuste = $detalleAjuste;
     }
 
-    /**
-     * Fila en la que empiezan los encabezados
-     */
+ 
     public function startRow(): int
     {
-        return 1; // Primera fila (donde están los encabezados)
+        return 1; 
     }
 
     /**
@@ -41,21 +38,21 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
      */
     public function model(array $row)
     {
-        // Registrar cada fila para depuración
+      
         Log::info('Fila procesada:', $row);
         
         try {
-            // Verificar que la fila tenga las claves esperadas
-            if (!isset($row['id']) || !isset($row['stock_nuevo']) || !isset($row['bodega'])) {
+          
+            if (!isset($row['id']) || !isset($row['id_bodega']) || !isset($row['stock_nuevo'])) {
                 // Registrar las claves disponibles
                 Log::warning('Claves faltantes. Claves disponibles:', array_keys($row));
                 return null;
             }
             
-            // Obtener los valores de la fila
+   
             $idProducto = $row['id'];
+            $idBodega = $row['id_bodega'];
             $stockNuevo = $row['stock_nuevo'];
-            $nombreBodega = $row['bodega'];
             
             // Convertir valores si es necesario
             if (!is_numeric($stockNuevo)) {
@@ -63,24 +60,13 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
                 return null;
             }
             
-            // Buscar la bodega por nombre para obtener su ID
-            $partesBodega = explode(' - ', $nombreBodega);
-            $nombreSucursal = trim($partesBodega[0]);
-            
-            $bodega = Bodega::where('nombre', 'like', $nombreSucursal . '%')->first();
-            
-            if (!$bodega) {
-                Log::warning("No se encontró la bodega: {$nombreBodega}");
-                return null;
-            }
-            
-            // Buscar el inventario
+            // Buscar el inventario directamente por ID de producto e ID de bodega
             $inventario = Inventario::where('id_producto', $idProducto)
-                ->where('id_bodega', $bodega->id)
+                ->where('id_bodega', $idBodega)
                 ->first();
             
             if (!$inventario) {
-                Log::warning("No se encontró inventario para producto {$idProducto} en bodega {$bodega->id}");
+                Log::warning("No se encontró inventario para producto {$idProducto} en bodega {$idBodega}");
                 return null;
             }
             
@@ -106,7 +92,7 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
             $ajuste->concepto = $this->detalleAjuste . " - " . $producto->nombre;
             $ajuste->estado = 'Procesado';
             $ajuste->id_producto = $idProducto;
-            $ajuste->id_bodega = $bodega->id;
+            $ajuste->id_bodega = $idBodega;
             $ajuste->id_usuario = Auth::id();
             $ajuste->id_empresa = Auth::user()->id_empresa;
             $ajuste->save();
@@ -115,10 +101,8 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
             $inventario->stock = $stockNuevo;
             $inventario->save();
             
-            // Registrar en el kardex
             $inventario->kardex($ajuste, $diferencia);
             
-            // Incrementar contador
             $this->actualizados++;
             
             Log::info("Producto {$producto->nombre} actualizado. Diferencia: {$diferencia}");
@@ -128,18 +112,6 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
         
         return null;
     }
-
-    /**
-     * @return array
-     */
-    // public function rules(): array
-    // {
-    //     return [
-    //         'id' => 'required|exists:productos,id',
-    //         'stock_nuevo' => 'required|numeric|min:0',
-    //         'bodega' => 'required|string',
-    //     ];
-    // }
 
     /**
      * @return int

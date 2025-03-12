@@ -10,9 +10,12 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle
+class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle, WithColumnFormatting
 {
     protected $filtros;
 
@@ -23,7 +26,7 @@ class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping,
 
     public function query()
     {
-        // Consulta base de productos
+  
         $query = Producto::query()
             ->with(['inventarios', 'categoria'])
             ->when($this->filtros['id_categoria'] ?? null, function ($q, $id_categoria) {
@@ -40,80 +43,41 @@ class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping,
 
         return $query;
     }
+    
     public function headings(): array
     {
         return [
-            'ID',
+            '#ID',        
+            '#ID_BODEGA', 
             'Código',
             'Producto',
             'Categoría',
             'Bodega',
             'Stock Actual',
-            'Stock Nuevo', // Esta columna es la que el usuario debe modificar
+            'Stock Nuevo', 
         ];
-    }
-
-    public function mapping($producto): array
-    {
-        // Obtener el inventario según el filtro de bodega
-        $inventario = null;
-        if (!empty($this->filtros['id_bodega'])) {
-            $inventario = $producto->inventarios->first(function ($inv) {
-                return $inv->id_bodega == $this->filtros['id_bodega'];
-            });
-        } else {
-            // Si no hay filtro de bodega, tomar el primer inventario
-            $inventario = $producto->inventarios->first();
-        }
-
-        // Stock actual
-        $stockActual = $inventario ? $inventario->stock : 0;
-
-        return [
-            'id' => $producto->id,
-            'codigo' => $producto->codigo ?? 'N/A',
-            'producto' => $producto->nombre,
-            'categoria' => $producto->categoria ? $producto->categoria->nombre : 'N/A',
-            'bodega' => $inventario ? $inventario->nombre_bodega : 'N/A',
-            'stock_actual' => $stockActual,
-            'stock_nuevo' => $stockActual, // Mismo valor inicial que el stock actual
-        ];
-    }
-
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            // Estilo para la fila de encabezados
-            1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'E2EFDA']]],
-
-            // Destacar la columna de Stock Nuevo
-            'G' => ['fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FCE4D6']]],
-        ];
-    }
-
-    public function title(): string
-    {
-        return 'Ajuste de Inventario';
     }
 
     public function map($producto): array
     {
-        // Obtener el inventario según el filtro de bodega
+
         $inventario = null;
         if (!empty($this->filtros['id_bodega'])) {
             $inventario = $producto->inventarios->first(function ($inv) {
                 return $inv->id_bodega == $this->filtros['id_bodega'];
             });
         } else {
-            // Si no hay filtro de bodega, tomar el primer inventario
+ 
             $inventario = $producto->inventarios->first();
         }
 
         // Stock actual
         $stockActual = $inventario ? $inventario->stock : 0;
+        $idBodega = $inventario ? $inventario->id_bodega : '';
 
         return [
-            $producto->id,
+            $producto->id,        
+            $idBodega,           
             $producto->codigo ?? 'N/A',
             $producto->nombre,
             $producto->categoria ? $producto->categoria->nombre : 'N/A',
@@ -121,5 +85,37 @@ class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping,
             $stockActual,
             $stockActual, // Mismo valor inicial que el stock actual
         ];
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+
+        $sheet->getColumnDimension('A')->setVisible(false);
+        $sheet->getColumnDimension('B')->setVisible(false);
+        
+        return [
+    
+            1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E2EFDA']]],
+
+        
+            'H' => ['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FCE4D6']]],
+            
+   
+            'A1' => ['font' => ['color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']]],
+            'B1' => ['font' => ['color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']]],
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'G' => '#,##0.00',
+            'H' => '#,##0.00',
+        ];
+    }
+
+    public function title(): string
+    {
+        return 'Ajuste de Inventario';
     }
 }
