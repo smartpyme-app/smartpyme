@@ -36,7 +36,7 @@ export class AjusteMasivoComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.initFilters();
+       // this.initFilters();
         this.loadAll();
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
@@ -61,11 +61,17 @@ export class AjusteMasivoComponent implements OnInit {
     }
 
     public loadAll() {
-        this.initFilters();
+        const filtrosGuardados = localStorage.getItem('ajusteMasivoFiltros');
+        if (filtrosGuardados) {
+            this.filtros = JSON.parse(filtrosGuardados);
+        } else {
+            this.initFilters();
+        }
         this.filtrarProductos();
     }
 
     public filtrarProductos() {
+        localStorage.setItem('ajusteMasivoFiltros', JSON.stringify(this.filtros));
         this.loading = true;
         this.seleccionados = [];
         this.ajusteMasivo.productos = [];
