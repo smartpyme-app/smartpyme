@@ -33,11 +33,11 @@ class CreateIaMetricasSucursalesV3Table extends Migration
             $table->decimal('cxp_totales', 15, 2)->default(0);
             $table->decimal('cxp_vencidas', 15, 2)->default(0);
             $table->decimal('cxp_vencimiento_30_dias', 15, 2)->default(0);
-            $table->decimal('ventas_vs_mes_anterior', 6, 2)->default(0);
-            $table->decimal('egresos_vs_mes_anterior', 6, 2)->default(0);
-            $table->decimal('flujo_efectivo_vs_mes_anterior', 6, 2)->default(0);
-            $table->decimal('rentabilidad_vs_mes_anterior', 6, 2)->default(0);
-            $table->double('ventas_vs_presupuesto', 6, 2)->default(0);
+            $table->decimal('ventas_vs_mes_anterior', 10, 2)->default(0);
+            $table->decimal('egresos_vs_mes_anterior', 10, 2)->default(0);
+            $table->decimal('flujo_efectivo_vs_mes_anterior', 10, 2)->default(0);
+            $table->decimal('rentabilidad_vs_mes_anterior', 10, 2)->default(0);
+            $table->double('ventas_vs_presupuesto', 10, 2)->default(0);
             $table->timestamps();
 
             $table->unique(['id_empresa', 'id_sucursal', 'fecha'], 'unique_empresa_sucursal_fecha');
