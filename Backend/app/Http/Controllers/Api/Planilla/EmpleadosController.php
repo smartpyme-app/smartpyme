@@ -395,7 +395,7 @@ class EmpleadosController extends Controller
             $documento = DocumentoEmpleado::findOrFail($id);
 
             // Cambiamos la ruta para que apunte a public
-            $rutaCompleta = public_path('documents/' . $documento->ruta_archivo);
+            $rutaCompleta = storage_path('app/documents/' . $documento->ruta_archivo);
 
             Log::info('Ruta del documento: ' . $rutaCompleta);
 

@@ -139,10 +139,45 @@ export class AdministrarEmpleadoComponent implements OnInit {
   }
 
   public getTipoDocumento(tipo: number): string {
-    const documento = this.tiposDocumento.find((t : any) => t.id === tipo);
-    return documento ? documento.nombre : 'Desconocido';
-  }
+    const TIPO_DOCUMENTO_RENUNCIA = 1;
+    const TIPO_DOCUMENTO_DESPIDO = 2;
+    const TIPO_DOCUMENTO_TERMINACION = 3;
+    const TIPO_DOCUMENTO_ALTA = 4;
+    const TIPO_DOCUMENTO_DUI = 5;
+    const TIPO_DOCUMENTO_NIT = 6;
+    const TIPO_DOCUMENTO_ISSS = 7;
+    const TIPO_DOCUMENTO_AFP = 8;
+    const TIPO_DOCUMENTO_TITULO = 9;
+    const TIPO_DOCUMENTO_CERTIFICACIONES = 10;
+    const TIPO_DOCUMENTO_OTRO = 11;
 
+    switch (tipo) {
+      case TIPO_DOCUMENTO_RENUNCIA:
+        return 'Renuncia';
+      case TIPO_DOCUMENTO_DESPIDO:
+        return 'Despido';
+      case TIPO_DOCUMENTO_TERMINACION:
+        return 'Terminación de contrato';
+      case TIPO_DOCUMENTO_ALTA:
+        return 'Alta';
+      case TIPO_DOCUMENTO_DUI:
+        return 'DUI';
+      case TIPO_DOCUMENTO_NIT:
+        return 'NIT';
+      case TIPO_DOCUMENTO_ISSS:
+        return 'ISSS';
+      case TIPO_DOCUMENTO_AFP:
+        return 'AFP';
+      case TIPO_DOCUMENTO_TITULO:
+        return 'Título';
+      case TIPO_DOCUMENTO_CERTIFICACIONES:
+        return 'Certificaciones';
+      case TIPO_DOCUMENTO_OTRO:
+        return 'Otro';
+      default:
+        return 'Desconocido';
+    }
+  }
   public openModalDocumento(template: TemplateRef<any>) {
     this.nuevoDocumento = {
       tipo_documento: '',

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentHelper
 {
-    public static function saveEmployeeDocument($file, $empresaId, $empleadoId, $disk = 'documentos')
+    public static function saveEmployeeDocument($file, $empresaId, $empleadoId, $disk = 'documents')
     {
         try {
             $rutaCarpeta = 'empresa-' . $empresaId . '/empleado-' . $empleadoId;
