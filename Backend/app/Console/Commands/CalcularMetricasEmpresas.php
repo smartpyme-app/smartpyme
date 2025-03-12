@@ -125,7 +125,9 @@ class CalcularMetricasEmpresas extends Command
                         'costo_venta_sin_iva' => $costoVenta,
                         'flujo_efectivo_sin_iva' => $ventas['sin_iva'] - $egresos['sin_iva'],
                         'flujo_efectivo_con_iva' => $ventas['con_iva'] - $egresos['con_iva'],
-                        'rentabilidad_monto' => $ventas['sin_iva'] - $egresos['sin_iva'],
+                        'rentabilidad_monto' => $rentabilidad = $ventas['sin_iva'] - $egresos['sin_iva'],
+
+                        //aqui debe de ir la nueva formula de rentabilidad y  hacer porcentuaje 
                         'rentabilidad_porcentaje' => $ventas['sin_iva'] > 0
                             ? (($ventas['sin_iva'] - $egresos['sin_iva']) / $ventas['sin_iva']) * 100
                             : 0,
@@ -178,11 +180,12 @@ class CalcularMetricasEmpresas extends Command
 
 
         // 2. Obtener abonos a ventas
-        $resultadosAbonos = DB::table('abonos_ventas')
-            ->where('id_empresa', $idEmpresa)
-            ->where('estado', '!=', 'Anulado')
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->sum('total');
+        //El abono si importa en flujo de efectivo o impuesto
+        // $resultadosAbonos = DB::table('abonos_ventas')
+        //     ->where('id_empresa', $idEmpresa)
+        //     ->where('estado', '!=', 'Anulado')
+        //     ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+        //     ->sum('total');
 
         // 3. Obtener devoluciones de ventas
         $resultadosDevoluciones = DB::table('devoluciones_venta')
@@ -196,8 +199,14 @@ class CalcularMetricasEmpresas extends Command
             ->first();
 
         // 4. Calcular totales
-        $sinIva = ($resultadosVentas->sin_iva ?? 0) + $resultadosAbonos - ($resultadosDevoluciones->sin_iva ?? 0);
-        $conIva = ($resultadosVentas->con_iva ?? 0) + $resultadosAbonos - ($resultadosDevoluciones->con_iva ?? 0);
+        $sinIva = ($resultadosVentas->sin_iva ?? 0) 
+        // + $resultadosAbonos
+         -
+         ($resultadosDevoluciones->sin_iva ?? 0);
+        $conIva = ($resultadosVentas->con_iva ?? 0) 
+        // + $resultadosAbonos 
+        -
+         ($resultadosDevoluciones->con_iva ?? 0);
 
         return [
             'sin_iva' => $sinIva,
@@ -230,15 +239,16 @@ class CalcularMetricasEmpresas extends Command
             ->first();
 
         // 3. Obtener abonos a compras
-        $abonosCompras = DB::table('abonos_compras')
-            ->where('id_empresa', $idEmpresa)
-            ->where('estado', '!=', 'Anulado')
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->sum('total');
+        // $abonosCompras = DB::table('abonos_compras')
+        //     ->where('id_empresa', $idEmpresa)
+        //     ->where('estado', '!=', 'Anulado')
+        //     ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+        //     ->sum('total');
 
         // 4. Obtener devoluciones de compra
         $devolucionesCompra = DB::table('devoluciones_compra')
             ->where('id_empresa', $idEmpresa)
+            //quitar gastos anulados
             ->where('enable', 1)
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->select(
@@ -246,13 +256,14 @@ class CalcularMetricasEmpresas extends Command
                 DB::raw('SUM(total) as con_iva')
             )
             ->first();
-
         // 5. Calcular totales
-        $sinIva = ($compras->sin_iva ?? 0) + ($egresosDirectos->sin_iva ?? 0) +
-            $abonosCompras - ($devolucionesCompra->sin_iva ?? 0);
+        $sinIva = ($compras->sin_iva ?? 0) + ($egresosDirectos->sin_iva ?? 0)
+        //  +  $abonosCompras 
+            - ($devolucionesCompra->sin_iva ?? 0);
 
-        $conIva = ($compras->con_iva ?? 0) + ($egresosDirectos->con_iva ?? 0) +
-            $abonosCompras - ($devolucionesCompra->con_iva ?? 0);
+        $conIva = ($compras->con_iva ?? 0) + ($egresosDirectos->con_iva ?? 0) 
+        // + $abonosCompras 
+            - ($devolucionesCompra->con_iva ?? 0);
 
         return [
             'sin_iva' => $sinIva,
@@ -265,14 +276,16 @@ class CalcularMetricasEmpresas extends Command
      */
     private function calcularCostoVenta($idEmpresa, $fechaInicio, $fechaFin)
     {
+        //en la tabla de costos hay costos con iva y sin iva, todo lo que se presenta es costo sin iva
         $resultado = DB::table('ventas')
             ->join('detalles_venta', 'ventas.id', '=', 'detalles_venta.id_venta')
             ->where('ventas.id_empresa', $idEmpresa)
-            ->where('ventas.estado', '!=', 'Anulada')
+            ->where('ventas.estado', '!=', 'Anulada') //aqui debo de quitar devoluciones
             ->whereBetween('ventas.fecha', [$fechaInicio, $fechaFin])
             ->sum('detalles_venta.total_costo');
 
         return $resultado ?? 0;
+
     }
 
     private function calcularCuentasPorCobrar($idEmpresa, $fechaCorte)
@@ -284,7 +297,7 @@ class CalcularMetricasEmpresas extends Command
         $totalCxC = DB::table('ventas')
             ->where('id_empresa', $idEmpresa)
             ->where('estado', '=', 'Pendiente')
-            ->where('fecha', '<=', $fechaCorte)
+            // ->where('fecha', '=', $fechaCorte) //Aqui no importa el dia de corte
             ->sum('total');
 
         // Vencidas
@@ -314,10 +327,12 @@ class CalcularMetricasEmpresas extends Command
         $treintaDiasDespues = $fechaActual->copy()->addDays(30)->format('Y-m-d');
 
         // Totales CxP de compras
+        // Aqui debo de sumar las tabla de gastos 
+        // Al final hago la sumatoria entre los dos
         $totalCxP = DB::table('compras')
             ->where('id_empresa', $idEmpresa)
             ->where('estado', '=', 'Pendiente')
-            ->where('fecha', '<=', $fechaCorte)
+            // ->where('fecha', '<=', $fechaCorte) //aqui no importa el dia de corte
             ->sum('total');
 
         // Vencidas
@@ -349,10 +364,35 @@ class CalcularMetricasEmpresas extends Command
         return [
             'ventas_sin_iva' => $ventas['sin_iva'],
             'egresos_sin_iva' => $egresos['sin_iva'],
-            'flujo_efectivo_sin_iva' => $ventas['sin_iva'] - $egresos['sin_iva'],
+            'flujo_efectivo_sin_iva' => $ventas['sin_iva'] - $egresos['sin_iva'],  //ahora se clculara en flujo de efectivo
             'rentabilidad_monto' => $ventas['sin_iva'] - $egresos['sin_iva']
         ];
     }
+
+    private function calcularFlujoEfectivoConIva($idEmpresa, $fechaInicio, $fechaFin)
+    {
+        //NOTA: Ahorita solo se cuadrara efectivo con iva
+        //que debo de sumar todas las ventas que se pagaron  este mes y toos los abonos que se recibieron 
+        //y a esto se le resta los egresos del contado del mes y todos los abonos que se he hecho a compras y gastos aqui si se separa 
+        //Flujo efectivo con iva = Total ventas con iva marcadas pagadas en este mes - egresos con iva + 
+        //Flujo efectivo sin iva = Total ventas sin iva marcadas pagadas en este mes- egresos sin iva
+    }
+
+    private function calcularRentabilidadMonto($idEmpresa, $fechaInicio, $fechaFin)
+    {
+        // $ventas = $this->calcularVentas($idEmpresa, $fechaInicio, $fechaFin);
+        // $egresos = $this->calcularEgresos($idEmpresa, $fechaInicio, $fechaFin);
+        // $costoVenta = $this->calcularCostoVenta($idEmpresa, $fechaInicio, $fechaFin);
+
+        //NOTA: rentabilidad con iva y sin iva
+
+        //la sumatoria de todos los costos es = costo de ventas
+        // rentabilidad sin iva = ventas sin iva -  gastos sin iva - costo de ventas
+        // rentabilidad con iva = ventas con iva -  gastos con iva - costo de ventas
+    }
+
+
+    
 
     private function calcularComparativas($ventasActual, $egresosActual, $flujoActual, $mesAnterior)
     {
