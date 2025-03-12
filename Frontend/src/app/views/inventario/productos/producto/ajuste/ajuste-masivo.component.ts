@@ -109,6 +109,14 @@ export class AjusteMasivoComponent implements OnInit {
         });
     }
 
+    // public toggleSeleccion(producto: any, event?: Event) {
+    //     if (event) {
+    //         event.stopPropagation();
+    //     }
+    //     producto.seleccionado = !producto.seleccionado;
+        
+    //     this.actualizarSeleccionados();
+    // }
     public toggleSeleccion(producto: any) {
         producto.seleccionado = !producto.seleccionado;
         this.actualizarSeleccionados();

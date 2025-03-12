@@ -90,9 +90,11 @@
                         </td>
                     </tr>
                     <tr *ngFor="let producto of productos?.data" [ngClass]="{'table-light': producto.seleccionado}">
-                        <td>
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" [(ngModel)]="producto.seleccionado" (change)="toggleSeleccion(producto)">
+                        <td (click)="toggleSeleccion(producto)" style="cursor: pointer">
+                            <div class="form-check" (click)="$event.stopPropagation()">
+                                <input type="checkbox" class="form-check-input" 
+                                       [(ngModel)]="producto.seleccionado" 
+                                       (ngModelChange)="actualizarSeleccionados()">
                             </div>
                         </td>
                         <td>
