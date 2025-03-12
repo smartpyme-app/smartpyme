@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Exports;
+
+use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithTitle;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle
+{
+    protected $filtros;
+
+    public function __construct(array $filtros)
+    {
+        $this->filtros = $filtros;
+    }
+
+    public function query()
+    {
+        // Consulta base de productos
+        $query = Producto::query()
+            ->with(['inventarios', 'categoria'])
+            ->when($this->filtros['id_categoria'] ?? null, function ($q, $id_categoria) {
+                return $q->where('id_categoria', $id_categoria);
+            })
+            ->when($this->filtros['buscador'] ?? null, function ($q, $buscador) {
+                return $q->where(function ($q) use ($buscador) {
+                    $q->where('nombre', 'like', "%{$buscador}%")
+                        ->orWhere('codigo', 'like', "%{$buscador}%")
+                        ->orWhere('barcode', 'like', "%{$buscador}%");
+                });
+            })
+            ->orderBy('nombre', 'asc');
+
+        return $query;
+    }
+    public function headings(): array
+    {
+        return [
+            'ID',
+            'Código',
+            'Producto',
+            'Categoría',
+            'Bodega',
+            'Stock Actual',
+            'Stock Nuevo', // Esta columna es la que el usuario debe modificar
+        ];
+    }
+
+    public function mapping($producto): array
+    {
+        // Obtener el inventario según el filtro de bodega
+        $inventario = null;
+        if (!empty($this->filtros['id_bodega'])) {
+            $inventario = $producto->inventarios->first(function ($inv) {
+                return $inv->id_bodega == $this->filtros['id_bodega'];
+            });
+        } else {
+            // Si no hay filtro de bodega, tomar el primer inventario
+            $inventario = $producto->inventarios->first();
+        }
+
+        // Stock actual
+        $stockActual = $inventario ? $inventario->stock : 0;
+
+        return [
+            'id' => $producto->id,
+            'codigo' => $producto->codigo ?? 'N/A',
+            'producto' => $producto->nombre,
+            'categoria' => $producto->categoria ? $producto->categoria->nombre : 'N/A',
+            'bodega' => $inventario ? $inventario->nombre_bodega : 'N/A',
+            'stock_actual' => $stockActual,
+            'stock_nuevo' => $stockActual, // Mismo valor inicial que el stock actual
+        ];
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            // Estilo para la fila de encabezados
+            1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'E2EFDA']]],
+
+            // Destacar la columna de Stock Nuevo
+            'G' => ['fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FCE4D6']]],
+        ];
+    }
+
+    public function title(): string
+    {
+        return 'Ajuste de Inventario';
+    }
+
+    public function map($producto): array
+    {
+        // Obtener el inventario según el filtro de bodega
+        $inventario = null;
+        if (!empty($this->filtros['id_bodega'])) {
+            $inventario = $producto->inventarios->first(function ($inv) {
+                return $inv->id_bodega == $this->filtros['id_bodega'];
+            });
+        } else {
+            // Si no hay filtro de bodega, tomar el primer inventario
+            $inventario = $producto->inventarios->first();
+        }
+
+        // Stock actual
+        $stockActual = $inventario ? $inventario->stock : 0;
+
+        return [
+            $producto->id,
+            $producto->codigo ?? 'N/A',
+            $producto->nombre,
+            $producto->categoria ? $producto->categoria->nombre : 'N/A',
+            $inventario ? $inventario->nombre_bodega : 'N/A',
+            $stockActual,
+            $stockActual, // Mismo valor inicial que el stock actual
+        ];
+    }
+}
