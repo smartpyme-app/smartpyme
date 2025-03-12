@@ -200,4 +200,11 @@ export class ApiService {
     private handleError(error: HttpErrorResponse) {
       return throwError(error);
     };
+
+    isSupervisorLimitado(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Supervisor Limitado')
+            return true;
+        return false;
+    }
 }
