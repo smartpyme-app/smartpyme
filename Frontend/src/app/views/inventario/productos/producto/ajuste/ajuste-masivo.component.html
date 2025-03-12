@@ -1,5 +1,5 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Ajuste Masivo de Inventario</h2>
+<section class="d-flex flex-column flex-md-row justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading mb-2 mb-md-0">Ajuste Masivo de Inventario</h2>
     <button routerLink="/productos" tooltip="Volver a productos" class="btn btn-light text-danger">
         <i class="fa fa-arrow-left"></i> Regresar
     </button>
@@ -7,8 +7,8 @@
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="row mb-3">
-        <div class="col-md-8">
-            <div class="d-flex gap-2">
+        <div class="col-12 col-md-8 mb-3 mb-md-0">
+            <div class="d-flex flex-wrap gap-2">
                 <button tooltip="Ajuste en tabla" class="btn btn-primary active" id="tablaBtn">
                     <i class="fa fa-table me-1"></i> Ajuste en tabla
                 </button>
@@ -20,7 +20,7 @@
                 </button>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
             <div class="input-group">
                 <div class="input-group-text bg-white border-end-0">
                     <i class="fa fa-search text-muted"></i>
@@ -32,7 +32,7 @@
     </div>
 
     <div class="row mb-3">
-        <div class="col-md-4">
+        <div class="col-12 col-md-4 mb-3 mb-md-0">
             <label for="id_bodega" class="mb-1">Bodega:</label>
             <select name="id_bodega" [(ngModel)]="filtros.id_bodega" (change)="filtrarProductos()" class="form-select">
                 <option value="">Seleccione una bodega</option>
@@ -41,7 +41,7 @@
                 </option>
             </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-4 mb-3 mb-md-0">
             <label for="id_categoria" class="mb-1">Categoría:</label>
             <select name="id_categoria" [(ngModel)]="filtros.id_categoria" (change)="filtrarProductos()" class="form-select">
                 <option value="">Todas las categorías</option>
@@ -50,8 +50,8 @@
                 </option>
             </select>
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-success w-100" (click)="openModalConfirmar(mConfirmar)" [disabled]="seleccionados.length === 0">
+        <div class="col-12 col-md-4">
+            <button class="btn btn-success w-100 mt-md-4" (click)="openModalConfirmar(mConfirmar)" [disabled]="seleccionados.length === 0">
                 <i class="fa fa-save me-1"></i> Guardar cambios <span *ngIf="seleccionados.length > 0">({{seleccionados.length}})</span>
             </button>
         </div>
