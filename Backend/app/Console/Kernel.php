@@ -26,6 +26,11 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('generate:notificaciones')->daily();
+        // $schedule->command('reporte:ventas-por-vendedor')
+        //      ->dailyAt('23:59');
+        $schedule->command('reportes:enviar')
+             ->everyFiveMinutes()
+             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
         $schedule->call(function () {
                 \Log::info('Working');

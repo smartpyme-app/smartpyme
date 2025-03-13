@@ -201,6 +201,55 @@
             </div>
         </div>
     </div>
+    <div class="row mt-4" *ngIf="cliente.tipo == 'Empresa'">
+        <!-- <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Contactos adicionales</h6>
+            <button type="button" class="btn btn-default tcla-F1" tooltip="Agregar contacto (F1)" (click)="openModal(mcontacto, contacto)">
+                <i class="fa fa-plus"></i> Agregar contacto
+            </button>
+        </div> -->
+        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Contactos adicionales</h6>
+            <button type="button" class="btn btn-default tcla-F1" tooltip="Agregar contacto (F1)" (click)="agregarContacto(mcontacto)">
+                <i class="fa fa-plus"></i> Agregar contacto
+            </button>
+        </div>
+        
+        <div class="col-12">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover" *ngIf="cliente.contactos?.length > 0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Teléfono</th>
+                            <th>Cargo</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let contacto of cliente.contactos">
+                            <td>{{contacto.nombre}} {{contacto.apellido}}</td>
+                            <td>{{contacto.correo}}</td>
+                            <td>{{contacto.telefono}}</td>
+                            <td>{{contacto.cargo}}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-light btn-sm me-2" tooltip="Editar contacto (F2)" (click)="openModal(mcontacto,contacto)">
+                                    <i class="fa fa-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-light btn-sm" tooltip="Eliminar contacto (F4)" (click)="eliminarContacto(contacto)">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-center py-3" *ngIf="!cliente.contactos?.length">
+                    <span class="badge bg-primary">No hay contactos registrados</span>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row" *ngIf="cliente.tipo == 'Extranjero'">
             <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
             <div class="form-group col-lg-3">
@@ -271,16 +320,67 @@
     </div>
 </form>
 
-<!-- <div class="row">
-    <h6 class="col-12 pb-2 mb-2">Otros datos</h6>
-    <div class="form-group col-6 col-lg-3">
-        <label for="pais">Fecha de registro:</label>
-        <p>{{ cliente.created_at | date:'d/M/y hh:mm:ss a' }}</p>
-    </div>
-    <div class="form-group col-6 col-lg-3">
-        <label for="pais">Última actualización:</label>
-        <p>{{ cliente.updated_at  | date:'d/M/y hh:mm:ss a' }}</p>
-    </div>
-</div>
 
- -->
+
+  <ng-template #mcontacto>
+    <div class="modal-header justify-content-between">
+        <h4 class="modal-title text-center">{{contacto.id ? 'Editar' : 'Nuevo'}} contacto</h4>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide()">Cancelar <i class="fa fa-close"></i></button>
+      </div>
+    <div class="modal-body">
+      <form (ngSubmit)="submit($event)">
+      <div class="row">
+          
+          <div class="form-group col-md-6">
+              <label for="nombre">Nombre:</label>
+              <input type="text" class="form-control" name="nombre" [(ngModel)]="contacto.nombre">
+          </div>
+          <div class="form-group col-md-6">
+              <label for="apellido">Apellido:</label>
+              <input type="text" class="form-control" name="apellido" [(ngModel)]="contacto.apellido">
+          </div>
+          <div class="form-group col-md-6">
+              <label for="correo">Correo:</label>
+              <input type="email" class="form-control" name="correo" [(ngModel)]="contacto.correo">
+          </div>
+          <div class="form-group col-6 col-md-6">
+              <label for="sexo">Sexo:</label>
+              <ng-select [(ngModel)]="contacto.sexo" placeholder="Escribe aqui" class="form-control form-select p-0" name="contacto.sexo">
+                  <ng-option value="Hombre">Hombre</ng-option>
+                  <ng-option value="Mujer">Mujer</ng-option>
+                  <ng-option value="Otro">Otro</ng-option>
+              </ng-select>
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="telefono">Teléfono:</label>
+              <input type="text" class="form-control" name="telefono" [(ngModel)]="contacto.telefono">
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="cargo">Cargo:</label>
+              <input type="text" class="form-control" name="cargo" [(ngModel)]="contacto.cargo">
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="red_social">Red social:</label>
+              <input type="text" class="form-control" name="red_social" [(ngModel)]="contacto.red_social">
+          </div>
+          <div class="form-group col-6 col-md-4">
+              <label for="fecha_nacimiento">Fecha nacimiento:</label>
+              <input type="date" class="form-control" name="fecha_nacimiento" [(ngModel)]="contacto.fecha_nacimiento">
+          </div>
+          <div class="form-group col-12">
+              <label for="nota">Nota:</label>
+              <textarea class="form-control" name="nota" [(ngModel)]="contacto.nota" cols="30" rows="2"></textarea>
+          </div>
+                      
+      </div>
+      <div class="row">          
+        <div class="form-group col-md-12 mt-3">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+      </form>
+    </div>
+  </ng-template>

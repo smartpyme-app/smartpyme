@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
+use App\Exports\RentabilidadSucursalExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ComprasController extends Controller
 {
@@ -555,6 +557,20 @@ class ComprasController extends Controller
                         ->get();
 
         return Response()->json($compras, 200);
+    }
+
+
+    public function exportRentabilidad(Request $request)
+    {
+
+        //enviar id de la empresa en el request
+
+        $user = JWTAuth::parseToken()->authenticate();
+        $request->request->add(['id_empresa' => $user->id_empresa]);
+        $ventas = new RentabilidadSucursalExport();
+        $ventas->filter($request);
+
+        return Excel::download($ventas, 'corte.xlsx');
     }
 
 
