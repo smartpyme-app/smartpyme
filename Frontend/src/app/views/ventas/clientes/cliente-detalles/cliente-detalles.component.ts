@@ -14,6 +14,7 @@ export class ClienteDetallesComponent implements OnInit {
 
     public cliente:any = {};
     public loading = false;
+    public contacto:any = {};
     modalRef?: BsModalRef;
 
 	constructor( 
@@ -40,5 +41,13 @@ export class ClienteDetallesComponent implements OnInit {
             }
         });
     }
+
+    openModal(template: TemplateRef<any>, contacto: any) {
+        this.contacto = contacto;
+        this.modalRef = this.modalService.show(template, {
+          class: 'modal-lg',
+          backdrop: 'static',
+        });
+      }
 
 }

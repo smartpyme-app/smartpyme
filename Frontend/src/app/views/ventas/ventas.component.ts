@@ -442,6 +442,23 @@ export class VentasComponent implements OnInit {
         );
     }
 
+    public descargarDetallesDiario(){
+      this.downloadingDetalles = true; this.saving = true;
+      this.apiService.export('ventas-detalles/exportar/diario', null).subscribe((data:Blob) => {
+          const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ventas-detalles-diario.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.downloadingDetalles = false; this.saving = false;
+        }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+      );
+  }
+
     public imprimir(venta:any){
         window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token());
     }

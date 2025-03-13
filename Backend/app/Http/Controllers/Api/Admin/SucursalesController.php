@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
@@ -89,6 +90,16 @@ class SucursalesController extends Controller
                 'id_sucursal' => $sucursal->id,
                 'id_empresa' => $sucursal->id_empresa
             ]);
+
+            // Configurar inventarios para los productos
+            $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
+            foreach ($productos as $producto) {
+                $inventario = new Inventario;
+                $inventario->id_bodega    = $bodega->id;
+                $inventario->stock          = 0;
+                $inventario->id_producto    = $producto->id;
+                $inventario->save();
+            }
         }
 
         return Response()->json($sucursal, 200);
