@@ -3,9 +3,8 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false, 
-  // API_URL: 'http://localhost:8000',
-  // API_URL: 'https://api.smartpyme.site',
+  production: false,
+  // API_URL: 'http://localhost:8001',
   API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
 };
