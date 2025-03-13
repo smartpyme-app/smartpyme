@@ -165,6 +165,8 @@ class ProcesarCargosAutomaticos extends Command
             ]);
 
             Log::channel('n1co')->info("Cargo exitoso para suscripción {$suscripcion->id}");
+
+            $ordenPago->generarVenta();
             
             // Notificar al usuario
             // $suscripcion->usuario->notify(new PagoExitosoNotification($ordenPago));
