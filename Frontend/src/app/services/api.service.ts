@@ -153,28 +153,28 @@ export class ApiService {
 
     isAdmin(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
 
     canCreate(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
 
     canEdit(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
 
     canDelete(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
@@ -200,4 +200,11 @@ export class ApiService {
     private handleError(error: HttpErrorResponse) {
       return throwError(error);
     };
+
+    isSupervisorLimitado(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Supervisor Limitado')
+            return true;
+        return false;
+    }
 }
