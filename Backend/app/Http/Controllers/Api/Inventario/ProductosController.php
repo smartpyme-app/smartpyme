@@ -447,7 +447,7 @@ class ProductosController extends Controller
 
     public function ajusteMasivo(Request $request)
     {
-        return dd($request->all());
+        //return dd($request->all());
         // Validar request
         $request->validate([
             'detalle' => 'required|string|max:255',

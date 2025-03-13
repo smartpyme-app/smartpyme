@@ -23,7 +23,6 @@ export class AjusteMasivoComponent implements OnInit {
         productos: []
     };
     
-    // Mapa para acceso rápido a productos por ID
     public productosMap: Map<number, any> = new Map();
 
     modalRef!: BsModalRef;
@@ -56,7 +55,7 @@ export class AjusteMasivoComponent implements OnInit {
             buscador: '',
             orden: 'nombre',
             direccion: 'asc',
-            paginate: 100  // Mostrar más productos por página para ajuste masivo
+            paginate: 100 
         };
     }
 
@@ -115,14 +114,6 @@ export class AjusteMasivoComponent implements OnInit {
         });
     }
 
-    // public toggleSeleccion(producto: any, event?: Event) {
-    //     if (event) {
-    //         event.stopPropagation();
-    //     }
-    //     producto.seleccionado = !producto.seleccionado;
-        
-    //     this.actualizarSeleccionados();
-    // }
     public toggleSeleccion(producto: any) {
         producto.seleccionado = !producto.seleccionado;
         this.actualizarSeleccionados();
@@ -147,33 +138,29 @@ export class AjusteMasivoComponent implements OnInit {
         return producto.diferencia;
     }
 
-    // Método auxiliar para obtener el nombre del producto por ID (para el modal de confirmación)
     public getNombreProducto(idProducto: number): string {
         const producto = this.productosMap.get(idProducto);
         return producto ? producto.nombre : 'Producto no encontrado';
     }
 
-    // Método para obtener la clase CSS según la diferencia
     public getDiferenciaClass(diferencia: number): string {
         return diferencia > 0 ? 'text-success' : (diferencia < 0 ? 'text-danger' : '');
     }
 
     public openModalConfirmar(template: TemplateRef<any>) {
-        // Verificar que haya productos seleccionados
         this.actualizarSeleccionados();
         if (this.seleccionados.length === 0) {
             this.alertService.warning('Debe seleccionar al menos un producto para realizar el ajuste masivo.','Sin productos seleccionados');
             return;
         }
 
-        // Verificar que al menos un producto tenga cambios
         const conCambios = this.seleccionados.some(p => p.diferencia !== 0);
         if (!conCambios) {
             this.alertService.warning('Ninguno de los productos seleccionados tiene cambios de stock.','Sin cambios');
             return;
         }
 
-        // Preparar los datos para el ajuste
+
         this.ajusteMasivo.productos = this.seleccionados.filter(p => p.diferencia !== 0).map(p => ({
             id_producto: p.id,
             id_bodega: p.inventario_actual?.id_bodega,
@@ -182,7 +169,7 @@ export class AjusteMasivoComponent implements OnInit {
             diferencia: p.diferencia
         }));
 
-        // Abrir modal de confirmación
+
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
@@ -218,7 +205,6 @@ export class AjusteMasivoComponent implements OnInit {
     public exportarPlantilla() {
         this.downloading = true;
         
-        // Agregar ID de bodega a los filtros si existe
         const filtrosExport = {...this.filtros, formato: 'plantilla'};
         
         this.apiService.export('productos/exportar-plantilla', filtrosExport).subscribe(
