@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
+use App\Observers\InventarioObserver;
+use App\Observers\ProductoObserver;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Inventario::observe(InventarioObserver::class);
+        Producto::observe(ProductoObserver::class);
         Schema::defaultStringLength(191);
         \Carbon\Carbon::setLocale(config('app.locale'));
         setlocale(LC_ALL,'es_ES.UTF8');

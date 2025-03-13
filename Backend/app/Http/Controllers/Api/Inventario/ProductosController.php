@@ -24,6 +24,8 @@ use App\Imports\InventarioImport;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
 use Illuminate\Support\Facades\Auth;
+use App\Exports\WooCommerceExport;
+use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class ProductosController extends Controller
 {
@@ -403,6 +405,27 @@ class ProductosController extends Controller
 
         return Excel::download($productos, 'productos.xlsx');
     }
+    //exportarWooCommerceTemplate
+    public function exportarWooCommerceTemplate(Request $request)
+    {
+        $user = FacadesAuth::user();
+        $id_empresa = $user->id_empresa;
+
+        $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
+
+        $productos = new WooCommerceExport();
+        $productos->filter($request);
+
+        return Excel::download(
+            $productos,
+            'productos_woocommerce_' . date('Y-m-d') . '.csv',
+            \Maatwebsite\Excel\Excel::CSV,
+            [
+                'Content-Type' => 'text/csv',
+            ]
+        );
+    }
+
 
     public function exportarPlantilla(Request $request)
     {
@@ -503,4 +526,5 @@ class ProductosController extends Controller
             'actualizados' => $productosActualizados
         ]);
     }
+
 }

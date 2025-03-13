@@ -1,0 +1,28 @@
+.hover-highlight {
+  transition: all 0.3s ease;
+}
+
+.hover-highlight:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  cursor: pointer;
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.list-group-item.active {
+  transform: scale(1.02);
+  background-color: #5394f6 !important;
+  border-color: #0d6efd !important;
+  color: white !important;
+}
+
+/* Para mantener el texto secundario blanco cuando está activo */
+.list-group-item.active .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Para el badge cuando el item está activo */
+.list-group-item.active .badge {
+  background-color: white !important;
+  color: #5394f6 !important;
+}
