@@ -243,25 +243,67 @@ class MHCCF extends Model
             $detalle->codTributo = NULL;
             $detalle->gravada = $detalle->total;
 
-            $detalles->push([
-                "numItem" => $index + 1,
-                "tipoItem" => $detalle->tipo_item,
-                "numeroDocumento" => NULL,
-                "cantidad" => floatval(number_format($detalle->cantidad,2)),
-                "codigo" => $detalle->codigo,
-                "codTributo" => $detalle->codTributo,
-                "uniMedida" => $detalle->cod_medida,
-                "descripcion" => $detalle->nombre_producto,
-                "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
-                "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
-                "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
-                "tributos" => ['20'],
-                "psv" => 0,
-                "noGravado" => floatval(number_format($detalle->cuenta_a_terceros,2, '.', '')),
-                // "ivaItem" => floatval($detalle->iva)
-              ]);
+            // Producto no Gravado
+               if ($detalle->cuenta_a_terceros > 0) {
+                   $detalles->push([
+                       "numItem" => count($detalles) + 1,
+                       "tipoItem" => $detalle->tipo_item,
+                       "numeroDocumento" => NULL,
+                       "cantidad" => floatval(number_format($detalle->cantidad,2, '.', '')),
+                       "codigo" => $detalle->codigo,
+                       "codTributo" => $detalle->codTributo,
+                       "uniMedida" => $detalle->cod_medida,
+                       "descripcion" => $detalle->nombre_producto,
+                       "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
+                       "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
+                       "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
+                       "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
+                       "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
+                       "tributos" => ['20'],
+                       "psv" => 0,
+                       "noGravado" => 0,
+                       // "ivaItem" => floatval($detalle->iva)
+                   ]);
+                   $detalles->push([
+                       "numItem" => count($detalles) + 1,
+                       "tipoItem" => 2,
+                       "numeroDocumento" => NULL,
+                       "cantidad" => 1,
+                       "codigo" => null,
+                       "codTributo" => null,
+                       "uniMedida" => 99,
+                       "descripcion" => 'Cobro por cuenta a terceros',
+                       "precioUni" => 0,
+                       "montoDescu" => 0,
+                       "ventaNoSuj" => 0,
+                       "ventaExenta" => 0,
+                       "ventaGravada" => 0,
+                       "tributos" => NULL,
+                       "psv" => 0,
+                       "noGravado" => floatval(number_format($detalle->cuenta_a_terceros,2, '.', '')),
+                       // "ivaItem" => floatval($detalle->iva)
+                   ]);
+               }else{
+                   $detalles->push([
+                       "numItem" => count($detalles) + 1,
+                       "tipoItem" => $detalle->tipo_item,
+                       "numeroDocumento" => NULL,
+                       "cantidad" => floatval(number_format($detalle->cantidad,2, '.', '')),
+                       "codigo" => $detalle->codigo,
+                       "codTributo" => $detalle->codTributo,
+                       "uniMedida" => $detalle->cod_medida,
+                       "descripcion" => $detalle->nombre_producto,
+                       "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
+                       "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
+                       "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
+                       "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
+                       "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
+                       "tributos" => ['20'],
+                       "psv" => 0,
+                       "noGravado" => 0,
+                       // "ivaItem" => floatval($detalle->iva)
+                   ]);
+               }
         }
 
         return $detalles;

@@ -25,6 +25,7 @@ export class SidebarComponent implements OnInit {
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
+    public authUser: any = {};
 
     searchControl = new FormControl();
 
@@ -82,6 +83,7 @@ export class SidebarComponent implements OnInit {
           });
 
         this.loadNotificaciones();
+        this.usuarioLogueado();
     }
 
 
@@ -204,5 +206,9 @@ export class SidebarComponent implements OnInit {
             this.notificaciones = notificaciones;
         }, error => {this.alertService.error(error); });
     }
+
+    public usuarioLogueado() {
+        this.authUser = this.apiService.auth_user();
+      }
 
 }
