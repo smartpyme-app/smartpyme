@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\Route;
     Route::get('/ventas/exportar',    [VentasController::class, 'export']);
     Route::get('/ventas-detalles/exportar',    [VentasController::class, 'exportDetalles']);
 
+     Route::get('/ventas-detalles/exportar/diario',    [VentasController::class, 'reporteDiario']);
+
+
     Route::get('/venta/wompi-link/{id}', [WompiController::class, 'wompiLink'])->name('wompi.link');  
     //ventas/acumulado
     Route::post('ventas-acumulado/exportar', [VentasController::class, 'acumuladoExport']);
