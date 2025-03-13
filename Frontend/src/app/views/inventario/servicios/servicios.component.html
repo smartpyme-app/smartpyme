@@ -58,8 +58,8 @@
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Estado</th>
                         <th class="d-none d-md-table-cell">Categoria</th>
-                        <th class="text-right">Precio sin IVA</th>
-                        <th class="text-right">Precio con IVA</th>
+                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</th>
+                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</th>
                         <!-- <th class="text-center" *ngIf="apiService.canEdit()">Más</th> -->
                         <th class="text-center" *ngIf="apiService.canEdit() && !apiService.isSupervisorLimitado()">Más</th>
                     </tr>

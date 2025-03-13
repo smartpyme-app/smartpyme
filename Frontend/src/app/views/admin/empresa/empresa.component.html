@@ -573,6 +573,17 @@
                                 (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
                         </div>
                     </div>
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Permite gestionar cuentas bancarias de la empresa en la sección Finanzas.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="modulo_bancos">Habilitar módulo de bancos</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="modulo_bancos"
+                                [checked]="isModuloBancos()"
+                                (change)="toggleModuloBancos()"
+                                name="modulo_bancos">
+                        </div>
+                    </div>
                     <hr>
                     <div class="row">
                         <h4 class="mb-0 fw-bold">Configuraciones de Lotes</h4>
@@ -626,6 +637,24 @@
                             </div>
                             <small class="text-muted d-block mt-2">
                                 Activa o desactiva el inventario por lotes por categorías.
+                            </small>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Campos de producto</h4>
+                        <div class="form-group col-md-12 col-xl-6 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="componente_quimico_activo">Habilitar componente químico</label>
+                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                    id="componente_quimico_activo"
+                                    [checked]="isComponenteQuimicoHabilitado()"
+                                    (change)="toggleComponenteQuimicoActivo()"
+                                    name="componente_quimico_activo">
+                            </div>
+                            <small class="text-muted">
+                                Muestra el campo componente químico en productos y lo incluye en las búsquedas.
                             </small>
                         </div>
                     </div>

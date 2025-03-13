@@ -144,22 +144,29 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(
+        (bancos) => { this.bancos = bancos; },
+        (error) => { this.alertService.error(error); }
+      );
+    }
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+          const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+          if (formaPagoSeleccionada?.banco?.nombre_banco && !this.venta.detalle_banco) {
+            this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+          }
+        }
       },
-      (error) => {
-        this.alertService.error(error);
-      }
+      (error) => { this.alertService.error(error); }
     );
 
     this.apiService.getAll('canales/list').subscribe(
@@ -176,7 +183,9 @@ export class FacturacionComponent implements OnInit {
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
-        if (!this.venta.impuestos || this.venta.iva == 0) {
+        // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
+        const esEdicion = !!this.route.snapshot.paramMap.get('id');
+        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }
@@ -331,6 +340,7 @@ export class FacturacionComponent implements OnInit {
             this.venta = venta;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+            this.sumTotal();
           },
           (error) => {
             this.alertService.error(error);
@@ -716,9 +726,7 @@ export class FacturacionComponent implements OnInit {
           impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
         }
       }
-      this.venta.iva = parseFloat(
-        this.sumPipe.transform(this.venta.impuestos, 'monto')
-      ).toFixed(4);
+      this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto')) || 0).toFixed(2);
     } else {
       this.venta.iva = (0).toFixed(2);
       this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
@@ -958,12 +966,18 @@ export class FacturacionComponent implements OnInit {
             });
         }
 
-        // Limpiar banco y mensaje de error al cambiar método de pago
-        if (!this.requiereBanco()) {
+        // Si módulo bancos: asignar banco por defecto del método de pago
+        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco) {
+                this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            } else {
+                this.venta.detalle_banco = '';
+            }
+        } else if (!this.requiereBanco()) {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
-        console.log(this.venta);
     }
 
     public setDocumento(id_documento: any) {
@@ -1052,7 +1066,8 @@ export class FacturacionComponent implements OnInit {
   public requiereBanco(): boolean {
     return this.venta.forma_pago &&
            this.venta.forma_pago !== 'Efectivo' &&
-           this.venta.forma_pago !== 'Wompi';
+           this.venta.forma_pago !== 'Wompi' &&
+           this.venta.forma_pago !== 'Multiple';
   }
 
   // Guardar venta
@@ -1080,6 +1095,10 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.store('facturacion', this.venta).subscribe(
       (venta) => {
+        // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
+        // para que en un siguiente guardado se envíe el mismo correlativo.
+        Object.assign(this.venta, venta);
+
         // Si es cotización
         if (this.facturarCotizacion) {
           this.apiService
@@ -1107,9 +1126,6 @@ export class FacturacionComponent implements OnInit {
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
-            // Actualizar this.venta con los datos del backend, especialmente el correlativo correcto
-            this.venta.id = venta.id;
-            this.venta.correlativo = venta.correlativo;
             this.emitirDTE();
           } else {
             window.open(
@@ -1277,11 +1293,15 @@ export class FacturacionComponent implements OnInit {
   }
 
 
-  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura minúsculas para que el select coincida. */
+  /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
     const tiposValidos = ['gravada', 'exenta', 'no_sujeta'];
     venta.detalles.forEach((d: any) => {
+      if (d.sub_total == null || d.sub_total === undefined) {
+        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
+      }
+      const totalLinea = parseFloat(d.total) ?? (parseFloat(d.sub_total) - parseFloat(d.descuento || 0));
       if (!d.tipo_gravado) {
         const ex = parseFloat(d.exenta) || 0;
         const no = parseFloat(d.no_sujeta) || 0;
@@ -1289,9 +1309,9 @@ export class FacturacionComponent implements OnInit {
       }
       const tipo = String(d.tipo_gravado).toLowerCase();
       d.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-      if (d.sub_total == null || d.sub_total === undefined) {
-        d.sub_total = Number((parseFloat(d.cantidad) * parseFloat(d.precio)).toFixed(4));
-      }
+      d.gravada = (d.tipo_gravado === 'gravada') ? totalLinea : 0;
+      d.exenta = (d.tipo_gravado === 'exenta') ? totalLinea : 0;
+      d.no_sujeta = (d.tipo_gravado === 'no_sujeta') ? totalLinea : 0;
     });
   }
 

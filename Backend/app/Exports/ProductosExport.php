@@ -6,6 +6,8 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 
 class ProductosExport implements FromCollection, WithHeadings, WithMapping
@@ -21,14 +23,29 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         $this->request = $request;
     }
 
+    private function incluirComponenteQuimico(): bool
+    {
+        $user = Auth::user();
+        if (!$user || !$user->id_empresa) {
+            return false;
+        }
+        $empresa = Empresa::find($user->id_empresa);
+        return $empresa && $empresa->isComponenteQuimicoHabilitado();
+    }
+
     public function headings(): array
     {
-        return [
+        $headings = [
             'Nombre',
             'Categoria',
             'Codigo',
             'Codigo_de_barra',
             'Marca',
+        ];
+        if ($this->incluirComponenteQuimico()) {
+            $headings[] = 'Componente químico';
+        }
+        $headings = array_merge($headings, [
             'Costo',
             'Precio sin IVA',
             'Ganancia',
@@ -38,7 +55,8 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             'Estado',
             // 'Etiquetas',
             'Descripcion',
-        ];
+        ]);
+        return $headings;
     }
 
     public function map($row): array
@@ -60,6 +78,11 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             $row->codigo,
             $row->barcode,
             $row->marca,
+        ];
+        if ($this->incluirComponenteQuimico()) {
+            $fields[] = $row->componente_quimico ?? '';
+        }
+        $fields = array_merge($fields, [
             $row->empresa()->pluck('valor_inventario')->first() == 'promedio' ? number_format($row->costo_promedio, 2) : number_format($row->costo, 2),
             number_format($row->precio, 2),
             number_format($row->precio - $row->costo, 2),
@@ -69,7 +92,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             $row->enable ? 'Activo' : 'Inactivo',
             // $etiquetas,
             $row->descripcion,
-        ];
+        ]);
         return $fields;
     }
 

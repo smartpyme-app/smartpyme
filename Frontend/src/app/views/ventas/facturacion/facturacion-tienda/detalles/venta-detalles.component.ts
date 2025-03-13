@@ -53,15 +53,12 @@ export class VentaDetallesComponent implements OnInit {
         detalle.exenta = 0;
         detalle.no_sujeta = 0;
         const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
-        const tasaIva = this.venta.cobrar_impuestos ? (this.apiService.auth_user().empresa.iva / 100 || 0) : 0;
         if (tipo === 'gravada') {
             detalle.gravada = total;
-            if (detalle.iva !== undefined && detalle.iva !== null) {
-                const pct = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
-                    ? Number(detalle.porcentaje_impuesto)
-                    : (this.apiService.auth_user().empresa?.iva ?? 0);
-                detalle.iva = parseFloat((total * (pct / 100)).toFixed(4));
-            }
+            const pct = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
+                ? Number(detalle.porcentaje_impuesto)
+                : (this.apiService.auth_user().empresa?.iva ?? 0);
+            detalle.iva = parseFloat((total * (pct / 100)).toFixed(4));
         } else if (tipo === 'exenta') {
             detalle.exenta = total;
             detalle.iva = 0;

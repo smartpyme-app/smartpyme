@@ -233,7 +233,7 @@
       <div class="col-md-6 mb-3">
         <label class="form-label">Monto inicial <span class="text-danger">*</span></label>
         <div class="input-group">
-          <span class="input-group-text">$</span>
+          <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
           <input type="number" class="form-control" [(ngModel)]="formPrestamo.monto_inicial" name="monto_inicial" step="0.01" min="0.01" required />
         </div>
       </div>
@@ -301,7 +301,7 @@
       <div class="col-md-6 mb-3">
         <label class="form-label">Monto del abono <span class="text-danger">*</span></label>
         <div class="input-group">
-          <span class="input-group-text">$</span>
+          <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
           <input type="number" class="form-control" [(ngModel)]="formAbono.monto" name="monto" step="0.01" min="0.01" required />
         </div>
       </div>

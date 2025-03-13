@@ -3,13 +3,14 @@
         <form class="d-flex input-group buscador" name="form" autocomplete="off">
             <div class="input-group">
                 <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
-                <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
+                <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'">
             </div>
             <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones">
               <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
                 <p class="mb-0">
                     {{ getNombreCompleto(producto) }} <br>
+                    <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico" class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
                     <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
                         {{ getDescripcion(producto) }}
                         <a href="javascript:void(0);" 
@@ -26,6 +27,8 @@
                         </a>
                     </small>
                     <br>
+                    <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico" class="text-muted">Comp. químico: {{ producto.componente_quimico }}</small>
+                    <br *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico">
                     <small class="text-muted">{{ producto.inventarios | filter:'id_bodega':compra.id_bodega | sum:'stock' }} disponibles</small>
                 </p>
               </a>

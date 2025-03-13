@@ -104,6 +104,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/contabilidad/proyectos.php');
 	require base_path('routes/modulos/contabilidad/libros-iva.php');
 
+	// Bancos
+	require base_path('routes/modulos/bancos/cuentas.php');
+
 	// Admin
 	require base_path('routes/modulos/admin/empresas.php');
 	require base_path('routes/modulos/admin/sucursales.php');

@@ -9,18 +9,23 @@
 
         <div class="form-group col-md-6">
             <label for="forma_pago">Forma de pago</label>
-            <select name="forma_pago" [(ngModel)]="abono.forma_pago" class="form-select">
+            <select name="forma_pago" (change)="cambioMetodoDePago()" [(ngModel)]="abono.forma_pago" class="form-select">
                 <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
             </select>
         </div>
-        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo'">
+        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo' && abono.forma_pago != 'Wompi'">
             <label for="detalle_banco">Banco</label>
             <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                <ng-container *ngIf="apiService.isModuloBancos()">
+                    <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+                </ng-container>
+                <ng-container *ngIf="!apiService.isModuloBancos()">
+                    <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                </ng-container>
             </select>
         </div>
-        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo'">
+        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo' && abono.forma_pago != 'Wompi'">
             <label for="referencia">Referencia:</label>
             <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
         </div>
@@ -59,7 +64,7 @@
         <div class="form-group col-md-12">
             <label>Pago:</label>
             <div class="input-group">
-                <div class="input-group-text">$</div>
+                <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
                 <input type="number" class="form-control" id="total" [(ngModel)]="abono.total" name="total">
             </div>
         </div>

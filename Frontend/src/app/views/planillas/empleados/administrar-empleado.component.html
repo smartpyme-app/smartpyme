@@ -204,7 +204,7 @@
                   <div class="form-group col-md-4">
                     <label for="salario_base">Salario Base:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input
                         type="number"
                         step="0.01"
@@ -869,7 +869,7 @@
         <!-- <div class="form-group col-12 mb-3">
           <label for="salario_base">Salario Base:</label>
           <div class="input-group">
-            <span class="input-group-text">$</span>
+            <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
             <input
               type="number"
               step="0.01"

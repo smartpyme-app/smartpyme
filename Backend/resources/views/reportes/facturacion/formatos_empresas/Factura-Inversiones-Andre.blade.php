@@ -217,7 +217,7 @@
                         <p><b>Dirección: </b> {{ $venta->id_cliente ? $cliente->direccion : '' }}</p>
                     </td>
                     <td>
-                        <h1 style="color: red; font-size: 1.2em;">000-002-1- {{ str_pad($venta->correlativo, 8, '0', STR_PAD_LEFT)}}</h1>
+                        <h1 style="color: red; font-size: 1.2em;">000-002-01- {{ str_pad($venta->correlativo, 8, '0', STR_PAD_LEFT)}}</h1>
                         <br>
                         <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
                         <p><b>ID Cliente:</b> {{ $venta->cliente->codigo_cliente }}</p>
@@ -282,12 +282,12 @@
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
-                    <td colspan="3">Fecha Límite de Emisión: 04/03/2026</td>
+                    <td colspan="3">Fecha Límite de Emisión: 02/03/2027</td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Exonerado:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
-                    <td colspan="3">Fecha de Autorización: 04/03/2025</td>
+                    <td colspan="3">Fecha de Autorización: 02/03/2026</td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Fiscal:</td> 
                     <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->sub_total, 2) }}</td>
                 </tr>
@@ -297,12 +297,12 @@
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
-                    <td colspan="3">RANGO AUTORIZADO: 000-002-01-00002401 / 000-002-01-00002600</td>
+                    <td colspan="3">RANGO 000-002-01-00002601 / 000-002-01-00002900</td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Gravado 18%:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
-                    <td colspan="3"><b>CAI: 2F86B6-E23258-5C69E0-63BE03-090937-F8</b></td>
+                    <td colspan="3"><b>CAI: 4C127A-574649-D93CE0-63BE03-0909A0-30</b></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Desc. y Rebajas:</td>
                     <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>

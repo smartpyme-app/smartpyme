@@ -37,6 +37,10 @@
                         </ng-option>
                     </ng-select>
                 </div>
+                <div class="form-group col-md-12 col-lg-4" *ngIf="isComponenteQuimicoHabilitado()">
+                    <label for="componente_quimico">Componente químico</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.componente_quimico" name="componente_quimico" placeholder="Escribe aquí">
+                </div>
 
                 <h6 class="my-3 font-weight-bold">Organización</h6>
                 <div class="form-group col-md-6 col-lg-3">
@@ -61,7 +65,7 @@
 
                 <h6 class="my-3 font-weight-bold">Precio</h6>
                 <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
-                    <label for="precio">Precio sin IVA</label>
+                    <label for="precio">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
@@ -96,7 +100,7 @@
                     </div>
                 </div>
                 <div *ngIf="getPorcentajeProducto() > 0" class="form-group col-md-4 col-lg-3">
-                    <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+                    <label class="fw-bold" for="precio_final">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA:' : 'Precio con Impuesto:' }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">

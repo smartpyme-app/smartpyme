@@ -483,7 +483,7 @@
                       </span>
                     </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number"
                         class="form-control"
                         [(ngModel)]="detalleSeleccionado.salario_base"
@@ -574,7 +574,7 @@
                       </span>
                     </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_devengado"
                         name="salario_devengado" disabled />
                     </div>
@@ -664,7 +664,7 @@
                   <div class="mb-3">
                     <label>Comisiones:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control" 
                         [(ngModel)]="detalleSeleccionado.comisiones"
                         name="comisiones" 
@@ -678,7 +678,7 @@
                   <div class="mb-3">
                     <label>Bonificaciones:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control" 
                         [(ngModel)]="detalleSeleccionado.bonificaciones"
                         name="bonificaciones" 
@@ -692,7 +692,7 @@
                   <div class="mb-3">
                     <label>Otros Ingresos:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control" 
                         [(ngModel)]="detalleSeleccionado.otros_ingresos"
                         name="otros_ingresos" 
@@ -716,7 +716,7 @@
                       </select>
                     </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control" 
                         [(ngModel)]="detalleSeleccionado.abonos"
                         name="abonos" 
@@ -756,7 +756,7 @@
                     <div class="mb-3">
                       <label>ISSS (3%):</label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.isss_empleado"
                           name="isss_empleado" [disabled]="true"
                           [placeholder]="(detalleSeleccionado?.empleado?.tipo_contrato === 4 ||
@@ -785,7 +785,7 @@
                     <div class="mb-3">
                       <label>AFP (7.25%):</label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.afp_empleado"
                           name="afp_empleado" [disabled]="true"
                           [placeholder]="(detalleSeleccionado?.empleado?.tipo_contrato === 4 ||
@@ -819,7 +819,7 @@
                                      detalleSeleccionado?.empleado?.tipo_contrato === 3">ISR (10% fijo):</span>
                       </label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
                           [disabled]="true" />
                       </div>
@@ -839,7 +839,7 @@
                     <div class="mb-3" *ngFor="let concepto of conceptosDeduccion">
                       <label>{{ concepto[1].nombre }}:</label>
                       <div class="input-group">
-                        <span class="input-group-text">$</span>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input
                           type="number"
                           class="form-control"
@@ -884,7 +884,7 @@
                           <div class="mb-3">
                             <label class="form-label">Monto a descontar (Préstamos)</label>
                             <div class="input-group">
-                              <span class="input-group-text">$</span>
+                              <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                               <input type="number" class="form-control"
                                 [(ngModel)]="detalleSeleccionado.prestamos"
                                 name="prestamos"
@@ -975,7 +975,7 @@
                   <div class="mb-3">
                     <label>Anticipos:</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
+                      <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.anticipos"
                         name="anticipos"

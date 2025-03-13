@@ -23,6 +23,9 @@ use App\Exports\RentabilidadSucursalExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
+use App\Services\ShopifyStockService;
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class ComprasController extends Controller
 {
@@ -389,6 +392,13 @@ class ComprasController extends Controller
         }
 
         DB::commit();
+
+        // Sincronizar stock a Shopify solo cuando se registra una compra (no cotización).
+        // No depende de shopify_sync_bidirectional: las compras siempre suben stock en Shopify si está conectado.
+        if ($request->cotizacion == 0) {
+            $this->sincronizarStockCompraConShopify($compra);
+        }
+
         return Response()->json($compra, 200);
 
         } catch (\Exception $e) {
@@ -399,6 +409,50 @@ class ComprasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
 
+    }
+
+    /**
+     * Envía el aumento de stock a Shopify para los productos de la compra.
+     * Solo cuando se realiza una compra; no depende de shopify_sync_bidirectional.
+     * Requiere: empresa con Shopify conectado y usuario con misma bodega.
+     */
+    private function sincronizarStockCompraConShopify(Compra $compra)
+    {
+        try {
+            $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+            if (!$empresa || $empresa->shopify_status !== 'connected' || empty($empresa->shopify_store_url) || empty($empresa->shopify_consumer_secret)) {
+                return;
+            }
+
+            $usuario = User::where('id_empresa', $compra->id_empresa)
+                ->where('id_bodega', $compra->id_bodega)
+                ->where('shopify_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                return;
+            }
+
+            $productoIds = $compra->detalles()->pluck('id_producto')->unique()->values()->all();
+            $shopifyStock = app(ShopifyStockService::class);
+
+            foreach ($productoIds as $idProducto) {
+                try {
+                    $shopifyStock->actualizarSoloStockEnShopify($idProducto, $usuario->id);
+                } catch (\Exception $e) {
+                    Log::warning('Error sincronizando stock de compra con Shopify', [
+                        'compra_id' => $compra->id,
+                        'producto_id' => $idProducto,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error en sincronización de compra con Shopify', [
+                'compra_id' => $compra->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function facturacionConsigna(Request $request){
@@ -615,7 +669,7 @@ class ComprasController extends Controller
             $export->filter($request);
             return Excel::download($export, 'cuentas-por-pagar.xlsx');
         } catch (\Throwable $e) {
-            \Log::error('CXP Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('CXP Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
         }
     }

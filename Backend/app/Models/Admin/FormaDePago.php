@@ -12,8 +12,8 @@ class FormaDePago extends Model {
     protected $fillable = array(
         'nombre',
         'orden',
-        'id_empresa'
-
+        'id_empresa',
+        'id_banco',
     );
 
     protected static function boot()
@@ -27,8 +27,14 @@ class FormaDePago extends Model {
         }
     }
 
-    public function empresa(){
+    public function empresa()
+    {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function banco()
+    {
+        return $this->belongsTo('App\Models\Bancos\Cuenta', 'id_banco');
     }
 
 

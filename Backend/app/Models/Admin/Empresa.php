@@ -686,6 +686,22 @@ class Empresa extends Model
     }
 
     /**
+     * Verificar si el campo componente químico está habilitado para la empresa
+     */
+    public function isComponenteQuimicoHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'componente_quimico_activo', false);
+    }
+
+    /**
+     * Verificar si el módulo de bancos está activo para la empresa
+     */
+    public function isModuloBancos(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'modulo_bancos', false);
+    }
+
+    /**
      * Obtener la metodología de lotes (FIFO, LIFO, FEFO, Manual)
      */
     public function getLotesMetodologia(): string

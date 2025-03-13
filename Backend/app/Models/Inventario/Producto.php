@@ -29,6 +29,7 @@ class Producto extends Model
         'id_categoria',
         'porcentaje_impuesto',
         'marca',
+        'componente_quimico',
         'etiquetas',
         'tipo',
         'enable',
