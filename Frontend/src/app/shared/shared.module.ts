@@ -40,6 +40,7 @@ import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
+import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 
 @NgModule({
   imports: [
@@ -68,6 +69,7 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
     NotFoundComponent,
     ImportarExcelComponent,
     DescargarExcelComponent,
+    DescargarInventarioComponent,
     CrearCategoriaActivoComponent,
     CrearCategoriaComponent,
     CrearSubCategoriaComponent,
@@ -96,6 +98,7 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
     NotFoundComponent,
     ImportarExcelComponent,
     DescargarExcelComponent,
+    DescargarInventarioComponent,
     CrearCategoriaActivoComponent,
     CrearCategoriaComponent,
     CrearSubCategoriaComponent,

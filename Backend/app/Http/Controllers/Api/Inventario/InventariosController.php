@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Inventario;
+use App\Exports\Inventario\InventarioAFechaExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InventariosController extends Controller
 {
@@ -125,6 +127,17 @@ class InventariosController extends Controller
 
         return Response()->json($productoVenta, 200);
 
+    }
+
+    public function export(Request $request){
+       $request->validate([
+           'fecha'    => 'required|date',
+       ]);
+
+        $inventario = new InventarioAFechaExport();
+        $inventario->filter($request);
+
+        return Excel::download($inventario, 'inventario.xlsx');
     }
 
 
