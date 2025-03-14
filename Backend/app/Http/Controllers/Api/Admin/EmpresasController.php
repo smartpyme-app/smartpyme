@@ -10,6 +10,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\FormaDePago;
 use App\Models\Admin\Impuesto;
 use App\Models\Admin\Sucursal;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Inventario\Bodega;
 use App\Models\Plan;
 use App\Models\Transaccion;
@@ -154,6 +155,10 @@ class EmpresasController extends Controller
 
         //Crear sucursal
             if(!$request->id){
+                // Crear cliente
+                    $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
+                    $empresa->cliente_id = $cliente->id;
+                    $empresa->save();
                 // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
                 // Crear bodega
