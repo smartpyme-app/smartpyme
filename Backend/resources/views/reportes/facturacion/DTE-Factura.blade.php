@@ -118,7 +118,23 @@
                     <td style="width: 50%; vertical-align: top;">
                         @if ($DTE['receptor'])
                             <p><b>Nombre o razón social: </b>{{ $DTE['receptor']['nombre'] }}</p>
-                            <p><b>Tipo de Documento:</b> {{ $DTE['receptor']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
+                            <p><b>Tipo de Documento:</b>
+                                @if ($DTE['receptor']['tipoDocumento'] == '36')
+                                    NIT
+                                @endif
+                                @if ($DTE['receptor']['tipoDocumento'] == '13')
+                                    DUI
+                                @endif
+                                @if ($DTE['receptor']['tipoDocumento'] == '03')
+                                    Pasaporte
+                                @endif
+                                @if ($DTE['receptor']['tipoDocumento'] == '02')
+                                    Carnet de residente
+                                @endif
+                                @if ($DTE['receptor']['tipoDocumento'] == '37')
+                                    Otro
+                                @endif
+                            </p>
                             <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
                             <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                                 <p><b>Dirección:</b> 
