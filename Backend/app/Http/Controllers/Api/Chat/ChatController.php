@@ -69,6 +69,10 @@ class ChatController extends Controller
 
 
             $empresaId = $request->user()->id_empresa ?? null;
+            if ($empresaId) {
+                session(['id_empresa' => $empresaId]);
+            }
+            
             $empresa = null;
             $metricas = null;
             
