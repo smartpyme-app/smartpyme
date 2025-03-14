@@ -81,6 +81,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/admin/accesos.php');
 		require base_path('routes/modulos/admin/licencias.php');
 		require base_path('routes/modulos/admin/MH.php');
+		require base_path('routes/modulos/admin/reportes-automaticos.php');
 
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');

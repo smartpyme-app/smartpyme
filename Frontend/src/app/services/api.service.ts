@@ -48,6 +48,11 @@ export class ApiService {
       .post<any>(this.apiUrl + url, model)
       .pipe(retry(0), catchError(this.handleError));
   }
+  update(url: string, id: number, model: any) {
+    return this.http
+      .put<any>(`${this.apiUrl}${url}/${id}`, model)
+      .pipe(retry(0), catchError(this.handleError));
+  }
 
   delete(url: string, id: number) {
     return this.http
@@ -105,20 +110,6 @@ export class ApiService {
       params: filtros,
     });
   }
-
-  download(endpoint: string): Observable<any> {
-    return this.http
-      .get(`${this.apiUrl}${endpoint}`, {
-        responseType: 'blob',
-        observe: 'response',
-      })
-      .pipe(
-        map((response) => {
-          return response.body;
-        })
-      );
-  }
-
 
   // En el ApiService
   exportAcumulado(url: string, filtros: any): Observable<Blob> {
@@ -359,7 +350,8 @@ export class ApiService {
     if (
       usuario.tipo == 'Administrador' ||
       usuario.tipo == 'Contador' ||
-      usuario.tipo == 'Supervisor'
+      usuario.tipo == 'Supervisor' ||
+      usuario.tipo == 'Supervisor Limitado'
     )
       return true;
     return false;
@@ -367,21 +359,33 @@ export class ApiService {
 
   canCreate() {
     let usuario = this.auth_user();
-    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+    if (
+      usuario.tipo == 'Administrador' ||
+      usuario.tipo == 'Supervisor' ||
+      usuario.tipo == 'Supervisor Limitado'
+    )
       return true;
     return false;
   }
 
   canEdit() {
     let usuario = this.auth_user();
-    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+    if (
+      usuario.tipo == 'Administrador' ||
+      usuario.tipo == 'Supervisor' ||
+      usuario.tipo == 'Supervisor Limitado'
+    )
       return true;
     return false;
   }
 
   canDelete() {
     let usuario = this.auth_user();
-    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+    if (
+      usuario.tipo == 'Administrador' ||
+      usuario.tipo == 'Supervisor' ||
+      usuario.tipo == 'Supervisor Limitado'
+    )
       return true;
     return false;
   }
@@ -416,6 +420,12 @@ export class ApiService {
     return throwError(error);
   }
 
+  isSupervisorLimitado() {
+    let usuario = this.auth_user();
+    if (usuario.tipo == 'Supervisor Limitado') return true;
+    return false;
+  }
+
   private loadConstants() {
     this.http.get<any>(this.apiUrl + 'constants').subscribe(
       (constants) => {
@@ -448,16 +458,6 @@ export class ApiService {
       );
   }
 
-  // Method to download and save the file
-  downloadFile(blob: Blob, filename: string) {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
-  }
-
   generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
     return this.http
       .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
@@ -472,5 +472,14 @@ export class ApiService {
           return throwError(() => error);
         })
       );
+  }
+
+  downloadFile(blob: Blob, filename: string) {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
   }
 }

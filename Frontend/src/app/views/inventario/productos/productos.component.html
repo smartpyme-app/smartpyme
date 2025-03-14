@@ -71,7 +71,7 @@
                         <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio sin IVA</th>
                         <th class="text-right">Precio con IVA</th>
                         <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
-                        <th class="text-center">Más</th>
+                        <th class="text-center" *ngIf="!apiService.isSupervisorLimitado()">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -138,7 +138,7 @@
                                 </ng-template>
                             </div>
                         </td>
-                        <td class="text-center">
+                        <td class="text-center" *ngIf="!apiService.isSupervisorLimitado()">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>

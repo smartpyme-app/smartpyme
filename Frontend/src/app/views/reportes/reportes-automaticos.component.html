@@ -1,0 +1,542 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Reportes Automáticos</h2>
+  <button
+    *ngIf="apiService.canCreate()"
+    (click)="openModalConfigurar(mconfigurarReporte)"
+    tooltip="Configurar nuevo reporte"
+    class="btn btn-default"
+  >
+    <i class="fa fa-plus"></i> Añadir configuración
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span
+        class="text-muted d-flex align-items-center gap-2"
+        *ngIf="configuraciones?.total"
+      >
+        Mostrando
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="filtrarConfiguraciones()"
+          [(ngModel)]="filtros.paginate"
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        de {{ configuraciones?.total + " registros" }}
+      </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2 justify-content-end">
+        <button
+          tooltip="Actualizar (F5)"
+          (click)="loadAll()"
+          class="btn btn-default tcla-F5"
+        >
+          <i class="fa fa-refresh"></i>
+        </button>
+        <form
+          class="d-flex input-group"
+          name="form"
+          (ngSubmit)="filtrarConfiguraciones()"
+          autocomplete="off"
+        >
+          <input
+            type="text"
+            name="buscador"
+            class="form-control pull-right"
+            placeholder="Buscar"
+            [(ngModel)]="filtros.buscador"
+          />
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Tipo de Reporte</th>
+            <th>Frecuencia</th>
+            <th>Horarios</th>
+            <th>Destinatarios</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="6"
+              class="text-center"
+              *ngIf="configuraciones?.total < 1 && !loading"
+            >
+              <span class="badge bg-primary"
+                >No hay configuraciones de reportes automáticos</span
+              >
+            </td>
+            <td colspan="6" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+
+          <tr *ngFor="let config of configuraciones?.data">
+            <td>
+              <span *ngIf="config.tipo_reporte === 'ventas-por-vendedor'"
+                >Ventas por Vendedor</span
+              >
+              <span *ngIf="config.tipo_reporte === 'ventas-diarias'"
+                >Ventas Diarias</span
+              >
+              <span *ngIf="config.tipo_reporte === 'productos-vendidos'"
+                >Productos Vendidos</span
+              >
+              <span
+                *ngIf="
+                  config.tipo_reporte !== 'ventas-por-vendedor' &&
+                  config.tipo_reporte !== 'ventas-diarias' &&
+                  config.tipo_reporte !== 'productos-vendidos'
+                "
+                >{{ config.tipo_reporte }}</span
+              >
+            </td>
+            <td>
+              <span *ngIf="config.frecuencia === 'diario'">Diario</span>
+              <span *ngIf="config.frecuencia === 'semanal'">Semanal</span>
+              <span *ngIf="config.frecuencia === 'mensual'"
+                >Mensual (Día {{ config.dia_mes }})</span
+              >
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                <span *ngIf="config.envio_matutino" class="badge bg-info">{{
+                  formatHora(config.hora_matutino)
+                }}</span>
+                <span *ngIf="config.envio_mediodia" class="badge bg-info">{{
+                  formatHora(config.hora_mediodia)
+                }}</span>
+                <span *ngIf="config.envio_nocturno" class="badge bg-info">{{
+                  formatHora(config.hora_nocturno)
+                }}</span>
+              </div>
+            </td>
+            <td>
+              <span tooltip="{{ config.destinatarios.join(', ') }}">
+                {{ config.destinatarios.length }} destinatario(s)
+              </span>
+            </td>
+            <td>
+              <span *ngIf="config.activo" class="badge bg-success">Activo</span>
+              <span *ngIf="!config.activo" class="badge bg-secondary"
+                >Inactivo</span
+              >
+            </td>
+            <td class="text-center">
+              <span
+                class="btn"
+                [popover]="accionesTemplate"
+                [outsideClick]="true"
+                tooltip="Acciones"
+                container="body"
+                [popoverContext]="{ config: config }"
+              >
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-12" *ngIf="configuraciones?.last_page > 1">
+      <app-pagination
+        [items]="configuraciones"
+        (setPagination)="setPagination($event)"
+      ></app-pagination>
+    </div>
+  </div>
+</section>
+
+<!-- Template de acciones -->
+<ng-template #accionesTemplate let-config="config">
+  <div class="list-group border-0">
+    <a
+      (click)="openModal(mconfigurarReporte, config)"
+      class="list-group-item list-group-item-action border-0 click"
+    >
+      <i class="fa fa-fw fa-edit"></i> Editar
+    </a>
+    <a
+      (click)="cambiarEstado(config)"
+      class="list-group-item list-group-item-action border-0 click"
+    >
+      <i
+        class="fa fa-fw"
+        [ngClass]="{
+          'fa-toggle-on': config.activo,
+          'fa-toggle-off': !config.activo
+        }"
+      ></i>
+      {{ config.activo ? "Desactivar" : "Activar" }}
+    </a>
+    <a
+      (click)="enviarReportePrueba(mEnvioPrueba, config)"
+      class="list-group-item list-group-item-action border-0 click"
+    >
+      <i class="fa fa-fw fa-paper-plane"></i> Enviar prueba
+    </a>
+    <a
+      (click)="eliminarConfiguracion(mEliminar, config)"
+      class="list-group-item list-group-item-action border-0 click text-danger"
+    >
+      <i class="fa fa-fw fa-trash"></i> Eliminar
+    </a>
+  </div>
+</ng-template>
+
+
+<ng-template #mconfigurarReporte>
+  <div class="modal-header justify-content-between">
+    <h4 class="modal-title">
+      {{ configuracionActual.id ? "Editar" : "Nueva" }} Configuración de Reporte
+    </h4>
+    <button
+      type="button"
+      class="btn btn-light text-danger"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    >
+      Cancelar <i class="fa fa-close"></i>
+    </button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+
+    <form (ngSubmit)="guardarConfiguracion()">
+      <!-- Tipo de Reporte -->
+      <div class="form-group mb-3">
+        <label for="tipo_reporte" class="form-label fw-bold"
+          >Tipo de Reporte</label
+        >
+        <!--change en el select-->
+        <select
+          name="tipo_reporte"
+          id="tipo_reporte"
+          class="form-select"
+          [(ngModel)]="configuracionActual.tipo_reporte"
+          (ngModelChange)="tipoReporteChanged($event)"
+          required
+        >
+          <option value="" disabled>Seleccione un tipo de reporte</option>
+          <option value="ventas-por-vendedor">Ventas por Vendedor</option>
+          <!-- <option value="ventas-diarias">Ventas Diarias</option>
+          <option value="productos-vendidos">Productos Vendidos</option> -->
+        </select>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="frecuencia" class="form-label fw-bold"
+          >Frecuencia de Envío</label
+        >
+        <select
+          name="frecuencia"
+          id="frecuencia"
+          class="form-select"
+          [(ngModel)]="configuracionActual.frecuencia"
+          required
+        >
+          <option value="diario">Diario</option>
+          <option value="semanal">Semanal</option>
+          <option value="mensual">Mensual</option>
+        </select>
+      </div>
+
+      <!-- Opciones específicas por frecuencia -->
+      <div class="mb-3" [ngSwitch]="configuracionActual.frecuencia">
+        <!-- Opciones para frecuencia semanal -->
+        <div *ngSwitchCase="'semanal'" class="p-3">
+          <label class="form-label fw-bold">Días de la semana</label>
+          <div class="row">
+            <div
+              class="col-md-3 col-6 mb-2"
+              *ngFor="let dia of diasSemana; let i = index"
+            >
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="dias_semana_{{ i }}"
+                  id="dia-{{ i + 1 }}"
+                  [(ngModel)]="dia.seleccionado"
+                />
+                <label class="form-check-label" for="dia-{{ i + 1 }}">
+                  {{ dia.nombre }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opciones para frecuencia mensual -->
+        <div *ngSwitchCase="'mensual'" class="p-3">
+          <label for="dia_mes" class="form-label fw-bold">Día del mes</label>
+          <select
+            name="dia_mes"
+            id="dia_mes"
+            class="form-select w-auto"
+            [(ngModel)]="configuracionActual.dia_mes"
+          >
+            <option *ngFor="let dia of diasMes" [value]="dia">{{ dia }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Horarios de Envío -->
+      <div class="mb-4">
+        <label class="form-label fw-bold d-block mb-3">Horarios de Envío</label>
+        <div class="row g-3">
+          <!-- Envío Matutino -->
+          <div class="col-md-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="envio_matutino"
+                name="envio_matutino"
+                [(ngModel)]="configuracionActual.envio_matutino"
+              />
+              <label class="form-check-label" for="envio_matutino" style="width: 154.687px;">
+                Envío Matutino
+              </label>
+            </div>
+            <input
+              type="time"
+              class="form-control"
+              id="hora_matutino"
+              name="hora_matutino"
+              [(ngModel)]="configuracionActual.hora_matutino"
+            />
+          </div>
+
+          <!-- Envío Mediodía -->
+          <div class="col-md-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="envio_mediodia"
+                name="envio_mediodia"
+                [(ngModel)]="configuracionActual.envio_mediodia"
+              />
+              <label class="form-check-label" for="envio_mediodia" style="width: 154.687px;">
+                Envío Mediodía
+              </label>
+            </div>
+            <input
+              type="time"
+              class="form-control"
+              id="hora_mediodia"
+              name="hora_mediodia"
+              [(ngModel)]="configuracionActual.hora_mediodia"
+            />
+          </div>
+
+          <!-- Envío Nocturno -->
+          <div class="col-md-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="envio_nocturno"
+                name="envio_nocturno"
+                [(ngModel)]="configuracionActual.envio_nocturno"
+              />
+              <label class="form-check-label" for="envio_nocturno" style="width: 154.687px;">
+                Envío Nocturno
+              </label>
+            </div>
+            <input
+              type="time"
+              class="form-control"
+              id="hora_nocturno"
+              name="hora_nocturno"
+              [(ngModel)]="configuracionActual.hora_nocturno"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Destinatarios -->
+      <div class="form-group mb-3">
+        <label for="destinatarios" class="form-label fw-bold"
+          >Destinatarios</label
+        >
+        <div class="input-group mb-2">
+          <input
+            type="email"
+            class="form-control"
+            id="email-input"
+            placeholder="Ingrese un correo electrónico"
+            [(ngModel)]="emailInput"
+            name="emailInput"
+          />
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="agregarEmail()"
+          >
+            Agregar
+          </button>
+        </div>
+        <div class="form-text mb-2">
+          Puede agregar múltiples correos electrónicos.
+        </div>
+
+        <div id="lista-emails" class="d-flex flex-wrap gap-2">
+          <div
+            *ngFor="
+              let email of configuracionActual.destinatarios;
+              let i = index
+            "
+            class="d-flex align-items-center bg-light rounded px-2 py-1"
+          >
+            <span>{{ email }}</span>
+            <button
+              type="button" 
+              class="btn btn-link text-danger p-0 ms-2"
+              style="text-decoration: none;"
+              (click)="eliminarEmail(i)"
+            >
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asunto del correo -->
+      <div class="form-group mb-3">
+        <label for="asunto_correo" class="form-label fw-bold"
+          >Asunto del correo (opcional)</label
+        >
+        <input
+          type="text"
+          class="form-control"
+          id="asunto_correo"
+          name="asunto_correo"
+          [(ngModel)]="configuracionActual.asunto_correo"
+          placeholder="Ej: Reporte diario de ventas"
+        />
+        <div class="form-text">
+          Si deja este campo vacío, se usará un asunto predeterminado.
+        </div>
+      </div>
+
+      <!-- Botones de acción end -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+          <span *ngIf="!saving"
+            > Guardar Configuración <i class="fa fa-save"></i></span
+          >
+          <span *ngIf="saving">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mEnvioPrueba>
+  <div class="modal-header">
+    <h4 class="modal-title">Enviar reporte de prueba</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRefPrueba.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <p>
+      ¿Está seguro de que desea enviar un reporte de prueba? Esto generará y
+      enviará el reporte a los destinatarios configurados.
+    </p>
+    <div class="form-group mb-3">
+      <label for="email-prueba" class="form-label"
+        >Correo para prueba (opcional)</label
+      >
+      <input
+        type="email"
+        class="form-control"
+        id="email-prueba"
+        [(ngModel)]="emailPrueba"
+        placeholder="Ingrese un correo para la prueba"
+      />
+      <div class="form-text">
+        Si no ingresa un correo, se enviará a los destinatarios configurados.
+      </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="modalRefPrueba.hide()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="confirmarEnvioPrueba()"
+        [disabled]="enviandoPrueba"
+      >
+        <span *ngIf="!enviandoPrueba">Enviar Prueba</span>
+        <span *ngIf="enviandoPrueba">Enviando...</span>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Modal de confirmación de eliminación -->
+<ng-template #mEliminar>
+  <div class="modal-header">
+    <h4 class="modal-title">Confirmar eliminación</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRefEliminar.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <p>
+      ¿Está seguro de que desea eliminar esta configuración de reporte? Esta
+      acción no se puede deshacer.
+    </p>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="modalRefEliminar.hide()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="confirmarEliminacion()"
+        [disabled]="eliminando"
+      >
+        <span *ngIf="!eliminando">Eliminar</span>
+        <span *ngIf="eliminando">Eliminando...</span>
+      </button>
+    </div>
+  </div>
+</ng-template>
