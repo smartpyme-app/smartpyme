@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
 use App\Models\Plan;
+use App\Models\Suscripcion;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
@@ -216,15 +217,15 @@ class AuthJWTController extends Controller
 
             if (!$request->id) {
                 // Crear cliente
-                    $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
-                    $empresa->cliente_id = $cliente->id;
-                    $empresa->save();
+                $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
+                $empresa->cliente_id = $cliente->id;
+                $empresa->save();
                 // Crear sucursal
-                        $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+                $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
                 // Crear bodega
-                        $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+                $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                 // Crear canales
-                    Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
+                Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
 
                 // Crear impuesto
                 Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
@@ -240,14 +241,14 @@ class AuthJWTController extends Controller
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
             }
 
-        if ($request->id) {
-            $usuario = User::findOrFail($request->id);
-        }else{
-            $usuario = new User();
-            $usuario->id_sucursal  = $sucursal->id;
-            $usuario->id_bodega    = $bodega->id;
-            $usuario->id_empresa   = $empresa->id;
-        }
+            if ($request->id) {
+                $usuario = User::findOrFail($request->id);
+            } else {
+                $usuario = new User();
+                $usuario->id_sucursal  = $sucursal->id;
+                $usuario->id_bodega    = $bodega->id;
+                $usuario->id_empresa   = $empresa->id;
+            }
 
             $usuario->name         = $request->name;
             $usuario->email        = $request->email;
@@ -312,22 +313,22 @@ class AuthJWTController extends Controller
             //     $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
             //     Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
             // } else {
-                // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
-                // Usar URLs por defecto como fallback
-                switch ($empresa->plan) {
-                    case config('constants.PLAN_EMPRENDEDOR'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
-                        break;
-                    case config('constants.PLAN_ESTANDAR'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
-                        break;
-                    case config('constants.PLAN_AVANZADO'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
-                        break;
-                    case config('constants.PLAN_PRO'):
-                        $usuario->url_n1co = config('constants.URL_N1CO_PRO');
-                        break;
-                }
+            // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
+            // Usar URLs por defecto como fallback
+            switch ($empresa->plan) {
+                case config('constants.PLAN_EMPRENDEDOR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
+                    break;
+                case config('constants.PLAN_ESTANDAR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
+                    break;
+                case config('constants.PLAN_AVANZADO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
+                    break;
+                case config('constants.PLAN_PRO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+                    break;
+            }
             // }
 
             $usuario->plan = $empresa->plan;
@@ -431,46 +432,154 @@ class AuthJWTController extends Controller
         return $pdf->download($transaccion->descripcion . '-' . $transaccion->id . '.pdf');
     }
 
+    // public function cancelarSuscripcion(Request $request)
+    // {
+    //     $request->validate([
+    //         'password'      => 'required',
+    //         'id'            => 'required',
+    //         'id_empresa'    => 'required',
+    //     ]);
+
+
+    //     $usuario = User::findOrfail($request->id);
+
+    //     if (!Hash::check($request->password, $usuario->password)) {
+    //         return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+    //     }
+
+    //     $usuario->enable = false;
+    //     $usuario->save();
+
+    //     $empresa = Empresa::findOrfail($request->id_empresa);
+    //     $empresa->activo = false;
+    //     $empresa->fecha_cancelacion = date('Y-m-d');
+    //     $empresa->save();
+
+
+    //     $data = [
+    //         'titulo' => 'Cancelación de Suscripción.',
+    //         'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+    //     ];
+
+    //     // Notificar
+    //     Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
+    //         $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+    //             ->to(env('MAIL_TO_ADDRESS'))
+    //             ->cc(config('constants.MAIL_CC_ADDRESS_1'))
+    //             ->cc(config('constants.MAIL_CC_ADDRESS_2'))
+    //             ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+    //     });
+
+
+    //     return response()->json($usuario, 200);
+    // }
+
     public function cancelarSuscripcion(Request $request)
     {
-        $request->validate([
-            'password'      => 'required',
-            'id'            => 'required',
-            'id_empresa'    => 'required',
-        ]);
+        try {
+            $request->validate([
+                'password'      => 'required',
+                'id'            => 'required|exists:users,id',
+                'id_empresa'    => 'required|exists:empresas,id',
+                'motivo_cancelacion' => 'required|string|max:500',
+            ]);
 
+            // Verificar contraseña
+            $usuario = User::findOrFail($request->id);
+            if (!Hash::check($request->password, $usuario->password)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'La contraseña ingresada no es correcta'
+                ], 422);
+            }
 
-        $usuario = User::findOrfail($request->id);
+            // Iniciar transacción para mantener consistencia en la base de datos
+            DB::beginTransaction();
 
-        if (!Hash::check($request->password, $usuario->password)) {
-            return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+            // Actualizar suscripción
+            $suscripcion = Suscripcion::where('usuario_id', $usuario->id)
+                ->where('estado', '!=', config('constants.ESTADO_SUSCRIPCION_CANCELADO'))
+                ->latest()
+                ->first();
+
+            if ($suscripcion) {
+                // Obtener la fecha de fin del período actual
+                $fechaFinPeriodo = Carbon::parse($suscripcion->fecha_proximo_pago);
+
+                $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
+                $suscripcion->motivo_cancelacion = $request->motivo_cancelacion;
+                $suscripcion->fecha_cancelacion = now();
+                $suscripcion->save();
+
+                // Actualizar empresa
+                $empresa = Empresa::findOrFail($request->id_empresa);
+                $empresa->fecha_cancelacion = now();
+                $empresa->save();
+
+                // No desactivamos al usuario inmediatamente, lo haremos cuando venza su período actual
+                Log::info('Suscripción cancelada', [
+                    'usuario_id' => $usuario->id,
+                    'empresa_id' => $empresa->id,
+                    'fecha_desactivacion_programada' => $fechaFinPeriodo
+                ]);
+
+                // Enviar notificaciones
+                $this->enviarNotificacionesCancelacion($usuario, $empresa, $fechaFinPeriodo, $request->motivo_cancelacion);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tu suscripción ha sido cancelada. Podrás seguir usando el sistema hasta ' . $fechaFinPeriodo->format('d/m/Y'),
+                    'fecha_desactivacion' => $fechaFinPeriodo->format('Y-m-d')
+                ], 200);
+            } else {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No se encontró una suscripción activa para cancelar'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en cancelación de suscripción: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ocurrió un error al procesar la solicitud: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        $usuario->enable = false;
-        $usuario->save();
-
-        $empresa = Empresa::findOrfail($request->id_empresa);
-        $empresa->activo = false;
-        $empresa->fecha_cancelacion = date('Y-m-d');
-        $empresa->save();
-
-
-        $data = [
-            'titulo' => 'Cancelación de Suscripción.',
-            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+    private function enviarNotificacionesCancelacion($usuario, $empresa, $fechaDesactivacion, $motivo)
+    {
+        // Notificar al administrador
+        $dataAdmin = [
+            'titulo' => 'Cancelación de Suscripción',
+            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' ha cancelado su suscripción.',
+            'motivo' => $motivo,
+            'fecha_desactivacion' => $fechaDesactivacion->format('d/m/Y')
         ];
 
-        // Notificar
-        Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
+        Mail::send('mails.notificacion_cancelacion_admin', ['data' => $dataAdmin], function ($m) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
                 ->to(env('MAIL_TO_ADDRESS'))
                 ->cc(config('constants.MAIL_CC_ADDRESS_1'))
                 ->cc(config('constants.MAIL_CC_ADDRESS_2'))
-                ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+                ->subject('Cancelación de suscripción SmartPyme');
         });
 
+        // Notificar al usuario
+        $dataUsuario = [
+            'nombre' => $usuario->name,
+            'empresa' => $empresa->nombre,
+            'fecha_desactivacion' => $fechaDesactivacion->format('d/m/Y')
+        ];
 
-        return response()->json($usuario, 200);
+        Mail::send('mails.notificacion_cancelacion_usuario', ['data' => $dataUsuario], function ($m) use ($usuario) {
+            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                ->to($usuario->email)
+                ->subject('Confirmación de cancelación de suscripción');
+        });
     }
 
     protected function getApiToken(): string
@@ -537,7 +646,7 @@ class AuthJWTController extends Controller
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                
+
                 DB::table('ordenes_pagos')->insert([
                     'id_orden' => $responseData['orderId'],
                     'order_code' => $responseData['orderCode'],
@@ -571,7 +680,6 @@ class AuthJWTController extends Controller
                 'success' => false,
                 'error' => 'Error al crear enlace de pago: ' . ($response->json()['title'] ?? 'Error desconocido')
             ];
-
         } catch (\Exception $e) {
             Log::error('N1co Payment Link Exception', [
                 'message' => $e->getMessage(),
@@ -585,13 +693,13 @@ class AuthJWTController extends Controller
         }
     }
 
-    private function createSuscripcion(array $data): array 
+    private function createSuscripcion(array $data): array
     {
         $plan = Plan::find($data['plan_id']);
-        
+
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
-            
+
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
                 'estado_ultimo_pago' => null,
@@ -616,17 +724,17 @@ class AuthJWTController extends Controller
                 'fin_periodo_prueba' => null
             ]);
         }
-    
+
         return $this->suscripcionService->createSuscripcion($data);
     }
 
-    private function getPlan($plan_id,$withName = false,$name = null)
+    private function getPlan($plan_id, $withName = false, $name = null)
     {
-       $plan= null;
+        $plan = null;
         if ($withName) {
-            $plan= Plan::where('nombre',$name)->first();
-        }else{
-            $plan= Plan::find($plan_id);
+            $plan = Plan::where('nombre', $name)->first();
+        } else {
+            $plan = Plan::find($plan_id);
         }
 
         return $plan;
