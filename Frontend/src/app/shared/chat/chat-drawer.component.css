@@ -7,11 +7,6 @@
   z-index: 9999 !important;
 }
 
-.header-chat {
-  background-color: #0073E1 !important;
-  color: white !important;
-}
-
 /* Para asegurar que el estilo se aplique correctamente */
 .offcanvas.offcanvas-bottom.custom-chat-height {
   height: 520px !important;
@@ -37,33 +32,33 @@
   max-width: 85%;
   border-radius: 1rem;
   position: relative;
+}
+
+.message.user-message {
+  align-self: flex-end;
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.message.user-message .message-content {
+  background-color: #007bff;
+  color: white;
+  border-bottom-right-radius: 0.25rem;
+  border-radius: 1rem;
+  margin-right: 8px;
+}
   
-  &.user-message {
-    align-self: flex-end;
-    margin-left: auto;
-    flex-direction: row-reverse;
-    
-    .message-content {
-      background-color: #007bff;
-      color: white;
-      border-bottom-right-radius: 0.25rem;
-      border-radius: 1rem;
-      margin-right: 8px;
-    }
-  }
-  
-  &.bot-message {
-    align-self: flex-start;
-    margin-right: auto;
-    
-    .message-content {
-      background-color: #f8f9fa;
-      color: #212529;
-      border-bottom-left-radius: 0.25rem;
-      border-radius: 1rem;
-      margin-left: 8px;
-    }
-  }
+.message.bot-message {
+  align-self: flex-start;
+  margin-right: auto;
+}
+
+.message.bot-message .message-content {
+  background-color: #f8f9fa;
+  color: #212529;
+  border-bottom-left-radius: 0.25rem;
+  border-radius: 1rem;
+  margin-left: 8px;
 }
 
 .message-content {
@@ -141,4 +136,51 @@
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* Estilos para las sugerencias */
+.suggestions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.suggestion-chip {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: #0056b3;
+  padding: 0.4rem 0.8rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  user-select: none;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+.suggestion-chip:hover {
+  background-color: rgba(0, 123, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bot-message .suggestion-chip {
+  background-color: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.2);
+}
+
+/* Estilo para mensaje de error cuando no hay acceso */
+.access-error-message {
+  text-align: center;
+  padding: 1rem;
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 0.5rem;
+  margin: 1rem;
 }

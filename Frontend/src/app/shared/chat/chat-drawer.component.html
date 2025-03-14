@@ -1,6 +1,7 @@
 <div class="offcanvas offcanvas-bottom custom-chat-height" tabindex="-1" id="chatOffcanvas" aria-labelledby="chatOffcanvasLabel">
-  <div class="offcanvas-header header-chat">
-    <h6 class="offcanvas-title" id="chatOffcanvasLabel">Lucas IA - Asistente Financiero</h6>
+  <div class="offcanvas-header">
+    <img src="/assets/img/logo.png" alt="Logo" class="me-2" style="width: 80px; height: 24px;">
+    <h6 class="offcanvas-title" id="chatOffcanvasLabel">Jarvis IA - Asistente Financiero</h6>
     <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
   <div class="offcanvas-body">
@@ -14,6 +15,16 @@
         </div>
         <div class="message-content p-3">
           <p class="mb-0">{{ message.text }}</p>
+          
+          <!-- Sugerencias -->
+          <div *ngIf="message.suggestions && message.suggestions.length > 0" class="suggestions-container mt-2">
+            <div *ngFor="let suggestion of message.suggestions" 
+                 class="suggestion-chip" 
+                 tooltip="{{ suggestion }}"
+                 (click)="handleSuggestionClick(suggestion)">
+              {{ suggestion }}
+            </div>
+          </div>
         </div>
         <!-- Avatar para mensajes del usuario (opcional) -->
         <div *ngIf="message.sender === 'user'" class="avatar-container user-avatar-container">

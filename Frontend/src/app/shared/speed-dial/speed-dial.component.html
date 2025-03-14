@@ -1,5 +1,5 @@
-<div class="floating-speed-dial">
+<div class="floating-speed-dial" *ngIf="mostrarBotonChat && isAdmin()">
     <button class="btn btn-primary rounded-circle shadow" (click)="openChat()">
-      <i class="fa fa-comments"></i>
+      <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
     </button>
   </div>

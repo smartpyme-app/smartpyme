@@ -1,4 +1,11 @@
-import {  Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked  } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
+} from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ChatService, ChatMessage } from '@services/chat/chat.service';
 
@@ -7,8 +14,9 @@ import { ChatService, ChatMessage } from '@services/chat/chat.service';
   templateUrl: './chat-drawer.component.html',
   styleUrls: ['./chat-drawer.component.css'],
 })
-
-export class ChatDrawerComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class ChatDrawerComponent
+  implements OnInit, OnDestroy, AfterViewChecked
+{
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
   isOpen = false;
   messages: ChatMessage[] = [];
@@ -22,8 +30,10 @@ export class ChatDrawerComponent implements OnInit, OnDestroy, AfterViewChecked 
   constructor(private chatService: ChatService) {}
 
   ngOnInit(): void {
-    // Suscribirse al estado del drawer
+    // Verificar acceso al chat
+    this.chatService.verificarAcceso();
 
+    // Suscribirse al estado del drawer
     this.subscriptions.push(
       this.chatService.loading$.subscribe((isLoading) => {
         this.isLoading = isLoading;
@@ -90,6 +100,11 @@ export class ChatDrawerComponent implements OnInit, OnDestroy, AfterViewChecked 
 
     this.chatService.sendMessage(this.newMessage);
     this.newMessage = '';
+  }
+
+  // Nuevo método para manejar clics en sugerencias
+  handleSuggestionClick(suggestion: string) {
+    this.chatService.sendMessage(suggestion);
   }
 
   // Mostrar el offcanvas usando la API de Bootstrap

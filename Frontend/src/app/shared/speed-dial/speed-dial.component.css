@@ -1,35 +1,33 @@
 .floating-speed-dial {
-    position: fixed !important; /* Forzar con !important para evitar sobrescritura */
-    right: 2rem !important;
-    bottom: 2rem !important;
-    z-index: 9998 !important; /* Valor muy alto para estar por encima de todo */
+  position: fixed !important;
+  right: 2rem !important;
+  bottom: 2rem !important;
+  z-index: 9998 !important;
+  
+  .btn {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    padding: 0; /* Eliminar padding interno */
+    overflow: hidden; /* Para imágenes que puedan ser ligeramente más grandes */
     
-    .btn {
-      width: 60px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-      
-      i {
-        font-size: 1.5rem;
-      }
-      
-      &:hover {
-        transform: scale(1.05);
-        transition: transform 0.2s ease;
-      }
+    i {
+      font-size: 1.5rem;
+    }
+    
+    &:hover {
+      transform: scale(1.05);
+      transition: transform 0.2s ease;
     }
   }
-  
-  /* Asegurarse de que no hay otros estilos que afecten */
-  :host {
-    display: block;
-    position: static;
-    pointer-events: none; /* Permite que los clics pasen a través del contenedor */
-  }
-  
-  :host .floating-speed-dial {
-    pointer-events: all; /* Pero el botón sí recibe los eventos de clic */
-  }
+}
+
+.bot-avatar {
+  width: 40px;
+  height: 40px;
+  object-fit: cover; /* Mantiene las proporciones de la imagen */
+  border-radius: 50%; /* Hace la imagen redonda si lo prefieres */
+}
