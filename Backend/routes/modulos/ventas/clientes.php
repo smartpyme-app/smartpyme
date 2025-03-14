@@ -3,11 +3,15 @@
 use App\Http\Controllers\Api\Ventas\Clientes\ClientesController;
 use App\Http\Controllers\Api\Ventas\Clientes\DocumentosController;
 use App\Http\Controllers\Api\Ventas\VentasController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/clientes',                         [ClientesController::class, 'index']);
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);
     Route::post('/cliente',                         [ClientesController::class, 'store']);
+    //storeContacto
+    Route::post('/cliente/contacto',                [ClientesController::class, 'storeContacto']);
+    Route::delete('/cliente/contacto/{id}',         [ClientesController::class, 'deleteContacto']);
     Route::delete('/cliente/{id}',                  [ClientesController::class, 'delete']);
     Route::post('/cliente/datos',                   [ClientesController::class, 'datos']);
 

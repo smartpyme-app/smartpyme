@@ -79,19 +79,20 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/contabilidad/libros-iva.php');
 
 	// Admin
-	require base_path('routes/modulos/admin/empresas.php');
-	require base_path('routes/modulos/admin/sucursales.php');
-	require base_path('routes/modulos/admin/dashboards.php');
-	require base_path('routes/modulos/admin/cajas.php');
-	require base_path('routes/modulos/admin/impuestos.php');
-	require base_path('routes/modulos/admin/formasdepago.php');
-	require base_path('routes/modulos/admin/canales.php');
-	require base_path('routes/modulos/admin/notificaciones.php');
-	require base_path('routes/modulos/admin/bancos.php');
-	require base_path('routes/modulos/admin/usuarios.php');
-	require base_path('routes/modulos/admin/accesos.php');
-	require base_path('routes/modulos/admin/licencias.php');
-	require base_path('routes/modulos/admin/MH.php');
+		require base_path('routes/modulos/admin/empresas.php');
+		require base_path('routes/modulos/admin/sucursales.php');
+		require base_path('routes/modulos/admin/dashboards.php');
+		require base_path('routes/modulos/admin/cajas.php');
+		require base_path('routes/modulos/admin/impuestos.php');
+		require base_path('routes/modulos/admin/formasdepago.php');
+		require base_path('routes/modulos/admin/canales.php');
+		require base_path('routes/modulos/admin/notificaciones.php');
+		require base_path('routes/modulos/admin/bancos.php');
+		require base_path('routes/modulos/admin/usuarios.php');
+		require base_path('routes/modulos/admin/accesos.php');
+		require base_path('routes/modulos/admin/licencias.php');
+		require base_path('routes/modulos/admin/MH.php');
+		require base_path('routes/modulos/admin/reportes-automaticos.php');
 
 	// Super Admin
 	require base_path('routes/modulos/super-admin/usuarios.php');
