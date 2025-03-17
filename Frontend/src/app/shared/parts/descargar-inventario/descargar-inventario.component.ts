@@ -18,12 +18,14 @@ export class DescargarInventarioComponent implements OnInit {
         private modalService: BsModalService
     ) { }
 
-	ngOnInit() {}
+	ngOnInit() {
+        this.filtros.id_empresa = this.apiService.auth_user().id_empresa;
+        this.filtros.fecha = this.apiService.date();
+        
+    }
 
 
     public openModal(template: TemplateRef<any>) {
-        this.filtros.id_empresa = this.apiService.auth_user().id_empresa;
-        this.filtros.fecha = this.apiService.date();
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }

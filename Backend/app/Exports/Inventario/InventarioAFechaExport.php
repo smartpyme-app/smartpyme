@@ -35,7 +35,7 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
     public function headings(): array
     {
-        $headings = ['Nombre', 'Categoría', 'Costo', 'Stock'];
+        $headings = ['Nombre', 'codigo', 'Categoría', 'Costo', 'Stock'];
 
         foreach ($this->bodegas as $sucursal) {
             $headings[] = $sucursal->nombre;
@@ -49,6 +49,7 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
         $fields = [
             $producto->nombre,
             $producto->nombre_categoria,
+            $producto->codigo,
             $producto->costo,
             $producto->inventarios->sum('stock'),
         ];

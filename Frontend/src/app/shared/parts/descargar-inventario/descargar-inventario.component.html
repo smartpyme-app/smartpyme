@@ -1,31 +1,16 @@
-<button type="button" class="btn btn-default" (click)="openModal(mfilter)">
-    <img src="/assets/icons/download.png" class="icon">
-</button>
+<form autocomplete="off" (ngSubmit)="descargar()">
+    <div class="row">
 
-<ng-template #mfilter>
-  <div class="modal-header">
-    <div class="modal-title text-center">
-        <h2 class="text-center">Fecha</h2>
+        <div class="form-group col-sm-12">
+            <label for="filtros.fecha">¿A qué fecha deseas ver como estaba tu inventario?:</label>
+            <input type="date" [(ngModel)]="filtros.fecha" class="form-control" name="filtros.fecha">
+        </div>            
     </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="descargar()">
-        <div class="row">
-
-            <div class="form-group col-sm-12">
-                <label for="filtros.fecha">¿Hasta que fecha desea descargar el inventario?:</label>
-                <input type="date" [(ngModel)]="filtros.fecha" class="form-control" name="filtros.fecha">
-            </div>            
-        </div>
-        
-        <div class="d-grid mt-3">
-            <button type="submit" [disabled]="downloading" class="btn btn-primary">
-                <span *ngIf="!downloading">Descargar</span>
-                <span *ngIf="downloading">Descargando...</span>
-            </button>
-        </div>
-    </form>
-  </div>
-</ng-template>
+    
+    <div class="d-grid mt-3">
+        <button type="submit" [disabled]="downloading" class="btn btn-primary">
+            <span *ngIf="!downloading">Descargar</span>
+            <span *ngIf="downloading">Descargando...</span>
+        </button>
+    </div>
+</form>
