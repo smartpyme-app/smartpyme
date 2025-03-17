@@ -35,6 +35,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   ];
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   public tiposReporteActivos: string[] = [];
+  public categorias: any[] = [];
 
   modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
@@ -66,6 +67,9 @@ export class ReportesAutomaticosComponent implements OnInit {
         this.loading = false;
       }
     );
+    this.apiService.getAll('categorias/list').subscribe(categorias => {
+      this.categorias = categorias;
+  }, error => {this.alertService.error(error);});
   }
 
   private actualizarTiposReporteActivos() {
@@ -130,6 +134,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       hora_nocturno: '19:00',
       dia_mes: 1,
       asunto_correo: '',
+      categorias: []
     };
     
     // Restablecer los días de la semana seleccionados
@@ -169,6 +174,8 @@ export class ReportesAutomaticosComponent implements OnInit {
 
   public guardarConfiguracion() {
     // Validar que haya al menos un horario seleccionado
+    console.log(this.configuracionActual);
+    return;
     if (
       !this.configuracionActual.envio_matutino &&
       !this.configuracionActual.envio_mediodia &&
@@ -451,4 +458,50 @@ export class ReportesAutomaticosComponent implements OnInit {
       }, 100);
     }
   }
+
+
+
+
+public seleccionarTodasCategorias() {
+  this.configuracionActual.categorias.forEach((categoria: any) => {
+    categoria.seleccionada = true;
+  });
+  this.actualizarCategoriasSeleccionadas();
+}
+
+
+public seleccionarTodos(event: any) {
+  const checked = event.target.checked;
+  this.categorias.forEach(categoria => {
+    categoria.seleccionada = checked;
+    if (checked) {
+      categoria.porcentaje = 100;
+    } else {
+      categoria.porcentaje = 0;
+    }
+  });
+    this.actualizarCategoriasSeleccionadas();
+}
+
+public actualizarCategoriasSeleccionadas() {
+  this.configuracionActual.categoriasSeleccionadas = this.categorias
+    .filter(categoria => categoria.seleccionada)
+    .map(categoria => ({
+      id: categoria.id,
+      nombre: categoria.nombre,
+      porcentaje: categoria.porcentaje || 100  
+    }));
+}
+
+public actualizarPorcentaje(categoria: any) {
+  if (categoria.seleccionada) {
+    const index = this.configuracionActual.categoriasSeleccionadas.findIndex(
+      (cat: any) => cat.id === categoria.id
+    );
+    
+    if (index !== -1) {
+      this.configuracionActual.categoriasSeleccionadas[index].porcentaje = categoria.porcentaje;
+    }
+  }
+}
 }
