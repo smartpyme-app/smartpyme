@@ -29,8 +29,8 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public function __construct($fecha = null, $id_empresa = null, $configuracion = null)
     {
         //para prueba mandar el 22 de enero
-        //$this->fecha = $fecha ?? Carbon::today()->format('Y-m-d');
-        $this->fecha = '2025-01-22';
+        $this->fecha = $fecha ?? Carbon::today()->format('Y-m-d');
+       // $this->fecha = '2025-01-22';
         $this->id_empresa = $id_empresa;
         $this->configuracion = $configuracion;
     }
