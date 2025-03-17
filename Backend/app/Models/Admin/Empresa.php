@@ -2,13 +2,16 @@
 
 namespace App\Models\Admin;
 
+use App\Models\Suscripcion;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
-class Empresa extends Model {
+class Empresa extends Model
+{
 
     // use SoftDeletes;
     protected $table = 'empresas';
@@ -51,6 +54,7 @@ class Empresa extends Model {
         'cobra_iva',
         'tipo_plan',
         'fecha_cancelacion',
+        'metodo_pago',
         'referido',
         'campania',
         'wompi_aplicativo',
@@ -79,28 +83,44 @@ class Empresa extends Model {
 
         //Permiso para vendedores
         'vendedor_inventario',
+        'woocommerce_api_key',
+        'woocommerce_store_url',
+        'woocommerce_consumer_key',
+        'woocommerce_consumer_secret',
+        'woocommerce_status',
+        'woocommerce_sync_progress',
+        'woocommerce_sync_total_batches',
+        'woocommerce_sync_processed_batches',
+        'woocommerce_sync_status',
+        'woocommerce_last_sync',
+        'woocommerce_error',
+        'woocommerce_canal_id',
+
     ];
 
     protected $casts = [
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
     ];
+    // protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
 
-    protected $appends = ['estado_plan'];
-
-    public function limiteUsuarios(){
-        if($this->usuarios->where('enable', true)->count() < $this->user_limit)
+    public function limiteUsuarios()
+    {
+        if ($this->usuarios->where('enable', true)->count() < $this->user_limit)
             return false;
         return true;
     }
 
-    public function limiteSucursales(){
-        if($this->sucursales->where('activo', true)->count() < $this->sucursal_limit)
+    public function limiteSucursales()
+    {
+        if ($this->sucursales->where('activo', true)->count() < $this->sucursal_limit)
             return false;
         return true;
     }
 
-    public function getEstadoPlanAttribute(){
+    public function getEstadoPlanAttribute()
+    {
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -116,51 +136,63 @@ class Empresa extends Model {
     }
 
 
-    public function usuarios(){
+    public function usuarios()
+    {
         return $this->hasMany('App\Models\User', 'id_empresa');
     }
 
-    public function ventas(){
+    public function ventas()
+    {
         return $this->hasMany('App\Models\Ventas\Venta', 'id_empresa');
     }
 
-    public function proveedores(){
+    public function proveedores()
+    {
         return $this->hasMany('App\Models\Compras\Proveedores\Proveedor', 'id_empresa');
     }
 
-    public function documentos(){
+    public function documentos()
+    {
         return $this->hasMany('App\Models\Admin\Documento', 'id_empresa');
     }
 
-    public function formasDePago(){
+    public function formasDePago()
+    {
         return $this->hasMany('App\Models\Admin\FormasDePago', 'id_empresa');
     }
 
-    public function clientes(){
+    public function clientes()
+    {
         return $this->hasMany('App\Models\Ventas\Clientes\Cliente', 'id_empresa');
     }
 
-    public function productos(){
+    public function productos()
+    {
         return $this->hasMany('App\Models\Inventario\Producto', 'id_empresa');
     }
 
-    public function licencia(){
+    public function licencia()
+    {
         return $this->hasOne('App\Models\Licencias\Licencia', 'id_empresa');
     }
 
-    public function dashboards(){
+    public function dashboards()
+    {
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');
     }
 
-    public function gastos(){
+    public function gastos()
+    {
         return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_empresa');
     }
 
-    public function compras(){
+    public function compras()
+    {
         return $this->hasMany('App\Models\Compras\Compra', 'id_empresa');
     }
 
-    public function canales(){
+    public function canales()
+    {
         return $this->hasMany('App\Models\Admin\Canal', 'id_empresa');
     }
 
@@ -172,59 +204,72 @@ class Empresa extends Model {
         return $this->hasMany('App\Models\Admin\Sucursal', 'id_empresa');
     }
 
-    public function deventas(){
+    public function deventas()
+    {
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_empresa');
     }
-    public function decompras(){
+    public function decompras()
+    {
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_empresa');
     }
 
-    public function recordatorios(){
+    public function recordatorios()
+    {
         return $this->hasMany('App\Models\Admin\Notification', 'id_empresa');
     }
 
-    public function ajustes(){
+    public function ajustes()
+    {
         return $this->hasMany('App\Models\Inventario\Ajuste', 'id_empresa');
     }
 
-    public function impuestos(){
+    public function impuestos()
+    {
         return $this->hasMany('App\Models\Admin\Impuesto', 'id_empresa');
     }
 
-    public function traslados(){
+    public function traslados()
+    {
         return $this->hasMany('App\Models\Inventario\Traslado', 'id_empresa');
     }
 
-    public function presupuestos(){
+    public function presupuestos()
+    {
         return $this->hasMany('App\Models\Contabilidad\Presupuesto', 'id_empresa');
     }
 
-    public function categorias(){
+    public function categorias()
+    {
         return $this->hasMany('App\Models\Inventario\Categorias\Categoria', 'id_empresa');
     }
 
-    public function pagos(){
+    public function pagos()
+    {
         return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
-    public function getRecibosPendientesAttribute(){
+    public function getRecibosPendientesAttribute()
+    {
         return $this->pagos()->where('estado', 'Pendiente')->count();
     }
 
-    public function getLastPayAttribute(){
+    public function getLastPayAttribute()
+    {
         return $this->pagos()->pluck('created_at')->last();
     }
 
-    public function getNextPayAttribute(){
+    public function getNextPayAttribute()
+    {
 
         $next_pay = $this->pagos()->pluck('created_at')->last();
-        if($this->pagos()->count())
+        if ($this->pagos()->count())
             $next_pay->addMonth(1);
 
         return $next_pay;
     }
 
-    public function getLeidosAttribute(){
+    public function getLeidosAttribute()
+    {
         $re = $this->recordatorios()->where('leido', false)->get();
         return $re->count();
     }
@@ -243,6 +288,50 @@ class Empresa extends Model {
                     ->withTimestamps();
     }
 
+    //mandar usuario que esta autenticado
+    public function user()
+    {
 
+        $user = Auth::user();
+        return $user;
+    }
 
+    public function getWooCommerceApiUrlAttribute()
+    {
+        if (empty($this->woocommerce_api_key)) {
+            return null;
+        }
+
+        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
+    }
+    public function getStatusConexionWoocommerceAttribute()
+    {
+        $connected_users = $this->usuarios->where('woocommerce_status', 'connected');
+
+        if ($connected_users->count() > 0) {
+            return 'connected';
+        }
+
+        return 'disconnected';
+    }
+    public function getIsCurrentUserConnectedToWooCommerceAttribute()
+    {
+        $current_user = Auth::user();
+        return $current_user && $current_user->woocommerce_status === 'connected';
+    }
+
+    public function canal()
+    {
+        return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
+    }
+
+    public function suscripcion()
+    {
+        return $this->hasOne(Suscripcion::class, 'empresa_id');
+    }
+
+    public function suscripcionActiva()
+    {
+        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
+    }
 }
