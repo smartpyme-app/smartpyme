@@ -4,6 +4,7 @@ import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
+import { ChatService } from '@services/chat/chat.service';
 
 import * as moment from 'moment';
 declare let $:any;
@@ -16,7 +17,7 @@ export class ApiService {
     public baseUrl: string = environment.API_URL;
     public apiUrl =  this.baseUrl + '/api/';
 
-    constructor(private http: HttpClient, private alertService: AlertService) { }
+    constructor(private http: HttpClient, private alertService: AlertService, private chatService: ChatService) { }
    
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
     
@@ -63,6 +64,7 @@ export class ApiService {
             }, error => {this.alertService.error(error); });
         }
         localStorage.clear();
+        this.chatService.resetChat();
     }
 
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }

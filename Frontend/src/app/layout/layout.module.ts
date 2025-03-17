@@ -18,6 +18,8 @@ import { SidebarOrganizacionesComponent } from './sidebar/sidebar-organizaciones
 import { SidebarVentasComponent } from './sidebar/sidebar-ventas/sidebar-ventas.component';
 import { SidebarServiciosComponent } from './sidebar/sidebar-servicios/sidebar-servicios.component';
 import { LayoutComponent } from './layout.component';
+import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
+import { ChatDrawerComponent } from '../shared/chat/chat-drawer.component';
 
 import { ThemeComponent } from './header/theme/theme.component';
 import { PerfilComponent } from './header/perfil/perfil.component';
@@ -48,6 +50,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     LayoutComponent,
     PerfilComponent,
     ThemeComponent,
+    SpeedDialComponent,
+    ChatDrawerComponent
   ],
   exports: [
     FooterComponent,
@@ -61,6 +65,8 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     LayoutComponent,
     PerfilComponent,
     ThemeComponent,
+    SpeedDialComponent,
+    ChatDrawerComponent
   ]
 })
 export class LayoutModule { }
