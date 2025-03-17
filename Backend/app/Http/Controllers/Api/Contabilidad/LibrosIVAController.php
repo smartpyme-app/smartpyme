@@ -16,7 +16,7 @@ use App\Exports\Contabilidad\LibroConsumidoresExport;
 use App\Exports\Contabilidad\AnexoConsumidoresExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
-use App\Exports\Contabilidad\DttesContribuyentesExport;
+use App\Exports\Contabilidad\GlobalDttesExport;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -379,13 +379,13 @@ class LibrosIVAController extends Controller
         return Excel::download($compras, 'AnexoComprasExport.xlsx');
     }
 
-    public function contribuyentesDttesExport(Request $request)
+    public function GlobalDttesExport(Request $request)
     {
         try {
-            $contribuyentes = new DttesContribuyentesExport();
-            $contribuyentes->filter($request);
+            $dttes = new GlobalDttesExport();
+            $dttes->filter($request);
             
-            $result = $contribuyentes->generateZip();
+            $result = $dttes->generateZip();
             
             if (!$result['success']) {
                 Log::error('Error al generar ZIP: ' . $result['message']);

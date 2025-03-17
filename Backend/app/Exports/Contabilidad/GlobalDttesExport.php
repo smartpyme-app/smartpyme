@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use ZipArchive;
 use Illuminate\Support\Facades\Storage;
 
-class DttesContribuyentesExport
+class GlobalDttesExport
 {
     protected $request;
 
@@ -21,6 +21,8 @@ class DttesContribuyentesExport
     public function generateZip()
     {
         $request = $this->request;
+
+        Log::info($request);
 
         // Obtener las fechas del filtro para el nombre del archivo
         $fechaInicio = $request->inicio ?? date('Y-m-d');
@@ -45,6 +47,7 @@ class DttesContribuyentesExport
             ->whereNotNull('sello_mh')
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
+            ->where('tipo_dte', $request->typeDTE)
             ->when($request->has('inicio') && $request->has('fin'), function ($query) use ($request) {
                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
             })

@@ -104,8 +104,10 @@ export class ContribuyentesComponent implements OnInit {
 
     }
 
-    public descargarDttes(): void {
+    public descargarDTECreditoFiscal(): void {
         this.downloading = true;
+        let typeDTE : string = '03';
+        this.filtros.typeDTE = typeDTE;
         this.apiService.export('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
           (data: Blob) => {
             // Si es texto plano, es un mensaje de error
