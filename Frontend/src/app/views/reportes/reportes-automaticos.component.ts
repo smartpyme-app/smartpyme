@@ -36,6 +36,10 @@ export class ReportesAutomaticosComponent implements OnInit {
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   public tiposReporteActivos: string[] = [];
   public categorias: any[] = [];
+  public tiposReporte: any[] = [ 
+    {tipo: 'ventas-por-vendedor', nombre: 'Ventas por Vendedor'},
+     {tipo: 'ventas-por-categoria-vendedor', nombre: 'Ventas por Categoría y Vendedor'}
+    ];
 
   modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
@@ -151,12 +155,60 @@ export class ReportesAutomaticosComponent implements OnInit {
     });
   }
 
+  // openModal(template: TemplateRef<any>, configuracion: any) {
+  //   if (!configuracion || configuracion === null) {
+  //     this.configuracionActual = {};
+  //   } else {
+  //     this.configuracionActual = { ...configuracion };
+
+  //     // Si es semanal, configurar los días seleccionados
+  //     if (
+  //       this.configuracionActual.frecuencia === 'semanal' &&
+  //       this.configuracionActual.dias_semana
+  //     ) {
+  //       // Reiniciar todos los días
+  //       this.diasSemana.forEach((dia) => (dia.seleccionado = false));
+
+  //       // Seleccionar los días guardados
+  //       this.diasSemana.forEach((dia) => {
+  //         if (this.configuracionActual.dias_semana.includes(dia.id)) {
+  //           dia.seleccionado = true;
+  //         }
+  //       });
+  //     }
+  //   }
+
+  //   this.modalRef = this.modalService.show(template, {
+  //     class: 'modal-lg',
+  //     backdrop: 'static',
+  //   });
+  // }
+
   openModal(template: TemplateRef<any>, configuracion: any) {
     if (!configuracion || configuracion === null) {
       this.configuracionActual = {};
     } else {
       this.configuracionActual = { ...configuracion };
-
+  
+      // Reiniciar todas las categorías
+      this.categorias.forEach(categoria => {
+        categoria.seleccionada = false;
+        categoria.porcentaje = 0;
+      });
+  
+      if (this.configuracionActual.tipo_reporte === 'ventas-por-categoria-vendedor') {
+        // Configurar las categorías seleccionadas
+        if (this.configuracionActual.configuracion) {
+          this.configuracionActual.configuracion.forEach((configCat: any) => {
+            const categoriaEncontrada = this.categorias.find(cat => cat.id === configCat.id);
+            if (categoriaEncontrada) {
+              categoriaEncontrada.seleccionada = true;
+              categoriaEncontrada.porcentaje = configCat.porcentaje || 100;
+            }
+          });
+        }
+      }
+  
       // Si es semanal, configurar los días seleccionados
       if (
         this.configuracionActual.frecuencia === 'semanal' &&
@@ -164,7 +216,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       ) {
         // Reiniciar todos los días
         this.diasSemana.forEach((dia) => (dia.seleccionado = false));
-
+  
         // Seleccionar los días guardados
         this.diasSemana.forEach((dia) => {
           if (this.configuracionActual.dias_semana.includes(dia.id)) {
@@ -173,7 +225,7 @@ export class ReportesAutomaticosComponent implements OnInit {
         });
       }
     }
-
+  
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
