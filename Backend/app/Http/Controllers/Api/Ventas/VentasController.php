@@ -1245,7 +1245,7 @@ class VentasController extends Controller
 
     public function enviarReporteProgramadoTest($configuracion, $destinatarios)
     {
-        //try {
+        try {
             $fecha = Carbon::today()->format('Y-m-d');
             if($configuracion->tipo_reporte === 'ventas-por-vendedor') {
                 $export = new VentasPorVendedorExport($fecha, $configuracion->id_empresa);
@@ -1321,13 +1321,13 @@ class VentasController extends Controller
          
             unlink($filePath);
 
-        //     return true;
-        // } catch (\Exception $e) {
-        //     Log::error('Error al enviar reporte de prueba: ' . $e->getMessage(), [
-        //         'configuracion_id' => $configuracion->id ?? null,
-        //         'tipo_reporte' => $configuracion->tipo_reporte ?? null
-        //     ]);
-        //     throw $e;
-        // }
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar reporte de prueba: ' . $e->getMessage(), [
+                'configuracion_id' => $configuracion->id ?? null,
+                'tipo_reporte' => $configuracion->tipo_reporte ?? null
+            ]);
+            throw $e;
+        }
     }
 }
