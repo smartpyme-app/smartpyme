@@ -58,7 +58,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       (configuraciones) => {
         this.configuraciones = configuraciones;
         this.loading = false;
-        
+
         // Obtener los tipos de reporte activos para validación
         this.actualizarTiposReporteActivos();
       },
@@ -67,9 +67,14 @@ export class ReportesAutomaticosComponent implements OnInit {
         this.loading = false;
       }
     );
-    this.apiService.getAll('categorias/list').subscribe(categorias => {
-      this.categorias = categorias;
-  }, error => {this.alertService.error(error);});
+    this.apiService.getAll('categorias/list').subscribe(
+      (categorias) => {
+        this.categorias = categorias;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
   }
 
   private actualizarTiposReporteActivos() {
@@ -134,12 +139,12 @@ export class ReportesAutomaticosComponent implements OnInit {
       hora_nocturno: '19:00',
       dia_mes: 1,
       asunto_correo: '',
-      categorias: []
+      categorias: [],
     };
-    
+
     // Restablecer los días de la semana seleccionados
-    this.diasSemana.forEach(dia => dia.seleccionado = false);
-    
+    this.diasSemana.forEach((dia) => (dia.seleccionado = false));
+
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
@@ -151,14 +156,17 @@ export class ReportesAutomaticosComponent implements OnInit {
       this.configuracionActual = {};
     } else {
       this.configuracionActual = { ...configuracion };
-      
+
       // Si es semanal, configurar los días seleccionados
-      if (this.configuracionActual.frecuencia === 'semanal' && this.configuracionActual.dias_semana) {
+      if (
+        this.configuracionActual.frecuencia === 'semanal' &&
+        this.configuracionActual.dias_semana
+      ) {
         // Reiniciar todos los días
-        this.diasSemana.forEach(dia => dia.seleccionado = false);
-        
+        this.diasSemana.forEach((dia) => (dia.seleccionado = false));
+
         // Seleccionar los días guardados
-        this.diasSemana.forEach(dia => {
+        this.diasSemana.forEach((dia) => {
           if (this.configuracionActual.dias_semana.includes(dia.id)) {
             dia.seleccionado = true;
           }
@@ -218,13 +226,17 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     // Verificar si ya existe un reporte activo del mismo tipo
     if (this.configuracionActual.activo) {
-      const existeReporteActivo = this.tiposReporteActivos.includes(this.configuracionActual.tipo_reporte) &&
-        (!this.configuracionActual.id || 
-         this.configuraciones.data.some((c: any) => 
-           c.tipo_reporte === this.configuracionActual.tipo_reporte && 
-           c.activo && 
-           c.id !== this.configuracionActual.id
-         ));
+      const existeReporteActivo =
+        this.tiposReporteActivos.includes(
+          this.configuracionActual.tipo_reporte
+        ) &&
+        (!this.configuracionActual.id ||
+          this.configuraciones.data.some(
+            (c: any) =>
+              c.tipo_reporte === this.configuracionActual.tipo_reporte &&
+              c.activo &&
+              c.id !== this.configuracionActual.id
+          ));
 
       if (existeReporteActivo) {
         Swal.fire({
@@ -233,7 +245,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
           showCancelButton: true,
           confirmButtonText: 'Continuar y desactivar la existente',
-          cancelButtonText: 'Cancelar'
+          cancelButtonText: 'Cancelar',
         }).then((result) => {
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
@@ -318,8 +330,10 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     // Si se está activando, verificar si ya existe otro reporte activo del mismo tipo
     if (nuevoEstado) {
-      const existeReporteActivo = this.tiposReporteActivos.includes(config.tipo_reporte);
-      
+      const existeReporteActivo = this.tiposReporteActivos.includes(
+        config.tipo_reporte
+      );
+
       if (existeReporteActivo) {
         Swal.fire({
           icon: 'warning',
@@ -327,7 +341,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
           showCancelButton: true,
           confirmButtonText: 'Continuar y desactivar la existente',
-          cancelButtonText: 'Cancelar'
+          cancelButtonText: 'Cancelar',
         }).then((result) => {
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
@@ -429,7 +443,7 @@ export class ReportesAutomaticosComponent implements OnInit {
         }
       );
   }
-  
+
   private obtenerEmpresa(): number {
     const empresa = localStorage.getItem('SP_auth_user');
     if (empresa) {
@@ -444,9 +458,10 @@ export class ReportesAutomaticosComponent implements OnInit {
     value = value.replace(/\s+/g, ' ');
     value = value.trim();
     const empresa = this.obtenerEmpresa();
-    
-    this.configuracionActual.asunto_correo = `Reporte diario de ${value}` + ' ' + empresa;
-    
+
+    this.configuracionActual.asunto_correo =
+      `Reporte diario de ${value}` + ' ' + empresa;
+
     // Verificar si ya existe una configuración activa para este tipo de reporte
     if (this.tiposReporteActivos.includes(value)) {
       setTimeout(() => {
@@ -459,49 +474,69 @@ export class ReportesAutomaticosComponent implements OnInit {
     }
   }
 
-
-
-
-public seleccionarTodasCategorias() {
-  this.configuracionActual.categorias.forEach((categoria: any) => {
-    categoria.seleccionada = true;
-  });
-  this.actualizarCategoriasSeleccionadas();
-}
-
-
-public seleccionarTodos(event: any) {
-  const checked = event.target.checked;
-  this.categorias.forEach(categoria => {
-    categoria.seleccionada = checked;
-    if (checked) {
-      categoria.porcentaje = 100;
-    } else {
-      categoria.porcentaje = 0;
-    }
-  });
+  public seleccionarTodasCategorias() {
+    this.configuracionActual.categorias.forEach((categoria: any) => {
+      categoria.seleccionada = true;
+    });
     this.actualizarCategoriasSeleccionadas();
-}
+  }
 
-public actualizarCategoriasSeleccionadas() {
-  this.configuracionActual.categoriasSeleccionadas = this.categorias
-    .filter(categoria => categoria.seleccionada)
-    .map(categoria => ({
-      id: categoria.id,
-      nombre: categoria.nombre,
-      porcentaje: categoria.porcentaje || 100  
-    }));
-}
+  public seleccionarTodos(event: any) {
+    const checked = event.target.checked;
+    this.categorias.forEach((categoria) => {
+      categoria.seleccionada = checked;
+      if (checked) {
+        categoria.porcentaje = 100;
+      } else {
+        categoria.porcentaje = 0;
+      }
+    });
+    this.actualizarCategoriasSeleccionadas();
+  }
 
-public actualizarPorcentaje(categoria: any) {
-  if (categoria.seleccionada) {
-    const index = this.configuracionActual.categoriasSeleccionadas.findIndex(
-      (cat: any) => cat.id === categoria.id
-    );
-    
-    if (index !== -1) {
-      this.configuracionActual.categoriasSeleccionadas[index].porcentaje = categoria.porcentaje;
+  public actualizarPorcentaje(categoria: any) {
+    if (categoria.seleccionada) {
+      const index = this.configuracionActual.categoriasSeleccionadas.findIndex(
+        (cat: any) => cat.id === categoria.id
+      );
+
+      if (index !== -1) {
+        this.configuracionActual.categoriasSeleccionadas[index].porcentaje =
+          categoria.porcentaje;
+      }
     }
   }
-}
+
+  public actualizarCategoriasSeleccionadas() {
+    this.configuracionActual.categoriasSeleccionadas = this.categorias
+      .filter((categoria) => {
+        if (
+          categoria.seleccionada &&
+          (!categoria.porcentaje || categoria.porcentaje === 0)
+        ) {
+          categoria.porcentaje = 100;
+        }
+        return categoria.seleccionada;
+      })
+      .map((categoria) => ({
+        id: categoria.id,
+        nombre: categoria.nombre,
+        porcentaje: categoria.porcentaje || 100,
+      }));
+  }
+
+  public actualizarSeleccionCategoria(categoria: any) {
+    if (
+      categoria.seleccionada &&
+      (!categoria.porcentaje || categoria.porcentaje === 0)
+    ) {
+      categoria.porcentaje = 100;
+    }
+
+    if (!categoria.seleccionada) {
+      categoria.porcentaje = 0;
+    }
+
+    this.actualizarCategoriasSeleccionadas();
+  }
 }
