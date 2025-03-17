@@ -40,6 +40,7 @@ import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
+import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
 
 import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
 
@@ -84,7 +85,8 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    ThreedsModalComponent
+    ThreedsModalComponent,
+    VerHistorialButtonComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -113,7 +115,8 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    ThreedsModalComponent
+    ThreedsModalComponent,
+    VerHistorialButtonComponent
   ],
   providers: [AlertService],
 })

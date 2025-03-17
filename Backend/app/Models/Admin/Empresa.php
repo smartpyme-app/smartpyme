@@ -3,6 +3,8 @@
 namespace App\Models\Admin;
 
 use App\Models\Suscripcion;
+use App\Models\Planilla\CargoEmpresa;
+use App\Models\Planilla\DepartamentoEmpresa;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -270,6 +272,20 @@ class Empresa extends Model
     {
         $re = $this->recordatorios()->where('leido', false)->get();
         return $re->count();
+    }
+
+    public function departamentos()
+    {
+        return $this->belongsToMany(DepartamentoEmpresa::class, 'empresa_departamento')
+                    ->withPivot('estado')
+                    ->withTimestamps();
+    }
+
+    public function cargos()
+    {
+        return $this->belongsToMany(CargoEmpresa::class, 'empresa_cargo')
+                    ->withPivot('estado')
+                    ->withTimestamps();
     }
 
     //mandar usuario que esta autenticado

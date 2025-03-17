@@ -12,8 +12,9 @@
 |
 */
 
-use App\Http\Controllers\n1co\N1coChargeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Constants\ConstantsController;
+use App\Http\Controllers\n1co\N1coChargeController;
 
 Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
@@ -40,6 +41,9 @@ Route::group(['prefix' => 'payment'], function () {
 require base_path('routes/modulos/auth.php');
 
 Route::group(['middleware' => ['jwt.auth']], function () {
+
+	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
+
 
 
 	require base_path('routes/modulos/dash.php');
@@ -75,14 +79,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/paquetes.php');
 
 	// Eventos
-	require base_path('routes/modulos/eventos/eventos.php');
-
-	// Empleados
-	require base_path('routes/modulos/empleados/empleados.php');
-	require base_path('routes/modulos/empleados/planillas.php');
-	require base_path('routes/modulos/empleados/comisiones.php');
-	require base_path('routes/modulos/empleados/asistencias.php');
-	require base_path('routes/modulos/empleados/metas.php');
+		require base_path('routes/modulos/eventos/eventos.php');
 
 	// Contabilidad
 	require base_path('routes/modulos/contabilidad/activos.php');
@@ -113,6 +110,17 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/transacciones.php');
 });
 
+	// planillas
+
+		require base_path('routes/modulos/planilla/empleados.php');
+		require base_path('routes/modulos/planilla/planillas.php');
+		require base_path('routes/modulos/planilla/cargos.php');
+		require base_path('routes/modulos/planilla/departamentos.php');
+
+		require base_path('routes/modulos/planilla/historialcontratos.php');
+
+
+});
 
 // Webhook
 require base_path('routes/modulos/webhook/webhook.php');
