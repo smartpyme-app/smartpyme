@@ -474,6 +474,23 @@ export class ApiService {
       );
   }
 
+  download(url: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}${url}`, {
+      responseType: 'blob',
+      headers: new HttpHeaders({
+        Authorization: 'Bearer ' + this.auth_token()
+      })
+    }).pipe(
+      map((response) => {
+        return new Blob([response]);
+      }),
+      catchError((error) => {
+        console.error('Error al descargar el archivo:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   downloadFile(blob: Blob, filename: string) {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
