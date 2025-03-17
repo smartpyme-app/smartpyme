@@ -52,78 +52,81 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
             1 => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'EEEEEE']]],
         ];
     }
-
-
-
     public function collection()
     {
         $categoriasSeleccionadas = $this->configuracion->configuracion;
         $categoriaIds = array_column($categoriasSeleccionadas, 'id');
+        
         Log::info('fecha: ' . $this->fecha);
         $ventasQuery = Detalle::whereHas('venta', function ($q) {
             $q->where('fecha', $this->fecha)
                 ->where('id_empresa', $this->id_empresa)
                 ->where('cotizacion', 0);
         })
-            ->whereHas('producto.categoria', function ($q) use ($categoriaIds) {
-                $q->whereIn('id', $categoriaIds);
-            })
-            ->with(['venta.vendedor', 'producto.categoria'])
-            ->get();
-
+        ->whereHas('producto.categoria', function ($q) use ($categoriaIds) {
+            $q->whereIn('id', $categoriaIds);
+        })
+        ->with(['venta.vendedor', 'producto.categoria'])
+        ->get();
+    
         $ventasAgrupadas = collect();
         $vendedoresAgrupados = $ventasQuery->groupBy(function ($detalle) {
             return $detalle->venta->vendedor ? $detalle->venta->vendedor->name : 'Sin vendedor';
         });
-
+    
         foreach ($vendedoresAgrupados as $nombreVendedor => $detallesVendedor) {
             $resultado = [
                 'Vendedor' => $nombreVendedor,
                 'Total General' => 0
             ];
-
             foreach ($categoriasSeleccionadas as $categoria) {
                 $resultado[$categoria['nombre']] = 0;
+                $resultado[$categoria['nombre'] . ' (%)'] = $categoria['porcentaje'] . '%';
             }
-
-            // Calcular totales por categoría
+    
             foreach ($detallesVendedor as $detalle) {
                 $nombreCategoria = $detalle->producto->categoria->nombre;
-                if (in_array($nombreCategoria, array_column($categoriasSeleccionadas, 'nombre'))) {
-                    $resultado[$nombreCategoria] += round($detalle->total, 2);
-                    $resultado['Total General'] += round($detalle->total, 2);
+                $categoriaConfig = collect($categoriasSeleccionadas)
+                    ->firstWhere('nombre', $nombreCategoria);
+    
+                if ($categoriaConfig) {
+                    // Calcular el total con el porcentaje
+                    $totalConPorcentaje = round($detalle->total * ($categoriaConfig['porcentaje'] / 100), 2);
+                    
+                    $resultado[$nombreCategoria] += $totalConPorcentaje;
+                    $resultado['Total General'] += $totalConPorcentaje;
                 }
             }
-
+    
             $ventasAgrupadas->push($resultado);
         }
-
+    
         return $ventasAgrupadas;
     }
-
-    public function map($fila): array
-    {
-        $categoriasSeleccionadas = $this->configuracion->configuracion;
-
-        $resultado = [$fila['Vendedor']];
-        foreach ($categoriasSeleccionadas as $categoria) {
-            $resultado[] = $fila[$categoria['nombre']] ?? 0;
-        }
-        $resultado[] = $fila['Total General'];
-
-        return $resultado;
-    }
-
+    
     public function headings(): array
     {
         $categoriasSeleccionadas = $this->configuracion->configuracion;
-
+    
         $columnas = ['Vendedor'];
         foreach ($categoriasSeleccionadas as $categoria) {
             $columnas[] = $categoria['nombre'];
         }
         $columnas[] = 'Total General';
-
+    
         return $columnas;
+    }
+    
+    public function map($fila): array
+    {
+        $categoriasSeleccionadas = $this->configuracion->configuracion;
+    
+        $resultado = [$fila['Vendedor']];
+        foreach ($categoriasSeleccionadas as $categoria) {
+            $resultado[] = '$' . number_format(round($fila[$categoria['nombre']], 2), 2);
+        }
+        $resultado[] = '$' . number_format(round($fila['Total General'], 2), 2);
+    
+        return $resultado;
     }
 }
