@@ -247,7 +247,7 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
-        try {
+       // try {
             switch ($configuracion->tipo_reporte) {
                 case 'ventas-por-vendedor':
                     $controller = new VentasController();
@@ -259,6 +259,15 @@ class ReporteConfiguracionController extends Controller
 
 
                     $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios);
+                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
+                case 'ventas-por-categoria-vendedor':
+                    $controller = new VentasController();
+
+                    $destinatarios = $request->email_prueba
+                        ? [$request->email_prueba]
+                        : $configuracion->destinatarios;
+
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios);
 
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
 
@@ -267,8 +276,8 @@ class ReporteConfiguracionController extends Controller
                 default:
                     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al enviar el reporte: ' . $e->getMessage()], 500);
-        }
+        // } catch (\Exception $e) {
+        //     return response()->json(['error' => 'Error al enviar el reporte: ' . $e->getMessage()], 500);
+        // }
     }
 }

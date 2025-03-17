@@ -29,6 +29,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 
 use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
+use App\Exports\VentasPorCategoriaVendedorExport;
 use App\Exports\VentasPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
@@ -1244,11 +1245,15 @@ class VentasController extends Controller
 
     public function enviarReporteProgramadoTest($configuracion, $destinatarios)
     {
-        try {
+        //try {
             $fecha = Carbon::today()->format('Y-m-d');
-            $export = new VentasPorVendedorExport($fecha, $configuracion->id_empresa);
-            $filename = "ventas-por-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
-
+            if($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $export = new VentasPorVendedorExport($fecha, $configuracion->id_empresa);
+                $filename = "ventas-por-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
+            } else {
+                $export = new VentasPorCategoriaVendedorExport($fecha, $configuracion->id_empresa, $configuracion);
+                $filename = "ventas-por-categoria-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
+            }
 
             $relativePath = "reportes/{$filename}";
 
@@ -1316,13 +1321,13 @@ class VentasController extends Controller
          
             unlink($filePath);
 
-            return true;
-        } catch (\Exception $e) {
-            Log::error('Error al enviar reporte de prueba: ' . $e->getMessage(), [
-                'configuracion_id' => $configuracion->id ?? null,
-                'tipo_reporte' => $configuracion->tipo_reporte ?? null
-            ]);
-            throw $e;
-        }
+        //     return true;
+        // } catch (\Exception $e) {
+        //     Log::error('Error al enviar reporte de prueba: ' . $e->getMessage(), [
+        //         'configuracion_id' => $configuracion->id ?? null,
+        //         'tipo_reporte' => $configuracion->tipo_reporte ?? null
+        //     ]);
+        //     throw $e;
+        // }
     }
 }

@@ -1,0 +1,129 @@
+<?php
+
+namespace App\Exports;
+
+use App\Models\Ventas\Detalle;
+use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Illuminate\Cache\Lock;
+use Illuminate\Support\Facades\Log;
+
+class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, WithMapping, WithTitle, ShouldAutoSize, WithStyles
+{
+    /**
+     * @return \Illuminate\Support\Collection
+     */
+    public $request;
+    public $fecha;
+    public $id_empresa;
+    public $configuracion;
+
+    public function __construct($fecha = null, $id_empresa = null, $configuracion = null)
+    {
+        //para prueba mandar el 22 de enero
+        //$this->fecha = $fecha ?? Carbon::today()->format('Y-m-d');
+        $this->fecha = '2025-01-22';
+        $this->id_empresa = $id_empresa;
+        $this->configuracion = $configuracion;
+    }
+
+    public function filter(Request $request)
+    {
+        $this->request = $request;
+    }
+
+    public function title(): string
+    {
+        return 'Ventas por Categoría y Vendedor - ' . $this->fecha;
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            // Estilo para los encabezados
+            1 => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'EEEEEE']]],
+        ];
+    }
+
+
+
+    public function collection()
+    {
+        $categoriasSeleccionadas = $this->configuracion->configuracion;
+        $categoriaIds = array_column($categoriasSeleccionadas, 'id');
+        Log::info('fecha: ' . $this->fecha);
+        $ventasQuery = Detalle::whereHas('venta', function ($q) {
+            $q->where('fecha', $this->fecha)
+                ->where('id_empresa', $this->id_empresa)
+                ->where('cotizacion', 0);
+        })
+            ->whereHas('producto.categoria', function ($q) use ($categoriaIds) {
+                $q->whereIn('id', $categoriaIds);
+            })
+            ->with(['venta.vendedor', 'producto.categoria'])
+            ->get();
+
+        $ventasAgrupadas = collect();
+        $vendedoresAgrupados = $ventasQuery->groupBy(function ($detalle) {
+            return $detalle->venta->vendedor ? $detalle->venta->vendedor->name : 'Sin vendedor';
+        });
+
+        foreach ($vendedoresAgrupados as $nombreVendedor => $detallesVendedor) {
+            $resultado = [
+                'Vendedor' => $nombreVendedor,
+                'Total General' => 0
+            ];
+
+            foreach ($categoriasSeleccionadas as $categoria) {
+                $resultado[$categoria['nombre']] = 0;
+            }
+
+            // Calcular totales por categoría
+            foreach ($detallesVendedor as $detalle) {
+                $nombreCategoria = $detalle->producto->categoria->nombre;
+                if (in_array($nombreCategoria, array_column($categoriasSeleccionadas, 'nombre'))) {
+                    $resultado[$nombreCategoria] += round($detalle->total, 2);
+                    $resultado['Total General'] += round($detalle->total, 2);
+                }
+            }
+
+            $ventasAgrupadas->push($resultado);
+        }
+
+        return $ventasAgrupadas;
+    }
+
+    public function map($fila): array
+    {
+        $categoriasSeleccionadas = $this->configuracion->configuracion;
+
+        $resultado = [$fila['Vendedor']];
+        foreach ($categoriasSeleccionadas as $categoria) {
+            $resultado[] = $fila[$categoria['nombre']] ?? 0;
+        }
+        $resultado[] = $fila['Total General'];
+
+        return $resultado;
+    }
+
+    public function headings(): array
+    {
+        $categoriasSeleccionadas = $this->configuracion->configuracion;
+
+        $columnas = ['Vendedor'];
+        foreach ($categoriasSeleccionadas as $categoria) {
+            $columnas[] = $categoria['nombre'];
+        }
+        $columnas[] = 'Total General';
+
+        return $columnas;
+    }
+}

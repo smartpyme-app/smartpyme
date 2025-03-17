@@ -117,6 +117,7 @@ class EnviarReportesAutomaticos extends Command
                 $empresa = Empresa::find($configuracion->id_empresa);
                 return $controller->enviarReporteProgramado($configuracion, $empresa);
                 
+                
             // Implementar otros tipos de reportes aquí
                 
             default:
