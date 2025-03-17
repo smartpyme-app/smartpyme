@@ -255,26 +255,26 @@
           </div>
           
           <div class="table-responsive" *ngIf="categorias.length > 0">
-            <table class="table table-bordered">
+            <table class="table table-sm table-bordered">
               <thead>
                 <tr>
-                  <th width="40">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" (change)="seleccionarTodos($event)">
+                  <th width="30">
+                    <div class="form-check mb-0">
+                      <input type="checkbox" class="form-check-input" (change)="seleccionarTodos($event)">
                     </div>
                   </th>
-                  <th>Nombre de Categoría</th>
-                  <th>Porcentaje</th>
+                  <th>Categoría</th>
+                  <th width="120">Porcentaje</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let categoria of categorias; let i = index">
                   <td class="text-center">
-                    <div class="form-check">
+                    <div class="form-check mb-0">
                       <input 
                         type="checkbox" 
-                        class="form-check-input" 
-                        [id]="'categoria_' + categoria.id" 
+                        class="form-check-input"
+                        [id]="'categoria_' + categoria.id"
                         [(ngModel)]="categoria.seleccionada"
                         name="categoria_seleccionada_{{i}}"
                         (change)="actualizarCategoriasSeleccionadas()"
@@ -282,23 +282,23 @@
                     </div>
                   </td>
                   <td>
-                    <label [for]="'categoria_' + categoria.id">{{ categoria.nombre }}</label>
+                    <label class="mb-0" [for]="'categoria_' + categoria.id">{{ categoria.nombre }}</label>
                   </td>
-                  <td style="width: 200px;">
-                    <div class="input-group">
+                  <td>
+                    <div class="input-group input-group-sm">
                       <input 
-                          type="number" 
-                          class="form-control" 
-                          [(ngModel)]="categoria.porcentaje"
-                          name="categoria_porcentaje_{{i}}" 
-                          placeholder="Porcentaje" 
-                          min="0" 
-                          max="100" 
-                          [disabled]="!categoria.seleccionada"
-                          (change)="actualizarPorcentaje(categoria)"
-                          required
-                        >
-                      <span class="input-group-text">%</span>
+                        type="number"
+                        class="form-control"
+                        [(ngModel)]="categoria.porcentaje"
+                        name="categoria_porcentaje_{{i}}"
+                        placeholder="%"
+                        min="0"
+                        max="100"
+                        [disabled]="!categoria.seleccionada"
+                        (change)="actualizarPorcentaje(categoria)"
+                        required
+                      >
+                      <span class="input-group-text py-0">%</span>
                     </div>
                   </td>
                 </tr>

@@ -139,7 +139,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       hora_nocturno: '19:00',
       dia_mes: 1,
       asunto_correo: '',
-      categorias: [],
+      categoriasSeleccionadas: [],
     };
 
     // Restablecer los días de la semana seleccionados
