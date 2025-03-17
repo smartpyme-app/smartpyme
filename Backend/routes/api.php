@@ -20,8 +20,6 @@ Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
 
-
-
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 
@@ -43,8 +41,6 @@ require base_path('routes/modulos/auth.php');
 Route::group(['middleware' => ['jwt.auth']], function () {
 
 	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
-
-
 
 	require base_path('routes/modulos/dash.php');
 	require base_path('routes/modulos/facturacion.php');
@@ -108,18 +104,15 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Super Admin
 	require base_path('routes/modulos/super-admin/usuarios.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
-});
 
-	// planillas
+    // planillas
 
-		require base_path('routes/modulos/planilla/empleados.php');
-		require base_path('routes/modulos/planilla/planillas.php');
-		require base_path('routes/modulos/planilla/cargos.php');
-		require base_path('routes/modulos/planilla/departamentos.php');
+    require base_path('routes/modulos/planilla/empleados.php');
+    require base_path('routes/modulos/planilla/planillas.php');
+    require base_path('routes/modulos/planilla/cargos.php');
+    require base_path('routes/modulos/planilla/departamentos.php');
 
-		require base_path('routes/modulos/planilla/historialcontratos.php');
-
-
+    require base_path('routes/modulos/planilla/historialcontratos.php');
 });
 
 // Webhook
