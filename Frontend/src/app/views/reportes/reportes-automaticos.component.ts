@@ -139,7 +139,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       hora_nocturno: '19:00',
       dia_mes: 1,
       asunto_correo: '',
-      categoriasSeleccionadas: [],
+      configuracion: [],
     };
 
     // Restablecer los días de la semana seleccionados
@@ -183,7 +183,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   public guardarConfiguracion() {
     // Validar que haya al menos un horario seleccionado
     console.log(this.configuracionActual);
-    return;
+    //return;
     if (
       !this.configuracionActual.envio_matutino &&
       !this.configuracionActual.envio_mediodia &&
@@ -474,13 +474,6 @@ export class ReportesAutomaticosComponent implements OnInit {
     }
   }
 
-  public seleccionarTodasCategorias() {
-    this.configuracionActual.categorias.forEach((categoria: any) => {
-      categoria.seleccionada = true;
-    });
-    this.actualizarCategoriasSeleccionadas();
-  }
-
   public seleccionarTodos(event: any) {
     const checked = event.target.checked;
     this.categorias.forEach((categoria) => {
@@ -496,19 +489,19 @@ export class ReportesAutomaticosComponent implements OnInit {
 
   public actualizarPorcentaje(categoria: any) {
     if (categoria.seleccionada) {
-      const index = this.configuracionActual.categoriasSeleccionadas.findIndex(
+      const index = this.configuracionActual.configuracion.findIndex(
         (cat: any) => cat.id === categoria.id
       );
 
       if (index !== -1) {
-        this.configuracionActual.categoriasSeleccionadas[index].porcentaje =
+        this.configuracionActual.configuracion[index].porcentaje =
           categoria.porcentaje;
       }
     }
   }
 
   public actualizarCategoriasSeleccionadas() {
-    this.configuracionActual.categoriasSeleccionadas = this.categorias
+    this.configuracionActual.configuracion = this.categorias
       .filter((categoria) => {
         if (
           categoria.seleccionada &&
@@ -523,20 +516,5 @@ export class ReportesAutomaticosComponent implements OnInit {
         nombre: categoria.nombre,
         porcentaje: categoria.porcentaje || 100,
       }));
-  }
-
-  public actualizarSeleccionCategoria(categoria: any) {
-    if (
-      categoria.seleccionada &&
-      (!categoria.porcentaje || categoria.porcentaje === 0)
-    ) {
-      categoria.porcentaje = 100;
-    }
-
-    if (!categoria.seleccionada) {
-      categoria.porcentaje = 0;
-    }
-
-    this.actualizarCategoriasSeleccionadas();
   }
 }

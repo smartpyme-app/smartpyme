@@ -238,15 +238,12 @@
         >
           <option value="" disabled>Seleccione un tipo de reporte</option>
           <option value="ventas-por-vendedor">Ventas por Vendedor</option>
-          <option value="ventas-por-categoria">Ventas por Categoría</option>
-          <!-- <option value="ventas-diarias">Ventas Diarias</option>
-          <option value="productos-vendidos">Productos Vendidos</option> -->
+          <option value="ventas-por-categoria-vendedor">Ventas por Categoría y Vendedor</option>
         </select>
       </div>
       
-
-      <div class="mb-4" *ngIf="configuracionActual.tipo_reporte === 'ventas-por-categoria'">
-        <h5 class="mb-0">Configuración de Categorías</h5>
+      <div class="mb-4" *ngIf="configuracionActual.tipo_reporte === 'ventas-por-categoria-vendedor'">
+        <label class="form-label fw-bold mb-0">Configuración de Categorías</label>
         <div class="pt-3">
           <p class="text-muted mb-3">Seleccione las categorías que desea incluir en el reporte y asigne un porcentaje a cada una:</p>
           
@@ -255,16 +252,16 @@
           </div>
           
           <div class="table-responsive" *ngIf="categorias.length > 0">
-            <table class="table table-sm table-bordered">
-              <thead>
+            <table class="table table-hover">
+              <thead class="table-light">
                 <tr>
-                  <th width="30">
+                  <th width="30" class="border-0">
                     <div class="form-check mb-0">
                       <input type="checkbox" class="form-check-input" (change)="seleccionarTodos($event)">
                     </div>
                   </th>
-                  <th>Categoría</th>
-                  <th width="120">Porcentaje</th>
+                  <th class="border-0">Categoría</th>
+                  <th width="120" class="border-0">Porcentaje</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,13 +279,13 @@
                     </div>
                   </td>
                   <td>
-                    <label class="mb-0" [for]="'categoria_' + categoria.id">{{ categoria.nombre }}</label>
+                    <label class="mb-0 cursor-pointer" [for]="'categoria_' + categoria.id">{{ categoria.nombre }}</label>
                   </td>
                   <td>
                     <div class="input-group input-group-sm">
                       <input 
                         type="number"
-                        class="form-control"
+                        class="form-control rounded-start"
                         [(ngModel)]="categoria.porcentaje"
                         name="categoria_porcentaje_{{i}}"
                         placeholder="%"
@@ -298,21 +295,19 @@
                         (change)="actualizarPorcentaje(categoria)"
                         required
                       >
-                      <span class="input-group-text py-0">%</span>
+                      <span class="input-group-text rounded-end bg-light">%</span>
                     </div>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          
-          <!-- Categorías seleccionadas -->
-          <div class="mt-4" *ngIf="configuracionActual.categoriasSeleccionadas && configuracionActual.categoriasSeleccionadas.length > 0">
-            <h6>Categorías seleccionadas:</h6>
-            <div class="d-flex flex-wrap gap-2 mt-2">
+          <div class="mt-4" *ngIf="configuracionActual.configuracion && configuracionActual.configuracion.length > 0">
+            <h6 class="text-muted mb-2">Categorías seleccionadas:</h6>
+            <div class="d-flex flex-wrap gap-2">
               <span 
-                *ngFor="let catSel of configuracionActual.categoriasSeleccionadas" 
-                class="badge bg-primary"
+                *ngFor="let catSel of configuracionActual.configuracion" 
+                class="badge bg-primary rounded-pill"
               >
                 {{ catSel.nombre }} ({{ catSel.porcentaje }}%)
               </span>
@@ -320,11 +315,13 @@
           </div>
           
           <!-- Alerta informativa -->
-          <div class="alert alert-info mt-3">
-            <small>
-              <i class="fa fa-info-circle me-1"></i> 
-              Los porcentajes se utilizarán para ponderar las ventas en cada categoría dentro del reporte.
-              Por ejemplo, un porcentaje del 90% para "Servicios" significa que se reportará el 90% de las ventas en esa categoría.
+          <div class="alert alert-info mt-4 rounded-3 shadow-sm">
+            <small class="d-flex align-items-center">
+              <i class="fa fa-info-circle me-2"></i> 
+              <span>
+                Los porcentajes se utilizarán para ponderar las ventas en cada categoría dentro del reporte.
+                Por ejemplo, un porcentaje del 90% para "Servicios" significa que se reportará el 90% de las ventas en esa categoría.
+              </span>
             </small>
           </div>
         </div>

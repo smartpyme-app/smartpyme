@@ -27,6 +27,7 @@ class ReporteConfiguracion extends Model
         'destinatarios',
         'asunto_correo',
         'id_empresa',
+        'configuracion'
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class ReporteConfiguracion extends Model
         'envio_nocturno' => 'boolean',
         'destinatarios' => 'array',
         'dias_semana' => 'array',
+        'configuracion' => 'array',
     ];
 
   
