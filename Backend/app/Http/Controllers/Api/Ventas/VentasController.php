@@ -1330,4 +1330,33 @@ class VentasController extends Controller
             throw $e;
         }
     }
+
+    public function exportarReporteProgramado($configuracion, $fechaInicio, $fechaFin)
+    {
+        //try {
+            // Implementar la lógica de exportación
+
+            Log::info("Exportando reporte: {$configuracion->tipo_reporte}", [
+                'configuracion_id' => $configuracion->id,
+                'fecha' => $fechaInicio . ' al ' . $fechaFin,
+                'configuracion' => $configuracion
+            ]);
+
+            if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion);
+            } else {
+                return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+            }
+
+            return Excel::download($export, $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '.xlsx');
+        // } catch (\Exception $e) {
+        //     Log::error('Error al exportar reporte programado: ' . $e->getMessage(), [
+        //         'configuracion_id' => $configuracion->id ?? null,
+        //         'tipo_reporte' => $configuracion->tipo_reporte ?? null
+        //     ]);
+        //     throw $e;
+        // }
+    }
 }

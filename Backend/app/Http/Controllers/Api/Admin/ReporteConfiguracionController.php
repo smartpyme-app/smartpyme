@@ -318,16 +318,16 @@ class ReporteConfiguracionController extends Controller
                 case 'ventas-por-vendedor':
                     $controller = new VentasController();
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte exportado correctamente'], 200);
+                    return $resultado;
                 case 'ventas-por-categoria-vendedor':
                     $controller = new VentasController();
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte exportado correctamente'], 200);
+                    return $resultado;
                 default:
                     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al exportar el reporte: ' . $e->getMessage()], 500);
         }
-    }
+ }
 }
