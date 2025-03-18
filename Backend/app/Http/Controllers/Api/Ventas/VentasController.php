@@ -33,10 +33,11 @@ use App\Exports\VentasPorCategoriaVendedorExport;
 use App\Exports\VentasPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
-use Auth;
+// use Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class VentasController extends Controller
 {
