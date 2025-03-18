@@ -34,6 +34,8 @@ import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.com
 
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
 
+import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-funcionalidades.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -63,7 +65,8 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     DashboardComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
-    AdminSuscripcionesComponent
+    AdminSuscripcionesComponent,
+    EmpresasFuncionalidadesComponent
   ],
   exports: [
     EmpresasComponent,

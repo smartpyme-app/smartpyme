@@ -12,6 +12,8 @@
 |
 */
 
+use App\Http\Controllers\Api\Admin\EmpresasController;
+use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Constants\ConstantsController;
 use App\Http\Controllers\n1co\N1coChargeController;
@@ -19,6 +21,9 @@ use App\Http\Controllers\n1co\N1coChargeController;
 Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
+
+Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
+
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
@@ -75,7 +80,14 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/paquetes.php');
 
 	// Eventos
-		require base_path('routes/modulos/eventos/eventos.php');
+	require base_path('routes/modulos/eventos/eventos.php');
+
+	// Empleados
+	require base_path('routes/modulos/empleados/empleados.php');
+	require base_path('routes/modulos/empleados/planillas.php');
+	require base_path('routes/modulos/empleados/comisiones.php');
+	require base_path('routes/modulos/empleados/asistencias.php');
+	require base_path('routes/modulos/empleados/metas.php');
 
 	// Contabilidad
 	require base_path('routes/modulos/contabilidad/activos.php');
@@ -107,6 +119,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 
+	//Chatbot
+	require base_path('routes/modulos/chat/chat.php');
+	//Funcionalidades
+	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
     // planillas
 
     require base_path('routes/modulos/planilla/empleados.php');
