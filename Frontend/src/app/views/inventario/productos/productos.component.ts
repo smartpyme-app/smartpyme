@@ -123,6 +123,10 @@ export class ProductosComponent implements OnInit {
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
+    public openDescargar(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template);
+    }
+
     public descargar(){
         this.downloading = true;
         this.apiService.export('productos/exportar', this.filtros).subscribe((data:Blob) => {
