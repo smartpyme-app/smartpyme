@@ -22,13 +22,15 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
      * @return \Illuminate\Support\Collection
      */
     public $request;
-    public $fecha;
+    public $fechaInicio;
+    public $fechaFin;
     public $id_empresa;
     public $configuracion;
 
-    public function __construct($fecha = null, $id_empresa = null, $configuracion = null)
+    public function __construct($fechaInicio = null, $fechaFin = null, $id_empresa = null, $configuracion = null)
     {
-        $this->fecha = $fecha ?? Carbon::today()->format('Y-m-d');
+        $this->fechaInicio = $fechaInicio;
+        $this->fechaFin = $fechaFin;
         $this->id_empresa = $id_empresa;
         $this->configuracion = $configuracion;
     }
@@ -40,7 +42,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
 
     public function title(): string
     {
-        return 'Ventas por Categoría y Vendedor - ' . $this->fecha;
+        return 'Ventas por Categoría y Vendedor - ' . $this->fechaInicio . ' al ' . $this->fechaFin;
     }
 
     public function styles(Worksheet $sheet)
@@ -55,9 +57,9 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
         $categoriasSeleccionadas = $this->configuracion->configuracion;
         $categoriaIds = array_column($categoriasSeleccionadas, 'id');
         
-        Log::info('fecha: ' . $this->fecha);
+        Log::info('fecha: ' . $this->fechaInicio . ' al ' . $this->fechaFin);
         $ventasQuery = Detalle::whereHas('venta', function ($q) {
-            $q->where('fecha', $this->fecha)
+            $q->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
                 ->where('cotizacion', 0);
         })

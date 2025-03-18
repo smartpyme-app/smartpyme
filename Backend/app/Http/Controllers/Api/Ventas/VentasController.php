@@ -1157,17 +1157,17 @@ class VentasController extends Controller
 
 
 
-    public function enviarReporteProgramado($configuracion, $empresa)
+    public function enviarReporteProgramado($configuracion, $empresa, $fechaInicio, $fechaFin)
     {
         try {
-            $fecha = Carbon::today()->format('Y-m-d');
-            $export = new VentasPorVendedorExport($fecha, $empresa->id);
-            $filename = "ventas-por-vendedor-{$fecha}.xlsx";
+            // $fecha = Carbon::today()->format('Y-m-d');
+            $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $empresa->id);
+            $filename = "ventas-por-vendedor-{$fechaInicio}.xlsx";
 
-          
+
             $relativePath = "reportes/{$filename}";
 
-          
+
             $directory = public_path('img/reportes');
             if (!file_exists($directory)) {
                 mkdir($directory, 0755, true);
@@ -1191,18 +1191,18 @@ class VentasController extends Controller
                 }
             }
 
-         
-            $ventasDelDia = Venta::where('fecha', $fecha)
+
+            $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
                 ->count();
 
-            $totalVentas = Venta::where('fecha', $fecha)
+            $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
                 ->sum('total');
 
-            $vendedoresConVentas = Venta::where('fecha', $fecha)
+            $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->where('id_empresa', $empresa->id)
                 ->where('cotizacion', 0)
                 ->distinct('id_vendedor')
@@ -1227,10 +1227,10 @@ class VentasController extends Controller
             Log::info("Reporte enviado: {$configuracion->tipo_reporte}", [
                 'configuracion_id' => $configuracion->id,
                 'destinatarios' => $destinatarios,
-                'fecha' => $fecha
+                'fecha' => $fechaInicio . ' al ' . $fechaFin
             ]);
 
-       
+
             unlink($filePath);
 
 
@@ -1244,16 +1244,15 @@ class VentasController extends Controller
         }
     }
 
-    public function enviarReporteProgramadoTest($configuracion, $destinatarios)
+    public function enviarReporteProgramadoTest($configuracion, $destinatarios, $fechaInicio, $fechaFin)
     {
         try {
-            $fecha = Carbon::today()->format('Y-m-d');
-            if($configuracion->tipo_reporte === 'ventas-por-vendedor') {
-                $export = new VentasPorVendedorExport($fecha, $configuracion->id_empresa);
-                $filename = "ventas-por-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
+            if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                $filename = "ventas-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             } else {
-                $export = new VentasPorCategoriaVendedorExport($fecha, $configuracion->id_empresa, $configuracion);
-                $filename = "ventas-por-categoria-vendedor-prueba-{$fecha}-" . time() . ".xlsx";
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $filename = "ventas-por-categoria-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1288,15 +1287,15 @@ class VentasController extends Controller
             }
 
             // Obtener estadísticas para incluir en el correo
-            $ventasDelDia = Venta::where('fecha', $fecha)
+            $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->where('cotizacion', 0)
                 ->count();
 
-            $totalVentas = Venta::where('fecha', $fecha)
+            $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->where('cotizacion', 0)
                 ->sum('total');
 
-            $vendedoresConVentas = Venta::where('fecha', $fecha)
+            $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                 ->where('cotizacion', 0)
                 ->distinct('id_vendedor')
                 ->count('id_vendedor');
@@ -1317,9 +1316,9 @@ class VentasController extends Controller
             Log::info("Reporte de prueba enviado: {$configuracion->tipo_reporte}", [
                 'configuracion_id' => $configuracion->id,
                 'destinatarios' => $destinatarios,
-                'fecha' => $fecha
+                'fecha' => $fechaInicio . ' al ' . $fechaFin
             ]);
-         
+
             unlink($filePath);
 
             return true;

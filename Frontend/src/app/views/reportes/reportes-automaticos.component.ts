@@ -461,14 +461,48 @@ public fechaHoy: string = new Date().toISOString().split('T')[0];
     });
   }
 
+  // public confirmarEnvioPrueba() {
+  //   this.enviandoPrueba = true;
+
+  //   const data = {
+  //     id_configuracion: this.configuracionEliminar.id,
+  //     email_prueba: this.emailPrueba,
+  //   };
+
+  //   this.apiService
+  //     .store('reportes-configuracion/enviar-prueba', data)
+  //     .subscribe(
+  //       (response) => {
+  //         this.enviandoPrueba = false;
+  //         this.modalRefPrueba?.hide();
+  //         this.alertService.success(
+  //           'Reporte enviado',
+  //           'El reporte de prueba ha sido enviado correctamente.'
+  //         );
+  //       },
+  //       (error) => {
+  //         this.enviandoPrueba = false;
+  //         this.alertService.error(error);
+  //       }
+  //     );
+  // }
+
   public confirmarEnvioPrueba() {
     this.enviandoPrueba = true;
-
+  
+    // Asegurarnos de que tengamos fechas válidas para la prueba
+    if (!this.fechaInicio || !this.fechaFin) {
+      // Usar fechas predeterminadas (este mes) si no hay seleccionadas
+      this.seleccionarPeriodo('mes');
+    }
+  
     const data = {
       id_configuracion: this.configuracionEliminar.id,
       email_prueba: this.emailPrueba,
+      fecha_inicio: this.fechaInicio,
+      fecha_fin: this.fechaFin
     };
-
+  
     this.apiService
       .store('reportes-configuracion/enviar-prueba', data)
       .subscribe(
@@ -477,7 +511,7 @@ public fechaHoy: string = new Date().toISOString().split('T')[0];
           this.modalRefPrueba?.hide();
           this.alertService.success(
             'Reporte enviado',
-            'El reporte de prueba ha sido enviado correctamente.'
+            `El reporte de prueba para el período ${this.fechaInicio} al ${this.fechaFin} ha sido enviado correctamente.`
           );
         },
         (error) => {

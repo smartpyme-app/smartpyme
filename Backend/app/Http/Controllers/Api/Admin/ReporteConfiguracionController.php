@@ -248,6 +248,13 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
+        if (!$request->fecha_inicio || !$request->fecha_fin) {
+            return response()->json(['error' => 'Debe seleccionar un período válido'], 422);
+        }
+
+        $fecha_inicio = $request->fecha_inicio;
+        $fecha_fin = $request->fecha_fin;
+
        try {
             switch ($configuracion->tipo_reporte) {
                 case 'ventas-por-vendedor':
@@ -259,7 +266,7 @@ class ReporteConfiguracionController extends Controller
                         : $configuracion->destinatarios;
 
 
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios);
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
                 case 'ventas-por-categoria-vendedor':
                     $controller = new VentasController();
@@ -268,7 +275,7 @@ class ReporteConfiguracionController extends Controller
                         ? [$request->email_prueba]
                         : $configuracion->destinatarios;
 
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios);
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
 
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
 
