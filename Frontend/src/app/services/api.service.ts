@@ -28,6 +28,8 @@ export class ApiService {
 
     store(url:string, model:any) {return this.http.post<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError) )}
 
+    update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
+
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
 
     paginate(url:string, filtros:any = {}) {return this.http.get<any>(url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
@@ -63,6 +65,32 @@ export class ApiService {
         }
         localStorage.clear();
     }
+
+    download(url: string): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}${url}`, {
+          responseType: 'blob',
+          headers: new HttpHeaders({
+            Authorization: 'Bearer ' + this.auth_token()
+          })
+        }).pipe(
+          map((response) => {
+            return new Blob([response]);
+          }),
+          catchError((error) => {
+            console.error('Error al descargar el archivo:', error);
+            return throwError(() => error);
+          })
+        );
+      }
+
+      downloadFile(blob: Blob, filename: string) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      }
 
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
 
@@ -196,6 +224,60 @@ export class ApiService {
              });
        });
     }
+
+    isSupervisorLimitado() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Supervisor Limitado') return true;
+        return false;
+    }
+
+    private loadConstants() {
+        this.http.get<any>(this.apiUrl + 'constants').subscribe(
+          (constants) => {
+            localStorage.setItem('SP_constants', JSON.stringify(constants));
+          },
+          (error) => {
+            console.error('Error cargando constantes:', error);
+          }
+        );
+      }
+
+      getConstants() {
+        const constants = localStorage.getItem('SP_constants');
+        return constants ? JSON.parse(constants) : null;
+      }
+
+      generatePayrollSlips(planillaId: number): Observable<Blob> {
+        return this.http
+          .get(`${this.apiUrl}planillas/${planillaId}/boletas`, {
+            responseType: 'blob',
+          })
+          .pipe(
+            map((response) => {
+              return new Blob([response], { type: 'application/pdf' });
+            }),
+            catchError((error) => {
+              console.error('Error downloading payroll slips:', error);
+              return throwError(() => error);
+            })
+          );
+      }
+
+      generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
+        return this.http
+          .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
+            responseType: 'blob',
+          })
+          .pipe(
+            map((response) => {
+              return new Blob([response], { type: 'application/pdf' });
+            }),
+            catchError((error) => {
+              console.error('Error downloading payroll slip:', error);
+              return throwError(() => error);
+            })
+          );
+      }
 
     private handleError(error: HttpErrorResponse) {
       return throwError(error);
