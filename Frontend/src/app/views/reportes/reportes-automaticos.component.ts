@@ -149,6 +149,13 @@ export class ReportesAutomaticosComponent implements OnInit {
     // Restablecer los días de la semana seleccionados
     this.diasSemana.forEach((dia) => (dia.seleccionado = false));
 
+    this.categorias.forEach((categoria) => {
+      categoria.seleccionada = true;
+      categoria.porcentaje = 100;
+    });
+
+    this.actualizarCategoriasSeleccionadas();
+
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
