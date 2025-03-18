@@ -5,24 +5,32 @@ namespace App\Exports\Inventario;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Illuminate\Http\Request;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Bodega;
 use Illuminate\Support\Facades\DB;
 
 class InventarioAFechaExport implements FromCollection, WithHeadings, WithMapping
 {
+    private $request;
     private $bodegas;
     private $kardexData;
 
-    public function __construct()
+    public function filter(Request $request)
     {
+        $this->request = $request;
+
         // Carga las bodegas de la empresa
-        $this->bodegas = Bodega::where('id_empresa', 324)->get();
+        $this->bodegas = Bodega::where('id_empresa', $this->request->id_empresa)
+                                ->when($request->id_bodega, function ($q) use ($request) {
+                                    $q->where('id', $request->id_bodega);
+                                })
+                                ->where('activo', true)->get();
 
         // Precalcula los datos del Kardex agrupados por sucursal y producto
         $this->kardexData = DB::table('kardexs')
             ->select('id_inventario', 'id_producto', 'total_cantidad')
-            ->whereDate('fecha', '<=', '2024-12-31')
+            ->whereDate('fecha', '<=', $this->request->fecha)
             ->orderBy('fecha', 'desc')
             ->orderBy('id', 'desc')
             ->get()
@@ -31,7 +39,7 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
     public function headings(): array
     {
-        $headings = ['Nombre', 'Categoría', 'Costo'];
+        $headings = ['Nombre', 'Categoría', 'Codigo',  'Costo', 'Stock'];
 
         foreach ($this->bodegas as $sucursal) {
             $headings[] = $sucursal->nombre;
@@ -45,7 +53,9 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
         $fields = [
             $producto->nombre,
             $producto->nombre_categoria,
+            $producto->codigo,
             $producto->costo,
+            $producto->inventarios->sum('stock'),
         ];
 
         // Agrupar inventarios por bodegas
@@ -82,8 +92,14 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
     public function collection()
     {
-        return Producto::with('inventarios')
-            ->where('id_empresa', 324)
+        $request = $this->request;
+        
+        return Producto::with(['inventarios' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }])
+            ->where('id_empresa', $this->request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             ->where('enable', true)
             ->get();
