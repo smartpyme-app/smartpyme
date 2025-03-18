@@ -80,14 +80,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/paquetes.php');
 
 	// Eventos
-	// require base_path('routes/modulos/eventos/eventos.php');
-
-	// // Empleados
-	// require base_path('routes/modulos/empleados/empleados.php');
-	// require base_path('routes/modulos/empleados/planillas.php');
-	// require base_path('routes/modulos/empleados/comisiones.php');
-	// require base_path('routes/modulos/empleados/asistencias.php');
-	// require base_path('routes/modulos/empleados/metas.php');
+	require base_path('routes/modulos/eventos/eventos.php');
 
 	// Contabilidad
 	require base_path('routes/modulos/contabilidad/activos.php');
