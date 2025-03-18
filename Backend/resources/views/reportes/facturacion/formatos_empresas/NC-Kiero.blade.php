@@ -33,6 +33,7 @@
         .letras{ margin-top: 120px; position: absolute; bottom: -400px;}
 
         .no-print{position: absolute;}
+        .text-left{text-align: left;}
         .text-right{text-align: right;}
 
     </style>
@@ -93,8 +94,16 @@
 
         <table id="footer" style="margin-bottom: 230px; width: 100%;">
             <tr>
-                <td class="text-right" width="55%"><b>Venta Total</b></td>
-                <td><b>$ {{ number_format($venta->total, 2) }}</b></td>
+                <td class="text-left" width="55%"><b>Sub Total</b></td>
+                <td class="text-right"><b>$ {{ number_format($venta->sub_total, 2) }}</b></td>
+            </tr>
+            <tr>
+                <td class="text-left" width="55%"><b>IVA</b></td>
+                <td class="text-right"><b>$ {{ number_format($venta->iva, 2) }}</b></td>
+            </tr>
+            <tr>
+                <td class="text-left" width="55%"><b>Total</b></td>
+                <td class="text-right"><b>$ {{ number_format($venta->total, 2) }}</b></td>
             </tr>
             <tr>
                 <td colspan="2" style="text-align: center;"> <br> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</td>
