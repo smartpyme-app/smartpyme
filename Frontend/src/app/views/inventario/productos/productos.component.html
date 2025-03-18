@@ -295,21 +295,18 @@
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de inventario en un archivo de Excel.</p>
         <div class="row">
             <div class="d-grid mt-4">
-                <p class="alert bg-info">Descarga todos los registros de productos.
-                    <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-primary w-100 mt-3">
-                        <span *ngIf="!downloading">Descargar</span>
-                        <span *ngIf="downloading">Descargando...</span>
-                    </button>
-                </p>
+                <label>Descargar detalle de productos:</label>
+                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-primary">
+                    <span *ngIf="!downloading">Descargar productos</span>
+                    <span *ngIf="downloading">Descargando...</span>
+                </button>
             </div>
             <div class="d-grid my-4">
-                <p class="alert bg-info">
-                    Descarga el detalle de stocks por bodegas en una fecha determinada.
-                    <br><br>
-                    <app-descargar-inventario></app-descargar-inventario>
-                </p>
+                <label>Descargar detalle de inventario:</label>
+                <app-descargar-inventario></app-descargar-inventario>
             </div>
         </div>
   </div>

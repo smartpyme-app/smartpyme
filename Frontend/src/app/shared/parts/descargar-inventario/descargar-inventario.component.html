@@ -1,16 +1,39 @@
-<form autocomplete="off" (ngSubmit)="descargar()">
-    <div class="row">
+<button type="button" class="btn btn-primary w-100" (click)="openModal(mfilter)">
+    <span *ngIf="!downloading">Descargar inventario</span>
+    <span *ngIf="downloading">Descargando...</span>
+</button>
 
-        <div class="form-group col-sm-12">
-            <label for="filtros.fecha">¿A qué fecha deseas ver como estaba tu inventario?:</label>
-            <input type="date" [(ngModel)]="filtros.fecha" class="form-control" name="filtros.fecha">
-        </div>            
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Fecha</h2>
     </div>
-    
-    <div class="d-grid mt-3">
-        <button type="submit" [disabled]="downloading" class="btn btn-primary">
-            <span *ngIf="!downloading">Descargar</span>
-            <span *ngIf="downloading">Descargando...</span>
-        </button>
-    </div>
-</form>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="descargar()">
+        <p class="alert bg-info">Acá puedes descargar los detalles de inventario a una fecha determinada en un archivo de Excel.</p>
+        <div class="row">
+            <div class="form-group col-sm-12">
+                <label for="filtros.fecha">¿Hasta que fecha desea descargar el inventario?:</label>
+                <input type="date" [(ngModel)]="filtros.fecha" class="form-control" name="filtros.fecha">
+            </div>
+            <div class="form-group col-sm-12">
+                <label for="filtros.sucursal_id">Bodega:</label>
+                <select [(ngModel)]="filtros.id_bodega" class="form-select" name="filtros.id_bodega">
+                    <option value="">Todas</option>
+                    <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                </select>
+            </div>            
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="downloading" class="btn btn-primary">
+                <span *ngIf="!downloading">Descargar</span>
+                <span *ngIf="downloading">Descargando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 export class DescargarInventarioComponent implements OnInit {
 
 	public filtros:any = [];
+    public bodegas:any = [];
     public downloading:boolean = false;
     modalRef!: BsModalRef;
 
@@ -20,10 +21,14 @@ export class DescargarInventarioComponent implements OnInit {
 
 	ngOnInit() {
         this.filtros.id_empresa = this.apiService.auth_user().id_empresa;
+        this.filtros.id_bodega = '';
         this.filtros.fecha = this.apiService.date();
+
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+            this.bodegas = bodegas;
+        }, error => {this.alertService.error(error); });
         
     }
-
 
     public openModal(template: TemplateRef<any>) {
         this.alertService.modal = true;

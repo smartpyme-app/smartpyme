@@ -21,7 +21,11 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
         $this->request = $request;
 
         // Carga las bodegas de la empresa
-        $this->bodegas = Bodega::where('id_empresa', $this->request->id_empresa)->where('activo', true)->get();
+        $this->bodegas = Bodega::where('id_empresa', $this->request->id_empresa)
+                                ->when($request->id_bodega, function ($q) use ($request) {
+                                    $q->where('id', $request->id_bodega);
+                                })
+                                ->where('activo', true)->get();
 
         // Precalcula los datos del Kardex agrupados por sucursal y producto
         $this->kardexData = DB::table('kardexs')
@@ -88,7 +92,13 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
     public function collection()
     {
-        return Producto::with('inventarios')
+        $request = $this->request;
+        
+        return Producto::with(['inventarios' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }])
             ->where('id_empresa', $this->request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             ->where('enable', true)
