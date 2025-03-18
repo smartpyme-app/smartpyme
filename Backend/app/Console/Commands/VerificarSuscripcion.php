@@ -27,7 +27,8 @@ class VerificarSuscripcion extends Command
         try {
             $this->verificarPeriodosPrueba();
             $this->verificarSuscripcionesVencidas();
-            
+            $this->procesarSuscripcionesCanceladas();
+
             $this->info('Verificación completada exitosamente');
             Log::channel('suscripciones')->info('Verificación completada exitosamente');
         } catch (\Exception $e) {
@@ -39,7 +40,7 @@ class VerificarSuscripcion extends Command
     private function verificarPeriodosPrueba()
     {
         $this->info('Verificando períodos de prueba...');
-        
+
         $suscripcionesEnPrueba = Suscripcion::where('estado', config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'))
             ->where('fin_periodo_prueba', '<=', now())
             ->get();
@@ -57,8 +58,78 @@ class VerificarSuscripcion extends Command
 
         foreach ($suscripciones as $suscripcion) {
             $diasVencidos = now()->diffInDays($suscripcion->fecha_proximo_pago);
-            
+
             $this->manejarSuscripcionVencida($suscripcion, $diasVencidos);
+        }
+    }
+
+    private function procesarSuscripcionesCanceladas()
+    {
+        $this->info('Procesando suscripciones canceladas...');
+        Log::channel('suscripciones')->info('Iniciando procesamiento de suscripciones canceladas');
+
+        // Buscar suscripciones canceladas con fecha de próximo pago menor o igual a hoy
+        $suscripcionesCanceladas = Suscripcion::where('estado', config('constants.ESTADO_SUSCRIPCION_CANCELADO'))
+            ->where('fecha_proximo_pago', '<=', Carbon::now())
+            ->get();
+
+        $this->info('Suscripciones canceladas a procesar: ' . $suscripcionesCanceladas->count());
+
+        foreach ($suscripcionesCanceladas as $suscripcion) {
+            $this->procesarDesactivacionCancelada($suscripcion);
+        }
+
+        $this->info('Procesamiento de suscripciones canceladas completado');
+        Log::channel('suscripciones')->info('Procesamiento de suscripciones canceladas completado');
+    }
+
+    private function procesarDesactivacionCancelada(Suscripcion $suscripcion)
+    {
+        try {
+            $usuario = User::find($suscripcion->usuario_id);
+
+            if (!$usuario) {
+                $this->warn('Usuario no encontrado para suscripción cancelada ID: ' . $suscripcion->id);
+                return;
+            }
+
+            // Desactivar usuario
+            $usuario->enable = false;
+            $usuario->save();
+
+            $this->info('Usuario desactivado por cancelación: ' . $usuario->email);
+            Log::channel('suscripciones')->info('Usuario desactivado por suscripción cancelada', [
+                'usuario_id' => $usuario->id,
+                'email' => $usuario->email,
+                'suscripcion_id' => $suscripcion->id
+            ]);
+
+            // Enviar notificación de desactivación
+            // Comenta esta parte si no quieres enviar notificaciones por correo
+            /*
+            Mail::send('mails.notificacion_desactivacion', [
+                'nombre' => $usuario->name,
+                'empresa' => $usuario->empresa->nombre ?? 'su empresa'
+            ], function ($m) use ($usuario) {
+                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                    ->to($usuario->email)
+                    ->subject('Tu cuenta ha sido desactivada');
+            });
+            */
+
+            // O usa tu sistema de notificaciones existente
+            /*
+            $usuario->notify(new SuscripcionNotification(
+                'Tu cuenta ha sido desactivada después de cancelar tu suscripción.',
+                'desactivacion_cancelada'
+            ));
+            */
+        } catch (\Exception $e) {
+            $this->error('Error al desactivar usuario para suscripción cancelada ID ' . $suscripcion->id . ': ' . $e->getMessage());
+            Log::channel('suscripciones')->error('Error al desactivar usuario cancelado', [
+                'suscripcion_id' => $suscripcion->id,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
@@ -69,13 +140,13 @@ class VerificarSuscripcion extends Command
             $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
             $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
         }
-        
+
         // Alerta crítica (7 días)
         elseif ($diasVencidos >= self::DIAS_ALERTA_CRITICA && $diasVencidos < self::DIAS_DESACTIVACION) {
             $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
             $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
         }
-        
+
         // Desactivación (10 días)
         elseif ($diasVencidos >= self::DIAS_DESACTIVACION) {
             $this->desactivarCuenta($suscripcion);
@@ -85,7 +156,7 @@ class VerificarSuscripcion extends Command
     private function procesarFinPeriodoPrueba(Suscripcion $suscripcion)
     {
         $this->info("Procesando fin de período de prueba para suscripción ID: {$suscripcion->id}");
-        
+
         try {
             // Actualizar estado de la suscripción
             $suscripcion->update([

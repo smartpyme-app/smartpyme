@@ -230,4 +230,17 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
     }
     return !this.usuario.tiene_suscripcion || this.usuario.dias_faltantes <= 7;
   }
+
+  shouldShowCancellationBanner(): boolean {
+    return this.usuario && 
+           this.usuario.suscripcion && 
+           this.usuario.suscripcion.estado === this.ESTADOS_SUSCRIPCION.CANCELADO;
+  }
+  
+  getCancellationMessage(): string {
+    if (!this.shouldShowCancellationBanner()) return '';
+    
+    const fechaDesactivacion = new Date(this.usuario.suscripcion.fecha_proximo_pago);
+    return `Tu suscripción ha sido cancelada. Podrás seguir utilizando el sistema hasta el ${fechaDesactivacion.toLocaleDateString()}.`;
+  }
 }

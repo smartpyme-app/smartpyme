@@ -24,14 +24,13 @@ import { LicenciasComponent } from './licencias/licencias.component';
 import { LicenciaComponent } from './licencias/licencia/licencia.component';
 import { LicenciaEmpresasComponent } from './licencias/licencia/empresas/licencia-empresas.component';
 import { AdminUsuariosComponent } from './usuarios/admin-usuarios.component';
+import { AdminPlanesComponent } from './planes/admin-planes.component';
+import { AdminPagosComponent } from './pagos/admin-pagos.component';
 import { DashboardsComponent } from './dashboards/dashboards.component';
 import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
-
-import { AdminFacturacionesComponent } from './facturaciones/admin-facturaciones.component';
-import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-facturacion.component';
 
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
 
@@ -58,10 +57,10 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     LicenciaComponent,
     LicenciaEmpresasComponent,
     AdminUsuariosComponent,
+    AdminPlanesComponent,
+    AdminPagosComponent,
     DashboardsComponent,
     DashboardComponent,
-    AdminFacturacionesComponent,
-    AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent
@@ -73,10 +72,10 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     LicenciaComponent,
     LicenciaEmpresasComponent,
     AdminUsuariosComponent,
+    AdminPlanesComponent,
+    AdminPagosComponent,
     DashboardsComponent,
     DashboardComponent,
-    AdminFacturacionesComponent,
-    AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent

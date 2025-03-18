@@ -3,12 +3,9 @@
 namespace App\Models\Admin;
 
 use App\Models\Suscripcion;
-use App\Models\Planilla\CargoEmpresa;
-use App\Models\Planilla\DepartamentoEmpresa;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 
 class Empresa extends Model
 {
@@ -55,6 +52,7 @@ class Empresa extends Model
         'tipo_plan',
         'fecha_cancelacion',
         'metodo_pago',
+        'pago_recurrente',
         'referido',
         'campania',
         'wompi_aplicativo',
@@ -83,27 +81,17 @@ class Empresa extends Model
 
         //Permiso para vendedores
         'vendedor_inventario',
-        'woocommerce_api_key',
-        'woocommerce_store_url',
-        'woocommerce_consumer_key',
-        'woocommerce_consumer_secret',
-        'woocommerce_status',
-        'woocommerce_sync_progress',
-        'woocommerce_sync_total_batches',
-        'woocommerce_sync_processed_batches',
-        'woocommerce_sync_status',
-        'woocommerce_last_sync',
-        'woocommerce_error',
-        'woocommerce_canal_id',
 
+        //Para facturación
+        'id_cliente'
     ];
 
     protected $casts = [
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
     ];
-    // protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
+
+    protected $appends = ['estado_plan'];
 
     public function limiteUsuarios()
     {
@@ -121,6 +109,10 @@ class Empresa extends Model
 
     public function getEstadoPlanAttribute()
     {
+        if (!$this->created_at) {
+            return ['estado' => 'Sin fecha de creación', 'dias_faltantes' => null];
+        }
+        
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -196,11 +188,13 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Admin\Canal', 'id_empresa');
     }
 
-    public function bodegas(){
+    public function bodegas()
+    {
         return $this->hasMany('App\Models\Inventario\Bodega', 'id_empresa');
     }
 
-    public function sucursales(){
+    public function sucursales()
+    {
         return $this->hasMany('App\Models\Admin\Sucursal', 'id_empresa');
     }
 
@@ -272,57 +266,6 @@ class Empresa extends Model
     {
         $re = $this->recordatorios()->where('leido', false)->get();
         return $re->count();
-    }
-
-    public function departamentos()
-    {
-        return $this->belongsToMany(DepartamentoEmpresa::class, 'empresa_departamento')
-                    ->withPivot('estado')
-                    ->withTimestamps();
-    }
-
-    public function cargos()
-    {
-        return $this->belongsToMany(CargoEmpresa::class, 'empresa_cargo')
-                    ->withPivot('estado')
-                    ->withTimestamps();
-    }
-
-    //mandar usuario que esta autenticado
-    public function user()
-    {
-
-        $user = Auth::user();
-        return $user;
-    }
-
-    public function getWooCommerceApiUrlAttribute()
-    {
-        if (empty($this->woocommerce_api_key)) {
-            return null;
-        }
-
-        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
-    }
-    public function getStatusConexionWoocommerceAttribute()
-    {
-        $connected_users = $this->usuarios->where('woocommerce_status', 'connected');
-
-        if ($connected_users->count() > 0) {
-            return 'connected';
-        }
-
-        return 'disconnected';
-    }
-    public function getIsCurrentUserConnectedToWooCommerceAttribute()
-    {
-        $current_user = Auth::user();
-        return $current_user && $current_user->woocommerce_status === 'connected';
-    }
-
-    public function canal()
-    {
-        return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
     }
 
     public function suscripcion()

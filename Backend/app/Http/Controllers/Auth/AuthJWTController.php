@@ -16,14 +16,16 @@ use App\Models\Admin\Canal;
 use App\Models\Admin\FormaDePago;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Bodega;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Transaccion;
 use App\Models\User;
 use Carbon\Carbon;
 use JWTAuth;
-use Mail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
 use App\Models\Plan;
+use App\Models\Suscripcion;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
@@ -71,12 +73,12 @@ class AuthJWTController extends Controller
 
         $user->empresa = $user->empresa()->with('licencia')->first();
         $suscripcion = $user->empresa->suscripcion()
-        ->whereNotIn('estado', [
-            config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
-            config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
-        ])
-        ->latest()
-        ->first();
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
         $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
         $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
         $user->tiene_suscripcion = !is_null($suscripcion);
@@ -214,6 +216,10 @@ class AuthJWTController extends Controller
 
 
             if (!$request->id) {
+                // Crear cliente
+                $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
+                $empresa->cliente_id = $cliente->id;
+                $empresa->save();
                 // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
                 // Crear bodega
@@ -426,46 +432,154 @@ class AuthJWTController extends Controller
         return $pdf->download($transaccion->descripcion . '-' . $transaccion->id . '.pdf');
     }
 
+    // public function cancelarSuscripcion(Request $request)
+    // {
+    //     $request->validate([
+    //         'password'      => 'required',
+    //         'id'            => 'required',
+    //         'id_empresa'    => 'required',
+    //     ]);
+
+
+    //     $usuario = User::findOrfail($request->id);
+
+    //     if (!Hash::check($request->password, $usuario->password)) {
+    //         return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+    //     }
+
+    //     $usuario->enable = false;
+    //     $usuario->save();
+
+    //     $empresa = Empresa::findOrfail($request->id_empresa);
+    //     $empresa->activo = false;
+    //     $empresa->fecha_cancelacion = date('Y-m-d');
+    //     $empresa->save();
+
+
+    //     $data = [
+    //         'titulo' => 'Cancelación de Suscripción.',
+    //         'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+    //     ];
+
+    //     // Notificar
+    //     Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
+    //         $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+    //             ->to(env('MAIL_TO_ADDRESS'))
+    //             ->cc(config('constants.MAIL_CC_ADDRESS_1'))
+    //             ->cc(config('constants.MAIL_CC_ADDRESS_2'))
+    //             ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+    //     });
+
+
+    //     return response()->json($usuario, 200);
+    // }
+
     public function cancelarSuscripcion(Request $request)
     {
-        $request->validate([
-            'password'      => 'required',
-            'id'            => 'required',
-            'id_empresa'    => 'required',
-        ]);
+        try {
+            $request->validate([
+                'password'      => 'required',
+                'id'            => 'required|exists:users,id',
+                'id_empresa'    => 'required|exists:empresas,id',
+                'motivo_cancelacion' => 'required|string|max:500',
+            ]);
 
+            // Verificar contraseña
+            $usuario = User::findOrFail($request->id);
+            if (!Hash::check($request->password, $usuario->password)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'La contraseña ingresada no es correcta'
+                ], 422);
+            }
 
-        $usuario = User::findOrfail($request->id);
+            // Iniciar transacción para mantener consistencia en la base de datos
+            DB::beginTransaction();
 
-        if (!Hash::check($request->password, $usuario->password)) {
-            return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+            // Actualizar suscripción
+            $suscripcion = Suscripcion::where('usuario_id', $usuario->id)
+                ->where('estado', '!=', config('constants.ESTADO_SUSCRIPCION_CANCELADO'))
+                ->latest()
+                ->first();
+
+            if ($suscripcion) {
+                // Obtener la fecha de fin del período actual
+                $fechaFinPeriodo = Carbon::parse($suscripcion->fecha_proximo_pago);
+
+                $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
+                $suscripcion->motivo_cancelacion = $request->motivo_cancelacion;
+                $suscripcion->fecha_cancelacion = now();
+                $suscripcion->save();
+
+                // Actualizar empresa
+                $empresa = Empresa::findOrFail($request->id_empresa);
+                $empresa->fecha_cancelacion = now();
+                $empresa->save();
+
+                // No desactivamos al usuario inmediatamente, lo haremos cuando venza su período actual
+                Log::info('Suscripción cancelada', [
+                    'usuario_id' => $usuario->id,
+                    'empresa_id' => $empresa->id,
+                    'fecha_desactivacion_programada' => $fechaFinPeriodo
+                ]);
+
+                // Enviar notificaciones
+                $this->enviarNotificacionesCancelacion($usuario, $empresa, $fechaFinPeriodo, $request->motivo_cancelacion);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tu suscripción ha sido cancelada. Podrás seguir usando el sistema hasta ' . $fechaFinPeriodo->format('d/m/Y'),
+                    'fecha_desactivacion' => $fechaFinPeriodo->format('Y-m-d')
+                ], 200);
+            } else {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No se encontró una suscripción activa para cancelar'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en cancelación de suscripción: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ocurrió un error al procesar la solicitud: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        $usuario->enable = false;
-        $usuario->save();
-
-        $empresa = Empresa::findOrfail($request->id_empresa);
-        $empresa->activo = false;
-        $empresa->fecha_cancelacion = date('Y-m-d');
-        $empresa->save();
-
-
-        $data = [
-            'titulo' => 'Cancelación de Suscripción.',
-            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+    private function enviarNotificacionesCancelacion($usuario, $empresa, $fechaDesactivacion, $motivo)
+    {
+        // Notificar al administrador
+        $dataAdmin = [
+            'titulo' => 'Cancelación de Suscripción',
+            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' ha cancelado su suscripción.',
+            'motivo' => $motivo,
+            'fecha_desactivacion' => $fechaDesactivacion->format('d/m/Y')
         ];
 
-        // Notificar
-        Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
+        Mail::send('mails.notificacion_cancelacion_admin', ['data' => $dataAdmin], function ($m) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
                 ->to(env('MAIL_TO_ADDRESS'))
                 ->cc(config('constants.MAIL_CC_ADDRESS_1'))
                 ->cc(config('constants.MAIL_CC_ADDRESS_2'))
-                ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+                ->subject('Cancelación de suscripción SmartPyme');
         });
 
+        // Notificar al usuario
+        $dataUsuario = [
+            'nombre' => $usuario->name,
+            'empresa' => $empresa->nombre,
+            'fecha_desactivacion' => $fechaDesactivacion->format('d/m/Y')
+        ];
 
-        return response()->json($usuario, 200);
+        Mail::send('mails.notificacion_cancelacion_usuario', ['data' => $dataUsuario], function ($m) use ($usuario) {
+            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                ->to($usuario->email)
+                ->subject('Confirmación de cancelación de suscripción');
+        });
     }
 
     protected function getApiToken(): string
@@ -624,5 +738,39 @@ class AuthJWTController extends Controller
         }
 
         return $plan;
+    }
+
+    public function me($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return Response()->json(['message' => 'Usuario no encontrado', 'code' => 404], 404);
+        }
+
+        $user->ultimo_login = Carbon::now();
+        $user->save();
+
+        $user->empresa = $user->empresa()->with('licencia')->first();
+        $suscripcion = $user->empresa->suscripcion()
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
+
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+
+        return response()->json(['user' => $user], 200);
     }
 }

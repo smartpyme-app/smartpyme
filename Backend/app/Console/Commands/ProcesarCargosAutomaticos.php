@@ -51,7 +51,10 @@ class ProcesarCargosAutomaticos extends Command
     {
         $query = Suscripcion::where('estado', config('constants.ESTADO_SUSCRIPCION_ACTIVO'))
             ->where('metodo_pago', config('constants.METODO_PAGO_N1CO'))
-            ->where('intentos_cobro', '<', self::MAX_INTENTOS);
+            ->where('intentos_cobro', '<', self::MAX_INTENTOS)
+            ->whereHas('empresa', function ($query) {
+                $query->where('pago_recurrente', true);
+            });
 
         if (!$this->option('force')) {
             $query->where('fecha_proximo_pago', '<=', now()->addDays(1));
@@ -162,6 +165,8 @@ class ProcesarCargosAutomaticos extends Command
             ]);
 
             Log::channel('n1co')->info("Cargo exitoso para suscripción {$suscripcion->id}");
+
+            $ordenPago->generarVenta();
             
             // Notificar al usuario
             // $suscripcion->usuario->notify(new PagoExitosoNotification($ordenPago));

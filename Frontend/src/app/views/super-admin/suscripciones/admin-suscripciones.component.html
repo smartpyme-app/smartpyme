@@ -1,5 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Estado de empresas</h2>
+  <button routerLink="/admin/empresa/crear"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -214,6 +215,9 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
+                  <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
                   <a
                     *ngIf="empresa.suscripcion"
                     (click)="openDetalles(mdetalles, empresa.suscripcion)"

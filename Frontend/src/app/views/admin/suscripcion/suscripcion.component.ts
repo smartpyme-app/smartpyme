@@ -44,6 +44,13 @@ export class SuscripcionComponent implements OnInit {
     zipCode: '',
   };
 
+  public cancelarSuscripcion = {
+    password: '',
+    id: 0,
+    id_empresa: 0,
+    motivo_cancelacion: '',
+  };
+
   modalRef?: BsModalRef;
 
   constructor(
@@ -115,9 +122,13 @@ export class SuscripcionComponent implements OnInit {
       }
 
       if (chargeResult.success) {
+        await this.refreshUserData();
+
         this.alertService.success('Éxito', 'Suscripción pagada exitosamente');
         this.modalRef?.hide();
         this.loadAll();
+
+        window.location.reload();
       } else {
         this.alertService.error(
           chargeResult.message || 'Error al procesar el pago'
@@ -164,26 +175,47 @@ export class SuscripcionComponent implements OnInit {
     );
   }
 
-  public onCancelar() {
-    this.saving = true;
-    this.apiService.store('cancelar-suscripcion', this.usuario).subscribe(
-      (usuario) => {
-        this.usuario = usuario;
-        this.alertService.success(
-          'Suscripción cancelada',
-          'Tu cuenta ha sido desactivada.'
-        );
-        this.router.navigate(['login']);
-        this.modalRef!.hide();
-        this.saving = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+  public openCancelarSuscripcion(template: TemplateRef<any>) {
+    const usuario = this.apiService.auth_user();
+    this.cancelarSuscripcion = {
+      password: '',
+      id: usuario.id,
+      id_empresa: usuario.id_empresa,
+      motivo_cancelacion: '',
+    };
+    this.modalRef = this.modalService.show(template);
   }
 
+  public onCancelar() {
+    if (!this.cancelarSuscripcion.motivo_cancelacion) {
+      this.alertService.error('Por favor, indique el motivo de la cancelación');
+      return;
+    }
+
+    this.saving = true;
+    this.apiService
+      .store('cancelar-suscripcion', this.cancelarSuscripcion)
+      .subscribe(
+        (response) => {
+          this.saving = false;
+          if (response.success) {
+            this.modalRef!.hide();
+            this.alertService.success(
+              'Suscripción cancelada',
+              `Tu suscripción ha sido cancelada exitosamente. Podrás seguir utilizando el sistema hasta ${response.fecha_desactivacion}.`
+            );
+            // No redirigimos al login, ya que el usuario puede seguir usando el sistema
+          }
+        },
+        (error) => {
+          this.saving = false;
+          this.alertService.error(
+            error.error?.error || 'Error al procesar la solicitud'
+          );
+        }
+      );
+  }
+  
   public async onUpdatePaymentMethod() {
     setTimeout(() => {
       if (!this.isFormValid()) {
@@ -193,7 +225,7 @@ export class SuscripcionComponent implements OnInit {
 
       this.saving = true;
       // if (this.suscripcion.metodoPago) {
-        this.updatePayment();
+      this.updatePayment();
       // } else {
 
       // }
@@ -237,10 +269,12 @@ export class SuscripcionComponent implements OnInit {
 
       if (result.success) {
         await this.processInitialPayment(result.data.id);
+        await this.refreshUserData();
         this.alertService.success('Éxito', 'Suscripción creada exitosamente');
         this.showUpdateForm = false;
         this.modalRef?.hide();
         this.loadAll();
+        window.location.reload();
       }
     } catch (error: any) {
       this.alertService.error(
@@ -329,10 +363,13 @@ export class SuscripcionComponent implements OnInit {
       );
 
       if (response.success) {
+        await this.refreshUserData();
         this.alertService.success('Éxito', 'Suscripción creada exitosamente');
         this.showUpdateForm = false;
         this.modalRef?.hide();
         this.loadAll();
+
+        window.location.reload();
       } else {
         this.alertService.error(
           response.message || 'Error al procesar el pago'
@@ -375,6 +412,7 @@ export class SuscripcionComponent implements OnInit {
       );
 
       if (result.success) {
+        await this.refreshUserData();
         this.alertService.success(
           'Éxito',
           'Método de pago actualizado exitosamente'
@@ -382,6 +420,8 @@ export class SuscripcionComponent implements OnInit {
         this.showUpdateForm = false;
         this.modalRef?.hide();
         this.loadAll();
+
+        window.location.reload();
       }
     } catch (error: any) {
       this.alertService.error(
@@ -667,5 +707,19 @@ export class SuscripcionComponent implements OnInit {
     this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
       'https://front-3ds-sandbox.n1co.com/authentication/test'
     );
+  }
+
+  private async refreshUserData() {
+    try {
+      const currentUser = this.apiService.auth_user();
+      if (currentUser && currentUser.id) {
+        await firstValueFrom(this.apiService.getUserData(currentUser.id));
+
+        this.usuario = this.apiService.auth_user();
+        this.loadAll();
+      }
+    } catch (error) {
+      console.error('Error al actualizar datos de usuario:', error);
+    }
   }
 }
