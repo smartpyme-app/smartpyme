@@ -1,8 +1,17 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, Pipe, PipeTransform } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
+
+@Pipe({
+  name: 'replace'
+})
+export class ReplacePipe implements PipeTransform {
+  transform(value: string, from: string, to: string): string {
+    return value.replace(new RegExp(from, 'g'), to);
+  }
+}
 
 @Component({
   selector: 'app-reportes-automaticos',
@@ -24,6 +33,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   public eliminando: boolean = false;
   public emailInput: string = '';
   public emailPrueba: string = '';
+  public downloading: boolean = false;
   public diasSemana: any[] = [
     { id: 1, nombre: 'Lunes', seleccionado: false },
     { id: 2, nombre: 'Martes', seleccionado: false },
@@ -40,6 +50,11 @@ export class ReportesAutomaticosComponent implements OnInit {
     {tipo: 'ventas-por-vendedor', nombre: 'Ventas por Vendedor'},
      {tipo: 'ventas-por-categoria-vendedor', nombre: 'Ventas por Categoría y Vendedor'}
     ];
+    public configReporteActual: any = null;
+public modalRefFechas!: BsModalRef;
+public fechaInicio: string = '';
+public fechaFin: string = '';
+public fechaHoy: string = new Date().toISOString().split('T')[0];
 
   modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
@@ -593,4 +608,129 @@ export class ReportesAutomaticosComponent implements OnInit {
     
     this.actualizarCategoriasSeleccionadas();
   }
+
+
+  // public descargarReporte(config: any) {
+  //   let tipo = config.tipo_reporte;
+  //   tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre;
+
+  //   this.downloading = true; 
+  //   this.saving = true;
+  //       this.apiService.exportAcumulado('reportes-configuracion/exportar', config).subscribe((data:Blob) => {
+  //           const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  //           const url = window.URL.createObjectURL(blob);
+  //           const a = document.createElement('a');
+  //           a.href = url;
+  //           a.download = `${tipo}.xlsx`;
+  //           document.body.appendChild(a);
+  //           a.click();
+  //           document.body.removeChild(a);
+  //           window.URL.revokeObjectURL(url);
+  //           this.downloading = false; 
+  //           this.saving = false;
+  //         }, (error) => {this.alertService.error(error); this.downloading = false; this.saving = false; }
+  //       );
+  // }
+
+
+  // Método modificado para abrir el modal de selección de fechas
+public descargarReporte(config: any, template: TemplateRef<any>) {
+  this.configReporteActual = config;
+  this.fechaInicio = '';
+  this.fechaFin = '';
+  
+  // Establecer fechas predeterminadas (este mes)
+  this.seleccionarPeriodo('mes');
+  
+  this.modalRefFechas = this.modalService.show(template, {
+    class: 'modal-md',
+    backdrop: 'static'
+  });
+}
+
+// Método para descargar el reporte con las fechas seleccionadas
+public descargarReporteConFechas() {
+  if (!this.fechaInicio || !this.fechaFin || this.fechaInicio > this.fechaFin) {
+    return;
+  }
+  
+  let tipo = this.configReporteActual.tipo_reporte;
+  tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
+
+  this.downloading = true;
+  
+  const params = {
+    id: this.configReporteActual.id,
+    fecha_inicio: this.fechaInicio,
+    fecha_fin: this.fechaFin
+  };
+
+  this.apiService.exportAcumulado('reportes-configuracion/exportar', params).subscribe(
+    (data: Blob) => {
+      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tipo}_${this.fechaInicio}_al_${this.fechaFin}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      this.downloading = false;
+      this.modalRefFechas.hide();
+    },
+    (error) => {
+      this.alertService.error(error);
+      this.downloading = false;
+    }
+  );
+}
+
+// Método para seleccionar períodos predefinidos
+public seleccionarPeriodo(periodo: string) {
+  const hoy = new Date();
+  let fechaInicio = new Date();
+  let fechaFin = new Date();
+  
+  switch(periodo) {
+    case 'hoy':
+      fechaInicio = hoy;
+      fechaFin = hoy;
+      break;
+    
+    case 'ayer':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 1);
+      fechaFin = new Date(hoy);
+      fechaFin.setDate(hoy.getDate() - 1);
+      break;
+    
+    case 'semana':
+      fechaInicio = new Date(hoy);
+      // Establecer al primer día de la semana (lunes)
+      const diaSemana = hoy.getDay();
+      const diff = diaSemana === 0 ? 6 : diaSemana - 1; // Considerar que el domingo es 0
+      fechaInicio.setDate(hoy.getDate() - diff);
+      break;
+    
+    case 'mes':
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      break;
+    
+    case 'mesAnterior':
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+      break;
+    
+    case 'anio':
+      fechaInicio = new Date(hoy.getFullYear(), 0, 1);
+      break;
+  }
+  
+  // Convertir las fechas a formato YYYY-MM-DD
+  this.fechaInicio = fechaInicio.toISOString().split('T')[0];
+  this.fechaFin = fechaFin.toISOString().split('T')[0];
+}
+
+  
 }

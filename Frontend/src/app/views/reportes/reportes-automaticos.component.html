@@ -100,11 +100,15 @@
               <span *ngIf="config.tipo_reporte === 'productos-vendidos'"
                 >Productos Vendidos</span
               >
+              <span *ngIf="config.tipo_reporte === 'ventas-por-categoria-vendedor'"
+                >Ventas por Categoría y Vendedor</span
+              >
               <span
                 *ngIf="
                   config.tipo_reporte !== 'ventas-por-vendedor' &&
                   config.tipo_reporte !== 'ventas-diarias' &&
-                  config.tipo_reporte !== 'productos-vendidos'
+                  config.tipo_reporte !== 'productos-vendidos' &&
+                  config.tipo_reporte !== 'ventas-por-categoria-vendedor'
                 "
                 >{{ config.tipo_reporte }}</span
               >
@@ -200,6 +204,13 @@
     >
       <i class="fa fa-fw fa-trash"></i> Eliminar
     </a>
+    <!--descargar reporte por configuracion-->
+    <a
+    (click)="descargarReporte(config, mSeleccionarFechas)"
+    class="list-group-item list-group-item-action border-0 click text-success"
+  >
+    <i class="fa fa-fw fa-download"></i> Descargar
+  </a>
   </div>
 </ng-template>
 
@@ -622,3 +633,105 @@
     </div>
   </div>
 </ng-template>
+
+
+<!-- Modal para seleccionar fechas del reporte -->
+<ng-template #mSeleccionarFechas>
+  <div class="modal-header">
+    <h4 class="modal-title">Seleccionar período del reporte</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRefFechas.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <p class="mb-3">
+      Seleccione el rango de fechas para el reporte "{{ configReporteActual?.tipo_reporte | titlecase | replace:'-':' ' }}".
+    </p>
+    
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label for="fecha_inicio" class="form-label fw-bold">Fecha de inicio</label>
+        <input
+          type="date"
+          class="form-control"
+          id="fecha_inicio"
+          [(ngModel)]="fechaInicio"
+          name="fecha_inicio"
+          [max]="fechaHoy"
+        />
+      </div>
+      <div class="col-md-6">
+        <label for="fecha_fin" class="form-label fw-bold">Fecha de fin</label>
+        <input
+          type="date"
+          class="form-control"
+          id="fecha_fin"
+          [(ngModel)]="fechaFin"
+          name="fecha_fin"
+          [max]="fechaHoy"
+        />
+      </div>
+    </div>
+    
+    <!-- Botones rápidos para selección de períodos -->
+    <div class="mb-4">
+      <label class="form-label d-block fw-bold">Períodos predefinidos</label>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('hoy')">
+          Hoy
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('ayer')">
+          Ayer
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('semana')">
+          Esta semana
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('mes')">
+          Este mes
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('mesAnterior')">
+          Mes anterior
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anio')">
+          Este año
+        </button>
+      </div>
+    </div>
+    
+    <div class="alert alert-info py-2 small" *ngIf="!fechaInicio || !fechaFin">
+      <i class="fa fa-info-circle me-1"></i> 
+      Debe seleccionar tanto la fecha de inicio como la fecha de fin para generar el reporte.
+    </div>
+    
+    <div class="alert alert-warning py-2 small" *ngIf="fechaInicio && fechaFin && fechaInicio > fechaFin">
+      <i class="fa fa-exclamation-triangle me-1"></i>
+      La fecha de inicio no puede ser posterior a la fecha de fin.
+    </div>
+    
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="modalRefFechas.hide()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="descargarReporteConFechas()"
+        [disabled]="!fechaInicio || !fechaFin || fechaInicio > fechaFin || downloading"
+      >
+        <i class="fa fa-download me-1"></i>
+        <span *ngIf="!downloading" tooltip="Descargar reporte con fechas seleccionadas">Descargar</span>
+        <span *ngIf="downloading" tooltip="Descargando reporte con fechas seleccionadas">Descargando...</span>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+
+

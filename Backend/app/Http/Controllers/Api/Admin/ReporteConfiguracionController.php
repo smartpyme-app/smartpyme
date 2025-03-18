@@ -8,6 +8,7 @@ use App\Http\Controllers\Reportes\VentasPorVendedorController;
 use App\Models\Admin\ReporteConfiguracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 
@@ -279,5 +280,39 @@ class ReporteConfiguracionController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al enviar el reporte: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function exportar(Request $request){
+        Log::info($request->all());
+        // $validator = Validator::make($request->all(), [
+        //     'id' => 'required|exists:reporte_configuraciones,id',
+        // ]);
+
+        // if ($validator->fails()) {
+        //     return response()->json(['error' => $validator->errors()], 422);
+        // }
+
+        // $configuracion = ReporteConfiguracion::findOrFail($request->id);
+
+        // if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
+        //     return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
+        // }
+
+        // try {
+        //     switch ($configuracion->tipo_reporte) {
+        //         case 'ventas-por-vendedor':
+        //             $controller = new VentasController();
+        //             $resultado = $controller->exportarReporteProgramado($configuracion);
+        //             return response()->json(['message' => 'Reporte exportado correctamente'], 200);
+        //         case 'ventas-por-categoria-vendedor':
+        //             $controller = new VentasController();
+        //             $resultado = $controller->exportarReporteProgramado($configuracion);
+        //             return response()->json(['message' => 'Reporte exportado correctamente'], 200);
+        //         default:
+        //             return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+        //     }
+        // } catch (\Exception $e) {
+        //     return response()->json(['error' => 'Error al exportar el reporte: ' . $e->getMessage()], 500);
+        // }
     }
 }
