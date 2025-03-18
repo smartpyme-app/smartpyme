@@ -1345,7 +1345,7 @@ class VentasController extends Controller
             if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
                 $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
             } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
-                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion);
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin , $configuracion->id_empresa, $configuracion);
             } else {
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
