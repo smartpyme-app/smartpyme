@@ -35,6 +35,8 @@ import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-fac
 
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
 
+import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-funcionalidades.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -64,7 +66,8 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
     AdminFacturacionComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
-    AdminSuscripcionesComponent
+    AdminSuscripcionesComponent,
+    EmpresasFuncionalidadesComponent
   ],
   exports: [
     EmpresasComponent,

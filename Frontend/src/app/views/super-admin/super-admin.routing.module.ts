@@ -14,6 +14,7 @@ import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-fac
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
+import { EmpresasFuncionalidadesComponent } from '@views/super-admin/funcionalidades/empresas-funcionalidades.component';
 
 
 const routes: Routes = [
@@ -37,6 +38,7 @@ const routes: Routes = [
         { path: 'facturacion/crear', component: AdminFacturacionComponent, title: 'Facturacion' },
 
         { path: 'suscripciones', component: AdminSuscripcionesComponent, title: 'Suscripciones' },
+        { path: 'funcionalidades', component: EmpresasFuncionalidadesComponent, title: 'Funcionalidades' },
     ]
   }
 ];

@@ -9,7 +9,7 @@
   <div class="content p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <div class="container-fluid p-0 m-0">
       <!-- Sección de estado de suscripción -->
-      
+
       <!-- Período de prueba (prioridad sobre cualquier otro estado) -->
       <ng-container *ngIf="usuario.estado_suscripcion?.toLowerCase() === 'en prueba'">
         <div class="alert bg-warning text-dark rounded-0 m-0 p-2 text-center">
@@ -29,11 +29,11 @@
           </ng-container>
         </div>
       </ng-container>
-      
+
       <!-- Otros estados de suscripción (solo se muestran si NO está en período de prueba) -->
       <ng-container *ngIf="usuario.estado_suscripcion?.toLowerCase() !== 'en prueba' && usuario.dias_faltantes !== null && usuario.tiene_suscripcion">
         <!-- Suscripción por vencer (4-7 días) -->
-        <div *ngIf="usuario.dias_faltantes <= 7 && usuario.dias_faltantes > 3" 
+        <div *ngIf="usuario.dias_faltantes <= 7 && usuario.dias_faltantes > 3"
              class="alert bg-warning rounded-0 m-0 p-2 text-center">
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
@@ -52,7 +52,7 @@
         </div>
 
         <!-- Suscripción crítica (1-3 días) -->
-        <div *ngIf="usuario.dias_faltantes <= 3 && usuario.dias_faltantes > 0" 
+        <div *ngIf="usuario.dias_faltantes <= 3 && usuario.dias_faltantes > 0"
              class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
@@ -71,12 +71,12 @@
         </div>
 
         <!-- Suscripción vencida (0 días) -->
-        <div *ngIf="usuario.dias_faltantes === 0" 
+        <div *ngIf="usuario.dias_faltantes === 0"
              class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
             <a href="/paywall" class="text-decoration-none text-dark">
-              Tu suscripción ha vencido. 
+              Tu suscripción ha vencido.
               <span class="fw-bold">Renueva ahora para mantener acceso a todas las funciones</span>
             </a>
           </ng-container>
@@ -90,7 +90,7 @@
         </div>
 
         <!-- Suscripción en período de gracia (1-9 días después de vencer) -->
-        <div *ngIf="usuario.dias_faltantes < 0 && usuario.dias_faltantes > -10" 
+        <div *ngIf="usuario.dias_faltantes < 0 && usuario.dias_faltantes > -10"
              class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
@@ -111,7 +111,7 @@
         </div>
 
         <!-- Cuenta desactivada (10+ días sin pago) -->
-        <div *ngIf="usuario.dias_faltantes <= -10" 
+        <div *ngIf="usuario.dias_faltantes <= -10"
              class="alert bg-dark text-white rounded-0 m-0 p-2 text-center">
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
@@ -131,7 +131,7 @@
           </ng-container>
         </div>
       </ng-container>
-      
+
       <!-- Sin suscripción y no en prueba -->
       <ng-container *ngIf="!usuario.tiene_suscripcion && usuario.estado_suscripcion?.toLowerCase() !== 'en prueba' && usuario.id_empresa != 2">
         <div class="alert bg-danger text-dark rounded-0 m-0 p-2 text-center">
@@ -139,7 +139,7 @@
           <ng-container *ngIf="isAdmin()">
             <a (click)="RedirectSuscripcion()" class="text-decoration-none text-dark">
               <i class="fas fa-exclamation-circle me-2"></i>
-              No cuentas con una suscripción activa. 
+              No cuentas con una suscripción activa.
               <a href="/suscripcion" class="fw-bold text-decoration-none text-dark">Haz clic aquí para activar tu suscripción.</a>
             </a>
           </ng-container>
@@ -163,3 +163,6 @@
 </div>
 
 <app-footer></app-footer>
+<app-chat-drawer></app-chat-drawer>
+
+<app-speed-dial></app-speed-dial>
