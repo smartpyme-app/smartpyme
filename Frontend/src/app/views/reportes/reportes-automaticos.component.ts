@@ -569,4 +569,21 @@ export class ReportesAutomaticosComponent implements OnInit {
         porcentaje: categoria.porcentaje || 100,
       }));
   }
+
+  public seleccionarTodosBtn() {
+    // Determinar si hay alguna categoría no seleccionada
+    const hayAlgunaNoSeleccionada = this.categorias.some(cat => !cat.seleccionada);
+    const nuevoEstado = hayAlgunaNoSeleccionada;
+    
+    this.categorias.forEach((categoria) => {
+      categoria.seleccionada = nuevoEstado;
+      if (nuevoEstado) {
+        categoria.porcentaje = 100;
+      } else {
+        categoria.porcentaje = 0;
+      }
+    });
+    
+    this.actualizarCategoriasSeleccionadas();
+  }
 }
