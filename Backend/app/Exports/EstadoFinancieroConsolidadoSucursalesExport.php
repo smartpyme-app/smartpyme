@@ -116,9 +116,9 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
     {
         return [
             $fila['sucursal'],
-            '$' . number_format($fila['ventas'], 2),
-            '$' . number_format($fila['gastos'], 2),
-            '$' . number_format($fila['balance'], 2)
+            '$' . number_format(round($fila['ventas'], 2), 2),
+            '$' . number_format(round($fila['gastos'], 2), 2),
+            '$' . number_format(round($fila['balance'], 2), 2)
         ];
     }
 }
