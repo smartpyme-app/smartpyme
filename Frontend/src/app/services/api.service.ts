@@ -17,9 +17,9 @@ export class ApiService {
     public apiUrl =  this.baseUrl + '/api/';
 
     constructor(private http: HttpClient, private alertService: AlertService) { }
-   
+
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
-    
+
     getAll(url:string, filtros:any = {}) {return this.http.get<any>(this.apiUrl + url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     read(url:string, id: number) {return this.http.get<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
@@ -35,9 +35,7 @@ export class ApiService {
     paginate(url:string, filtros:any = {}) {return this.http.get<any>(url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     upload (url: string, formData: any) {let headers = new HttpHeaders(); headers.append('Accept', 'application/json'); headers.append('Authorization','Bearer ' + JSON.parse(localStorage.getItem('SP_token')!) ); let options = {headers}; return this.http.post(this.apiUrl + url, formData, options).pipe(retry(0), catchError(this.handleError)) }
-
-    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
-
+    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user));   this.loadConstants(); } }) ); }
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
     export(url:string, filtros: any): Observable<Blob> {
@@ -48,7 +46,7 @@ export class ApiService {
     // En el ApiService
         exportAcumulado(url: string, filtros: any): Observable<Blob> {
             console.log('Enviando filtros:', filtros);
-            return this.http.post(this.apiUrl + url, filtros, { 
+            return this.http.post(this.apiUrl + url, filtros, {
                 responseType: 'blob',
                 headers: new HttpHeaders({
                     'Authorization': 'Bearer ' + this.auth_token()
@@ -56,11 +54,11 @@ export class ApiService {
             });
         }
 
-    logout() { 
+    logout() {
         let data:any = {};
         if (this.autenticated()) {
             data.usuario_id = this.auth_user().id;
-            this.store('logout', data).subscribe(ivas => { 
+            this.store('logout', data).subscribe(ivas => {
             }, error => {this.alertService.error(error); });
         }
         localStorage.clear();
@@ -95,7 +93,7 @@ export class ApiService {
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
 
     autenticated(){ let token = JSON.parse(localStorage.getItem('SP_token')!); if(token) { return true; } else {return false; } }
-    
+
     auth_user(){ return JSON.parse(localStorage.getItem('SP_auth_user')!); }
     register_user(){ return JSON.parse(localStorage.getItem('SP_user_register')!); }
 
@@ -153,24 +151,24 @@ export class ApiService {
         this.getAll('formas-de-pago').subscribe(metodospago => {
             localStorage.setItem('metodospago', JSON.stringify(metodospago));
         }, error => {this.alertService.error(error);});
-        
-        this.getAll('paises').subscribe(paises => { 
+
+        this.getAll('paises').subscribe(paises => {
             localStorage.setItem('paises', JSON.stringify(paises));
         }, error => {this.alertService.error(error); });
-        
-        this.getAll('municipios').subscribe(municipios => { 
+
+        this.getAll('municipios').subscribe(municipios => {
             localStorage.setItem('municipios', JSON.stringify(municipios));
         }, error => {this.alertService.error(error); });
 
-        this.getAll('distritos').subscribe(distritos => { 
+        this.getAll('distritos').subscribe(distritos => {
             localStorage.setItem('distritos', JSON.stringify(distritos));
         }, error => {this.alertService.error(error); });
-        
-        this.getAll('departamentos').subscribe(departamentos => { 
+
+        this.getAll('departamentos').subscribe(departamentos => {
             localStorage.setItem('departamentos', JSON.stringify(departamentos));
         }, error => {this.alertService.error(error); });
 
-        this.getAll('actividades_economicas').subscribe(actividad_economicas => { 
+        this.getAll('actividades_economicas').subscribe(actividad_economicas => {
             localStorage.setItem('actividad_economicas', JSON.stringify(actividad_economicas));
         }, error => {this.alertService.error(error); });
 
