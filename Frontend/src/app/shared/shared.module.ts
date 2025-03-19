@@ -42,6 +42,10 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 
+import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
+
+
+
 @NgModule({
   imports: [
     CommonModule,
@@ -81,7 +85,8 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    ThreedsModalComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -110,7 +115,8 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    ThreedsModalComponent
   ],
   providers: [AlertService],
 })

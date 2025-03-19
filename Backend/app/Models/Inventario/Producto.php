@@ -27,6 +27,7 @@ class Producto extends Model {
         'tipo',
         'enable',
         'id_empresa',
+        'woocommerce_id'
     );
 
     protected $appends = ['nombre_categoria', 'img'];
