@@ -254,6 +254,74 @@
           <option *ngFor="let tipo of tiposReporte" [value]="tipo.tipo">{{ tipo.nombre }}</option>
         </select>
       </div>
+
+      
+      <div class="alert alert-info py-3 small mb-3" *ngIf="configuracionActual.tipo_reporte">
+        <div class="d-flex">
+          <i class="fa fa-info-circle me-2 mt-1"></i>
+          <div>
+            <ng-container [ngSwitch]="configuracionActual.tipo_reporte">
+            
+              <div *ngSwitchCase="'ventas-por-categoria-vendedor'">
+                <strong class="d-block mb-1">Reporte de Ventas por Categoría y Vendedor</strong>
+                <p class="mb-2">Este reporte ofrece un análisis detallado de las ventas realizadas por cada vendedor, desglosadas por categorías de productos.</p>
+                <ul class="ps-3 mb-1">
+                  <li>Muestra las ventas de cada vendedor agrupadas por categorías de productos</li>
+                  <li>Permite asignar porcentajes específicos a cada categoría para ponderar su impacto en el reporte</li>
+                  <li>Facilita la evaluación del desempeño de vendedores en diferentes líneas de productos</li>
+                  <li>Genera totales generales por vendedor según los porcentajes asignados a cada categoría</li>
+                </ul>
+                <p class="mb-0 mt-2"><strong>Ideal para:</strong> Análisis de comisiones, evaluación de desempeño y seguimiento de especialización por categoría.</p>
+              </div>
+              
+             
+              <div *ngSwitchCase="'ventas-por-vendedor'">
+                <strong class="d-block mb-1">Reporte de Ventas por Vendedor</strong>
+                <p class="mb-2">Este reporte proporciona información completa sobre las ventas realizadas por cada vendedor en el período seleccionado.</p>
+                <ul class="ps-3 mb-1">
+                  <li>Detalla todas las transacciones realizadas por cada vendedor</li>
+                  <li>Incluye información sobre productos, clientes, precios y descuentos</li>
+                  <li>Calcula totales de ventas, utilidades y cantidad de transacciones por vendedor</li>
+                  <li>Facilita la comparación de rendimiento entre diferentes vendedores</li>
+                </ul>
+                <p class="mb-0 mt-2"><strong>Ideal para:</strong> Cálculo de comisiones, evaluación de desempeño y seguimiento de metas de ventas.</p>
+              </div>
+              
+              
+              <div *ngSwitchCase="'estado-financiero-consolidado-sucursales'">
+                <strong class="d-block mb-1">Estado Financiero Consolidado por Sucursales</strong>
+                <p class="mb-2">Este reporte ofrece una visión global del desempeño financiero de cada sucursal, mostrando ingresos, gastos y balance.</p>
+                <ul class="ps-3 mb-1">
+                  <li>Muestra las ventas totales de cada sucursal en el período seleccionado</li>
+                  <li>Incluye los gastos totales reportados por cada sucursal</li>
+                  <li>Calcula automáticamente el balance financiero (ingresos - gastos) por sucursal</li>
+                  <li>Proporciona totales consolidados de toda la empresa al final del reporte</li>
+                </ul>
+                <p class="mb-0 mt-2"><strong>Ideal para:</strong> Análisis de rentabilidad por sucursal, toma de decisiones estratégicas y planificación financiera.</p>
+              </div>
+              
+              
+              <div *ngSwitchCase="'stock-productos'">
+                <strong class="d-block mb-1">Reporte de Inventario y Stock de Productos</strong>
+                <p class="mb-2">Este reporte muestra el estado actual del inventario de productos en todas las sucursales o bodegas.</p>
+                <ul class="ps-3 mb-1">
+                  <li>Detalla las existencias actuales de cada producto por sucursal o bodega</li>
+                  <li>Destaca productos con stock bajo según los umbrales definidos</li>
+                  <li>Incluye información sobre el valor monetario del inventario</li>
+                  <li>Permite identificar productos sin movimiento o con baja rotación</li>
+                </ul>
+                <p class="mb-0 mt-2"><strong>Ideal para:</strong> Control de inventario, planificación de compras y prevención de desabastecimiento.</p>
+              </div>
+              
+            
+              <div *ngSwitchDefault>
+                <strong class="d-block mb-1">Información del Reporte Seleccionado</strong>
+                <p class="mb-0">Este reporte proporcionará información detallada según el tipo seleccionado. Por favor configure los parámetros necesarios para personalizar la generación y envío automático del mismo.</p>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
       
       <div class="mb-4" *ngIf="configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor'" id="config-categorias">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -269,12 +337,12 @@
         
         <p class="text-muted small mb-3">Seleccione las categorías que desea incluir en el reporte y asigne un porcentaje a cada una:</p>
         
-        <!-- Mensaje cuando no hay categorías -->
+        
         <div *ngIf="categorias.length === 0" class="alert alert-info py-2 small">
           <i class="fa fa-info-circle me-1"></i> No hay categorías disponibles en el sistema.
         </div>
         
-        <!-- Lista de categorías -->
+       
         <div *ngIf="categorias.length > 0" class="categoria-lista border rounded mb-3" style="max-height: 350px; overflow-y: auto;">
           <div *ngFor="let categoria of categorias; let i = index" 
                class="py-2 px-3 d-flex flex-wrap align-items-center gap-2 border-bottom">
@@ -332,11 +400,11 @@
         </div>
         
         <!-- Alerta informativa -->
-        <div class="alert alert-info mt-3 py-2 small">
+        <!-- <div class="alert alert-info mt-3 py-2 small">
           <i class="fa fa-info-circle me-2"></i> 
           Los porcentajes se utilizarán para ponderar las ventas en cada categoría dentro del reporte.
           Por ejemplo, un porcentaje del 90% para "Servicios" significa que se reportará el 90% de las ventas en esa categoría.
-        </div>
+        </div> -->
       </div>
 
       <div class="form-group mb-3">
