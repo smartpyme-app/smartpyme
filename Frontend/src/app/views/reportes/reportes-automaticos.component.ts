@@ -680,7 +680,7 @@ public descargarReporte(config: any, template: TemplateRef<any>) {
   this.seleccionarPeriodo('mes');
   
   this.modalRefFechas = this.modalService.show(template, {
-    class: 'modal-md',
+    class: 'modal-lg',
     backdrop: 'static'
   });
 }

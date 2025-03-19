@@ -1,7 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Reportes Automáticos</h2>
   <button
-    *ngIf="apiService.canCreate()"
+    *ngIf="apiService.isAdminCreate()"
     (click)="openModalConfigurar(mconfigurarReporte)"
     tooltip="Configurar nuevo reporte"
     class="btn btn-default"
@@ -173,11 +173,12 @@
   </div>
 </section>
 
-<!-- Template de acciones -->
+<!-- Template de acciones no pode editar si esta deshabilitado -->
 <ng-template #accionesTemplate let-config="config">
   <div class="list-group border-0">
     <a
       (click)="openModal(mconfigurarReporte, config)"
+      *ngIf="apiService.isAdminCreate() && config.activo"
       class="list-group-item list-group-item-action border-0 click"
     >
       <i class="fa fa-fw fa-edit"></i> Editar
@@ -197,12 +198,14 @@
     </a>
     <a
       (click)="enviarReportePrueba(mEnvioPrueba, config)"
+      *ngIf="config.activo"
       class="list-group-item list-group-item-action border-0 click"
     >
       <i class="fa fa-fw fa-paper-plane"></i> Enviar prueba
     </a>
     <a
       (click)="eliminarConfiguracion(mEliminar, config)"
+      *ngIf="config.activo"
       class="list-group-item list-group-item-action border-0 click text-danger"
     >
       <i class="fa fa-fw fa-trash"></i> Eliminar
@@ -210,6 +213,7 @@
     <!--descargar reporte por configuracion-->
     <a
     (click)="descargarReporte(config, mSeleccionarFechas)"
+    *ngIf="config.activo"
     class="list-group-item list-group-item-action border-0 click text-success"
   >
     <i class="fa fa-fw fa-download"></i> Descargar
@@ -617,58 +621,6 @@
   </div>
 </ng-template>
 
-<!-- <ng-template #mEnvioPrueba>
-  <div class="modal-header">
-    <h4 class="modal-title">Enviar reporte de prueba</h4>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRefPrueba.hide()"
-      aria-label="Close"
-    ></button>
-  </div>
-  <div class="modal-body">
-    <p>
-      ¿Está seguro de que desea enviar un reporte de prueba? Esto generará y
-      enviará el reporte a los destinatarios configurados.
-    </p>
-    <div class="form-group mb-3">
-      <label for="email-prueba" class="form-label"
-        >Correo para prueba (opcional)</label
-      >
-      <input
-        type="email"
-        class="form-control"
-        id="email-prueba"
-        [(ngModel)]="emailPrueba"
-        placeholder="Ingrese un correo para la prueba"
-      />
-      <div class="form-text">
-        Si no ingresa un correo, se enviará a los destinatarios configurados.
-      </div>
-    </div>
-    <div class="d-flex justify-content-end gap-2 mt-3">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        (click)="modalRefPrueba.hide()"
-      >
-        Cancelar
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary"
-        (click)="confirmarEnvioPrueba()"
-        [disabled]="enviandoPrueba"
-      >
-        <span *ngIf="!enviandoPrueba">Enviar Prueba</span>
-        <span *ngIf="enviandoPrueba">Enviando...</span>
-      </button>
-    </div>
-  </div>
-</ng-template> -->
-
-<!-- Modal de confirmación de eliminación -->
 <ng-template #mEliminar>
   <div class="modal-header">
     <h4 class="modal-title">Confirmar eliminación</h4>
