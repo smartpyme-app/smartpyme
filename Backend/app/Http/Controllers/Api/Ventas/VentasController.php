@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Ventas;
 
+use App\Exports\EstadoFinancieroConsolidadoSucursalesExport;
 use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -1346,6 +1347,8 @@ class VentasController extends Controller
                 $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
             } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
                 $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin , $configuracion->id_empresa, $configuracion);
+            } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
             } else {
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }

@@ -323,6 +323,10 @@ class ReporteConfiguracionController extends Controller
                     $controller = new VentasController();
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
                     return $resultado;
+                case 'estado-financiero-consolidado-sucursales':
+                    $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
                 default:
                     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
