@@ -101,14 +101,17 @@
                 >Productos Vendidos</span
               >
               <span *ngIf="config.tipo_reporte === 'ventas-por-categoria-vendedor'"
-                >Ventas por Categoría y Vendedor</span
+                >Ventas por Categoría y Vendedor</span>
+              <span *ngIf="config.tipo_reporte === 'estado-financiero-consolidado-sucursales'"
+                >Estado Financiero Consolidado por Sucursales</span
               >
               <span
                 *ngIf="
                   config.tipo_reporte !== 'ventas-por-vendedor' &&
                   config.tipo_reporte !== 'ventas-diarias' &&
                   config.tipo_reporte !== 'productos-vendidos' &&
-                  config.tipo_reporte !== 'ventas-por-categoria-vendedor'
+                  config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
+                  config.tipo_reporte !== 'estado-financiero-consolidado-sucursales'
                 "
                 >{{ config.tipo_reporte }}</span
               >

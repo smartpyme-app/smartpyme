@@ -46,9 +46,11 @@ export class ReportesAutomaticosComponent implements OnInit {
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   public tiposReporteActivos: string[] = [];
   public categorias: any[] = [];
+  //Estado Financiero Consolidado por Sucursales
   public tiposReporte: any[] = [ 
     {tipo: 'ventas-por-vendedor', nombre: 'Ventas por Vendedor'},
-     {tipo: 'ventas-por-categoria-vendedor', nombre: 'Ventas por Categoría y Vendedor'}
+     {tipo: 'ventas-por-categoria-vendedor', nombre: 'Ventas por Categoría y Vendedor'},
+     {tipo: 'estado-financiero-consolidado-sucursales', nombre: 'Estado Financiero Consolidado por Sucursales'},
     ];
     public configReporteActual: any = null;
 public modalRefFechas!: BsModalRef;
