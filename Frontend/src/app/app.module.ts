@@ -48,6 +48,11 @@ import { LayoutModule } from '@layout/layout.module';
 // Contabilidad
   import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
 
+
+// Planillas
+import { PlanillasModule } from '@views/planillas/planillas.module';
+
+
 // Paquetes
   import { PaquetesModule } from '@views/paquetes/paquetes.module';
 
@@ -90,6 +95,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     CitasModule,
     PaquetesModule,
     ProyectosModule,
+    PlanillasModule,
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: !isDevMode(),
       // Register the ServiceWorker as soon as the application is stable
