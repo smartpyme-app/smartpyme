@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
@@ -61,7 +61,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
-    
+
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);
     Route::post('promocion',          [PromocionesController::class, 'store']);
@@ -82,6 +82,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
     //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
-    
+
 
 ?>

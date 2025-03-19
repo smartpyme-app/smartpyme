@@ -19,9 +19,11 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Exports\WooCommerceExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Auth;
+//use Auth;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class ProductosController extends Controller
@@ -178,14 +180,19 @@ class ProductosController extends Controller
             // 'costo.required' => 'Agregue el costo.'
         ]);
 
-        if ($request->id)
+        if ($request->id) {
             $producto = Producto::findOrFail($request->id);
-        else
+            $precioAnterior = $producto->precio;
+            $costoAnterior = $producto->costo;
+        } else {
+
             $producto = new Producto;
+        }
 
 
         $producto->fill($request->all());
         $producto->save();
+
 
         // Configurar inventarios para las bodegas
         if (!$request->id && $producto->tipo != 'Servicio') {
@@ -199,6 +206,18 @@ class ProductosController extends Controller
             }
         }
 
+        if ($request->id) {
+            if ($precioAnterior != $producto->precio || $costoAnterior != $producto->costo) {
+                $inventarios = Inventario::where('id_producto', $producto->id)->get();
+
+                foreach ($inventarios as $inventario) {
+                    if ($inventario->stock > 0) {
+                        $producto->id_usuario = Auth::id();
+                        $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
+                    }
+                }
+            }
+        }
 
         return Response()->json($producto, 200);
     }
