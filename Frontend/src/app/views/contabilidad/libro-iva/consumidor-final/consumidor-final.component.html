@@ -4,13 +4,40 @@
         <h2>Libro Consumidor Final</h2>
     </div>
     <div>
-        <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
+        <!-- <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
             Libro <img src="/assets/icons/download.png" class="icon">
         </button>
         <button [disabled]="downloading" tooltip="Descargar Anexo" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
             Anexo <img src="/assets/icons/download.png" class="icon">
-        </button>
+        </button> -->
     </div>
+
+    <div class="dropdown">
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
+          Descargas 
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Libro de IVA
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Anexo
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarDTEConsumidorFinal()" title="Descargar DTEs en zip como JSON ">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                DTEs
+            </button>
+          </li>
+        </ul>
+      </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
