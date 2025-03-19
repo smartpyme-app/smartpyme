@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\Admin\UsuariosController;
 use App\Http\Controllers\Api\Admin\UsuariosMetaController;
+//use Route;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/usuarios',                 [UsuariosController::class, 'index']);
     Route::get('/usuarios/list',            [UsuariosController::class, 'list']);
@@ -17,5 +19,9 @@ use App\Http\Controllers\Api\Admin\UsuariosMetaController;
 
     Route::post('/usuario-validar',       [UsuariosController::class, 'validar']);
     Route::post('/usuario-auth',       [UsuariosController::class, 'auth']);
+
+    Route::post('/usuario/save-credentials', [UsuariosController::class, 'saveCredentials']);
+    //usuario/disconnect-woocommerce
+    Route::post('/usuario/disconnect-woocommerce', [UsuariosController::class, 'disconnectWooCommerce']);
 
 ?>

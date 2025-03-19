@@ -4,4 +4,9 @@ Backend/composer.lock
 Backend/composer.lock
 Backend/package-lock.json
 Backend/composer.lock
-.idea/
+Frontend/src/environments/environment.prod.ts
+.idea/*
+Frontend/src/environments/environment.ts
+
+
+

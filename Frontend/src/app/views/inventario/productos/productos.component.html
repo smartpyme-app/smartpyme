@@ -19,11 +19,19 @@
         </div>
 
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar" >
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 justify-content-end">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
+
+                <!-- <button tooltip="importar productos a WooCommerce" (click)="exportarWooCommerce()" class="btn btn-default tcla-F6" *ngIf="connected">
+                    <img src="/assets/icons/upload-cloud.png" class="icon">
+                </button>
+  
+                <button tooltip="Descargar productos para importar en WooCommerce (F7)" (click)="descargarWooCommerce()" class="btn btn-default tcla-F7" *ngIf="connected">
+                    <img src="/assets/icons/woocommerce.png" class="icon">
+                </button> -->
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
                     <div class="input-group">
                         <div class="input-group-text bg-white border-end-0">
@@ -33,6 +41,9 @@
                     </div>
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)"  class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
+                <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                    <i class="fa fa-refresh"></i>
+                  </button>
             </div>
         </div>
     </div>
