@@ -34,6 +34,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   public emailInput: string = '';
   public emailPrueba: string = '';
   public downloading: boolean = false;
+  public periodosExpandidos: boolean = false;
   public diasSemana: any[] = [
     { id: 1, nombre: 'Lunes', seleccionado: false },
     { id: 2, nombre: 'Martes', seleccionado: false },
@@ -723,24 +724,44 @@ public descargarReporteConFechas() {
 }
 
 // Método para seleccionar períodos predefinidos
+// Variable para controlar la expansión/contracción de los períodos
+
+
+// Función para alternar la visualización de los períodos
+public toggleMostrarPeriodos(): void {
+  this.periodosExpandidos = !this.periodosExpandidos;
+}
+
+// Método para seleccionar períodos predefinidos
 public seleccionarPeriodo(periodo: string) {
   const hoy = new Date();
   let fechaInicio = new Date();
   let fechaFin = new Date();
   
   switch(periodo) {
+    // Días
     case 'hoy':
-      fechaInicio = hoy;
-      fechaFin = hoy;
+      fechaInicio = new Date(hoy);
+      fechaFin = new Date(hoy);
       break;
     
     case 'ayer':
       fechaInicio = new Date(hoy);
       fechaInicio.setDate(hoy.getDate() - 1);
-      fechaFin = new Date(hoy);
-      fechaFin.setDate(hoy.getDate() - 1);
+      fechaFin = new Date(fechaInicio);
       break;
     
+    case 'ultimos3':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 2);
+      break;
+    
+    case 'ultimos7':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 6);
+      break;
+    
+    // Semanas
     case 'semana':
       fechaInicio = new Date(hoy);
       // Establecer al primer día de la semana (lunes)
@@ -749,6 +770,20 @@ public seleccionarPeriodo(periodo: string) {
       fechaInicio.setDate(hoy.getDate() - diff);
       break;
     
+    case 'semanaAnterior':
+      fechaInicio = new Date(hoy);
+      const diffInicio = hoy.getDay() === 0 ? 6 : hoy.getDay() - 1;
+      fechaInicio.setDate(hoy.getDate() - diffInicio - 7);
+      fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + 6);
+      break;
+    
+    case 'ultimas2Semanas':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 13);
+      break;
+    
+    // Meses
     case 'mes':
       fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
       break;
@@ -758,8 +793,41 @@ public seleccionarPeriodo(periodo: string) {
       fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
       break;
     
+    case 'ultimos3Meses':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setMonth(hoy.getMonth() - 2);
+      fechaInicio.setDate(1);
+      break;
+    
+    case 'ultimos6Meses':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setMonth(hoy.getMonth() - 5);
+      fechaInicio.setDate(1);
+      break;
+    
+    // Trimestres y Año
+    case 'trimestre':
+      const trimestreActual = Math.floor(hoy.getMonth() / 3);
+      fechaInicio = new Date(hoy.getFullYear(), trimestreActual * 3, 1);
+      fechaFin = new Date(hoy.getFullYear(), trimestreActual * 3 + 3, 0);
+      break;
+    
+    case 'trimestreAnterior':
+      const trimestreAnteriorMes = Math.floor((hoy.getMonth() - 3) / 3) * 3;
+      const anioTrimestreAnterior = hoy.getFullYear() + Math.floor(trimestreAnteriorMes / 12);
+      const mesTrimestreAnterior = ((trimestreAnteriorMes % 12) + 12) % 12;
+      fechaInicio = new Date(anioTrimestreAnterior, mesTrimestreAnterior, 1);
+      fechaFin = new Date(anioTrimestreAnterior, mesTrimestreAnterior + 3, 0);
+      break;
+    
     case 'anio':
       fechaInicio = new Date(hoy.getFullYear(), 0, 1);
+      fechaFin = new Date(hoy.getFullYear(), 11, 31);
+      break;
+    
+    case 'anioAnterior':
+      fechaInicio = new Date(hoy.getFullYear() - 1, 0, 1);
+      fechaFin = new Date(hoy.getFullYear() - 1, 11, 31);
       break;
   }
   

@@ -746,32 +746,110 @@
         />
       </div>
     </div>
-    
-    <!-- Botones rápidos para selección de períodos -->
     <div class="mb-4">
       <label class="form-label d-block fw-bold">Períodos predefinidos</label>
-      <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('hoy')">
-          Hoy
+      
+      <!-- Períodos con agrupación visual -->
+      <div class="card mb-2 border-0">
+        <div class="card-body p-2 bg-light rounded">
+          <div class="row g-2">
+            <!-- Días (siempre visible) -->
+            <div class="col-12">
+              <small class="text-muted d-block mb-1">Días:</small>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('hoy')">
+                  <i class="fa fa-calendar-day me-1"></i> Hoy
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('ayer')">
+                  <i class="fa fa-calendar-day me-1"></i> Ayer
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('ultimos3')">
+                  <i class="fa fa-calendar-day me-1"></i> Últimos 3 días
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('ultimos7')">
+                  <i class="fa fa-calendar-day me-1"></i> Últimos 7 días
+                </button>
+              </div>
+            </div>
+            
+            <!-- Opciones adicionales (visible solo cuando periodosExpandidos = true) -->
+            <ng-container *ngIf="periodosExpandidos">
+              <!-- Semanas -->
+              <div class="col-12">
+                <small class="text-muted d-block mb-1">Semanas:</small>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="seleccionarPeriodo('semana')">
+                    <i class="fa fa-calendar-week me-1"></i> Esta semana
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="seleccionarPeriodo('semanaAnterior')">
+                    <i class="fa fa-calendar-week me-1"></i> Semana anterior
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="seleccionarPeriodo('ultimas2Semanas')">
+                    <i class="fa fa-calendar-week me-1"></i> Últimas 2 semanas
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Meses -->
+              <div class="col-12">
+                <small class="text-muted d-block mb-1">Meses:</small>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('mes')">
+                    <i class="fa fa-calendar-alt me-1"></i> Este mes
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('mesAnterior')">
+                    <i class="fa fa-calendar-alt me-1"></i> Mes anterior
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('ultimos3Meses')">
+                    <i class="fa fa-calendar-alt me-1"></i> Últimos 3 meses
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('ultimos6Meses')">
+                    <i class="fa fa-calendar-alt me-1"></i> Últimos 6 meses
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Trimestres y Año -->
+              <div class="col-12">
+                <small class="text-muted d-block mb-1">Trimestres y Año:</small>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('trimestre')">
+                    <i class="fa fa-calendar-alt me-1"></i> Este trimestre
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('trimestreAnterior')">
+                    <i class="fa fa-calendar-alt me-1"></i> Trimestre anterior
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anio')">
+                    <i class="fa fa-calendar-alt me-1"></i> Este año
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anioAnterior')">
+                    <i class="fa fa-calendar-alt me-1"></i> Año anterior
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Controles adicionales -->
+      <div class="d-flex justify-content-end">
+        <button 
+          type="button" 
+          class="btn btn-sm btn-link text-muted" 
+          (click)="toggleMostrarPeriodos()"
+          *ngIf="periodosExpandidos">
+          <i class="fa fa-chevron-up me-1"></i> Mostrar menos
         </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('ayer')">
-          Ayer
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('semana')">
-          Esta semana
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('mes')">
-          Este mes
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('mesAnterior')">
-          Mes anterior
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anio')">
-          Este año
+        <button 
+          type="button" 
+          class="btn btn-sm btn-link text-muted" 
+          (click)="toggleMostrarPeriodos()"
+          *ngIf="!periodosExpandidos">
+          <i class="fa fa-chevron-down me-1"></i> Mostrar más
         </button>
       </div>
     </div>
-    
     <div class="alert alert-info py-2 small" *ngIf="!fechaInicio || !fechaFin">
       <i class="fa fa-info-circle me-1"></i> 
       Debe seleccionar tanto la fecha de inicio como la fecha de fin para generar el reporte.
@@ -849,24 +927,105 @@
     <!-- Botones rápidos para selección de períodos -->
     <div class="mb-4">
       <label class="form-label d-block fw-bold">Períodos predefinidos</label>
-      <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('hoy')">
-          Hoy
+      
+      <!-- Períodos con agrupación visual -->
+      <div class="card mb-2 border-0">
+        <div class="card-body p-2 bg-light rounded">
+          <div class="row g-2">
+            <!-- Días (siempre visible) -->
+            <div class="col-12">
+              <small class="text-muted d-block mb-1">Días:</small>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('hoy')">
+                  <i class="fa fa-calendar-day me-1"></i> Hoy
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('ayer')">
+                  <i class="fa fa-calendar-day me-1"></i> Ayer
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('ultimos3')">
+                  <i class="fa fa-calendar-day me-1"></i> Últimos 3 días
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="seleccionarPeriodo('ultimos7')">
+                  <i class="fa fa-calendar-day me-1"></i> Últimos 7 días
+                </button>
+              </div>
+            </div>
+            
+            <!-- Opciones adicionales (visible solo cuando periodosExpandidos = true) -->
+            <ng-container *ngIf="periodosExpandidos">
+              <!-- Semanas -->
+              <div class="col-12">
+                <small class="text-muted d-block mb-1">Semanas:</small>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="seleccionarPeriodo('semana')">
+                    <i class="fa fa-calendar-week me-1"></i> Esta semana
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="seleccionarPeriodo('semanaAnterior')">
+                    <i class="fa fa-calendar-week me-1"></i> Semana anterior
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="seleccionarPeriodo('ultimas2Semanas')">
+                    <i class="fa fa-calendar-week me-1"></i> Últimas 2 semanas
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Meses -->
+              <div class="col-12">
+                <small class="text-muted d-block mb-1">Meses:</small>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('mes')">
+                    <i class="fa fa-calendar-alt me-1"></i> Este mes
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('mesAnterior')">
+                    <i class="fa fa-calendar-alt me-1"></i> Mes anterior
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('ultimos3Meses')">
+                    <i class="fa fa-calendar-alt me-1"></i> Últimos 3 meses
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-dark" (click)="seleccionarPeriodo('ultimos6Meses')">
+                    <i class="fa fa-calendar-alt me-1"></i> Últimos 6 meses
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Trimestres y Año -->
+              <div class="col-12">
+                <small class="text-muted d-block mb-1">Trimestres y Año:</small>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('trimestre')">
+                    <i class="fa fa-calendar-alt me-1"></i> Este trimestre
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('trimestreAnterior')">
+                    <i class="fa fa-calendar-alt me-1"></i> Trimestre anterior
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anio')">
+                    <i class="fa fa-calendar-alt me-1"></i> Este año
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anioAnterior')">
+                    <i class="fa fa-calendar-alt me-1"></i> Año anterior
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Controles adicionales -->
+      <div class="d-flex justify-content-end">
+        <button 
+          type="button" 
+          class="btn btn-sm btn-link text-muted" 
+          (click)="toggleMostrarPeriodos()"
+          *ngIf="periodosExpandidos">
+          <i class="fa fa-chevron-up me-1"></i> Mostrar menos
         </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('ayer')">
-          Ayer
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('semana')">
-          Esta semana
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('mes')">
-          Este mes
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('mesAnterior')">
-          Mes anterior
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="seleccionarPeriodo('anio')">
-          Este año
+        <button 
+          type="button" 
+          class="btn btn-sm btn-link text-muted" 
+          (click)="toggleMostrarPeriodos()"
+          *ngIf="!periodosExpandidos">
+          <i class="fa fa-chevron-down me-1"></i> Mostrar más
         </button>
       </div>
     </div>
