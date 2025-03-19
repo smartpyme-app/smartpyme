@@ -48,18 +48,17 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
     public function styles(Worksheet $sheet)
     {
         return [
-            // Estilo para los encabezados
+
             1 => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'EEEEEE']]],
-            // Estilo para la columna de sucursales
+
             'A' => ['font' => ['bold' => true]],
-            // Estilo para la columna de balance
+
             'D' => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'E8F5E9']]],
         ];
     }
 
     public function collection()
     {
-        // Obtenemos todas las sucursales de la empresa
         $sucursales = Sucursal::where('id_empresa', $this->id_empresa)
             ->where('activo', 1)
             ->orderBy('nombre', 'asc')
@@ -68,23 +67,19 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
         $resultados = collect();
         
         foreach ($sucursales as $sucursal) {
-            // Calculamos las ventas de la sucursal en el período
             $ventas = Venta::where('id_sucursal', $sucursal->id)
                 ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
                 ->where('cotizacion', 0)
                 ->sum('total');
                 
-            // Calculamos los gastos de la sucursal en el período
             $gastos = Gasto::where('id_sucursal', $sucursal->id)
                 ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
                 ->sum('total');
                 
-            // Calculamos el balance (ventas - gastos)
             $balance = $ventas - $gastos;
             
-            // Agregamos los datos a la colección
             $resultados->push([
                 'sucursal' => $sucursal->nombre,
                 'ventas' => $ventas,
@@ -93,7 +88,6 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
             ]);
         }
         
-        // Añadimos una fila para el total
         $totalVentas = $resultados->sum('ventas');
         $totalGastos = $resultados->sum('gastos');
         $totalBalance = $totalVentas - $totalGastos;

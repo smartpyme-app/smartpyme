@@ -1348,7 +1348,7 @@ class VentasController extends Controller
             } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
                 $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin , $configuracion->id_empresa, $configuracion);
             } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
-                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
             } else {
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
