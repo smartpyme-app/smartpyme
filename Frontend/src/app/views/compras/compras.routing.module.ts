@@ -79,6 +79,7 @@ const routes: Routes = [
 
       // { path: 'retaceo', component: RetaceoComponent },
       { path: 'retaceo', component: RetaceosListComponent },
+      { path: 'retaceo/crear', component: RetaceoComponent },
 
     ]
   }
