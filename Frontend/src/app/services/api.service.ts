@@ -184,6 +184,13 @@ export class ApiService {
         return false;
     }
 
+    isAdminCreate(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador')
+            return true;
+        return false;
+    }
+
     canCreate(){
         let usuario = this.auth_user();
         if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')

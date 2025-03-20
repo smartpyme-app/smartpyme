@@ -8,6 +8,7 @@ use App\Http\Controllers\Reportes\VentasPorVendedorController;
 use App\Models\Admin\ReporteConfiguracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 
@@ -247,7 +248,14 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
-        try {
+        if (!$request->fecha_inicio || !$request->fecha_fin) {
+            return response()->json(['error' => 'Debe seleccionar un período válido'], 422);
+        }
+
+        $fecha_inicio = $request->fecha_inicio;
+        $fecha_fin = $request->fecha_fin;
+
+       try {
             switch ($configuracion->tipo_reporte) {
                 case 'ventas-por-vendedor':
                     $controller = new VentasController();
@@ -258,7 +266,26 @@ class ReporteConfiguracionController extends Controller
                         : $configuracion->destinatarios;
 
 
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios);
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
+                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
+                case 'ventas-por-categoria-vendedor':
+                    $controller = new VentasController();
+
+                    $destinatarios = $request->email_prueba
+                        ? [$request->email_prueba]
+                        : $configuracion->destinatarios;
+
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
+
+                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
+                case 'estado-financiero-consolidado-sucursales':
+                    $controller = new VentasController();
+
+                    $destinatarios = $request->email_prueba
+                        ? [$request->email_prueba]
+                        : $configuracion->destinatarios;
+
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
 
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
 
@@ -271,4 +298,50 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'Error al enviar el reporte: ' . $e->getMessage()], 500);
         }
     }
+
+    public function exportar(Request $request){
+        Log::info($request->all());
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:reporte_configuraciones,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        $configuracion = ReporteConfiguracion::findOrFail($request->id);
+
+        if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
+            return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
+        }
+
+
+        $fecha_inicio = $request->fecha_inicio;
+        $fecha_fin = $request->fecha_fin;
+
+        if (!$fecha_inicio || !$fecha_fin) {
+            return response()->json(['error' => 'Debe especificar fechas de inicio y fin'], 422);
+        }
+
+        try {
+            switch ($configuracion->tipo_reporte) {
+                case 'ventas-por-vendedor':
+                    $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
+                case 'ventas-por-categoria-vendedor':
+                    $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
+                case 'estado-financiero-consolidado-sucursales':
+                    $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
+                default:
+                    return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al exportar el reporte: ' . $e->getMessage()], 500);
+        }
+ }
 }
