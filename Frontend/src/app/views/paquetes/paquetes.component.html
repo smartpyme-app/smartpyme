@@ -46,10 +46,16 @@
                 <option value="Pendiente">Pendiente</option>
                 <option value="Facturado">Facturado</option>
             </select>
-            <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
+            <ng-select name="id_cliente" (change)="filtrarPaquetes()" placeholder=" Cliente " [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
                 <ng-option value="">Cliente</ng-option>
                 <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
                     {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                </ng-option>
+            </ng-select>
+            <ng-select name="num_guia" (change)="filtrarPaquetes()" placeholder=" Guia " [(ngModel)]="filtros.num_guia" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
+                <ng-option value="">Guia</ng-option>
+                <ng-option *ngFor="let guia of guias" [value]="guia.num_guia">
+                    {{ guia.num_guia }}
                 </ng-option>
             </ng-select>
         </div>
@@ -263,6 +269,15 @@
                         {{ sucursal.nombre }}
                     </option>
                 </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.num_guia">Guia:</label>
+                <ng-select name="num_guia" [(ngModel)]="filtros.num_guia" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let guia of guias" [value]="guia.num_guia">
+                        {{ guia.num_guia }}
+                    </ng-option>
+                </ng-select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.id_cliente">Cliente:</label>
