@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
+use App\Models\Compras\Compra;
 use App\Models\Compras\Retaceo\Retaceo;
 use App\Models\Compras\Retaceo\RetaceoDistribucion;
 use App\Models\Compras\Retaceo\RetaceoGasto;
@@ -73,6 +74,7 @@ class RetaceoController extends Controller
             DB::beginTransaction();
 
             // Crear el retaceo
+            $compra = Compra::findOrFail($request->id_compra);
             $retaceo = new Retaceo();
             $retaceo->codigo = 'RET-' . date('Ymd') . '-' . rand(1000, 9999);
             $retaceo->id_compra = $request->id_compra;
@@ -86,6 +88,7 @@ class RetaceoController extends Controller
             $retaceo->total_retaceado = $request->total_retaceado;
             $retaceo->id_empresa = $request->id_empresa;
             $retaceo->id_sucursal = $request->id_sucursal;
+            $retaceo->id_bodega = $compra->id_bodega;
             $retaceo->id_usuario = $request->id_usuario;
             $retaceo->save();
 

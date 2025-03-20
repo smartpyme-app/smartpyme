@@ -78,8 +78,9 @@ const routes: Routes = [
       { path: 'gastos/categorias', component: GastosCategoriasComponent },
 
       // { path: 'retaceo', component: RetaceoComponent },
-      { path: 'retaceo', component: RetaceosListComponent },
+      { path: 'retaceos', component: RetaceosListComponent },
       { path: 'retaceo/crear', component: RetaceoComponent },
+      { path: 'retaceo/:id', component: RetaceoComponent },
 
     ]
   }
