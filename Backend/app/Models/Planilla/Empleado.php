@@ -39,6 +39,7 @@ class Empleado extends Model
         'tipo_jornada',
         'fecha_ingreso',
         'fecha_fin',
+        'fecha_baja',
         'estado',
         'id_departamento',
         'id_cargo',

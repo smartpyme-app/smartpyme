@@ -184,7 +184,7 @@
                         class="btn btn-default"
                         type="button"
                         tooltip="Agregar cargo"
-                        (click)="openModal(mcargo)"
+                        (click)="openModalCargo(mcargo)"
                         [disabled]="!empleado.id_departamento"
                       >
                         <i class="fa fa-plus"></i>
@@ -682,16 +682,17 @@
         <div class="form-group col-12 mb-3">
           <label for="id_departamento">Departamento:</label>
           <select
-            [(ngModel)]="cargo.id_departamento"
-            name="id_departamento"
-            class="form-select"
-            required
-          >
-            <option [ngValue]="null">Seleccione un departamento</option>
-            <option *ngFor="let dept of departamentos" [ngValue]="dept.id">
-              {{ dept.nombre }}
-            </option>
-          </select>
+          [(ngModel)]="cargo.id_departamento"
+          (ngModelChange)="empleado.id_departamento = $event; onDepartamentoChange($event)"
+          name="id_departamento"
+          class="form-select"
+          required
+        >
+          <option [ngValue]="null">Seleccione un departamento</option>
+          <option *ngFor="let dept of departamentos" [ngValue]="dept.id">
+            {{ dept.nombre }}
+          </option>
+        </select>
           <small class="text-muted d-block mt-1" *ngIf="cargo.id_departamento">
             El cargo será asignado al departamento:
             <strong>{{ getNombreDepartamento(cargo.id_departamento) }}</strong>
@@ -721,7 +722,7 @@
           ></textarea>
         </div>
 
-        <div class="form-group col-12 mb-3">
+        <!-- <div class="form-group col-12 mb-3">
           <label for="salario_base">Salario Base:</label>
           <div class="input-group">
             <span class="input-group-text">$</span>
@@ -735,7 +736,7 @@
               min="0"
             />
           </div>
-        </div>
+        </div> -->
 
         <div class="form-group col-12">
           <button

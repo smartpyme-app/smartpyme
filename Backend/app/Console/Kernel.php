@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
@@ -32,8 +33,12 @@ class Kernel extends ConsoleKernel
              ->everyFiveMinutes()
              ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
+        $schedule->command('empleados:actualizar-estado')
+        ->dailyAt('00:01')
+        ->appendOutputTo(storage_path('logs/empleados-estado.log'));
+
         $schedule->call(function () {
-                \Log::info('Working');
+                Log::info('Working');
         })->daily();
     }
 
