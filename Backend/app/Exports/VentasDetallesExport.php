@@ -28,7 +28,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'DUI',
             'NIT',
             'Producto',
-            'SKU',
+            'Codigo',
             'Marca',
             'Categoria',
             'Documento',
