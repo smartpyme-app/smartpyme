@@ -81,6 +81,18 @@ class Empresa extends Model
 
         //Permiso para vendedores
         'vendedor_inventario',
+        'woocommerce_api_key',
+        'woocommerce_store_url',
+        'woocommerce_consumer_key',
+        'woocommerce_consumer_secret',
+        'woocommerce_status',
+        'woocommerce_sync_progress',
+        'woocommerce_sync_total_batches',
+        'woocommerce_sync_processed_batches',
+        'woocommerce_sync_status',
+        'woocommerce_last_sync',
+        'woocommerce_error',
+        'woocommerce_canal_id',
 
         //Para facturación
         'id_cliente'
@@ -91,7 +103,7 @@ class Empresa extends Model
         'facturacion_electronica' => 'boolean',
     ];
 
-    protected $appends = ['estado_plan'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
 
     public function limiteUsuarios()
     {
@@ -112,7 +124,7 @@ class Empresa extends Model
         if (!$this->created_at) {
             return ['estado' => 'Sin fecha de creación', 'dias_faltantes' => null];
         }
-        
+
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -266,6 +278,43 @@ class Empresa extends Model
     {
         $re = $this->recordatorios()->where('leido', false)->get();
         return $re->count();
+    }
+
+    //mandar usuario que esta autenticado
+    public function user()
+    {
+
+        $user = Auth::user();
+        return $user;
+    }
+
+    public function getWooCommerceApiUrlAttribute()
+    {
+        if (empty($this->woocommerce_api_key)) {
+            return null;
+        }
+
+        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
+    }
+    public function getStatusConexionWoocommerceAttribute()
+    {
+        $connected_users = $this->usuarios->where('woocommerce_status', 'connected');
+
+        if ($connected_users->count() > 0) {
+            return 'connected';
+        }
+
+        return 'disconnected';
+    }
+    public function getIsCurrentUserConnectedToWooCommerceAttribute()
+    {
+        $current_user = Auth::user();
+        return $current_user && $current_user->woocommerce_status === 'connected';
+    }
+
+    public function canal()
+    {
+        return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
     }
 
     public function suscripcion()
