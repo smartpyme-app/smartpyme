@@ -108,14 +108,14 @@ class WooCommerceController extends Controller
                     $venta->id_bodega
                 );
 
-                // Inventario::where('id_producto', $producto->id)
-                //     ->where('id_bodega', $venta->id_bodega)
-                //     ->decrement('stock', $item['quantity']);
+                Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->decrement('stock', $item['quantity']);
 
-                Inventario::updateOrCreate(
-                    ['id_producto' => $producto->id, 'id_bodega' => $venta->id_bodega],
-                    ['stock' => $inventarioData['stock']]
-                );
+                // Inventario::updateOrCreate(
+                //     ['id_producto' => $producto->id, 'id_bodega' => $venta->id_bodega],
+                //     ['stock' => $inventarioData['stock']]
+                // );
             }
 
             $documento = Documento::findOrfail($venta->id_documento);
