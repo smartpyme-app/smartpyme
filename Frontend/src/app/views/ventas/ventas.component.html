@@ -232,15 +232,8 @@
                     <span *ngIf="downloadingVentas">Descargando...</span>
                 </button>
             </div>
-            <!-- <div class="d-grid my-4">
-                <p>Descarga Acumulado por Producto.</p>
-                <button [disabled]="saving" (click)="descargarAcumulado()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingVentas">Descargar Acumulado</span>
-                    <span *ngIf="downloadingVentas">Descargando...</span>
-                </button>
-            </div> -->
-            <div class="d-grid my-4">
-                <p>Descarga Acumulado por Producto.</p>
+            <div class="d-grid mb-4">
+                <p>Descarga acumulado por producto.</p>
                 <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)" class="btn btn-primary btn-block">
                   Descargar Acumulado
                 </button>
@@ -520,7 +513,7 @@
             <!-- Sucursales -->
             <div class="form-group col-12 mt-3">
               <label>Sucursales:</label>
-              <ng-select [multiple]="true"
+              <ng-select [multiple]="true" class="form-select p-0"
                         [items]="sucursales"
                         [(ngModel)]="filtrosAcumulado.sucursales"
                         bindLabel="nombre"
@@ -533,7 +526,7 @@
             <!-- Categorías -->
             <div class="form-group col-12 mt-3">
               <label>Categorías:</label>
-              <ng-select [multiple]="true"
+              <ng-select [multiple]="true" class="form-select p-0"
                         [items]="categorias"
                         [(ngModel)]="filtrosAcumulado.categorias"
                         bindLabel="nombre"
@@ -546,7 +539,7 @@
             <!-- Marcas -->
             <div class="form-group col-12 mt-3">
               <label>Marcas:</label>
-              <ng-select [multiple]="true"
+              <ng-select [multiple]="true" class="form-select p-0"
                         [items]="marcas"
                         [(ngModel)]="filtrosAcumulado.marcas"
                         bindLabel="nombre"

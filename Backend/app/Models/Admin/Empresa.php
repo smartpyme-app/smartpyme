@@ -53,6 +53,7 @@ class Empresa extends Model
         'tipo_plan',
         'fecha_cancelacion',
         'metodo_pago',
+        'pago_recurrente',
         'referido',
         'campania',
         'wompi_aplicativo',
@@ -94,13 +95,15 @@ class Empresa extends Model
         'woocommerce_error',
         'woocommerce_canal_id',
 
+        //Para facturación
+        'id_cliente'
     ];
 
     protected $casts = [
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
     ];
-    // protected $appends = ['estado_plan', 'woocommerce_api_key', 'woocommerce_api_url', 'woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret', 'woocommerce_status'];
+
     protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
 
     public function limiteUsuarios()
@@ -119,6 +122,10 @@ class Empresa extends Model
 
     public function getEstadoPlanAttribute()
     {
+        if (!$this->created_at) {
+            return ['estado' => 'Sin fecha de creación', 'dias_faltantes' => null];
+        }
+
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -194,11 +201,13 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Admin\Canal', 'id_empresa');
     }
 
-    public function bodegas(){
+    public function bodegas()
+    {
         return $this->hasMany('App\Models\Inventario\Bodega', 'id_empresa');
     }
 
-    public function sucursales(){
+    public function sucursales()
+    {
         return $this->hasMany('App\Models\Admin\Sucursal', 'id_empresa');
     }
 

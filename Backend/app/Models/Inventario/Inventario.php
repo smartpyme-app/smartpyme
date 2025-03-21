@@ -5,7 +5,6 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use Illuminate\Database\Eloquent\SoftDeletes;
-// use Auth;
 use Illuminate\Support\Facades\Auth;
 
 class Inventario extends Model {
@@ -116,6 +115,12 @@ class Inventario extends Model {
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Devolución Compra Anulada';
             }
+        }else if ($clase == 'App\Models\Inventario\Producto') {
+            // Es una actualización de producto
+            $clase = 'Actualización de producto';
+            // No es entrada ni salida, por lo que ambos valores serían NULL
+            $entradaCantidad = null;
+            $salidaCantidad = null;
         }else{
             // return null;
         }

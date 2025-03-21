@@ -24,6 +24,9 @@ export class UsuariosComponent implements OnInit {
     public filtros:any = {};
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
+    public authUser: any = {};
+
+
 
     modalRef?: BsModalRef;
 
@@ -54,6 +57,8 @@ export class UsuariosComponent implements OnInit {
         this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
+
+        this.usuarioLogueado();
     }
 
     public loadAll(){
@@ -164,4 +169,9 @@ export class UsuariosComponent implements OnInit {
 
         this.loadAll();
     }
+
+    public usuarioLogueado() {
+      this.authUser = this.apiService.auth_user();
+    }
+  
 }

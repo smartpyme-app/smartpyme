@@ -63,4 +63,10 @@ return [
         'sandbox_mode' => env('APP_ENV') !== 'production',
     ],
 
+    'bedrock' => [
+        'key' => config('bedrock.key'),
+        'secret' => config('bedrock.secret'),
+        'region' => config('bedrock.region'),
+    ],
+
 ];

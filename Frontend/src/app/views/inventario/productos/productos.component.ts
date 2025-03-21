@@ -175,6 +175,10 @@ export class ProductosComponent implements OnInit {
     );
   }
 
+  public openDescargar(template: TemplateRef<any>) {
+      this.modalRef = this.modalService.show(template);
+  }
+
   public descargar() {
     this.downloading = true;
     this.apiService.export('productos/exportar', this.filtros).subscribe(

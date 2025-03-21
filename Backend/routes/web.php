@@ -42,7 +42,7 @@ Route::get('/inventariostock', function(){
 
     $inventario = new InventarioAFechaExport();
     return Excel::download($inventario, 'inventario.xlsx');
-    
+
 });
 
 Route::get('/',       			[HomeController::class, 'index'])->name('home');

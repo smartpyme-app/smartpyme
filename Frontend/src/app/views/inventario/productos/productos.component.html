@@ -1,6 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
     <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+    <!-- <button *ngIf="apiService.canCreate()" routerLink="/ajuste/crear" tooltip="Ajuste masivo" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Ajuste masivo</button> -->
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
@@ -21,7 +22,7 @@
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar" >
             <div class="d-flex gap-2 justify-content-end">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
-                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
+                <button [disabled]="downloading" tooltip="Descargar productos" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
 
@@ -82,7 +83,7 @@
                         <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio sin IVA</th>
                         <th class="text-right">Precio con IVA</th>
                         <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
-                        <th class="text-center">Más</th>
+                        <th class="text-center" *ngIf="!apiService.isSupervisorLimitado()">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -149,7 +150,7 @@
                                 </ng-template>
                             </div>
                         </td>
-                        <td class="text-center">
+                        <td class="text-center" *ngIf="!apiService.isSupervisorLimitado()">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
@@ -295,5 +296,30 @@
         </div>
 
     </form>
+  </div>
+</ng-template>
+
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de inventario</h4>
+    <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de inventario en un archivo de Excel.</p>
+        <div class="row">
+            <div class="d-grid mt-4">
+                <label>Descargar detalle de productos:</label>
+                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-primary">
+                    <span *ngIf="!downloading">Descargar productos</span>
+                    <span *ngIf="downloading">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <label>Descargar detalle de inventario:</label>
+                <app-descargar-inventario></app-descargar-inventario>
+            </div>
+        </div>
   </div>
 </ng-template>

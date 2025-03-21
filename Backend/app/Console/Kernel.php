@@ -28,12 +28,58 @@ class Kernel extends ConsoleKernel
     {
         // Comandos existentes
         $schedule->command('generate:notificaciones')->daily();
+        // $schedule->command('reporte:ventas-por-vendedor')
+        //      ->dailyAt('23:59');
+        $schedule->command('reportes:enviar')
+             ->everyFiveMinutes()
+             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
         // Agregar el nuevo comando de verificación de suscripciones
         $schedule->command('suscripciones:verificar')
             ->daily()
             ->at('01:00')
             ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
+
+        $schedule->command('metricas:empresas')
+            ->dailyAt('03:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                // env('ADMIN_EMAIL')
+                'joseespana94@gmail.com'
+            );
+
+        // Programar la actualización de métricas para todas las sucursales a las 4:00 AM
+        $schedule->command('metricas:sucursales')
+            ->dailyAt('04:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                'joseespana94@gmail.com'
+                // env('ADMIN_EMAIL')
+            );
+
+        $schedule->command('metricas:empresas --actualizar-historico')
+            ->monthlyOn(1, '02:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                'joseespana94@gmail.com'
+                // env('ADMIN_EMAIL')
+            );
+
+        $schedule->command('metricas:sucursales --actualizar-historico')
+            ->monthlyOn(1, '02:30')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                'joseespana94@gmail.com'
+                // env('ADMIN_EMAIL')
+            );
+
+        $schedule->command('empleados:actualizar-estado')
+            ->dailyAt('00:01')
+            ->appendOutputTo(storage_path('logs/empleados-estado.log'));
 
         $schedule->call(function () {
             Log::info('Working');
@@ -47,7 +93,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

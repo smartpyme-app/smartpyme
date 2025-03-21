@@ -6,6 +6,8 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Observers\InventarioObserver;
 use App\Observers\ProductoObserver;
+use App\Services\AIService;
+use App\Services\ContextService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,7 +20,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->singleton(ContextService::class, function ($app) {
+            return new ContextService();
+        });
+
+        $this->app->singleton(AIService::class, function ($app) {
+            return new AIService();
+        });
     }
 
     /**

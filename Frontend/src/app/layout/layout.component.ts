@@ -3,6 +3,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
+import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 
 @Component({
   selector: 'app-layout',
@@ -49,18 +50,18 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
 
   // Normalizar el estado de suscripción para comparaciones consistentes
   const estadoSuscripcion = this.usuario.estado_suscripcion?.toLowerCase() || '';
-  
+
   // Verificar primero si el usuario está en período de prueba sin importar otros valores
   if (estadoSuscripcion === 'en prueba') {
     const diasRestantesPrueba = this.usuario.dias_faltantes_prueba;
-    
+
     if (diasRestantesPrueba === undefined || diasRestantesPrueba === null) {
       return {
         mensaje: 'No se pudo determinar el estado de la prueba. Por favor, contacta con soporte técnico.',
         tipo: 'error',
       };
     }
-    
+
     if (diasRestantesPrueba <= 0) {
       if (this.isAdmin()) {
         return {
@@ -229,5 +230,18 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
       return this.usuario.dias_faltantes_prueba <= 1;
     }
     return !this.usuario.tiene_suscripcion || this.usuario.dias_faltantes <= 7;
+  }
+
+  shouldShowCancellationBanner(): boolean {
+    return this.usuario && 
+           this.usuario.suscripcion && 
+           this.usuario.suscripcion.estado === this.ESTADOS_SUSCRIPCION.CANCELADO;
+  }
+  
+  getCancellationMessage(): string {
+    if (!this.shouldShowCancellationBanner()) return '';
+    
+    const fechaDesactivacion = new Date(this.usuario.suscripcion.fecha_proximo_pago);
+    return `Tu suscripción ha sido cancelada. Podrás seguir utilizando el sistema hasta el ${fechaDesactivacion.toLocaleDateString()}.`;
   }
 }

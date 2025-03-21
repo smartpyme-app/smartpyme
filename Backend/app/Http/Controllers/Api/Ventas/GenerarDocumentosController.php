@@ -195,6 +195,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 420 ){ //420
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));

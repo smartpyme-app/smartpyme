@@ -51,6 +51,7 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
 
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
+import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo.component';
 
 @NgModule({
   imports: [
@@ -99,7 +100,8 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     CategoriasComponent,
     SubCategoriasComponent,
     BodegaComponent,
-    BodegasComponent
+    BodegasComponent,
+    AjusteMasivoComponent
   ],
   exports: [
   	ProductosComponent,
@@ -129,7 +131,8 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     CategoriasComponent,
     SubCategoriasComponent,
     BodegaComponent,
-    BodegasComponent
+    BodegasComponent,
+    AjusteMasivoComponent
   ]
 })
 export class InventarioModule { }

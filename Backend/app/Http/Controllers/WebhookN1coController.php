@@ -7,11 +7,13 @@ use App\Models\OrdenPago;
 use App\Models\Plan;
 use App\Models\Suscripcion;
 use App\Models\User;
+use App\Notifications\SuscripcionExitosa;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class WebhookN1coController extends Controller
 {
@@ -89,7 +91,7 @@ class WebhookN1coController extends Controller
 
                 case 'Requires3ds':
                     return $this->handleRequires3ds($payload);
-    
+
 
                 case 'ThreeDSecureAuthSucceeded':
                     return $this->handle3DSAuthSuccess($payload);
@@ -150,8 +152,14 @@ class WebhookN1coController extends Controller
                 $tipoPlan = $plan->duracion_dias == 30 ? 'Mensual' : $plan->tipo_plan;
 
                 if ($user) {
+
+                    $esNuevaSuscripcion = !Suscripcion::where('usuario_id', $user->id)
+                        ->where('estado', config('constants.ESTADO_SUSCRIPCION_ACTIVO'))
+                        ->exists();
+
+
                     // Actualizar o crear suscripción
-                    Suscripcion::updateOrCreate(
+                    $suscripcion = Suscripcion::updateOrCreate(
                         ['usuario_id' => $user->id],
                         [
                             'plan_id' => $plan->id,
@@ -177,6 +185,12 @@ class WebhookN1coController extends Controller
                         'metodo_pago' => config('constants.METODO_PAGO_N1CO')
                     ]);
 
+                    $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
+
+
+                    $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
+
+
                     Log::info('Empresa actualizada', [
                         'empresa' => $empresa->metodo_pago
                     ]);
@@ -185,6 +199,9 @@ class WebhookN1coController extends Controller
                         'user_id' => $user->id,
                         'order_id' => $payload['orderId']
                     ]);
+
+                    $ordenPago->generarVenta();
+
                 } else {
                     Log::error('Usuario no encontrado', [
                         'user_id' => $ordenPago->id_usuario,
@@ -258,7 +275,7 @@ class WebhookN1coController extends Controller
     private function handleRequires3ds($payload)
     {
         Log::info('N1co Webhook: Payment requires 3DS', ['orderId' => $payload['orderId']]);
-     
+
         return response()->json(['status' => 'success']);
     }
 
@@ -434,7 +451,7 @@ class WebhookN1coController extends Controller
                 'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
             ]);
 
-            
+
             $suscripcion = Suscripcion::where('id_orden', $payload['orderReference'])->first();
 
             Log::info('N1co Webhook: Suscripcion encontrada', [
@@ -582,6 +599,80 @@ class WebhookN1coController extends Controller
                 'error' => 'Error al crear enlace de pago',
                 'message' => $e->getMessage()
             ];
+        }
+    }
+
+    private function enviarCorreoSuscripcion($user, $suscripcion, $empresa)
+    {
+        // $emailDestino = app()->environment('production') ? $user->email : 'joseespana94@gmail.com';
+        $emailDestino = $user->email;
+
+        try {
+            Mail::send('mails.suscripcion-exitosa', [
+                'suscripcion' => $suscripcion,
+                'empresa' => $empresa,
+                'usuario' => $user
+            ], function ($m) use ($emailDestino, $empresa) {
+                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                    ->to($emailDestino)
+                    ->subject('Confirmación de Suscripción - ' . $empresa->nombre);
+            });
+
+            Log::info('Correo de confirmación de suscripción enviado', [
+                'email' => $emailDestino
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar correo de confirmación', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return false;
+        }
+    }
+
+    private function enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion)
+    {
+        $adminEmails = [
+            'joseespana94@gmail.com',
+            'gabrielaq@smartpyme.sv',
+            'alejandro.a@smartpyme.sv'
+        ];
+
+        $fromAddress = env('MAIL_FROM_ADDRESS');
+
+        try {
+            foreach ($adminEmails as $adminEmail) {
+                Mail::send('mails.admin-pago-notificacion', [
+                    'usuario' => $user,
+                    'suscripcion' => $suscripcion,
+                    'empresa' => $empresa,
+                    'ordenPago' => $ordenPago,
+                    'esNuevaSuscripcion' => $esNuevaSuscripcion
+                ], function ($m) use ($adminEmail, $empresa, $fromAddress, $ordenPago, $esNuevaSuscripcion) {
+                    $tipo = $esNuevaSuscripcion ? 'Nueva Suscripción' : 'Renovación';
+                    $m->from($fromAddress, 'SmartPyme Sistema')
+                        ->to($adminEmail)
+                        ->subject("[$tipo] Pago de {$empresa->nombre} - \${$ordenPago->monto}");
+                });
+            }
+
+            Log::info('Notificación de pago enviada a administradores', [
+                'empresa' => $empresa->nombre,
+                'monto' => $ordenPago->monto,
+                'es_nueva' => $esNuevaSuscripcion
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar notificación de pago a administradores', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return false;
         }
     }
 }

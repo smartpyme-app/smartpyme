@@ -10,7 +10,7 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Imports\Paquetes;
 use App\Exports\PaquetesExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class PaquetesController extends Controller
 {
@@ -36,6 +36,9 @@ class PaquetesController extends Controller
                                 })
                                 ->when($request->id_usuario, function($q) use ($request){
                                     return $q->where("id_usuario", $request->id_usuario);
+                                })
+                                ->when($request->num_guia, function($q) use ($request){
+                                    return $q->where("num_guia", $request->num_guia);
                                 })
                                 ->when($request->estado, function($q) use ($request){
                                     $q->where('estado', $request->estado);
@@ -205,6 +208,17 @@ class PaquetesController extends Controller
         
         return Response()->json($clientes, 200);
 
+    }
+    public function listGuia()
+    {
+
+        $paquetes = Paquete::orderBy('num_guia', 'asc')
+            ->where('id_sucursal', Auth::user()->id_sucursal)
+            ->where('id_empresa', Auth::user()->id_empresa)
+            ->distinct('num_guia')
+            ->get();
+
+        return Response()->json($paquetes, 200);
     }
 
 }

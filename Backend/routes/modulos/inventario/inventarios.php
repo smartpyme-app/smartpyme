@@ -14,3 +14,5 @@ use App\Http\Controllers\Api\Inventario\InventariosController;
     Route::get('/bodega/productos/{id}',          [InventariosController::class, 'productos']);
     Route::get('/bodega/productos/buscar/{id}/{txt}',          [InventariosController::class, 'search']);
     Route::post('/bodega/productos/filtrar',       [InventariosController::class, 'productosFiltrar']);
+
+    Route::get('/inventarios/exportar',              [InventariosController::class, 'export']);

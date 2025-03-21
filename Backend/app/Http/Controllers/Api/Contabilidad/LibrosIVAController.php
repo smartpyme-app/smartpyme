@@ -16,6 +16,7 @@ use App\Exports\Contabilidad\LibroConsumidoresExport;
 use App\Exports\Contabilidad\AnexoConsumidoresExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
+use App\Exports\Contabilidad\GlobalDttesExport;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -376,5 +377,39 @@ class LibrosIVAController extends Controller
         $compras->filter($request);
 
         return Excel::download($compras, 'AnexoComprasExport.xlsx');
+    }
+
+    public function GlobalDttesExport(Request $request)
+    {
+        try {
+            $dttes = new GlobalDttesExport();
+            $dttes->filter($request);
+            
+            $result = $dttes->generateZip();
+            
+            if (!$result['success']) {
+                Log::error('Error al generar ZIP: ' . $result['message']);
+                
+                // Devolver texto plano en lugar de JSON
+                return response($result['message'], 400)
+                    ->header('Content-Type', 'text/plain');
+            }
+            
+            return response()->download(
+                storage_path('app/' . $result['path']),
+                $result['filename'],
+                [
+                    'Content-Type' => 'application/zip',
+                    'Content-Disposition' => 'attachment; filename=' . $result['filename']
+                ]
+            )->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            
+            // Devolver texto plano en lugar de JSON
+            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
+                ->header('Content-Type', 'text/plain');
+        }
     }
 }

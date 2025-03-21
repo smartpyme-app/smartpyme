@@ -28,7 +28,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'DUI',
             'NIT',
             'Producto',
-            'SKU',
+            'Codigo',
             'Marca',
             'Categoria',
             'Documento',
@@ -48,6 +48,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Observaciones', 
             'Usuario',
             'Vendedor',
+            'Sucursal'
         ];
     }
 
@@ -131,6 +132,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $row->venta()->pluck('observaciones')->first(),
               $row->venta()->first()->usuario()->pluck('name')->first(),
               $row->vendedor()->pluck('name')->first(),
+              $row->venta()->first()->sucursal()->pluck('nombre')->first()
          ];
         return $fields;
     }
