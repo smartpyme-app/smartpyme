@@ -164,12 +164,12 @@ class EmpleadosController extends Controller
     {
         try {
             $empleado = Empleado::findOrFail($id);
-    
+
             $documentos = DocumentoEmpleado::where('id_empleado', $id)
                 ->where('estado', PlanillaConstants::ESTADO_ACTIVO)
                 ->orderBy('fecha_documento', 'desc')
                 ->paginate(10);
-    
+
             return response()->json($documentos);
         } catch (\Exception $e) {
             Log::error('Error al obtener documentos: ' . $e->getMessage());
@@ -252,9 +252,20 @@ class EmpleadosController extends Controller
                     'estado' => PlanillaConstants::ESTADO_ACTIVO
                 ]);
             }
+
             // Actualizar empleado
-            $empleado->estado = PlanillaConstants::ESTADO_EMPLEADO_INACTIVO;
-            $empleado->fecha_fin = $request->fecha_baja;
+            $empleado->fecha_baja = $request->fecha_baja; // Guardar fecha de baja
+
+            // Decidir si cambiar el estado ahora o dejarlo para la fecha de baja
+            $fechaActual = Carbon::now()->startOfDay();
+            $fechaBaja = Carbon::parse($request->fecha_baja)->startOfDay();
+
+            if ($fechaBaja->lte($fechaActual)) {
+                // Si la fecha de baja es hoy o en el pasado, inactivar inmediatamente
+                $empleado->estado = PlanillaConstants::ESTADO_EMPLEADO_INACTIVO;
+            }
+            // Si la fecha es futura, mantener estado actual (se actualizará mediante un job)
+
             $empleado->save();
 
             // Registrar en historial de bajas
@@ -278,7 +289,16 @@ class EmpleadosController extends Controller
             }
 
             DB::commit();
-            return response()->json(['message' => 'Empleado dado de baja exitosamente']);
+
+            // Mensaje personalizado según si se inactivó inmediatamente o se programó
+            if ($fechaBaja->lte($fechaActual)) {
+                return response()->json(['message' => 'Empleado dado de baja exitosamente']);
+            } else {
+                return response()->json([
+                    'message' => 'Empleado programado para baja el ' . $fechaBaja->format('d/m/Y') .
+                        '. Permanecerá activo hasta esa fecha.'
+                ]);
+            }
         } catch (\Exception $e) {
             DB::rollback();
             Log::error($e->getMessage());

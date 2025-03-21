@@ -1,4 +1,3 @@
-// nuevo-empleado.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -6,6 +5,7 @@ import { ApiService } from '@services/api.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
+import { createDuration } from '@fullcalendar/core/internal';
 
 @Component({
   selector: 'app-administrar-empleado',
@@ -406,8 +406,15 @@ export class AdministrarEmpleadoComponent implements OnInit {
   }
 
   public openModalCargo(template: TemplateRef<any>) {
+    
+    const departamentoId = this.empleado.id_departamento ? 
+      (typeof this.empleado.id_departamento === 'string' ? 
+        parseInt(this.empleado.id_departamento) : 
+        this.empleado.id_departamento) : 
+      null;
+
     this.cargo = {
-      id_departamento: null,
+      id_departamento: departamentoId,
       nombre: '',
       descripcion: '',
       salario_base: 0,
@@ -431,7 +438,48 @@ export class AdministrarEmpleadoComponent implements OnInit {
           'Exito',
           'Departamento guardado exitosamente'
         );
-        this.loadCatalogos(); // Recargar la lista de departamentos
+        this.loadCatalogos(); 
+
+        this.empleado.id_departamento = response.id;
+
+        this.onDepartamentoChange(response.id);
+
+        this.modalRef?.hide();
+        this.saving = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.saving = false;
+      }
+    );
+  }
+
+  public guardarCargo() {
+    this.saving = true;
+    this.cargo.activo = true;
+  
+    this.apiService.store('cargos', this.cargo).subscribe(
+      (response: any) => {
+        // Guardar temporalmente los IDs
+        const departamentoId = response.id_departamento;
+        const nuevoCargoId = response.id;
+        
+        this.alertService.success('Éxito', 'Cargo guardado exitosamente');
+        
+        // Recargar catálogos
+        this.loadCatalogos().then(() => {
+          // Después de recargar los catálogos, actualizar la selección
+          this.empleado.id_departamento = departamentoId;
+          this.onDepartamentoChange(departamentoId);
+          
+          // Pequeña espera para asegurar que los cargos filtrados estén actualizados
+          setTimeout(() => {
+            this.empleado.id_cargo = nuevoCargoId;
+            // Forzar detección de cambios si es necesario
+            this.changeDetectorRef.detectChanges();
+          }, 100);
+        });
+        
         this.modalRef?.hide();
         this.saving = false;
       },
@@ -471,32 +519,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     }
   }
 
-  public guardarCargo() {
-    this.saving = true;
-    this.cargo.activo = true;
-
-    if (!this.cargo.id_departamento) {
-      this.alertService.error('Debe seleccionar un departamento');
-      this.saving = false;
-      return;
-    }
-
-    // Asegurar que id_departamento sea número
-    this.cargo.id_departamento = parseInt(this.cargo.id_departamento);
-
-    this.apiService.store('cargos', this.cargo).subscribe(
-      (response: any) => {
-        this.alertService.success('Éxito', 'Cargo guardado exitosamente');
-        this.loadCatalogos();
-        this.modalRef?.hide();
-        this.saving = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
-  }
+  
 
   public loadAll() {
     // Cargar catálogos primero

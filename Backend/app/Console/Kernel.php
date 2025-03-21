@@ -77,6 +77,10 @@ class Kernel extends ConsoleKernel
                 // env('ADMIN_EMAIL')
             );
 
+        $schedule->command('empleados:actualizar-estado')
+            ->dailyAt('00:01')
+            ->appendOutputTo(storage_path('logs/empleados-estado.log'));
+
         $schedule->call(function () {
             Log::info('Working');
         })->daily();
