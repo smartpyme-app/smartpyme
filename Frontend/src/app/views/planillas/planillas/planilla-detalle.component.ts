@@ -101,7 +101,7 @@ export class PlanillaDetalleComponent implements OnInit {
       id: id,
     };
 
-    this.apiService.getAll('planillas/detalles/', params).subscribe({
+    this.apiService.getAll('planillas/detalles', params).subscribe({
       next: (response) => {
         this.planilla = response;
         this.detalles = response.detalles.data;
