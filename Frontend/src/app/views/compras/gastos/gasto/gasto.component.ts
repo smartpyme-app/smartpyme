@@ -175,7 +175,7 @@ export class GastoComponent implements OnInit {
         }
         this.gasto.renta_retenida = this.gasto.renta ? this.gasto.sub_total * 0.10 : 0;
         this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
-        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido) - parseFloat(this.gasto.renta_retenida)).toFixed(2);
+        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido) + parseFloat(this.gasto.renta_retenida)).toFixed(2);
     }
 
     public setSubTotal(){
