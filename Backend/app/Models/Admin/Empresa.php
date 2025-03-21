@@ -6,6 +6,7 @@ use App\Models\Suscripcion;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class Empresa extends Model
 {
