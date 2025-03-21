@@ -78,7 +78,7 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
                     $productosMiniBatch = collect($productosMiniBatch);
 
                     // Procesar mini-lote
-                    $result = $exportService->exportarProductos($user, $productosMiniBatch, $this->bodegaId);
+                    $result = $exportService->exportarProductos($user, $productosMiniBatch, $this->bodegaId,$empresa);
 
                     Log::info("Mini-lote procesado", [
                         'lote' => $this->batchNumber,
