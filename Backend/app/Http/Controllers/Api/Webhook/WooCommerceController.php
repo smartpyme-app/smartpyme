@@ -65,7 +65,7 @@ class WooCommerceController extends Controller
         try {
             DB::beginTransaction();
 
-            $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal, 'id_documento' => $documento->id,'id_canal' => $empresa->woocommerce_canal_id]);
+            $request->merge(['id_empresa' => $usuario->id_empresa, 'id_usuario' => $usuario->id, 'id_bodega' => $usuario->id_bodega, 'id_sucursal' => $usuario->id_sucursal, 'id_documento' => $documento->id, 'id_canal' => $empresa->woocommerce_canal_id]);
 
             $clienteData = $this->transformer->transformarCliente($request->all());
             $cliente = Cliente::updateOrCreate(
@@ -111,6 +111,14 @@ class WooCommerceController extends Controller
                 Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
                     ->decrement('stock', $item['quantity']);
+
+                $inventario = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->first();
+
+                if ($inventario) {
+                    $inventario->kardex($venta, $item['quantity'], $item['price']);
+                }
 
                 // Inventario::updateOrCreate(
                 //     ['id_producto' => $producto->id, 'id_bodega' => $venta->id_bodega],
