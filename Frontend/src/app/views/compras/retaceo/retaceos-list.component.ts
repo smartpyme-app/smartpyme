@@ -46,7 +46,7 @@ export class RetaceosListComponent implements OnInit {
     const mesAnterior = new Date();
     mesAnterior.setMonth(hoy.getMonth() - 1);
     this.filtros.id_sucursal = '';
-    this.filtros.id_cliente = '';
+  //  this.filtros.id_cliente = '';
     this.filtros.id_usuario = '';
     this.filtros.inicio = this.formatDate(mesAnterior);
     this.filtros.fin = this.formatDate(hoy);

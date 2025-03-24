@@ -23,39 +23,38 @@ class RetaceoController extends Controller
      */
     public function index(Request $request)
     {
-        //$query = Retaceo::query()->with('compra', 'gastos', 'distribucion');
         $retaceos = Retaceo::when($request->has('inicio') && !empty($request->inicio), function ($query) use ($request) {
             return $query->where('fecha', '>=', $request->inicio);
         })
-            ->when($request->has('fin') && !empty($request->fin), function ($query) use ($request) {
-                return $query->where('fecha', '<=', $request->fin);
-            })
-            ->when($request->id_cliente, function ($query) use ($request) {
-                return $query->where('id_cliente', $request->id_cliente);
-            })
-            ->when($request->id_usuario, function ($query) use ($request) {
-                return $query->where('id_usuario', $request->id_usuario);
-            })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->when($request->id_bodega, function ($query) use ($request) {
-                return $query->where('id_bodega', $request->id_bodega);
-            })
-            ->when($request->estado, function ($query) use ($request) {
-                return $query->where('estado', $request->estado);
-            })
-            ->when($request->has('busqueda') && !empty($request->busqueda), function ($query) use ($request) {
-                $busqueda = $request->busqueda;
-                return $query->where(function ($q) use ($busqueda) {
-                    $q->where('numero_duca', 'like', '%' . $busqueda . '%')
-                        ->orWhere('numero_factura', 'like', '%' . $busqueda . '%');
-                });
-            })
-            ->with('compra', 'gastos', 'distribucion')
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
+        ->when($request->has('fin') && !empty($request->fin), function ($query) use ($request) {
+            return $query->where('fecha', '<=', $request->fin);
+        })
+        ->when($request->id_usuario, function ($query) use ($request) {
+            return $query->where('id_usuario', $request->id_usuario);
+        })
+        ->when($request->id_sucursal, function ($query) use ($request) {
+            return $query->where('id_sucursal', $request->id_sucursal);
+        })
+        ->when($request->id_bodega, function ($query) use ($request) {
+            return $query->where('id_bodega', $request->id_bodega);
+        })
+        ->when($request->estado, function ($query) use ($request) {
+            return $query->where('estado', $request->estado);
+        })
+        ->when($request->has('busqueda') && !empty($request->busqueda), function ($query) use ($request) {
+            $busqueda = $request->busqueda;
+            return $query->where(function ($q) use ($busqueda) {
+                $q->where('numero_duca', 'like', '%' . $busqueda . '%')
+                  ->orWhere('numero_factura', 'like', '%' . $busqueda . '%')
+                  ->orWhereHas('compra', function($subq) use ($busqueda) {
+                      $subq->where('codigo', 'like', '%' . $busqueda . '%');
+                  });
+            });
+        })
+        ->with(['compra', 'gastos', 'distribucion'])  // Eliminé la carga de 'cliente'
+        ->orderBy($request->orden, $request->direccion)
+        ->orderBy('id', 'desc')
+        ->paginate($request->paginate);
 
         return Response()->json($retaceos, 200);
     }
