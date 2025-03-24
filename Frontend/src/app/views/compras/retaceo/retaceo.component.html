@@ -5,6 +5,72 @@
     <i class="fa fa-arrow-left"></i> Regresar
   </button>
 </div>
+<div class="bg-white rounded p-3 mb-3">
+  <div class="row">
+    <div class="col-12">
+      <ol class="steps">
+        <li class="step-item">
+          <div class="step-circle active">1</div>
+          <div class="step-title active">Seleccionar compra</div>
+        </li>
+        <li class="step-item">
+          <div
+            class="step-circle"
+            [ngClass]="{
+              active:
+                gastoTransporte.monto > 0 ||
+                gastoSeguro.monto > 0 ||
+                gastoDAI.monto > 0 ||
+                gastoOtros.monto > 0
+            }"
+          >
+            2
+          </div>
+          <div
+            class="step-title"
+            [ngClass]="{
+              active:
+                gastoTransporte.monto > 0 ||
+                gastoSeguro.monto > 0 ||
+                gastoDAI.monto > 0 ||
+                gastoOtros.monto > 0
+            }"
+          >
+            Agregar gastos
+          </div>
+        </li>
+        <li class="step-item">
+          <div
+            class="step-circle"
+            [ngClass]="{
+              active:
+                distribucion.length > 0 &&
+                distribucion[0].porcentaje_distribucion > 0
+            }"
+          >
+            3
+          </div>
+          <div
+            class="step-title"
+            [ngClass]="{
+              active:
+                distribucion.length > 0 &&
+                distribucion[0].porcentaje_distribucion > 0
+            }"
+          >
+            Calcular distribución
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-circle" [ngClass]="{ active: retaceo.id }">4</div>
+          <div class="step-title" [ngClass]="{ active: retaceo.id }">
+            Aplicar retaceo
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
 
 <!-- Información General -->
 <section class="card border-0 p-3 mb-3">
@@ -15,41 +81,72 @@
     <div class="form-group col-md-6 col-lg-4 mb-3">
       <div class="form-switch border rounded">
         <label>Opciones Avanzadas</label>
-        <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"
-               [(ngModel)]="opAvanzadas" name="opciones_ava_detalles">
+        <input
+          class="form-check-input float-end"
+          type="checkbox"
+          role="switch"
+          (click)="toggleDiv()"
+          [(ngModel)]="opAvanzadas"
+          name="opciones_ava_detalles"
+        />
       </div>
     </div>
   </div>
-  
+
   <!-- Fila 1: Información básica -->
   <div class="row">
     <div class="form-group col-md-12 col-lg-4">
       <label for="id_compra">Compra</label>
       <div class="input-group flex-nowrap">
-        <ng-select name="id_compra" placeholder="Seleccionar compra" [(ngModel)]="retaceo.id_compra"
-                 (change)="cargarDetallesCompra()" class="form-select p-0">
+        <ng-select
+          name="id_compra"
+          placeholder="Seleccionar compra"
+          [(ngModel)]="retaceo.id_compra"
+          (change)="cargarDetallesCompra()"
+          class="form-select p-0"
+        >
           <ng-option value="" *ngIf="loading"> Cargando compras...</ng-option>
           <ng-option *ngFor="let compra of compras" [value]="compra.id">
-            {{ compra?.referencia || 'N/A' }} - {{ compra?.nombre_proveedor || 'N/A' }} {{ compra?.fecha | date:'dd/MM/yyyy' }}
+            {{ compra?.referencia || "N/A" }} -
+            {{ compra?.nombre_proveedor || "N/A" }}
+            {{ compra?.fecha | date : "dd/MM/yyyy" }}
           </ng-option>
         </ng-select>
       </div>
     </div>
     <div class="form-group col-md-12 col-lg-4">
       <label for="numero_duca">Número de DUCA</label>
-      <input type="text" class="form-control" [(ngModel)]="retaceo.numero_duca" name="numero_duca" id="numero_duca">
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="retaceo.numero_duca"
+        name="numero_duca"
+        id="numero_duca"
+      />
     </div>
     <div class="form-group col-md-12 col-lg-4">
       <label for="numero_factura">Número de Factura</label>
-      <input type="text" class="form-control" [(ngModel)]="retaceo.numero_factura" name="numero_factura" id="numero_factura">
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="retaceo.numero_factura"
+        name="numero_factura"
+        id="numero_factura"
+      />
     </div>
   </div>
 
   <!-- Fila 2: Fecha e Incoterm -->
   <div class="row">
     <div class="form-group col-md-12 col-lg-4">
-      <label for="fecha">Fecha</label><br>
-      <input type="date" class="form-control" [(ngModel)]="retaceo.fecha" name="fecha" id="fecha">
+      <label for="fecha">Fecha</label><br />
+      <input
+        type="date"
+        class="form-control"
+        [(ngModel)]="retaceo.fecha"
+        name="fecha"
+        id="fecha"
+      />
     </div>
     <div class="form-group col-md-12 col-lg-4">
       <label for="incoterm">Incoterms</label>
@@ -67,7 +164,11 @@
         <option value="DAP">DAP - Delivered At Place</option>
         <option value="DDP">DDP - Delivered Duty Paid</option>
       </select> -->
-      <select name="incoterm" [(ngModel)]="retaceo.incoterm" class="form-select">
+      <select
+        name="incoterm"
+        [(ngModel)]="retaceo.incoterm"
+        class="form-select"
+      >
         <option value="FOB">FOB - Franco a Bordo</option>
         <option value="CIF">CIF - Costo, Seguro y Flete</option>
         <option value="EXW">EXW - En Fábrica</option>
@@ -83,112 +184,166 @@
     </div>
     <div class="form-group col-md-12 col-lg-4">
       <label for="tasa_dai">Tasa del DAI (%)</label>
-      <input type="number" class="form-control" [(ngModel)]="retaceo.tasa_dai" name="tasa_dai" id="tasa_dai" min="0" max="100" step="0.01">
+      <input
+        type="number"
+        class="form-control"
+        [(ngModel)]="retaceo.tasa_dai"
+        name="tasa_dai"
+        id="tasa_dai"
+        min="0"
+        max="100"
+        step="0.01"
+      />
     </div>
   </div>
 
   <div class="row" *ngIf="opAvanzadas">
     <div class="form-group col-md-12 col-lg-12">
-      <label for="observaciones">Observaciones:</label><br>
-      <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="retaceo.observaciones" name="observaciones"
-                cols="30" rows="3"></textarea>
+      <label for="observaciones">Observaciones:</label><br />
+      <textarea
+        class="form-control"
+        placeholder="Escribe aquí"
+        [(ngModel)]="retaceo.observaciones"
+        name="observaciones"
+        cols="30"
+        rows="3"
+      ></textarea>
     </div>
   </div>
 </section>
 
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Gastos e Impuestos</h6>
-  
+
   <div class="row">
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_transporte">Transporte</label>
       <div class="input-group">
-        <ng-select name="id_gasto_transporte" placeholder="Seleccionar gasto" 
-                  [(ngModel)]="gastoTransporte.id_gasto" 
-                  (change)="setGastoMonto('Transporte')"
-                  class="form-select p-0">
+        <ng-select
+          name="id_gasto_transporte"
+          placeholder="Seleccionar gasto"
+          [(ngModel)]="gastoTransporte.id_gasto"
+          (change)="setGastoMonto('Transporte')"
+          class="form-select p-0"
+        >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
           <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} - {{ gasto.total | currency:'USD':'symbol':'1.2' }}
+            {{ gasto.concepto }} -
+            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
           </ng-option>
         </ng-select>
       </div>
       <div class="input-group mt-2">
         <div class="input-group-text">$</div>
-        <input type="number" class="form-control" [(ngModel)]="gastoTransporte.monto" 
-               (change)="calcularTotalGastos()" name="monto_transporte" 
-               placeholder="Monto de transporte">
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="gastoTransporte.monto"
+          (change)="calcularTotalGastos()"
+          name="monto_transporte"
+          placeholder="Monto de transporte"
+        />
       </div>
     </div>
-    
+
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_seguro">Seguro</label>
       <div class="input-group">
-        <ng-select name="id_gasto_seguro" placeholder="Seleccionar gasto" 
-                  [(ngModel)]="gastoSeguro.id_gasto" 
-                  (change)="setGastoMonto('Seguro')"
-                  class="form-select p-0">
+        <ng-select
+          name="id_gasto_seguro"
+          placeholder="Seleccionar gasto"
+          [(ngModel)]="gastoSeguro.id_gasto"
+          (change)="setGastoMonto('Seguro')"
+          class="form-select p-0"
+        >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
           <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} - {{ gasto.total | currency:'USD':'symbol':'1.2' }}
+            {{ gasto.concepto }} -
+            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
           </ng-option>
         </ng-select>
       </div>
       <div class="input-group mt-2">
         <div class="input-group-text">$</div>
-        <input type="number" class="form-control" [(ngModel)]="gastoSeguro.monto" 
-               (change)="calcularTotalGastos()" name="monto_seguro" 
-               placeholder="Monto de seguro">
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="gastoSeguro.monto"
+          (change)="calcularTotalGastos()"
+          name="monto_seguro"
+          placeholder="Monto de seguro"
+        />
       </div>
     </div>
-    
+
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_dai">DAI</label>
       <div class="input-group">
-        <ng-select name="id_gasto_dai" placeholder="Seleccionar gasto" 
-                  [(ngModel)]="gastoDAI.id_gasto" 
-                  (change)="setGastoMonto('DAI')"
-                  class="form-select p-0">
+        <ng-select
+          name="id_gasto_dai"
+          placeholder="Seleccionar gasto"
+          [(ngModel)]="gastoDAI.id_gasto"
+          (change)="setGastoMonto('DAI')"
+          class="form-select p-0"
+        >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
           <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} - {{ gasto.total | currency:'USD':'symbol':'1.2' }}
+            {{ gasto.concepto }} -
+            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
           </ng-option>
         </ng-select>
       </div>
       <div class="input-group mt-2">
         <div class="input-group-text">$</div>
-        <input type="number" class="form-control" [(ngModel)]="gastoDAI.monto" 
-               (change)="calcularTotalGastos()" name="monto_dai" 
-               placeholder="Monto de DAI">
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="gastoDAI.monto"
+          (change)="calcularTotalGastos()"
+          name="monto_dai"
+          placeholder="Monto de DAI"
+        />
       </div>
     </div>
-    
+
     <!-- Otros gastos -->
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_otros">Otros gastos</label>
       <div class="input-group">
-        <ng-select name="id_gasto_otros" placeholder="Seleccionar gasto" 
-                  [(ngModel)]="gastoOtros.id_gasto" 
-                  (change)="setGastoMonto('Otro')"
-                  class="form-select p-0">
+        <ng-select
+          name="id_gasto_otros"
+          placeholder="Seleccionar gasto"
+          [(ngModel)]="gastoOtros.id_gasto"
+          (change)="setGastoMonto('Otro')"
+          class="form-select p-0"
+        >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
           <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} - {{ gasto.total | currency:'USD':'symbol':'1.2' }}
+            {{ gasto.concepto }} -
+            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
           </ng-option>
         </ng-select>
       </div>
       <div class="input-group mt-2">
         <div class="input-group-text">$</div>
-        <input type="number" class="form-control" [(ngModel)]="gastoOtros.monto" 
-               (change)="calcularTotalGastos()" name="monto_otros" 
-               placeholder="Monto de otros gastos">
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="gastoOtros.monto"
+          (change)="calcularTotalGastos()"
+          name="monto_otros"
+          placeholder="Monto de otros gastos"
+        />
       </div>
     </div>
   </div>
-  
+
   <div class="row mt-3">
     <div class="col-md-12 text-end">
-      <h5>Total de Gastos: {{ retaceo.total_gastos | currency:'USD':'symbol':'1.2' }}</h5>
+      <h5>
+        Total de Gastos:
+        {{ retaceo.total_gastos | currency : "USD" : "symbol" : "1.2" }}
+      </h5>
     </div>
   </div>
 </section>
@@ -196,10 +351,13 @@
 <!-- Productos -->
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Productos y Distribución</h6>
-  
+
   <div class="row">
     <div class="col-md-12 table-responsive">
-      <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+      <table
+        class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle"
+      >
+        <!-- Reemplazar la columna de porcentaje de distribución en la tabla actual -->
         <thead>
           <tr>
             <th>Producto</th>
@@ -215,52 +373,141 @@
             <th class="text-end">Costo Final</th>
           </tr>
         </thead>
+
         <tbody class="align-top">
           <!-- Si no hay productos -->
           <tr *ngIf="!distribucion || distribucion.length === 0">
             <td colspan="11" class="text-center">
-              <p class="text-muted my-3">Seleccione una compra para ver sus productos</p>
+              <p class="text-muted my-3">
+                Seleccione una compra para ver sus productos
+              </p>
             </td>
           </tr>
-          
+
           <!-- Lista de productos -->
           <tr *ngFor="let item of distribucion; let i = index">
             <td>{{ item.producto.nombre }}</td>
             <td class="text-center">{{ item.cantidad }}</td>
-            <td class="text-end">{{ item.costo_original | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.valor_fob | currency:'USD':'symbol':'1.2' }}</td>
-            <!-- <td class="text-end">{{ item.porcentaje_distribucion | number:'1.2-2' }}%</td> -->
             <td class="text-end">
+              {{ item.costo_original | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              {{ item.valor_fob | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              <!-- Campo editable para el porcentaje de distribución -->
               <div class="input-group input-group-sm">
-                <input type="number" class="form-control form-control-sm text-end" 
-                       [(ngModel)]="item.porcentaje_distribucion" 
-                       (change)="recalcularDistribucion()" 
-                       min="0" max="100" step="0.01">
+                <input
+                  type="number"
+                  class="form-control form-control-sm text-end"
+                  [(ngModel)]="item.porcentaje_distribucion"
+                  (change)="recalcularDistribucion()"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  [disabled]="!retaceo.id_compra || loading"
+                />
                 <span class="input-group-text">%</span>
               </div>
             </td>
-            <td class="text-end">{{ item.monto_transporte | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.monto_seguro | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.monto_dai | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.monto_otros | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.costo_landed | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.costo_retaceado | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">
+              {{ item.monto_transporte | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              {{ item.monto_seguro | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              {{ item.monto_dai | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              {{ item.monto_otros | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              {{ item.costo_landed | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              <span
+                [class.text-success]="
+                  item.costo_retaceado > item.costo_original
+                "
+                [class.text-danger]="item.costo_retaceado < item.costo_original"
+              >
+                {{ item.costo_retaceado | currency : "USD" : "symbol" : "1.2" }}
+              </span>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+  <!-- Agregar esta sección antes de los botones de acciones -->
+<div class="card border-0 p-3 mb-3" *ngIf="distribucion && distribucion.length > 0 && distribucion[0].porcentaje_distribucion > 0">
+  <h6 class="mt-3">Resumen de Cambios</h6>
   
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="text-center">Cantidad</th>
+          <th class="text-end">Costo Original</th>
+          <th class="text-end">Costo Retaceado</th>
+          <th class="text-end">Diferencia</th>
+          <th class="text-end">Impacto Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of distribucion">
+          <td>{{ item.producto.nombre }}</td>
+          <td class="text-center">{{ item.cantidad }}</td>
+          <td class="text-end">{{ item.costo_original | currency:'USD':'symbol':'1.2' }}</td>
+          <td class="text-end">{{ item.costo_retaceado | currency:'USD':'symbol':'1.2' }}</td>
+          <td class="text-end" [ngClass]="{'text-success': item.costo_retaceado > item.costo_original, 'text-danger': item.costo_retaceado < item.costo_original}">
+            {{ (item.costo_retaceado - item.costo_original) | currency:'USD':'symbol':'1.2' }}
+          </td>
+          <td class="text-end" [ngClass]="{'text-success': (item.costo_retaceado - item.costo_original) * item.cantidad > 0, 'text-danger': (item.costo_retaceado - item.costo_original) * item.cantidad < 0}">
+            {{ (item.costo_retaceado - item.costo_original) * item.cantidad | currency:'USD':'symbol':'1.2' }}
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5" class="text-end fw-bold">Cambio total en inventario:</td>
+          <td class="text-end fw-bold" [ngClass]="{'text-success': calcularImpactoTotal() > 0, 'text-danger': calcularImpactoTotal() < 0}">
+            {{ calcularImpactoTotal() | currency:'USD':'symbol':'1.2' }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  
+  <div class="alert alert-info mt-3">
+    <i class="fa fa-info-circle me-2"></i>
+    <strong>Importante:</strong> Al aplicar el retaceo, se modificarán los costos de los productos en el inventario y se actualizará el valor del inventario según lo mostrado en esta tabla.
+  </div>
+</div>
+
   <div class="row mt-5">
     <div class="col-md-12">
-      <button (click)="calcularDistribucion()" [disabled]="!retaceo.id_compra || loading" 
-              class="btn btn-warning float-start me-2">
+      <button
+        (click)="calcularDistribucion()"
+        [disabled]="!retaceo.id_compra || loading"
+        class="btn btn-warning float-start me-2"
+      >
         <i class="fa fa-calculator"></i> Calcular
       </button>
-      
-      <button type="submit" (click)="guardarRetaceo()" [disabled]="saving || loading || !distribucion || distribucion.length === 0" 
-              class="btn btn-primary float-end">
-        <span *ngIf="!saving">Aplicar Retaceo <i class="fa fa-check ms-1"></i></span>
+
+      <button
+        type="submit"
+        (click)="guardarRetaceo()"
+        [disabled]="
+          saving || loading || !distribucion || distribucion.length === 0
+        "
+        class="btn btn-primary float-end"
+      >
+        <span *ngIf="!saving"
+          >Aplicar Retaceo <i class="fa fa-check ms-1"></i
+        ></span>
         <span *ngIf="saving">Aplicando...</span>
       </button>
     </div>
