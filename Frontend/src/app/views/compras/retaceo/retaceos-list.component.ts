@@ -34,6 +34,14 @@ export class RetaceosListComponent implements OnInit {
   }
 
   public loadAll() {
+
+    const filtrosGuardados = localStorage.getItem('retaceosFiltros');
+    
+    if (filtrosGuardados) {
+      this.filtros = JSON.parse(filtrosGuardados);
+      console.log(this.filtros);
+    } else {
+
     const hoy = new Date();
     const mesAnterior = new Date();
     mesAnterior.setMonth(hoy.getMonth() - 1);
@@ -47,6 +55,7 @@ export class RetaceosListComponent implements OnInit {
     this.filtros.estado = '';
     this.filtros.orden = 'fecha';
     this.filtros.direccion = 'desc';
+    }
 
     this.cargarRetaceos();
   }
@@ -61,10 +70,10 @@ export class RetaceosListComponent implements OnInit {
   }
 
   cargarRetaceos() {
+    localStorage.setItem('retaceosFiltros', JSON.stringify(this.filtros));
     this.loading = true;
     
     this.apiService.getAll('retaceos', this.filtros).subscribe(response => {
-      console.log('response', response)
       this.retaceos = response
       this.loading = false;
       if(this.modalRef){
@@ -74,24 +83,6 @@ export class RetaceosListComponent implements OnInit {
       this.alertService.error(error);
       this.loading = false;
     });
-  }
-
-  buscar() {
-    this.filtros.pagina = 1;
-    this.cargarRetaceos();
-  }
-
-  limpiarFiltros() {
-    const hoy = new Date();
-    const mesAnterior = new Date();
-    mesAnterior.setMonth(hoy.getMonth() - 1);
-    
-    this.filtros.fecha_desde = this.formatDate(mesAnterior);
-    this.filtros.fecha_hasta = this.formatDate(hoy);
-    this.filtros.busqueda = '';
-    this.filtros.limite = 10;
-    
-    this.cargarRetaceos();
   }
 
 
@@ -140,4 +131,10 @@ export class RetaceosListComponent implements OnInit {
     }
     this.modalRef = this.modalService.show(template);
   }
+
+  public limpiarFiltros() {
+    localStorage.removeItem('retaceosFiltros');
+    this.loadAll();
+  }
+
 }

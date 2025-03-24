@@ -262,44 +262,44 @@ class RetaceoController extends Controller
             'gastos' => 'required|array',
             'detalles' => 'required|array|min:1',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-        
+
         try {
             // Obtener los gastos
             $gastoTransporte = $request->gastos['transporte'] ?? 0;
             $gastoSeguro = $request->gastos['seguro'] ?? 0;
             $gastoDAI = $request->gastos['dai'] ?? 0;
             $gastoOtros = $request->gastos['otros'] ?? 0;
-            
+
             $totalGastos = $gastoTransporte + $gastoSeguro + $gastoDAI + $gastoOtros;
-            
+
             // Calcular el valor FOB total
             $valorFobTotal = 0;
             foreach ($request->detalles as $detalle) {
                 $valorFobTotal += ($detalle['costo_original'] * $detalle['cantidad']);
             }
-            
+
             if ($valorFobTotal <= 0) {
                 return response()->json(['error' => 'El valor FOB total debe ser mayor que cero'], 422);
             }
-            
+
             // Calcular la distribución
             $distribucion = [];
             foreach ($request->detalles as $detalle) {
                 $valorFob = $detalle['costo_original'] * $detalle['cantidad'];
                 $porcentajeDistribucion = ($valorFob / $valorFobTotal) * 100;
-                
+
                 $montoTransporte = ($porcentajeDistribucion / 100) * $gastoTransporte;
                 $montoSeguro = ($porcentajeDistribucion / 100) * $gastoSeguro;
                 $montoDAI = ($porcentajeDistribucion / 100) * $gastoDAI;
                 $montoOtros = ($porcentajeDistribucion / 100) * $gastoOtros;
-                
+
                 $costoLanded = $valorFob + $montoTransporte + $montoSeguro + $montoDAI + $montoOtros;
                 $costoRetaceado = $detalle['cantidad'] > 0 ? $costoLanded / $detalle['cantidad'] : 0;
-                
+
                 $distribucion[] = [
                     'id_producto' => $detalle['id_producto'],
                     'id_detalle_compra' => $detalle['id'],
@@ -315,13 +315,12 @@ class RetaceoController extends Controller
                     'costo_retaceado' => $costoRetaceado,
                 ];
             }
-            
+
             return response()->json([
                 'distribucion' => $distribucion,
                 'total_gastos' => $totalGastos,
                 'total_retaceado' => array_sum(array_column($distribucion, 'costo_landed'))
             ]);
-            
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
