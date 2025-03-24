@@ -108,17 +108,9 @@ export class RetaceoComponent implements OnInit {
 
     this.apiService.getAll('compras', this.filtros).subscribe(
       (compras) => {
-        //compras si ya tienen el objeto retaceo, no se muestran
         this.compras = compras.data.filter(
           (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
         );
-        // if(!this.retaceo.id){
-        //   console.log('No hay retaceo');
-        //   this.compras = this.compras.filter(
-        //     (c: any) => !c.retaceo
-        //   );
-        // }
-
 
         this.loading = false;
       },
@@ -160,6 +152,7 @@ export class RetaceoComponent implements OnInit {
             costo_original: detalle.costo || 0,
             valor_fob: detalle.cantidad * (detalle.costo || 0),
             porcentaje_distribucion: 0,
+            porcentaje_dai: 0, // Nuevo campo
             monto_transporte: 0,
             monto_seguro: 0,
             monto_dai: 0,
@@ -297,6 +290,7 @@ export class RetaceoComponent implements OnInit {
         100
       ).toFixed(2);
 
+      // Distribuir gastos de transporte, seguro y otros
       item.monto_transporte = (
         (item.porcentaje_distribucion / 100) *
         this.gastoTransporte.monto
@@ -305,24 +299,15 @@ export class RetaceoComponent implements OnInit {
         (item.porcentaje_distribucion / 100) *
         this.gastoSeguro.monto
       ).toFixed(2);
-      item.monto_dai = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoDAI.monto
-      ).toFixed(2);
       item.monto_otros = (
         (item.porcentaje_distribucion / 100) *
         this.gastoOtros.monto
       ).toFixed(2);
 
-      item.costo_landed = (
-        parseFloat(item.valor_fob) +
-        parseFloat(item.monto_transporte) +
-        parseFloat(item.monto_seguro) +
-        parseFloat(item.monto_dai) +
-        parseFloat(item.monto_otros)
-      ).toFixed(2);
+      // DAI: no se distribuye, se deja como está (lo asignará manualmente el usuario)
 
-      item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
+      // Actualizar costos
+      this.actualizarCostosProducto(item);
     });
 
     this.retaceo.total_retaceado = this.distribucion
@@ -420,9 +405,8 @@ export class RetaceoComponent implements OnInit {
       });
     }
 
-    // Recalcular distribución de gastos según los nuevos porcentajes
     this.distribucion.forEach((item: any) => {
-      // Distribuir gastos según porcentaje
+      // Distribuir gastos según porcentaje (excepto DAI)
       item.monto_transporte = (
         (item.porcentaje_distribucion / 100) *
         this.gastoTransporte.monto
@@ -431,29 +415,109 @@ export class RetaceoComponent implements OnInit {
         (item.porcentaje_distribucion / 100) *
         this.gastoSeguro.monto
       ).toFixed(2);
-      item.monto_dai = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoDAI.monto
-      ).toFixed(2);
       item.monto_otros = (
         (item.porcentaje_distribucion / 100) *
         this.gastoOtros.monto
       ).toFixed(2);
 
-      // Calcular costo landed (FOB + gastos distribuidos)
-      item.costo_landed = (
-        parseFloat(item.valor_fob) +
-        parseFloat(item.monto_transporte) +
-        parseFloat(item.monto_seguro) +
-        parseFloat(item.monto_dai) +
-        parseFloat(item.monto_otros)
-      ).toFixed(2);
-
-      // Calcular costo retaceado (costo landed / cantidad)
-      item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
+      this.actualizarCostosProducto(item);
     });
 
+    this.recalcularTotalRetaceado();
+  }
+
+
+  guardarRetaceo() {
+    if (!this.distribucion || this.distribucion.length === 0) {
+      this.alertService.error('No hay productos para aplicar el retaceo');
+      return;
+    }
+
+    if (parseFloat(this.retaceo.total_gastos) <= 0) {
+      this.alertService.warning('No hay gastos para distribuir', 'Retaceo');
+      return;
+    }
+
+    const faltaDAI = this.distribucion.some(
+      (item: any) =>
+        item.porcentaje_dai === null ||
+        item.porcentaje_dai === undefined ||
+        parseFloat(item.porcentaje_dai) < 0
+    );
+
+    if (faltaDAI) {
+      this.alertService.warning(
+        'Hay productos sin porcentaje de DAI asignado',
+        'Retaceo'
+      );
+      return;
+    }
+
+    const impactoTotal = this.calcularImpactoTotal();
+
+    // Mostrar confirmación con detalles
+    Swal.fire({
+      title: 'Confirmar Retaceo',
+      html: `
+      <div class="text-start">
+        <p>Esta acción actualizará los costos de <strong>${
+          this.distribucion.length
+        }</strong> productos en inventario.</p>
+        <ul>
+          <li>Total de gastos a distribuir: <strong>${
+            this.retaceo.total_gastos
+          }</strong></li>
+          <li>Impacto en el valor del inventario: <strong class="${
+            impactoTotal > 0 ? 'text-success' : 'text-danger'
+          }">${impactoTotal.toFixed(2)}</strong></li>
+        </ul>
+        <p class="mt-3 fw-bold">¿Confirma aplicar estos cambios?</p>
+        <p class="text-muted small">Esta acción modificará permanentemente los costos de los productos en el inventario.</p>
+      </div>
+    `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, aplicar retaceo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.onSubmit();
+      }
+    });
+  }
+
+  calcularDAIProducto(item: any) {
+
+    item.monto_dai = (
+      (parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai)) /
+      100
+    ).toFixed(2);
+
+
+    this.actualizarCostosProducto(item);
+
     // Actualizar el total retaceado
+    this.recalcularTotalRetaceado();
+  }
+
+  actualizarCostosProducto(item: any) {
+  
+    item.costo_landed = (
+      parseFloat(item.valor_fob) +
+      parseFloat(item.monto_transporte) +
+      parseFloat(item.monto_seguro) +
+      parseFloat(item.monto_dai) +
+      parseFloat(item.monto_otros)
+    ).toFixed(2);
+
+
+    item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
+  }
+
+  recalcularTotalRetaceado() {
+
     this.retaceo.total_retaceado = this.distribucion
       .reduce(
         (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
@@ -461,48 +525,4 @@ export class RetaceoComponent implements OnInit {
       )
       .toFixed(2);
   }
-
-  /**
- * Muestra confirmación detallada y aplica el retaceo
- */
-guardarRetaceo() {
-
-  if (!this.distribucion || this.distribucion.length === 0) {
-    this.alertService.error('No hay productos para aplicar el retaceo');
-    return;
-  }
-  
-  if (parseFloat(this.retaceo.total_gastos) <= 0) {
-    this.alertService.warning('No hay gastos para distribuir', 'Retaceo');
-    return;
-  }
-  
-  const impactoTotal = this.calcularImpactoTotal();
-  
-  // Mostrar confirmación con detalles
-  Swal.fire({
-    title: 'Confirmar Retaceo',
-    html: `
-      <div class="text-start">
-        <p>Esta acción actualizará los costos de <strong>${this.distribucion.length}</strong> productos en inventario.</p>
-        <ul>
-          <li>Total de gastos a distribuir: <strong>${this.retaceo.total_gastos}</strong></li>
-          <li>Impacto en el valor del inventario: <strong class="${impactoTotal > 0 ? 'text-success' : 'text-danger'}">${impactoTotal.toFixed(2)}</strong></li>
-        </ul>
-        <p class="mt-3 fw-bold">¿Confirma aplicar estos cambios?</p>
-        <p class="text-muted small">Esta acción modificará permanentemente los costos de los productos en el inventario.</p>
-      </div>
-    `,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, aplicar retaceo',
-    cancelButtonText: 'Cancelar',
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      this.onSubmit();
-    }
-  });
-}
 }

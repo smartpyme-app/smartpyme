@@ -297,7 +297,7 @@
       </div>
     </div>
 
-    <div class="form-group col-md-12 col-lg-3">
+    <div class="form-group col-md-12 col-lg-3" *ngIf="false">
       <label for="id_gasto_dai">DAI</label>
       <div class="input-group">
         <ng-select
@@ -386,6 +386,8 @@
             <th class="text-end">Costo Antes</th>
             <th class="text-end">FOB</th>
             <th class="text-end">Dist. %</th>
+            <th class="text-end">% DAI</th>
+            <!-- Nueva columna -->
             <th class="text-end">Transporte</th>
             <th class="text-end">Seguro</th>
             <th class="text-end">DAI</th>
@@ -423,6 +425,22 @@
                   class="form-control form-control-sm text-end"
                   [(ngModel)]="item.porcentaje_distribucion"
                   (change)="recalcularDistribucion()"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  [disabled]="!retaceo.id_compra || loading"
+                />
+                <span class="input-group-text">%</span>
+              </div>
+            </td>
+            <td class="text-end">
+              <!-- Campo editable para el porcentaje DAI -->
+              <div class="input-group input-group-sm">
+                <input
+                  type="number"
+                  class="form-control form-control-sm text-end"
+                  [(ngModel)]="item.porcentaje_dai"
+                  (change)="calcularDAIProducto(item)"
                   min="0"
                   max="100"
                   step="0.01"
