@@ -229,7 +229,7 @@ export class RetaceoComponent implements OnInit {
       return;
     }
     
-    // Calcular el valor FOB total
+
     const valorFobTotal = this.distribucion.reduce((sum: number, item: any) => 
       sum + parseFloat(item.valor_fob || 0), 0);
     
@@ -238,18 +238,18 @@ export class RetaceoComponent implements OnInit {
       return;
     }
     
-    // Calcular porcentajes y montos para cada producto
+
     this.distribucion.forEach((item: any) => {
-      // Calcular porcentaje de distribución
+
       item.porcentaje_distribucion = ((item.valor_fob / valorFobTotal) * 100).toFixed(2);
       
-      // Distribuir gastos según porcentaje
+
       item.monto_transporte = ((item.porcentaje_distribucion / 100) * this.gastoTransporte.monto).toFixed(2);
       item.monto_seguro = ((item.porcentaje_distribucion / 100) * this.gastoSeguro.monto).toFixed(2);
       item.monto_dai = ((item.porcentaje_distribucion / 100) * this.gastoDAI.monto).toFixed(2);
       item.monto_otros = ((item.porcentaje_distribucion / 100) * this.gastoOtros.monto).toFixed(2);
       
-      // Calcular costo landed (FOB + gastos distribuidos)
+  
       item.costo_landed = (
         parseFloat(item.valor_fob) + 
         parseFloat(item.monto_transporte) + 
@@ -258,32 +258,81 @@ export class RetaceoComponent implements OnInit {
         parseFloat(item.monto_otros)
       ).toFixed(2);
       
-      // Calcular costo retaceado (costo landed / cantidad)
+
       item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
     });
     
-    // Calcular el total retaceado
+
     this.retaceo.total_retaceado = this.distribucion.reduce((sum: number, item: any) => 
       sum + parseFloat(item.costo_landed || 0), 0).toFixed(2);
     
-    // Mostrar mensaje de éxito
     this.alertService.success('Distribución calculada correctamente', 'Distribución');
   }
 
-  guardarRetaceo() {
-    Swal.fire({
-      title: '¿Confirma aplicar el retaceo?',
-      text: 'Esta acción actualizará los costos de los productos',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, aplicar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.onSubmit();
-      }
-    });
-  }
+guardarRetaceo() {
+  let detalleProductos = '';
+  let totalCambio = 0;
+  
+  this.distribucion.forEach((item: any) => {
+    const costoOriginal = parseFloat(item.costo_original);
+    const costoRetaceado = parseFloat(item.costo_retaceado);
+    const diferencia = costoRetaceado - costoOriginal;
+    const nombreProducto = item.producto?.nombre || `Producto #${item.id_producto}`;
+    
+    detalleProductos += `<tr>
+      <td>${nombreProducto}</td>
+      <td class="text-center">${item.cantidad}</td>
+      <td class="text-end">$${costoOriginal.toFixed(2)}</td>
+      <td class="text-end">$${costoRetaceado.toFixed(2)}</td>
+      <td class="text-end ${diferencia > 0 ? 'text-success' : 'text-danger'}">$${diferencia.toFixed(2)}</td>
+    </tr>`;
+    
+    totalCambio += diferencia * item.cantidad;
+  });
+  
+  const contenidoHTML = `
+    <div class="text-start">
+      <p>Esta acción actualizará los costos de los siguientes productos:</p>
+      <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="text-center">Cant.</th>
+              <th class="text-end">Costo Original</th>
+              <th class="text-end">Costo Retaceado</th>
+              <th class="text-end">Diferencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${detalleProductos}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-end fw-bold">Cambio total en inventario:</td>
+              <td class="text-end fw-bold ${totalCambio > 0 ? 'text-success' : 'text-danger'}">$${totalCambio.toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="mt-3 fw-bold">¿Confirma aplicar estos cambios?</p>
+    </div>
+  `;
+  
+  Swal.fire({
+    title: 'Confirmar Retaceo',
+    html: contenidoHTML,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, aplicar retaceo',
+    cancelButtonText: 'Cancelar',
+    width: '800px'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      this.onSubmit();
+    }
+  });
+}
 
   onSubmit() {
     this.saving = true;
@@ -313,4 +362,44 @@ export class RetaceoComponent implements OnInit {
   toggleDiv() {
     this.opAvanzadas = !this.opAvanzadas;
   }
+
+recalcularDistribucion() {
+
+  const totalPorcentaje = this.distribucion.reduce((sum: number, item: any) => 
+    sum + parseFloat(item.porcentaje_distribucion || 0), 0);
+  
+
+  if (Math.abs(totalPorcentaje - 100) > 0.01) {
+    this.alertService.warning(`La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%. Se normalizarán los valores.`, 'Distribución');
+    
+    this.distribucion.forEach((item: any) => {
+      item.porcentaje_distribucion = ((parseFloat(item.porcentaje_distribucion) / totalPorcentaje) * 100).toFixed(2);
+    });
+  }
+  
+
+  this.distribucion.forEach((item: any) => {
+    // Distribuir gastos según porcentaje
+    item.monto_transporte = ((item.porcentaje_distribucion / 100) * this.gastoTransporte.monto).toFixed(2);
+    item.monto_seguro = ((item.porcentaje_distribucion / 100) * this.gastoSeguro.monto).toFixed(2);
+    item.monto_dai = ((item.porcentaje_distribucion / 100) * this.gastoDAI.monto).toFixed(2);
+    item.monto_otros = ((item.porcentaje_distribucion / 100) * this.gastoOtros.monto).toFixed(2);
+    
+
+    item.costo_landed = (
+      parseFloat(item.valor_fob) + 
+      parseFloat(item.monto_transporte) + 
+      parseFloat(item.monto_seguro) + 
+      parseFloat(item.monto_dai) + 
+      parseFloat(item.monto_otros)
+    ).toFixed(2);
+    
+
+    item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
+  });
+  
+
+  this.retaceo.total_retaceado = this.distribucion.reduce((sum: number, item: any) => 
+    sum + parseFloat(item.costo_landed || 0), 0).toFixed(2);
+}
 }

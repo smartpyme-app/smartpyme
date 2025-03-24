@@ -30,7 +30,7 @@
                  (change)="cargarDetallesCompra()" class="form-select p-0">
           <ng-option value="" *ngIf="loading"> Cargando compras...</ng-option>
           <ng-option *ngFor="let compra of compras" [value]="compra.id">
-            {{ compra.codigo }} - {{ compra.fecha | date:'dd/MM/yyyy' }}
+            {{ compra?.referencia || 'N/A' }} - {{ compra?.nombre_proveedor || 'N/A' }} {{ compra?.fecha | date:'dd/MM/yyyy' }}
           </ng-option>
         </ng-select>
       </div>
@@ -53,7 +53,8 @@
     </div>
     <div class="form-group col-md-12 col-lg-4">
       <label for="incoterm">Incoterms</label>
-      <select name="incoterm" [(ngModel)]="retaceo.incoterm" class="form-select">
+      <!-- <select name="incoterm" [(ngModel)]="retaceo.incoterm" class="form-select">
+
         <option value="FOB">FOB - Free On Board</option>
         <option value="CIF">CIF - Cost, Insurance and Freight</option>
         <option value="EXW">EXW - Ex Works</option>
@@ -65,6 +66,19 @@
         <option value="DAT">DAT - Delivered At Terminal</option>
         <option value="DAP">DAP - Delivered At Place</option>
         <option value="DDP">DDP - Delivered Duty Paid</option>
+      </select> -->
+      <select name="incoterm" [(ngModel)]="retaceo.incoterm" class="form-select">
+        <option value="FOB">FOB - Franco a Bordo</option>
+        <option value="CIF">CIF - Costo, Seguro y Flete</option>
+        <option value="EXW">EXW - En Fábrica</option>
+        <option value="FCA">FCA - Franco Transportista</option>
+        <option value="FAS">FAS - Franco al Costado del Buque</option>
+        <option value="CFR">CFR - Costo y Flete</option>
+        <option value="CPT">CPT - Transporte Pagado Hasta</option>
+        <option value="CIP">CIP - Transporte y Seguro Pagado Hasta</option>
+        <option value="DAT">DAT - Entregado en Terminal</option>
+        <option value="DAP">DAP - Entregado en Lugar</option>
+        <option value="DDP">DDP - Entregado con Derechos Pagados</option>
       </select>
     </div>
     <div class="form-group col-md-12 col-lg-4">
@@ -73,7 +87,6 @@
     </div>
   </div>
 
-  <!-- Opciones avanzadas -->
   <div class="row" *ngIf="opAvanzadas">
     <div class="form-group col-md-12 col-lg-12">
       <label for="observaciones">Observaciones:</label><br>
@@ -83,12 +96,10 @@
   </div>
 </section>
 
-<!-- Gastos e Impuestos -->
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Gastos e Impuestos</h6>
   
   <div class="row">
-    <!-- Transporte -->
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_transporte">Transporte</label>
       <div class="input-group">
@@ -110,7 +121,6 @@
       </div>
     </div>
     
-    <!-- Seguro -->
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_seguro">Seguro</label>
       <div class="input-group">
@@ -132,7 +142,6 @@
       </div>
     </div>
     
-    <!-- DAI -->
     <div class="form-group col-md-12 col-lg-3">
       <label for="id_gasto_dai">DAI</label>
       <div class="input-group">
@@ -220,7 +229,16 @@
             <td class="text-center">{{ item.cantidad }}</td>
             <td class="text-end">{{ item.costo_original | currency:'USD':'symbol':'1.2' }}</td>
             <td class="text-end">{{ item.valor_fob | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ item.porcentaje_distribucion | number:'1.2-2' }}%</td>
+            <!-- <td class="text-end">{{ item.porcentaje_distribucion | number:'1.2-2' }}%</td> -->
+            <td class="text-end">
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control form-control-sm text-end" 
+                       [(ngModel)]="item.porcentaje_distribucion" 
+                       (change)="recalcularDistribucion()" 
+                       min="0" max="100" step="0.01">
+                <span class="input-group-text">%</span>
+              </div>
+            </td>
             <td class="text-end">{{ item.monto_transporte | currency:'USD':'symbol':'1.2' }}</td>
             <td class="text-end">{{ item.monto_seguro | currency:'USD':'symbol':'1.2' }}</td>
             <td class="text-end">{{ item.monto_dai | currency:'USD':'symbol':'1.2' }}</td>
