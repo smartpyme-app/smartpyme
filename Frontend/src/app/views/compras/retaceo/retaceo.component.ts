@@ -108,9 +108,18 @@ export class RetaceoComponent implements OnInit {
 
     this.apiService.getAll('compras', this.filtros).subscribe(
       (compras) => {
+        //compras si ya tienen el objeto retaceo, no se muestran
         this.compras = compras.data.filter(
           (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
         );
+        // if(!this.retaceo.id){
+        //   console.log('No hay retaceo');
+        //   this.compras = this.compras.filter(
+        //     (c: any) => !c.retaceo
+        //   );
+        // }
+
+
         this.loading = false;
       },
       (error) => {
@@ -360,71 +369,6 @@ export class RetaceoComponent implements OnInit {
   toggleDiv() {
     this.opAvanzadas = !this.opAvanzadas;
   }
-
-  // recalcularDistribucion() {
-  //   const totalPorcentaje = this.distribucion.reduce(
-  //     (sum: number, item: any) =>
-  //       sum + parseFloat(item.porcentaje_distribucion || 0),
-  //     0
-  //   );
-
-  //   if (Math.abs(totalPorcentaje - 100) > 0.01) {
-  //     this.alertService.warning(
-  //       `La suma de porcentajes (${totalPorcentaje.toFixed(
-  //         2
-  //       )}%) debe ser 100%. Se normalizarán los valores.`,
-  //       'Distribución'
-  //     );
-
-  //     this.distribucion.forEach((item: any) => {
-  //       item.porcentaje_distribucion = (
-  //         (parseFloat(item.porcentaje_distribucion) / totalPorcentaje) *
-  //         100
-  //       ).toFixed(2);
-  //     });
-  //   }
-
-  //   this.distribucion.forEach((item: any) => {
-  //     // Distribuir gastos según porcentaje
-  //     item.monto_transporte = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoTransporte.monto
-  //     ).toFixed(2);
-  //     item.monto_seguro = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoSeguro.monto
-  //     ).toFixed(2);
-  //     item.monto_dai = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoDAI.monto
-  //     ).toFixed(2);
-  //     item.monto_otros = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoOtros.monto
-  //     ).toFixed(2);
-
-  //     item.costo_landed = (
-  //       parseFloat(item.valor_fob) +
-  //       parseFloat(item.monto_transporte) +
-  //       parseFloat(item.monto_seguro) +
-  //       parseFloat(item.monto_dai) +
-  //       parseFloat(item.monto_otros)
-  //     ).toFixed(2);
-
-  //     item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
-  //   });
-
-  //   this.retaceo.total_retaceado = this.distribucion
-  //     .reduce(
-  //       (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
-  //       0
-  //     )
-  //     .toFixed(2);
-  // }
-
-  /**
-   * Calcula el impacto total del retaceo en el valor del inventario
-   */
   calcularImpactoTotal(): number {
     if (!this.distribucion || this.distribucion.length === 0) {
       return 0;
