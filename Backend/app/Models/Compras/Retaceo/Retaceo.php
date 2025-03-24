@@ -6,8 +6,10 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\Compras\Compra;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Retaceo extends Model
 {
@@ -32,9 +34,16 @@ class Retaceo extends Model
         'id_usuario'
     ];
 
-    /**
-     * Relación con la compra
-     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+    }
     public function compra()
     {
         return $this->belongsTo(Compra::class, 'id_compra');

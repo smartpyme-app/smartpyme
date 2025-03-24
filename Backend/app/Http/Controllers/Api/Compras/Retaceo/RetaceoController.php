@@ -23,30 +23,41 @@ class RetaceoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Retaceo::query();
+        //$query = Retaceo::query()->with('compra', 'gastos', 'distribucion');
+        $retaceos = Retaceo::when($request->has('inicio') && !empty($request->inicio), function ($query) use ($request) {
+            return $query->where('fecha', '>=', $request->inicio);
+        })
+            ->when($request->has('fin') && !empty($request->fin), function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->id_cliente, function ($query) use ($request) {
+                return $query->where('id_cliente', $request->id_cliente);
+            })
+            ->when($request->id_usuario, function ($query) use ($request) {
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->id_bodega, function ($query) use ($request) {
+                return $query->where('id_bodega', $request->id_bodega);
+            })
+            ->when($request->estado, function ($query) use ($request) {
+                return $query->where('estado', $request->estado);
+            })
+            ->when($request->has('busqueda') && !empty($request->busqueda), function ($query) use ($request) {
+                $busqueda = $request->busqueda;
+                return $query->where(function ($q) use ($busqueda) {
+                    $q->where('numero_duca', 'like', '%' . $busqueda . '%')
+                        ->orWhere('numero_factura', 'like', '%' . $busqueda . '%');
+                });
+            })
+            ->with('compra', 'gastos', 'distribucion')
+            ->orderBy($request->orden, $request->direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($request->paginate);
 
-        // Filtros
-        if ($request->has('fecha_desde') && !empty($request->fecha_desde)) {
-            $query->where('fecha', '>=', $request->fecha_desde);
-        }
-
-        if ($request->has('fecha_hasta') && !empty($request->fecha_hasta)) {
-            $query->where('fecha', '<=', $request->fecha_hasta);
-        }
-
-        if ($request->has('busqueda') && !empty($request->busqueda)) {
-            $busqueda = $request->busqueda;
-            $query->where(function ($q) use ($busqueda) {
-                $q->where('numero_duca', 'like', '%' . $busqueda . '%')
-                    ->orWhere('numero_factura', 'like', '%' . $busqueda . '%')
-                    ->orWhere('id', 'like', '%' . $busqueda . '%');
-            });
-        }
-
-        // Paginación
-        $limite = $request->limite ?? 10;
-
-        return $query->orderBy('id', 'desc')->paginate($limite);
+        return Response()->json($retaceos, 200);
     }
 
     /**
