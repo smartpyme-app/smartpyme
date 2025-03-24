@@ -106,10 +106,30 @@
           class="form-select p-0"
         >
           <ng-option value="" *ngIf="loading"> Cargando compras...</ng-option>
-          <ng-option *ngFor="let compra of compras" [value]="compra.id">
-            {{ compra?.referencia || "N/A" }} -
-            {{ compra?.nombre_proveedor || "N/A" }}
-            {{ compra?.fecha | date : "dd/MM/yyyy" }}
+          <ng-option
+            *ngFor="let compra of compras"
+            [value]="compra.id"
+            [disabled]="compra.retaceo && compra.retaceo.id !== retaceo.id"
+          >
+            <span
+              [ngClass]="{
+                'text-muted': compra.retaceo && compra.retaceo.id !== retaceo.id
+              }"
+            >
+              {{ compra?.referencia || "N/A" }} -
+              {{ compra?.nombre_proveedor || "N/A" }}
+              {{ compra?.fecha | date : "dd/MM/yyyy" }}
+              <small
+                *ngIf="compra.retaceo && compra.retaceo.id !== retaceo.id"
+                class="text-danger"
+                >(Ya tiene retaceo)</small
+              >
+              <small
+                *ngIf="compra.retaceo && compra.retaceo.id === retaceo.id"
+                class="text-success"
+                >(Este retaceo)</small
+              >
+            </span>
           </ng-option>
         </ng-select>
       </div>
@@ -182,7 +202,8 @@
         <option value="DDP">DDP - Entregado con Derechos Pagados</option>
       </select>
     </div>
-    <div class="form-group col-md-12 col-lg-4">
+    <!--no mostrar el dai-->
+    <div class="form-group col-md-12 col-lg-4" *ngIf="false">
       <label for="tasa_dai">Tasa del DAI (%)</label>
       <input
         type="number"
@@ -643,6 +664,7 @@
     <div class="col-md-12">
       <button
         (click)="calcularDistribucion()"
+        *ngIf="!retaceo.id"
         [disabled]="!retaceo.id_compra || loading"
         class="btn btn-warning float-start me-2"
       >
