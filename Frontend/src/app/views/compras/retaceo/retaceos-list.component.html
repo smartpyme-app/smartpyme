@@ -1,39 +1,11 @@
-<!-- Encabezado -->
+
 <div class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Retaceos</h2>
-    <a routerLink="/retaceo/crear" class="btn btn-default tcla-F4">
-      <i class="fa fa-plus"></i> Nuevo Retaceo
-    </a>
+    <button *ngIf="apiService.canCreate()" routerLink="/retaceo/crear" tooltip="Crear retaceo (F4)" class="btn btn-default tcla-F4">
+      <i class="fa fa-plus"></i> Añadir retaceo
+    </button>
   </div>
   
-  <!-- Filtros -->
-  <!-- <section class="card border-0 p-3 mb-3">
-    <div class="row">
-      <div class="col-md-2">
-        <label for="fechaDesde">Desde</label>
-        <input type="date" class="form-control" [(ngModel)]="filtros.fecha_desde" name="fechaDesde" id="fechaDesde">
-      </div>
-      <div class="col-md-2">
-        <label for="fechaHasta">Hasta</label>
-        <input type="date" class="form-control" [(ngModel)]="filtros.fecha_hasta" name="fechaHasta" id="fechaHasta">
-      </div>
-      <div class="col-md-3">
-        <label for="busqueda">Búsqueda</label>
-        <input type="text" class="form-control" [(ngModel)]="filtros.busqueda" name="busqueda" id="busqueda"
-               placeholder="Número de factura, DUCA...">
-      </div>
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-primary me-2" (click)="buscar()">
-          <i class="fa fa-search"></i> Buscar
-        </button>
-        <button class="btn btn-light" (click)="limpiarFiltros()">
-          <i class="fa fa-eraser"></i> Limpiar
-        </button>
-      </div>
-    </div>
-  </section> -->
-  
-  <!-- Listado de Retaceos -->
   <section class="bg-white p-4 rounded mb-3">
     <div class="row">
       <div class="col-md-6 mb-3">
@@ -71,39 +43,51 @@
               <th>Fecha Elaboración</th>
               <th>Monto Total</th>
               <th>Estado</th>
-              <th>Acciones</th>
+              <th class="text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td colspan="10" class="text-center" *ngIf="retaceos?.total < 1 && !loading">
-                  <span class="badge bg-primary">No tiene retaceos registrados</span>
+                <span class="badge bg-primary">No tiene retaceos registrados</span>
               </td>
               <td colspan="10" class="text-center" *ngIf="loading">
-                  <span class="badge bg-primary">Cargando...</span>
+                <span class="badge bg-primary">Cargando...</span>
               </td>
-          </tr>
+            </tr>
             <tr *ngFor="let retaceo of retaceos?.data">
-              <td>{{ retaceo.id }}</td>
-              <td>{{ retaceo.compra?.codigo || 'N/A' }}</td>
+              <td>{{ retaceo.codigo }}</td>
+              <td>
+                <strong>{{ retaceo.compra?.nombre_proveedor || 'N/A' }}</strong>
+                <br>
+                <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
+              </td>
               <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
-              <td>{{ retaceo.monto_total | currency:'USD':'symbol':'1.2' }}</td>
-              <td>{{ retaceo.estado }}</td>
+              <td>{{ retaceo.total_retaceado | currency:'USD':'symbol':'1.2' }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': retaceo.estado === 'Aplicado',
+                  'bg-warning': retaceo.estado === 'Pendiente',
+                  'bg-danger': retaceo.estado === 'Anulado'
+                }">
+                  {{ retaceo.estado }}
+                </span>
+              </td>
               <td class="text-center">
                 <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                  <i class="fa fa-ellipsis-vertical fa-fw"></i>
                 </span>
                 <ng-template #accionesTemplate>
-                    <div class="list-group border-0">
-                        <a routerLink="/retaceo/{{retaceo.id}}" class="list-group-item list-group-item-action border-0 click">
-                            <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                        </a>
-                        <a *ngIf="apiService.canEdit()" (click)="eliminarRetaceo(retaceo.id)" class="list-group-item list-group-item-action border-0 click">
-                            <i class="fa fa-fw fa-trash"></i>Eliminar
-                        </a>
-                    </div>
+                  <div class="list-group border-0">
+                    <a routerLink="/retaceo/{{retaceo.id}}" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                    </a>
+                    <a *ngIf="apiService.canEdit()" (click)="eliminarRetaceo(retaceo.id)" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-trash"></i>Eliminar
+                    </a>
+                  </div>
                 </ng-template>
-            </td>
+              </td>
             </tr>
           </tbody>
         </table>
