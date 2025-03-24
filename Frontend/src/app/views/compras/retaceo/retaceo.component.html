@@ -386,7 +386,7 @@
 
           <!-- Lista de productos -->
           <tr *ngFor="let item of distribucion; let i = index">
-            <td>{{ item.producto.nombre }}</td>
+            <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
             <td class="text-center">{{ item.cantidad }}</td>
             <td class="text-end">
               {{ item.costo_original | currency : "USD" : "symbol" : "1.2" }}
@@ -440,7 +440,7 @@
       </table>
     </div>
   </div>
-  <div
+  <!-- <div
     class="card border-0 p-3 mb-3"
     *ngIf="
       distribucion &&
@@ -464,7 +464,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let item of distribucion">
-            <td>{{ item.producto.nombre }}</td>
+            <td>{{ item?.producto?.nombre || 'Producto sin nombre' }}</td>
             <td class="text-center">{{ item.cantidad }}</td>
             <td class="text-end">
               {{ item.costo_original | currency : "USD" : "symbol" : "1.2" }}
@@ -527,8 +527,118 @@
       costos de los productos en el inventario y se actualizará el valor del
       inventario según lo mostrado en esta tabla.
     </div>
-  </div>
+  </div> -->
+  <section
+    class="card border-0 p-3 mb-3"
+    *ngIf="
+      distribucion &&
+      distribucion.length > 0 &&
+      distribucion[0]?.porcentaje_distribucion > 0
+    "
+  >
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mt-0 mb-0">Resumen de Cambios</h6>
+      <button
+        class="btn btn-sm btn-link"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#collapseResumen"
+        aria-expanded="false"
+        aria-controls="collapseResumen"
+      >
+        <i class="fa fa-chevron-down"></i>
+      </button>
+    </div>
 
+    <div class="collapse" id="collapseResumen">
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="text-center">Cant.</th>
+              <th class="text-end">C. Original</th>
+              <th class="text-end">C. Retaceado</th>
+              <th class="text-end">Diferencia</th>
+              <th class="text-end">Impacto Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of distribucion">
+              <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
+              <td class="text-center">{{ item.cantidad }}</td>
+              <td class="text-end">
+                {{
+                  item.costo_original | currency : "USD" : "symbol" : "1.0-2"
+                }}
+              </td>
+              <td class="text-end">
+                {{
+                  item.costo_retaceado | currency : "USD" : "symbol" : "1.0-2"
+                }}
+              </td>
+              <td
+                class="text-end"
+                [ngClass]="{
+                  'text-success': item.costo_retaceado > item.costo_original,
+                  'text-danger': item.costo_retaceado < item.costo_original
+                }"
+              >
+                {{
+                  item.costo_retaceado - item.costo_original
+                    | currency : "USD" : "symbol" : "1.0-2"
+                }}
+              </td>
+              <td
+                class="text-end"
+                [ngClass]="{
+                  'text-success':
+                    (item.costo_retaceado - item.costo_original) *
+                      item.cantidad >
+                    0,
+                  'text-danger':
+                    (item.costo_retaceado - item.costo_original) *
+                      item.cantidad <
+                    0
+                }"
+              >
+                {{
+                  (item.costo_retaceado - item.costo_original) * item.cantidad
+                    | currency : "USD" : "symbol" : "1.0-2"
+                }}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="text-end fw-bold">
+                Cambio total en inventario:
+              </td>
+              <td
+                class="text-end fw-bold"
+                [ngClass]="{
+                  'text-success': calcularImpactoTotal() > 0,
+                  'text-danger': calcularImpactoTotal() < 0
+                }"
+              >
+                {{
+                  calcularImpactoTotal() | currency : "USD" : "symbol" : "1.0-2"
+                }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="alert alert-info py-2 px-3 mt-2 mb-0">
+      <i class="fa fa-info-circle me-2"></i>
+      <small
+        ><strong>Importante:</strong> Al aplicar el retaceo, se modificarán los
+        costos y se actualizará el valor del inventario.</small
+      >
+    </div>
+  </section>
   <div class="row mt-5">
     <div class="col-md-12">
       <button
