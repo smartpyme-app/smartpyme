@@ -79,6 +79,7 @@ class RetaceoController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
+        //dd($request->all());
 
         try {
             DB::beginTransaction();

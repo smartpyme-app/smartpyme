@@ -522,7 +522,7 @@ export class RetaceoComponent implements OnInit {
  * Muestra confirmación detallada y aplica el retaceo
  */
 guardarRetaceo() {
-  // Verificaciones básicas
+
   if (!this.distribucion || this.distribucion.length === 0) {
     this.alertService.error('No hay productos para aplicar el retaceo');
     return;
@@ -533,7 +533,6 @@ guardarRetaceo() {
     return;
   }
   
-  // Calcular el impacto en el inventario para mostrar en la confirmación
   const impactoTotal = this.calcularImpactoTotal();
   
   // Mostrar confirmación con detalles

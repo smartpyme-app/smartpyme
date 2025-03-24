@@ -440,52 +440,94 @@
       </table>
     </div>
   </div>
-  <!-- Agregar esta sección antes de los botones de acciones -->
-<div class="card border-0 p-3 mb-3" *ngIf="distribucion && distribucion.length > 0 && distribucion[0].porcentaje_distribucion > 0">
-  <h6 class="mt-3">Resumen de Cambios</h6>
-  
-  <div class="table-responsive">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th class="text-center">Cantidad</th>
-          <th class="text-end">Costo Original</th>
-          <th class="text-end">Costo Retaceado</th>
-          <th class="text-end">Diferencia</th>
-          <th class="text-end">Impacto Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of distribucion">
-          <td>{{ item.producto.nombre }}</td>
-          <td class="text-center">{{ item.cantidad }}</td>
-          <td class="text-end">{{ item.costo_original | currency:'USD':'symbol':'1.2' }}</td>
-          <td class="text-end">{{ item.costo_retaceado | currency:'USD':'symbol':'1.2' }}</td>
-          <td class="text-end" [ngClass]="{'text-success': item.costo_retaceado > item.costo_original, 'text-danger': item.costo_retaceado < item.costo_original}">
-            {{ (item.costo_retaceado - item.costo_original) | currency:'USD':'symbol':'1.2' }}
-          </td>
-          <td class="text-end" [ngClass]="{'text-success': (item.costo_retaceado - item.costo_original) * item.cantidad > 0, 'text-danger': (item.costo_retaceado - item.costo_original) * item.cantidad < 0}">
-            {{ (item.costo_retaceado - item.costo_original) * item.cantidad | currency:'USD':'symbol':'1.2' }}
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="5" class="text-end fw-bold">Cambio total en inventario:</td>
-          <td class="text-end fw-bold" [ngClass]="{'text-success': calcularImpactoTotal() > 0, 'text-danger': calcularImpactoTotal() < 0}">
-            {{ calcularImpactoTotal() | currency:'USD':'symbol':'1.2' }}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+  <div
+    class="card border-0 p-3 mb-3"
+    *ngIf="
+      distribucion &&
+      distribucion.length > 0 &&
+      distribucion[0].porcentaje_distribucion > 0
+    "
+  >
+    <h6 class="mt-3">Resumen de Cambios</h6>
+
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-end">Costo Original</th>
+            <th class="text-end">Costo Retaceado</th>
+            <th class="text-end">Diferencia</th>
+            <th class="text-end">Impacto Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of distribucion">
+            <td>{{ item.producto.nombre }}</td>
+            <td class="text-center">{{ item.cantidad }}</td>
+            <td class="text-end">
+              {{ item.costo_original | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td class="text-end">
+              {{ item.costo_retaceado | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+            <td
+              class="text-end"
+              [ngClass]="{
+                'text-success': item.costo_retaceado > item.costo_original,
+                'text-danger': item.costo_retaceado < item.costo_original
+              }"
+            >
+              {{
+                item.costo_retaceado - item.costo_original
+                  | currency : "USD" : "symbol" : "1.2"
+              }}
+            </td>
+            <td
+              class="text-end"
+              [ngClass]="{
+                'text-success':
+                  (item.costo_retaceado - item.costo_original) * item.cantidad >
+                  0,
+                'text-danger':
+                  (item.costo_retaceado - item.costo_original) * item.cantidad <
+                  0
+              }"
+            >
+              {{
+                (item.costo_retaceado - item.costo_original) * item.cantidad
+                  | currency : "USD" : "symbol" : "1.2"
+              }}
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="text-end fw-bold">
+              Cambio total en inventario:
+            </td>
+            <td
+              class="text-end fw-bold"
+              [ngClass]="{
+                'text-success': calcularImpactoTotal() > 0,
+                'text-danger': calcularImpactoTotal() < 0
+              }"
+            >
+              {{ calcularImpactoTotal() | currency : "USD" : "symbol" : "1.2" }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="alert alert-info mt-3">
+      <i class="fa fa-info-circle me-2"></i>
+      <strong>Importante:</strong> Al aplicar el retaceo, se modificarán los
+      costos de los productos en el inventario y se actualizará el valor del
+      inventario según lo mostrado en esta tabla.
+    </div>
   </div>
-  
-  <div class="alert alert-info mt-3">
-    <i class="fa fa-info-circle me-2"></i>
-    <strong>Importante:</strong> Al aplicar el retaceo, se modificarán los costos de los productos en el inventario y se actualizará el valor del inventario según lo mostrado en esta tabla.
-  </div>
-</div>
 
   <div class="row mt-5">
     <div class="col-md-12">
@@ -496,10 +538,11 @@
       >
         <i class="fa fa-calculator"></i> Calcular
       </button>
-
+      <!--nose podra editar no mostra boton-->
       <button
         type="submit"
         (click)="guardarRetaceo()"
+        *ngIf="!retaceo.id"
         [disabled]="
           saving || loading || !distribucion || distribucion.length === 0
         "
