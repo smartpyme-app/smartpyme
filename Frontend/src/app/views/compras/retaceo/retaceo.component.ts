@@ -89,6 +89,7 @@ export class RetaceoComponent implements OnInit {
       total_retaceado: 0,
       incoterm: 'FOB',
       tasa_dai: 0,
+      estado: 'Pendiente',
     };
 
     this.gastoTransporte = {
@@ -585,6 +586,83 @@ export class RetaceoComponent implements OnInit {
       (total: number, item: any) =>
         total + parseFloat(item.costo_retaceado || 0),
       0
+    );
+  }
+
+  cambiarEstado(nuevoEstado: string) {
+    // Verificar el estado actual y si el cambio es válido
+    if (this.retaceo.estado === 'Aplicado' && nuevoEstado !== 'Anulado') {
+      this.alertService.warning(
+        'Un retaceo aplicado solo puede anularse',
+        'Cambio de estado'
+      );
+      return;
+    }
+
+    if (this.retaceo.estado === 'Anulado') {
+      this.alertService.warning(
+        'Un retaceo anulado no puede cambiar de estado',
+        'Cambio de estado'
+      );
+      return;
+    }
+
+    // Confirmar el cambio de estado
+    let mensaje = '';
+    let confirmacionNecesaria = true;
+
+    if (nuevoEstado === 'Aplicado') {
+      mensaje =
+        'Esta acción aplicará los nuevos costos a los productos en inventario. ¿Desea continuar?';
+    } else if (nuevoEstado === 'Anulado') {
+      mensaje =
+        'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
+    }
+
+    if (confirmacionNecesaria) {
+      Swal.fire({
+        title: 'Cambiar estado',
+        text: mensaje,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cambiar',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.actualizarEstado(nuevoEstado);
+        }
+      });
+    } else {
+      this.actualizarEstado(nuevoEstado);
+    }
+  }
+
+  actualizarEstado(nuevoEstado: string) {
+    this.loading = true;
+
+    const datosActualizacion = {
+      id: this.retaceo.id,
+      estado: nuevoEstado,
+    };
+
+    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
+      (response) => {
+        this.retaceo.estado = nuevoEstado;
+
+        let mensaje = '';
+        if (nuevoEstado === 'Aplicado') {
+          mensaje = 'El retaceo ha sido aplicado y los costos actualizados';
+        } else if (nuevoEstado === 'Anulado') {
+          mensaje = 'El retaceo ha sido anulado';
+        }
+
+        this.alertService.success(mensaje, 'Cambio de estado');
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
     );
   }
 }
