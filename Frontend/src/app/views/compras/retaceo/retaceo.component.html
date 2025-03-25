@@ -475,6 +475,20 @@
               </span>
             </td>
           </tr>
+          <tr class="bg-light fw-bold border-top">
+            <td>TOTALES</td>
+            <td class="text-center">{{ calcularTotalCantidad() }}</td>
+            <td class="text-end">{{ calcularTotalCostoAntes() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ calcularTotalFOB() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">100 %</td>
+            <td class="text-end">-</td>
+            <td class="text-end">{{ calcularTotalTransporte() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ calcularTotalSeguro() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ calcularTotalDAI() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ calcularTotalOtros() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ calcularTotalLanded() | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ calcularTotalRetaceado() | currency:'USD':'symbol':'1.2' }}</td>
+          </tr>
         </tbody>
       </table>
     </div>

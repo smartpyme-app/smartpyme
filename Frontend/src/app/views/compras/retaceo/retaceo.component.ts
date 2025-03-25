@@ -426,7 +426,6 @@ export class RetaceoComponent implements OnInit {
     this.recalcularTotalRetaceado();
   }
 
-
   guardarRetaceo() {
     if (!this.distribucion || this.distribucion.length === 0) {
       this.alertService.error('No hay productos para aplicar el retaceo');
@@ -489,12 +488,10 @@ export class RetaceoComponent implements OnInit {
   }
 
   calcularDAIProducto(item: any) {
-
     item.monto_dai = (
       (parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai)) /
       100
     ).toFixed(2);
-
 
     this.actualizarCostosProducto(item);
 
@@ -503,7 +500,6 @@ export class RetaceoComponent implements OnInit {
   }
 
   actualizarCostosProducto(item: any) {
-  
     item.costo_landed = (
       parseFloat(item.valor_fob) +
       parseFloat(item.monto_transporte) +
@@ -512,17 +508,83 @@ export class RetaceoComponent implements OnInit {
       parseFloat(item.monto_otros)
     ).toFixed(2);
 
-
     item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
   }
 
   recalcularTotalRetaceado() {
-
     this.retaceo.total_retaceado = this.distribucion
       .reduce(
         (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
         0
       )
       .toFixed(2);
+  }
+
+  // Métodos para calcular los totales
+  calcularTotalCantidad(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) => total + parseFloat(item.cantidad || 0),
+      0
+    );
+  }
+
+  calcularTotalCostoAntes(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) =>
+        total +
+        parseFloat(item.costo_original || 0) * parseFloat(item.cantidad || 0),
+      0
+    );
+  }
+
+  calcularTotalFOB(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) => total + parseFloat(item.valor_fob || 0),
+      0
+    );
+  }
+
+  calcularTotalTransporte(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) =>
+        total + parseFloat(item.monto_transporte || 0),
+      0
+    );
+  }
+
+  calcularTotalSeguro(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) => total + parseFloat(item.monto_seguro || 0),
+      0
+    );
+  }
+
+  calcularTotalDAI(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) => total + parseFloat(item.monto_dai || 0),
+      0
+    );
+  }
+
+  calcularTotalOtros(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) => total + parseFloat(item.monto_otros || 0),
+      0
+    );
+  }
+
+  calcularTotalLanded(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) => total + parseFloat(item.costo_landed || 0),
+      0
+    );
+  }
+  //calcularTotalRetaceado
+  calcularTotalRetaceado(): number {
+    return this.distribucion.reduce(
+      (total: number, item: any) =>
+        total + parseFloat(item.costo_retaceado || 0),
+      0
+    );
   }
 }
