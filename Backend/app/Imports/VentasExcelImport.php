@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Models\Admin\Canal;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
@@ -36,6 +37,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                 $primeraFila = $rows[0];
                 $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
             }
+
+            
             
             // Agrupar filas por cliente y fecha
             $ventasAgrupadas = [];
@@ -69,7 +72,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                     ];
                 }
                 
-                // Agregar este detalle a la venta
+              
                 $ventasAgrupadas[$clienteKey]['detalles'][] = $this->obtenerDatosDetalle($row);
             }
             
@@ -153,12 +156,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                 // Para consumidor final, buscar por nombre y documento si existe
                 $query = Cliente::query();
                 
-                if (!empty($fila['nombre'])) {
-                    $query->where('nombre_completo', $fila['nombre']);
-                }
+                // if (!empty($fila['nombre'])) {
+                //     $query->where('nombre_completo', $fila['nombre']);
+                // }
                 
                 if (!empty($fila['num_documento'])) {
-                    $query->where('num_documento', $fila['num_documento']);
+                    $query->where('dui', $fila['num_documento']);
                 }
                 
                 $cliente = $query->first();
@@ -169,14 +172,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                 $cliente = new Cliente();
                 
                 // Datos comunes
-                $cliente->nombre_completo = $fila['nombre'] ?? 'Consumidor Final';
+                $cliente->nombre = $fila['nombre'] ?? 'Consumidor Final';
+                $cliente->apellido = $fila['apellido'] ?? '';
                 $cliente->telefono = $fila['telefono'] ?? '';
                 $cliente->correo = $fila['correo'] ?? '';
                 $cliente->direccion = $fila['direccion'] ?? '';
                 $cliente->id_departamento = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
                 $cliente->id_municipio = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
-                $cliente->tipo = 'Persona';
                 $cliente->id_usuario = Auth::id();
+                $cliente->tipo = 'Persona';
                 $cliente->id_empresa = Auth::user()->id_empresa;
                 
                 // Datos específicos según tipo
@@ -187,9 +191,10 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                     $cliente->nrc = $fila['nrc'] ?? '';
                     $cliente->giro = $fila['cod_giro'] ?? '';
                     $cliente->tipo_contribuyente = 'Otro';
+                    $cliente->dui = $fila['num_documento'] ?? '';
                 } else {
                     $cliente->tipo_documento = $fila['tipo_documento'] ?? 'DUI';
-                    $cliente->num_documento = $fila['num_documento'] ?? '';
+                    $cliente->dui = $fila['num_documento'] ?? '';
                 }
                 
                 $cliente->save();
@@ -240,21 +245,20 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         return $documento ? $documento->id : null;
     }
     
-    /**
-     * Extraer datos de cabecera de una fila
-     */
+  
     protected function obtenerDatosCabecera($fila, $id_cliente, $id_documento)
     {
-        // Datos básicos comunes
+        $canal = Canal::where('id_empresa', Auth::user()->id_empresa)->first();
+        
         $cabecera = [
             'fecha' => $this->formatearFecha($fila['fecha']),
             'estado' => 'Pagada',
-            'forma_pago' => $fila['forma_pago'] ?? 'Efectivo',
+            'forma_pago' => $fila['forma_pago'] ?? 'Tarjeta de crédito/débito',
             'condicion' => $fila['condicion'] ?? 'Contado',
             'credito' => (($fila['condicion'] ?? 'Contado') == 'Crédito') ? 1 : 0,
             'id_cliente' => $id_cliente,
             'id_documento' => $id_documento,
-            'id_canal' => 1, // Canal por defecto
+            'id_canal' => $canal->id,
             'id_sucursal' => Auth::user()->id_sucursal,
             'id_bodega' => Auth::user()->id_bodega,
             'id_vendedor' => Auth::id(),
@@ -274,15 +278,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             'cobrar_impuestos' => isset($fila['iva']) && $fila['iva'] > 0 ? 1 : 0,
         ];
         
-        // Fecha de pago para ventas a crédito
+       
         if (isset($fila['fecha_pago']) && !empty($fila['fecha_pago'])) {
             $cabecera['fecha_pago'] = $this->formatearFecha($fila['fecha_pago']);
         } else if ($cabecera['credito']) {
-            // Si es crédito y no se especificó fecha, poner fecha a un mes
+           
             $cabecera['fecha_pago'] = Carbon::parse($cabecera['fecha'])->addMonth()->format('Y-m-d');
         }
         
-        // Obtener el correlativo del documento
+       
         $documento = Documento::find($id_documento);
         if ($documento) {
             $cabecera['correlativo'] = $documento->correlativo;
@@ -296,10 +300,10 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function obtenerDatosDetalle($fila)
     {
-        // Buscar o crear producto según la descripción
+
         $idProducto = $this->buscarOCrearProducto($fila);
         
-        // Calcular los montos si no están especificados
+
         $cantidad = 1; // Por defecto
         $precio = $fila['total'] ?? 0; // Si no hay desglose, usar el total
         $total = $fila['total'] ?? 0;
@@ -318,16 +322,25 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                 }
             }
         }
+
+        $producto = Producto::find($idProducto);
+        if ($producto) {
+            $costo = $producto->costo;
+            $total_costo = $cantidad * $costo;
+        } else {
+            $costo = 0;
+            $total_costo = 0;
+        }
         
         return [
             'id_producto' => $idProducto,
             'descripcion' => $fila['descripcion'] ?? '',
             'cantidad' => $cantidad,
             'precio' => $precio,
-            'costo' => 0, // Se establecerá según el producto
+            'costo' => $costo,
             'descuento' => 0,
             'total' => $total,
-            'total_costo' => 0, // Se calculará según el costo
+            'total_costo' => $total_costo,
             'exenta' => $fila['exenta'] ?? 0,
             'no_sujeta' => $fila['no_sujeta'] ?? 0,
             'gravada' => $fila['gravada'] ?? $total,
@@ -343,13 +356,6 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function buscarOCrearProducto($fila)
     {
-        // Aquí implementarías la búsqueda de producto por descripción
-        // o la creación de un producto genérico si no existe
-        
-        // Por simplicidad, esta implementación retorna un ID fijo
-        // Deberías adaptarla para buscar realmente el producto
-        
-        // Ejemplo básico:
         $producto = Producto::where('nombre', $fila['descripcion'])
             ->orWhere('descripcion', 'like', '%' . $fila['descripcion'] . '%')
             ->first();
@@ -357,11 +363,17 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         if ($producto) {
             return $producto->id;
         }
+
+        $producto = new Producto();
+        $producto->nombre = $fila['descripcion'];
+        $producto->descripcion = $fila['descripcion'];
+        $producto->tipo = $fila['tipo_item'] ?? 'Producto';
+        $producto->id_empresa = Auth::user()->id_empresa;
+        $producto->enable = '1';
+
+        $producto->save();
         
-        // Si no se encuentra el producto, podrías crear uno genérico
-        // o retornar un ID de producto comodín predefinido
-        
-        return null; // Cambiar por lógica real
+        return $producto->id;
     }
     
     /**
@@ -433,14 +445,17 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function actualizarInventario($venta, $detalle)
     {
-        $inventario = Inventario::where('id_producto', $detalle->id_producto)
-            ->where('id_bodega', $venta->id_bodega)
-            ->first();
-            
-        if ($inventario) {
-            $inventario->stock -= $detalle->cantidad;
-            $inventario->save();
-            $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);
+        //solamente su es producto si es servicio no se actualiza
+        if ($detalle->tipo_item == 'Producto') {
+            $inventario = Inventario::where('id_producto', $detalle->id_producto)
+                ->where('id_bodega', $venta->id_bodega)
+                ->first();
+                
+            if ($inventario) {
+                $inventario->stock -= $detalle->cantidad;
+                $inventario->save();
+                $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);
+            }
         }
     }
     

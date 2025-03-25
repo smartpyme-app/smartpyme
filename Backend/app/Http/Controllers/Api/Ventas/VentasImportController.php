@@ -46,36 +46,4 @@ class VentasImportController extends Controller
             return response()->json(['error' => 'Error al importar: ' . $e->getMessage()], 400);
         }
     }
-
-    /**
-     * Descargar plantilla de Excel para Crédito Fiscal
-     *
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function descargarPlantillaCreditoFiscal()
-    {
-        $path = public_path('docs/ventas-credito-fiscal-format.xlsx');
-
-        if (!file_exists($path)) {
-            return response()->json(['error' => 'Plantilla no encontrada'], 404);
-        }
-
-        return response()->download($path);
-    }
-
-    /**
-     * Descargar plantilla de Excel para Consumidor Final
-     *
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function descargarPlantillaConsumidorFinal()
-    {
-        $path = public_path('docs/ventas-consumidor-final-format.xlsx');
-
-        if (!file_exists($path)) {
-            return response()->json(['error' => 'Plantilla no encontrada'], 404);
-        }
-
-        return response()->download($path);
-    }
 }
