@@ -80,7 +80,8 @@
     </div>
   </div>
 
-  <!-- Fila 1: Información básica -->
+  <!-- si  *ngIf ="retaceo.id no poder selecionar otra compra pero si mostrar la compra seleccionada-->
+   
   <div class="row">
     <div class="form-group col-md-12 col-lg-4">
       <label for="id_compra">Compra</label>
@@ -88,6 +89,7 @@
         <ng-select
           name="id_compra"
           placeholder="Seleccionar compra"
+          [disabled]="retaceo.id"
           [(ngModel)]="retaceo.id_compra"
           (change)="cargarDetallesCompra()"
           class="form-select p-0"
@@ -218,6 +220,7 @@
           placeholder="Seleccionar gasto"
           [(ngModel)]="gastoTransporte.id_gasto"
           (change)="setGastoMonto('Transporte')"
+          [disabled]="retaceo.id"
           class="form-select p-0"
         >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
@@ -248,6 +251,7 @@
           placeholder="Seleccionar gasto"
           [(ngModel)]="gastoSeguro.id_gasto"
           (change)="setGastoMonto('Seguro')"
+          [disabled]="retaceo.id"
           class="form-select p-0"
         >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
@@ -309,6 +313,7 @@
           placeholder="Seleccionar gasto"
           [(ngModel)]="gastoOtros.id_gasto"
           (change)="setGastoMonto('Otro')"
+          [disabled]="retaceo.id"
           class="form-select p-0"
         >
           <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
