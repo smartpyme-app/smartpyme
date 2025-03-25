@@ -30,7 +30,7 @@ class WooCommerceTransformer
     /**
      * Transforma datos de venta de WooCommerce
      */
-    public function transformarVenta($wooData, $clienteId, $documentoId)
+    public function transformarVenta($wooData, $clienteId, $documentoId,$correlativo)
     {
         return [
             'codigo_generacion' => null, // para DTE si es necesario
@@ -48,7 +48,7 @@ class WooCommerceTransformer
             'iva_percibido' => 0,
             'descuento' => $wooData['discount_total'],
             'id_cliente' => $clienteId,
-            'correlativo' => $wooData['number'],
+            'correlativo' => $correlativo,
             'id_documento' => $documentoId,
             'id_bodega' => $wooData['id_bodega'],
             'id_empresa' => $wooData['id_empresa'],
