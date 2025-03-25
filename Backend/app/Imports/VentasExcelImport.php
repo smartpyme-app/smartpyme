@@ -87,10 +87,10 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             }
 
             // Si hay errores, hacer rollback
-            if (count($this->errores) > 0) {
-                DB::rollback();
-                throw new \Exception(implode("\n", $this->errores));
-            }
+            // if (count($this->errores) > 0) {
+            //     DB::rollback();
+            //     throw new \Exception(implode("\n", $this->errores));
+            // }
 
             DB::commit();
             return $this->contador;
@@ -400,8 +400,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
         //crear categoria
         $categoria = new Categoria();
-        $categoria->nombre = $fila['descripcion'];
-        $categoria->descripcion = $fila['descripcion'];
+        $categoria->nombre = $fila['tipo_item'];
+        $categoria->descripcion = $fila['tipo_item'];
         $categoria->enable = '1';
         $categoria->id_empresa = Auth::user()->id_empresa;
         $categoria->save();
@@ -543,13 +543,14 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     protected function formatearFecha($fecha)
     {
         if (empty($fecha)) {
-            return date('Y-m-d');
+            //dia mes año
+            return date('d-m-Y');
         }
 
         try {
-            return Carbon::parse($fecha)->format('Y-m-d');
+            return Carbon::parse($fecha)->format('d-m-Y');
         } catch (\Exception $e) {
-            return date('Y-m-d');
+            return date('d-m-Y');
         }
     }
 
