@@ -79,10 +79,11 @@ class RetaceoController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-        dd($request->all());
+      //  dd($request->all());
 
         try {
             DB::beginTransaction();
+            
 
             // Crear el retaceo
             $compra = Compra::findOrFail($request->id_compra);
@@ -91,7 +92,7 @@ class RetaceoController extends Controller
             $retaceo->id_compra = $request->id_compra;
             $retaceo->numero_duca = $request->numero_duca;
             $retaceo->tasa_dai = $request->tasa_dai;
-            $retaceo->numero_factura = $request->numero_factura;
+            $retaceo->numero_factura = $compra->referencia;
             $retaceo->incoterm = $request->incoterm;
             $retaceo->fecha = $request->fecha;
             $retaceo->observaciones = $request->observaciones;
@@ -131,6 +132,7 @@ class RetaceoController extends Controller
                 $distribucion->monto_otros = $item['monto_otros'];
                 $distribucion->costo_landed = $item['costo_landed'];
                 $distribucion->costo_retaceado = $item['costo_retaceado'];
+                $distribucion->porcentaje_dai = $item['porcentaje_dai'];
                 $distribucion->save();
 
                 // Actualizar el costo del producto

@@ -26,7 +26,8 @@ class RetaceoDistribucion extends Model
         'monto_dai',
         'monto_otros',
         'costo_landed',
-        'costo_retaceado'
+        'costo_retaceado',
+        'porcentaje_dai'
     ];
 
     /**
