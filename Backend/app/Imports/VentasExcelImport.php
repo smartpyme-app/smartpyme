@@ -36,7 +36,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     {
         DB::beginTransaction();
 
-        //   try {
+          try {
         // Determinar el tipo de documento por los encabezados
         if (count($rows) > 0) {
             $primeraFila = $rows[0];
@@ -87,18 +87,18 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             }
         }
 
-        // Si hay errores, hacer rollback
-        // if (count($this->errores) > 0) {
-        //     DB::rollback();
-        //     throw new \Exception(implode("\n", $this->errores));
-        // }
+       // Si hay errores, hacer rollback
+        if (count($this->errores) > 0) {
+            DB::rollback();
+            throw new \Exception(implode("\n", $this->errores));
+        }
 
         DB::commit();
         return $this->contador;
-        // } catch (\Exception $e) {
-        //     DB::rollback();
-        //     throw $e;
-        // }
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+        }
     }
 
     /**
@@ -148,7 +148,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function buscarOCrearCliente($fila)
     {
-        //   try {
+          try {
         // Intentar buscar al cliente primero
         $cliente = null;
 
@@ -212,11 +212,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
         return $cliente->id;
 
-        // } catch (\Exception $e) {
-        //     // Si hay error, usar cliente por defecto (consumidor final)
-        //     $clienteDefault = Cliente::where('nombre_completo', 'Consumidor Final')->first();
-        //     return $clienteDefault ? $clienteDefault->id : null;
-        // }
+        } catch (\Exception $e) {
+            // Si hay error, usar cliente por defecto (consumidor final)
+            $clienteDefault = Cliente::where('nombre_completo', 'Consumidor Final')->first();
+            return $clienteDefault ? $clienteDefault->id : null;
+        }
     }
 
     /**
@@ -430,31 +430,35 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
         if ($producto) {
             return $producto->id;
-        } else {
-            return 0;
         }
 
-        //crear categoria
-        $categoria = new Categoria();
-        $categoria->nombre = $fila['tipo_item'];
-        $categoria->descripcion = $fila['tipo_item'];
-        $categoria->enable = '1';
-        $categoria->id_empresa = Auth::user()->id_empresa;
-        $categoria->save();
+        return 0;
 
-        $producto = new Producto();
-        $producto->nombre = $fila['descripcion'];
-        $producto->costo = $fila['gravada'] ?? 0;
-        $producto->precio = $fila['total'] ?? 0;
-        $producto->descripcion = $fila['descripcion'];
-        $producto->id_categoria = $categoria->id;
-        $producto->tipo = $fila['tipo_item'] ?? 'Producto';
-        $producto->id_empresa = Auth::user()->id_empresa;
-        $producto->enable = '1';
+        // else {
+        //     return 0;
+        // }
 
-        $producto->save();
+        // //crear categoria
+        // $categoria = new Categoria();
+        // $categoria->nombre = $fila['tipo_item'];
+        // $categoria->descripcion = $fila['tipo_item'];
+        // $categoria->enable = '1';
+        // $categoria->id_empresa = Auth::user()->id_empresa;
+        // $categoria->save();
 
-        return $producto->id;
+        // $producto = new Producto();
+        // $producto->nombre = $fila['descripcion'];
+        // $producto->costo = $fila['gravada'] ?? 0;
+        // $producto->precio = $fila['total'] ?? 0;
+        // $producto->descripcion = $fila['descripcion'];
+        // $producto->id_categoria = $categoria->id;
+        // $producto->tipo = $fila['tipo_item'] ?? 'Producto';
+        // $producto->id_empresa = Auth::user()->id_empresa;
+        // $producto->enable = '1';
+
+        // $producto->save();
+
+        // return $producto->id;
     }
 
     /**
@@ -531,11 +535,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         // Crear los detalles
         foreach ($detalles as $detalle_data) {
             // Si no hay ID de producto, continuar con el siguiente
-            // if (empty($detalle_data['id_producto'])) {
-            //     Log::info('No se encontró el producto: ' . $detalle_data['descripcion']);
-            //     Log::info($detalle_data);
-            //     continue;
-            // }
+            if (empty($detalle_data['id_producto'])) {
+                Log::info('No se encontró el producto: ' . $detalle_data['descripcion']);
+                Log::info($detalle_data);
+                continue;
+            }
 
             $detalle = new Detalle();
             $detalle_data['id_venta'] = $venta->id;
