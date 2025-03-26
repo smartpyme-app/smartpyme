@@ -197,7 +197,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
                 $cliente->tipo = 'Empresa';
                 $cliente->nombre_empresa = $fila['nombre_comercial'] ?? $fila['nombre'];
                 $cliente->nit = $fila['nit'];
-                $cliente->nrc = $fila['nrc'] ?? '';
+                $cliente->ncr = $fila['nrc'] ?? '';
                 $cliente->giro = $fila['cod_giro'] ?? '';
                 $cliente->tipo_contribuyente = 'Otro';
                 $cliente->dui = $fila['num_documento'] ?? '';
