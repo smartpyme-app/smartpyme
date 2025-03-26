@@ -368,7 +368,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
 
         $cantidad = 1; // Por defecto
-        $precio = $fila['total'] ?? 0; // Si no hay desglose, usar el total
+        $precio = $fila['subtotal'] ?? 0; // Si no hay desglose, usar el total
         $total = $fila['total'] ?? 0;
 
         // Si hay información de precio unitario, calcular
@@ -516,9 +516,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         // Crear los detalles
         foreach ($detalles as $detalle_data) {
             // Si no hay ID de producto, continuar con el siguiente
-            if (empty($detalle_data['id_producto'])) {
-                continue;
-            }
+            // if (empty($detalle_data['id_producto'])) {
+            //     Log::info('No se encontró el producto: ' . $detalle_data['descripcion']);
+            //     Log::info($detalle_data);
+            //     continue;
+            // }
 
             $detalle = new Detalle();
             $detalle_data['id_venta'] = $venta->id;
