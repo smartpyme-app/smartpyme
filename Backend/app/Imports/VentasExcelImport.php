@@ -36,69 +36,172 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     {
         DB::beginTransaction();
 
-          try {
-        // Determinar el tipo de documento por los encabezados
-        if (count($rows) > 0) {
-            $primeraFila = $rows[0];
-            $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
-        }
+        try {
+            // Inicializar contador para el log
+            $validRows = 0;
+            $ventasExitosas = 0;
+            $ventasFallidas = 0;
 
-
-
-        // Agrupar filas por cliente y fecha
-        $ventasAgrupadas = [];
-
-        foreach ($rows as $index => $row) {
-            // Validar datos mínimos requeridos
-            if (!$this->validarFilaRequeridos($row)) {
-                continue;
+            // Determinar el tipo de documento por los encabezados
+            if (count($rows) > 0) {
+                $primeraFila = $rows[0];
+                $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
+                Log::info("Tipo de documento determinado: " . $this->tipo_documento);
             }
 
-            // Crear una clave única para agrupar filas de la misma venta
-            // En este caso, agrupamos por cliente (identificado por nombre/NIT) y fecha
-            $clienteKey = '';
-            if ($this->tipo_documento == 'credito_fiscal') {
-                $clienteKey = ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '');
-            } else {
-                $clienteKey = ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
+            // Agrupar filas por cliente y fecha
+            $ventasAgrupadas = [];
+
+            foreach ($rows as $index => $row) {
+                // AÑADIDO: Saltar filas vacías
+                if ($this->esFilaVacia($row)) {
+                    Log::info("Fila {$index} ignorada por estar vacía");
+                    continue;
+                }
+
+                // Validar datos mínimos requeridos
+                if (!$this->validarFilaRequeridos($row)) {
+                    Log::info("Fila {$index} ignorada por faltar datos requeridos");
+                    continue;
+                }
+
+                $validRows++;
+                Log::info("Fila {$index} válida");
+
+                // Crear una clave única para agrupar filas de la misma venta
+                $clienteKey = '';
+                if ($this->tipo_documento == 'credito_fiscal') {
+                    $clienteKey = ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '');
+                } else {
+                    $clienteKey = ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
+                }
+
+                Log::info("Cliente key: " . $clienteKey);
+
+                if (!isset($ventasAgrupadas[$clienteKey])) {
+                    // Buscar o crear cliente
+                    $id_cliente = $this->buscarOCrearCliente($row);
+                    Log::info("Cliente ID: " . $id_cliente);
+
+                    // Buscar documento adecuado
+                    $id_documento = $this->buscarDocumento($this->tipo_documento);
+                    Log::info("Documento ID: " . $id_documento);
+
+                    if (!$id_cliente || !$id_documento) {
+                        Log::error("Error: ID de cliente o documento no válido. Cliente: {$id_cliente}, Documento: {$id_documento}");
+                        continue;
+                    }
+
+                    // Crear nueva entrada para esta venta
+                    $ventasAgrupadas[$clienteKey] = [
+                        'cabecera' => $this->obtenerDatosCabecera($row, $id_cliente, $id_documento),
+                        'detalles' => []
+                    ];
+
+                    Log::info("Nueva venta agrupada creada para: " . $clienteKey);
+                }
+
+                $ventasAgrupadas[$clienteKey]['detalles'][] = $this->obtenerDatosDetalle($row);
+                Log::info("Detalle agregado a venta: " . $clienteKey);
             }
 
-            if (!isset($ventasAgrupadas[$clienteKey])) {
-                // Buscar o crear cliente
-                $id_cliente = $this->buscarOCrearCliente($row);
+            Log::info("Total de filas válidas: " . $validRows);
+            Log::info("Total de ventas agrupadas: " . count($ventasAgrupadas));
 
-                // Buscar documento adecuado
-                $id_documento = $this->buscarDocumento($this->tipo_documento);
+            // Procesar cada venta agrupada
+            foreach ($ventasAgrupadas as $clienteKey => $datos) {
+                Log::info("Procesando venta para: " . $clienteKey);
+                Log::info("Datos de cabecera: " . json_encode($datos['cabecera']));
+                Log::info("Total de detalles: " . count($datos['detalles']));
 
-                // Crear nueva entrada para esta venta
-                $ventasAgrupadas[$clienteKey] = [
-                    'cabecera' => $this->obtenerDatosCabecera($row, $id_cliente, $id_documento),
-                    'detalles' => []
-                ];
+                if ($this->procesarVenta($datos['cabecera'], $datos['detalles'])) {
+                    $this->contador++;
+                    $ventasExitosas++;
+                    Log::info("Venta procesada exitosamente: " . $clienteKey);
+                } else {
+                    $ventasFallidas++;
+                    Log::warning("No se pudo procesar la venta para: " . $clienteKey);
+                    // Continuamos con la siguiente venta en lugar de detener el proceso
+                }
             }
 
-            $ventasAgrupadas[$clienteKey]['detalles'][] = $this->obtenerDatosDetalle($row);
-        }
+            Log::info("Total de ventas procesadas exitosamente: " . $ventasExitosas);
+            Log::info("Total de ventas que no pudieron procesarse: " . $ventasFallidas);
 
-        // Procesar cada venta agrupada
-        foreach ($ventasAgrupadas as $clienteKey => $datos) {
-            if ($this->procesarVenta($datos['cabecera'], $datos['detalles'])) {
-                $this->contador++;
+            // Si hay errores pero se procesaron algunas ventas, NO hacer rollback
+            if (count($this->errores) > 0 && $ventasExitosas == 0) {
+                Log::error("Errores encontrados y ninguna venta procesada: " . count($this->errores));
+                Log::error(implode("\n", $this->errores));
+                DB::rollback();
+                throw new \Exception(implode("\n", $this->errores));
+            } else if (count($this->errores) > 0) {
+                // Hay errores pero algunas ventas se procesaron correctamente
+                Log::warning("Se encontraron " . count($this->errores) . " errores, pero se procesaron " . $ventasExitosas . " ventas correctamente.");
             }
-        }
 
-       // Si hay errores, hacer rollback
-        if (count($this->errores) > 0) {
-            DB::rollback();
-            throw new \Exception(implode("\n", $this->errores));
-        }
+            if ($this->contador == 0) {
+                Log::warning("No se procesó ninguna venta");
+                DB::rollback();
+                throw new \Exception('No se encontraron ventas válidas para importar.');
+            }
 
-        DB::commit();
-        return $this->contador;
+            DB::commit();
+            Log::info("Importación completada: " . $this->contador . " ventas procesadas");
+            return $this->contador;
         } catch (\Exception $e) {
+            Log::error("Error en importación: " . $e->getMessage());
+            Log::error($e->getTraceAsString());
             DB::rollback();
             throw $e;
         }
+    }
+    protected function esFilaVacia($row)
+    {
+        // Log para depuración
+        Log::info('Verificando fila: ' . json_encode($row));
+
+        // Si la fila está completamente vacía (es un array vacío)
+        if (empty($row) || count($row) == 0) {
+            Log::info('Fila vacía: array vacío');
+            return true;
+        }
+
+        // Si 'nombre' no existe o está vacío, considerar la fila como vacía
+        if (!isset($row['nombre']) || (is_string($row['nombre']) && trim($row['nombre']) === '') || $row['nombre'] === null) {
+            Log::info('Fila vacía: sin nombre');
+            return true;
+        }
+
+        // Si 'descripcion' no existe o está vacío, considerar la fila como vacía
+        if (!isset($row['descripcion']) || (is_string($row['descripcion']) && trim($row['descripcion']) === '') || $row['descripcion'] === null) {
+            Log::info('Fila vacía: sin descripción');
+            return true;
+        }
+
+        // Si 'fecha' no existe o está vacío, considerar la fila como vacía
+        if (!isset($row['fecha']) || empty($row['fecha'])) {
+            Log::info('Fila vacía: sin fecha');
+            return true;
+        }
+
+        // Verificar si todos los valores están vacíos o son nulos
+        $todoVacio = true;
+        foreach ($row as $campo => $valor) {
+            // Si al menos un campo tiene un valor no vacío, la fila no está vacía
+            if (!empty($valor) && $valor !== null && $valor !== '') {
+                $todoVacio = false;
+                break;
+            }
+        }
+
+        if ($todoVacio) {
+            Log::info('Fila vacía: todos los campos son vacíos');
+            return true;
+        }
+
+        // Si llegamos aquí, la fila tiene datos válidos
+        Log::info('Fila válida');
+        return false;
     }
 
     /**
@@ -120,8 +223,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function validarFilaRequeridos($fila)
     {
+        // Comprobación más estricta para evitar procesar filas vacías
+        if ($this->esFilaVacia($fila)) {
+            // No agregamos error porque ya sabemos que es una fila vacía
+            return false;
+        }
+
         // Campos requeridos para ambos tipos
         $requeridos = ['nombre', 'fecha', 'descripcion', 'total'];
+        $faltantes = [];
 
         // Campos adicionales según el tipo
         if ($this->tipo_documento == 'credito_fiscal') {
@@ -134,10 +244,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         }
 
         foreach ($requeridos as $campo) {
-            if (!isset($fila[$campo]) || (is_string($fila[$campo]) && trim($fila[$campo]) === '')) {
-                $this->errores[] = "Error: Falta el campo obligatorio '$campo' en una de las filas.";
-                return false;
+            if (!isset($fila[$campo]) || (is_string($fila[$campo]) && trim($fila[$campo]) === '') || $fila[$campo] === null) {
+                $faltantes[] = $campo;
             }
+        }
+
+        if (!empty($faltantes)) {
+            $this->errores[] = "Error: Faltan los campos obligatorios '" . implode("', '", $faltantes) . "' en una de las filas.";
+            Log::warning("Fila inválida - Faltan campos: " . implode(", ", $faltantes) . " - Datos: " . json_encode($fila));
+            return false;
         }
 
         return true;
@@ -148,70 +263,69 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function buscarOCrearCliente($fila)
     {
-          try {
-        // Intentar buscar al cliente primero
-        $cliente = null;
+        try {
+            // Intentar buscar al cliente primero
+            $cliente = null;
 
-        if ($this->tipo_documento == 'credito_fiscal') {
-            // Buscar por NIT para crédito fiscal
-            $cliente = Cliente::where('nit', $fila['nit'])->first();
-        } else {
-            // Para consumidor final, buscar por nombre y documento si existe
-            $query = Cliente::query();
-
-            // if (!empty($fila['nombre'])) {
-            //     $query->where('nombre_completo', $fila['nombre']);
-            // }
-
-            if (!empty($fila['num_documento'])) {
-                $query->where('dui', $fila['num_documento']);
-            }
-
-            $cliente = $query->first();
-        }
-
-        // Si no se encuentra, crear nuevo cliente
-        if (!$cliente) {
-            $cliente = new Cliente();
-            $departamento = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
-            $municipio = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
-            $distrito = $this->buscarDistrito($fila['cod_departamento'], $fila['cod_municipio']);
-
-            $cliente->nombre = $fila['nombre'] ?? 'Consumidor Final';
-            $cliente->apellido = $fila['apellido'] ?? '';
-            $cliente->telefono = $fila['telefono'] ?? '';
-            $cliente->correo = $fila['correo'] ?? '';
-            $cliente->direccion = $fila['direccion'] ?? '';
-            $cliente->cod_departamento =   $departamento->cod ?? null;
-            $cliente->departamento =  $departamento->nombre ?? null;
-            $cliente->cod_municipio =  $municipio->cod ?? null;
-            $cliente->municipio =  $municipio->nombre ?? null;
-            $cliente->cod_distrito = $distrito->cod ?? null;
-            $cliente->distrito =  $distrito->nombre ?? null;
-
-            $cliente->id_usuario = Auth::id();
-            $cliente->tipo = 'Persona';
-            $cliente->id_empresa = Auth::user()->id_empresa;
-
-            // Datos específicos según tipo
             if ($this->tipo_documento == 'credito_fiscal') {
-                $cliente->tipo = 'Empresa';
-                $cliente->nombre_empresa = $fila['nombre_comercial'] ?? $fila['nombre'];
-                $cliente->nit = $fila['nit'];
-                $cliente->ncr = $fila['nrc'] ?? '';
-                $cliente->giro = $fila['cod_giro'] ?? '';
-                $cliente->tipo_contribuyente = 'Otro';
-                $cliente->dui = $fila['num_documento'] ?? '';
+                // Buscar por NIT para crédito fiscal
+                $cliente = Cliente::where('nit', $fila['nit'])->first();
             } else {
-                $cliente->tipo_documento = $fila['tipo_documento'] ?? 'DUI';
-                $cliente->dui = $fila['num_documento'] ?? '';
+                // Para consumidor final, buscar por nombre y documento si existe
+                $query = Cliente::query();
+
+                // if (!empty($fila['nombre'])) {
+                //     $query->where('nombre_completo', $fila['nombre']);
+                // }
+
+                if (!empty($fila['num_documento'])) {
+                    $query->where('dui', $fila['num_documento']);
+                }
+
+                $cliente = $query->first();
             }
 
-            $cliente->save();
-        }
+            // Si no se encuentra, crear nuevo cliente
+            if (!$cliente) {
+                $cliente = new Cliente();
+                $departamento = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
+                $municipio = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
+                $distrito = $this->buscarDistrito($fila['cod_departamento'], $fila['cod_municipio']);
 
-        return $cliente->id;
+                $cliente->nombre = $fila['nombre'] ?? 'Consumidor Final';
+                $cliente->apellido = $fila['apellido'] ?? '';
+                $cliente->telefono = $fila['telefono'] ?? '';
+                $cliente->correo = $fila['correo'] ?? '';
+                $cliente->direccion = $fila['direccion'] ?? '';
+                $cliente->cod_departamento =   $departamento->cod ?? null;
+                $cliente->departamento =  $departamento->nombre ?? null;
+                $cliente->cod_municipio =  $municipio->cod ?? null;
+                $cliente->municipio =  $municipio->nombre ?? null;
+                $cliente->cod_distrito = $distrito->cod ?? null;
+                $cliente->distrito =  $distrito->nombre ?? null;
 
+                $cliente->id_usuario = Auth::id();
+                $cliente->tipo = 'Persona';
+                $cliente->id_empresa = Auth::user()->id_empresa;
+
+                // Datos específicos según tipo
+                if ($this->tipo_documento == 'credito_fiscal') {
+                    $cliente->tipo = 'Empresa';
+                    $cliente->nombre_empresa = $fila['nombre_comercial'] ?? $fila['nombre'];
+                    $cliente->nit = $fila['nit'];
+                    $cliente->ncr = $fila['nrc'] ?? '';
+                    $cliente->giro = $fila['cod_giro'] ?? '';
+                    $cliente->tipo_contribuyente = 'Otro';
+                    $cliente->dui = $fila['num_documento'] ?? '';
+                } else {
+                    $cliente->tipo_documento = $fila['tipo_documento'] ?? 'DUI';
+                    $cliente->dui = $fila['num_documento'] ?? '';
+                }
+
+                $cliente->save();
+            }
+
+            return $cliente->id;
         } catch (\Exception $e) {
             // Si hay error, usar cliente por defecto (consumidor final)
             $clienteDefault = Cliente::where('nombre_completo', 'Consumidor Final')->first();
@@ -277,6 +391,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
         $fecha = $this->convertirFechaExcel($fila['fecha']);
 
+        // Extraer valores numéricos o calcular si son fórmulas
+        $gravada = $this->extraerValorOCalcular($fila, 'gravada', 0);
+        $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada);
+        $iva = $this->extraerValorOCalcular($fila, 'iva', $gravada * 0.13);
+        $total = $this->extraerValorOCalcular($fila, 'total', $subtotal + $iva);
+
         $cabecera = [
             'fecha' => $fecha,
             'estado' => 'Pagada',
@@ -293,16 +413,16 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             'id_empresa' => Auth::user()->id_empresa,
             'observaciones' => '',
             'cotizacion' => 0,
-            'exenta' => $fila['exenta'] ?? 0,
-            'no_sujeta' => $fila['no_sujeta'] ?? 0,
-            'gravada' => $fila['gravada'] ?? 0,
+            'exenta' => $this->extraerValorOCalcular($fila, 'exenta', 0),
+            'no_sujeta' => $this->extraerValorOCalcular($fila, 'no_sujeta', 0),
+            'gravada' => $gravada,
             'cuenta_a_terceros' => 0,
-            'iva' => $fila['iva'] ?? 0,
-            'iva_retenido' => $fila['iva_retenido'] ?? 0,
+            'iva' => $iva,
+            'iva_retenido' => $this->extraerValorOCalcular($fila, 'iva_retenido', 0),
             'iva_percibido' => 0,
-            'sub_total' => $fila['subtotal'] ?? 0,
-            'total' => $fila['total'] ?? 0,
-            'cobrar_impuestos' => isset($fila['iva']) && $fila['iva'] > 0 ? 1 : 0,
+            'sub_total' => $subtotal,
+            'total' => $total,
+            'cobrar_impuestos' => $iva > 0 ? 1 : 0,
         ];
 
         // Procesar fecha de pago
@@ -312,7 +432,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             $cabecera['fecha_pago'] = Carbon::parse($fecha)->addMonth()->format('Y-m-d');
         }
 
-        // Manejo de correlativo (este bloque ya lo tienes correcto)
+        // Manejo de correlativo
         $documento = Documento::find($id_documento);
         if ($documento) {
             $ultimoCorrelativo = Venta::where('id_documento', $id_documento)
@@ -360,218 +480,26 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         return $this->convertirFechaExcel($fecha);
     }
 
-    /**
-     * Extraer datos de detalle de una fila
-     */
-    protected function obtenerDatosDetalle($fila)
-    {
 
-        $idProducto = $this->buscarOCrearProducto($fila);
-
-
-        $cantidad = 1; // Por defecto
-        $precio = $fila['subtotal'] ?? 0; // Si no hay desglose, usar el total
-        $total = $fila['total'] ?? 0;
-
-        // Si hay información de precio unitario, calcular
-        if (isset($fila['precio']) && is_numeric($fila['precio']) && $fila['precio'] > 0) {
-            $precio = $fila['precio'];
-            // Si hay información de cantidad, usarla
-            if (isset($fila['cantidad']) && is_numeric($fila['cantidad']) && $fila['cantidad'] > 0) {
-                $cantidad = $fila['cantidad'];
-                $total = $cantidad * $precio;
-            } else {
-                // Calcular cantidad basada en total y precio
-                if ($precio > 0) {
-                    $cantidad = $total / $precio;
-                }
-            }
-        }
-
-        $producto = Producto::find($idProducto);
-        if ($producto) {
-            $costo = $producto->costo;
-            $total_costo = $cantidad * $costo;
-        } else {
-            $costo = 0;
-            $total_costo = 0;
-        }
-
-        return [
-            'id_producto' => $idProducto,
-            'descripcion' => $fila['descripcion'] ?? '',
-            'cantidad' => $cantidad,
-            'precio' => $precio,
-            'costo' => $costo,
-            'descuento' => 0,
-            'total' => $total,
-            'total_costo' => $total_costo,
-            'exenta' => $fila['exenta'] ?? 0,
-            'no_sujeta' => $fila['no_sujeta'] ?? 0,
-            'gravada' => $fila['gravada'] ?? $total,
-            'cuenta_a_terceros' => 0,
-            'iva' => $fila['iva'] ?? 0,
-            'id_vendedor' => Auth::id(),
-            'tipo_item' => $fila['tipo_item'] ?? 'Producto',
-        ];
-    }
-
-    /**
-     * Buscar o crear producto según la descripción
-     */
     protected function buscarOCrearProducto($fila)
     {
-        // Log::info('Buscando producto: ' . $fila['descripcion']);
-        //imprimir todo el array
-        // Log::info($fila);
-        $producto = Producto::where('nombre', $fila['descripcion'])
-            ->orWhere('descripcion', 'like', '%' . $fila['descripcion'] . '%')
+        $descripcion = $fila['descripcion'] ?? 'Sin descripción';
+        Log::info('Buscando producto: ' . $descripcion);
+
+        $producto = Producto::where('nombre', $descripcion)
+            ->orWhere('descripcion', 'like', '%' . $descripcion . '%')
             ->first();
 
         if ($producto) {
+            Log::info('Producto encontrado: ID ' . $producto->id);
             return $producto->id;
         }
 
-        return 0;
-
-        // else {
-        //     return 0;
-        // }
-
-        // //crear categoria
-        // $categoria = new Categoria();
-        // $categoria->nombre = $fila['tipo_item'];
-        // $categoria->descripcion = $fila['tipo_item'];
-        // $categoria->enable = '1';
-        // $categoria->id_empresa = Auth::user()->id_empresa;
-        // $categoria->save();
-
-        // $producto = new Producto();
-        // $producto->nombre = $fila['descripcion'];
-        // $producto->costo = $fila['gravada'] ?? 0;
-        // $producto->precio = $fila['total'] ?? 0;
-        // $producto->descripcion = $fila['descripcion'];
-        // $producto->id_categoria = $categoria->id;
-        // $producto->tipo = $fila['tipo_item'] ?? 'Producto';
-        // $producto->id_empresa = Auth::user()->id_empresa;
-        // $producto->enable = '1';
-
-        // $producto->save();
-
-        // return $producto->id;
+        Log::warning('Producto no encontrado en el sistema: ' . $descripcion);
+        return 0; // Retornar 0 indica que no se encontró el producto
     }
 
-    /**
-     * Procesar una venta completa
-     */
-    protected function procesarVenta($cabecera, $detalles)
-    {
-        // try {
-        // Verificar si ya existe esta venta
-        // if (isset($cabecera['correlativo'])) {
-        //     $existe = Venta::where('correlativo', $cabecera['correlativo'])
-        //         ->where('id_sucursal', $cabecera['id_sucursal'])
-        //         ->where('id_documento', $cabecera['id_documento'])
-        //         ->exists();
 
-        //     if ($existe) {
-        //         $this->errores[] = "Error: Ya existe una venta con el correlativo {$cabecera['correlativo']} en la sucursal y documento seleccionados.";
-        //         return false;
-        //     }
-        // }
-
-        if (isset($cabecera['correlativo'])) {
-            $correlativoOriginal = $cabecera['correlativo'];
-            $correlativoNuevo = $correlativoOriginal;
-            $contador = 0;
-
-            // Intentar hasta 10 veces encontrar un correlativo único
-            while ($contador < 10) {
-                $existe = Venta::where('correlativo', $correlativoNuevo)
-                    ->where('id_sucursal', $cabecera['id_sucursal'])
-                    ->where('id_documento', $cabecera['id_documento'])
-                    ->exists();
-
-                if (!$existe) {
-                    // ¡Encontramos un correlativo único!
-                    $cabecera['correlativo'] = $correlativoNuevo;
-                    break;
-                }
-
-                // Incrementar el correlativo y seguir intentando
-                $correlativoNuevo++;
-                $contador++;
-            }
-
-            // Si después de 10 intentos seguimos sin éxito, generar uno completamente nuevo
-            if ($contador >= 10) {
-                // Obtener el máximo correlativo y sumar uno
-                $maxCorrelativo = Venta::where('id_documento', $cabecera['id_documento'])
-                    ->where('id_sucursal', $cabecera['id_sucursal'])
-                    ->max('correlativo');
-
-                $cabecera['correlativo'] = $maxCorrelativo ? $maxCorrelativo + 1 : 1;
-            }
-        }
-
-        // Crear la venta
-        $venta = new Venta();
-        $venta->fill($cabecera);
-        $venta->save();
-        Log::info('Venta creada: ' . $venta->id);
-        Log::info($cabecera);
-        //si existe iva, crear iva
-        if ($cabecera['iva'] > 0) {
-            $iva = Impuesto::where('id_empresa', Auth::user()->id_empresa)->first();
-            if ($iva) {
-                $impuesto = new ImpuestoVenta();
-                $impuesto->id_impuesto = $iva->id;
-                $impuesto->id_venta = $venta->id;
-                $impuesto->monto = $cabecera['iva'];
-                $impuesto->save();
-            }
-        }
-
-        // Crear los detalles
-        foreach ($detalles as $detalle_data) {
-            // Si no hay ID de producto, continuar con el siguiente
-            if (empty($detalle_data['id_producto'])) {
-                Log::info('No se encontró el producto: ' . $detalle_data['descripcion']);
-                Log::info($detalle_data);
-                continue;
-            }
-
-            $detalle = new Detalle();
-            $detalle_data['id_venta'] = $venta->id;
-
-            // Obtener costo del producto
-            $producto = Producto::find($detalle_data['id_producto']);
-            if ($producto) {
-                $detalle_data['costo'] = $producto->costo;
-                $detalle_data['total_costo'] = $detalle_data['costo'] * $detalle_data['cantidad'];
-            }
-
-            $detalle->fill($detalle_data);
-            $detalle->save();
-
-            // Actualizar inventario si no es cotización
-            if ($venta->cotizacion == 0) {
-                $this->actualizarInventario($venta, $detalle);
-            }
-        }
-
-        // Incrementar el correlativo del documento
-        $documento = Documento::find($venta->id_documento);
-        if ($documento) {
-            $documento->increment('correlativo');
-        }
-
-        return true;
-        // } catch (\Exception $e) {
-        //     $this->errores[] = "Error al procesar venta: " . $e->getMessage();
-        //     return false;
-        // }
-    }
 
 
     protected function actualizarInventario($venta, $detalle)
@@ -602,5 +530,232 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     public function getErrores()
     {
         return $this->errores;
+    }
+
+
+    /**
+     * Extraer datos de detalle de una fila, manejando fórmulas de Excel
+     */
+    protected function obtenerDatosDetalle($fila)
+    {
+        Log::info('Procesando fila: ' . json_encode($fila));
+
+        $idProducto = $this->buscarOCrearProducto($fila);
+
+        // Manejar las fórmulas de Excel para gravada, subtotal, iva y total
+        $gravada = $this->extraerValorOCalcular($fila, 'gravada');
+        $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada); // Si subtotal es una fórmula, usar gravada como valor base
+        $iva = $this->extraerValorOCalcular($fila, 'iva', $subtotal * 0.13); // Si iva es una fórmula, calcularlo como subtotal * 0.13
+        $total = $this->extraerValorOCalcular($fila, 'total', $subtotal + $iva); // Si total es una fórmula, calcularlo como subtotal + iva
+
+        $cantidad = 1; // Por defecto
+        $precio = $gravada; // Usamos el valor de gravada como precio base
+
+        // Si hay información de precio unitario, calcular
+        if (isset($fila['precio']) && is_numeric($fila['precio']) && $fila['precio'] > 0) {
+            $precio = $fila['precio'];
+            // Si hay información de cantidad, usarla
+            if (isset($fila['cantidad']) && is_numeric($fila['cantidad']) && $fila['cantidad'] > 0) {
+                $cantidad = $fila['cantidad'];
+            } else {
+                // Calcular cantidad basada en gravada y precio
+                if ($precio > 0) {
+                    $cantidad = $gravada / $precio;
+                }
+            }
+        }
+
+        $producto = Producto::find($idProducto);
+        if ($producto) {
+            $costo = $producto->costo;
+            $total_costo = $cantidad * $costo;
+        } else {
+            $costo = 0;
+            $total_costo = 0;
+        }
+
+        return [
+            'id_producto' => $idProducto,
+            'descripcion' => $fila['descripcion'] ?? '',
+            'cantidad' => $cantidad,
+            'precio' => $precio,
+            'costo' => $costo,
+            'descuento' => 0,
+            'total' => $total,
+            'total_costo' => $total_costo,
+            'exenta' => $fila['exenta'] ?? 0,
+            'no_sujeta' => $fila['no_sujeta'] ?? 0,
+            'gravada' => $gravada,
+            'cuenta_a_terceros' => 0,
+            'iva' => $iva,
+            'id_vendedor' => Auth::id(),
+            'tipo_item' => $fila['tipo_item'] ?? 'Producto',
+        ];
+    }
+
+    /**
+     * Extraer valor numérico de un campo, o calcular si es una fórmula
+     */
+    protected function extraerValorOCalcular($fila, $campo, $valorPredeterminado = 0)
+    {
+        // Si el campo no existe o está vacío
+        if (!isset($fila[$campo]) || empty($fila[$campo])) {
+            return $valorPredeterminado;
+        }
+
+        $valor = $fila[$campo];
+
+        // Si ya es un número, devolverlo directamente
+        if (is_numeric($valor)) {
+            return (float)$valor;
+        }
+
+        // Si es una cadena que parece una fórmula
+        if (is_string($valor) && substr($valor, 0, 1) === '=') {
+            // Las fórmulas más comunes
+            if (preg_match('/=N(\d+)/', $valor, $matches)) {
+                // Fórmula tipo "=N2" (referencia a subtotal)
+                // Usar el valor predeterminado proporcionado
+                return $valorPredeterminado;
+            }
+
+            if (preg_match('/=N(\d+)\*13%/', $valor, $matches)) {
+                // Fórmula tipo "=N2*13%" (cálculo de IVA)
+                // Usar el valor predeterminado que debería ser subtotal * 0.13
+                return $valorPredeterminado;
+            }
+
+            if (preg_match('/=N(\d+)\+P(\d+)/', $valor, $matches)) {
+                // Fórmula tipo "=N2+P2" (suma subtotal + iva)
+                // Usar el valor predeterminado que debería ser subtotal + iva
+                return $valorPredeterminado;
+            }
+
+            if (preg_match('/=I(\d+)/', $valor, $matches)) {
+                // Fórmula tipo "=I2" (referencia a fecha)
+                // Duplicar la fecha actual
+                return date('Y-m-d');
+            }
+        }
+
+        // Para cualquier otro caso, intentar convertir a número o devolver 0
+        return is_numeric($valor) ? (float)$valor : $valorPredeterminado;
+    }
+
+    protected function procesarVenta($cabecera, $detalles)
+    {
+        try {
+            // Verificar si hay detalles válidos
+            $detallesValidos = [];
+            $detallesInvalidos = [];
+
+            foreach ($detalles as $detalle_data) {
+                // Si no hay ID de producto, registrar como inválido
+                if (empty($detalle_data['id_producto'])) {
+                    $detallesInvalidos[] = "Producto no encontrado: " . ($detalle_data['descripcion'] ?? 'Sin descripción');
+                    continue;
+                }
+
+                // Este detalle es válido
+                $detallesValidos[] = $detalle_data;
+            }
+
+            // Si no hay detalles válidos, no procesar la venta
+            if (empty($detallesValidos)) {
+                $mensajeError = "Error: No se pudo procesar la venta porque no se encontraron productos válidos. ";
+                $mensajeError .= "Productos no encontrados: " . implode(", ", $detallesInvalidos);
+                $this->errores[] = $mensajeError;
+                Log::warning($mensajeError);
+                return false;
+            }
+
+            // Si hay algunos detalles inválidos, registrar advertencia pero continuar con los válidos
+            if (!empty($detallesInvalidos)) {
+                Log::warning("Advertencia: Algunos productos no fueron encontrados y se omitieron: " . implode(", ", $detallesInvalidos));
+            }
+
+            // Continuar con el resto del código para crear la venta con los detalles válidos
+            // Manejo de correlativos duplicados...
+
+            // Crear la venta
+            $venta = new Venta();
+            $venta->fill($cabecera);
+            $venta->save();
+
+            Log::info('Venta creada: ' . $venta->id);
+
+            // Manejar impuestos
+            $this->procesarImpuestos($venta, $cabecera);
+
+            // Crear los detalles (solo los válidos)
+            foreach ($detallesValidos as $detalle_data) {
+                $detalle = new Detalle();
+                $detalle_data['id_venta'] = $venta->id;
+
+                // Obtener costo del producto
+                $producto = Producto::find($detalle_data['id_producto']);
+                if ($producto) {
+                    $detalle_data['costo'] = $producto->costo;
+                    $detalle_data['total_costo'] = $detalle_data['costo'] * $detalle_data['cantidad'];
+                }
+
+                $detalle->fill($detalle_data);
+                $detalle->save();
+
+                // Actualizar inventario si no es cotización
+                if ($venta->cotizacion == 0) {
+                    $this->actualizarInventario($venta, $detalle);
+                }
+            }
+
+            // Incrementar el correlativo del documento
+            $documento = Documento::find($venta->id_documento);
+            if ($documento) {
+                $documento->increment('correlativo');
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            $this->errores[] = "Error al procesar venta: " . $e->getMessage();
+            Log::error('Error al procesar venta: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            return false;
+        }
+    }
+
+    /**
+     * Procesar impuestos de la venta
+     */
+    protected function procesarImpuestos($venta, $cabecera)
+    {
+        // Verificar si hay valor de IVA
+        if (isset($cabecera['iva']) && is_numeric($cabecera['iva']) && $cabecera['iva'] > 0) {
+            try {
+                // Buscar impuesto de IVA en el sistema
+                $iva = Impuesto::where('nombre', 'IVA')
+                    ->where('id_empresa', Auth::user()->id_empresa)
+                    ->first();
+
+                // Si no encuentra IVA por nombre, buscar el primer impuesto
+                if (!$iva) {
+                    $iva = Impuesto::where('id_empresa', Auth::user()->id_empresa)->first();
+                }
+
+                // Si existe un impuesto configurado, crear registro de impuesto
+                if ($iva) {
+                    $impuesto = new ImpuestoVenta();
+                    $impuesto->id_impuesto = $iva->id;
+                    $impuesto->id_venta = $venta->id;
+                    $impuesto->monto = $cabecera['iva'];
+                    $impuesto->save();
+
+                    Log::info('Impuesto IVA agregado: ' . $cabecera['iva']);
+                } else {
+                    Log::warning('No se encontró configuración de impuestos para la empresa');
+                }
+            } catch (\Exception $e) {
+                Log::error('Error al procesar impuestos: ' . $e->getMessage());
+            }
+        }
     }
 }
