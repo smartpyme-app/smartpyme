@@ -12,6 +12,8 @@ use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Impuesto as ImpuestoVenta;
+use App\Models\Admin\Impuesto;
 use App\Models\Ventas\Venta;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -428,7 +430,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
         if ($producto) {
             return $producto->id;
-        }else{
+        } else {
             return 0;
         }
 
@@ -512,6 +514,19 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         $venta = new Venta();
         $venta->fill($cabecera);
         $venta->save();
+        Log::info('Venta creada: ' . $venta->id);
+        Log::info($cabecera);
+        //si existe iva, crear iva
+        if ($cabecera['iva'] > 0) {
+            $iva = Impuesto::where('id_empresa', Auth::user()->id_empresa)->first();
+            if ($iva) {
+                $impuesto = new ImpuestoVenta();
+                $impuesto->id_impuesto = $iva->id;
+                $impuesto->id_venta = $venta->id;
+                $impuesto->monto = $cabecera['iva'];
+                $impuesto->save();
+            }
+        }
 
         // Crear los detalles
         foreach ($detalles as $detalle_data) {
