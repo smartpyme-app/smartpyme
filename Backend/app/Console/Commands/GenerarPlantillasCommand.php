@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 
 class GenerarPlantillasCommand extends Command
 {
@@ -68,7 +69,9 @@ class GenerarPlantillasCommand extends Command
         ];
         
         $this->escribirEjemplos($sheet, $ejemplos, 2);
-        
+
+        // Añadir validaciones para listas desplegables
+        $this->agregarValidaciones($sheet, $encabezados);
        
         $this->agregarHojaInstrucciones($spreadsheet, 'credito_fiscal');
         
@@ -108,6 +111,8 @@ class GenerarPlantillasCommand extends Command
         
         $this->escribirEjemplos($sheet, $ejemplos, 2);
         
+        // Añadir validaciones para listas desplegables
+        $this->agregarValidaciones($sheet, $encabezados);
       
         $this->agregarHojaInstrucciones($spreadsheet, 'consumidor_final');
         
@@ -148,6 +153,79 @@ class GenerarPlantillasCommand extends Command
         }
     }
     
+    /**
+     * Agregar validaciones de datos (listas desplegables)
+     */
+    protected function agregarValidaciones($sheet, $encabezados)
+    {
+        // Encontrar índice de las columnas que necesitan validación
+        $tipoDocumentoIndex = array_search('tipo_documento', $encabezados);
+        $tipoItemIndex = array_search('tipo_item', $encabezados);
+        $formaPagoIndex = array_search('forma_pago', $encabezados);
+        $condicionIndex = array_search('condicion', $encabezados);
+        
+        // Configurar la validación para 100 filas (ajustar según necesidad)
+        $numFilas = 100;
+        
+        // Agregar lista desplegable para tipo_documento si existe
+        if ($tipoDocumentoIndex !== false) {
+            $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($tipoDocumentoIndex + 1);
+            $this->agregarListaDesplegable(
+                $sheet, 
+                $columna . '2:' . $columna . ($numFilas + 1), 
+                '"DUI,NIT,Pasaporte,Carnet de residente,Otro"'
+            );
+        }
+        
+        // Agregar lista desplegable para tipo_item si existe
+        if ($tipoItemIndex !== false) {
+            $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($tipoItemIndex + 1);
+            $this->agregarListaDesplegable(
+                $sheet, 
+                $columna . '2:' . $columna . ($numFilas + 1), 
+                '"Producto,Servicio"'
+            );
+        }
+        
+        // Agregar lista desplegable para forma_pago si existe
+        if ($formaPagoIndex !== false) {
+            $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($formaPagoIndex + 1);
+            $this->agregarListaDesplegable(
+                $sheet, 
+                $columna . '2:' . $columna . ($numFilas + 1), 
+                '"Efectivo,Tarjeta de crédito/débito,Cheque,Transferencia,CARGO AUTOMATICO"'
+            );
+        }
+        
+        // Agregar lista desplegable para condicion si existe
+        if ($condicionIndex !== false) {
+            $columna = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($condicionIndex + 1);
+            $this->agregarListaDesplegable(
+                $sheet, 
+                $columna . '2:' . $columna . ($numFilas + 1), 
+                '"Contado,Crédito"'
+            );
+        }
+    }
+    
+    /**
+     * Agregar una lista desplegable a un rango de celdas
+     */
+    protected function agregarListaDesplegable($sheet, $rango, $opciones)
+    {
+        // Crear la validación
+        $validation = $sheet->getCell(explode(':', $rango)[0])->getDataValidation();
+        $validation->setType(DataValidation::TYPE_LIST)
+            ->setErrorStyle(DataValidation::STYLE_INFORMATION)
+            ->setAllowBlank(true)
+            ->setShowInputMessage(true)
+            ->setShowErrorMessage(true)
+            ->setShowDropDown(true)
+            ->setFormula1($opciones);
+        
+        // Aplicar la validación al rango completo
+        $sheet->setDataValidation($rango, $validation);
+    }
    
     protected function agregarHojaInstrucciones($spreadsheet, $tipo)
     {
@@ -164,39 +242,41 @@ class GenerarPlantillasCommand extends Command
             ['A4', '- No modifique los encabezados de la primera fila.'],
             ['A5', '- Cada fila representa un producto/servicio vendido.'],
             ['A6', '- Las filas se agruparán en ventas según el cliente y la fecha.'],
-            ['A8', '2. CAMPOS OBLIGATORIOS:'],
+            ['A7', '- Utilice las listas desplegables para seleccionar valores en tipo de documento, tipo de ítem, forma de pago y condición.'],
+            ['A9', '2. CAMPOS OBLIGATORIOS:'],
         ];
         
         // Campos obligatorios específicos para cada tipo
         if ($tipo == 'credito_fiscal') {
-            $filas[] = ['A9', '- nombre_comercial: Nombre comercial del cliente.'];
-            $filas[] = ['A10', '- nombre: Nombre legal del cliente.'];
-            $filas[] = ['A11', '- NIT: NIT del cliente (formato correcto).'];
+            $filas[] = ['A10', '- nombre_comercial: Nombre comercial del cliente.'];
+            $filas[] = ['A11', '- nombre: Nombre legal del cliente.'];
+            $filas[] = ['A12', '- NIT: NIT del cliente (formato correcto).'];
+            $filas[] = ['A13', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
+            $filas[] = ['A14', '- descripcion: Descripción del producto o servicio.'];
+            $filas[] = ['A15', '- total: Monto total de la venta.'];
+        } else {
+            $filas[] = ['A10', '- nombre: Nombre del cliente (o "Consumidor Final").'];
+            $filas[] = ['A11', '- tipo_documento: Seleccione de la lista desplegable (DUI, NIT, Pasaporte, etc.)'];
             $filas[] = ['A12', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
             $filas[] = ['A13', '- descripcion: Descripción del producto o servicio.'];
             $filas[] = ['A14', '- total: Monto total de la venta.'];
-        } else {
-            $filas[] = ['A9', '- nombre: Nombre del cliente (o "Consumidor Final").'];
-            $filas[] = ['A10', '- fecha: Fecha de la venta en formato YYYY-MM-DD.'];
-            $filas[] = ['A11', '- descripcion: Descripción del producto o servicio.'];
-            $filas[] = ['A12', '- total: Monto total de la venta.'];
         }
         
        
-        $filas[] = ['A16', '3. CÓDIGOS DE DEPARTAMENTOS Y MUNICIPIOS:'];
-        $filas[] = ['A17', '- Los códigos de departamento deben corresponder a los registrados en el sistema (ej. 01 para San Salvador).'];
-        $filas[] = ['A18', '- Los códigos de municipio deben corresponder a los registrados en el sistema (ej. 0101 para San Salvador).'];
+        $filas[] = ['A17', '3. CÓDIGOS DE DEPARTAMENTOS Y MUNICIPIOS:'];
+        $filas[] = ['A18', '- Los códigos de departamento deben corresponder a los registrados en el sistema (ej. 01 para San Salvador).'];
+        $filas[] = ['A19', '- Los códigos de municipio deben corresponder a los registrados en el sistema (ej. 0101 para San Salvador).'];
         
-        $filas[] = ['A20', '4. TIPOS DE ÍTEM:'];
-        $filas[] = ['A21', '- Producto: Para artículos físicos.'];
-        $filas[] = ['A22', '- Servicio: Para servicios prestados.'];
+        $filas[] = ['A21', '4. TIPOS DE ÍTEM:'];
+        $filas[] = ['A22', '- Producto: Para artículos físicos.'];
+        $filas[] = ['A23', '- Servicio: Para servicios prestados.'];
         
-        $filas[] = ['A24', '5. FORMAS DE PAGO:'];
-        $filas[] = ['A25', '- Efectivo, Tarjeta, Cheque, Transferencia, Crédito, etc.'];
+        $filas[] = ['A25', '5. FORMAS DE PAGO:'];
+        $filas[] = ['A26', '- Efectivo, Tarjeta de crédito/débito, Cheque, Transferencia, CARGO AUTOMATICO.'];
         
-        $filas[] = ['A27', '6. CONDICIÓN:'];
-        $filas[] = ['A28', '- Contado: Pago inmediato.'];
-        $filas[] = ['A29', '- Crédito: Pago diferido (requiere fecha_pago).'];
+        $filas[] = ['A28', '6. CONDICIÓN:'];
+        $filas[] = ['A29', '- Contado: Pago inmediato.'];
+        $filas[] = ['A30', '- Crédito: Pago diferido (requiere fecha_pago).'];
         
         foreach ($filas as $fila) {
             $instrucciones->setCellValue($fila[0], $fila[1]);

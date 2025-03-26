@@ -28,7 +28,7 @@ class VentasImportController extends Controller
 
         $file = $request->file('file');
 
-        try {
+       // try {
             // Intentar importar usando nuestro servicio personalizado
             $import = new VentasExcelImport();
             Excel::import($import, $file);
@@ -41,9 +41,9 @@ class VentasImportController extends Controller
             } else {
                 return response()->json(['error' => 'No se procesaron ventas. Verifique el formato del archivo.'], 400);
             }
-        } catch (\Exception $e) {
-            // Si hay un error, devolver mensaje
-            return response()->json(['error' => 'Error al importar: ' . $e->getMessage()], 400);
-        }
+        // } catch (\Exception $e) {
+        //     // Si hay un error, devolver mensaje
+        //     return response()->json(['error' => 'Error al importar: ' . $e->getMessage()], 400);
+        // }
     }
 }

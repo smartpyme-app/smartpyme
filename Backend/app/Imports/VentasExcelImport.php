@@ -34,70 +34,69 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     {
         DB::beginTransaction();
 
-        try {
-            // Determinar el tipo de documento por los encabezados
-            if (count($rows) > 0) {
-                $primeraFila = $rows[0];
-                $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
-            }
-
-
-
-            // Agrupar filas por cliente y fecha
-            $ventasAgrupadas = [];
-
-            foreach ($rows as $index => $row) {
-                // Validar datos mínimos requeridos
-                if (!$this->validarFilaRequeridos($row)) {
-                    continue;
-                }
-
-                // Crear una clave única para agrupar filas de la misma venta
-                // En este caso, agrupamos por cliente (identificado por nombre/NIT) y fecha
-                $clienteKey = '';
-                if ($this->tipo_documento == 'credito_fiscal') {
-                    $clienteKey = ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '');
-                } else {
-                    $clienteKey = ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
-                }
-
-                if (!isset($ventasAgrupadas[$clienteKey])) {
-                    // Buscar o crear cliente
-                    $id_cliente = $this->buscarOCrearCliente($row);
-
-                    // Buscar documento adecuado
-                    $id_documento = $this->buscarDocumento($this->tipo_documento);
-
-                    // Crear nueva entrada para esta venta
-                    $ventasAgrupadas[$clienteKey] = [
-                        'cabecera' => $this->obtenerDatosCabecera($row, $id_cliente, $id_documento),
-                        'detalles' => []
-                    ];
-                }
-
-
-                $ventasAgrupadas[$clienteKey]['detalles'][] = $this->obtenerDatosDetalle($row);
-            }
-
-            // Procesar cada venta agrupada
-            foreach ($ventasAgrupadas as $clienteKey => $datos) {
-                if ($this->procesarVenta($datos['cabecera'], $datos['detalles'])) {
-                    $this->contador++;
-                }
-            }
-
-            // Si hay errores, hacer rollback
-            // if (count($this->errores) > 0) {
-            //     DB::rollback();
-            //     throw new \Exception(implode("\n", $this->errores));
-            // }
-
-            DB::commit();
-            return $this->contador;
-        } catch (\Exception $e) {
-            DB::rollback();
-            throw $e;
+        //   try {
+        // Determinar el tipo de documento por los encabezados
+        if (count($rows) > 0) {
+            $primeraFila = $rows[0];
+            $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
         }
+
+
+
+        // Agrupar filas por cliente y fecha
+        $ventasAgrupadas = [];
+
+        foreach ($rows as $index => $row) {
+            // Validar datos mínimos requeridos
+            if (!$this->validarFilaRequeridos($row)) {
+                continue;
+            }
+
+            // Crear una clave única para agrupar filas de la misma venta
+            // En este caso, agrupamos por cliente (identificado por nombre/NIT) y fecha
+            $clienteKey = '';
+            if ($this->tipo_documento == 'credito_fiscal') {
+                $clienteKey = ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '');
+            } else {
+                $clienteKey = ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
+            }
+
+            if (!isset($ventasAgrupadas[$clienteKey])) {
+                // Buscar o crear cliente
+                $id_cliente = $this->buscarOCrearCliente($row);
+
+                // Buscar documento adecuado
+                $id_documento = $this->buscarDocumento($this->tipo_documento);
+
+                // Crear nueva entrada para esta venta
+                $ventasAgrupadas[$clienteKey] = [
+                    'cabecera' => $this->obtenerDatosCabecera($row, $id_cliente, $id_documento),
+                    'detalles' => []
+                ];
+            }
+
+            $ventasAgrupadas[$clienteKey]['detalles'][] = $this->obtenerDatosDetalle($row);
+        }
+
+        // Procesar cada venta agrupada
+        foreach ($ventasAgrupadas as $clienteKey => $datos) {
+            if ($this->procesarVenta($datos['cabecera'], $datos['detalles'])) {
+                $this->contador++;
+            }
+        }
+
+        // Si hay errores, hacer rollback
+        // if (count($this->errores) > 0) {
+        //     DB::rollback();
+        //     throw new \Exception(implode("\n", $this->errores));
+        // }
+
+        DB::commit();
+        return $this->contador;
+        // } catch (\Exception $e) {
+        //     DB::rollback();
+        //     throw $e;
+        // }
     }
 
     /**
@@ -268,16 +267,20 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     }
 
 
+
+
     protected function obtenerDatosCabecera($fila, $id_cliente, $id_documento)
     {
         $canal = Canal::where('id_empresa', Auth::user()->id_empresa)->first();
 
+        $fecha = $this->convertirFechaExcel($fila['fecha']);
+
         $cabecera = [
-            'fecha' => $this->formatearFecha($fila['fecha']),
+            'fecha' => $fecha,
             'estado' => 'Pagada',
             'forma_pago' => $fila['forma_pago'] ?? 'Tarjeta de crédito/débito',
             'condicion' => $fila['condicion'] ?? 'Contado',
-            'credito' => (($fila['condicion'] ?? 'Contado') == 'Crédito') ? 1 : 0,
+            'credito' => (strtolower($fila['condicion'] ?? 'Contado') == 'crédito' || strtolower($fila['condicion'] ?? 'Contado') == 'credito') ? 1 : 0,
             'id_cliente' => $id_cliente,
             'id_documento' => $id_documento,
             'id_canal' => $canal->id,
@@ -300,30 +303,59 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             'cobrar_impuestos' => isset($fila['iva']) && $fila['iva'] > 0 ? 1 : 0,
         ];
 
-
+        // Procesar fecha de pago
         if (isset($fila['fecha_pago']) && !empty($fila['fecha_pago'])) {
-            $cabecera['fecha_pago'] = $this->formatearFecha($fila['fecha_pago']);
+            $cabecera['fecha_pago'] = $this->convertirFechaExcel($fila['fecha_pago']);
         } else if ($cabecera['credito']) {
-
-            $cabecera['fecha_pago'] = Carbon::parse($cabecera['fecha'])->addMonth()->format('Y-m-d');
+            $cabecera['fecha_pago'] = Carbon::parse($fecha)->addMonth()->format('Y-m-d');
         }
 
-
-        // $documento = Documento::find($id_documento);
-        // if ($documento) {
-        //     $cabecera['correlativo'] = $documento->correlativo;
-        // }
-
+        // Manejo de correlativo (este bloque ya lo tienes correcto)
         $documento = Documento::find($id_documento);
         if ($documento) {
-
             $ultimoCorrelativo = Venta::where('id_documento', $id_documento)
                 ->max('correlativo');
-
             $cabecera['correlativo'] = $ultimoCorrelativo ? $ultimoCorrelativo + 1 : $documento->correlativo;
         }
 
         return $cabecera;
+    }
+
+
+    protected function convertirFechaExcel($fecha)
+    {
+        // Si es un número (Excel almacena fechas como números), convertirlo
+        if (is_numeric($fecha)) {
+            // Excel almacena fechas como días desde el 1/1/1900 (o 1/1/1904 en Mac)
+            // PHP puede convertir esto usando DateTime
+            try {
+
+                $dateTime = Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fecha));
+                return $dateTime->format('Y-m-d');
+            } catch (\Exception $e) {
+                // Si falla, intentar parsear directamente
+                return date('Y-m-d');
+            }
+        }
+
+        // Si es una cadena con formato dd/mm/yyyy
+        if (is_string($fecha) && preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $fecha, $matches)) {
+            return "{$matches[3]}-{$matches[2]}-{$matches[1]}"; // Convertir a Y-m-d
+        }
+
+        // Intentar con Carbon para otros formatos
+        try {
+            return Carbon::parse($fecha)->format('Y-m-d');
+        } catch (\Exception $e) {
+            // Si todo falla, devolver la fecha actual
+            return date('Y-m-d');
+        }
+    }
+
+
+    protected function formatearFecha($fecha)
+    {
+        return $this->convertirFechaExcel($fecha);
     }
 
     /**
@@ -387,15 +419,17 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function buscarOCrearProducto($fila)
     {
-        Log::info('Buscando producto: ' . $fila['descripcion']);
+        // Log::info('Buscando producto: ' . $fila['descripcion']);
         //imprimir todo el array
-        Log::info($fila);
+        // Log::info($fila);
         $producto = Producto::where('nombre', $fila['descripcion'])
             ->orWhere('descripcion', 'like', '%' . $fila['descripcion'] . '%')
             ->first();
 
         if ($producto) {
             return $producto->id;
+        }else{
+            return 0;
         }
 
         //crear categoria
@@ -426,101 +460,99 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
      */
     protected function procesarVenta($cabecera, $detalles)
     {
-        try {
-            // Verificar si ya existe esta venta
-            // if (isset($cabecera['correlativo'])) {
-            //     $existe = Venta::where('correlativo', $cabecera['correlativo'])
-            //         ->where('id_sucursal', $cabecera['id_sucursal'])
-            //         ->where('id_documento', $cabecera['id_documento'])
-            //         ->exists();
+        // try {
+        // Verificar si ya existe esta venta
+        // if (isset($cabecera['correlativo'])) {
+        //     $existe = Venta::where('correlativo', $cabecera['correlativo'])
+        //         ->where('id_sucursal', $cabecera['id_sucursal'])
+        //         ->where('id_documento', $cabecera['id_documento'])
+        //         ->exists();
 
-            //     if ($existe) {
-            //         $this->errores[] = "Error: Ya existe una venta con el correlativo {$cabecera['correlativo']} en la sucursal y documento seleccionados.";
-            //         return false;
-            //     }
-            // }
+        //     if ($existe) {
+        //         $this->errores[] = "Error: Ya existe una venta con el correlativo {$cabecera['correlativo']} en la sucursal y documento seleccionados.";
+        //         return false;
+        //     }
+        // }
 
-            if (isset($cabecera['correlativo'])) {
-                $correlativoOriginal = $cabecera['correlativo'];
-                $correlativoNuevo = $correlativoOriginal;
-                $contador = 0;
+        if (isset($cabecera['correlativo'])) {
+            $correlativoOriginal = $cabecera['correlativo'];
+            $correlativoNuevo = $correlativoOriginal;
+            $contador = 0;
 
-                // Intentar hasta 10 veces encontrar un correlativo único
-                while ($contador < 10) {
-                    $existe = Venta::where('correlativo', $correlativoNuevo)
-                        ->where('id_sucursal', $cabecera['id_sucursal'])
-                        ->where('id_documento', $cabecera['id_documento'])
-                        ->exists();
+            // Intentar hasta 10 veces encontrar un correlativo único
+            while ($contador < 10) {
+                $existe = Venta::where('correlativo', $correlativoNuevo)
+                    ->where('id_sucursal', $cabecera['id_sucursal'])
+                    ->where('id_documento', $cabecera['id_documento'])
+                    ->exists();
 
-                    if (!$existe) {
-                        // ¡Encontramos un correlativo único!
-                        $cabecera['correlativo'] = $correlativoNuevo;
-                        break;
-                    }
-
-                    // Incrementar el correlativo y seguir intentando
-                    $correlativoNuevo++;
-                    $contador++;
+                if (!$existe) {
+                    // ¡Encontramos un correlativo único!
+                    $cabecera['correlativo'] = $correlativoNuevo;
+                    break;
                 }
 
-                // Si después de 10 intentos seguimos sin éxito, generar uno completamente nuevo
-                if ($contador >= 10) {
-                    // Obtener el máximo correlativo y sumar uno
-                    $maxCorrelativo = Venta::where('id_documento', $cabecera['id_documento'])
-                        ->where('id_sucursal', $cabecera['id_sucursal'])
-                        ->max('correlativo');
-
-                    $cabecera['correlativo'] = $maxCorrelativo ? $maxCorrelativo + 1 : 1;
-                }
+                // Incrementar el correlativo y seguir intentando
+                $correlativoNuevo++;
+                $contador++;
             }
 
-            // Crear la venta
-            $venta = new Venta();
-            $venta->fill($cabecera);
-            $venta->save();
+            // Si después de 10 intentos seguimos sin éxito, generar uno completamente nuevo
+            if ($contador >= 10) {
+                // Obtener el máximo correlativo y sumar uno
+                $maxCorrelativo = Venta::where('id_documento', $cabecera['id_documento'])
+                    ->where('id_sucursal', $cabecera['id_sucursal'])
+                    ->max('correlativo');
 
-            // Crear los detalles
-            foreach ($detalles as $detalle_data) {
-                // Si no hay ID de producto, continuar con el siguiente
-                if (empty($detalle_data['id_producto'])) {
-                    continue;
-                }
-
-                $detalle = new Detalle();
-                $detalle_data['id_venta'] = $venta->id;
-
-                // Obtener costo del producto
-                $producto = Producto::find($detalle_data['id_producto']);
-                if ($producto) {
-                    $detalle_data['costo'] = $producto->costo;
-                    $detalle_data['total_costo'] = $detalle_data['costo'] * $detalle_data['cantidad'];
-                }
-
-                $detalle->fill($detalle_data);
-                $detalle->save();
-
-                // Actualizar inventario si no es cotización
-                if ($venta->cotizacion == 0) {
-                    $this->actualizarInventario($venta, $detalle);
-                }
+                $cabecera['correlativo'] = $maxCorrelativo ? $maxCorrelativo + 1 : 1;
             }
-
-            // Incrementar el correlativo del documento
-            $documento = Documento::find($venta->id_documento);
-            if ($documento) {
-                $documento->increment('correlativo');
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            $this->errores[] = "Error al procesar venta: " . $e->getMessage();
-            return false;
         }
+
+        // Crear la venta
+        $venta = new Venta();
+        $venta->fill($cabecera);
+        $venta->save();
+
+        // Crear los detalles
+        foreach ($detalles as $detalle_data) {
+            // Si no hay ID de producto, continuar con el siguiente
+            if (empty($detalle_data['id_producto'])) {
+                continue;
+            }
+
+            $detalle = new Detalle();
+            $detalle_data['id_venta'] = $venta->id;
+
+            // Obtener costo del producto
+            $producto = Producto::find($detalle_data['id_producto']);
+            if ($producto) {
+                $detalle_data['costo'] = $producto->costo;
+                $detalle_data['total_costo'] = $detalle_data['costo'] * $detalle_data['cantidad'];
+            }
+
+            $detalle->fill($detalle_data);
+            $detalle->save();
+
+            // Actualizar inventario si no es cotización
+            if ($venta->cotizacion == 0) {
+                $this->actualizarInventario($venta, $detalle);
+            }
+        }
+
+        // Incrementar el correlativo del documento
+        $documento = Documento::find($venta->id_documento);
+        if ($documento) {
+            $documento->increment('correlativo');
+        }
+
+        return true;
+        // } catch (\Exception $e) {
+        //     $this->errores[] = "Error al procesar venta: " . $e->getMessage();
+        //     return false;
+        // }
     }
 
-    /**
-     * Actualizar el inventario para un detalle de venta
-     */
+
     protected function actualizarInventario($venta, $detalle)
     {
         //solamente su es producto si es servicio no se actualiza
@@ -537,26 +569,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
         }
     }
 
-    /**
-     * Formatear una fecha del Excel a formato Y-m-d
-     */
-    protected function formatearFecha($fecha)
-    {
-        if (empty($fecha)) {
-            //dia mes año
-            return date('d-m-Y');
-        }
 
-        try {
-            return Carbon::parse($fecha)->format('d-m-Y');
-        } catch (\Exception $e) {
-            return date('d-m-Y');
-        }
-    }
-
-    /**
-     * Obtener contador de ventas procesadas
-     */
     public function getContador()
     {
         return $this->contador;
