@@ -86,7 +86,7 @@ export class ImportarExcelComponent implements OnInit {
                                     'Estos productos deben ser creados en el sistema: ' + 
                                     data.productos_faltantes.join(", ")
                                 );
-                            }, 1000);
+                            }, 4000);
                         }
                     } else if (typeof data === 'number') {
                        
@@ -105,7 +105,7 @@ export class ImportarExcelComponent implements OnInit {
                     this.modalRef.hide();
                     this.loadAll.emit();
                     this.alertService.modal = false;
-                }, 7000); 
+                }, 10000); 
             }, 
             error => {
                 this.loading = false;
