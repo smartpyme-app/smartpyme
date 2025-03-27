@@ -59,13 +59,6 @@ class GenerarPlantillasCommand extends Command
         
       
         $ejemplos = [
-            [
-                'Empresa ABC', 'Corporación ABC S.A. de C.V.', '0614-010190-101-0', '12345-6', '12345',
-                '1', '1', '1a Calle Poniente #123, Colonia Centro', '2222-3333',
-                'info@empresa-abc.com', '2025-03-25', 'Servicio de mantenimiento', 'Servicio', 'Tarjeta de crédito/débito',
-                '0', '0', '100.00', '100.00', '13.00',
-                '0', '113.00', 'Contado', '2025-03-25'
-            ]
         ];
         
         $this->escribirEjemplos($sheet, $ejemplos, 2);
@@ -101,12 +94,7 @@ class GenerarPlantillasCommand extends Command
         
        
         $ejemplos = [
-            [
-                'Juan Pérez', 'DUI', '01234567-8', '1', '1',
-                'Residencial Las Flores, Casa #10', '7777-8888', 'juan.perez@email.com', '2025-03-25', 'Reparación de laptop',
-                'Servicio', 'Tarjeta de crédito/débito', '0', '50.00', '50.00',
-                '6.50', '0', '56.50', 'Contado', '2025-03-25'
-            ],
+
         ];
         
         $this->escribirEjemplos($sheet, $ejemplos, 2);
@@ -183,7 +171,7 @@ class GenerarPlantillasCommand extends Command
             $this->agregarListaDesplegable(
                 $sheet, 
                 $columna . '2:' . $columna . ($numFilas + 1), 
-                '"Producto,Servicio"'
+                '"Servicio"'
             );
         }
         
@@ -193,7 +181,7 @@ class GenerarPlantillasCommand extends Command
             $this->agregarListaDesplegable(
                 $sheet, 
                 $columna . '2:' . $columna . ($numFilas + 1), 
-                '"Efectivo,Tarjeta de crédito/débito,Cheque,Transferencia,CARGO AUTOMATICO"'
+                '"Tarjeta de crédito/débito"'
             );
         }
         
