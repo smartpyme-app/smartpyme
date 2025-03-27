@@ -209,14 +209,16 @@ class PaquetesController extends Controller
         return Response()->json($clientes, 200);
 
     }
-    public function listGuia()
+
+        public function listGuia()
     {
 
-        $paquetes = Paquete::orderBy('num_guia', 'asc')
-            ->where('id_sucursal', Auth::user()->id_sucursal)
-            ->where('id_empresa', Auth::user()->id_empresa)
-            ->distinct('num_guia')
-            ->get();
+        $paquetes = Paquete::select('num_guia')
+        ->where('id_sucursal', Auth::user()->id_sucursal)
+        ->where('id_empresa', Auth::user()->id_empresa)
+        ->distinct()
+        ->orderBy('num_guia', 'asc')
+        ->get();
 
         return Response()->json($paquetes, 200);
     }
