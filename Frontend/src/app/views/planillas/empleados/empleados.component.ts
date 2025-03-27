@@ -1,4 +1,3 @@
-// empleados.component.ts
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
@@ -169,6 +168,10 @@ export class EmpleadosComponent implements OnInit {
 
   public openModalDarBaja(template: TemplateRef<any>, empleado: any) {
     this.empleado = { ...empleado };
+    // Establecer la fecha de notificación por defecto como hoy
+    this.empleado.fecha_fin = new Date().toISOString().split('T')[0];
+    // La fecha efectiva de baja puede ser igual a la fecha de notificación inicialmente
+    this.empleado.fecha_baja = this.empleado.fecha_fin;
     this.modalRef = this.modalService.show(template);
   }
 
@@ -192,6 +195,7 @@ export class EmpleadosComponent implements OnInit {
 
   public darBaja() {
     if (
+      !this.empleado.fecha_fin ||
       !this.empleado.fecha_baja ||
       !this.empleado.tipo_baja ||
       !this.empleado.motivo
@@ -199,13 +203,30 @@ export class EmpleadosComponent implements OnInit {
       this.alertService.error('Por favor complete todos los campos requeridos');
       return;
     }
-
-    // Validar fecha de baja
-    const fechaBaja = new Date(this.empleado.fecha_baja);
+  
+    // Validar fecha de notificación
+    const fechaNotificacion = new Date(this.empleado.fecha_fin);
     const fechaIngreso = new Date(this.empleado.fecha_ingreso);
-    if (fechaBaja < fechaIngreso) {
+    if (fechaNotificacion < fechaIngreso) {
       this.alertService.error(
-        'La fecha de baja no puede ser anterior a la fecha de ingreso'
+        'La fecha de notificación no puede ser anterior a la fecha de ingreso'
+      );
+      return;
+    }
+  
+    // Validar fecha efectiva de baja
+    const fechaEfectiva = new Date(this.empleado.fecha_baja);
+    if (fechaEfectiva < fechaIngreso) {
+      this.alertService.error(
+        'La fecha efectiva de baja no puede ser anterior a la fecha de ingreso'
+      );
+      return;
+    }
+  
+    // Validar que la fecha efectiva no sea anterior a la notificación
+    if (fechaEfectiva < fechaNotificacion) {
+      this.alertService.error(
+        'La fecha efectiva de baja no puede ser anterior a la fecha de notificación'
       );
       return;
     }
@@ -214,6 +235,7 @@ export class EmpleadosComponent implements OnInit {
 
     const formData = new FormData();
     formData.append('fecha_baja', this.empleado.fecha_baja);
+    formData.append('fecha_fin', this.empleado.fecha_fin);
     formData.append('tipo_baja', this.empleado.tipo_baja);
     formData.append('motivo', this.empleado.motivo);
 

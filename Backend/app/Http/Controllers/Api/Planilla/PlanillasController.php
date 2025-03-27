@@ -185,6 +185,9 @@ class PlanillasController extends Controller
 
             $planilla->save();
 
+            $empleadosIncluidos = 0;
+            $empleadosOmitidos = 0;
+
             if ($request->planillaTemplate) {
                 $templatePlanilla = Planilla::with(['detalles' => function ($query) {
                     $query->with(['empleado' => function ($q) {
@@ -199,7 +202,15 @@ class PlanillasController extends Controller
                             $planilla->id,
                             $request->tipo_planilla
                         );
-                        $detalle->save();
+                        
+                        // Solo guardar si el detalle no es null
+                        if ($detalle) {
+                            $detalle->save();
+                            $empleadosIncluidos++;
+                        } else {
+                            $empleadosOmitidos++;
+                            Log::info("Empleado ID: {$detalleTemplate->empleado->id} omitido de la planilla por tener fecha de baja/fin");
+                        }
                     }
                 }
             } else {
@@ -210,8 +221,24 @@ class PlanillasController extends Controller
 
                 foreach ($empleados as $empleado) {
                     $detalle = $this->crearDetallePlanilla($empleado, $planilla->id, $request->tipo_planilla);
-                    $detalle->save();
+                    
+                    // Solo guardar si el detalle no es null
+                    if ($detalle) {
+                        $detalle->save();
+                        $empleadosIncluidos++;
+                    } else {
+                        $empleadosOmitidos++;
+                        Log::info("Empleado ID: {$empleado->id} omitido de la planilla por tener fecha de baja/fin");
+                    }
                 }
+            }
+
+            // Verificar si se incluyó al menos un empleado
+            if ($empleadosIncluidos === 0) {
+                DB::rollback();
+                return response()->json([
+                    'error' => 'No se pudo generar la planilla porque no hay empleados activos para el período indicado'
+                ], 422);
             }
 
             // Usar el método del modelo para actualizar totales
@@ -226,14 +253,20 @@ class PlanillasController extends Controller
                 'total_salarios' => $planilla->total_salarios,
                 'total_deducciones' => $planilla->total_deducciones,
                 'total_neto' => $planilla->total_neto,
-                'total_aportes_patronales' => $planilla->total_aportes_patronales
+                'total_aportes_patronales' => $planilla->total_aportes_patronales,
+                'empleados_incluidos' => $empleadosIncluidos,
+                'empleados_omitidos' => $empleadosOmitidos
             ]);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Planilla generada exitosamente',
-                'planilla' => $planilla
+                'planilla' => $planilla,
+                'estadisticas' => [
+                    'empleados_incluidos' => $empleadosIncluidos,
+                    'empleados_omitidos' => $empleadosOmitidos
+                ]
             ]);
         } catch (\Exception $e) {
             DB::rollback();
@@ -360,7 +393,7 @@ class PlanillasController extends Controller
         // Determinar días de referencia según tipo de planilla
         $diasReferencia = 30; // Por defecto, mensual
         $factorAjuste = 1;
-
+    
         if ($tipoPlanilla === 'quincenal') {
             $diasReferencia = 15;
             $factorAjuste = 2; // 2 quincenas por mes
@@ -368,50 +401,90 @@ class PlanillasController extends Controller
             $diasReferencia = 7;
             $factorAjuste = 4.33; // ~4.33 semanas por mes (promedio)
         }
-
-        // Calcular días laborados según tipo de planilla
+        
+        // Obtener las fechas de la planilla
+        $planilla = Planilla::findOrFail($planillaId);
+        $fechaInicioPlanilla = Carbon::parse($planilla->fecha_inicio)->startOfDay();
+        $fechaFinPlanilla = Carbon::parse($planilla->fecha_fin)->startOfDay();
+        
+        // Verificar si el empleado tiene fecha de baja o fin programada
+        $tieneBajaProgramada = false;
+        $diasProporcionales = $diasReferencia;
+        
+        // Si la baja es anterior al inicio de la planilla, no incluir en la planilla
+        if (($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay() < $fechaInicioPlanilla) ||
+            ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)) {
+            // Verificar si debería estar inactivo pero no lo está
+            if ($empleado->estado == PlanillaConstants::ESTADO_EMPLEADO_ACTIVO) {
+                // Log warning - empleado debería estar inactivo
+                Log::warning("Empleado {$empleado->id} ({$empleado->nombres} {$empleado->apellidos}) tiene fecha de baja/fin pasada pero sigue activo");
+            }
+            
+            // En este caso, no incluir en la planilla
+            return null;
+        }
+        
+        // Calcular días proporcionales si hay baja programada dentro del período
+        if ($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
+            $tieneBajaProgramada = true;
+            $diasProporcionales = Carbon::parse($empleado->fecha_baja)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
+        } elseif ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
+            $tieneBajaProgramada = true;
+            $diasProporcionales = Carbon::parse($empleado->fecha_fin)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
+        }
+        
+        // Calcular días laborados
         $diasLaborados = $diasReferencia; // Por defecto, todos los días del período
-
+        
+        // Ajustar días laborados si hay baja programada
+        if ($tieneBajaProgramada) {
+            // Asegurarse de que los días proporcionales no excedan los días de referencia
+            $diasLaborados = min($diasProporcionales, $diasReferencia);
+            
+            // Logging para depuración
+            Log::info("Empleado {$empleado->id} con baja programada: días proporcionales = {$diasLaborados} de {$diasReferencia}");
+        }
+    
         // Obtener salario base mensual
         $salarioBaseMensual = $empleado->salario_base;
-
+    
         // Ajustar el salario base según el tipo de planilla
         $salarioBaseAjustado = $salarioBaseMensual;
         if ($tipoPlanilla !== 'mensual') {
             // Si no es mensual, ajustar según el factor correspondiente
             $salarioBaseAjustado = $salarioBaseMensual / $factorAjuste;
         }
-
+    
         // Calcular salario devengado según días laborados
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
-
+    
         // Calcular ISSS y AFP
         $descuentosLey = $this->calcularISSSyAFP($salarioDevengado);
-
+    
         // Calcular Renta - se debe ajustar para planilla no mensual
         $baseRenta = $salarioDevengado - $descuentosLey['isss_empleado'] - $descuentosLey['afp_empleado'];
-
+    
         // Para planillas no mensuales, ajustar la base para el cálculo de renta
         $baseRentaAnualizada = $baseRenta;
         if ($tipoPlanilla !== 'mensual') {
             // Multiplicamos por el factor para obtener el valor mensual equivalente
             $baseRentaAnualizada = $baseRenta * $factorAjuste;
         }
-
+    
         $renta = $this->calcularRentaAjustada($baseRentaAnualizada, $tipoPlanilla, $factorAjuste);
-
+    
         // Calcular total de deducciones
         $totalDeducciones =
             $descuentosLey['isss_empleado'] +
             $descuentosLey['afp_empleado'] +
             $renta;
-
+    
         // Calcular total de ingresos (por ahora solo salario devengado)
         $totalIngresos = $salarioDevengado;
-
+    
         // Calcular sueldo neto
         $sueldoNeto = $totalIngresos - $totalDeducciones;
-
+    
         return new PlanillaDetalle([
             'id_planilla' => $planillaId,
             'id_empleado' => $empleado->id,
