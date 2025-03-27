@@ -71,6 +71,16 @@ class BodegasController extends Controller
         $bodega->save();
 
         // Configurar inventarios para los productos
+        // if (!$request->id) {
+        //     $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
+        //     foreach ($productos as $producto) {
+        //         $inventario = new Inventario;
+        //         $inventario->id_bodega    = $bodega->id;
+        //         $inventario->stock          = 0;
+        //         $inventario->id_producto    = $producto->id;
+        //         $inventario->save();
+        //     }
+        // }
         if (!$request->id) {
             $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
             foreach ($productos as $producto) {
@@ -79,6 +89,37 @@ class BodegasController extends Controller
                 $inventario->stock          = 0;
                 $inventario->id_producto    = $producto->id;
                 $inventario->save();
+
+            $productoIds = DB::table('productos')
+                ->whereIn('tipo', ['Producto', 'Compuesto'])
+                ->where('id_empresa', $request->id_empresa) 
+                ->pluck('id')
+                ->toArray();
+            $batchSize = 500;
+            $batches = array_chunk($productoIds, $batchSize);
+
+            foreach ($batches as $batch) {
+                $values = [];
+                $placeholders = [];
+                $now = now()->format('Y-m-d H:i:s');
+
+                foreach ($batch as $productoId) {
+                    $placeholders[] = "(?, ?, ?, ?, ?)";
+                    $values[] = $bodega->id;
+                    $values[] = 0; // stock
+                    $values[] = $productoId;
+                    $values[] = $now; // created_at
+                    $values[] = $now; // updated_at
+                }
+
+                if (!empty($placeholders)) {
+                    $placeholdersString = implode(', ', $placeholders);
+                    DB::statement(
+                        "INSERT INTO inventario (id_bodega, stock, id_producto, created_at, updated_at) VALUES " .
+                            $placeholdersString,
+                        $values
+                    );
+                }
             }
         }
 
