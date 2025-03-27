@@ -116,7 +116,7 @@
       <thead>
         <tr>
           <th>Empleado</th>
-          <th>Estado</th>
+          <!-- <th>Estado</th> -->
           <th class="text-end">Salario Base</th>
           <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
             S. Quincenal
@@ -141,13 +141,13 @@
             <br />
             <small class="text-muted">{{ detalle.empleado?.codigo }}</small>
           </td>
-          <td>
+          <!-- <td>
             <span
               class="badge {{ getEstadoDetalle(detalle.estado).className }}"
             >
               {{ getEstadoDetalle(detalle.estado).nombre }}
             </span>
-          </td>
+          </td> -->
           <td class="text-end">
             ${{ detalle.salario_base | number : "1.2-2" }}
           </td>
