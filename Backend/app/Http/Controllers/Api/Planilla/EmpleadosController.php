@@ -193,7 +193,8 @@ class EmpleadosController extends Controller
     public function darBaja(Request $request, $id)
     {
         $request->validate([
-            'fecha_baja' => 'required|date',
+            'fecha_fin' => 'required|date',     // Fecha de notificación
+            'fecha_baja' => 'required|date',    // Fecha efectiva de baja
             'tipo_baja' => 'required|in:Renuncia,Despido,Terminación de contrato',
             'motivo' => 'required|string',
             'documento_respaldo' => 'nullable|file|mimes:pdf,doc,docx|max:2048' // 2MB max
@@ -204,10 +205,22 @@ class EmpleadosController extends Controller
 
             $empleado = Empleado::findOrFail($id);
 
-            // Validar que la fecha de baja no sea anterior a la fecha de ingreso
+            // Validar que la fecha de notificación no sea anterior a la fecha de ingreso
+            if (Carbon::parse($request->fecha_fin)->lt(Carbon::parse($empleado->fecha_ingreso))) {
+                Log::info('La fecha de notificación no puede ser anterior a la fecha de ingreso');
+                return response()->json(['error' => 'La fecha de notificación no puede ser anterior a la fecha de ingreso'], 422);
+            }
+
+            // Validar que la fecha efectiva de baja no sea anterior a la fecha de ingreso
             if (Carbon::parse($request->fecha_baja)->lt(Carbon::parse($empleado->fecha_ingreso))) {
-                Log::info('La fecha de baja no puede ser anterior a la fecha de ingreso');
-                return response()->json(['error' => 'La fecha de baja no puede ser anterior a la fecha de ingreso'], 422);
+                Log::info('La fecha efectiva de baja no puede ser anterior a la fecha de ingreso');
+                return response()->json(['error' => 'La fecha efectiva de baja no puede ser anterior a la fecha de ingreso'], 422);
+            }
+
+            // Validar que la fecha efectiva no sea anterior a la notificación
+            if (Carbon::parse($request->fecha_baja)->lt(Carbon::parse($request->fecha_fin))) {
+                Log::info('La fecha efectiva de baja no puede ser anterior a la fecha de notificación');
+                return response()->json(['error' => 'La fecha efectiva de baja no puede ser anterior a la fecha de notificación'], 422);
             }
 
             // Manejar el archivo si existe
@@ -248,20 +261,21 @@ class EmpleadosController extends Controller
                     'tipo_documento' => $tipoDocumento,
                     'nombre_archivo' => $resultado['nombre'],
                     'ruta_archivo' => $resultado['ruta'],
-                    'fecha_documento' => $request->fecha_baja,
+                    'fecha_documento' => $request->fecha_fin, // Usar fecha de notificación para el documento
                     'estado' => PlanillaConstants::ESTADO_ACTIVO
                 ]);
             }
 
             // Actualizar empleado
-            $empleado->fecha_baja = $request->fecha_baja; // Guardar fecha de baja
+            $empleado->fecha_fin = $request->fecha_fin;     // Fecha de notificación
+            $empleado->fecha_baja = $request->fecha_baja;   // Fecha efectiva
 
             // Decidir si cambiar el estado ahora o dejarlo para la fecha de baja
             $fechaActual = Carbon::now()->startOfDay();
             $fechaBaja = Carbon::parse($request->fecha_baja)->startOfDay();
 
             if ($fechaBaja->lte($fechaActual)) {
-                // Si la fecha de baja es hoy o en el pasado, inactivar inmediatamente
+                // Si la fecha efectiva de baja es hoy o en el pasado, inactivar inmediatamente
                 $empleado->estado = PlanillaConstants::ESTADO_EMPLEADO_INACTIVO;
             }
             // Si la fecha es futura, mantener estado actual (se actualizará mediante un job)
@@ -284,7 +298,7 @@ class EmpleadosController extends Controller
                 ->first();
 
             if ($contratoActual) {
-                $contratoActual->fecha_fin = $request->fecha_baja;
+                $contratoActual->fecha_fin = $request->fecha_baja; // La fecha fin del contrato debe ser la fecha efectiva
                 $contratoActual->save();
             }
 

@@ -30,7 +30,7 @@ export class AlertService {
 
     error(message: any) {
         console.log(message);
-
+    
         if(message.status == 0) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
         }
@@ -48,11 +48,22 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message.error.error});
         }
         else if(message.status == 422) {
-            let alerts='';
-            for (var i = 0; i < message.error.error.length; ++i) {
-                alerts += '- ' + message.error.error[i] + '<br>';
+            // Verificar si el error es un array o una cadena
+            if(message.error && message.error.error) {
+                if(Array.isArray(message.error.error)) {
+                    let alerts='';
+                    for (var i = 0; i < message.error.error.length; ++i) {
+                        alerts += '- ' + message.error.error[i] + '<br>';
+                    }
+                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
+                } else {
+                    // Si es una cadena, mostrarla directamente
+                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : message.error.error});
+                }
+            } else {
+                // Fallback por si la estructura es diferente
+                this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : 'Ocurrió un error de validación'});
             }
-            this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
         }
         else if(message.status == 500) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
@@ -60,7 +71,6 @@ export class AlertService {
         else {
             this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : message});
         }
-        
     }
 
 }
