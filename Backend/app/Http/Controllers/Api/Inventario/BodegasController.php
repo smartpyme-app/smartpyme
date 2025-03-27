@@ -125,8 +125,8 @@ class BodegasController extends Controller
                 }
             }
 
-            return Response()->json($bodega, 200);
         }
+        return Response()->json($bodega, 200);
     }
 
     public function delete($id)
