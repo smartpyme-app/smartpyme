@@ -14,6 +14,12 @@ export class MHService {
     public url_consultadte: string = 'fesv/recepcion/consultadte';
     public url_anular_dte: string = '/fesv/anulardte';
     public url_contingencia: string = '/fesv/contingencia';
+    
+    public url_pruebas_estadisticas: string = 'mh/pruebas-masivas/estadisticas';
+    public url_pruebas_documentos: string = 'mh/pruebas-masivas/documentos-base';
+    public url_pruebas_ejecutar: string = 'mh/pruebas-masivas/ejecutar';
+    public url_pruebas_limpiar: string = 'mh/pruebas-masivas/limpiar';
+
 
     constructor(private http: HttpClient, private alertService: AlertService, private apiService: ApiService) { }
     
@@ -347,5 +353,22 @@ export class MHService {
         });
     }
 
+    obtenerEstadisticasPruebasMasivas(): Observable<any> {
+        return this.apiService.getAll(this.url_pruebas_estadisticas);
+    }
 
+    obtenerDocumentosBase(): Observable<any> {
+        return this.apiService.getAll(this.url_pruebas_documentos);
+    }
+
+    ejecutarPruebasMasivas(tipo: string, cantidad: number, idDocumentoBase?: number): Observable<any> {
+        const datos = {
+            tipo: tipo,
+            cantidad: cantidad,
+            id_documento_base: idDocumentoBase
+        };
+        
+        return this.apiService.store(this.url_pruebas_ejecutar, datos);
+    }
+    
 }
