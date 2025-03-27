@@ -252,15 +252,15 @@ class GenerarPlantillasCommand extends Command
         
        
         $filas[] = ['A17', '3. CÓDIGOS DE DEPARTAMENTOS Y MUNICIPIOS:'];
-        $filas[] = ['A18', '- Los códigos de departamento deben corresponder a los registrados en el sistema (ej. 01 para San Salvador).'];
-        $filas[] = ['A19', '- Los códigos de municipio deben corresponder a los registrados en el sistema (ej. 0101 para San Salvador).'];
+        $filas[] = ['A18', '- Los códigos de departamento deben corresponder a los registrados en el sistema (ej. 6 para San Salvador).'];
+        $filas[] = ['A19', '- Los códigos de municipio deben corresponder a los registrados en el sistema (ej. 24 para San Salvador).'];
         
         $filas[] = ['A21', '4. TIPOS DE ÍTEM:'];
         $filas[] = ['A22', '- Producto: Para artículos físicos.'];
         $filas[] = ['A23', '- Servicio: Para servicios prestados.'];
         
         $filas[] = ['A25', '5. FORMAS DE PAGO:'];
-        $filas[] = ['A26', '- Efectivo, Tarjeta de crédito/débito, Cheque, Transferencia, CARGO AUTOMATICO.'];
+        $filas[] = ['A26', '- Efectivo, Tarjeta de crédito/débito'];
         
         $filas[] = ['A28', '6. CONDICIÓN:'];
         $filas[] = ['A29', '- Contado: Pago inmediato.'];
