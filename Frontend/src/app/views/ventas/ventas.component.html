@@ -225,13 +225,6 @@
                     <span *ngIf="downloadingDetalles">Descargando...</span>
                 </button>
             </div>
-            <!-- <div class="d-grid mt-4">
-                <p>Descargar los detalles de ventas por producto diario.</p>
-                <button [disabled]="saving" (click)="descargarDetallesDiario()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
-                    <span *ngIf="downloadingDetalles">Descargando...</span>
-                </button>
-            </div> -->
             <div class="d-grid my-4">
                 <p>Descargar los detalles de ventas totales.</p>
                 <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
@@ -239,15 +232,8 @@
                     <span *ngIf="downloadingVentas">Descargando...</span>
                 </button>
             </div>
-            <!-- <div class="d-grid my-4">
-                <p>Descarga Acumulado por Producto.</p>
-                <button [disabled]="saving" (click)="descargarAcumulado()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingVentas">Descargar Acumulado</span>
-                    <span *ngIf="downloadingVentas">Descargando...</span>
-                </button>
-            </div> -->
-            <div class="d-grid my-4">
-                <p>Descarga Acumulado por Producto.</p>
+            <div class="d-grid mb-4">
+                <p>Descarga acumulado por producto.</p>
                 <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)" class="btn btn-primary btn-block">
                   Descargar Acumulado
                 </button>
@@ -351,7 +337,7 @@
                 Ver PDF
             </button>
 
-            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE(venta)" class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!sending">Enviar por correo</span>
                 <span *ngIf="sending">Enviando...</span>
             </button>
@@ -527,7 +513,7 @@
             <!-- Sucursales -->
             <div class="form-group col-12 mt-3">
               <label>Sucursales:</label>
-              <ng-select [multiple]="true"
+              <ng-select [multiple]="true" class="form-select p-0"
                         [items]="sucursales"
                         [(ngModel)]="filtrosAcumulado.sucursales"
                         bindLabel="nombre"
@@ -540,7 +526,7 @@
             <!-- Categorías -->
             <div class="form-group col-12 mt-3">
               <label>Categorías:</label>
-              <ng-select [multiple]="true"
+              <ng-select [multiple]="true" class="form-select p-0"
                         [items]="categorias"
                         [(ngModel)]="filtrosAcumulado.categorias"
                         bindLabel="nombre"
@@ -553,7 +539,7 @@
             <!-- Marcas -->
             <div class="form-group col-12 mt-3">
               <label>Marcas:</label>
-              <ng-select [multiple]="true"
+              <ng-select [multiple]="true" class="form-select p-0"
                         [items]="marcas"
                         [(ngModel)]="filtrosAcumulado.marcas"
                         bindLabel="nombre"

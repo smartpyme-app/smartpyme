@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   // API_URL: 'http://localhost:8001',
-  API_URL: 'https://apitest.smartpyme.site',
+  API_URL: 'https://api.smartpyme.site',
   APP_URL: 'http://localhost:4200',
 };
 

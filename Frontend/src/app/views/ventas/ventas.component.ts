@@ -522,7 +522,7 @@ export class VentasComponent implements OnInit {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
-            this.enviarDTE();
+            this.enviarDTE(this.venta);
         }).catch((error) => {
             this.saving = false;
             console.log(error);
@@ -534,9 +534,9 @@ export class VentasComponent implements OnInit {
         });
     }
 
-    enviarDTE(){
+    enviarDTE(venta:any){
         this.sending = true;
-        this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
+        this.apiService.store('enviarDTE', venta).subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
@@ -623,7 +623,7 @@ export class VentasComponent implements OnInit {
                     this.apiService.store('venta', this.venta).subscribe(data => {
                         this.alertService.success('Sello recibido', 'El DTE ha sido sellado.');
                         if(this.venta.cliente_id){
-                            this.enviarDTE();
+                            this.enviarDTE(this.venta);
                         }
                         setTimeout(()=>{
                             this.modalRef?.hide();

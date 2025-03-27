@@ -22,26 +22,6 @@ Route::get('/registro/{id}', [AuthJWTController::class, 'pagoFinish'])->name('pa
 Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])->name('suscripcion.ticket');
 
 
-use App\Exports\TrasladosCombosExport;
-use Maatwebsite\Excel\Facades\Excel;
-
-Route::get('/traslados', function(){
-
-    $tralados = new TrasladosCombosExport();
-    // $tralados->filter($request);
-
-    return Excel::download($tralados, 'tralados.xlsx');
-});
-
-use App\Exports\Inventario\InventarioAFechaExport;
-
-Route::get('/inventariostock', function(){
-
-    $inventario = new InventarioAFechaExport();
-    return Excel::download($inventario, 'inventario.xlsx');
-    
-});
-
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
