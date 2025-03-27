@@ -14,7 +14,7 @@
             margin-left: 0cm;
             margin-top: 0cm;
             position: relative;
-            border: 1px solid red;
+/*            border: 1px solid red;*/
         }
 
         #header > *, #totales > *{

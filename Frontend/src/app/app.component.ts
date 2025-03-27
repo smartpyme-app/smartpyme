@@ -31,9 +31,9 @@ export class AppComponent implements OnInit {
 
         if (this.updates.isEnabled) {
             this.updates.available.subscribe(event => {
-                if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
+                // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
                   this.updates.activateUpdate().then(() => document.location.reload());
-                }
+                // }
             });
         }
     }
