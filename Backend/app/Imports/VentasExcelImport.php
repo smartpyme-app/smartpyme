@@ -20,17 +20,58 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\BeforeSheet;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
-class VentasExcelImport implements ToCollection, WithHeadingRow
+class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 {
     protected $tipo_documento;
     protected $contador = 0;
     protected $errores = [];
+    protected $productos_faltantes = [];
+    protected $importar_hoja = true; // Flag para controlar si se importa la hoja actual
+    protected $primera_hoja_procesada = false; // Flag para saber si ya se procesó la primera hoja
+
+    /**
+     * Definir los eventos para el control de hojas
+     */
+    public function registerEvents(): array
+    {
+        return [
+            // Antes de procesar cada hoja, verificar si es la primera
+            BeforeSheet::class => function(BeforeSheet $event) {
+                if ($this->primera_hoja_procesada) {
+                    // Si ya procesamos la primera hoja, ignorar esta
+                    $this->importar_hoja = false;
+                    Log::info('Ignorando hoja: ' . $event->getSheet()->getTitle());
+                } else {
+                    // Esta es la primera hoja, procesarla
+                    $this->importar_hoja = true;
+                    Log::info('Procesando primera hoja: ' . $event->getSheet()->getTitle());
+                }
+            },
+            
+            // Después de procesar cada hoja, marcar que ya procesamos la primera
+            AfterSheet::class => function(AfterSheet $event) {
+                if ($this->importar_hoja) {
+                    $this->primera_hoja_procesada = true;
+                    Log::info('Primera hoja procesada correctamente');
+                }
+            },
+        ];
+    }
 
     public function collection(Collection $rows)
     {
+        // Si no es la primera hoja, simplemente retornar sin procesar
+        if (!$this->importar_hoja) {
+            Log::info('Omitiendo proceso de hoja secundaria');
+            return;
+        }
+
         DB::beginTransaction();
 
         try {
@@ -38,11 +79,14 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             $ventasExitosas = 0;
             $ventasFallidas = 0;
 
-            if (count($rows) > 0) {
-                $primeraFila = $rows[0];
-                $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
-                Log::info("Tipo de documento determinado: " . $this->tipo_documento);
+            // Si no hay filas, lanzar excepción
+            if (count($rows) == 0) {
+                throw new \Exception('El archivo no contiene datos para importar.');
             }
+
+            $primeraFila = $rows[0];
+            $this->tipo_documento = $this->determinarTipoDocumento($primeraFila);
+            Log::info("Tipo de documento determinado: " . $this->tipo_documento);
 
             $ventasAgrupadas = [];
 
@@ -120,7 +164,14 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
 
             DB::commit();
             Log::info("Importación completada: " . $this->contador . " ventas procesadas");
-            return $this->contador;
+            
+            // Devolver información completa para mostrar en frontend
+            return [
+                'message' => $this->contador . ' ventas procesadas correctamente',
+                'ventas_procesadas' => $this->contador,
+                'ventas_fallidas' => $ventasFallidas,
+                'productos_faltantes' => array_unique($this->productos_faltantes)
+            ];
         } catch (\Exception $e) {
             Log::error("Error en importación: " . $e->getMessage());
             Log::error($e->getTraceAsString());
@@ -393,6 +444,9 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
             return $producto->id;
         }
 
+        // Guardar el producto faltante para reportar al usuario
+        $this->productos_faltantes[] = $descripcion;
+        
         Log::warning('Producto no encontrado en el sistema: ' . $descripcion);
         return 0;
     }
@@ -420,6 +474,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow
     public function getErrores()
     {
         return $this->errores;
+    }
+    
+    public function getProductosFaltantes()
+    {
+        return array_unique($this->productos_faltantes);
     }
 
     protected function obtenerDatosDetalle($fila)
