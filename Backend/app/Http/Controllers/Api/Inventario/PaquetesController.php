@@ -11,6 +11,7 @@ use App\Imports\Paquetes;
 use App\Exports\PaquetesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PaquetesController extends Controller
 {
@@ -211,13 +212,18 @@ class PaquetesController extends Controller
     }
     public function listGuia()
     {
+        $query = Paquete::select('num_guia')
+            ->where('id_empresa', Auth::user()->id_empresa);
 
-        $paquetes = Paquete::orderBy('num_guia', 'asc')
-            ->where('id_sucursal', Auth::user()->id_sucursal)
-            ->where('id_empresa', Auth::user()->id_empresa)
-            ->distinct('num_guia')
+        // Si el rol del usuario es "Ventas", entonces filtrar por id_sucursal
+        // if (Auth::user()->tipo == 'Ventas') {
+        //     $query->where('id_sucursal', Auth::user()->id_sucursal);
+        // }
+    
+        $paquetes = $query->distinct()
+            ->orderBy('num_guia', 'asc')
             ->get();
-
+    
         return Response()->json($paquetes, 200);
     }
 
