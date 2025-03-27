@@ -210,16 +210,20 @@ class PaquetesController extends Controller
 
     }
 
-        public function listGuia()
+    public function listGuia()
     {
+        $query = Paquete::select('num_guia')
+            ->where('id_empresa', Auth::user()->id_empresa);
 
-        $paquetes = Paquete::select('num_guia')
-        ->where('id_sucursal', Auth::user()->id_sucursal)
-        ->where('id_empresa', Auth::user()->id_empresa)
-        ->distinct()
-        ->orderBy('num_guia', 'asc')
-        ->get();
-
+        // Si el rol del usuario es "Ventas", entonces filtrar por id_sucursal
+        // if (Auth::user()->tipo == 'Ventas') {
+        //     $query->where('id_sucursal', Auth::user()->id_sucursal);
+        // }
+    
+        $paquetes = $query->distinct()
+            ->orderBy('num_guia', 'asc')
+            ->get();
+    
         return Response()->json($paquetes, 200);
     }
 
