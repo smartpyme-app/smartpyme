@@ -68,6 +68,8 @@
         <div id="header">
             <p id="fecha">{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
             <p id="cliente">{{ $venta->nombre_cliente }}</p>
+            @if ($venta->id_cliente)
+                {{-- expr --}}
             <p id="direccion">{{ $cliente->direccion }} {{ $cliente->municipio }} {{ $cliente->departamento }}</p>
             {{-- <p id="municipio">{{ $cliente->municipio }}</p> --}}
             {{-- <p id="departamento">{{ $cliente->departamento }}</p> --}}
@@ -82,6 +84,7 @@
                 @endif
             </p> --}}
             <p id="nit">{{ $cliente->dui ? $cliente->dui : $cliente->nit }}</p>
+            @endif
         </div>
                     
         <table>

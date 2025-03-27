@@ -11,7 +11,7 @@
         }
 
         #factura{
-            width: 13.6cm; height: 21.4cm;
+            width: 13.6cm; height: 21.2cm;
             margin-left: 0cm;
             margin-top: 0cm;
             position: relative;
@@ -23,12 +23,13 @@
         }
 
         #fecha          {top: 4cm; left: 10cm; }
+
         #cliente        {top: 4.5cm; left: 5.5cm; width: 9cm;}
         #direccion      {top: 5cm; left: 2.5cm; width: 9cm;}
         #nit            {top: 6cm; left: 5.5cm; }
 
 
-        table   {position: absolute; top: 8cm; left: 1cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 8cm; left: 0.5cm; text-align: left; border-collapse: collapse; width: 12cm;}
         table td{height: 0.6cm; text-align: left;}
 
         .cantidad{ width: 1.5cm; text-align: center;}
@@ -37,12 +38,12 @@
         .gravadas{ width: 2cm; text-align: right;}
         
 
-        #letras     {top: 17.2cm; left: 2.5cm; width: 5cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 18cm; left: 1cm; width: 6cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 17.5cm; left: 2cm;; width: 9cm;;}
 
-        #suma       {top: 17.2cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #renta      {top: 18cm; left: 10.8cm; width: 2cm; text-align: right;}
-        #total      {top: 18.8cm; left: 10.8cm; width: 2cm; text-align: right;}
+        #suma       {top: 18cm; left: 10.5cm; width: 2cm; text-align: right;}
+        #renta      {top: 18.7cm; left: 10.5cm; width: 2cm; text-align: right;}
+        #total      {top: 19.4cm; left: 10.5cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 

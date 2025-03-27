@@ -159,7 +159,7 @@
                     <td class="border-bottom">   {{ $detalle['descripcion']  }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 4) }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['montoDescu'] , 2) }}</td>
-                    @if ($detalle['noGravado'])
+                    @if ($DTE['resumen']['totalNoGravado'] > 0)
                         <td class="border-bottom text-right">   ${{ number_format($detalle['noGravado'], 2) }}</th>
                     @endif
                     <td class="border-bottom text-right">   ${{ number_format($detalle['ventaNoSuj'], 2) }}</th>
