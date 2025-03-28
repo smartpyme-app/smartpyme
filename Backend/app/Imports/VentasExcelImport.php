@@ -42,7 +42,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     {
         return [
             // Antes de procesar cada hoja, verificar si es la primera
-            BeforeSheet::class => function(BeforeSheet $event) {
+            BeforeSheet::class => function (BeforeSheet $event) {
                 if ($this->primera_hoja_procesada) {
                     // Si ya procesamos la primera hoja, ignorar esta
                     $this->importar_hoja = false;
@@ -53,9 +53,9 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                     Log::info('Procesando primera hoja: ' . $event->getSheet()->getTitle());
                 }
             },
-            
+
             // Después de procesar cada hoja, marcar que ya procesamos la primera
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 if ($this->importar_hoja) {
                     $this->primera_hoja_procesada = true;
                     Log::info('Primera hoja procesada correctamente');
@@ -164,7 +164,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
             DB::commit();
             Log::info("Importación completada: " . $this->contador . " ventas procesadas");
-            
+
             // Devolver información completa para mostrar en frontend
             return [
                 'message' => $this->contador . ' ventas procesadas correctamente',
@@ -238,7 +238,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             $requeridos[] = 'tipo_documento';
         }
 
-        $faltantes = array_filter($requeridos, function($campo) use ($fila) {
+        $faltantes = array_filter($requeridos, function ($campo) use ($fila) {
             return !isset($fila[$campo]) || (is_string($fila[$campo]) && trim($fila[$campo]) === '') || $fila[$campo] === null;
         });
 
@@ -353,9 +353,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
     protected function generarClienteKey($row)
     {
-        return $this->tipo_documento == 'credito_fiscal' ? 
-            ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '') :
-            ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
+        return $this->tipo_documento == 'credito_fiscal' ?
+            ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '') : ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
     }
 
     protected function obtenerDatosCabecera($fila, $id_cliente, $id_documento)
@@ -397,8 +396,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         ];
 
         $cabecera['fecha_pago'] = isset($fila['fecha_pago']) && !empty($fila['fecha_pago']) ?
-            $this->convertirFechaExcel($fila['fecha_pago']) :
-            ($cabecera['credito'] ? Carbon::parse($fecha)->addMonth()->format('Y-m-d') : null);
+            $this->convertirFechaExcel($fila['fecha_pago']) : ($cabecera['credito'] ? Carbon::parse($fecha)->addMonth()->format('Y-m-d') : null);
 
         $documento = Documento::find($id_documento);
         if ($documento) {
@@ -446,7 +444,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
         // Guardar el producto faltante para reportar al usuario
         $this->productos_faltantes[] = $descripcion;
-        
+
         Log::warning('Producto no encontrado en el sistema: ' . $descripcion);
         return 0;
     }
@@ -475,7 +473,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     {
         return $this->errores;
     }
-    
+
     public function getProductosFaltantes()
     {
         return array_unique($this->productos_faltantes);
@@ -505,8 +503,13 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         }
 
         $producto = Producto::find($idProducto);
-        $costo = $producto ? $producto->costo : 0;
-        $total_costo = $cantidad * $costo;
+        if (!$producto) {
+            $costo = 0;
+            $total_costo = 0;
+        } else {
+            $costo = $producto->costo;
+            $total_costo = $cantidad * $costo;
+        }
 
         return [
             'id_producto' => $idProducto,
@@ -564,10 +567,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             $detallesInvalidos = [];
 
             foreach ($detalles as $detalle_data) {
-                if (empty($detalle_data['id_producto'])) {
-                    $detallesInvalidos[] = "Producto no encontrado: " . ($detalle_data['descripcion'] ?? 'Sin descripción');
-                    continue;
-                }
+                // if (empty($detalle_data['id_producto'])) {
+                //     $detallesInvalidos[] = "Producto no encontrado: " . ($detalle_data['descripcion'] ?? 'Sin descripción');
+                //    // continue;
+                //    $detallesValidos[] = $detalle_data;
+                // }
                 $detallesValidos[] = $detalle_data;
             }
 
