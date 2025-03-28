@@ -105,7 +105,7 @@ export class ImportarExcelComponent implements OnInit {
                     this.modalRef.hide();
                     this.loadAll.emit();
                     this.alertService.modal = false;
-                }, 10000); 
+                }, 1000); 
             }, 
             error => {
                 this.loading = false;
