@@ -285,7 +285,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         $cliente = new Cliente();
         $departamento = $this->buscarDepartamento($fila['cod_departamento'] ?? null);
         $municipio = $this->buscarMunicipio($fila['cod_municipio'] ?? null);
-        $distrito = $this->buscarDistrito($fila['cod_departamento'] ?? null, $fila['cod_municipio'] ?? null);
+        $distrito = $this->buscarDistrito($municipio->cod ?? null, $departamento->cod ?? null);
 
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
@@ -309,7 +309,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
                 'nit' => $fila['nit'],
                 'ncr' => $fila['nrc'] ?? '',
-                'giro' => $fila['cod_giro'] ?? '',
+                'cod_giro' => $fila['cod_giro'] ?? '',
                 'tipo_contribuyente' => 'Otro',
                 'dui' => $fila['num_documento'] ?? ''
             ]);
