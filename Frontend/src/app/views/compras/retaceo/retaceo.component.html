@@ -81,7 +81,7 @@
   </div>
 
   <!-- si  *ngIf ="retaceo.id no poder selecionar otra compra pero si mostrar la compra seleccionada-->
-   
+
   <div class="row">
     <div class="form-group col-md-12 col-lg-4">
       <label for="id_compra">Compra</label>
@@ -211,20 +211,32 @@
     <div class="form-group col-md-12 col-lg-4">
       <label>Estado</label>
       <div>
-        <span class="badge" [ngClass]="{
-          'bg-success': retaceo.estado === 'Aplicado',
-          'bg-warning': retaceo.estado === 'Pendiente',
-          'bg-danger': retaceo.estado === 'Anulado'
-        }">
+        <span
+          class="badge"
+          [ngClass]="{
+            'bg-success': retaceo.estado === 'Aplicado',
+            'bg-warning': retaceo.estado === 'Pendiente',
+            'bg-danger': retaceo.estado === 'Anulado'
+          }"
+        >
           {{ retaceo.estado }}
         </span>
-        
+
         <!-- Si ya tiene ID (está guardado) y está pendiente, mostrar opciones para cambiar estado -->
-        <div class="btn-group ms-2" *ngIf="retaceo.id && retaceo.estado === 'Pendiente'">
-          <button class="btn btn-sm btn-success" (click)="cambiarEstado('Aplicado')">
+        <div
+          class="btn-group ms-2"
+          *ngIf="retaceo.id && retaceo.estado === 'Pendiente'"
+        >
+          <button
+            class="btn btn-sm btn-success"
+            (click)="cambiarEstado('Aplicado')"
+          >
             Aplicar
           </button>
-          <button class="btn btn-sm btn-danger" (click)="cambiarEstado('Anulado')">
+          <button
+            class="btn btn-sm btn-danger"
+            (click)="cambiarEstado('Anulado')"
+          >
             Anular
           </button>
         </div>
@@ -376,6 +388,42 @@
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Productos y Distribución</h6>
 
+  <div class="d-flex align-items-center mb-3">
+    <span class="me-2">Modo de distribución:</span>
+    <div class="btn-group" role="group">
+      <input
+        type="radio"
+        class="btn-check"
+        name="distribucionTipo"
+        id="distribucionAuto"
+        autocomplete="off"
+        [checked]="!distribucionManual"
+        (change)="distribucionManual = false"
+      />
+      <label
+        class="btn btn-outline-primary btn-sm"
+        for="distribucionAuto"
+        title="Calcula automáticamente los porcentajes basados en FOB"
+        >Auto</label
+      >
+
+      <input
+        type="radio"
+        class="btn-check"
+        name="distribucionTipo"
+        id="distribucionManual"
+        autocomplete="off"
+        [checked]="distribucionManual"
+        (change)="distribucionManual = true"
+      />
+      <label
+        class="btn btn-outline-primary btn-sm"
+        for="distribucionManual"
+        title="Permite ingresar porcentajes manualmente sin normalizar automáticamente"
+        >Manual</label
+      >
+    </div>
+  </div>
   <div class="row">
     <div class="col-md-12 table-responsive">
       <table
@@ -387,6 +435,7 @@
             <th>Producto</th>
             <th class="text-center">Cantidad</th>
             <th class="text-end">Costo Antes</th>
+            
             <th class="text-end">FOB</th>
             <th class="text-end">Dist. %</th>
             <th class="text-end">% DAI</th>

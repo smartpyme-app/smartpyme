@@ -29,6 +29,7 @@ export class RetaceoComponent implements OnInit {
   public loading = false;
   public saving = false;
   public opAvanzadas = false;
+  public distribucionManual: boolean = false;
 
   constructor(
     public apiService: ApiService,
@@ -266,7 +267,7 @@ export class RetaceoComponent implements OnInit {
       this.alertService.error('No hay productos para distribuir los gastos');
       return;
     }
-
+  
     if (parseFloat(this.retaceo.total_gastos) <= 0) {
       this.alertService.warning(
         'No hay gastos para distribuir',
@@ -274,24 +275,42 @@ export class RetaceoComponent implements OnInit {
       );
       return;
     }
-
+  
     const valorFobTotal = this.distribucion.reduce(
       (sum: number, item: any) => sum + parseFloat(item.valor_fob || 0),
       0
     );
-
+  
     if (valorFobTotal <= 0) {
       this.alertService.error('El valor FOB total debe ser mayor que cero');
       return;
     }
+  
+    if (this.distribucionManual) {
+      const totalPorcentaje = this.distribucion.reduce(
+        (sum: number, item: any) => sum + parseFloat(item.porcentaje_distribucion || 0),
+        0
+      );
+          
+      if (Math.abs(totalPorcentaje - 100) > 0.01) {
+        this.alertService.warning(
+          `La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%.`,
+          'Distribución'
+        );
+      }
+    } else {
+      // En modo automático, calculamos los porcentajes basados en el valor FOB
+      this.distribucion.forEach((item: any) => {
+        item.porcentaje_distribucion = (
+          (item.valor_fob / valorFobTotal) *
+          100
+        ).toFixed(2);
+      });
+    }
+    
 
     this.distribucion.forEach((item: any) => {
-      item.porcentaje_distribucion = (
-        (item.valor_fob / valorFobTotal) *
-        100
-      ).toFixed(2);
-
-      // Distribuir gastos de transporte, seguro y otros
+      // Distribuir gastos según porcentaje
       item.monto_transporte = (
         (item.porcentaje_distribucion / 100) *
         this.gastoTransporte.monto
@@ -305,19 +324,16 @@ export class RetaceoComponent implements OnInit {
         this.gastoOtros.monto
       ).toFixed(2);
 
-      // DAI: no se distribuye, se deja como está (lo asignará manualmente el usuario)
-
-      // Actualizar costos
       this.actualizarCostosProducto(item);
     });
-
+  
     this.retaceo.total_retaceado = this.distribucion
       .reduce(
         (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
         0
       )
       .toFixed(2);
-
+  
     this.alertService.success(
       'Distribución calculada correctamente',
       'Distribución'
@@ -376,36 +392,90 @@ export class RetaceoComponent implements OnInit {
   /**
    * Recalcula la distribución cuando se edita manualmente un porcentaje
    */
+  // recalcularDistribucion() {
+  //   if (!this.distribucion || this.distribucion.length === 0) {
+  //     return;
+  //   }
+
+  //   // Verificar que la suma de porcentajes sea 100%
+  //   const totalPorcentaje = this.distribucion.reduce(
+  //     (sum: number, item: any) =>
+  //       sum + parseFloat(item.porcentaje_distribucion || 0),
+  //     0
+  //   );
+
+  //   // Si el total no es aproximadamente 100%, normalizar
+  //   if (Math.abs(totalPorcentaje - 100) > 0.01) {
+  //     this.alertService.warning(
+  //       `La suma de porcentajes (${totalPorcentaje.toFixed(
+  //         2
+  //       )}%) debe ser 100%. Se normalizarán los valores.`,
+  //       'Distribución'
+  //     );
+
+  //     // Normalizar porcentajes para que sumen 100%
+  //     this.distribucion.forEach((item: any) => {
+  //       item.porcentaje_distribucion = (
+  //         (parseFloat(item.porcentaje_distribucion) / totalPorcentaje) *
+  //         100
+  //       ).toFixed(2);
+  //     });
+  //   }
+
+  //   this.distribucion.forEach((item: any) => {
+  //     // Distribuir gastos según porcentaje (excepto DAI)
+  //     item.monto_transporte = (
+  //       (item.porcentaje_distribucion / 100) *
+  //       this.gastoTransporte.monto
+  //     ).toFixed(2);
+  //     item.monto_seguro = (
+  //       (item.porcentaje_distribucion / 100) *
+  //       this.gastoSeguro.monto
+  //     ).toFixed(2);
+  //     item.monto_otros = (
+  //       (item.porcentaje_distribucion / 100) *
+  //       this.gastoOtros.monto
+  //     ).toFixed(2);
+
+  //     this.actualizarCostosProducto(item);
+  //   });
+
+  //   this.recalcularTotalRetaceado();
+  // }
+
   recalcularDistribucion() {
     if (!this.distribucion || this.distribucion.length === 0) {
       return;
     }
-
+  
     // Verificar que la suma de porcentajes sea 100%
     const totalPorcentaje = this.distribucion.reduce(
       (sum: number, item: any) =>
         sum + parseFloat(item.porcentaje_distribucion || 0),
       0
     );
-
-    // Si el total no es aproximadamente 100%, normalizar
+  
+    // Mostrar advertencia si los porcentajes no suman 100%, pero no normalizar automáticamente
+    // si estamos en modo manual
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.warning(
-        `La suma de porcentajes (${totalPorcentaje.toFixed(
-          2
-        )}%) debe ser 100%. Se normalizarán los valores.`,
+        `La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%.`,
         'Distribución'
       );
-
-      // Normalizar porcentajes para que sumen 100%
-      this.distribucion.forEach((item: any) => {
-        item.porcentaje_distribucion = (
-          (parseFloat(item.porcentaje_distribucion) / totalPorcentaje) *
-          100
-        ).toFixed(2);
-      });
+      
+      // Si no estamos en modo manual, normalizar
+      if (!this.distribucionManual) {
+        // Normalizar porcentajes para que sumen 100%
+        this.distribucion.forEach((item: any) => {
+          item.porcentaje_distribucion = (
+            (parseFloat(item.porcentaje_distribucion) / totalPorcentaje) *
+            100
+          ).toFixed(2);
+        });
+      }
     }
-
+  
+    // Calcular montos basados en los porcentajes actuales (sean normalizados o no)
     this.distribucion.forEach((item: any) => {
       // Distribuir gastos según porcentaje (excepto DAI)
       item.monto_transporte = (
@@ -420,14 +490,27 @@ export class RetaceoComponent implements OnInit {
         (item.porcentaje_distribucion / 100) *
         this.gastoOtros.monto
       ).toFixed(2);
-
+  
       this.actualizarCostosProducto(item);
     });
-
+  
     this.recalcularTotalRetaceado();
   }
 
   guardarRetaceo() {
+
+    
+    const totalPorcentaje = this.distribucion.reduce(
+      (sum: number, item: any) => sum + parseFloat(item.porcentaje_distribucion || 0),
+      0
+    );
+    
+    if (Math.abs(totalPorcentaje - 100) > 0.01) {
+      this.alertService.error(
+        `La suma de porcentajes de distribución (${totalPorcentaje.toFixed(2)}%) debe ser exactamente 100% antes de guardar.`,
+      );
+      return;
+    }
     if (!this.distribucion || this.distribucion.length === 0) {
       this.alertService.error('No hay productos para aplicar el retaceo');
       return;
