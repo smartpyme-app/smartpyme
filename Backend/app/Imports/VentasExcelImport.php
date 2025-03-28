@@ -270,14 +270,63 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     protected function buscarCliente($fila)
     {
         if ($this->tipo_documento == 'credito_fiscal') {
-            return Cliente::where('nit', $fila['nit'])->first();
+            $cliente = Cliente::where('nit', $fila['nit'])->first();
+            //actualizar cliente
+            if ($cliente) {
+                $this->actualizarCliente($cliente, $fila);
+            }
+            return $cliente;
         }
 
         $query = Cliente::query();
         if (!empty($fila['num_documento'])) {
             $query->where('dui', $fila['num_documento']);
+            //actualizar cliente
+            $cliente = $query->first();
+            if ($cliente) {
+                $this->actualizarCliente($cliente, $fila);
+            }
+            return $cliente;
         }
         return $query->first();
+    }
+
+    protected function actualizarCliente($cliente, $fila)
+    {
+        $datosCliente = [
+            'nombre' => $fila['nombre'] ?? 'Consumidor Final',
+            'apellido' => $fila['apellido'] ?? '',
+            'telefono' => $fila['telefono'] ?? '',
+            'correo' => $fila['correo'] ?? '',
+            'direccion' => $fila['direccion'] ?? '',
+            'cod_departamento' => $this->buscarDepartamento($fila['cod_departamento'] ?? null)->cod ?? null,
+            'cod_municipio' => $this->buscarMunicipio($fila['cod_municipio'] ?? null)->cod ?? null,
+            'cod_distrito' => $this->buscarDistrito($fila['cod_distrito'] ?? null, $this->buscarMunicipio($fila['cod_municipio'] ?? null)->cod ?? null)->cod ?? null,
+            'tipo_contribuyente' => $fila['tipo_contribuyente'] ?? 'Otro',
+            'dui' => $fila['num_documento'] ?? ''
+        ];
+        if ($this->tipo_documento == 'credito_fiscal') {
+            $datosCliente = array_merge($datosCliente, [
+                'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
+                'nit' => $fila['nit'],
+                'ncr' => $fila['nrc'] ?? '',
+                'cod_giro' => $fila['cod_giro'] ?? '',
+                'tipo_contribuyente' => 'Otro',
+                'dui' => $fila['num_documento'] ?? ''
+            ]);
+        } else {
+            $datosCliente = array_merge($datosCliente, [
+                'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
+                'nit' => $fila['nit'],
+                'ncr' => $fila['nrc'] ?? '',
+                'cod_giro' => $fila['cod_giro'] ?? '',
+                'tipo_contribuyente' => 'Otro',
+                'dui' => $fila['num_documento'] ?? ''
+            ]);
+        }
+        $cliente->fill($datosCliente);
+        $cliente->save();
+        return $cliente;
     }
 
     protected function crearCliente($fila)
