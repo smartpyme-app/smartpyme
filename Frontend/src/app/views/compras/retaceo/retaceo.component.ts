@@ -267,7 +267,7 @@ export class RetaceoComponent implements OnInit {
       this.alertService.error('No hay productos para distribuir los gastos');
       return;
     }
-  
+
     if (parseFloat(this.retaceo.total_gastos) <= 0) {
       this.alertService.warning(
         'No hay gastos para distribuir',
@@ -275,26 +275,29 @@ export class RetaceoComponent implements OnInit {
       );
       return;
     }
-  
+
     const valorFobTotal = this.distribucion.reduce(
       (sum: number, item: any) => sum + parseFloat(item.valor_fob || 0),
       0
     );
-  
+
     if (valorFobTotal <= 0) {
       this.alertService.error('El valor FOB total debe ser mayor que cero');
       return;
     }
-  
+
     if (this.distribucionManual) {
       const totalPorcentaje = this.distribucion.reduce(
-        (sum: number, item: any) => sum + parseFloat(item.porcentaje_distribucion || 0),
+        (sum: number, item: any) =>
+          sum + parseFloat(item.porcentaje_distribucion || 0),
         0
       );
-          
+
       if (Math.abs(totalPorcentaje - 100) > 0.01) {
         this.alertService.warning(
-          `La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%.`,
+          `La suma de porcentajes (${totalPorcentaje.toFixed(
+            2
+          )}%) debe ser 100%.`,
           'Distribución'
         );
       }
@@ -307,7 +310,6 @@ export class RetaceoComponent implements OnInit {
         ).toFixed(2);
       });
     }
-    
 
     this.distribucion.forEach((item: any) => {
       // Distribuir gastos según porcentaje
@@ -326,14 +328,14 @@ export class RetaceoComponent implements OnInit {
 
       this.actualizarCostosProducto(item);
     });
-  
+
     this.retaceo.total_retaceado = this.distribucion
       .reduce(
         (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
         0
       )
       .toFixed(2);
-  
+
     this.alertService.success(
       'Distribución calculada correctamente',
       'Distribución'
@@ -447,22 +449,24 @@ export class RetaceoComponent implements OnInit {
     if (!this.distribucion || this.distribucion.length === 0) {
       return;
     }
-  
+
     // Verificar que la suma de porcentajes sea 100%
     const totalPorcentaje = this.distribucion.reduce(
       (sum: number, item: any) =>
         sum + parseFloat(item.porcentaje_distribucion || 0),
       0
     );
-  
+
     // Mostrar advertencia si los porcentajes no suman 100%, pero no normalizar automáticamente
     // si estamos en modo manual
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.warning(
-        `La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%.`,
+        `La suma de porcentajes (${totalPorcentaje.toFixed(
+          2
+        )}%) debe ser 100%.`,
         'Distribución'
       );
-      
+
       // Si no estamos en modo manual, normalizar
       if (!this.distribucionManual) {
         // Normalizar porcentajes para que sumen 100%
@@ -474,7 +478,7 @@ export class RetaceoComponent implements OnInit {
         });
       }
     }
-  
+
     // Calcular montos basados en los porcentajes actuales (sean normalizados o no)
     this.distribucion.forEach((item: any) => {
       // Distribuir gastos según porcentaje (excepto DAI)
@@ -490,24 +494,25 @@ export class RetaceoComponent implements OnInit {
         (item.porcentaje_distribucion / 100) *
         this.gastoOtros.monto
       ).toFixed(2);
-  
+
       this.actualizarCostosProducto(item);
     });
-  
+
     this.recalcularTotalRetaceado();
   }
 
   guardarRetaceo() {
-
-    
     const totalPorcentaje = this.distribucion.reduce(
-      (sum: number, item: any) => sum + parseFloat(item.porcentaje_distribucion || 0),
+      (sum: number, item: any) =>
+        sum + parseFloat(item.porcentaje_distribucion || 0),
       0
     );
-    
+
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.error(
-        `La suma de porcentajes de distribución (${totalPorcentaje.toFixed(2)}%) debe ser exactamente 100% antes de guardar.`,
+        `La suma de porcentajes de distribución (${totalPorcentaje.toFixed(
+          2
+        )}%) debe ser exactamente 100% antes de guardar.`
       );
       return;
     }
@@ -747,5 +752,34 @@ export class RetaceoComponent implements OnInit {
         this.loading = false;
       }
     );
+  }
+
+  obtenerNombreColumnaIncoterm(): string {
+    switch (this.retaceo.incoterm) {
+      case 'FOB':
+        return 'FOB';
+      case 'CIF':
+        return 'CIF';
+      case 'EXW':
+        return 'EXW';
+      case 'FCA':
+        return 'FCA';
+      case 'FAS':
+        return 'FAS';
+      case 'CFR':
+        return 'CFR';
+      case 'CPT':
+        return 'CPT';
+      case 'CIP':
+        return 'CIP';
+      case 'DAT':
+        return 'DAT';
+      case 'DAP':
+        return 'DAP';
+      case 'DDP':
+        return 'DDP';
+      default:
+        return 'FOB'; // Valor predeterminado
+    }
   }
 }
