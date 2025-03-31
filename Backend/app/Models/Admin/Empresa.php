@@ -7,6 +7,7 @@ use App\Models\Planilla\DepartamentoEmpresa;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class Empresa extends Model {
 
@@ -79,6 +80,19 @@ class Empresa extends Model {
 
         //Permiso para vendedores
         'vendedor_inventario',
+        'woocommerce_api_key',
+        'woocommerce_store_url',
+        'woocommerce_consumer_key',
+        'woocommerce_consumer_secret',
+        'woocommerce_status',
+        'woocommerce_sync_progress',
+        'woocommerce_sync_total_batches',
+        'woocommerce_sync_processed_batches',
+        'woocommerce_sync_status',
+        'woocommerce_last_sync',
+        'woocommerce_error',
+        'woocommerce_canal_id',
+
     ];
 
     protected $casts = [
@@ -86,7 +100,7 @@ class Empresa extends Model {
         'facturacion_electronica' => 'boolean',
     ];
 
-    protected $appends = ['estado_plan'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
 
     public function limiteUsuarios(){
         if($this->usuarios->where('enable', true)->count() < $this->user_limit)
@@ -242,6 +256,44 @@ class Empresa extends Model {
                     ->withPivot('estado')
                     ->withTimestamps();
     }
+
+
+    public function user()
+    {
+
+        $user = Auth::user();
+        return $user;
+    }
+
+    public function getWooCommerceApiUrlAttribute()
+    {
+        if (empty($this->woocommerce_api_key)) {
+            return null;
+        }
+
+        return url('/api/webhook/woocommerce/' . $this->woocommerce_api_key);
+    }
+    public function getStatusConexionWoocommerceAttribute()
+    {
+        $connected_users = $this->usuarios->where('woocommerce_status', 'connected');
+
+        if ($connected_users->count() > 0) {
+            return 'connected';
+        }
+
+        return 'disconnected';
+    }
+    public function getIsCurrentUserConnectedToWooCommerceAttribute()
+    {
+        $current_user = Auth::user();
+        return $current_user && $current_user->woocommerce_status === 'connected';
+    }
+
+    public function canal()
+    {
+        return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
+    }
+
 
 
 

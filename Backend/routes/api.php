@@ -36,6 +36,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	    require base_path('routes/modulos/ventas/cotizaciones.php');
 		require base_path('routes/modulos/ventas/abonos.php');
 		require base_path('routes/modulos/ventas/clientes.php');
+		
+		
 
 	// Compras
 		require base_path('routes/modulos/compras/compras.php');
@@ -98,6 +100,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 		
 });
+
+//webhook
+
+require base_path('routes/modulos/webhook/webhook.php');
 
 
 Route::get('/prueba/factura', function () { 
