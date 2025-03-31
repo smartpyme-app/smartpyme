@@ -21,6 +21,8 @@ export class EmpresaComponent implements OnInit {
     public distritos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
+    public downloading:boolean = false;
+    public filtros:any = {};
 
     public estadisticasPruebas: any = null;
     public documentosBase: any[] = [];
@@ -38,6 +40,7 @@ export class EmpresaComponent implements OnInit {
 
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
+    public canales:any = [];
 
     constructor( 
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
@@ -45,6 +48,11 @@ export class EmpresaComponent implements OnInit {
     ) { }
 
     ngOnInit() {
+
+        this.apiService.getAll('canales').subscribe(canales => { 
+            this.canales = canales;
+        }, error => {this.alertService.error(error); });
+
         this.loadAll();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
@@ -385,5 +393,215 @@ export class EmpresaComponent implements OnInit {
           }
         );
       }
+
+
+    public copyToClipboard(text: string): void {
+        const selBox = document.createElement('textarea');
+        selBox.style.position = 'fixed';
+        selBox.style.left = '0';
+        selBox.style.top = '0';
+        selBox.style.opacity = '0';
+        selBox.value = text;
+        document.body.appendChild(selBox);
+        selBox.focus();
+        selBox.select();
+        document.execCommand('copy');
+        document.body.removeChild(selBox);
+        this.alertService.success('Copiado', 'Texto copiado al portapapeles');
+    }
+
+    public saveCredentials() {
+        this.saving = true;
+        
+        if (!this.empresa.woocommerce_store_url || !this.empresa.woocommerce_consumer_key || !this.empresa.woocommerce_consumer_secret) {
+            this.saving = false;
+            
+            Swal.fire({
+                title: 'Error',
+                text: 'Todos los campos son requeridos',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
+        //verificar que el canal no vaya vacio o nulo
+        if (!this.empresa.woocommerce_canal_id || this.empresa.woocommerce_canal_id == 0 || this.empresa.woocommerce_canal_id == '0') {
+            this.saving = false;
+            Swal.fire({
+                title: 'Error',
+                text: 'Selecciona un canal',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
+        
+        const credentials = {
+            store_url: this.empresa.woocommerce_store_url,
+            consumer_key: this.empresa.woocommerce_consumer_key,
+            consumer_secret: this.empresa.woocommerce_consumer_secret,
+            canal_id: this.empresa.woocommerce_canal_id,
+        };
+        
+        Swal.fire({
+            title: 'Conectando...',
+            text: 'Verificando conexión con WooCommerce',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        this.apiService.store('usuario/save-credentials', credentials).subscribe(
+            response => {
+                this.saving = false;
+                this.loadAll();
+                Swal.close();
+                Swal.fire({
+                    title: 'Conexión Exitosa',
+                    text: 'Credenciales guardadas y conexión con WooCommerce establecida',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+            },
+            error => {
+                this.saving = false;
+                Swal.close();
+                this.loadAll();
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudieron guardar las credenciales',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        );
+    }
+
+
+    public disconnectWooCommerce() {
+        this.saving = true;
+
+        this.empresa.woocommerce_store_url = '';
+        this.empresa.woocommerce_consumer_key = '';
+        this.empresa.woocommerce_consumer_secret = '';
+        
+        this.apiService.store('usuario/disconnect-woocommerce', {}).subscribe(
+            response => {
+                this.saving = false;
+                this.loadAll();
+                Swal.fire({
+                    title: 'Desconexión Exitosa',
+                    text: 'Desconectado de WooCommerce',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+
+            }, error => {
+                this.saving = false;
+                this.loadAll();
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo desconectar de WooCommerce',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        );
+
+
+    }
+
+    public exportarWooCommerce(){
+        Swal.fire({
+            title: '¿Está seguro de exportar sus productos a WooCommerce?',
+            html: `
+                <p>Esta acción iniciará una migración asincrónica de productos a WooCommerce:</p>
+                <ul style="text-align: left; margin-top: 1em;">
+                    <li>Solo se migrarán los productos relacionados con su usuario y sucursal actual</li>
+                    <li>Los productos vinculados a otras sucursales no serán exportados</li>
+                    <li>El proceso se ejecutará en segundo plano y puede tomar varios minutos</li>
+                    <li>Esta acción no se puede revertir</li>
+                </ul>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, iniciar exportación',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Iniciando exportación...',
+                    text: 'La migración de productos ha comenzado y continuará en segundo plano',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+                this.apiService.store('producto/exportar-woocommerce', {}).subscribe(
+                    response => {
+                        Swal.fire({
+                            title: 'Proceso iniciado',
+                            text: 'La migración de productos a WooCommerce se está ejecutando en segundo plano',
+                            icon: 'success'
+                        });
+                    },
+                    error => {
+                        this.alertService.error(error);
+                    }
+                );
+            }
+        });
+    }
+    //descargarWooCommerce
+    public descargarWooCommerce() {
+        console.log('descargarWooCommerce');
+        this.downloading = true;
+
+        Swal.fire({
+            title: 'Exportando productos a WooCommerce',
+            text: 'Estamos preparando el archivo CSV con los productos de WooCommerce',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
+            (data: Blob) => {
+                Swal.close();
+
+                Swal.fire({
+                    title: 'Exportando productos a WooCommerce',
+                    text: 'El archivo CSV está listo para descargar',
+                    icon: 'success',
+                    showConfirmButton: true
+                });
+                const blob = new Blob([data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                
+                this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
+            },
+            (error) => { 
+                this.alertService.error('Error en la exportación: ' + error); 
+                this.downloading = false; 
+            }
+        );
+    }
+
 
 }
