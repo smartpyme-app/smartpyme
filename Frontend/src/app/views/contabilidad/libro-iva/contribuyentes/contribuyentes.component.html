@@ -3,14 +3,32 @@
     <div>
         <h2>Libro de Contribuyentes</h2>
     </div>
-    <div>
-        <button [disabled]="downloading" tooltip="Descargar Libro de Contribuyentes" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
-            Libro <img src="/assets/icons/download.png" class="icon">
+    <div class="dropdown">
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
+          Descargas 
         </button>
-        <button [disabled]="downloading" tooltip="Descargar Anexo de Contribuyentes" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
-            Anexo <img src="/assets/icons/download.png" class="icon">
-        </button>
-    </div>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Libro de IVA
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Anexo
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarDTECreditoFiscal()" title="Descargar DTEs en zip como JSON ">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                DTEs
+            </button>
+          </li>
+        </ul>
+      </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -21,7 +39,7 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="setSucursal($event.target.value)">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
             </select>
@@ -52,6 +70,9 @@
                 <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
             <!-- </div> -->
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
+            <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                <i class="fa fa-refresh"></i>
+              </button>
         </div>
     </div>
 

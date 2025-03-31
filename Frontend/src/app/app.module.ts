@@ -11,6 +11,7 @@ import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
+import { SubscriptionGuard } from '@guards/SuscriptionGuard.guard';
 import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
 import { NotifierModule } from 'angular-notifier';
@@ -47,6 +48,11 @@ import { LayoutModule } from '@layout/layout.module';
 
 // Contabilidad
   import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
+
+
+// Planillas
+import { PlanillasModule } from '@views/planillas/planillas.module';
+
 
 // Paquetes
   import { PaquetesModule } from '@views/paquetes/paquetes.module';
@@ -90,6 +96,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     CitasModule,
     PaquetesModule,
     ProyectosModule,
+    PlanillasModule,
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: !isDevMode(),
       // Register the ServiceWorker as soon as the application is stable
@@ -98,7 +105,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     }),
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, AlertService, ApiService,
+                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, AlertService, ApiService,
                 MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })

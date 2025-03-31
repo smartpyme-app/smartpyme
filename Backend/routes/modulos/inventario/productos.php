@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
+use App\Http\Controllers\Api\Webhook\WooCommerceController;
+//use Route;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
@@ -57,7 +60,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
-    
+
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);
     Route::post('promocion',          [PromocionesController::class, 'store']);
@@ -74,5 +77,16 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
+    //exportar-plantilla
+    Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);
+    //productos/ajuste-masivo/importar
+    Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
+    //productos/ajuste-masivo
+    Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
+    //producto/exportar-woocommerce post
+    Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    //productos/exportar/woocommerce
+    Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
+
 
 ?>

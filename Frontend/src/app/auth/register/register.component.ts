@@ -29,7 +29,7 @@ export class RegisterComponent implements OnInit {
         this.apiService.getToUrl('https://restcountries.com/v3.1/all?order=name').subscribe(
         data => {
             this.paises = data;
-            console.log(data);
+            // console.log(data);
         },
         error => {
             this.alertService.error(error);
@@ -71,7 +71,7 @@ export class RegisterComponent implements OnInit {
     }
 
     public setPlan(){
-        if(this.user.empresa.plan == 'Emprendedor'){
+        if(this.user.empresa.plan == 1){//emprendedor
             this.user.empresa.user_limit = 1;
             this.user.empresa.sucursal_limit = 1;
 
@@ -82,7 +82,7 @@ export class RegisterComponent implements OnInit {
             }
         }
 
-        if(this.user.empresa.plan == 'Estándar'){
+        if(this.user.empresa.plan == 2){//estándar
             this.user.empresa.user_limit = 2;
             this.user.empresa.sucursal_limit = 1;
 
@@ -93,7 +93,7 @@ export class RegisterComponent implements OnInit {
             }
         }
 
-        if(this.user.empresa.plan == 'Avanzado'){
+        if(this.user.empresa.plan == 3){//avanzado
             this.user.empresa.user_limit = 5;
             this.user.empresa.sucursal_limit = 2;
 
@@ -104,7 +104,7 @@ export class RegisterComponent implements OnInit {
             }
         }
 
-        if(this.user.empresa.plan == 'Pro'){
+        if(this.user.empresa.plan == 4){//pro
             this.user.empresa.user_limit = 5;
             this.user.empresa.sucursal_limit = 2;
 

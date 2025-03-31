@@ -25,6 +25,7 @@ import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.co
 import { CorteComponent } from './corte/corte.component';
 import { ReportesComponent } from './reportes.component';
 import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
+import { ReplacePipe } from './reportes-automaticos.component';
 
 @NgModule({
   imports: [
@@ -50,7 +51,8 @@ import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
     EmpleadosVentasComponent,
     CorteComponent,
     ReportesComponent,
-    ReportesAutomaticosComponent
+    ReportesAutomaticosComponent,
+    ReplacePipe
   ],
   exports: [
     HistorialVentasComponent,
@@ -62,7 +64,8 @@ import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
     EmpleadosVentasComponent,
     CorteComponent,
     ReportesComponent,
-    ReportesAutomaticosComponent
+    ReportesAutomaticosComponent,
+    ReplacePipe
   ]
 })
 export class ReportesModule { }

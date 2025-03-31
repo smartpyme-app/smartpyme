@@ -17,9 +17,9 @@ export class ApiService {
     public apiUrl =  this.baseUrl + '/api/';
 
     constructor(private http: HttpClient, private alertService: AlertService) { }
-   
+
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
-    
+
     getAll(url:string, filtros:any = {}) {return this.http.get<any>(this.apiUrl + url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     read(url:string, id: number) {return this.http.get<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
@@ -27,16 +27,15 @@ export class ApiService {
     filter(url:string, filter: any) {return this.http.get<any>(this.apiUrl + url + filter).pipe(retry(0), catchError(this.handleError) )}
 
     store(url:string, model:any) {return this.http.post<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError) )}
-    update(url: string, id: number, model: any) {return this.http.put<any>(`${this.apiUrl}${url}/${id}`, model).pipe(retry(0), catchError(this.handleError))}
+
+    update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
 
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
 
     paginate(url:string, filtros:any = {}) {return this.http.get<any>(url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     upload (url: string, formData: any) {let headers = new HttpHeaders(); headers.append('Accept', 'application/json'); headers.append('Authorization','Bearer ' + JSON.parse(localStorage.getItem('SP_token')!) ); let options = {headers}; return this.http.post(this.apiUrl + url, formData, options).pipe(retry(0), catchError(this.handleError)) }
-
-    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
-
+    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user));   this.loadConstants(); } }) ); }
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
     export(url:string, filtros: any): Observable<Blob> {
@@ -47,7 +46,7 @@ export class ApiService {
     // En el ApiService
         exportAcumulado(url: string, filtros: any): Observable<Blob> {
             console.log('Enviando filtros:', filtros);
-            return this.http.post(this.apiUrl + url, filtros, { 
+            return this.http.post(this.apiUrl + url, filtros, {
                 responseType: 'blob',
                 headers: new HttpHeaders({
                     'Authorization': 'Bearer ' + this.auth_token()
@@ -55,20 +54,46 @@ export class ApiService {
             });
         }
 
-    logout() { 
+    logout() {
         let data:any = {};
         if (this.autenticated()) {
             data.usuario_id = this.auth_user().id;
-            this.store('logout', data).subscribe(ivas => { 
+            this.store('logout', data).subscribe(ivas => {
             }, error => {this.alertService.error(error); });
         }
         localStorage.clear();
     }
 
+    download(url: string): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}${url}`, {
+          responseType: 'blob',
+          headers: new HttpHeaders({
+            Authorization: 'Bearer ' + this.auth_token()
+          })
+        }).pipe(
+          map((response) => {
+            return new Blob([response]);
+          }),
+          catchError((error) => {
+            console.error('Error al descargar el archivo:', error);
+            return throwError(() => error);
+          })
+        );
+      }
+
+      downloadFile(blob: Blob, filename: string) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      }
+
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
 
     autenticated(){ let token = JSON.parse(localStorage.getItem('SP_token')!); if(token) { return true; } else {return false; } }
-    
+
     auth_user(){ return JSON.parse(localStorage.getItem('SP_auth_user')!); }
     register_user(){ return JSON.parse(localStorage.getItem('SP_user_register')!); }
 
@@ -126,24 +151,24 @@ export class ApiService {
         this.getAll('formas-de-pago').subscribe(metodospago => {
             localStorage.setItem('metodospago', JSON.stringify(metodospago));
         }, error => {this.alertService.error(error);});
-        
-        this.getAll('paises').subscribe(paises => { 
+
+        this.getAll('paises').subscribe(paises => {
             localStorage.setItem('paises', JSON.stringify(paises));
         }, error => {this.alertService.error(error); });
-        
-        this.getAll('municipios').subscribe(municipios => { 
+
+        this.getAll('municipios').subscribe(municipios => {
             localStorage.setItem('municipios', JSON.stringify(municipios));
         }, error => {this.alertService.error(error); });
 
-        this.getAll('distritos').subscribe(distritos => { 
+        this.getAll('distritos').subscribe(distritos => {
             localStorage.setItem('distritos', JSON.stringify(distritos));
         }, error => {this.alertService.error(error); });
-        
-        this.getAll('departamentos').subscribe(departamentos => { 
+
+        this.getAll('departamentos').subscribe(departamentos => {
             localStorage.setItem('departamentos', JSON.stringify(departamentos));
         }, error => {this.alertService.error(error); });
 
-        this.getAll('actividades_economicas').subscribe(actividad_economicas => { 
+        this.getAll('actividades_economicas').subscribe(actividad_economicas => {
             localStorage.setItem('actividad_economicas', JSON.stringify(actividad_economicas));
         }, error => {this.alertService.error(error); });
 
@@ -154,28 +179,35 @@ export class ApiService {
 
     isAdmin(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor')
+            return true;
+        return false;
+    }
+
+    isAdminCreate(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador')
             return true;
         return false;
     }
 
     canCreate(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
             return true;
         return false;
     }
 
     canEdit(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
             return true;
         return false;
     }
 
     canDelete(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
             return true;
         return false;
     }
@@ -198,14 +230,74 @@ export class ApiService {
        });
     }
 
+    isSupervisorLimitado() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Supervisor Limitado') return true;
+        return false;
+    }
+
+    private loadConstants() {
+        this.http.get<any>(this.apiUrl + 'constants').subscribe(
+          (constants) => {
+            localStorage.setItem('SP_constants', JSON.stringify(constants));
+          },
+          (error) => {
+            console.error('Error cargando constantes:', error);
+          }
+        );
+      }
+
+      getConstants() {
+        const constants = localStorage.getItem('SP_constants');
+        return constants ? JSON.parse(constants) : null;
+      }
+
+      generatePayrollSlips(planillaId: number): Observable<Blob> {
+        return this.http
+          .get(`${this.apiUrl}planillas/${planillaId}/boletas`, {
+            responseType: 'blob',
+          })
+          .pipe(
+            map((response) => {
+              return new Blob([response], { type: 'application/pdf' });
+            }),
+            catchError((error) => {
+              console.error('Error downloading payroll slips:', error);
+              return throwError(() => error);
+            })
+          );
+      }
+
+      generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
+        return this.http
+          .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
+            responseType: 'blob',
+          })
+          .pipe(
+            map((response) => {
+              return new Blob([response], { type: 'application/pdf' });
+            }),
+            catchError((error) => {
+              console.error('Error downloading payroll slip:', error);
+              return throwError(() => error);
+            })
+          );
+      }
+
     private handleError(error: HttpErrorResponse) {
       return throwError(error);
     };
 
-    isSupervisorLimitado(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
-    }
+    getUserData(userId: number) {
+        return this.http.get<any>(`${this.apiUrl}me/${userId}`).pipe(
+            map((response: any) => {
+              if (response && response.user) {
+                localStorage.setItem('SP_auth_user', JSON.stringify(response.user));
+                return response.user;
+              }
+              return null;
+            }),
+            catchError(this.handleError)
+          );
+        }
 }

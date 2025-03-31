@@ -40,7 +40,11 @@ import { NotFoundComponent } from './404/not-found.component';
 
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
-import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
+import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
+
+import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
+
+
 
 @NgModule({
   imports: [
@@ -69,7 +73,6 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     NotFoundComponent,
     ImportarExcelComponent,
     DescargarExcelComponent,
-    DescargarInventarioComponent,
     CrearCategoriaActivoComponent,
     CrearCategoriaComponent,
     CrearSubCategoriaComponent,
@@ -81,7 +84,9 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    ThreedsModalComponent,
+    VerHistorialButtonComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -98,7 +103,6 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     NotFoundComponent,
     ImportarExcelComponent,
     DescargarExcelComponent,
-    DescargarInventarioComponent,
     CrearCategoriaActivoComponent,
     CrearCategoriaComponent,
     CrearSubCategoriaComponent,
@@ -110,7 +114,9 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    ThreedsModalComponent,
+    VerHistorialButtonComponent
   ],
   providers: [AlertService],
 })
