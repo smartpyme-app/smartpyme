@@ -27,6 +27,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
+use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
@@ -539,6 +540,35 @@ class VentasController extends Controller
             $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
             $lotesActivo = $empresa->isLotesActivo();
 
+            $omitirMovimientoInventario = false;
+            if ($request->filled('id_restaurante_pedido') && empty($request->id)) {
+                $pedidoFactura = PedidoRestaurante::where('id', (int) $request->id_restaurante_pedido)
+                    ->where('id_empresa', Auth::user()->id_empresa)
+                    ->with('detalles')
+                    ->first();
+                if (! $pedidoFactura || ! $pedidoFactura->inventario_descontado_at) {
+                    DB::rollBack();
+
+                    return response()->json(['error' => 'Pedido canal inválido o sin inventario descontado al confirmar.'], 422);
+                }
+                if ($pedidoFactura->estado !== 'pendiente_facturar') {
+                    DB::rollBack();
+
+                    return response()->json(['error' => 'El pedido canal no está pendiente de facturar.'], 422);
+                }
+                if ((int) $pedidoFactura->id_bodega_inventario !== (int) $request->id_bodega) {
+                    DB::rollBack();
+
+                    return response()->json(['error' => 'La bodega de la factura debe ser la misma usada al confirmar el pedido canal.'], 422);
+                }
+                if (! $this->detallesFacturaCoincidenConPedidoCanal($request->detalles, $pedidoFactura)) {
+                    DB::rollBack();
+
+                    return response()->json(['error' => 'Los productos y cantidades deben coincidir con el pedido canal.'], 422);
+                }
+                $omitirMovimientoInventario = true;
+            }
+
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
@@ -610,7 +640,7 @@ class VentasController extends Controller
 
 
                 // Actualizar inventario
-                if ($request->cotizacion == 0) {
+                if ($request->cotizacion == 0 && ! $omitirMovimientoInventario) {
 
                     // Obtener el producto para verificar si es servicio
                     $producto = Producto::where('id', $det['id_producto'])->first();
@@ -2107,5 +2137,34 @@ class VentasController extends Controller
 
         return Response()->json($numsIds, 200);
      }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $detallesRequest
+     */
+    private function detallesFacturaCoincidenConPedidoCanal(array $detallesRequest, PedidoRestaurante $pedido): bool
+    {
+        $pedido->loadMissing('detalles');
+        if (count($detallesRequest) !== $pedido->detalles->count()) {
+            return false;
+        }
+
+        $norm = function ($rows, bool $fromPedido) {
+            return collect($rows)->map(function ($row) use ($fromPedido) {
+                if ($fromPedido) {
+                    return [(int) $row->producto_id, round((float) $row->cantidad, 4)];
+                }
+
+                return [(int) ($row['id_producto'] ?? 0), round((float) ($row['cantidad'] ?? 0), 4)];
+            })->sort(function ($a, $b) {
+                if ($a[0] !== $b[0]) {
+                    return $a[0] <=> $b[0];
+                }
+
+                return $a[1] <=> $b[1];
+            })->values()->all();
+        };
+
+        return $norm($pedido->detalles, true) === $norm($detallesRequest, false);
+    }
 
 }

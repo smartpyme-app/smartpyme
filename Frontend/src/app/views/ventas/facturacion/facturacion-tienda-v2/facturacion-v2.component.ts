@@ -389,6 +389,7 @@ export class FacturacionV2Component implements OnInit {
             pedido_id: pedidoCanalIdVal,
             cliente_id: pdata.cliente_id,
             id_sucursal: pdata.id_sucursal,
+            id_bodega_inventario: pdata.id_bodega_inventario,
             fecha: pdata.fecha,
             canal: pdata.canal,
             referencia_externa: pdata.referencia_externa,
@@ -1254,6 +1255,7 @@ export class FacturacionV2Component implements OnInit {
     pedido_id: number;
     cliente_id?: number | null;
     id_sucursal?: number | null;
+    id_bodega_inventario?: number | null;
     fecha?: string | null;
     canal?: string | null;
     referencia_externa?: string | null;
@@ -1263,6 +1265,9 @@ export class FacturacionV2Component implements OnInit {
     this.pedidoCanalId = data.pedido_id;
     if (data.id_sucursal) {
       this.venta.id_sucursal = data.id_sucursal;
+    }
+    if (data.id_bodega_inventario) {
+      this.venta.id_bodega = data.id_bodega_inventario;
     }
     if (data.fecha) {
       this.venta.fecha = data.fecha;
@@ -1368,6 +1373,10 @@ export class FacturacionV2Component implements OnInit {
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
       this.venta.credito = false;
       this.venta.consigna = false;
+    }
+
+    if (this.pedidoCanalId) {
+      (this.venta as any).id_restaurante_pedido = this.pedidoCanalId;
     }
 
     this.apiService.store('facturacion', this.venta).subscribe(

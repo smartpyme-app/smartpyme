@@ -269,7 +269,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
   }
 
   confirmar(p: PedidoCanal): void {
-    if (!confirm('¿Confirmar pedido? Pasará a pendiente de facturar y ya no podrá editarse.')) {
+    if (!confirm('¿Confirmar pedido? Pasará a pendiente de facturar, se descontará el inventario según su bodega de usuario y ya no podrá editarse.')) {
       return;
     }
     this.restauranteService.confirmarPedidoCanal(p.id).subscribe({
@@ -320,6 +320,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
           pedidoCanalData: {
             cliente_id: data.cliente_id,
             id_sucursal: data.id_sucursal,
+            id_bodega_inventario: data.id_bodega_inventario,
             fecha: data.fecha,
             canal: data.canal,
             referencia_externa: data.referencia_externa,

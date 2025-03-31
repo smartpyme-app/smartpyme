@@ -28,6 +28,8 @@ class PedidoRestaurante extends Model
         'subtotal',
         'descuento',
         'total',
+        'inventario_descontado_at',
+        'id_bodega_inventario',
     ];
 
     protected $casts = [
@@ -35,6 +37,7 @@ class PedidoRestaurante extends Model
         'subtotal' => 'decimal:4',
         'descuento' => 'decimal:4',
         'total' => 'decimal:4',
+        'inventario_descontado_at' => 'datetime',
     ];
 
     public function detalles(): HasMany
