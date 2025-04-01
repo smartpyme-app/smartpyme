@@ -106,12 +106,12 @@ class BodegasController extends Controller
         $bodega->fill($request->all());
         $bodega->save();
 
-  
+
         if (!$request->id) {
 
             $productoIds = DB::table('productos')
                 ->whereIn('tipo', ['Producto', 'Compuesto'])
-                ->where('id_empresa', $request->id_empresa) 
+                ->where('id_empresa', $request->id_empresa)
                 ->pluck('id')
                 ->toArray();
             $batchSize = 500;

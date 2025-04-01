@@ -143,7 +143,7 @@ class Inventario extends Model {
             // Si estamos en un webhook (no hay usuario autenticado)
             if (!Auth::user()) {
                 $costo = $producto->costo;
-            } 
+            }
             // Si hay usuario autenticado, usar la lógica original
             else if(Auth::user()->empresa->valor_inventario == 'promedio' && $producto->costo_promedio > 0){
                 $costo = $producto->costo_promedio;

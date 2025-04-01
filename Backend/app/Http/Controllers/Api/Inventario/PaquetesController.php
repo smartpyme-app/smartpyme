@@ -210,6 +210,7 @@ class PaquetesController extends Controller
         return Response()->json($clientes, 200);
 
     }
+
     public function listGuia()
     {
         $query = Paquete::select('num_guia')

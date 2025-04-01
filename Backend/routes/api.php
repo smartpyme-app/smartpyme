@@ -112,6 +112,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 
+	// Pruebas masivas
+	require base_path('routes/modulos/admin/pruebas-masivas-mh.php');
+
+
 	//Chatbot
 	require base_path('routes/modulos/chat/chat.php');
 	//Funcionalidades
