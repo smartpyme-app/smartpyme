@@ -212,7 +212,7 @@ class WooCommerceController extends Controller
 
         // Verificar la empresa
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
-            ->where('woocommerce_status', 'connected')
+            //->where('woocommerce_status', 'connected')
             ->first();
 
         if (!$empresa) {
@@ -227,11 +227,37 @@ class WooCommerceController extends Controller
         $errores = [];
         $procesadas = 0;
         $fallidas = 0;
+
         foreach ($request->ventas as $index => $ventaData) {
             try {
                 DB::beginTransaction();
+                $ventaId = isset($ventaData['id']) ? $ventaData['id'] : 'N/A';
+
+                // Verificar primero la existencia de todos los productos en la venta
+                $todosProductosExisten = true;
+                $productosFaltantes = [];
+
+                if (!isset($ventaData['line_items']) || !is_array($ventaData['line_items'])) {
+                    throw new \Exception("La venta {$ventaData['id']} no contiene líneas de productos válidas");
+                }
+
+                foreach ($ventaData['line_items'] as $item) {
+                    $producto = Producto::where('codigo', $item['sku'])
+                        ->where('id_empresa', $empresa->id)
+                        ->first();
+
+                    if (!$producto) {
+                        $todosProductosExisten = false;
+                        $productosFaltantes[] = $item['sku'];
+                    }
+                }
+
+                if (!$todosProductosExisten) {
+                    throw new \Exception("Productos no encontrados: " . implode(", ", $productosFaltantes));
+                }
 
                 $idVendedor = null;
+                $usuario = null;
                 if (isset($ventaData['codigo_vendedor']) && !empty($ventaData['codigo_vendedor'])) {
                     $vendedor = User::where('codigo', $ventaData['codigo_vendedor'])
                         ->where('id_empresa', $empresa->id)
@@ -240,27 +266,14 @@ class WooCommerceController extends Controller
 
                     if ($vendedor) {
                         $idVendedor = $vendedor->id;
+                        $usuario = $vendedor;
                     } else {
                         Log::warning("Vendedor con código {$ventaData['codigo_vendedor']} no encontrado. Usando usuario predeterminado.");
                     }
                 }
 
-                $idSucursal = null;
-                if (isset($ventaData['codigo_sucursal']) && !empty($ventaData['codigo_sucursal'])) {
-                    $sucursalEspecifica = Sucursal::where('cod_estable_mh', $ventaData['codigo_sucursal'])
-                        ->where('id_empresa', $empresa->id)
-                        ->where('activo', 1)
-                        ->first();
-
-                    if ($sucursalEspecifica) {
-                        $idSucursal = $sucursalEspecifica->id;
-                        $sucursal = $sucursalEspecifica;
-                    } else {
-                        Log::warning("Sucursal con código {$ventaData['codigo_sucursal']} no encontrada. Usando sucursal predeterminada.");
-                    }
-                }
-
-                // Obtener el documento apropiado para la sucursal específica de esta venta
+                $idSucursal = $usuario->id_sucursal;
+                $idBodega = $usuario->id_bodega;
                 if ($empresa->facturacion_electronica) {
                     $documento = Documento::where('id_sucursal', $idSucursal)
                         ->where('nombre', 'Factura')
@@ -272,71 +285,24 @@ class WooCommerceController extends Controller
                         ->where('activo', true)
                         ->first();
                 }
-
-                // Verificar que existe un documento válido para esta sucursal
                 if (!$documento) {
                     throw new \Exception("No se encontró un documento válido para la sucursal seleccionada (ID: {$idSucursal})");
                 }
 
-               
-                $idBodega = null;
-                if (isset($ventaData['codigo_bodega']) && !empty($ventaData['codigo_bodega'])) {
-                    $bodegaEspecifica = DB::table('sucursal_bodegas')
-                        ->where('cod_estable_mh', $ventaData['codigo_bodega'])
-                        ->where('id_sucursal', $idSucursal) // Debe pertenecer a la sucursal seleccionada
-                        ->where('id_empresa', $empresa->id)
-                        ->where('activo', 1)
-                        ->first();
-
-                    if ($bodegaEspecifica) {
-                        $idBodega = $bodegaEspecifica->id;
-                        $bodega = $bodegaEspecifica;
-                    } else {
-                        Log::warning("Bodega con código {$ventaData['codigo_bodega']} no encontrada. Usando bodega predeterminada.");
-                    }
-                }
-
-                // Obtener ID del canal de WooCommerce
-                $canalId = $empresa->woocommerce_canal_id;
+                $canalId = null;
 
                 // Buscar canal por nombre si viene en la venta
-                if (isset($ventaData['codigo_canal']) && !empty($ventaData['codigo_canal'])) {
+                if (isset($ventaData['canal']) && !empty($ventaData['canal'])) {
                     $canalEspecifico = DB::table('canales')
-                        ->where('nombre', $ventaData['codigo_canal'])
+                        ->where('nombre', $ventaData['canal'])
                         ->where('id_empresa', $empresa->id)
                         ->first();
 
                     if ($canalEspecifico) {
                         $canalId = $canalEspecifico->id;
                     } else {
-                        Log::warning("Canal con código {$ventaData['codigo_canal']} no encontrado. Usando canal WooCommerce predeterminado.");
+                        Log::warning("Canal con código {$ventaData['canal']} no encontrado. Usando canal predeterminado.");
                     }
-                }
-
-                // Si no hay canal especificado o no se encontró, asegurarse de tener un canal WooCommerce
-                if (!$canalId) {
-                    $canal = DB::table('canales')
-                        ->where('nombre', 'WooCommerce')
-                        ->where('id_empresa', $empresa->id)
-                        ->first();
-
-                    if ($canal) {
-                        $canalId = $canal->id;
-                    } else {
-                        // Crear un canal para WooCommerce si no existe
-                        $canalId = DB::table('canales')->insertGetId([
-                            'nombre' => 'WooCommerce',
-                            'descripcion' => 'Canal de ventas de WooCommerce',
-                            'id_empresa' => $empresa->id,
-                            'enable' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ]);
-                    }
-
-                    // Actualizar la empresa con el canal de WooCommerce
-                    $empresa->woocommerce_canal_id = $canalId;
-                    $empresa->save();
                 }
 
                 // Mezclar los datos de la venta con la información del sistema
@@ -368,32 +334,14 @@ class WooCommerceController extends Controller
                 $venta = Venta::create($ventaTransformada);
 
                 // 3. Procesar líneas de productos
-                if (!isset($ventaData['line_items']) || !is_array($ventaData['line_items'])) {
-                    throw new \Exception("La venta {$ventaData['id']} no contiene líneas de productos válidas");
-                }
-
                 foreach ($ventaData['line_items'] as $item) {
-                    // Buscar primero por woocommerce_id, luego por SKU
-                    $producto = Producto::where('woocommerce_id', $item['product_id'])
+                    $producto = Producto::where('codigo', $item['sku'])
                         ->where('id_empresa', $empresa->id)
                         ->first();
 
+                    // Ya verificamos que todos los productos existen, así que esto no debería ocurrir
                     if (!$producto) {
-                        $producto = Producto::where('codigo', $item['sku'])
-                            ->where('id_empresa', $empresa->id)
-                            ->first();
-                    }
-
-                    // Si no se encuentra el producto, crearlo
-                    if (!$producto) {
-                        $productoData = $this->transformer->transformarProducto(
-                            $item,
-                            $empresa->id,
-                            $idVendedor,
-                            $idSucursal
-                        );
-                        $productoData['woocommerce_id'] = $item['product_id'];
-                        $producto = Producto::create($productoData);
+                        throw new \Exception("Producto no encontrado: " . $item['sku']);
                     }
 
                     // Crear detalle de venta
@@ -429,8 +377,8 @@ class WooCommerceController extends Controller
 
                 // Obtener información adicional para incluir en la respuesta
                 $infoVendedor = User::select('id', 'name', 'codigo')->find($idVendedor);
-                $infoSucursal = Sucursal::select('id', 'nombre')->find($sucursal->id);
-                $infoBodega = DB::table('sucursal_bodegas')->select('id', 'nombre')->find($bodega->id);
+                $infoSucursal = Sucursal::select('id', 'nombre')->find($idSucursal);
+                $infoBodega = DB::table('sucursal_bodegas')->select('id', 'nombre')->find($idBodega);
                 $infoCanal = DB::table('canales')->select('id', 'nombre')->find($canalId);
 
                 $resultados[] = [
@@ -467,7 +415,7 @@ class WooCommerceController extends Controller
                 Log::error("Error procesando venta #{$index} (ID: {$ventaId}): " . $e->getMessage());
 
                 $errores[] = [
-                    'woocommerce_id' => $ventaData['id'] ?? 'desconocido',
+                    'venta_id' => $ventaData['id'] ?? 'desconocido',
                     'estado' => 'error',
                     'mensaje' => $e->getMessage()
                 ];
@@ -482,6 +430,6 @@ class WooCommerceController extends Controller
             'total_fallidas' => $fallidas,
             'resultados' => $resultados,
             'errores' => $errores
-        ], $fallidas > 0 ? 207 : 200); 
+        ], $fallidas > 0 ? 207 : 200);
     }
 }
