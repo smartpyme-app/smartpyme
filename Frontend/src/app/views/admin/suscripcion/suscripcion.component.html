@@ -520,7 +520,12 @@
             class="payment-form"
             *ngIf="showPaymentForm || !suscripcion?.metodoPago"
           >
-            <!-- Formulario de tarjeta (igual que el original) -->
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <span>
+                Se actualizara automaticamente tu método de pago con la nueva tarjeta.
+              </span>
+            </div>
             <!-- Número de tarjeta -->
             <div class="mb-3">
               <label class="form-label">Número de Tarjeta</label>
@@ -750,6 +755,8 @@
                 </div>
               </div>
             </div>
+            
+
           </div>
         </div>
       </div>

@@ -75,7 +75,7 @@ class N1coChargeController extends Controller
             $customerId = $request->input('customer.id');
             $metodoPago = MetodoPago::where('id_usuario', $customerId)->where('esta_activo', true)->where('es_predeterminado', true)->first();
 
-            if ($metodoPago) {
+            if ($metodoPago && $request->input('updatePaymentMethod') == false && $request->input('showPaymentForm') == false) {
                 Log::info('Método de pago encontrado', [
                     'metodo_pago' => $metodoPago
                 ]);
@@ -267,17 +267,42 @@ class N1coChargeController extends Controller
                     ], 500);
                 }
 
-                $paymentMethod = MetodoPago::create([
-                    'id_usuario' => $request->input('customer.id'),
-                    'id_tarjeta' => $result['data']['id'],
-                    'marca_tarjeta' => $result['data']['bin']['brand'],
-                    'ultimos_cuatro' => substr($request->input('card.number'), -4),
-                    'titular_tarjeta' => $request->input('card.cardHolder'),
-                    'nombre_emisor' => $result['data']['bin']['issuerName'],
-                    'codigo_pais' => $result['data']['bin']['countryCode'],
-                    'es_predeterminado' => true,
-                    'esta_activo' => true
-                ]);
+
+                $paymentMethodExist = MetodoPago::where('id_usuario', $request->input('customer.id'))->where('ultimos_cuatro', substr($request->input('card.number'), -4))->where('id_tarjeta', $result['data']['id'])->first();
+
+                if ($paymentMethodExist) {
+                    $paymentMethodExist->update([
+                        'es_predeterminado' => true,
+                        'esta_activo' => true
+                    ]);
+
+                } else {
+
+                    $paymentMethod = MetodoPago::create([
+                        'id_usuario' => $request->input('customer.id'),
+                        'id_tarjeta' => $result['data']['id'],
+                        'marca_tarjeta' => $result['data']['bin']['brand'],
+                        'ultimos_cuatro' => substr($request->input('card.number'), -4),
+                        'titular_tarjeta' => $request->input('card.cardHolder'),
+                        'nombre_emisor' => $result['data']['bin']['issuerName'],
+                        'codigo_pais' => $request->input('billingInfo.countryCode'),
+                        'codigo_estado' => $request->input('billingInfo.stateCode'),
+                        'codigo_postal' => $request->input('billingInfo.zipCode'),
+                        'es_predeterminado' => true,
+                        'esta_activo' => true
+                    ]);
+                }
+
+                //se desactivan metodos de pagos sin el nuevo predeterminado
+                if ($request->input('updatePaymentMethod') == true) {
+                    MetodoPago::where('id_usuario', $request->input('customer.id'))
+                        ->where('esta_activo', true)
+                        ->where('id_tarjeta', '!=', $result['data']['id'])
+                        ->update([
+                            'es_predeterminado' => false,
+                            'esta_activo' => false
+                        ]);
+                }
             }
 
             $plan = Plan::find($request->input('plan.id_plan'));
@@ -485,7 +510,8 @@ class N1coChargeController extends Controller
         }
     }
 
-    public function processChargeReady(Request $request) {
+    public function processChargeReady(Request $request)
+    {
         try {
             $validator = Validator::make($request->all(), [
                 'metodo_pago_id' => 'required|integer',
@@ -496,7 +522,7 @@ class N1coChargeController extends Controller
                 'customer_email' => 'required|email',
                 'customer_phone' => 'nullable|string'
             ]);
-    
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -504,20 +530,20 @@ class N1coChargeController extends Controller
                     'errors' => $validator->errors()
                 ], 400);
             }
-    
+
             // Obtener el método de pago
             $metodoPago = MetodoPago::where('id', $request->metodo_pago_id)
                 ->where('id_usuario', $request->id_usuario)
                 ->where('esta_activo', true)
                 ->first();
-    
+
             if (!$metodoPago) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Método de pago no encontrado o no está activo'
                 ], 404);
             }
-    
+
             // Obtener el plan
             $plan = Plan::find($request->plan_id);
             if (!$plan) {
@@ -526,7 +552,7 @@ class N1coChargeController extends Controller
                     'message' => 'Plan no encontrado'
                 ], 404);
             }
-    
+
             // Crear orden de pago
             $ordenPago = OrdenPago::create([
                 'id_usuario' => $request->id_usuario,
@@ -543,7 +569,7 @@ class N1coChargeController extends Controller
                 'estado' => 'pendiente',
                 'divisa' => 'USD'
             ]);
-    
+
             // Preparar datos para el cargo
             $chargeData = [
                 'customer' => [
@@ -572,25 +598,25 @@ class N1coChargeController extends Controller
                     'zipCode' => $metodoPago->codigo_postal
                 ]
             ];
-    
+
             // Realizar el cargo
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
-    
+
             Log::info('Resultado de la creación del cargo', [
                 'charge_result' => $chargeResult
             ]);
-    
+
             // Si requiere autenticación 3DS
             if (isset($chargeResult['data']['status']) && $chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
                 $authenticationId = $chargeResult['data']['authentication']['id'];
                 $authenticationUrl = $chargeResult['data']['authentication']['url'];
-    
+
                 $ordenPago->updateStatusAuthentication3DS(
                     $authenticationId,
                     $authenticationUrl,
                     config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
                 );
-    
+
                 return response()->json([
                     'success' => true,
                     'requires_3ds' => true,
@@ -599,7 +625,7 @@ class N1coChargeController extends Controller
                     'order_id' => $ordenPago->id_orden
                 ]);
             }
-    
+
             // Si el cargo fue exitoso
             if ($chargeResult['success']) {
                 // Actualizar la orden de pago
@@ -608,7 +634,7 @@ class N1coChargeController extends Controller
                     'estado' => 'completado',
                     'fecha_transaccion' => now()
                 ]);
-                
+
                 // Crear o actualizar suscripción
                 $empresa = Empresa::find($request->empresa_id);
                 if ($empresa) {
@@ -625,7 +651,7 @@ class N1coChargeController extends Controller
                         ]
                     );
                 }
-    
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Pago procesado exitosamente',
@@ -636,7 +662,7 @@ class N1coChargeController extends Controller
                 $ordenPago->update([
                     'estado' => 'fallido'
                 ]);
-                
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Error al procesar el pago',
@@ -648,7 +674,7 @@ class N1coChargeController extends Controller
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al procesar el pago',

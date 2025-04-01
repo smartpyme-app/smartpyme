@@ -1,5 +1,6 @@
+
 <div class="d-flex" style="min-height: 100vh; background: #fdfbff">
-  <!-- Sidebars sin cambios -->
+
   <app-sidebar-admin
     *ngIf="usuario.id_empresa == 2 && !usuario.empresa.licencia"
   ></app-sidebar-admin>
@@ -73,7 +74,7 @@
         >
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
-            <a href="/paywall" class="text-decoration-none text-dark">
+            <a href="/suscripcion" class="text-decoration-none text-dark">
               Tu suscripción vencerá en {{ usuario.dias_faltantes }} días.
               <span class="fw-bold">Renueva ahora</span>
             </a>
@@ -122,7 +123,7 @@
         >
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
-            <a href="/paywall" class="text-decoration-none text-dark">
+            <a href="/suscripcion" class="text-decoration-none text-dark">
               Tu suscripción ha vencido.
               <span class="fw-bold"
                 >Renueva ahora para mantener acceso a todas las funciones</span
@@ -147,7 +148,7 @@
         >
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
-            <a href="/paywall" class="text-decoration-none text-dark">
+            <a href="/suscripcion" class="text-decoration-none text-dark">
               <i class="fas fa-exclamation-triangle me-2"></i>
               Tu cuenta será desactivada en
               {{ 10 + usuario.dias_faltantes }} días si no renuevas tu
@@ -175,7 +176,7 @@
         >
           <!-- Contenido para administradores -->
           <ng-container *ngIf="isAdmin()">
-            <a href="/paywall" class="text-decoration-none text-white">
+            <a href="/suscripcion" class="text-decoration-none text-white">
               <i class="fas fa-lock me-2"></i>
               Tu cuenta ha sido desactivada por falta de pago.
               <span class="fw-bold">Contacta a soporte para reactivarla</span>
@@ -278,3 +279,6 @@
 </div>
 
 <app-footer></app-footer>
+<!-- <app-chat-drawer></app-chat-drawer> -->
+
+<!-- <app-speed-dial></app-speed-dial> -->
