@@ -1,4 +1,5 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef, } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
@@ -25,12 +26,26 @@ export class EmpresaComponent implements OnInit {
     public downloading:boolean = false;
     public filtros:any = {};
 
+    public estadisticasPruebas: any = null;
+    public documentosBase: any[] = [];
+    public tipoSeleccionado: string = '';
+    public cantidadFaltante: number = 1;
+    public documentoBaseSeleccionado: any = null;
+    public procesando: boolean = false;
+    public modalRef!: BsModalRef;
+    public procesandoPruebas: boolean = false;
+    @ViewChild('modalTemplate')
+    modalTemplate!: TemplateRef<any>;
+
+    public estadoPruebasCompletado: boolean = false;
+    public fechaCompletadoPruebas: string = '';
+
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
 
     constructor( 
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
     ) { }
 
     ngOnInit() {
@@ -43,6 +58,13 @@ export class EmpresaComponent implements OnInit {
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+
+        setTimeout(() => {
+            if (this.empresa && this.empresa.fe_ambiente === '00') {
+                this.cargarEstadisticasPruebas();
+                this.cargarDocumentosBase();
+            }
+        }, 1000); 
 
     }
 
@@ -57,7 +79,7 @@ export class EmpresaComponent implements OnInit {
 
     public onSubmit(): Promise<any> {
 
-        return new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
             this.saving = true;
             this.apiService.store('empresa', this.empresa).subscribe(empresa => {
                 this.empresa = empresa;
@@ -239,6 +261,138 @@ export class EmpresaComponent implements OnInit {
 
     }
 
+    cargarEstadisticasPruebas() {
+        if(this.empresa.fe_ambiente == '00') {
+            this.mhService.obtenerEstadisticasPruebasMasivas().subscribe(
+                (data) => {
+                    this.estadisticasPruebas = data.tipos;
+                    this.estadoPruebasCompletado = data.estado.completado;
+                    this.fechaCompletadoPruebas = data.estado.fecha_completado;
+                },
+                (error) => {
+                    console.error('Error al cargar estadísticas de pruebas:', error);
+                    this.alertService.error('No se pudieron cargar las estadísticas de pruebas masivas');
+                }
+            );
+        }
+    }
+    
+      getKeysPruebas(): string[] {
+        return this.estadisticasPruebas ? Object.keys(this.estadisticasPruebas) : [];
+      }
+    
+      getLabelTipo(tipo: string): string {
+        const labels: { [key: string]: string } = {
+          'facturas': 'Facturas',
+          'creditosFiscales': 'CCF',
+        //   'notasCredito': 'Notas Crédito',
+        //   'notasDebito': 'Notas Débito',
+        //   'facturasExportacion': 'Exportación',
+        //   'sujetoExcluido': 'Sujeto Excluido'
+        };
+        
+        return labels[tipo] || tipo;
+      }
+    
+      isPruebaCompleta(tipo: string): boolean {
+        if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
+          return false;
+        }
+        
+        return this.estadisticasPruebas[tipo].emitidas >= this.estadisticasPruebas[tipo].requeridas;
+      }
+    
+      getProgresoTipo(tipo: string): number {
+        if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
+          return 0;
+        }
+        
+        const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
+        return Math.min(100, Math.round((emitidas / requeridas) * 100));
+      }
+    
+      getTotalProgress(): number {
+        if (!this.estadisticasPruebas) {
+          return 0;
+        }
+        
+        // Verificar si todos los tipos de documentos han alcanzado el mínimo requerido
+        const todosCompletados = Object.values(this.estadisticasPruebas).every((stat: any) => 
+          stat.emitidas >= stat.requeridas
+        );
+        
+        // Si todos los tipos han alcanzado el mínimo, mostrar 100%
+        if (todosCompletados) {
+          return 100;
+        }
+        
+        // Caso contrario, calcular el porcentaje real pero limitado a 100%
+        let totalEmitidos = 0;
+        let totalRequeridos = 0;
+        
+        Object.values(this.estadisticasPruebas).forEach((stat: any) => {
+          // Para cada tipo, considerar como máximo el número requerido
+          totalEmitidos += Math.min(stat.emitidas, stat.requeridas);
+          totalRequeridos += stat.requeridas;
+        });
+        
+        return Math.min(100, Math.round((totalEmitidos / totalRequeridos) * 100));
+      }
+    
+      cargarDocumentosBase() {
+        this.apiService.getAll('mh/pruebas-masivas/documentos-base').subscribe(
+          (data) => {
+            this.documentosBase = data;
+          },
+          (error) => {
+            console.error('Error al cargar documentos base:', error);
+            this.alertService.error('Error al cargar documentos base');
+          }
+        );
+      }
+      
+      // Modifica este método para que abra el modal
+      ejecutarPruebasMasivas(template: TemplateRef<any>, tipo: string) {
+        this.tipoSeleccionado = tipo;
+        
+        // Calcular cuántos documentos faltan
+        if (this.estadisticasPruebas && this.estadisticasPruebas[tipo]) {
+          const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
+          
+          // Mostrar el modal usando el template pasado como parámetro
+          this.modalRef = this.modalService.show(template, {
+            class: 'modal-md'
+          });
+        }
+      }
+      
+      // Método para confirmar y ejecutar la emisión
+      confirmarEjecucion() {
+        this.modalRef.hide();
+        this.procesando = true;
+        
+        // Llamada al servicio para ejecutar las pruebas
+        this.mhService.ejecutarPruebasMasivas(
+          this.tipoSeleccionado, 
+          this.cantidadFaltante, 
+          this.documentoBaseSeleccionado?.id
+        ).subscribe(
+          (response) => {
+            this.procesando = false;
+            this.cargarEstadisticasPruebas(); // Recargar estadísticas
+            
+            if (response.success) {
+              this.alertService.success('Proceso completado', response.message);
+            } else {
+              this.alertService.error(response.message);
+            }
+          },
+          (error) => {
+            this.procesando = false;
+            this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
+          }
+        );
+      }
 
     public copyToClipboard(text: string): void {
         const selBox = document.createElement('textarea');
@@ -447,7 +601,5 @@ export class EmpresaComponent implements OnInit {
             }
         );
     }
-
-
 
 }

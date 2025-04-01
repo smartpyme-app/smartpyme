@@ -14,6 +14,7 @@ class Venta extends Model {
         'numero_control',
         'codigo_generacion',
         'sello_mh',
+        'prueba_masiva',
         'fecha',
         'correlativo',
         'estado',
