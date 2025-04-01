@@ -112,6 +112,19 @@ class EmpresasController extends Controller
             }
         }
 
+        $woocommerceFields = [
+            'woocommerce_api_key',
+            'woocommerce_store_url',
+            'woocommerce_consumer_key',
+            'woocommerce_consumer_secret',
+            'woocommerce_status'
+        ];
+
+        $woocommerceValues = [];
+        foreach ($woocommerceFields as $field) {
+            $woocommerceValues[$field] = $empresa->$field;
+        }
+
         $empresa->fill($request->all());
 
         if ($request->hasFile('file')) {
@@ -124,6 +137,10 @@ class EmpresasController extends Controller
             $path = "empresas/{$hash}.jpg";
             $resize->save(public_path('img/'.$path), 50);
             $empresa->logo = "/" . $path;
+        }
+
+        foreach ($woocommerceFields as $field) {
+            $empresa->$field = $woocommerceValues[$field];
         }
 
 

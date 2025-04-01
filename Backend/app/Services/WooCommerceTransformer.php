@@ -38,6 +38,7 @@ class WooCommerceTransformer
             'forma_pago' => 'Tarjeta de crédito/débito',
             'observaciones' => $wooData['customer_note'],
             'fecha' => $wooData['date_created'],
+            'fecha_pago' => $wooData['date_created'],
             'total_costo' => 0, // calcular basado en detalles
             'total' => $wooData['total'],
             'sub_total' => $wooData['total'],
