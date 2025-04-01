@@ -19,6 +19,8 @@ export class SidebarComponent implements OnInit {
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
+    public planillaIsCollapsed:boolean = true;
+
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -61,6 +63,11 @@ export class SidebarComponent implements OnInit {
             localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
         }else{
             this.finanzasIsCollapsed = JSON.parse(localStorage.getItem('finanzasIsCollapsed')!);
+        }
+        if (!localStorage.getItem('planillaIsCollapsed')) {
+            localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        }else{
+            this.planillaIsCollapsed = JSON.parse(localStorage.getItem('planillaIsCollapsed')!);
         }
         if (!localStorage.getItem('paquetesIsCollapsed')) {
             localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
@@ -159,6 +166,15 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    togglePlanilla() {
+        if(this.planillaIsCollapsed){
+            this.closeAll();
+        }
+        this.planillaIsCollapsed = !this.planillaIsCollapsed;
+        localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     togglePaquetes() {
         if(this.paquetesIsCollapsed){
             this.closeAll();
@@ -187,6 +203,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.planillaIsCollapsed = true;
+        localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
     }
