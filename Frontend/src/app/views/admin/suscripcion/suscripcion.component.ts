@@ -23,6 +23,8 @@ export class SuscripcionComponent implements OnInit {
   public saving = false;
   public showUpdateForm = false;
   public showPaymentForm = false;
+  public updatePaymentMethod = false;
+  public checkboxUpdate = true;
 
   public processingPayment = false;
   public mostrar3DSModal = false;
@@ -256,6 +258,8 @@ export class SuscripcionComponent implements OnInit {
           plan_name: this.usuario.plan,
         },
         billingInfo: this.billingInfo,
+        updatePaymentMethod: this.showPaymentForm,
+        showPaymentForm: this.showPaymentForm,
       };
 
       const result = await firstValueFrom(

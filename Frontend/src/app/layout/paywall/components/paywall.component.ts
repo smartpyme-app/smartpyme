@@ -33,9 +33,9 @@ export class PaywallComponent implements OnInit {
   };
 
   billingInfo = {
-    countryCode: 'SV',
-    stateCode: 'SS',
-    zipCode: '1101'
+    countryCode: '',
+    stateCode: '',
+    zipCode: ''
   };
 
   mostrar3DSModal = false;
@@ -73,25 +73,6 @@ export class PaywallComponent implements OnInit {
     }
   }
 
-  // setPlanFeatures(plan: string) {
-  //   this.planName = plan;
-    
-  //   switch (plan) {
-  //     case AppConstants.PLANES.EMPRENDEDOR.NOMBRE:
-  //       this.planFeatures = AppConstants.PLANES.EMPRENDEDOR.CARACTERISTICAS;
-  //       this.price = AppConstants.PLANES.EMPRENDEDOR.PRECIO;
-  //       break;
-  //     case AppConstants.PLANES.ESTANDAR.NOMBRE:
-  //       this.planFeatures = AppConstants.PLANES.ESTANDAR.CARACTERISTICAS;
-  //       this.price = AppConstants.PLANES.ESTANDAR.PRECIO;
-  //       break;
-  //     case AppConstants.PLANES.AVANZADO.NOMBRE:
-  //       this.planFeatures = AppConstants.PLANES.AVANZADO.CARACTERISTICAS;
-  //       this.price = AppConstants.PLANES.AVANZADO.PRECIO;
-  //       break;
-  //   }
-  // }
-
   getMensajeSuscripcion(): string {
     if (this.estadoSuscripcion === this.ESTADOS_SUSCRIPCION.EN_PRUEBA) {
       return 'Tu suscripción de prueba ha expirado';
@@ -121,18 +102,6 @@ export class PaywallComponent implements OnInit {
     }
     return 'alert-danger';
   }
-
-  // renewSubscription() {
-  //   const paymentUrl = this.PLAN_URLS[this.planName];
-  //   if (paymentUrl) {
-  //     window.location.href = paymentUrl;
-  //   }
-  // }
-
-  // logout() {
-  //   // this.apiService.logout();
-  //   this.router.navigate(['/login']);
-  // }
 
   async processPayment() {
     if (this.loading) return;
@@ -170,6 +139,8 @@ export class PaywallComponent implements OnInit {
       };
 
       const result = await this.n1coPaymentService.createPaymentMethod(paymentMethodData).toPromise();
+
+      console.log("Payment result en processPayment:", result);
 
       if (result.requires_3ds) {
         this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
@@ -210,7 +181,7 @@ export class PaywallComponent implements OnInit {
             
             if (response.success) {
               this.alertService.success('Exito','Pago procesado exitosamente');
-              this.n1coPaymentService.setPaymentResponse(result);
+              this.n1coPaymentService.setPaymentResponse(response);
               this.router.navigate(['/pago-exitoso-paywall']);
             }
             return true;
