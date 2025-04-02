@@ -5,6 +5,7 @@ namespace App\Services\PaymentGateways;
 use App\Models\MetodoPago;
 use App\Models\OrdenPago;
 use App\Models\Plan;
+use App\Models\Suscripcion;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -287,6 +288,7 @@ class N1coGateway extends BasePaymentGateway
             }
 
             $plan = Plan::find($ordenPago->id_plan);
+            // $suscripcion = Suscripcion::where('id_usuario', $ordenPago->id_usuario)->where('id_plan', $ordenPago->id_plan)->first();
 
             $chargeData = [
                 'customer' => [

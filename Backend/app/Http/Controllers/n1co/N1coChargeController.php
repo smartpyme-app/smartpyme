@@ -165,6 +165,7 @@ class N1coChargeController extends Controller
                 } else {
                     // Crear nueva orden con el método de pago existente
                     $plan = Plan::find($request->input('plan.id_plan'));
+                    $suscripcion = Suscripcion::where('usuario_id', $request->input('customer.id'))->where('plan_id', $plan->id)->first();
 
                     $ordenPago = OrdenPago::create([
                         'id_usuario' => $request->input('customer.id'),
@@ -177,7 +178,7 @@ class N1coChargeController extends Controller
                         'email_cliente' => $request->input('customer.email'),
                         'telefono_cliente' => $request->input('customer.phoneNumber'),
                         'plan' => $plan->nombre,
-                        'monto' => $plan->precio,
+                        'monto' => $suscripcion->monto,
                         'estado' => 'pendiente',
                     ]);
 
@@ -194,7 +195,7 @@ class N1coChargeController extends Controller
                                 [
                                     'product' => [
                                         'name' => $plan->nombre,
-                                        'price' => $plan->precio
+                                        'price' => $suscripcion->monto
                                     ],
                                     'quantity' => 1
                                 ]
@@ -306,6 +307,7 @@ class N1coChargeController extends Controller
             }
 
             $plan = Plan::find($request->input('plan.id_plan'));
+            $suscripcion = Suscripcion::where('usuario_id', $request->input('customer.id'))->where('plan_id', $plan->id)->first();
 
             $order = OrdenPago::create([
                 'id_usuario' => $request->input('customer.id'),
@@ -318,7 +320,7 @@ class N1coChargeController extends Controller
                 'email_cliente' => $request->input('customer.email'),
                 'telefono_cliente' => $request->input('customer.phoneNumber'),
                 'plan' => $plan->nombre,
-                'monto' => $plan->precio,
+                'monto' => $suscripcion->monto,
                 'estado' => 'pendiente',
             ]);
 
@@ -336,7 +338,7 @@ class N1coChargeController extends Controller
                             // 'sku' => $request->input('order.lineItems.0.sku'),
                             'product' => [
                                 'name' => $plan->nombre,
-                                'price' => $plan->precio
+                                'price' => $suscripcion->monto
                             ],
                             'quantity' => 1
                         ]
@@ -546,6 +548,12 @@ class N1coChargeController extends Controller
 
             // Obtener el plan
             $plan = Plan::find($request->plan_id);
+
+            // Obtener la suscripción
+            $suscripcion = Suscripcion::where('usuario_id', $request->id_usuario)
+                ->where('plan_id', $request->plan_id)
+                ->first();
+
             if (!$plan) {
                 return response()->json([
                     'success' => false,
@@ -565,7 +573,7 @@ class N1coChargeController extends Controller
                 'email_cliente' => $request->customer_email,
                 'telefono_cliente' => $request->customer_phone,
                 'plan' => $plan->nombre,
-                'monto' => $plan->precio,
+                'monto' => $suscripcion->monto,
                 'estado' => 'pendiente',
                 'divisa' => 'USD'
             ]);
@@ -584,7 +592,7 @@ class N1coChargeController extends Controller
                         [
                             'product' => [
                                 'name' => $plan->nombre,
-                                'price' => $plan->precio
+                                'price' => $ordenPago->monto
                             ],
                             'quantity' => 1
                         ]
@@ -641,9 +649,9 @@ class N1coChargeController extends Controller
                     $suscripcion = Suscripcion::updateOrCreate(
                         ['id_empresa' => $empresa->id, 'estado' => 'activo'],
                         [
-                            'id_plan' => $plan->id,
+                            'plan_id' => $plan->id,
                             'tipo_plan' => 'mensual', // O el valor que corresponda
-                            'monto' => $plan->precio,
+                            'monto' => $ordenPago->monto,
                             'fecha_inicio' => now(),
                             'fecha_ultimo_pago' => now(),
                             'fecha_proximo_pago' => now()->addMonth(),
