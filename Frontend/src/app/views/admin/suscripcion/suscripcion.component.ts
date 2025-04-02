@@ -75,7 +75,6 @@ export class SuscripcionComponent implements OnInit {
     this.apiService.getAll('suscripcion').subscribe(
       (suscripcion) => {
         this.suscripcion = suscripcion;
-        // console.log(this.suscripcion);
         this.loading = false;
       },
       (error) => {
@@ -107,7 +106,7 @@ export class SuscripcionComponent implements OnInit {
         id_usuario: this.usuario.id,
         empresa_id: this.usuario.empresa.id,
         plan_id: this.suscripcion.plan.id,
-        amount: this.usuario.plan.precio,
+        amount: this.suscripcion.suscripcion.monto,
         customer_name: this.usuario.name,
         customer_email: this.usuario.email,
         customer_phone: this.usuario.telefono || this.usuario.empresa.telefono,
