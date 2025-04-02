@@ -184,7 +184,7 @@ export class FacturacionComponent implements OnInit {
       (documentos) => {
         this.documentos = documentos;
         this.documentos = this.documentos.filter(
-          (x: any) => x.id_sucursal == this.venta.id_sucursal
+          (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
         if (!this.venta.id_documento && !this.venta.correlativo) {
           let documento = this.documentos.find(
@@ -211,8 +211,8 @@ export class FacturacionComponent implements OnInit {
             }
           } else {
             this.documentos = this.documentos.filter(
-              (x: any) =>
-                x.nombre != 'Cotización' && x.nombre != 'Orden de compra'
+              (doc: any) =>
+                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket'
             );
           }
         }

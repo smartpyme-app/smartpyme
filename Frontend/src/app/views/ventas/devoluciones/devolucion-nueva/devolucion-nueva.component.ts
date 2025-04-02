@@ -76,7 +76,9 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     cargarDocumentos(){
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
-            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.devolucion.id_sucursal);
+            this.documentos = this.documentos.filter((doc:any) => doc.id_sucursal == this.devolucion.id_sucursal &&
+                  doc.nombre === 'Nota de débito' || doc.nombre === 'Nota de crédito'
+                );
 
             if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
                 let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
