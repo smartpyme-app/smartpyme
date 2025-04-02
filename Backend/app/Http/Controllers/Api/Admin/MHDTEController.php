@@ -428,7 +428,8 @@ class MHDTEController extends Controller
 
             return Response()->json($DTE, 200);
         }else{
-            return Response()->json(['error' => 'El cliente no tiene correo electrónico'], 400);
+            return Response()->json($DTE, 200);
+            // return Response()->json(['error' => 'El cliente no tiene correo electrónico'], 400);
         }
 
     }
