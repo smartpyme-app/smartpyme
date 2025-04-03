@@ -413,8 +413,69 @@
                         </small>
                     </div>
                 </div>
+                <hr class="mb-4">
+              
+                <div class="col-12 mb-5">
+                    <h5 class="mb-3">Credenciales OAuth 2.0</h5>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fa fa-info-circle me-2"></i> 
+                        Estas credenciales son necesarias para autenticar sus aplicaciones externas con nuestra API.
+                    </div>
+                    
+                    <div *ngIf="cliente && cliente.id_client">
+                        <div class="mb-3">
+                            <label for="client_id" class="form-label">Clave de cliente:</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                    class="form-control" 
+                                    [value]="cliente.id_client" 
+                                    name="client_id" 
+                                    readonly>
+                                <button class="btn btn-secondary" 
+                                        type="button" 
+                                        (click)="copyToClipboard(cliente.id_client)" 
+                                        tooltip="Copiar Client ID">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="client_secret" class="form-label">Clave Secreta:</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                    class="form-control" 
+                                    [value]="cliente.secret" 
+                                    name="client_secret" 
+                                    readonly>
+                                <button class="btn btn-secondary" 
+                                        type="button" 
+                                        (click)="copyToClipboard(cliente.secret)" 
+                                        tooltip="Copiar Client Secret">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-light" 
+                                    type="button" 
+                                    (click)="downloadClientCredentials()" 
+                                    tooltip="Descargar Credenciales">
+                                <i class="fa fa-download me-2"></i>
+                                Descargar Credenciales
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning" *ngIf="!cliente || !cliente.id_client">
+                        <i class="fa fa-exclamation-triangle me-2"></i>
+                        No se encontraron credenciales de cliente. Contacte al administrador para generar nuevas credenciales.
+                    </div>
+                </div>
+                <hr class="mb-4">
 
-    
                 <div class="col-12">
                     <h5 class="mb-3">Integración WooCommerce</h5>
                     

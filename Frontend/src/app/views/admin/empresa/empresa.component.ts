@@ -22,6 +22,7 @@ export class EmpresaComponent implements OnInit {
     public actividad_economicas:any = [];
     public downloading:boolean = false;
     public filtros:any = {};
+    public cliente:any = {};
 
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
@@ -51,6 +52,16 @@ export class EmpresaComponent implements OnInit {
         this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
+            //empresa.empresa_cliente.id_client
+            this.getClienteById(this.empresa.empresa_cliente.id_client);
+            this.loading = false;
+        },error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    public getClienteById(id_client: number){
+        this.loading = true;
+        this.apiService.store('empresa/getClienteById', {id_client}).subscribe(cliente => {
+            this.cliente = cliente;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
     }
@@ -446,6 +457,34 @@ export class EmpresaComponent implements OnInit {
             }
         );
     }
+
+
+    public downloadClientCredentials(): void {
+        if (!this.cliente || !this.cliente.id_client || !this.cliente.secret) {
+          this.alertService.warning('No hay credenciales disponibles para descargar', 'No se encontraron credenciales de cliente. Contacte al administrador para generar nuevas credenciales.');
+          return;
+        }
+        
+        const contenido = `OAuth Client Credentials:
+        
+      Client ID: ${this.cliente.id_client}
+      Client Secret: ${this.cliente.secret}
+      Nombre: ${this.cliente.name || this.empresa.nombre}
+      Fecha de Creación: ${new Date(this.cliente.created_at).toLocaleDateString()}
+      `;
+      
+        const blob = new Blob([contenido], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `credenciales_oauth_${this.empresa.nombre.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        this.alertService.success('Credenciales descargadas', 'El archivo de texto con las credenciales ha sido generado correctamente.');
+      }
 
 
 

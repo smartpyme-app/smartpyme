@@ -154,7 +154,7 @@ class ClientController extends Controller
             ->leftJoin('empresa_clientes', 'oauth_clients.id', '=', 'empresa_clientes.id_client')
             ->leftJoin('empresas', 'empresas.id', '=', 'empresa_clientes.id_empresa')
             ->select('oauth_clients.*', 'empresa_clientes.*', 'empresas.nombre as institucion', 'oauth_clients.secret')
-            ->where('oauth_clients.id', $request->id)
+            ->where('oauth_clients.id', $request->id_client)
             ->first();
 
         // Aquí puedes formatear $client según tus necesidades

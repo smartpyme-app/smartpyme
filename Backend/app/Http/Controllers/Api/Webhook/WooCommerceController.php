@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use League\CommonMark\Block\Element\Document;
+use Illuminate\Support\Facades\Validator;
 
 class WooCommerceController extends Controller
 {
@@ -190,8 +191,17 @@ class WooCommerceController extends Controller
 
     public function ventas(Request $request)
     {
-        return response()->json($request->all(), 200);
-        // Verificamos el token de la solicitud
+        $validator = Validator::make($request->all(), [
+            'client_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Formato de solicitud incorrecto'
+            ], 400);
+        }
+
         $tokenEmpresa = $request->token ?? $request->header('X-WC-Token');
 
         if (!$tokenEmpresa) {
