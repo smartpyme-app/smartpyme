@@ -9,6 +9,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Models\Token\EmpresaCliente;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
@@ -213,6 +214,8 @@ class WooCommerceController extends Controller
 
         Log::info("Solicitud de procesamiento masivo de ventas recibida para token: {$tokenEmpresa}");
 
+       
+
         // Validar que la solicitud contiene un array de ventas
         if (!$request->has('ventas') || !is_array($request->ventas)) {
             return response()->json([
@@ -233,6 +236,20 @@ class WooCommerceController extends Controller
                 'mensaje' => 'Token de acceso no válido o no conectado'
             ], 401);
         }
+
+       $empresaCliente = EmpresaCliente::where('id_client', $request->client_id)
+            ->where('id_empresa', $empresa->id)
+            ->first();
+
+        if (!$empresaCliente) {
+            Log::error("Cliente no encontrado para la empresa: {$empresa->id}");
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Cliente no encontrado para la empresa'
+            ], 404);
+        }
+
+        return response()->json($empresaCliente);
 
         $resultados = [];
         $errores = [];

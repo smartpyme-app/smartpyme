@@ -11,18 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class GenerateOAuthCredentialsForCompanies extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
+   
     protected $signature = 'passport:generate-company-credentials {--user_id= : ID del usuario administrador para crear los clientes}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+   
     protected $description = 'Genera credenciales OAuth para todas las empresas registradas';
 
     /**
@@ -53,7 +45,7 @@ class GenerateOAuthCredentialsForCompanies extends Command
         $userId = $this->option('user_id');
         
         if (!$userId) {
-            // Si no se proporciona usuario, usa el primer admin
+      
             $user = User::where('tipo', 'Administrador')->first();
             
             if (!$user) {
