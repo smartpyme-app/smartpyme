@@ -203,20 +203,10 @@ class WooCommerceController extends Controller
             ], 400);
         }
 
-        $tokenEmpresa = $request->token ?? $request->header('X-WC-Token');
-
-        if (!$tokenEmpresa) {
-            return response()->json([
-                'status' => 'error',
-                'mensaje' => 'Token de empresa no proporcionado'
-            ], 401);
-        }
-
-        Log::info("Solicitud de procesamiento masivo de ventas recibida para token: {$tokenEmpresa}");
+        Log::info("Solicitud de procesamiento masivo de ventas recibida para token: {$request->client_id}");
 
        
 
-        // Validar que la solicitud contiene un array de ventas
         if (!$request->has('ventas') || !is_array($request->ventas)) {
             return response()->json([
                 'status' => 'error',
@@ -224,32 +214,27 @@ class WooCommerceController extends Controller
             ], 400);
         }
 
-        // Verificar la empresa
-        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
-            //->where('woocommerce_status', 'connected')
+        $empresaCliente = EmpresaCliente::where('id_client', $request->client_id)
+            // ->where('id_empresa', $empresa->id)
+            ->first();
+ 
+         if (!$empresaCliente) {
+             Log::error("Cliente no encontrado para la empresa: {$request->client_id}");
+             return response()->json([
+                 'status' => 'error',
+                 'mensaje' => 'Cliente no encontrado para la empresa'
+             ], 404);
+         }
+        $empresa = Empresa::where('id', $empresaCliente->id_empresa)
             ->first();
 
         if (!$empresa) {
-            Log::error("Token de empresa no válido: {$tokenEmpresa}");
+            Log::error("Empresa no encontrada: {$empresaCliente->id_empresa}");
             return response()->json([
                 'status' => 'error',
-                'mensaje' => 'Token de acceso no válido o no conectado'
+                'mensaje' => 'Empresa no encontrada'
             ], 401);
         }
-
-       $empresaCliente = EmpresaCliente::where('id_client', $request->client_id)
-            ->where('id_empresa', $empresa->id)
-            ->first();
-
-        if (!$empresaCliente) {
-            Log::error("Cliente no encontrado para la empresa: {$empresa->id}");
-            return response()->json([
-                'status' => 'error',
-                'mensaje' => 'Cliente no encontrado para la empresa'
-            ], 404);
-        }
-
-        return response()->json($empresaCliente);
 
         $resultados = [];
         $errores = [];
@@ -410,26 +395,20 @@ class WooCommerceController extends Controller
                 $infoCanal = DB::table('canales')->select('id', 'nombre')->find($canalId);
 
                 $resultados[] = [
-                    'woocommerce_id' => $ventaData['id'],
                     'estado' => 'procesada',
                     'mensaje' => 'Venta procesada correctamente',
-                    'venta_id' => $venta->id,
                     'asignaciones' => [
                         'sucursal' => [
-                            'id' => $infoSucursal->id,
                             'nombre' => $infoSucursal->nombre
                         ],
                         'vendedor' => [
-                            'id' => $infoVendedor->id,
                             'nombre' => $infoVendedor->name,
                             'codigo' => $infoVendedor->codigo
                         ],
                         'bodega' => [
-                            'id' => $infoBodega->id,
                             'nombre' => $infoBodega->nombre
                         ],
                         'canal' => [
-                            'id' => $infoCanal->id,
                             'nombre' => $infoCanal->nombre
                         ]
                     ]
