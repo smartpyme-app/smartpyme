@@ -382,39 +382,7 @@
     </tab>
     <tab heading="Integraciones">
         <section class="bg-white rounded p-4 mb-4">
-
-            <div class="alert alert-info mb-4">
-                <i class="fa fa-info-circle me-2"></i> 
-                En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
-            </div>
-
             <div class="row">
-                <!-- API Key Section -->
-                <div class="col-12 mb-5">
-                    <h5 class="mb-3">Clave de API</h5>
-                    <div class="form-group">
-                        <label for="key_webhook" class="form-label">Clave Api para integraciones:</label>
-                        <div class="input-group">
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_api_key" 
-                                   name="key_webhook" 
-                                   placeholder="API Key para integraciones" 
-                                   readonly>
-                            <button class="btn btn-secondary" 
-                                    type="button" 
-                                    (click)="copyToClipboard(empresa.woocommerce_api_key)" 
-                                    tooltip="Copiar API Key">
-                                <i class="fa fa-copy"></i>
-                            </button>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            Esta es su clave única para autenticar integraciones con sistemas externos
-                        </small>
-                    </div>
-                </div>
-                <hr class="mb-4">
-              
                 <div class="col-12 mb-5">
                     <h5 class="mb-3">Credenciales OAuth 2.0</h5>
                     
@@ -468,10 +436,33 @@
                             </button>
                         </div>
                     </div>
-                    
-                    <div class="alert alert-warning" *ngIf="!cliente || !cliente.id_client">
-                        <i class="fa fa-exclamation-triangle me-2"></i>
-                        No se encontraron credenciales de cliente. Contacte al administrador para generar nuevas credenciales.
+                </div>
+                <hr class="mb-4">
+                <div class="col-12 mb-5">
+                    <div class="alert alert-info mb-4">
+                        <i class="fa fa-info-circle me-2"></i> 
+                        En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
+                    </div>
+                    <h5 class="mb-3">Clave de API</h5>
+                    <div class="form-group">
+                        <label for="key_webhook" class="form-label">Clave Api para integraciones:</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.woocommerce_api_key" 
+                                   name="key_webhook" 
+                                   placeholder="API Key para integraciones" 
+                                   readonly>
+                            <button class="btn btn-secondary" 
+                                    type="button" 
+                                    (click)="copyToClipboard(empresa.woocommerce_api_key)" 
+                                    tooltip="Copiar API Key">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            Esta es su clave única para autenticar integraciones con sistemas externos
+                        </small>
                     </div>
                 </div>
                 <hr class="mb-4">
