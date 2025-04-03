@@ -343,7 +343,7 @@ class WooCommerceController extends Controller
                     $documento->id,
                     $documento->correlativo
                 );
-                $ventaTransformada['woocommerce_id'] = $ventaData['id']; // Guardar el ID de WooCommerce
+                $ventaTransformada['woocommerce_id'] = isset($ventaData['id']) ? $ventaData['id'] : null; // Guardar el ID de WooCommerce
                 $venta = Venta::create($ventaTransformada);
 
                 // 3. Procesar líneas de productos
