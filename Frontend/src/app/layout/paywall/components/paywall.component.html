@@ -1,6 +1,6 @@
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-md-4">
+    <div class="col-md-6 col-lg-4 col-12 col-xl-4">
       <div class="card mb-4 rounded-3">
         <div class="card-body text-center">
           <h4 class="alert-heading">{{getMensajeSuscripcion()}}</h4>
@@ -8,7 +8,7 @@
           
           <div class="list-group mt-3 mb-4">
             <div class="list-group-item border mb-2 rounded-3 hover-highlight" 
-                 *ngFor="let plan of [PLANES.EMPRENDEDOR, PLANES.ESTANDAR, PLANES.AVANZADO]"
+                 *ngFor="let plan of [PLANES.EMPRENDEDOR, PLANES.ESTANDAR, PLANES.AVANZADO, PLANES.PRO]"
                  (click)="setPlanFeatures(plan.NOMBRE)"
                  [class.active]="planName === plan.NOMBRE">
               <div class="d-flex justify-content-between align-items-center">
@@ -117,6 +117,65 @@
                     placeholder="123">
                 </div>
               </div>
+
+              <div class="row">
+                <!-- País -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">País</label>
+                    <select 
+                        class="form-control" 
+                        [(ngModel)]="billingInfo.countryCode"
+                        name="countryCode"
+                        required
+                        [ngClass]="{'is-invalid': countryCode.invalid && (countryCode.dirty || countryCode.touched)}"
+                        #countryCode="ngModel">
+                        <option value="" disabled selected>Seleccione un país</option>
+                        <option value="SV">El Salvador</option>
+                        <option value="US">Estados Unidos</option>
+                        <option value="MX">México</option>
+                        <!-- Agregar más opciones según sea necesario -->
+                    </select>
+                    <div class="invalid-feedback" *ngIf="countryCode.invalid && (countryCode.dirty || countryCode.touched)">
+                        País inválido
+                    </div>
+                </div>
+
+                <!-- Código de Estado -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Código Estado</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        [(ngModel)]="billingInfo.stateCode"
+                        name="stateCode"
+                        required
+                        [ngClass]="{'is-invalid': stateCode.invalid && (stateCode.dirty || stateCode.touched)}"
+                        maxlength="2"
+                        placeholder="SS"
+                        #stateCode="ngModel">
+                    <div class="invalid-feedback" *ngIf="stateCode.invalid && (stateCode.dirty || stateCode.touched)">
+                        Código de estado inválido
+                    </div>
+                </div>
+
+                <!-- Código ZIP -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Código ZIP</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        [(ngModel)]="billingInfo.zipCode"
+                        name="zipCode"
+                        required
+                        [ngClass]="{'is-invalid': zipCode.invalid && (zipCode.dirty || zipCode.touched)}"
+                        maxlength="5"
+                        placeholder="1101"
+                        #zipCode="ngModel">
+                    <div class="invalid-feedback" *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)">
+                        Código ZIP inválido
+                    </div>
+                </div>
+            </div>
 
               <div class="d-grid gap-2">
                 <button 

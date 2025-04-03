@@ -237,6 +237,7 @@ class SuscripcionesController extends Controller
                 'estado_ultimo_pago' => $request->input('estado_ultimo_pago'),
                 'estado' => $validated['estado'],
                 'usuario_id' => $validated['usuario_id'],
+                'monto' => $validated['monto'],
                 'fin_periodo_prueba' => $validated['fin_periodo_prueba'],
                 'nit' => $request->input('nit'),
                 'nombre_factura' => $request->input('nombre_factura'),
