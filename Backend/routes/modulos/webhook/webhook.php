@@ -9,3 +9,8 @@ Route::post('/webhook/woocommerce/{token}', [WooCommerceController::class, 'proc
 //Route::post('/webhook/woocommerce', [WooCommerceController::class, 'saveCredentials']);
 //ventas/externas
 Route::post('/ventas-externas', [WooCommerceController::class, 'ventas']) ->middleware('token_client', 'CheckClientTokenAccess', 'client');
+
+
+
+
+

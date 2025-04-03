@@ -1,0 +1,694 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Planillas</h2>
+  <button
+    *ngIf="apiService.canCreate()"
+    (click)="openNuevaPlanilla(mNuevaPlanilla)"
+    tooltip="Generar nueva planilla"
+    class="btn btn-primary"
+  >
+    <i class="fa fa-plus"></i> Nueva Planilla
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span
+        class="text-muted d-flex align-items-center gap-2"
+        *ngIf="planillas?.total"
+      >
+        Mostrando
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="filtrarPlanillas()"
+          [(ngModel)]="filtros.paginate"
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        de {{ planillas?.total + " registros" }}
+      </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2">
+        <button
+          (click)="openModal(mimportar)"
+          class="btn btn-default tcla-F4"
+          tooltip="Importar planillas desde archivo de Excel"
+        >
+          <img src="/assets/icons/upload.png" class="icon" />
+        </button>
+        <!-- <button
+          tooltip="Descargar planillas"
+          (click)="openModal(mexportar)"
+          class="btn btn-default tcla-F6"
+        >
+          <img src="/assets/icons/download.png" class="icon" />
+        </button>
+         -->
+        <form
+          class="d-flex input-group"
+          name="form"
+          (ngSubmit)="filtrarPlanillas()"
+          autocomplete="off"
+        >
+          <input
+            type="search"
+            name="buscador"
+            class="form-control pull-right"
+            placeholder="Buscar por código o empleado"
+            [(ngModel)]="filtros.buscador"
+          />
+        </form>
+        <button
+          tooltip="Filtrar"
+          (click)="openFilter(mfilter)"
+          class="btn btn-default"
+        >
+          <img src="/assets/icons/filter.png" class="icon" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Período</th>
+            <th>Tipo</th>
+            <th class="text-end">Total Salarios</th>
+            <th class="text-end">Total Deducciones</th>
+            <th class="text-end">Total Neto</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="8"
+              class="text-center"
+              *ngIf="planillas?.total < 1 && !loading"
+            >
+              <span class="badge bg-primary">No hay planillas registradas</span>
+            </td>
+            <td colspan="8" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+
+          <tr *ngFor="let planilla of planillas?.data">
+            <td>{{ planilla.codigo }}</td>
+            <td>
+              {{ planilla.fecha_inicio | date : "dd/MM/yyyy" }} -
+              {{ planilla.fecha_fin | date : "dd/MM/yyyy" }}
+            </td>
+            <td>{{ planilla.tipo_planilla | titlecase }}</td>
+            <td class="text-end">
+              ${{ planilla.total_salarios | number : "1.2-2" }}
+            </td>
+            <td class="text-end">
+              ${{ planilla.total_deducciones | number : "1.2-2" }}
+            </td>
+            <td class="text-end">
+              ${{ planilla.total_neto | number : "1.2-2" }}
+            </td>
+            <td>
+              <span
+                class="badge py-2"
+                style="font-size: 0.8rem"
+                [ngClass]="getEstadoClass(planilla.estado)"
+              >
+                {{ getEstadoPlanilla(planilla.estado) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span
+                class="btn"
+                [popover]="accionesTemplate"
+                [outsideClick]="true"
+                tooltip="Acciones"
+              >
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="list-group border-0">
+                  <a
+                    [routerLink]="['/planilla/detalle', planilla.id]"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado != 6 || planilla.estado != 0"
+                  >
+                    <i class="fa fa-fw fa-eye"></i> Ver detalles
+                  </a>
+                  <a
+                    (click)="openEditarPlanilla(planilla, mEditarPlanilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 2 || planilla.estado == 3"
+                  >
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a
+                    (click)="aprobarPlanilla(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 2 || planilla.estado == 3"
+                  >
+                    <i class="fa fa-fw fa-check"></i> Aprobar
+                  </a>
+                  <a
+                    (click)="procesarPago(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 2 || planilla.estado == 4"
+                  >
+                    <i class="fa fa-fw fa-money-bill"></i> Procesar Pago
+                  </a>
+                  <a
+                    (click)="generarBoletas(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 5"
+                  >
+                    <i class="fa fa-fw fa-file-pdf"></i> Generar Boletas
+                  </a>
+                  <a
+                    routerLink="/planilla/boletas/{{ planilla.id }}"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 5"
+                  >
+                    <i class="fa fa-fw fa-eye"></i> Ver Boletas
+                  </a>
+                  <!-- <a
+                    (click)="enviarBoletas(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 5"
+                  >
+                    <i class="fa fa-fw fa-envelope"></i> Enviar Boletas
+                  </a> -->
+                  <a
+                    (click)="exportarExcel(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-file-excel"></i> Exportar Excel
+                  </a>
+                  <a
+                    (click)="exportarPDF(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-file-pdf"></i> Exportar PDF
+                  </a>
+                  <a
+                    (click)="eliminarPlanilla(planilla)"
+                    class="list-group-item list-group-item-action border-0 click text-danger"
+                    *ngIf="planilla.estado === 1"
+                  >
+                    <i class="fa fa-fw fa-trash"></i> Eliminar
+                  </a>
+                  <a
+                    (click)="duplicarPlanilla(planilla, mNuevaPlanilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-copy"></i> Duplicar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-12" *ngIf="planillas?.last_page > 1">
+      <app-pagination
+        [items]="planillas"
+        (setPagination)="setPagination($event)"
+      ></app-pagination>
+    </div>
+  </div>
+</section>
+
+<!-- Modal para filtros -->
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h4 class="mb-0">Filtrar Planillas</h4>
+    </div>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="filtrarPlanillas()">
+      <div class="row">
+        <div class="form-group col-sm-12 mb-3">
+          <label>Período:</label>
+          <select
+            [(ngModel)]="filtros.periodo"
+            name="periodo"
+            class="form-select"
+          >
+            <option value="">Todos los períodos</option>
+            <option
+              *ngFor="let periodo of periodos"
+              [value]="periodo.anio + '-' + periodo.mes"
+            >
+              {{ periodo.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group col-sm-6 mb-3">
+          <label>Tipo:</label>
+          <select
+            [(ngModel)]="filtros.tipo_planilla"
+            name="tipo_planilla"
+            class="form-select"
+          >
+            <option value="">Todos</option>
+            <option value="quincenal">Quincenal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+
+        <div class="form-group col-sm-6 mb-3">
+          <label>Estado:</label>
+          <select
+            [(ngModel)]="filtros.estado"
+            name="estado"
+            class="form-select"
+          >
+            <option value="">Todos</option>
+            <option value="1">Borrador</option>
+            <option value="2">Aprobada</option>
+            <option value="3">Pagada</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="d-grid mt-3">
+        <button type="submit" [disabled]="loading" class="btn btn-primary">
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Modal para nueva planilla -->
+<ng-template #mNuevaPlanilla>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h4 class="mb-0">Generar Nueva Planilla</h4>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="generarPlanilla()">
+      <div class="row">
+        <div class="form-group col-12 mb-3">
+          <label>Tipo de Planilla:</label>
+          <select 
+            [(ngModel)]="planilla.tipo_planilla" 
+            name="tipo_planilla" 
+            class="form-select" 
+            required>
+            <option value="mensual">Mensual</option>
+            <option value="quincenal">Quincenal</option>
+            <option value="semanal">Semanal</option>
+          </select>
+          <small class="form-text text-muted" *ngIf="planilla.tipo_planilla === 'semanal'">
+            Planilla semanal: El salario base se dividirá entre 4.33 (semanas promedio por mes).
+          </small>
+          <small class="form-text text-muted" *ngIf="planilla.tipo_planilla === 'quincenal'">
+            Planilla quincenal: El salario base se dividirá entre 2.
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label>Fecha Inicio:</label>
+          <input 
+            type="date" 
+            [(ngModel)]="planilla.fecha_inicio" 
+            name="fecha_inicio" 
+            class="form-control" 
+            required>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label>Fecha Fin:</label>
+          <input 
+            type="date" 
+            [(ngModel)]="planilla.fecha_fin" 
+            name="fecha_fin" 
+            class="form-control" 
+            required>
+        </div>
+      </div>
+      
+      <div class="d-grid mt-3">
+        <button 
+          type="submit" 
+          [disabled]="saving" 
+          class="btn btn-primary">
+          <span *ngIf="!saving">
+            <i class="fa fa-save"></i> Generar Planilla
+          </span>
+          <span *ngIf="saving">
+            <i class="fa fa-spinner fa-spin"></i> Generando...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Modal para editar planilla -->
+<ng-template #mEditarPlanilla>
+  <div class="modal-header">
+    <h4 class="modal-title">Editar Planilla</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="actualizarPlanilla()">
+      <div class="row">
+        <!-- Información básica -->
+        <div class="col-12 mb-3">
+          <label class="form-label">Código</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="planillaEdit.codigo"
+            name="codigo"
+            disabled
+          />
+        </div>
+
+        <!-- Tipo de planilla -->
+        <div class="col-md-12 mb-3">
+          <label class="form-label">Tipo de Planilla</label>
+          <select
+            class="form-select"
+            [(ngModel)]="planillaEdit.tipo_planilla"
+            name="tipo_planilla"
+            [disabled]="planillaEdit.estado !== 2"
+          >
+            <option value="quincenal">Quincenal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+
+        <!-- Fechas -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Fecha Inicio</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="planillaEdit.fecha_inicio"
+            name="fecha_inicio"
+            [disabled]="planillaEdit.estado !== 2"
+          />
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Fecha Fin</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="planillaEdit.fecha_fin"
+            name="fecha_fin"
+            [disabled]="planillaEdit.estado !== 2"
+          />
+        </div>
+
+        <!-- Totales (Solo lectura) -->
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Total Salarios</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="planillaEdit.total_salarios"
+              name="total_salarios"
+              disabled
+            />
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Total Deducciones</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="planillaEdit.total_deducciones"
+              name="total_deducciones"
+              disabled
+            />
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Total Neto</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="planillaEdit.total_neto"
+              name="total_neto"
+              disabled
+            />
+          </div>
+        </div>
+
+        <!-- Estado -->
+        <div class="col-12">
+          <label class="form-label">Estado</label>
+          <input
+            type="text"
+            class="form-control"
+            [value]="getEstadoPlanilla(planillaEdit.estado)"
+            disabled
+          />
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-light" (click)="modalRef.hide()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="saving || planillaEdit.estado !== 2"
+        >
+          <span *ngIf="!saving">
+            <i class="fa fa-save"></i> Guardar Cambios
+          </span>
+          <span *ngIf="saving">
+            <i class="fa fa-spinner fa-spin"></i> Guardando...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Modal para importar planillas -->
+<ng-template #mimportar>
+  <div class="modal-header">
+    <h4 class="modal-title">Importar Planillas</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="importarPlanillas()" enctype="multipart/form-data">
+      <div class="row">
+        <!-- Fecha Inicio -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Fecha Inicio</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="datosImportacion.fecha_inicio"
+            name="fecha_inicio"
+            required
+          />
+        </div>
+
+        <!-- Fecha Fin -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Fecha Fin</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="datosImportacion.fecha_fin"
+            name="fecha_fin"
+            required
+          />
+        </div>
+
+        <!-- tipo planilla -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Tipo de Planilla</label>
+          <select
+            class="form-select"
+            [(ngModel)]="datosImportacion.tipo_planilla"
+            name="tipo_planilla"
+            required
+          >
+            <option value="quincenal">Quincenal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+
+        <!-- Archivo Excel -->
+        <div class="col-12 mb-3">
+          <label class="form-label">Archivo Excel</label>
+          <input
+            type="file"
+            class="form-control"
+            (change)="onFileSelected($event)"
+            accept=".xlsx,.xls"
+          />
+          <small class="text-muted">
+            Formatos permitidos: Excel (.xlsx, .xls)<br />
+            <a href="javascript:void(0)" (click)="descargarPlantilla()">
+              <i class="fa fa-download"></i> Descargar plantilla de ejemplo
+            </a>
+          </small>
+        </div>
+
+        <!-- Validación del rango de fechas -->
+        <div
+          class="col-12"
+          *ngIf="
+            !esRangoFechasValido() &&
+            datosImportacion.fecha_inicio &&
+            datosImportacion.fecha_fin
+          "
+        >
+          <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle me-2"></i>
+            La fecha de fin debe ser posterior a la fecha de inicio
+          </div>
+        </div>
+
+        <div class="col-12">
+          <button
+            type="submit"
+            class="btn btn-primary w-100"
+            [disabled]="!esFormularioValido()"
+          >
+            <span *ngIf="!procesandoImportacion">
+              <i class="fa fa-upload"></i> Importar Planillas
+            </span>
+            <span *ngIf="procesandoImportacion">
+              <i class="fa fa-spinner fa-spin"></i> Procesando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<!-- Modal para exportar planillas -->
+<ng-template #mexportar>
+  <div class="modal-header">
+    <h4 class="modal-title">Exportar Planillas</h4>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="exportarPlanillas()">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Fecha Inicio</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="filtrosExportar.fecha_inicio"
+            name="fecha_inicio"
+          />
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Fecha Fin</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="filtrosExportar.fecha_fin"
+            name="fecha_fin"
+          />
+        </div>
+
+        <div class="col-12 mb-3">
+          <label class="form-label">Tipo de Planilla</label>
+          <select
+            class="form-select"
+            [(ngModel)]="filtrosExportar.tipo_planilla"
+            name="tipo_planilla"
+          >
+            <option value="">Todos</option>
+            <option value="quincenal">Quincenal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+
+        <div class="col-12 mb-3">
+          <label class="form-label">Estado</label>
+          <select
+            class="form-select"
+            [(ngModel)]="filtrosExportar.estado"
+            name="estado"
+          >
+            <option value="">Todos</option>
+            <option value="1">Borrador</option>
+            <option value="2">Aprobada</option>
+            <option value="3">Pagada</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <button
+            type="submit"
+            class="btn btn-primary w-100"
+            [disabled]="procesandoExportacion"
+          >
+            <span *ngIf="!procesandoExportacion">
+              <i class="fa fa-download"></i> Exportar Planillas
+            </span>
+            <span *ngIf="procesandoExportacion">
+              <i class="fa fa-spinner fa-spin"></i> Procesando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</ng-template>

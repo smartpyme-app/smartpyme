@@ -12,8 +12,9 @@ import { ApiService } from '@services/api.service';
 
 export class CrearEmpresaComponent implements OnInit {
 
-    public empresas:any = [];
     public empresa:any = {};
+    public clientes:any = [];
+    public documentos:any = [];
     public loading:boolean = false;
     public saving:boolean = false;
     public licencia:boolean = false;
@@ -34,6 +35,17 @@ export class CrearEmpresaComponent implements OnInit {
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+
+        this.apiService.getAll('clientes/list').subscribe((clientes) => {
+            this.clientes = clientes;
+            this.loading = false;
+        }, (error) => {this.alertService.error(error); this.loading = false; } );
+
+        this.apiService.getAll('documentos/list').subscribe((documentos) => {
+            this.documentos = documentos;
+            this.loading = false;
+        }, (error) => {this.alertService.error(error); this.loading = false; } );
+
     }
 
     public loadAll(){
@@ -67,18 +79,11 @@ export class CrearEmpresaComponent implements OnInit {
         }
     }
 
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('empresa/', id) .subscribe(data => {
-                for (let i = 0; i < this.empresas['data'].length; i++) { 
-                    if (this.empresas['data'][i].id == data.id )
-                        this.empresas['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
-        }
-
+    public setCliente(cliente: any) {
+      if (!this.empresa.id_cliente) {
+        this.clientes.push(cliente);
+      }
+      this.empresa.id_cliente = cliente.id;
     }
 
     public onSubmit() {
@@ -104,13 +109,6 @@ export class CrearEmpresaComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.empresas.path + '?page='+ event.page, this.filtros).subscribe(empresas => { 
-            this.empresas = empresas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
 
     setGiro(){
         this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;

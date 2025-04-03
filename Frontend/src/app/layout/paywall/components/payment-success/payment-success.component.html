@@ -1,0 +1,55 @@
+<div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-4">
+        <div class="card mb-4 rounded-3 shadow-sm">
+          <div class="card-body text-center p-5">
+            <!-- Icono de éxito/error -->
+            <div class="success-icon mb-4">
+              <i class="fas fa-check-circle text-success fa-4x" *ngIf="paymentResponse?.success"></i>
+              <i class="fas fa-times-circle text-danger fa-4x" *ngIf="!paymentResponse?.success"></i>
+            </div>
+  
+            <!-- Título -->
+            <h2 class="mb-4" *ngIf="paymentResponse?.success">¡Pago Exitoso!</h2>
+            <h2 class="mb-4" *ngIf="!paymentResponse?.success">¡Pago Rechazado!</h2>
+  
+            <!-- Detalles del pago -->
+            <div class="payment-details mb-4" *ngIf="paymentResponse">
+              <p class="text-muted">{{ paymentResponse.message }}</p>
+              <div class="amount">
+                <h3 class="mb-0">
+                  {{ paymentResponse.amount | currency:paymentResponse.currency:'symbol':'1.2-2' }}
+                </h3>
+              </div>
+            </div>
+  
+            <!-- Línea divisoria -->
+            <hr class="my-4">
+  
+            <!-- Contador -->
+            <p class="text-muted mb-4">
+              Serás redirigido al inicio de sesión en 
+              <span class="badge bg-primary">{{ countdown }}</span> 
+              segundos...
+            </p>
+  
+            <!-- Botón de acción -->
+            <div class="d-grid">
+              <button class="btn btn-sm btn-primary" (click)="goToLogin()">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                Ir al Inicio de Sesión
+              </button>
+            </div>
+          </div>
+  
+          <!-- Footer -->
+          <div class="text-center my-4">
+            <a href="https://websis.me" target="_blank">
+              <img src="assets/img/smartpyme.png" width="150px" alt="smartpyme logo">
+            </a>
+            <p class="text-muted mt-2">&copy; {{ currentYear }} SmartPyme</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
