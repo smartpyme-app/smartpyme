@@ -190,6 +190,7 @@ class WooCommerceController extends Controller
 
     public function ventas(Request $request)
     {
+        return response()->json($request->all(), 200);
         // Verificamos el token de la solicitud
         $tokenEmpresa = $request->token ?? $request->header('X-WC-Token');
 

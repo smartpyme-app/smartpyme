@@ -97,6 +97,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 require base_path('routes/modulos/webhook/webhook.php');
 
+//token
+
+require base_path('routes/modulos/token/token.php');
+
 
 Route::get('/prueba/factura', function () { 
 	return view('reportes/pruebas/factura');	
