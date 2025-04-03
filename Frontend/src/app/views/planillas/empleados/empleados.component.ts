@@ -1,4 +1,3 @@
-// empleados.component.ts
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
@@ -73,7 +72,7 @@ export class EmpleadosComponent implements OnInit {
   }
 
   public loadCatalogos() {
-    this.apiService.getAll('departamentos/list').subscribe(
+    this.apiService.getAll('departamentosPlanilla/list').subscribe(
       (departamentos) => {
         this.departamentos = departamentos;
       },

@@ -581,7 +581,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
   public loadCatalogos(): Promise<void> {
     return new Promise((resolve) => {
       Promise.all([
-        this.apiService.getAll('departamentos/list').toPromise(),
+        this.apiService.getAll('departamentosPlanilla/list').toPromise(),
         this.apiService.getAll('cargos/list').toPromise(),
       ])
         .then(([departamentos, cargos]) => {
