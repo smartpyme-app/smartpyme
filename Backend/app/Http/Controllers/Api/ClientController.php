@@ -146,19 +146,6 @@ class ClientController extends Controller
     }
 
 
-    public function index()
-    {
-       
-
-        $empresas = Empresa::all();
-        $clientes = EmpresaCliente::with('cliente', 'empresa', 'cliente')->where('estado', 1)->get();
-        // return response()->json($clientes);
-        // return response()->json($empresas);
-        return view('clients.index', compact('clientes', 'empresas'));
-    }
-
-
-
     public function getClienteById(Request $request)
     {
 
