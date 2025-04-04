@@ -80,5 +80,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
     //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
-
+    //productos/exportar-traslado
+    Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
 ?>
