@@ -265,7 +265,7 @@ export class TrasladoMasivoComponent implements OnInit {
         );
     }
 
-    public exportarListado() {
+    public exportarPlantilla() {
         if (!this.filtros.id_bodega_origen || !this.filtros.id_bodega_destino) {
             this.alertService.warning('Debe seleccionar las bodegas origen y destino para exportar el listado.', 'Selección incompleta');
             return;
@@ -310,5 +310,42 @@ export class TrasladoMasivoComponent implements OnInit {
             this.alertService.error(error); 
             this.loading = false;
         });
+    }
+
+    public openModalImportar(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+    }
+
+    public importarAjustes(fileInput: HTMLInputElement, detalle: string) {
+        if (!detalle) {
+            this.alertService.warning('Debe proporcionar una descripción para el ajuste.','Descripción requerida');
+            return;
+        }
+    
+        if (!fileInput.files || fileInput.files.length === 0) {
+            this.alertService.warning('Debe seleccionar un archivo para importar.', 'No se ha seleccionado ningún archivo.');
+            return;
+        }
+    
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('archivo', file);
+        formData.append('detalle', detalle);
+        formData.append('id_usuario', this.apiService.auth_user().id);
+        formData.append('id_empresa', this.apiService.auth_user().id_empresa);
+    
+        this.saving = true;
+        this.apiService.upload('productos/ajuste-masivo/importar', formData).subscribe(
+            respuesta => {
+                this.alertService.success('Ajuste masivo importado', ' productos exitosamente.');
+                this.modalRef.hide();
+                this.saving = false;
+                this.loadAll();
+            },
+            error => {
+                this.alertService.error(error);
+                this.saving = false;
+            }
+        );
     }
 }

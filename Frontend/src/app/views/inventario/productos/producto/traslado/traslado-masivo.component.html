@@ -9,8 +9,11 @@
     <div class="row mb-3">
         <div class="col-12 col-md-8 mb-3 mb-md-0">
             <div class="d-flex flex-wrap gap-2">
-                <button tooltip="Exportar listado" (click)="exportarListado()" [disabled]="downloading" class="btn btn-default tcla-F6 text-dark" id="exportarBtn">
-                    <i class="fa fa-download me-1"></i> Exportar listado
+                <button tooltip="Exportar plantilla" (click)="exportarPlantilla()" [disabled]="downloading" class="btn btn-default tcla-F6 text-dark" id="exportarBtn">
+                    <i class="fa fa-download me-1"></i> Exportar plantilla
+                </button>
+                <button tooltip="Importar plantilla" (click)="openModalImportar(mImportar)" class="btn btn-default tcla-F6 text-dark" id="importarBtn">
+                    <i class="fa fa-upload me-1"></i> Importar plantilla
                 </button>
             </div>
         </div>
@@ -189,6 +192,45 @@
                 (click)="realizarTraslado()">
             <span *ngIf="!saving">Confirmar Traslado</span>
             <span *ngIf="saving">Procesando...</span>
+        </button>
+    </div>
+</ng-template>
+
+<ng-template #mImportar>
+    <div class="modal-header">
+        <h5 class="modal-title">Importar Traslado Masivo</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <form #importForm="ngForm">
+            <div class="mb-3">
+                <label for="detalle_import" class="form-label">Descripción del traslado:</label>
+                <input type="text" id="detalle_import" class="form-control" ngModel name="detalle" 
+                    placeholder="Ej: Traslado masivo de inventario" required>
+            </div>
+            <div class="mb-3">
+                <label for="archivo" class="form-label">Archivo Excel:</label>
+                <input type="file" id="archivo" class="form-control" accept=".xlsx,.xls,.csv" #fileInput required>
+                <small class="text-muted">Solo se aceptan archivos Excel (.xlsx, .xls) o CSV.</small>
+            </div>
+        </form>
+        
+        <div class="alert alert-info mt-3">
+            <h6 class="mb-2"><i class="fa fa-info-circle"></i> Instrucciones:</h6>
+            <ol class="mb-0 ps-3">
+                <li>Descargue la plantilla desde el botón "Exportar plantilla"</li>
+                <li>Modifique <strong>únicamente</strong> la columna "Cantidad"</li>
+                <li>Guarde el archivo sin cambiar su formato o estructura</li>
+                <li>Suba el archivo modificado en este formulario</li>
+            </ol>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving" 
+        (click)="importarAjustes(fileInput, importForm.value.detalle)">
+            <span *ngIf="!saving">Importar Traslado</span>
+            <span *ngIf="saving">Importando...</span>
         </button>
     </div>
 </ng-template>
