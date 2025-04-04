@@ -1,5 +1,5 @@
 <section class="d-flex flex-column flex-md-row justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading mb-2 mb-md-0">Traslado Masivo de Inventario</h2>
+    <h2 class="page-heading mb-2 mb-md-0">Traslado de Inventario</h2>
     <button routerLink="/ajustes" tooltip="Volver a productos" class="btn btn-light text-danger">
         <i class="fa fa-arrow-left"></i> Regresar
     </button>
@@ -9,14 +9,8 @@
     <div class="row mb-3">
         <div class="col-12 col-md-8 mb-3 mb-md-0">
             <div class="d-flex flex-wrap gap-2">
-                <!-- <button tooltip="Ajuste en tabla" class="btn btn-primary active" id="tablaBtn">
-                    <i class="fa fa-table me-1"></i> Ajuste en tabla
-                </button> -->
-                <button tooltip="Exportar plantilla" (click)="exportarPlantilla()" [disabled]="downloading" class="btn btn-default tcla-F6 text-dark" id="exportarBtn">
-                    <i class="fa fa-download me-1"></i> Exportar plantilla
-                </button>
-                <button tooltip="Importar plantilla" (click)="openModalImportar(mImportar)" class="btn btn-default tcla-F6 text-dark" id="importarBtn">
-                    <i class="fa fa-upload me-1"></i> Importar plantilla
+                <button tooltip="Exportar listado" (click)="exportarListado()" [disabled]="downloading" class="btn btn-default tcla-F6 text-dark" id="exportarBtn">
+                    <i class="fa fa-download me-1"></i> Exportar listado
                 </button>
             </div>
         </div>
@@ -33,10 +27,19 @@
 
     <div class="row mb-3">
         <div class="col-12 col-md-4 mb-3 mb-md-0">
-            <label for="id_bodega" class="mb-1">Bodega:</label>
-            <select name="id_bodega" [(ngModel)]="filtros.id_bodega" (change)="filtrarProductos()" class="form-select">
-                <option value="">Seleccione una bodega</option>
+            <label for="id_bodega_origen" class="mb-1">Bodega origen:</label>
+            <select name="id_bodega_origen" [(ngModel)]="filtros.id_bodega_origen" (change)="filtrarProductos()" class="form-select">
+                <option value="">Seleccione bodega origen</option>
                 <option *ngFor="let bodega of bodegas" [value]="bodega.id">
+                    {{bodega.nombre}}
+                </option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4 mb-3 mb-md-0">
+            <label for="id_bodega_destino" class="mb-1">Bodega destino:</label>
+            <select name="id_bodega_destino" [(ngModel)]="filtros.id_bodega_destino" (change)="filtrarProductos()" class="form-select">
+                <option value="">Seleccione bodega destino</option>
+                <option *ngFor="let bodega of bodegas" [value]="bodega.id" [disabled]="bodega.id == filtros.id_bodega_origen">
                     {{bodega.nombre}}
                 </option>
             </select>
@@ -50,19 +53,24 @@
                 </option>
             </select>
         </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12 col-md-8 d-flex align-items-end mb-3 mb-md-0">
+            <div class="alert alert-info d-flex align-items-center w-100 mb-0" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
+                <i class="fa fa-info-circle me-2"></i>
+                <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
+            </div>
+        </div>
         <div class="col-12 col-md-4">
-            <button class="btn btn-primary tcla-F6 w-100 mt-md-4" (click)="openModalConfirmar(mConfirmar)" [disabled]="seleccionados.length === 0">
-                <i class="fa fa-save me-1"></i> Guardar cambios <span *ngIf="seleccionados.length > 0">({{seleccionados.length}})</span>
+            <button class="btn btn-primary tcla-F6 w-100" (click)="openModalConfirmar(mConfirmar)" 
+                    [disabled]="seleccionados.length === 0 || !filtros.id_bodega_origen || !filtros.id_bodega_destino">
+                <i class="fa fa-exchange-alt me-1"></i> Realizar traslado <span *ngIf="seleccionados.length > 0">({{seleccionados.length}})</span>
             </button>
         </div>
     </div>
 
-    <div class="alert alert-info d-flex align-items-center" *ngIf="!filtros.id_bodega">
-        <i class="fa fa-info-circle me-2"></i>
-        <span>Seleccione una bodega para realizar ajustes de inventario.</span>
-    </div>
-
-    <div class="row" *ngIf="filtros.id_bodega">
+    <div class="row" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
         <div class="col-12 table-responsive">
             <table class="table table-borderless table-hover align-middle">
                 <thead>
@@ -75,9 +83,9 @@
                         <th>Producto</th>
                         <th class="d-none d-md-table-cell">Categoría</th>
                         <th class="d-none d-md-table-cell">Código</th>
-                        <th class="text-center" width="120">Stock Actual</th>
-                        <th class="text-center" width="140">Stock Nuevo</th>
-                        <th class="text-center" width="100">Diferencia</th>
+                        <th class="text-center" width="120">Stock Origen</th>
+                        <th class="text-center" width="120">Stock Destino</th>
+                        <th class="text-center" width="140">Cantidad a trasladar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,24 +114,21 @@
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                         <td class="text-center">
-                            <span class="badge bg-light text-dark">{{ producto.stock_actual }}</span>
+                            <span class="badge bg-light text-dark">{{ producto.stock_origen || 0 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark">{{ producto.stock_destino || 0 }}</span>
                         </td>
                         <td>
                             <input 
                                 type="number" 
                                 class="form-control text-center" 
-                                [(ngModel)]="producto.stock_nuevo" 
-                                (input)="calcularDiferencia(producto)"
+                                [(ngModel)]="producto.cantidad_traslado" 
+                                (change)="validarCantidadTraslado(producto)"
                                 min="0"
+                                [max]="producto.stock_origen"
                                 step="1"
-                                [disabled]="!producto.seleccionado">
-                        </td>
-                        <td class="text-center">
-                            <span 
-                                class="badge" 
-                                [ngClass]="{'bg-success': producto.diferencia > 0, 'bg-danger': producto.diferencia < 0, 'bg-secondary': producto.diferencia == 0}">
-                                {{ producto.diferencia > 0 ? '+' + producto.diferencia : producto.diferencia }}
-                            </span>
+                                [disabled]="!producto.seleccionado || producto.stock_origen <= 0">
                         </td>
                     </tr>
                 </tbody>
@@ -138,40 +143,40 @@
 
 <ng-template #mConfirmar>
     <div class="modal-header">
-        <h5 class="modal-title">Confirmar Ajuste Masivo</h5>
+        <h5 class="modal-title">Confirmar Traslado de Inventario</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <div class="mb-3">
-            <label for="detalle" class="form-label">Descripción del ajuste:</label>
-            <input type="text" class="form-control" [(ngModel)]="ajusteMasivo.detalle" 
-                placeholder="Ej: Ajuste masivo de inventario" required>
+            <label for="detalle" class="form-label">Descripción del traslado:</label>
+            <input type="text" class="form-control" [(ngModel)]="trasladoInventario.detalle" 
+                placeholder="Ej: Traslado de inventario entre sucursales" required>
         </div>
         
         <div class="alert alert-info">
-            <p class="mb-1"><strong>Resumen de cambios:</strong></p>
-            <p class="mb-1">Productos seleccionados: {{ seleccionados.length }}</p>
-            <p class="mb-0">Productos con cambios: {{ ajusteMasivo.productos.length }}</p>
+            <p class="mb-1"><strong>Resumen de traslado:</strong></p>
+            <p class="mb-1">De: <strong>{{ getNombreBodega(filtros.id_bodega_origen) }}</strong></p>
+            <p class="mb-1">A: <strong>{{ getNombreBodega(filtros.id_bodega_destino) }}</strong></p>
+            <p class="mb-1">Productos seleccionados: <strong>{{ seleccionados.length }}</strong></p>
+            <p class="mb-0">Productos con cantidades a trasladar: <strong>{{ productosParaTraslado.length }}</strong></p>
         </div>
 
-        <div class="table-responsive mt-3" *ngIf="ajusteMasivo.productos.length > 0">
+        <div class="table-responsive mt-3" *ngIf="productosParaTraslado.length > 0">
             <table class="table table-sm">
                 <thead>
                     <tr>
                         <th>Producto</th>
-                        <th class="text-center">Actual</th>
-                        <th class="text-center">Nuevo</th>
-                        <th class="text-center">Diferencia</th>
+                        <th class="text-center">Stock origen</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-center">Stock origen final</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let item of ajusteMasivo.productos">
+                    <tr *ngFor="let item of productosParaTraslado">
                         <td>{{ getNombreProducto(item.id_producto) }}</td>
-                        <td class="text-center">{{ item.stock_actual }}</td>
-                        <td class="text-center">{{ item.stock_nuevo }}</td>
-                        <td class="text-center" [ngClass]="getDiferenciaClass(item.diferencia)">
-                            {{ item.diferencia > 0 ? '+' + item.diferencia : item.diferencia }}
-                        </td>
+                        <td class="text-center">{{ item.stock_origen }}</td>
+                        <td class="text-center text-primary">{{ item.cantidad_traslado }}</td>
+                        <td class="text-center">{{ item.stock_origen - item.cantidad_traslado }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -179,49 +184,11 @@
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!ajusteMasivo.detalle || saving" (click)="guardarAjusteMasivo()">
-            <span *ngIf="!saving">Guardar Ajuste</span>
-            <span *ngIf="saving">Guardando...</span>
+        <button type="button" class="btn btn-primary" 
+                [disabled]="!trasladoInventario.detalle || productosParaTraslado.length === 0 || saving" 
+                (click)="realizarTraslado()">
+            <span *ngIf="!saving">Confirmar Traslado</span>
+            <span *ngIf="saving">Procesando...</span>
         </button>
-    </div>
-</ng-template>
-
-<!-- Modal para importar plantilla -->
-<ng-template #mImportar>
-    <div class="modal-header">
-        <h5 class="modal-title">Importar Ajuste Masivo</h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-    </div>
-    <div class="modal-body">
-        <form #importForm="ngForm">
-            <div class="mb-3">
-                <label for="detalle_import" class="form-label">Descripción del ajuste:</label>
-                <input type="text" id="detalle_import" class="form-control" ngModel name="detalle" 
-                    placeholder="Ej: Ajuste masivo de inventario" required>
-            </div>
-            <div class="mb-3">
-                <label for="archivo" class="form-label">Archivo Excel:</label>
-                <input type="file" id="archivo" class="form-control" accept=".xlsx,.xls,.csv" #fileInput required>
-                <small class="text-muted">Solo se aceptan archivos Excel (.xlsx, .xls) o CSV.</small>
-            </div>
-        </form>
-        
-        <div class="alert alert-info mt-3">
-            <h6 class="mb-2"><i class="fa fa-info-circle"></i> Instrucciones:</h6>
-            <ol class="mb-0 ps-3">
-                <li>Descargue la plantilla desde el botón "Exportar plantilla"</li>
-                <li>Modifique <strong>únicamente</strong> la columna "Stock Nuevo"</li>
-                <li>Guarde el archivo sin cambiar su formato o estructura</li>
-                <li>Suba el archivo modificado en este formulario</li>
-            </ol>
-        </div>
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving" 
-        (click)="importarAjustes(fileInput, importForm.value.detalle)">
-    <span *ngIf="!saving">Importar Ajustes</span>
-    <span *ngIf="saving">Importando...</span>
-</button>
     </div>
 </ng-template>
