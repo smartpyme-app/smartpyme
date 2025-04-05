@@ -78,18 +78,15 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
             });
         }
 
-        // Stock en bodega origen
+  
         $stockOrigen = $inventarioOrigen ? $inventarioOrigen->stock : 0;
         $idBodegaOrigen = $inventarioOrigen ? $inventarioOrigen->id_bodega : '';
         $nombreBodegaOrigen = $inventarioOrigen ? $inventarioOrigen->nombre_bodega : 'N/A';
 
-        // Stock en bodega destino
+
         $stockDestino = $inventarioDestino ? $inventarioDestino->stock : 0;
         $idBodegaDestino = $inventarioDestino ? $inventarioDestino->id_bodega : '';
         $nombreBodegaDestino = $inventarioDestino ? $inventarioDestino->nombre_bodega : 'N/A';
-
-        // Verificar si el producto tiene composiciones
-      //  $tieneComposiciones = count($producto->composiciones) > 0 ? 'Sí' : 'No';
 
         return [
             $producto->id,
@@ -98,7 +95,6 @@ class PlantillaInventarioMasivoExport implements FromQuery, WithHeadings, WithMa
             $producto->codigo ?? 'N/A',
             $producto->nombre,
             $producto->categoria ? $producto->categoria->nombre : 'N/A',
-          //  $tieneComposiciones,
             $nombreBodegaOrigen,
             $nombreBodegaDestino,
             $stockOrigen,

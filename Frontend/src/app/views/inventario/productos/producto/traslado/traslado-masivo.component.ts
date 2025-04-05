@@ -5,26 +5,29 @@ import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
 
 @Component({
-  selector: 'app-traslado-masivo',
-  templateUrl: './traslado-masivo.component.html',
+    selector: 'app-traslado-masivo',
+    templateUrl: './traslado-masivo.component.html',
 })
 export class TrasladoMasivoComponent implements OnInit {
-
-    public productos: any = [];
+    public resultadosBusqueda: any[] = [];
     public loading: boolean = false;
     public downloading: boolean = false;
     public saving: boolean = false;
     public filtros: any = {
         id_bodega_origen: '',
         id_bodega_destino: '',
-        id_categoria: '',
         buscador: '',
         orden: 'nombre',
         direccion: 'asc',
-        paginate: 100
+        paginate: 10
+    };
+    public traslado: any = {
+        fecha: this.apiService.date(),
+        id_usuario: '',
     };
     public bodegas: any = [];
     public categorias: any = [];
+    public usuarios: any = [];
     public seleccionados: any[] = [];
     public productosParaTraslado: any[] = [];
     public trasladoInventario: any = {
@@ -45,8 +48,15 @@ export class TrasladoMasivoComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.loadAll();
+        this.loadData();
+    }
 
+    public loadData() {
+        const filtrosGuardados = localStorage.getItem('trasladoInventarioFiltros');
+        if (filtrosGuardados) {
+            this.filtros = JSON.parse(filtrosGuardados);
+        }
+        
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
@@ -60,113 +70,158 @@ export class TrasladoMasivoComponent implements OnInit {
             });
             
         }, error => {this.alertService.error(error);});
+
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+            this.usuarios = usuarios;
+            if (this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor') {
+                this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
+            }
+            this.traslado.id_usuario = this.apiService.auth_user().id;
+        }, error => {
+            this.alertService.error(error);
+        });
     }
 
-    public initFilters() {
-        this.filtros = {
-            id_bodega_origen: '',
-            id_bodega_destino: '',
-            id_categoria: '',
-            buscador: '',
-            orden: 'nombre',
-            direccion: 'asc',
-            paginate: 100
-        };
-    }
-
-    public loadAll() {
-        const filtrosGuardados = localStorage.getItem('trasladoInventarioFiltros');
-        if (filtrosGuardados) {
-            this.filtros = JSON.parse(filtrosGuardados);
+    public cambiarBodegaOrigen() {
+        // Si se cambia la bodega origen, limpiamos los productos seleccionados
+        if (this.seleccionados.length > 0) {
+            if (confirm('Al cambiar la bodega de origen se perderá la lista actual de productos a trasladar. ¿Desea continuar?')) {
+                this.seleccionados = [];
+                this.productosParaTraslado = [];
+                this.resultadosBusqueda = [];
+                this.filtros.buscador = '';
+                this.guardarFiltros();
+            } else {
+                // Restaurar bodega origen anterior
+                const filtrosGuardados = localStorage.getItem('trasladoInventarioFiltros');
+                if (filtrosGuardados) {
+                    const filtrosAnteriores = JSON.parse(filtrosGuardados);
+                    this.filtros.id_bodega_origen = filtrosAnteriores.id_bodega_origen;
+                }
+            }
         } else {
-            this.initFilters();
-        }
-        
-        if (this.filtros.id_bodega_origen && this.filtros.id_bodega_destino) {
-            this.filtrarProductos();
+            this.guardarFiltros();
         }
     }
 
-    public filtrarProductos() {
-        if (!this.filtros.id_bodega_origen || !this.filtros.id_bodega_destino) {
-            return;
-        }
-        
-        // No permitir la misma bodega como origen y destino
+    public cambiarBodegaDestino() {
+        // Validar que no sea la misma bodega origen
         if (this.filtros.id_bodega_origen === this.filtros.id_bodega_destino) {
-            this.alertService.warning('La bodega origen y destino no pueden ser la misma', 'Error en selección');
+            this.alertService.warning('No puede seleccionar la misma bodega como origen y destino.', 'Bodega duplicada');
             this.filtros.id_bodega_destino = '';
             return;
         }
         
+        this.guardarFiltros();
+    }
+
+    private guardarFiltros() {
         localStorage.setItem('trasladoInventarioFiltros', JSON.stringify(this.filtros));
+    }
+
+    public buscarProducto() {
+        if (!this.filtros.id_bodega_origen || !this.filtros.id_bodega_destino) {
+            this.alertService.warning('Debe seleccionar las bodegas de origen y destino primero.', 'Bodegas requeridas');
+            return;
+        }
+
+        if (!this.filtros.buscador || this.filtros.buscador.trim().length < 2) {
+            this.alertService.warning('Ingrese al menos 2 caracteres para buscar.', 'Búsqueda requerida');
+            return;
+        }
+
         this.loading = true;
-        this.seleccionados = [];
-        this.productosParaTraslado = [];
+        this.resultadosBusqueda = [];
 
         this.apiService.getAll('productos', { 
-            ...this.filtros, 
-            id_bodega: this.filtros.id_bodega_origen // Usamos el parámetro existente para compatibilidad
-        }).subscribe(productos => { 
-            this.productos = productos;
-            
-            // Limpiar y reconstruir el mapa de productos
-            this.productosMap.clear();
-            
-            // Preparar los productos para el traslado
-            if (this.productos?.data) {
-                this.productos.data.forEach((producto: any) => {
-                    // Guardamos en el mapa para acceso rápido
-                    this.productosMap.set(producto.id, producto);
-                    
-                    producto.seleccionado = false;
-                    producto.cantidad_traslado = 0;
-                    
-                    // Establecer stock en bodega origen
-                    const inventarioOrigen = producto.inventarios.find(
-                        (inv: any) => inv.id_bodega == this.filtros.id_bodega_origen
-                    );
-                    producto.stock_origen = inventarioOrigen ? inventarioOrigen.stock : 0;
-                    producto.id_inventario_origen = inventarioOrigen ? inventarioOrigen.id : null;
-                    
-                    // Establecer stock en bodega destino
-                    const inventarioDestino = producto.inventarios.find(
-                        (inv: any) => inv.id_bodega == this.filtros.id_bodega_destino
-                    );
-                    producto.stock_destino = inventarioDestino ? inventarioDestino.stock : 0;
-                    producto.id_inventario_destino = inventarioDestino ? inventarioDestino.id : null;
-                });
+            buscador: this.filtros.buscador.trim(),
+            id_bodega_origen: this.filtros.id_bodega_origen,
+            id_bodega_destino: this.filtros.id_bodega_destino,
+            paginate: 10
+        }).subscribe(
+            response => { 
+                if (response.data && response.data.length > 0) {
+                    this.resultadosBusqueda = response.data.map((producto: any) => {
+                        // Obtener stock en bodega origen
+                        const inventarioOrigen = producto.inventarios.find(
+                            (inv: any) => inv.id_bodega == this.filtros.id_bodega_origen
+                        );
+                        const stockOrigen = inventarioOrigen ? inventarioOrigen.stock : 0;
+                        const idInventarioOrigen = inventarioOrigen ? inventarioOrigen.id : null;
+                        
+                        // Obtener stock en bodega destino
+                        const inventarioDestino = producto.inventarios.find(
+                            (inv: any) => inv.id_bodega == this.filtros.id_bodega_destino
+                        );
+                        const stockDestino = inventarioDestino ? inventarioDestino.stock : 0;
+                        const idInventarioDestino = inventarioDestino ? inventarioDestino.id : null;
+
+                        return {
+                            ...producto,
+                            stock_origen: stockOrigen,
+                            stock_destino: stockDestino,
+                            id_inventario_origen: idInventarioOrigen,
+                            id_inventario_destino: idInventarioDestino,
+                            cantidad_traslado: 0
+                        };
+                    });
+                } else {
+                    this.alertService.info('No se encontraron productos con ese criterio de búsqueda.', 'Sin resultados');
+                }
+                this.loading = false;
+            },
+            error => {
+                this.alertService.error(error); 
+                this.loading = false;
             }
-            
-            this.loading = false;
-            
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {
-            this.alertService.error(error); 
-            this.loading = false;
-        });
+        );
     }
 
-    public toggleSeleccion(producto: any) {
-        producto.seleccionado = !producto.seleccionado;
-        this.actualizarSeleccionados();
+    public productoYaSeleccionado(idProducto: number): boolean {
+        return this.seleccionados.some(p => p.id === idProducto);
     }
 
-    public seleccionarTodos(event: any) {
-        const seleccionado = event.target.checked;
-        if (this.productos.data) {
-            this.productos.data.forEach((producto: any) => {
-                producto.seleccionado = seleccionado;
-            });
+    public agregarProducto(producto: any) {
+        if (this.productoYaSeleccionado(producto.id)) {
+            this.alertService.info('Este producto ya está en la lista de traslado.', 'Producto duplicado');
+            return;
         }
-        this.actualizarSeleccionados();
+
+        if (producto.stock_origen <= 0) {
+            this.alertService.warning('Este producto no tiene stock disponible en la bodega de origen.', 'Sin stock');
+            return;
+        }
+
+        // Clonamos el producto para evitar referencias
+        const productoTraslado = { ...producto };
+        productoTraslado.cantidad_traslado = 1; // Por defecto 1
+        
+        this.seleccionados.push(productoTraslado);
+        this.actualizarProductosParaTraslado();
     }
 
-    public actualizarSeleccionados() {
-        this.seleccionados = this.productos.data ? 
-            this.productos.data.filter((p: any) => p.seleccionado) : [];
+    public quitarProducto(producto: any) {
+        this.seleccionados = this.seleccionados.filter(p => p.id !== producto.id);
+        this.actualizarProductosParaTraslado();
+    }
+
+    public limpiarSeleccion() {
+        if (confirm('¿Está seguro de eliminar todos los productos de la lista de traslado?')) {
+            this.seleccionados = [];
+            this.productosParaTraslado = [];
+        }
+    }
+
+    public validarCantidadTraslado(producto: any) {
+        if (!producto.cantidad_traslado || producto.cantidad_traslado < 1) {
+            producto.cantidad_traslado = 1;
+        }
+        
+        // No permitir trasladar más del stock disponible
+        if (producto.cantidad_traslado > producto.stock_origen) {
+            producto.cantidad_traslado = producto.stock_origen;
+            this.alertService.warning('No puede trasladar más unidades que el stock disponible en la bodega origen.', 'Cantidad inválida');
+        }
         
         this.actualizarProductosParaTraslado();
     }
@@ -182,51 +237,30 @@ export class TrasladoMasivoComponent implements OnInit {
             id_bodega_destino: this.filtros.id_bodega_destino,
             stock_origen: p.stock_origen,
             stock_destino: p.stock_destino,
-            cantidad_traslado: p.cantidad_traslado
+            cantidad_traslado: p.cantidad_traslado,
+            nombre: p.nombre // Para mostrar en el modal de confirmación
         }));
-    }
-
-    public validarCantidadTraslado(producto: any) {
-        if (!producto.cantidad_traslado) {
-            producto.cantidad_traslado = 0;
-            return;
-        }
-        
-        // No permitir valores negativos
-        if (producto.cantidad_traslado < 0) {
-            producto.cantidad_traslado = 0;
-        }
-        
-        // No permitir trasladar más del stock disponible
-        if (producto.cantidad_traslado > producto.stock_origen) {
-            producto.cantidad_traslado = producto.stock_origen;
-            this.alertService.warning('No puede trasladar más unidades que el stock disponible en la bodega origen.', 'Cantidad inválida');
-        }
-        
-        this.actualizarProductosParaTraslado();
-    }
-
-    public getNombreProducto(idProducto: number): string {
-        const producto = this.productosMap.get(idProducto);
-        return producto ? producto.nombre : 'Producto no encontrado';
     }
 
     public getNombreBodega(idBodega: string): string {
         return this.bodegasMap.get(idBodega) || 'Bodega no encontrada';
     }
 
-    public openModalConfirmar(template: TemplateRef<any>) {
-        this.actualizarSeleccionados();
-        
-        if (this.seleccionados.length === 0) {
-            this.alertService.warning('Debe seleccionar al menos un producto para realizar el traslado.', 'Sin productos seleccionados');
-            return;
-        }
+    public getNombreProducto(idProducto: number): string {
+        const producto = this.seleccionados.find(p => p.id === idProducto);
+        return producto ? producto.nombre : 'Producto no encontrado';
+    }
 
+    public openModalConfirmar(template: TemplateRef<any>) {
         this.actualizarProductosParaTraslado();
         
+        if (!this.trasladoInventario.detalle) {
+            this.alertService.warning('Debe proporcionar una descripción para el traslado.', 'Concepto requerido');
+            return;
+        }
+        
         if (this.productosParaTraslado.length === 0) {
-            this.alertService.warning('Debe especificar la cantidad a trasladar para al menos un producto.', 'Sin cantidades especificadas');
+            this.alertService.warning('Debe agregar al menos un producto con cantidad a trasladar mayor a cero.', 'Sin productos para trasladar');
             return;
         }
 
@@ -243,20 +277,27 @@ export class TrasladoMasivoComponent implements OnInit {
         this.saving = true;
         
         const datos = {
-            detalle: this.trasladoInventario.detalle,
+            concepto: this.trasladoInventario.detalle,
             id_bodega_origen: this.filtros.id_bodega_origen,
             id_bodega_destino: this.filtros.id_bodega_destino,
-            productos: this.trasladoInventario.productos,
-            id_usuario: this.apiService.auth_user().id,
-            id_empresa: this.apiService.auth_user().id_empresa
+            id_usuario: this.traslado.id_usuario || this.apiService.auth_user().id,
+            productos: this.productosParaTraslado.map(p => ({
+                id_producto: p.id_producto,
+                cantidad: p.cantidad_traslado
+            }))
         };
 
-        this.apiService.store('productos/traslado-inventario', datos).subscribe(
+        this.apiService.store('productos/traslado-masivo', datos).subscribe(
             respuesta => {
-                this.alertService.success('Traslado realizado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
+                this.alertService.success('Traslado realizado exitosamente', 'Se han trasladado ' + respuesta.trasladados + ' productos.');
                 this.modalRef.hide();
                 this.saving = false;
-                this.filtrarProductos();
+                
+                // Limpiar productos seleccionados
+                this.seleccionados = [];
+                this.productosParaTraslado = [];
+                this.resultadosBusqueda = [];
+                this.filtros.buscador = '';
             },
             error => {
                 this.alertService.error(error);
@@ -267,14 +308,23 @@ export class TrasladoMasivoComponent implements OnInit {
 
     public exportarPlantilla() {
         if (!this.filtros.id_bodega_origen || !this.filtros.id_bodega_destino) {
-            this.alertService.warning('Debe seleccionar las bodegas origen y destino para exportar el listado.', 'Selección incompleta');
+            this.alertService.warning('Debe seleccionar las bodegas origen y destino para exportar la lista.', 'Bodegas requeridas');
+            return;
+        }
+        
+        if (this.seleccionados.length === 0) {
+            this.alertService.warning('No hay productos en la lista para exportar.', 'Sin productos');
             return;
         }
         
         this.downloading = true;
         
+        const productosIds = this.seleccionados.map(p => p.id).join(',');
+        
         const filtrosExport = {
-            ...this.filtros,
+            id_bodega_origen: this.filtros.id_bodega_origen,
+            id_bodega_destino: this.filtros.id_bodega_destino,
+            productos_ids: productosIds,
             formato: 'excel'
         };
         
@@ -298,27 +348,18 @@ export class TrasladoMasivoComponent implements OnInit {
         );
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page, {
-            ...this.filtros,
-            id_bodega: this.filtros.id_bodega_origen
-        }).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => {
-            this.alertService.error(error); 
-            this.loading = false;
-        });
-    }
-
     public openModalImportar(template: TemplateRef<any>) {
+        if (!this.filtros.id_bodega_origen || !this.filtros.id_bodega_destino) {
+            this.alertService.warning('Debe seleccionar las bodegas origen y destino primero.', 'Bodegas requeridas');
+            return;
+        }
+        
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }
 
-    public importarAjustes(fileInput: HTMLInputElement, detalle: string) {
+    public importarTraslado(fileInput: HTMLInputElement, detalle: string) {
         if (!detalle) {
-            this.alertService.warning('Debe proporcionar una descripción para el ajuste.','Descripción requerida');
+            this.alertService.warning('Debe proporcionar una descripción para el traslado.', 'Descripción requerida');
             return;
         }
     
@@ -330,17 +371,32 @@ export class TrasladoMasivoComponent implements OnInit {
         const file = fileInput.files[0];
         const formData = new FormData();
         formData.append('archivo', file);
-        formData.append('detalle', detalle);
-        formData.append('id_usuario', this.apiService.auth_user().id);
-        formData.append('id_empresa', this.apiService.auth_user().id_empresa);
+        formData.append('concepto', detalle);
+        formData.append('id_bodega_origen', this.filtros.id_bodega_origen);
+        formData.append('id_bodega_destino', this.filtros.id_bodega_destino);
+        formData.append('id_usuario', this.traslado.id_usuario || this.apiService.auth_user().id);
     
         this.saving = true;
-        this.apiService.upload('productos/ajuste-masivo/importar', formData).subscribe(
+        this.apiService.upload('productos/traslado-masivo/importar', formData).subscribe(
             respuesta => {
-                this.alertService.success('Ajuste masivo importado', ' productos exitosamente.');
+                //this.alertService.success('Traslado masivo importado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
                 this.modalRef.hide();
                 this.saving = false;
-                this.loadAll();
+                
+                // Limpiar productos seleccionados
+                this.seleccionados = [];
+                this.productosParaTraslado = [];
+                this.resultadosBusqueda = [];
+                this.filtros.buscador = '';
+                
+                // Si hay errores, mostrarlos
+                // if (respuesta.errores && respuesta.errores.length > 0) {
+                //     let mensajeErrores = 'Los siguientes productos no pudieron ser trasladados:<br>';
+                //     respuesta.errores.forEach((error: string) => {
+                //         mensajeErrores += '- ' + error + '<br>';
+                //     });
+                //     this.alertService.warning(mensajeErrores, 'Advertencias durante el traslado');
+                // }
             },
             error => {
                 this.alertService.error(error);

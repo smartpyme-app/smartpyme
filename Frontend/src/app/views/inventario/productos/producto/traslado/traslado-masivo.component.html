@@ -1,121 +1,139 @@
-<section class="d-flex flex-column flex-md-row justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading mb-2 mb-md-0">Traslado de Inventario</h2>
-    <button routerLink="/ajustes" tooltip="Volver a productos" class="btn btn-light text-danger">
-        <i class="fa fa-arrow-left"></i> Regresar
-    </button>
-</section>
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>Traslado de Inventario</h3>
+    <button class="btn btn-light text-danger" routerLink="/productos"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
 
-<section class="bg-white p-2 p-md-4 rounded mb-3">
-    <div class="row mb-3">
-        <div class="col-12 col-md-8 mb-3 mb-md-0">
-            <div class="d-flex flex-wrap gap-2">
-                <button tooltip="Exportar plantilla" (click)="exportarPlantilla()" [disabled]="downloading" class="btn btn-default tcla-F6 text-dark" id="exportarBtn">
-                    <i class="fa fa-download me-1"></i> Exportar plantilla
-                </button>
-                <button tooltip="Importar plantilla" (click)="openModalImportar(mImportar)" class="btn btn-default tcla-F6 text-dark" id="importarBtn">
-                    <i class="fa fa-upload me-1"></i> Importar plantilla
-                </button>
-            </div>
+<section class="card border-0 p-3 mb-3">
+    <div class="row">
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_bodega_origen">Bodega origen</label>
+            <select name="id_bodega_origen" [(ngModel)]="filtros.id_bodega_origen" (change)="cambiarBodegaOrigen()" class="form-select">
+                <option value="">Seleccione bodega origen</option>
+                <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+                    {{ bodega.nombre }}
+                </option>
+            </select>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="form-group col-md-4 col-lg-4">
+            <label for="id_bodega_destino">Bodega destino</label>
+            <select name="id_bodega_destino" [(ngModel)]="filtros.id_bodega_destino" (change)="cambiarBodegaDestino()" class="form-select">
+                <option value="">Seleccione bodega destino</option>
+                <option [value]="bodega.id" *ngFor="let bodega of bodegas" [disabled]="bodega.id == filtros.id_bodega_origen">
+                    {{ bodega.nombre }}
+                </option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <h6 class="mt-3">Detalles del traslado</h6>
+        <div class="form-group col-md-12 col-lg-8">
+            <label for="buscador">Buscar producto</label>
             <div class="input-group">
                 <div class="input-group-text bg-white border-end-0">
                     <i class="fa fa-search text-muted"></i>
                 </div>
-                <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador" (keyup.enter)="filtrarProductos()">
-                <button class="btn btn-primary" (click)="filtrarProductos()">Buscar</button>
+                <input type="search" id="buscador" name="buscador" class="form-control border-start-0" 
+                    placeholder="Escriba el nombre o código del producto" 
+                    [(ngModel)]="filtros.buscador" (keyup.enter)="buscarProducto()">
+                <button class="btn btn-primary" (click)="buscarProducto()" [disabled]="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
+                    <i class="fa fa-search me-1"></i> Buscar
+                </button>
             </div>
         </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-12 col-md-4 mb-3 mb-md-0">
-            <label for="id_bodega_origen" class="mb-1">Bodega origen:</label>
-            <select name="id_bodega_origen" [(ngModel)]="filtros.id_bodega_origen" (change)="filtrarProductos()" class="form-select">
-                <option value="">Seleccione bodega origen</option>
-                <option *ngFor="let bodega of bodegas" [value]="bodega.id">
-                    {{bodega.nombre}}
-                </option>
-            </select>
-        </div>
-        <div class="col-12 col-md-4 mb-3 mb-md-0">
-            <label for="id_bodega_destino" class="mb-1">Bodega destino:</label>
-            <select name="id_bodega_destino" [(ngModel)]="filtros.id_bodega_destino" (change)="filtrarProductos()" class="form-select">
-                <option value="">Seleccione bodega destino</option>
-                <option *ngFor="let bodega of bodegas" [value]="bodega.id" [disabled]="bodega.id == filtros.id_bodega_origen">
-                    {{bodega.nombre}}
-                </option>
-            </select>
-        </div>
-        <div class="col-12 col-md-4 mb-3 mb-md-0">
-            <label for="id_categoria" class="mb-1">Categoría:</label>
-            <select name="id_categoria" [(ngModel)]="filtros.id_categoria" (change)="filtrarProductos()" class="form-select">
-                <option value="">Todas las categorías</option>
-                <option *ngFor="let categoria of categorias" [value]="categoria.id">
-                    {{categoria.nombre}}
-                </option>
-            </select>
+        <div class="form-group col-md-12 col-lg-4">
+            <label for="concepto">Concepto del traslado</label>
+            <input type="text" class="form-control" placeholder="Escribe aquí el motivo del traslado" [(ngModel)]="trasladoInventario.detalle" name="concepto">
         </div>
     </div>
-
-    <div class="row mb-3">
-        <div class="col-12 col-md-8 d-flex align-items-end mb-3 mb-md-0">
-            <div class="alert alert-info d-flex align-items-center w-100 mb-0" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
-                <i class="fa fa-info-circle me-2"></i>
-                <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
-            </div>
-        </div>
-        <div class="col-12 col-md-4">
-            <button class="btn btn-primary tcla-F6 w-100" (click)="openModalConfirmar(mConfirmar)" 
-                    [disabled]="seleccionados.length === 0 || !filtros.id_bodega_origen || !filtros.id_bodega_destino">
-                <i class="fa fa-exchange-alt me-1"></i> Realizar traslado <span *ngIf="seleccionados.length > 0">({{seleccionados.length}})</span>
-            </button>
-        </div>
+    
+    <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
+        <i class="fa fa-info-circle me-2"></i>
+        <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
     </div>
+</section>
 
-    <div class="row" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
-        <div class="col-12 table-responsive">
-            <table class="table table-borderless table-hover align-middle">
+<section class="card border-0 p-3 mb-3" *ngIf="resultadosBusqueda && resultadosBusqueda.length > 0">
+    <h6 class="mt-3">Resultados de búsqueda</h6>
+    <div class="row">
+        <div class="col-md-12 table-responsive">
+            <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th width="40">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" (change)="seleccionarTodos($event)">
-                            </div>
-                        </th>
                         <th>Producto</th>
-                        <th class="d-none d-md-table-cell">Categoría</th>
-                        <th class="d-none d-md-table-cell">Código</th>
-                        <th class="text-center" width="120">Stock Origen</th>
-                        <th class="text-center" width="120">Stock Destino</th>
-                        <th class="text-center" width="140">Cantidad a trasladar</th>
+                        <th class="text-center">Código</th>
+                            <th class="text-center">Stock Origen</th>
+                            <th class="text-center">Stock Destino</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let producto of resultadosBusqueda">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="32px"> 
+                                    <span>{{ producto.nombre }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">{{ producto.codigo || 'N/A' }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ producto.stock_origen || 0 }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ producto.stock_destino || 0 }}</span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-primary" 
+                                    *ngIf="!productoYaSeleccionado(producto.id) && producto.stock_origen > 0"
+                                    (click)="agregarProducto(producto)">
+                                    <i class="fa fa-plus"></i> Agregar
+                                </button>
+                                <span class="badge bg-success" 
+                                    *ngIf="productoYaSeleccionado(producto.id)">
+                                    <i class="fa fa-check"></i> Agregado
+                                </span>
+                                <span class="badge bg-danger" 
+                                    *ngIf="!productoYaSeleccionado(producto.id) && producto.stock_origen <= 0">
+                                    Sin stock
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+          
+        </div>
+    </div>
+</section>
+
+<section class="card border-0 p-3 mb-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+    <h6 class="mt-3">Productos a trasladar</h6>
+    <div class="row">
+        <div class="col-md-12 table-responsive">
+            <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-center d-none d-md-table-cell">Categoría</th>
+                        <th class="text-center">Stock Origen</th>
+                        <th class="text-center">Stock Destino</th>
+                        <th class="text-center">Cantidad a trasladar</th>
+                        <th class="text-center">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="7" class="text-center" *ngIf="productos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No hay productos disponibles</span>
-                        </td>
-                        <td colspan="7" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
+                    <tr *ngIf="seleccionados.length === 0">
+                        <td colspan="6" class="text-center py-3">
+                            <i class="fa fa-info-circle me-1 text-muted"></i> 
+                            Busque y agregue productos para realizar el traslado
                         </td>
                     </tr>
-                    <tr *ngFor="let producto of productos?.data" [ngClass]="{'table-light': producto.seleccionado}">
-                        <td (click)="toggleSeleccion(producto)" style="cursor: pointer">
-                            <div class="form-check" (click)="$event.stopPropagation()">
-                                <input type="checkbox" class="form-check-input" 
-                                       [(ngModel)]="producto.seleccionado" 
-                                       (ngModelChange)="actualizarSeleccionados()">
-                            </div>
-                        </td>
+                    <tr *ngFor="let producto of seleccionados">
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
                                 <span>{{ producto.nombre }}</span>
                             </div>
                         </td>
-                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
-                        <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
+                        <td class="text-center d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="text-center">
                             <span class="badge bg-light text-dark">{{ producto.stock_origen || 0 }}</span>
                         </td>
@@ -128,18 +146,52 @@
                                 class="form-control text-center" 
                                 [(ngModel)]="producto.cantidad_traslado" 
                                 (change)="validarCantidadTraslado(producto)"
-                                min="0"
+                                min="1"
                                 [max]="producto.stock_origen"
-                                step="1"
-                                [disabled]="!producto.seleccionado || producto.stock_origen <= 0">
+                                step="1">
+                        </td>
+                        <td class="text-center">
+                            <!-- <button class="btn btn-sm btn-danger" (click)="quitarProducto(producto)">
+                                <i class="fa fa-times"></i>
+                            </button> -->
+                            <div class="btn-group">
+                                <button class="btn btn-light" (click)="quitarProducto(producto)">
+                                  <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        
+    </div>
+</section>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+<section class="card border-0 p-3 mb-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button class="btn btn-outline-secondary me-2" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
+                        <i class="fa fa-download me-1"></i> Exportar lista
+                    </button>
+                    <button class="btn btn-outline-secondary" (click)="openModalImportar(mImportar)">
+                        <i class="fa fa-upload me-1"></i> Importar traslado
+                    </button>
+                    <button class="btn btn-outline-danger ms-2" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
+                        <i class="fa fa-trash-alt me-1"></i> Limpiar selección
+                    </button>
+                </div>
+                
+                <button type="submit" (click)="openModalConfirmar(mConfirmar)" [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle" class="btn btn-primary">
+                    <span *ngIf="!saving">
+                        Realizar traslado
+                        <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                    </span>
+                    <span *ngIf="saving">Procesando...</span>
+                </button>
+            </div>
         </div>
     </div>
 </section>
@@ -160,8 +212,7 @@
             <p class="mb-1"><strong>Resumen de traslado:</strong></p>
             <p class="mb-1">De: <strong>{{ getNombreBodega(filtros.id_bodega_origen) }}</strong></p>
             <p class="mb-1">A: <strong>{{ getNombreBodega(filtros.id_bodega_destino) }}</strong></p>
-            <p class="mb-1">Productos seleccionados: <strong>{{ seleccionados.length }}</strong></p>
-            <p class="mb-0">Productos con cantidades a trasladar: <strong>{{ productosParaTraslado.length }}</strong></p>
+            <p class="mb-1">Productos a trasladar: <strong>{{ productosParaTraslado.length }}</strong></p>
         </div>
 
         <div class="table-responsive mt-3" *ngIf="productosParaTraslado.length > 0">
@@ -176,7 +227,7 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let item of productosParaTraslado">
-                        <td>{{ getNombreProducto(item.id_producto) }}</td>
+                        <td>{{ item.nombre }}</td>
                         <td class="text-center">{{ item.stock_origen }}</td>
                         <td class="text-center text-primary">{{ item.cantidad_traslado }}</td>
                         <td class="text-center">{{ item.stock_origen - item.cantidad_traslado }}</td>
@@ -218,8 +269,8 @@
         <div class="alert alert-info mt-3">
             <h6 class="mb-2"><i class="fa fa-info-circle"></i> Instrucciones:</h6>
             <ol class="mb-0 ps-3">
-                <li>Descargue la plantilla desde el botón "Exportar plantilla"</li>
-                <li>Modifique <strong>únicamente</strong> la columna "Cantidad"</li>
+                <li>Descargue la lista actual usando el botón "Exportar lista"</li>
+                <li>Modifique <strong>únicamente</strong> la columna "Cantidad a Trasladar"</li>
                 <li>Guarde el archivo sin cambiar su formato o estructura</li>
                 <li>Suba el archivo modificado en este formulario</li>
             </ol>
@@ -228,7 +279,7 @@
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
         <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving" 
-        (click)="importarAjustes(fileInput, importForm.value.detalle)">
+        (click)="importarTraslado(fileInput, importForm.value.detalle)">
             <span *ngIf="!saving">Importar Traslado</span>
             <span *ngIf="saving">Importando...</span>
         </button>
