@@ -628,17 +628,20 @@ class ProductosController extends Controller
         Excel::import($importador, $request->file('archivo'));
 
         // Verificar si se actualizó algún producto
-        $actualizados = $importador->getTrasladados();
-
-        if ($actualizados > 0) {
+        $trasladados = $importador->getTrasladados();
+        $errores = $importador->getErrores();
+        
+        if ($trasladados > 0) {
             return Response()->json([
-                'message' => "Traslado de inventario realizado exitosamente. Se actualizaron {$actualizados} productos.",
-                'actualizados' => $actualizados
+                'message' => "Traslado de inventario realizado exitosamente. Se trasladaron {$trasladados} productos.",
+                'trasladados' => $trasladados,
+                'errores' => $errores
             ], 200);
         } else {
             return Response()->json([
-                'message' => 'No se realizó ningún cambio en el inventario. Verifica que los datos sean correctos.',
-                'actualizados' => 0
+                'message' => 'No se realizó ningún traslado de inventario. Verifica que los datos sean correctos.',
+                'trasladados' => 0,
+                'errores' => $errores
             ], 200);
         }
     }

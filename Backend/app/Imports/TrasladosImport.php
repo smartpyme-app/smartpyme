@@ -32,11 +32,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
         return 2; // Empezamos en la fila 2 para omitir los encabezados
     }
 
-    /**
-     * @param array $row
-     *
-     * @return null
-     */
+
     public function model(array $row)
     {
         Log::info('Fila procesada para traslado:', $row);
@@ -44,7 +40,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
         try {
             if (!isset($row['id_producto']) || !isset($row['cantidad_a_trasladar'])) {
                 Log::warning('Claves faltantes para traslado. Claves disponibles:', array_keys($row));
-                $this->errores[] = "Falta información necesaria en alguna fila del archivo.";
+                //$this->errores[] = "Falta información necesaria en alguna fila del archivo.";
                 return null;
             }
 
@@ -52,8 +48,6 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
             $idBodegaOrigen = $row['id_bodega_origen'];
             $idBodegaDestino = $row['id_bodega_destino'];
             $cantidadTraslado = floatval($row['cantidad_a_trasladar']);
-
-            // Validar que la cantidad sea mayor que cero
             if ($cantidadTraslado <= 0) {
                 Log::info("Cantidad de traslado debe ser mayor a cero para el producto {$idProducto}");
                 return null;
@@ -190,9 +184,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
         return null;
     }
 
-    /**
-     * @return int
-     */
+
     public function getTrasladados(): int
     {
         return $this->trasladados;
