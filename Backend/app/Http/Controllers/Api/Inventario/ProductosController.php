@@ -21,8 +21,10 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
 use App\Exports\WooCommerceExport;
+use App\Models\Inventario\Traslado;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductosController extends Controller
@@ -426,7 +428,6 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
-        //convertir en un arraya viene asi   'productos_ids' => '130541,120896',
         $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
         $filtros = [
             'id_bodega_origen' => $request->id_bodega_origen,
@@ -440,5 +441,176 @@ class ProductosController extends Controller
             new PlantillaInventarioMasivoExport($filtros),
             'plantilla_traslado_inventario_' . date('Ymd_His') . '.xlsx'
         );
+    }
+
+    public function trasladoMasivo(Request $request)
+    {
+        $request->validate([
+            'concepto' => 'required|string',
+            'id_bodega_origen' => 'required|numeric',
+            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
+            'id_usuario' => 'required|numeric',
+            'productos' => 'required|array',
+            'productos.*.id_producto' => 'required|numeric',
+            'productos.*.cantidad' => 'required|numeric|min:0.01',
+        ]);
+
+        if ($request->id_bodega_origen == $request->id_bodega_destino) {
+            return response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $trasladosExitosos = 0;
+            $errores = [];
+
+            foreach ($request->productos as $productoData) {
+                $idProducto = $productoData['id_producto'];
+                $cantidad = $productoData['cantidad'];
+
+                // Si la cantidad es 0 o negativa, saltamos este producto
+                if ($cantidad <= 0) {
+                    continue;
+                }
+
+                $producto = Producto::where('id', $idProducto)->with('composiciones')->first();
+
+                if (!$producto) {
+                    $errores[] = "Producto con ID {$idProducto} no encontrado.";
+                    continue;
+                }
+
+                $origen = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $request->id_bodega_origen)
+                    ->first();
+
+                $destino = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $request->id_bodega_destino)
+                    ->first();
+
+                // Validar que exista inventario en origen y destino
+                if (!$origen || !$destino) {
+                    $errores[] = "Una de las sucursales no tiene inventario para el producto {$producto->nombre}.";
+                    continue;
+                }
+
+                // Validar que haya suficiente stock
+                if ($origen->stock < $cantidad) {
+                    $errores[] = "La sucursal origen no tiene stock suficiente para el producto {$producto->nombre}.";
+                    continue;
+                }
+                $user = Auth::user();
+
+                // Crear el registro de traslado
+                $traslado = new Traslado();
+                $traslado->id_producto = $idProducto;
+                $traslado->id_bodega_de = $request->id_bodega_origen;
+                $traslado->id_bodega = $request->id_bodega_destino;
+                $traslado->concepto = $request->concepto;
+                $traslado->cantidad = $cantidad;
+                $traslado->id_usuario = $user->id;
+                $traslado->id_empresa = $user->id_empresa;
+                $traslado->estado = 'Confirmado';
+                $traslado->save();
+
+                // Actualizar inventario del producto principal
+                $origen->stock -= $cantidad;
+                $origen->save();
+                $origen->kardex($traslado, $cantidad * -1);
+
+                $destino->stock += $cantidad;
+                $destino->save();
+                $destino->kardex($traslado, $cantidad);
+
+                // Procesar composiciones si las hay
+                $composicionesValidas = true;
+
+                foreach ($producto->composiciones as $comp) {
+                    $productoCompuesto = Producto::where('id', $comp->id_compuesto)->first();
+
+                    if (!$productoCompuesto) {
+                        $errores[] = "Producto compuesto con ID {$comp->id_compuesto} no encontrado.";
+                        $composicionesValidas = false;
+                        break;
+                    }
+
+                    $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
+                        ->where('id_bodega', $request->id_bodega_origen)
+                        ->first();
+
+                    $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
+                        ->where('id_bodega', $request->id_bodega_destino)
+                        ->first();
+
+                    if (!$origenComp || !$destinoComp) {
+                        $errores[] = "Una de las sucursales no tiene inventario para la composición {$productoCompuesto->nombre}.";
+                        $composicionesValidas = false;
+                        break;
+                    }
+
+                    $cantidadComp = $cantidad * $comp->cantidad;
+
+                    if ($origenComp->stock < $cantidadComp) {
+                        $errores[] = "La sucursal origen no tiene stock suficiente para la composición {$productoCompuesto->nombre}.";
+                        $composicionesValidas = false;
+                        break;
+                    }
+
+                    // Si llegamos aquí, la composición es válida
+                }
+
+                // Si hay algún problema con las composiciones, continuamos con el siguiente producto
+                if (!$composicionesValidas) {
+                    continue;
+                }
+
+                // Actualizar inventario de las composiciones
+                foreach ($producto->composiciones as $comp) {
+                    $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
+                        ->where('id_bodega', $request->id_bodega_origen)
+                        ->first();
+
+                    $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
+                        ->where('id_bodega', $request->id_bodega_destino)
+                        ->first();
+
+                    $cantidadComp = $cantidad * $comp->cantidad;
+
+                    $origenComp->stock -= $cantidadComp;
+                    $origenComp->save();
+                    $origenComp->kardex($traslado, $cantidadComp * -1);
+
+                    $destinoComp->stock += $cantidadComp;
+                    $destinoComp->save();
+                    $destinoComp->kardex($traslado, $cantidadComp);
+                }
+
+                $trasladosExitosos++;
+            }
+
+            if ($trasladosExitosos == 0) {
+                DB::rollback();
+                return response()->json([
+                    'error' => 'No se pudo realizar ningún traslado. Revise los errores.',
+                    'detalles' => $errores,
+                    'code' => 400
+                ], 400);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Traslado masivo realizado exitosamente',
+                'trasladados' => $trasladosExitosos,
+                'errores' => $errores
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => $e->getMessage(), 'code' => 400], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return response()->json(['error' => $e->getMessage(), 'code' => 400], 400);
+        }
     }
 }
