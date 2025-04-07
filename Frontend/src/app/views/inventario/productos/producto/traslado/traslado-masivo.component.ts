@@ -445,24 +445,10 @@ export class TrasladoMasivoComponent implements OnInit {
         this.saving = true;
         this.apiService.upload('productos/traslado-masivo/importar', formData).subscribe(
             respuesta => {
-               // this.alertService.success('Traslado masivo importado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
+                this.alertService.success('Traslado masivo importado', ' productos exitosamente.');
                 this.modalRef.hide();
                 this.saving = false;
                 
-                // Limpiar productos seleccionados
-                this.seleccionados = [];
-                this.productosParaTraslado = [];
-                this.productos = [];
-                this.searchControl.setValue('');
-                
-                // Si hay errores, mostrarlos
-                // if (respuesta.errores && respuesta.errores.length > 0) {
-                //     let mensajeErrores = 'Los siguientes productos no pudieron ser trasladados:<br>';
-                //     respuesta.errores.forEach((error: string) => {
-                //         mensajeErrores += '- ' + error + '<br>';
-                //     });
-                //     this.alertService.warning(mensajeErrores, 'Advertencias durante el traslado');
-                // }
             },
             error => {
                 this.alertService.error(error);

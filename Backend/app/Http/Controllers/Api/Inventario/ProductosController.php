@@ -21,6 +21,7 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
 use App\Exports\WooCommerceExport;
+use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
@@ -611,6 +612,48 @@ class ProductosController extends Controller
         } catch (\Throwable $e) {
             DB::rollback();
             return response()->json(['error' => $e->getMessage(), 'code' => 400], 400);
+        }
+    }
+
+    public function importarTrasladosMasivos(Request $request)
+    {
+        $request->validate([
+            //'archivo' => 'required|file|mimes:xlsx,xls,csv',
+            'concepto' => 'required|string',
+            'id_bodega_origen' => 'required|numeric',
+            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
+        ]);
+
+        if ($request->hasFile('archivo')) {
+            $file = $request->file('archivo');
+            $extension = $file->getClientOriginalExtension();
+            $mimeType = $file->getMimeType();
+            
+            Log::info("Archivo: {$file->getClientOriginalName()}");
+            Log::info("Extensión: {$extension}");
+            Log::info("MIME: {$mimeType}");
+        } else {
+            Log::info("No se encontró archivo en la solicitud");
+        }
+
+      //  return $request->all();
+
+        $importador = new TrasladosImport($request->concepto, $request->id_bodega_origen, $request->id_bodega_destino);
+        Excel::import($importador, $request->file('archivo'));
+
+        // Verificar si se actualizó algún producto
+        $actualizados = $importador->getTrasladados();
+
+        if ($actualizados > 0) {
+            return Response()->json([
+                'message' => "Traslado de inventario realizado exitosamente. Se actualizaron {$actualizados} productos.",
+                'actualizados' => $actualizados
+            ], 200);
+        } else {
+            return Response()->json([
+                'message' => 'No se realizó ningún cambio en el inventario. Verifica que los datos sean correctos.',
+                'actualizados' => 0
+            ], 200);
         }
     }
 }
