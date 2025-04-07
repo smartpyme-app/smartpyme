@@ -308,6 +308,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.tipo_dte = null;
             this.venta.numero_control = null;
             this.venta.codigo_generacion = null;
+            this.venta.impuestos = this.impuestos;
             this.venta.sello_mh = null;
             this.venta.dte = null;
             this.venta.dte_invalidacion = null;
@@ -315,6 +316,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
+            this.sumTotal();
           },
           (error) => {
             this.alertService.error(error);
