@@ -52,6 +52,8 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
 import { TrasladoMasivoComponent } from './productos/producto/traslado/traslado-masivo.component';
+import { ReactiveFormsModule } from '@angular/forms';
+
 
 @NgModule({
   imports: [
@@ -70,7 +72,8 @@ import { TrasladoMasivoComponent } from './productos/producto/traslado/traslado-
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
     PopoverModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    ReactiveFormsModule
   ],
   declarations: [
   	ProductosComponent,

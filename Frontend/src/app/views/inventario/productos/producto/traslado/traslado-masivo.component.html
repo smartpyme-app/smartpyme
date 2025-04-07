@@ -28,79 +28,43 @@
             <input type="text" class="form-control" placeholder="Escribe aquí el motivo del traslado" [(ngModel)]="trasladoInventario.detalle" name="concepto">
         </div>
     </div>
-    <div class="row">
-        <h6 class="mt-3">Detalles del traslado</h6>
-        <div class="form-group col-md-12 col-lg-8">
-            <label for="buscador">Buscar producto</label>
-            <div class="input-group">
-                <div class="input-group-text bg-white border-end-0">
-                    <i class="fa fa-search text-muted"></i>
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="w-100 d-flex input-group buscador" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="fa fa-search"></i></span>
+                    <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control border-start-0" 
+                        placeholder="Buscar producto por nombre o código">
                 </div>
-                <input type="search" id="buscador" name="buscador" class="form-control border-start-0" 
-                    placeholder="Escriba el nombre o código del producto" 
-                    [(ngModel)]="filtros.buscador" (keyup.enter)="buscarProducto()">
-                <button class="btn btn-primary" (click)="buscarProducto()" [disabled]="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
-                    <i class="fa fa-search me-1"></i> Buscar
-                </button>
+                <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones" style="position: absolute; width: 100%; z-index: 1000; margin-top: 40px;">
+                    <li class="list-group-item text-center" *ngIf="loading">
+                        <small>Buscando productos...</small>
+                    </li>
+                    <li class="list-group-item text-center" *ngIf="!loading && productos.length === 0 && searchControl.value?.length > 0">
+                        <small>No se encontraron productos</small>
+                    </li>
+                    <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" 
+                       *ngFor="let producto of productos">
+                        <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" 
+                             class="rounded-circle img-fluid col-1">
+                        <span id="producto_nombre" class="col-7 ps-2">
+                            {{ producto.nombre }} <br>
+                            <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span></small>
+                        </span>
+                        <span class="col-2 text-center" id="stock">
+                            <span *ngIf="getStockOrigen(producto) > 0" class="badge bg-success">{{ getStockOrigen(producto) }} en origen</span>
+                            <span *ngIf="getStockOrigen(producto) <= 0" class="badge bg-danger">Sin stock</span>
+                        </span>
+                        <span class="col-2 text-end">
+                            <span class="badge bg-light text-dark p-1">{{ getStockDestino(producto) }} en destino</span>
+                        </span>
+                    </a>
+                </ul>
             </div>
-        </div>
-        
-    </div>
-    
-    <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
-        <i class="fa fa-info-circle me-2"></i>
-        <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
-    </div>
-</section>
-
-<section class="card border-0 p-3 mb-3" *ngIf="resultadosBusqueda && resultadosBusqueda.length > 0">
-    <h6 class="mt-3">Resultados de búsqueda</h6>
-    <div class="row">
-        <div class="col-md-12 table-responsive">
-            <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th class="text-center">Código</th>
-                            <th class="text-center">Stock Origen</th>
-                            <th class="text-center">Stock Destino</th>
-                            <th class="text-center">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let producto of resultadosBusqueda">
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="32px"> 
-                                    <span>{{ producto.nombre }}</span>
-                                </div>
-                            </td>
-                            <td class="text-center">{{ producto.codigo || 'N/A' }}</td>
-                            <td class="text-center">
-                                <span class="badge bg-light text-dark">{{ producto.stock_origen || 0 }}</span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-light text-dark">{{ producto.stock_destino || 0 }}</span>
-                            </td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-primary" 
-                                    *ngIf="!productoYaSeleccionado(producto.id) && producto.stock_origen > 0"
-                                    (click)="agregarProducto(producto)">
-                                    <i class="fa fa-plus"></i> Agregar
-                                </button>
-                                <span class="badge bg-success" 
-                                    *ngIf="productoYaSeleccionado(producto.id)">
-                                    <i class="fa fa-check"></i> Agregado
-                                </span>
-                                <span class="badge bg-danger" 
-                                    *ngIf="!productoYaSeleccionado(producto.id) && producto.stock_origen <= 0">
-                                    Sin stock
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-          
+            <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
+                <i class="fa fa-info-circle me-2"></i>
+                <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
+            </div>
         </div>
     </div>
 </section>
@@ -152,9 +116,6 @@
                                 step="1">
                         </td>
                         <td class="text-center">
-                            <!-- <button class="btn btn-sm btn-danger" (click)="quitarProducto(producto)">
-                                <i class="fa fa-times"></i>
-                            </button> -->
                             <div class="btn-group">
                                 <button class="btn btn-light" (click)="quitarProducto(producto)">
                                   <i class="fa fa-trash"></i>

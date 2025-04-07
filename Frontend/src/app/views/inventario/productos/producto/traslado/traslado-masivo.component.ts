@@ -3,12 +3,17 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
+import { FormControl } from '@angular/forms';
+import { debounceTime, switchMap, filter, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import Swal from 'sweetalert2';
 
 @Component({
-    selector: 'app-traslado-masivo',
-    templateUrl: './traslado-masivo.component.html',
+  selector: 'app-traslado-masivo',
+  templateUrl: './traslado-masivo.component.html',
 })
 export class TrasladoMasivoComponent implements OnInit {
+    public productos: any = [];
     public resultadosBusqueda: any[] = [];
     public loading: boolean = false;
     public downloading: boolean = false;
@@ -37,6 +42,9 @@ export class TrasladoMasivoComponent implements OnInit {
     
     public productosMap: Map<number, any> = new Map();
     public bodegasMap: Map<string, string> = new Map();
+    
+    // Control para el buscador
+    searchControl = new FormControl();
 
     modalRef!: BsModalRef;
 
@@ -49,6 +57,86 @@ export class TrasladoMasivoComponent implements OnInit {
 
     ngOnInit() {
         this.loadData();
+        
+        // Configurar el buscador con debounce
+        this.searchControl.valueChanges
+          .pipe(
+            debounceTime(500),
+            filter((query: string) => query?.trim().length > 0),
+            switchMap((query: any) => {
+              this.loading = true;
+              // Construir la URL con los parámetros de búsqueda
+              const params = {
+                query: query.trim(),
+                id_bodega_origen: this.filtros.id_bodega_origen,
+                id_bodega_destino: this.filtros.id_bodega_destino
+              };
+              return this.apiService.getAll(`productos/buscar-by-query`, params).pipe(
+                catchError(error => {
+                  console.error('Error en la búsqueda:', error);
+                  this.productos = [];
+                  this.loading = false;
+                  return of([]);
+                })
+              );
+            })
+          )
+          .subscribe({
+            next: (results: any[]) => {
+              this.productos = Array.isArray(results) ? results : [];
+              this.procesarProductosEncontrados();
+              this.loading = false;
+            },
+            error: (err) => {
+              console.error('Error no controlado:', err);
+              this.loading = false;
+            }
+          });
+    }
+    
+    // Procesar los productos encontrados con información de stock
+    private procesarProductosEncontrados() {
+        this.productos = this.productos.map((producto: any) => {
+            // Obtener stock en bodega origen
+            const inventarioOrigen = producto.inventarios.find(
+                (inv: any) => inv.id_bodega == this.filtros.id_bodega_origen
+            );
+            const stockOrigen = inventarioOrigen ? inventarioOrigen.stock : 0;
+            
+            // Obtener stock en bodega destino
+            const inventarioDestino = producto.inventarios.find(
+                (inv: any) => inv.id_bodega == this.filtros.id_bodega_destino
+            );
+            const stockDestino = inventarioDestino ? inventarioDestino.stock : 0;
+            
+            return {
+                ...producto,
+                stock_origen: stockOrigen,
+                stock_destino: stockDestino
+            };
+        });
+    }
+
+    public getStockOrigen(producto: any): number {
+        if (producto.stock_origen !== undefined) {
+            return producto.stock_origen;
+        }
+        
+        const inventarioOrigen = producto.inventarios.find(
+            (inv: any) => inv.id_bodega == this.filtros.id_bodega_origen
+        );
+        return inventarioOrigen ? inventarioOrigen.stock : 0;
+    }
+    
+    public getStockDestino(producto: any): number {
+        if (producto.stock_destino !== undefined) {
+            return producto.stock_destino;
+        }
+        
+        const inventarioDestino = producto.inventarios.find(
+            (inv: any) => inv.id_bodega == this.filtros.id_bodega_destino
+        );
+        return inventarioDestino ? inventarioDestino.stock : 0;
     }
 
     public loadData() {
@@ -88,8 +176,8 @@ export class TrasladoMasivoComponent implements OnInit {
             if (confirm('Al cambiar la bodega de origen se perderá la lista actual de productos a trasladar. ¿Desea continuar?')) {
                 this.seleccionados = [];
                 this.productosParaTraslado = [];
-                this.resultadosBusqueda = [];
-                this.filtros.buscador = '';
+                this.productos = [];
+                this.searchControl.setValue('');
                 this.guardarFiltros();
             } else {
                 // Restaurar bodega origen anterior
@@ -119,85 +207,54 @@ export class TrasladoMasivoComponent implements OnInit {
         localStorage.setItem('trasladoInventarioFiltros', JSON.stringify(this.filtros));
     }
 
-    public buscarProducto() {
-        if (!this.filtros.id_bodega_origen || !this.filtros.id_bodega_destino) {
-            this.alertService.warning('Debe seleccionar las bodegas de origen y destino primero.', 'Bodegas requeridas');
+    public selectProducto(producto: any) {
+        if (this.productoYaSeleccionado(producto.id)) {
+            this.alertService.info('Este producto ya está en la lista de traslado.', 'Producto duplicado');
+            this.searchControl.setValue('');
+            this.productos = [];
             return;
         }
 
-        if (!this.filtros.buscador || this.filtros.buscador.trim().length < 2) {
-            this.alertService.warning('Ingrese al menos 2 caracteres para buscar.', 'Búsqueda requerida');
+        const stockOrigen = this.getStockOrigen(producto);
+        if (stockOrigen <= 0) {
+            this.alertService.warning('Este producto no tiene stock disponible en la bodega de origen.', 'Sin stock');
+            this.searchControl.setValue('');
+            this.productos = [];
             return;
         }
 
-        this.loading = true;
-        this.resultadosBusqueda = [];
-
-        this.apiService.getAll('productos', { 
-            buscador: this.filtros.buscador.trim(),
-            id_bodega_origen: this.filtros.id_bodega_origen,
-            id_bodega_destino: this.filtros.id_bodega_destino,
-            paginate: 10
-        }).subscribe(
-            response => { 
-                if (response.data && response.data.length > 0) {
-                    this.resultadosBusqueda = response.data.map((producto: any) => {
-                        // Obtener stock en bodega origen
-                        const inventarioOrigen = producto.inventarios.find(
-                            (inv: any) => inv.id_bodega == this.filtros.id_bodega_origen
-                        );
-                        const stockOrigen = inventarioOrigen ? inventarioOrigen.stock : 0;
-                        const idInventarioOrigen = inventarioOrigen ? inventarioOrigen.id : null;
-                        
-                        // Obtener stock en bodega destino
-                        const inventarioDestino = producto.inventarios.find(
-                            (inv: any) => inv.id_bodega == this.filtros.id_bodega_destino
-                        );
-                        const stockDestino = inventarioDestino ? inventarioDestino.stock : 0;
-                        const idInventarioDestino = inventarioDestino ? inventarioDestino.id : null;
-
-                        return {
-                            ...producto,
-                            stock_origen: stockOrigen,
-                            stock_destino: stockDestino,
-                            id_inventario_origen: idInventarioOrigen,
-                            id_inventario_destino: idInventarioDestino,
-                            cantidad_traslado: 0
-                        };
-                    });
-                } else {
-                    this.alertService.info('No se encontraron productos con ese criterio de búsqueda.', 'Sin resultados');
-                }
-                this.loading = false;
-            },
-            error => {
-                this.alertService.error(error); 
-                this.loading = false;
-            }
+        // Preparar inventario origen y destino
+        const inventarioOrigen = producto.inventarios.find(
+            (inv: any) => inv.id_bodega == this.filtros.id_bodega_origen
         );
+        const inventarioDestino = producto.inventarios.find(
+            (inv: any) => inv.id_bodega == this.filtros.id_bodega_destino
+        );
+
+        // Crear objeto de producto para el traslado
+        const productoTraslado = {
+            id: producto.id,
+            nombre: producto.nombre,
+            nombre_categoria: producto.nombre_categoria,
+            img: producto.img,
+            stock_origen: stockOrigen,
+            stock_destino: this.getStockDestino(producto),
+            id_inventario_origen: inventarioOrigen ? inventarioOrigen.id : null,
+            id_inventario_destino: inventarioDestino ? inventarioDestino.id : null,
+            cantidad_traslado: 1 // Por defecto 1
+        };
+        
+        // Agregar a la lista de seleccionados
+        this.seleccionados.push(productoTraslado);
+        this.actualizarProductosParaTraslado();
+        
+        // Limpiar buscador
+        this.searchControl.setValue('');
+        this.productos = [];
     }
 
     public productoYaSeleccionado(idProducto: number): boolean {
         return this.seleccionados.some(p => p.id === idProducto);
-    }
-
-    public agregarProducto(producto: any) {
-        if (this.productoYaSeleccionado(producto.id)) {
-            this.alertService.info('Este producto ya está en la lista de traslado.', 'Producto duplicado');
-            return;
-        }
-
-        if (producto.stock_origen <= 0) {
-            this.alertService.warning('Este producto no tiene stock disponible en la bodega de origen.', 'Sin stock');
-            return;
-        }
-
-        // Clonamos el producto para evitar referencias
-        const productoTraslado = { ...producto };
-        productoTraslado.cantidad_traslado = 1; // Por defecto 1
-        
-        this.seleccionados.push(productoTraslado);
-        this.actualizarProductosParaTraslado();
     }
 
     public quitarProducto(producto: any) {
@@ -206,10 +263,19 @@ export class TrasladoMasivoComponent implements OnInit {
     }
 
     public limpiarSeleccion() {
-        if (confirm('¿Está seguro de eliminar todos los productos de la lista de traslado?')) {
-            this.seleccionados = [];
-            this.productosParaTraslado = [];
-        }
+
+        Swal.fire({
+            title: '¿Está seguro de eliminar todos los productos de la lista de traslado?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'No'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.seleccionados = [];
+                this.productosParaTraslado = [];
+            }
+        });
     }
 
     public validarCantidadTraslado(producto: any) {
@@ -296,8 +362,8 @@ export class TrasladoMasivoComponent implements OnInit {
                 // Limpiar productos seleccionados
                 this.seleccionados = [];
                 this.productosParaTraslado = [];
-                this.resultadosBusqueda = [];
-                this.filtros.buscador = '';
+                this.productos = [];
+                this.searchControl.setValue('');
             },
             error => {
                 this.alertService.error(error);
@@ -379,15 +445,15 @@ export class TrasladoMasivoComponent implements OnInit {
         this.saving = true;
         this.apiService.upload('productos/traslado-masivo/importar', formData).subscribe(
             respuesta => {
-                //this.alertService.success('Traslado masivo importado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
+               // this.alertService.success('Traslado masivo importado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
                 this.modalRef.hide();
                 this.saving = false;
                 
                 // Limpiar productos seleccionados
                 this.seleccionados = [];
                 this.productosParaTraslado = [];
-                this.resultadosBusqueda = [];
-                this.filtros.buscador = '';
+                this.productos = [];
+                this.searchControl.setValue('');
                 
                 // Si hay errores, mostrarlos
                 // if (respuesta.errores && respuesta.errores.length > 0) {
