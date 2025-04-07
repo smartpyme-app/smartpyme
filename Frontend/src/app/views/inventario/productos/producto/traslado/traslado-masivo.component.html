@@ -39,13 +39,13 @@
                 </div>
                 
                 <!-- Botones de acción pegados a la barra de búsqueda -->
-                <button class="btn btn-outline-secondary" tooltip="Exportar lista" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
+                <button class="btn btn-default tcla-F3" tooltip="Exportar lista" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
                     <i class="fa fa-download"></i>
                 </button>
-                <button class="btn btn-outline-secondary" tooltip="Importar traslado" (click)="openModalImportar(mImportar)">
+                <button class="btn btn-default tcla-F3" tooltip="Importar traslado" (click)="openModalImportar(mImportar)">
                     <i class="fa fa-upload"></i>
                 </button>
-                <button class="btn btn-outline-danger" tooltip="Limpiar selección" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
+                <button class="btn btn-default tcla-F3" tooltip="Limpiar selección" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
                     <i class="fa fa-trash-alt"></i>
                 </button>
             </div>
