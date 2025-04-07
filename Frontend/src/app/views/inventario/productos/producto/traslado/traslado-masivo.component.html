@@ -132,29 +132,30 @@
 
 <section class="card border-0 p-3 mb-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
     <div class="row mt-3">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <button class="btn btn-outline-secondary me-2" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
-                        <i class="fa fa-download me-1"></i> Exportar lista
-                    </button>
-                    <button class="btn btn-outline-secondary" (click)="openModalImportar(mImportar)">
-                        <i class="fa fa-upload me-1"></i> Importar traslado
-                    </button>
-                    <button class="btn btn-outline-danger ms-2" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
-                        <i class="fa fa-trash-alt me-1"></i> Limpiar selección
-                    </button>
-                </div>
-                
-                <button type="submit" (click)="openModalConfirmar(mConfirmar)" [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle" class="btn btn-primary">
-                    <span *ngIf="!saving">
-                        Realizar traslado
-                        <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-                    </span>
-                    <span *ngIf="saving">Procesando...</span>
-                </button>
-            </div>
+      <div class="col-md-12">
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+          <div class="d-flex flex-wrap gap-2 mb-2 mb-md-0">
+            <button class="btn btn-outline-secondary" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
+              <i class="fa fa-download me-1"></i> Exportar lista
+            </button>
+            <button class="btn btn-outline-secondary" (click)="openModalImportar(mImportar)">
+              <i class="fa fa-upload me-1"></i> Importar traslado
+            </button>
+            <button class="btn btn-outline-danger" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
+              <i class="fa fa-trash-alt me-1"></i> Limpiar selección
+            </button>
+          </div>
+          <div>
+            <button type="submit" (click)="openModalConfirmar(mConfirmar)" [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle" class="btn btn-primary w-100 w-md-auto">
+              <span *ngIf="!saving">
+                Realizar traslado
+                <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+              </span>
+              <span *ngIf="saving">Procesando...</span>
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 </section>
 
