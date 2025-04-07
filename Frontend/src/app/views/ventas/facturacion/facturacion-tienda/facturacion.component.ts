@@ -212,7 +212,7 @@ export class FacturacionComponent implements OnInit {
           } else {
             this.documentos = this.documentos.filter(
               (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket'
+                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo'
             );
           }
         }
