@@ -491,7 +491,7 @@ class ProductosController extends Controller
                     ->first();
 
                 // Validar que exista inventario en origen y destino
-                if (!$origen || !$destino) {
+                if (!$origen) {
                     $errores[] = "Una de las sucursales no tiene inventario para el producto {$producto->nombre}.";
                     continue;
                 }
@@ -519,10 +519,18 @@ class ProductosController extends Controller
                 $origen->stock -= $cantidad;
                 $origen->save();
                 $origen->kardex($traslado, $cantidad * -1);
-
-                $destino->stock += $cantidad;
-                $destino->save();
-                $destino->kardex($traslado, $cantidad);
+                if ($destino) {
+                    $destino->stock += $cantidad;
+                    $destino->save();
+                    $destino->kardex($traslado, $cantidad);
+                } else {
+                    $destino = new Inventario();
+                    $destino->id_producto = $idProducto;
+                    $destino->id_bodega = $request->id_bodega_destino;
+                    $destino->stock = $cantidad;
+                    $destino->save();
+                    $destino->kardex($traslado, $cantidad);
+                }
 
                 // Procesar composiciones si las hay
                 $composicionesValidas = true;
@@ -630,7 +638,7 @@ class ProductosController extends Controller
         // Verificar si se actualizó algún producto
         $trasladados = $importador->getTrasladados();
         $errores = $importador->getErrores();
-        
+
         if ($trasladados > 0) {
             return Response()->json([
                 'message' => "Traslado de inventario realizado exitosamente. Se trasladaron {$trasladados} productos.",
