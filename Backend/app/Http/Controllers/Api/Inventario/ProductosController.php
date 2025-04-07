@@ -618,27 +618,13 @@ class ProductosController extends Controller
     public function importarTrasladosMasivos(Request $request)
     {
         $request->validate([
-            //'archivo' => 'required|file|mimes:xlsx,xls,csv',
+            'archivo' => 'required|file',
             'concepto' => 'required|string',
             'id_bodega_origen' => 'required|numeric',
             'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
         ]);
 
-        if ($request->hasFile('archivo')) {
-            $file = $request->file('archivo');
-            $extension = $file->getClientOriginalExtension();
-            $mimeType = $file->getMimeType();
-            
-            Log::info("Archivo: {$file->getClientOriginalName()}");
-            Log::info("Extensión: {$extension}");
-            Log::info("MIME: {$mimeType}");
-        } else {
-            Log::info("No se encontró archivo en la solicitud");
-        }
-
-      //  return $request->all();
-
-        $importador = new TrasladosImport($request->concepto, $request->id_bodega_origen, $request->id_bodega_destino);
+        $importador = new TrasladosImport($request->concepto);
         Excel::import($importador, $request->file('archivo'));
 
         // Verificar si se actualizó algún producto
