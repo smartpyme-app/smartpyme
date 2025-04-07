@@ -28,44 +28,58 @@
             <input type="text" class="form-control" placeholder="Escribe aquí el motivo del traslado" [(ngModel)]="trasladoInventario.detalle" name="concepto">
         </div>
     </div>
-    <div class="row mt-3">
+    <div class="row mt-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
         <div class="col-md-12">
-            <div class="w-100 d-flex input-group buscador" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
-                <div class="input-group">
+            <div class="d-flex gap-2">
+                <!-- Barra de búsqueda -->
+                <div class="input-group flex-grow-1">
                     <span class="input-group-text bg-white border-end-0"><i class="fa fa-search"></i></span>
                     <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control border-start-0" 
-                        placeholder="Buscar producto por nombre o código">
+                           placeholder="Buscar producto por nombre o código">
                 </div>
-                <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones" style="position: absolute; width: 100%; z-index: 1000; margin-top: 40px;">
-                    <li class="list-group-item text-center" *ngIf="loading">
-                        <small>Buscando productos...</small>
-                    </li>
-                    <li class="list-group-item text-center" *ngIf="!loading && productos.length === 0 && searchControl.value?.length > 0">
-                        <small>No se encontraron productos</small>
-                    </li>
-                    <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" 
-                       *ngFor="let producto of productos">
-                        <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" 
-                             class="rounded-circle img-fluid col-1">
-                        <span id="producto_nombre" class="col-7 ps-2">
-                            {{ producto.nombre }} <br>
-                            <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span></small>
-                        </span>
-                        <span class="col-2 text-center" id="stock">
-                            <span *ngIf="getStockOrigen(producto) > 0" class="badge bg-success">{{ getStockOrigen(producto) }} en origen</span>
-                            <span *ngIf="getStockOrigen(producto) <= 0" class="badge bg-danger">Sin stock</span>
-                        </span>
-                        <span class="col-2 text-end">
-                            <span class="badge bg-light text-dark p-1">{{ getStockDestino(producto) }} en destino</span>
-                        </span>
-                    </a>
-                </ul>
+                
+                <!-- Botones de acción pegados a la barra de búsqueda -->
+                <button class="btn btn-outline-secondary" tooltip="Exportar lista" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
+                    <i class="fa fa-download"></i>
+                </button>
+                <button class="btn btn-outline-secondary" tooltip="Importar traslado" (click)="openModalImportar(mImportar)">
+                    <i class="fa fa-upload"></i>
+                </button>
+                <button class="btn btn-outline-danger" tooltip="Limpiar selección" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
+                    <i class="fa fa-trash-alt"></i>
+                </button>
             </div>
-            <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
-                <i class="fa fa-info-circle me-2"></i>
-                <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
-            </div>
+            
+            <!-- Dropdown de resultados de búsqueda -->
+            <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones" style="position: absolute; width: 100%; z-index: 1000; margin-top: 0">
+                <li class="list-group-item text-center" *ngIf="loading">
+                    <small>Buscando productos...</small>
+                </li>
+                <li class="list-group-item text-center" *ngIf="!loading && productos.length === 0 && searchControl.value?.length > 0">
+                    <small>No se encontraron productos</small>
+                </li>
+                <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" 
+                   *ngFor="let producto of productos">
+                    <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" 
+                         class="rounded-circle img-fluid col-1">
+                    <span id="producto_nombre" class="col-7 ps-2">
+                        {{ producto.nombre }} <br>
+                        <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span></small>
+                    </span>
+                    <span class="col-2 text-center" id="stock">
+                        <span *ngIf="getStockOrigen(producto) > 0" class="badge bg-success">{{ getStockOrigen(producto) }} en origen</span>
+                        <span *ngIf="getStockOrigen(producto) <= 0" class="badge bg-danger">Sin stock</span>
+                    </span>
+                    <span class="col-2 text-end">
+                        <span class="badge bg-light text-dark p-1">{{ getStockDestino(producto) }} en destino</span>
+                    </span>
+                </a>
+            </ul>
         </div>
+    </div>
+    <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
+        <i class="fa fa-info-circle me-2"></i>
+        <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
     </div>
 </section>
 
@@ -126,36 +140,21 @@
                 </tbody>
             </table>
         </div>
-        
     </div>
-</section>
 
-<section class="card border-0 p-3 mb-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+    <!-- Botón de acción en la parte inferior -->
     <div class="row mt-3">
-      <div class="col-md-12">
-        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
-          <div class="d-flex flex-wrap gap-2 mb-2 mb-md-0">
-            <button class="btn btn-outline-secondary" (click)="exportarPlantilla()" [disabled]="downloading || seleccionados.length === 0">
-              <i class="fa fa-download me-1"></i> Exportar lista
+        <div class="col-md-12 text-end">
+            <button type="submit" (click)="openModalConfirmar(mConfirmar)" 
+                    [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle" 
+                    class="btn btn-primary">
+                <span *ngIf="!saving">
+                    Realizar traslado
+                    <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                </span>
+                <span *ngIf="saving">Procesando...</span>
             </button>
-            <button class="btn btn-outline-secondary" (click)="openModalImportar(mImportar)">
-              <i class="fa fa-upload me-1"></i> Importar traslado
-            </button>
-            <button class="btn btn-outline-danger" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
-              <i class="fa fa-trash-alt me-1"></i> Limpiar selección
-            </button>
-          </div>
-          <div>
-            <button type="submit" (click)="openModalConfirmar(mConfirmar)" [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle" class="btn btn-primary w-100 w-md-auto">
-              <span *ngIf="!saving">
-                Realizar traslado
-                <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-              </span>
-              <span *ngIf="saving">Procesando...</span>
-            </button>
-          </div>
         </div>
-      </div>
     </div>
 </section>
 
