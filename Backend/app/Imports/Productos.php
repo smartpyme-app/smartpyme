@@ -49,15 +49,17 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
                     $query->where('nombre', $row['proveedor_nombre'])
                           ->where('apellido', $row['proveedor_apellido']);
                 })
-                ->orWhere('nombre_empresa', $row['nombre'])
+                ->orWhere('nombre_empresa', $row['proveedor_nombre'])
                 ->where('id_empresa', $usuario->id_empresa)
                 ->pluck('id')
                 ->first();
 
             if(!$id_proveedor){
                 $proveedor = new Proveedor();
-                $proveedor->nombre = $row['proveedor_nombre'];
+                $proveedor->nombre = $row['proveedor_apellido'] ? $row['proveedor_nombre'] : null;
                 $proveedor->apellido = $row['proveedor_apellido'];
+                $proveedor->tipo = $row['proveedor_apellido'] ? 'Persona' : 'Empresa';
+                $proveedor->nombre_empresa = $proveedor->tipo == 'Empresa' ? $row['proveedor_nombre'] : NULL;
                 $proveedor->enable = true;
                 $proveedor->id_empresa = $usuario->id_empresa;
                 $proveedor->id_usuario = $usuario->id;
