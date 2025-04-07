@@ -23,6 +23,7 @@ use App\Exports\ProductosExport;
 use App\Exports\WooCommerceExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ProductosController extends Controller
 {
@@ -425,12 +426,15 @@ class ProductosController extends Controller
 
     public function exportarPlantillaTraslado(Request $request)
     {
+        //convertir en un arraya viene asi   'productos_ids' => '130541,120896',
+        $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
         $filtros = [
             'id_bodega_origen' => $request->id_bodega_origen,
             'id_bodega_destino' => $request->id_bodega_destino,
-            'id_categoria' => $request->id_categoria,
-            'buscador' => $request->buscador,
+            'productos_ids' => $request->productos_ids
         ];
+
+        Log::info($filtros);
 
         return Excel::download(
             new PlantillaInventarioMasivoExport($filtros),
