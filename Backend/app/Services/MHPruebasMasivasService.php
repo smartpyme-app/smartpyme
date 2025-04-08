@@ -467,62 +467,6 @@ class MHPruebasMasivasService
         }
     }
 
-    protected function obtenerCargaSistema()
-    {
-        // En Linux
-        if (function_exists('sys_getloadavg') && stristr(PHP_OS, 'linux')) {
-            $load = sys_getloadavg();
-            $cores = $this->getCPUCores();
-            // Normalizar la carga por número de núcleos y convertir a porcentaje
-            return min(100, round(($load[0] / $cores) * 100));
-        }
-
-        // Método alternativo para otros sistemas
-        if (function_exists('shell_exec')) {
-            // Para Windows
-            if (stristr(PHP_OS, 'win')) {
-                $cmd = "wmic cpu get loadpercentage /all";
-                @exec($cmd, $output);
-
-                if (isset($output[1])) {
-                    return (int)$output[1];
-                }
-            }
-        }
-
-        // Si no se puede determinar la carga, asumimos un valor moderado
-        return 50;
-    }
-
-    /**
-     * Obtiene el número de núcleos de CPU
-     * @return int Número de núcleos
-     */
-    protected function getCPUCores()
-    {
-        $cores = 1; // Valor por defecto
-
-        if (function_exists('shell_exec')) {
-            // Para Linux
-            if (stristr(PHP_OS, 'linux')) {
-                $cmd = "cat /proc/cpuinfo | grep processor | wc -l";
-                $cores = (int)shell_exec($cmd);
-            }
-            // Para Windows
-            elseif (stristr(PHP_OS, 'win')) {
-                $cmd = "echo %NUMBER_OF_PROCESSORS%";
-                $cores = (int)shell_exec($cmd);
-            }
-            // Para Mac
-            elseif (stristr(PHP_OS, 'darwin')) {
-                $cmd = "sysctl -n hw.ncpu";
-                $cores = (int)shell_exec($cmd);
-            }
-        }
-
-        return $cores > 0 ? $cores : 1;
-    }
-
     protected function enviarNotificacionPorCorreo($resultados, $tipo, $cantidad, $estadisticas)
     {
         try {
@@ -533,14 +477,14 @@ class MHPruebasMasivasService
 
                 Mail::send('mails.pruebas-masivas-completadas', [
                     'resultado' => $resultados,
-                    'tipo' => $tipo,         // Añadir el tipo como número
-                    'tipoDTE' => $tipo,      // Añadir el tipoDTE para compatibilidad
+                    'tipo' => $tipo,      
+                    'tipoDTE' => $tipo,
                     'tipoTexto' => $tipoTexto,
                     'cantidad' => $cantidad,
                     'estadisticas' => $estadisticas
                 ], function ($mensaje) use ($usuario, $tipoTexto) {
-                    // $mensaje->to($usuario->email, $usuario->name)
-                    $mensaje->to("joseespana94@gmail.com", $usuario->name)
+                    // $mensaje->to("joseespana94@gmail.com", $usuario->name)
+                    $mensaje->to($usuario->email, $usuario->name)
                         ->subject('Pruebas Masivas MH Completadas: ' . $tipoTexto);
                 });
             }
@@ -548,10 +492,6 @@ class MHPruebasMasivasService
             Log::error('Error al enviar correo de notificación: ' . $e->getMessage());
         }
     }
-
-    /**
-     * Enviar notificación de error por correo
-     */
 
     protected function enviarNotificacionError($mensaje, $tipo, $cantidad)
     {
@@ -563,13 +503,13 @@ class MHPruebasMasivasService
 
                 Mail::send('mails.pruebas-masivas-error', [
                     'error' => $mensaje,
-                    'tipo' => $tipo,        // Añadir el tipo como número
-                    'tipoDTE' => $tipo,     // Añadir el tipoDTE para compatibilidad
+                    'tipo' => $tipo,        
+                    'tipoDTE' => $tipo,
                     'tipoTexto' => $tipoTexto,
                     'cantidad' => $cantidad
                 ], function ($mensaje) use ($usuario, $tipoTexto) {
-                    // $mensaje->to($usuario->email, $usuario->name)
-                    $mensaje->to("joseespana94@gmail.com", $usuario->name)
+                    // $mensaje->to("joseespana94@gmail.com", $usuario->name)
+                    $mensaje->to($usuario->email, $usuario->name)
                         ->subject('Error en Pruebas Masivas MH: ' . $tipoTexto);
                 });
             }
@@ -578,10 +518,6 @@ class MHPruebasMasivasService
         }
     }
 
-
-    /**
-     * Obtener descripción textual del tipo de documento
-     */
     protected function getTipoTexto($tipo)
     {
         $tipos = [
