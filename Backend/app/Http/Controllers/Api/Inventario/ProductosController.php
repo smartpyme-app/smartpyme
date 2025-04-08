@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Inventario;
 
-use App\Exports\PlantillaInventarioMasivoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -27,6 +26,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Exports\PlantillaInventarioMasivoExport;
 
 class ProductosController extends Controller
 {
