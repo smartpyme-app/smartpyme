@@ -54,23 +54,31 @@ export class RecurrentesComponent implements OnInit {
     }
 
     public loadAll() {
-        this.filtros.id_sucursal = '';
-        this.filtros.id_cliente = '';
-        this.filtros.id_usuario = '';
-        this.filtros.id_canal = '';
-        this.filtros.id_documento = '';
-        this.filtros.forma_pago = '';
-        this.filtros.recurrente = true;
-        this.filtros.estado = '';
-        this.filtros.buscador = '';
-        this.filtros.orden = 'fecha';
-        this.filtros.direccion = 'desc';
-        this.filtros.paginate = 10;
+        const filtrosGuardados = localStorage.getItem('ventasRecurrentesFiltros');
+
+        if (filtrosGuardados) {
+            this.filtros = JSON.parse(filtrosGuardados);
+            console.log(this.filtros);
+          } else {
+            this.filtros.id_sucursal = '';
+            this.filtros.id_cliente = '';
+            this.filtros.id_usuario = '';
+            this.filtros.id_canal = '';
+            this.filtros.id_documento = '';
+            this.filtros.forma_pago = '';
+            this.filtros.recurrente = true;
+            this.filtros.estado = '';
+            this.filtros.buscador = '';
+            this.filtros.orden = 'fecha';
+            this.filtros.direccion = 'desc';
+            this.filtros.paginate = 10;
+          }
 
         this.filtrarVentas();
     }
 
     public filtrarVentas(){
+        localStorage.setItem('ventasRecurrentesFiltros', JSON.stringify(this.filtros));
         this.loading = true;
         this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
             this.ventas = ventas;
@@ -248,6 +256,11 @@ export class RecurrentesComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
         this.modalRef = this.modalService.show(template);
+    }
+
+    public limpiarFiltros() {
+        localStorage.removeItem('ventasRecurrentesFiltros');
+        this.loadAll();
     }
 
 
