@@ -14,7 +14,7 @@
             margin-left: 0cm;
             margin-top: 0cm;
             position: relative;
-            width: 13.6cm; height: 21.4cm;
+            width: 13.7cm; height: 21.4cm;
         }
 
         #header > *, #totales > *{
@@ -23,6 +23,7 @@
         }
 
         #fecha          {top: 4.4cm; left: 10cm; }
+        
         #cliente        {top: 5cm; left: 2.2cm; width: 9cm;}
         #direccion      {top: 5.5cm; left: 2.2cm; width: 9cm;}
         #departamento   {top: 5.5cm; left: 10cm; width: 4cm;}
@@ -32,25 +33,25 @@
         #nit            {top: 6.5cm; left: 9.5cm; }
 
 
-        table   {position: absolute; top: 8.5cm; left: 1cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 8cm; left: 0.5cm; text-align: left; border-collapse: collapse; width:12.1cm; }
         table td{height: 0.6cm; text-align: left;}
 
         .cantidad{ width: 1cm; text-align: center;}
-        .producto{ width: 5.6cm; text-align: left;}
+        .producto{ width: 5.7cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
         .sujetas{ width: 1cm; text-align: center;}
-        .exentas{ width: 0.9cm; text-align: center;}
-        .gravadas{ width: 1.6cm; text-align: right;}
+        .exentas{ width: 1cm; text-align: center;}
+        .gravadas{ width: 2cm; text-align: right;}
         
 
-        #letras     {top: 16cm; left: 2cm; width: 5cm; word-break: break-all; white-space: normal;}
-        #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
+        #letras     {top: 16.5cm; left: 1cm; width: 6cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 16cm; left: 10.6cm; width: 2cm; text-align: right;}
-        #iva        {top: 16.5cm; left: 10.6cm; width: 2cm; text-align: right;}
-        #sub_total  {top: 17cm; left: 10.6cm; width: 2cm; text-align: right;}
-        #no_sujeta  {top: 17.5cm; left: 10.6cm; width: 2cm; text-align: right;}
-        #exenta     {top: 18cm; left: 10.6cm; width: 2cm; text-align: right;}
+        #suma       {top: 16.5cm; left: 10.6cm; width: 2cm; text-align: right;}
+        #iva        {top: 17cm; left: 10.6cm; width: 2cm; text-align: right;}
+        #sub_total  {top: 17.5cm; left: 10.6cm; width: 2cm; text-align: right;}
+        #ivaretenido{top: 18cm; left: 10.6cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 18.5cm; left: 10.6cm; width: 2cm; text-align: right;}
+        #exenta     {top: 19cm; left: 10.6cm; width: 2cm; text-align: right;}
         #total      {top: 19.5cm; left: 10.6cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
@@ -97,7 +98,6 @@
 
         <div id="totales">
             <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
-            {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
             <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>
             <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>

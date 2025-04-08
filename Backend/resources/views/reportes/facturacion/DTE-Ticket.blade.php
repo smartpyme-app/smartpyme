@@ -80,23 +80,18 @@
             {{ \Carbon\Carbon::parse($venta->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($venta->created_at)->format('h:i:s a') }}
         </p>
         <p><b>TICKET:</b># {{ $venta->correlativo }}</p>
-        <p><b>MÉTODO DE PAGO:</b> {{ $venta->forma_pago}}</p>
         <p><b>CAJERO:</b> {{ $venta->nombre_usuario }}</p>
 
         @if ($venta->cliente())
             <p><b>Cliente:</b></p>
-            <p>NOMBRE: {{ $venta->nombre_cliente }}</p> 
+            <p>Nombre: {{ $venta->nombre_cliente }}</p> 
             @if ($venta->cliente()->pluck('telefono')->first())
-                <p>TELÉFONO: {{ $venta->cliente()->pluck('telefono')->first() }}</p> 
+                <p>Teléfono: {{ $venta->cliente()->pluck('telefono')->first() }}</p> 
             @endif
             @if ($venta->cliente()->pluck('direccion')->first())
-                <p>DIRECCIÓN: {{ $venta->cliente()->pluck('direccion')->first() }}</p> 
+                <p>Dirección: {{ $venta->cliente()->pluck('direccion')->first() }}</p> 
             @endif
         @endif
-
-        <br>
-        <h3 class="text-center">{{ $venta->nombre_documento }}</h3>
-        <br>
 
         <p><b>CÓDIGO DE GENERACIÓN:</b> <br> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
         <p><b>NÚMERO DE CONTROL:</b> <br> {{ $DTE['identificacion']['numeroControl'] }}</p>
@@ -156,12 +151,10 @@
             @endif
         </tbody>
         <tfoot>
-            @if (isset($DTE['resumen']['tributos']))
-            <tr>
-                <td class="text-right">SubTotal:</td>
-                <td class="text-right"><b>$ {{ number_format($DTE['resumen']['subTotalVentas'], 2) }}</b></td>
+            <tr class="mt-4">
+                <td class="text-right" colspan="3">Sub Total:</td>
+                <td class="text-right">${{number_format($venta->sub_total + $venta->iva,2) }}</td>
             </tr>
-            @endif
             <tr class="mt-4">
                 <td class="text-right" colspan="3">VENTA GRAVADA:</td>
                 <td class="text-right">${{number_format($venta->sub_total + $venta->iva,2) }}</td>
@@ -174,15 +167,6 @@
                 <td class="text-right" colspan="3">VENTA NO SUJETA:</td>
                 <td class="text-right">${{number_format($venta->no_sujeta,2) }}</td>
             </tr>
-            @if (isset($DTE['resumen']['tributos']))
-                @foreach ($DTE['resumen']['tributos'] as $tributo)
-                <tr>
-                    <td class="text-right">{{ $tributo['descripcion'] }}:</td>
-                    <td class="text-right"><b>${{ number_format($tributo['valor'], 2) }}</b></td>
-                </tr>
-                @endforeach
-            @endif
-
             @if ($venta->cuenta_a_terceros > 0)
                 <tr>
                     <td class="text-right" colspan="3">CUENTA A TERCEROS:</td>

@@ -162,7 +162,8 @@
                     <option value="Ventas">Ventas</option>
                     <option value="Supervisor Limitado" *ngIf="authUser?.id_empresa == 396 || 
                                                    authUser?.id_empresa == 397 || 
-                                                   authUser?.id_empresa == 398">Supervisor Limitado</option>
+                                                   authUser?.id_empresa == 398 || 
+                                                   authUser?.id_empresa == 13">Supervisor Limitado</option>
                 </select>
             </div>
             <div class="form-group col-md-6" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">

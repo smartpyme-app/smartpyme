@@ -14,6 +14,7 @@
 
 use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
+use App\Http\Controllers\Api\Constants\ConstantsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/prueba', function () {
@@ -22,9 +23,15 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
+
+
+
 require base_path('routes/modulos/auth.php');
 
 Route::group(['middleware' => ['jwt.auth']], function () {
+
+	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
+
 
 
 
@@ -79,20 +86,20 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/contabilidad/libros-iva.php');
 
 	// Admin
-		require base_path('routes/modulos/admin/empresas.php');
-		require base_path('routes/modulos/admin/sucursales.php');
-		require base_path('routes/modulos/admin/dashboards.php');
-		require base_path('routes/modulos/admin/cajas.php');
-		require base_path('routes/modulos/admin/impuestos.php');
-		require base_path('routes/modulos/admin/formasdepago.php');
-		require base_path('routes/modulos/admin/canales.php');
-		require base_path('routes/modulos/admin/notificaciones.php');
-		require base_path('routes/modulos/admin/bancos.php');
-		require base_path('routes/modulos/admin/usuarios.php');
-		require base_path('routes/modulos/admin/accesos.php');
-		require base_path('routes/modulos/admin/licencias.php');
-		require base_path('routes/modulos/admin/MH.php');
-		require base_path('routes/modulos/admin/reportes-automaticos.php');
+	require base_path('routes/modulos/admin/empresas.php');
+	require base_path('routes/modulos/admin/sucursales.php');
+	require base_path('routes/modulos/admin/dashboards.php');
+	require base_path('routes/modulos/admin/cajas.php');
+	require base_path('routes/modulos/admin/impuestos.php');
+	require base_path('routes/modulos/admin/formasdepago.php');
+	require base_path('routes/modulos/admin/canales.php');
+	require base_path('routes/modulos/admin/notificaciones.php');
+	require base_path('routes/modulos/admin/bancos.php');
+	require base_path('routes/modulos/admin/usuarios.php');
+	require base_path('routes/modulos/admin/accesos.php');
+	require base_path('routes/modulos/admin/licencias.php');
+	require base_path('routes/modulos/admin/MH.php');
+	require base_path('routes/modulos/admin/reportes-automaticos.php');
 
 	// Super Admin
 	require base_path('routes/modulos/super-admin/usuarios.php');
@@ -102,7 +109,21 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/chat/chat.php');
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
+
+	// planillas
+
+	require base_path('routes/modulos/planilla/empleados.php');
+	require base_path('routes/modulos/planilla/planillas.php');
+	require base_path('routes/modulos/planilla/cargos.php');
+	require base_path('routes/modulos/planilla/departamentos-planilla.php');
+
+	require base_path('routes/modulos/planilla/historialcontratos.php');
+	
 });
+
+//webhook
+
+require base_path('routes/modulos/webhook/webhook.php');
 
 
 Route::get('/prueba/factura', function () {

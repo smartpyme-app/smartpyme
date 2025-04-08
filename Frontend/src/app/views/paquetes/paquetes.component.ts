@@ -16,6 +16,7 @@ export class PaquetesComponent implements OnInit {
     public paquetes:any = [];
     public sucursales:any = [];
     public clientes:any = [];
+    public guias:any = [];
     public usuarios:any = [];
     public paquete:any = {};
     public loading:boolean = false;
@@ -34,7 +35,16 @@ export class PaquetesComponent implements OnInit {
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
 
+        this.getGuias();
+
         this.loadAll();
+    }
+
+    private getGuias() {   
+        this.apiService.getAll('paquetes/list/guias').subscribe(paquetes => { 
+            this.guias = paquetes;
+        }, error => {this.alertService.error(error); });
+
     }
 
     public setOrden(columna: string) {
@@ -55,6 +65,7 @@ export class PaquetesComponent implements OnInit {
         this.filtros.id_usuario = '';
         this.filtros.tipo = '';
         this.filtros.estado = '';
+        this.filtros.num_guia = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
@@ -71,6 +82,10 @@ export class PaquetesComponent implements OnInit {
         this.loading = true;
         if(!this.filtros.id_cliente){
             this.filtros.id_cliente = '';
+        }
+
+        if(!this.filtros.num_guia){
+            this.filtros.num_guia = '';
         }
         this.apiService.getAll('paquetes', this.filtros).subscribe(paquetes => { 
             this.paquetes = paquetes;

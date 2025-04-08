@@ -415,7 +415,7 @@ class MHDTEController extends Controller
 
         if ($correo) {
             Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre ], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
-                $m->from(env('MAIL_FROM_ADDRESS'), $DTE['emisor']['nombre'] )
+                $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'] )
                 ->to($correo, $nombre)
                 ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
                     'mime' => 'application/pdf',
@@ -428,7 +428,8 @@ class MHDTEController extends Controller
 
             return Response()->json($DTE, 200);
         }else{
-            return Response()->json(['error' => 'El cliente no tiene correo electrónico'], 400);
+            return Response()->json($DTE, 200);
+            // return Response()->json(['error' => 'El cliente no tiene correo electrónico'], 400);
         }
 
     }
