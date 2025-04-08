@@ -616,39 +616,61 @@
 <ng-template #mpruebasMasivas>
     <div class="modal-header">
         <div class="d-flex align-items-center justify-content-between">
-      <h4 class="modal-title">Confirmar Emisión Masiva</h4>
-      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-      </div>
+            <h4 class="modal-title">Confirmar Emisión Masiva</h4>
+            <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        </div>
     </div>
     <div class="modal-body">
-      <p>Está a punto de emitir <strong>{{ cantidad }}</strong> documentos de tipo <strong>{{ getLabelTipo(tipoSeleccionado) }}</strong> en el ambiente de pruebas.</p>
-      
-      <div class="form-group mb-3">
-        <label for="documentoBase">Documento base (opcional):</label>
-        <select class="form-select" id="documentoBase" [(ngModel)]="documentoBaseSeleccionado">
-          <option [ngValue]="null">Usar último documento emitido</option>
-          <option *ngFor="let doc of documentosBase" [ngValue]="doc">
-            {{ doc.numero_control }} - {{ doc.nombre_cliente }}
-          </option>
-        </select>
-        <small class="form-text text-muted">
-          Si no selecciona un documento base, se utilizará el último documento emitido de este tipo.
-        </small>
-      </div>
+                
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle me-2"></i> El proceso se ejecutará en segundo plano y podrá continuar utilizando la aplicación. Recibirá una notificación por correo electrónico cuando se complete.
+        </div>
+        
+        <p>Está a punto de emitir <strong>{{ cantidadFaltante }}</strong> documentos de tipo <strong>{{ getLabelTipo(tipoSeleccionado) }}</strong> en el ambiente de pruebas.</p>
+        
+        <div class="form-group mb-3">
+            <label for="documentoBase">Documento base (opcional):</label>
+            <select class="form-select" id="documentoBase" [(ngModel)]="documentoBaseSeleccionado">
+                <option [ngValue]="null">Usar último documento emitido</option>
+                <option *ngFor="let doc of documentosBase" [ngValue]="doc">
+                    {{ doc.numero_control }} - {{ doc.nombre_cliente }}
+                </option>
+            </select>
+            <small class="form-text text-muted">
+                Si no selecciona un documento base, se utilizará el último documento emitido de este tipo.
+            </small>
+        </div>
 
-      <div class="form-group mb-3">
-        <label for="cantidad">Cantidad de documentos:</label>
-        <input type="number" class="form-control" id="cantidad" [(ngModel)]="this.cantidadFaltante" min="1" required>
-      </div>
-      
-      <div class="alert alert-warning">
-        <i class="fa fa-exclamation-triangle"></i> Esta acción no afectará sus correlativos reales y los documentos generados no aparecerán en sus reportes normales.
-      </div>
+        <div class="form-group mb-3">
+            <label for="correlativoInicial">Correlativo inicial:</label>
+            <input type="number" class="form-control" id="correlativoInicial" 
+                   [(ngModel)]="correlativoInicial" 
+                   min="1" 
+                   placeholder="Ej: 1001">
+            <small class="form-text text-muted">
+                Ingrese el número desde donde desea comenzar la generación de documentos.
+                Si lo deja vacío, se usará automáticamente el siguiente correlativo disponible.
+            </small>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="cantidad">Cantidad de documentos:</label>
+            <input type="number" class="form-control" id="cantidad" [(ngModel)]="cantidadFaltante" min="1" required>
+        </div>
+        
+        <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle me-2"></i> Esta acción no afectará sus correlativos reales y los documentos generados no aparecerán en sus reportes normales.
+        </div>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-      <button type="button" class="btn btn-primary" (click)="confirmarEjecucion()">
-        <i class="fa fa-paper-plane"></i> Iniciar Emisión
-      </button>
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="procesando" (click)="confirmarEjecucion()">
+            <span *ngIf="!procesando">
+                <i class="fa fa-paper-plane me-1"></i> Iniciar Emisión
+            </span>
+            <span *ngIf="procesando">
+                <i class="fa fa-spinner fa-spin me-1"></i> Iniciando proceso...
+            </span>
+        </button>
     </div>
-  </ng-template>
+</ng-template>

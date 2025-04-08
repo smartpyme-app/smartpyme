@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessMassTestsJob;
+use App\Models\TrabajosPendientes;
 use Illuminate\Http\Request;
 use App\Services\MHPruebasMasivasService;
 use App\Models\Ventas\Venta;
@@ -51,9 +53,158 @@ class MHPruebasMasivasController extends Controller
         }
     }
 
-    /**
-     * Obtener los documentos que pueden usarse como base para las pruebas
-     */
+    public function ejecutar(Request $request)
+    {
+        try {
+            $request->validate([
+                'tipo' => 'required|string|in:facturas,creditosFiscales,notasCredito,notasDebito,facturasExportacion,sujetoExcluido',
+                'cantidad' => 'required|integer|min:1|max:100',
+                'id_documento_base' => 'nullable|integer|exists:ventas,id',
+                'correlativo_inicial' => 'nullable|integer|min:1'
+            ]);
+    
+            // Comprobar autenticación
+            if (!Auth::user()) {
+                return response()->json(['error' => 'Usuario no autenticado'], 401);
+            }
+    
+            // Verificar que el ambiente sea de pruebas
+            $user = Auth::user();
+            if ($user->empresa->fe_ambiente !== '00') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Las pruebas masivas solo pueden ejecutarse en ambiente de pruebas'
+                ], 400);
+            }
+    
+            // Mapear el tipo a código DTE
+            $tiposDTE = [
+                'facturas' => '01',
+                'creditosFiscales' => '03',
+                'notasCredito' => '05',
+                'notasDebito' => '06',
+                'facturasExportacion' => '11',
+                'sujetoExcluido' => '14'
+            ];
+    
+            $tiposDescriptivos = [
+                '01' => 'Facturas Consumidor Final',
+                '03' => 'Comprobantes de Crédito Fiscal',
+                '05' => 'Notas de Crédito',
+                '06' => 'Notas de Débito',
+                '11' => 'Facturas de Exportación',
+                '14' => 'Facturas de Sujeto Excluido'
+            ];
+    
+            $tipoDTE = $tiposDTE[$request->tipo];
+            
+            // Verificar primero si la operación es viable
+            $verificacion = $this->pruebasMasivasService->ejecutarPruebasMasivas(
+                $tipoDTE,
+                $request->cantidad,
+                $request->id_documento_base,
+                $user->id
+            );
+            
+            // Si la verificación falló, retornar el error
+            if (!$verificacion['success']) {
+                return response()->json($verificacion, 400);
+            }
+            
+            // Guardar el trabajo pendiente en la base de datos
+            $trabajo = TrabajosPendientes::create([
+                'tipo' => 'pruebas_masivas',
+                'parametros' => json_encode([
+                    'tipo_dte' => $tipoDTE,
+                    'cantidad' => $request->cantidad,
+                    'id_documento_base' => $request->id_documento_base,
+                    'correlativo_inicial' => $request->correlativo_inicial,
+                    'id_usuario' => $user->id,
+                    'id_empresa' => $user->id_empresa
+                ]),
+                'estado' => 'pendiente',
+                'fecha_creacion' => now(),
+                'id_usuario' => $user->id,
+                'id_empresa' => $user->id_empresa
+            ]);
+    
+            // Ejecutar el comando artisan en segundo plano
+            $command = "php " . base_path('artisan') . " trabajos:procesar --limite=1 --id=" . $trabajo->id . " > /dev/null 2>&1 &";
+    
+            if (PHP_OS_FAMILY === 'Windows') {
+                pclose(popen("start /B " . $command, "r"));
+            } else {
+                exec($command);
+            }
+
+            return response()->json([
+                'success' => true,
+                'queued' => true,
+                'trabajo_id' => $trabajo->id,
+                'message' => "Se ha programado la generación de {$request->cantidad} {$tiposDescriptivos[$tipoDTE]}. " .
+                           "El proceso se ejecutará en segundo plano y recibirá una notificación por correo cuando finalice."
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al iniciar pruebas masivas: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al iniciar el proceso: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function procesarEnSegundoPlano($trabajo)
+    {
+        // Enviar respuesta al navegador antes de continuar
+        if (function_exists('fastcgi_finish_request')) {
+            // Cerrar la conexión pero mantener el script ejecutándose
+            fastcgi_finish_request();
+        } else {
+            // Alternativa si fastcgi no está disponible
+            ob_end_clean();
+            header("Connection: close");
+            ignore_user_abort(true);
+            ob_start();
+            echo json_encode(['status' => 'processing']);
+            $size = ob_get_length();
+            header("Content-Length: $size");
+            ob_end_flush();
+            flush();
+        }
+        
+        try {
+            // Marcar como en proceso
+            $trabajo->estado = 'procesando';
+            $trabajo->fecha_inicio = now();
+            $trabajo->save();
+            
+            // Obtener parámetros
+            $params = json_decode($trabajo->parametros, true);
+            
+            // Ejecutar el proceso
+            $resultado = $this->pruebasMasivasService->ejecutarPruebasMasivas(
+                $params['tipo_dte'],
+                $params['cantidad'],
+                $params['id_documento_base'],
+                $params['id_usuario']
+            );
+            
+            // Actualizar el trabajo
+            $trabajo->estado = 'completado';
+            $trabajo->resultado = json_encode($resultado);
+            $trabajo->fecha_fin = now();
+            $trabajo->save();
+        } catch (\Exception $e) {
+            Log::error('Error en procesamiento en segundo plano: ' . $e->getMessage());
+            
+            // Marcar como fallido
+            $trabajo->estado = 'fallido';
+            $trabajo->resultado = json_encode(['error' => $e->getMessage()]);
+            $trabajo->fecha_fin = now();
+            $trabajo->save();
+        }
+    }
+
     public function documentosBase()
     {
         try {
@@ -77,61 +228,6 @@ class MHPruebasMasivasController extends Controller
         } catch (\Exception $e) {
             Log::error('Error en documentos base de pruebas masivas: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json(['error' => 'Error al obtener documentos base: ' . $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Ejecutar pruebas masivas para un tipo de documento
-     */
-    public function ejecutar(Request $request)
-    {
-        try {
-            $request->validate([
-                'tipo' => 'required|string|in:facturas,creditosFiscales,notasCredito,notasDebito,facturasExportacion,sujetoExcluido',
-                'cantidad' => 'required|integer|min:1|max:100',
-                'id_documento_base' => 'nullable|integer|exists:ventas,id'
-            ]);
-
-            // Comprobar autenticación
-            if (!Auth::user()) {
-                return response()->json(['error' => 'Usuario no autenticado'], 401);
-            }
-
-            // Verificar que el ambiente sea de pruebas
-            $user = Auth::user();
-            if ($user->empresa->fe_ambiente !== '00') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Las pruebas masivas solo pueden ejecutarse en ambiente de pruebas'
-                ], 400);
-            }
-
-            // Mapear el tipo a código DTE
-            $tiposDTE = [
-                'facturas' => '01',
-                'creditosFiscales' => '03',
-                'notasCredito' => '05',
-                'notasDebito' => '06',
-                'facturasExportacion' => '11',
-                'sujetoExcluido' => '14'
-            ];
-
-            $tipoDTE = $tiposDTE[$request->tipo];
-
-            // Ejecutar pruebas masivas
-            $resultado = $this->pruebasMasivasService->ejecutarPruebasMasivas(
-                $tipoDTE,
-                $request->cantidad,
-                $request->id_documento_base
-            );
-
-            return response()->json($resultado);
-        } catch (\Exception $e) {
-            Log::error('Error en ejecución de pruebas masivas: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al ejecutar pruebas masivas: ' . $e->getMessage()
-            ], 500);
         }
     }
 

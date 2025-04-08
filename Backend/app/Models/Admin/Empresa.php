@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
-class Empresa extends Model {
+class Empresa extends Model
+{
 
     // use SoftDeletes;
     protected $table = 'empresas';
@@ -100,19 +101,22 @@ class Empresa extends Model {
 
     protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
 
-    public function limiteUsuarios(){
-        if($this->usuarios->where('enable', true)->count() < $this->user_limit)
+    public function limiteUsuarios()
+    {
+        if ($this->usuarios->where('enable', true)->count() < $this->user_limit)
             return false;
         return true;
     }
 
-    public function limiteSucursales(){
-        if($this->sucursales->where('activo', true)->count() < $this->sucursal_limit)
+    public function limiteSucursales()
+    {
+        if ($this->sucursales->where('activo', true)->count() < $this->sucursal_limit)
             return false;
         return true;
     }
 
-    public function getEstadoPlanAttribute(){
+    public function getEstadoPlanAttribute()
+    {
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -128,115 +132,142 @@ class Empresa extends Model {
     }
 
 
-    public function usuarios(){
+    public function usuarios()
+    {
         return $this->hasMany('App\Models\User', 'id_empresa');
     }
 
-    public function ventas(){
+    public function ventas()
+    {
         return $this->hasMany('App\Models\Ventas\Venta', 'id_empresa');
     }
 
-    public function proveedores(){
+    public function proveedores()
+    {
         return $this->hasMany('App\Models\Compras\Proveedores\Proveedor', 'id_empresa');
     }
 
-    public function documentos(){
+    public function documentos()
+    {
         return $this->hasMany('App\Models\Admin\Documento', 'id_empresa');
     }
 
-    public function formasDePago(){
+    public function formasDePago()
+    {
         return $this->hasMany('App\Models\Admin\FormasDePago', 'id_empresa');
     }
 
-    public function clientes(){
+    public function clientes()
+    {
         return $this->hasMany('App\Models\Ventas\Clientes\Cliente', 'id_empresa');
     }
 
-    public function productos(){
+    public function productos()
+    {
         return $this->hasMany('App\Models\Inventario\Producto', 'id_empresa');
     }
 
-    public function licencia(){
+    public function licencia()
+    {
         return $this->hasOne('App\Models\Licencias\Licencia', 'id_empresa');
     }
 
-    public function dashboards(){
+    public function dashboards()
+    {
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');
     }
 
-    public function gastos(){
+    public function gastos()
+    {
         return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_empresa');
     }
 
-    public function compras(){
+    public function compras()
+    {
         return $this->hasMany('App\Models\Compras\Compra', 'id_empresa');
     }
 
-    public function canales(){
+    public function canales()
+    {
         return $this->hasMany('App\Models\Admin\Canal', 'id_empresa');
     }
 
-    public function bodegas(){
+    public function bodegas()
+    {
         return $this->hasMany('App\Models\Inventario\Bodega', 'id_empresa');
     }
 
-    public function sucursales(){
+    public function sucursales()
+    {
         return $this->hasMany('App\Models\Admin\Sucursal', 'id_empresa');
     }
 
-    public function deventas(){
+    public function deventas()
+    {
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_empresa');
     }
-    public function decompras(){
+    public function decompras()
+    {
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_empresa');
     }
 
-    public function recordatorios(){
+    public function recordatorios()
+    {
         return $this->hasMany('App\Models\Admin\Notification', 'id_empresa');
     }
 
-    public function ajustes(){
+    public function ajustes()
+    {
         return $this->hasMany('App\Models\Inventario\Ajuste', 'id_empresa');
     }
 
-    public function impuestos(){
+    public function impuestos()
+    {
         return $this->hasMany('App\Models\Admin\Impuesto', 'id_empresa');
     }
 
-    public function traslados(){
+    public function traslados()
+    {
         return $this->hasMany('App\Models\Inventario\Traslado', 'id_empresa');
     }
 
-    public function presupuestos(){
+    public function presupuestos()
+    {
         return $this->hasMany('App\Models\Contabilidad\Presupuesto', 'id_empresa');
     }
 
-    public function categorias(){
+    public function categorias()
+    {
         return $this->hasMany('App\Models\Inventario\Categorias\Categoria', 'id_empresa');
     }
 
-    public function pagos(){
+    public function pagos()
+    {
         return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
-    public function getRecibosPendientesAttribute(){
+    public function getRecibosPendientesAttribute()
+    {
         return $this->pagos()->where('estado', 'Pendiente')->count();
     }
 
-    public function getLastPayAttribute(){
+    public function getLastPayAttribute()
+    {
         return $this->pagos()->pluck('created_at')->last();
     }
 
-    public function getNextPayAttribute(){
+    public function getNextPayAttribute()
+    {
 
         $next_pay = $this->pagos()->pluck('created_at')->last();
-        if($this->pagos()->count())
+        if ($this->pagos()->count())
             $next_pay->addMonth(1);
 
         return $next_pay;
     }
 
-    public function getLeidosAttribute(){
+    public function getLeidosAttribute()
+    {
         $re = $this->recordatorios()->where('leido', false)->get();
         return $re->count();
     }
@@ -278,7 +309,43 @@ class Empresa extends Model {
         return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
     }
 
+    public function inicializarEstadoPruebasMasivas()
+    {
+        $estadoPruebas = [
+            'completado' => false,
+            'fecha_completado' => null,
+            'tipos' => [
+                'facturas' => [
+                    'requeridas' => 90,
+                    'emitidas' => 0
+                ],
+                'creditosFiscales' => [
+                    'requeridas' => 75,
+                    'emitidas' => 0
+                ],
+                'notasCredito' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ],
+                'notasDebito' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ],
+                'facturasExportacion' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ],
+                'sujetoExcluido' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ]
+            ]
+        ];
 
+        // Actualizar el campo en la base de datos
+        $this->fe_pruebas_estadisticas = $estadoPruebas;
+        $this->save();
 
-
+        return $estadoPruebas;
+    }
 }

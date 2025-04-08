@@ -356,19 +356,40 @@ export class MHService {
     obtenerEstadisticasPruebasMasivas(): Observable<any> {
         return this.apiService.getAll(this.url_pruebas_estadisticas);
     }
-
+    
     obtenerDocumentosBase(): Observable<any> {
         return this.apiService.getAll(this.url_pruebas_documentos);
     }
 
-    ejecutarPruebasMasivas(tipo: string, cantidad: number, idDocumentoBase?: number): Observable<any> {
+    ejecutarPruebasMasivas(tipo: string, cantidad: number, idDocumentoBase?: number, correlativoInicial?: number): Observable<any> {
         const datos = {
             tipo: tipo,
             cantidad: cantidad,
-            id_documento_base: idDocumentoBase
+            id_documento_base: idDocumentoBase,
+            correlativo_inicial: correlativoInicial
         };
         
-        return this.apiService.store(this.url_pruebas_ejecutar, datos);
+        // Usa apiService para la llamada HTTP
+        // El endpoint procesará la solicitud de forma asíncrona
+        return this.apiService.store(this.url_pruebas_ejecutar, datos)
+            .pipe(
+                map(response => {
+                    // Manejar la respuesta exitosa (ahora incluye el campo 'queued')
+                    return response;
+                }),
+                catchError(error => {
+                    // Registrar y manejar errores
+                    console.error('Error al ejecutar pruebas masivas:', error);
+                    
+                    // Si hay un mensaje de error específico en la respuesta, úsalo
+                    if (error.error && error.error.message) {
+                        return throwError(error.error.message);
+                    }
+                    
+                    // De lo contrario, devolver un mensaje genérico o el error completo
+                    return throwError('Error al ejecutar pruebas masivas. Por favor, intente nuevamente.');
+                })
+            );
     }
     
 }
