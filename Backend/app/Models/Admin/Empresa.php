@@ -2,8 +2,7 @@
 
 namespace App\Models\Admin;
 
-use App\Models\Planilla\CargoEmpresa;
-use App\Models\Planilla\DepartamentoEmpresa;
+use App\Models\Suscripcion;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -53,6 +52,8 @@ class Empresa extends Model
         'cobra_iva',
         'tipo_plan',
         'fecha_cancelacion',
+        'metodo_pago',
+        'pago_recurrente',
         'referido',
         'campania',
         'wompi_aplicativo',
@@ -94,6 +95,8 @@ class Empresa extends Model
         'woocommerce_error',
         'woocommerce_canal_id',
 
+        //Para facturación
+        'id_cliente'
     ];
 
     protected $casts = [
@@ -119,6 +122,10 @@ class Empresa extends Model
 
     public function getEstadoPlanAttribute()
     {
+        if (!$this->created_at) {
+            return ['estado' => 'Sin fecha de creación', 'dias_faltantes' => null];
+        }
+
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -274,21 +281,7 @@ class Empresa extends Model
         return $re->count();
     }
 
-    public function departamentos()
-    {
-        return $this->belongsToMany(DepartamentoEmpresa::class, 'empresa_departamento')
-                    ->withPivot('estado')
-                    ->withTimestamps();
-    }
-
-    public function cargos()
-    {
-        return $this->belongsToMany(CargoEmpresa::class, 'empresa_cargo')
-                    ->withPivot('estado')
-                    ->withTimestamps();
-    }
-
-
+    //mandar usuario que esta autenticado
     public function user()
     {
 
@@ -363,5 +356,16 @@ class Empresa extends Model
         $this->save();
 
         return $estadoPruebas;
+
+    }
+
+        public function suscripcion()
+    {
+        return $this->hasOne(Suscripcion::class, 'empresa_id');
+    }
+
+    public function suscripcionActiva()
+    {
+        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
     }
 }

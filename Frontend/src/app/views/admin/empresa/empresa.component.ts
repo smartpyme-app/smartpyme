@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
+
 @Component({
   selector: 'app-empresa',
   templateUrl: './empresa.component.html'
@@ -21,6 +22,7 @@ export class EmpresaComponent implements OnInit {
     public distritos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
+    public canales: any[] = [];
     public downloading:boolean = false;
     public filtros:any = {};
 
@@ -42,19 +44,16 @@ export class EmpresaComponent implements OnInit {
 
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
-    public canales:any = [];
 
-    constructor( 
+    constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService
     ) { }
 
     ngOnInit() {
-
-        this.apiService.getAll('canales').subscribe(canales => { 
+        this.apiService.getAll('canales').subscribe(canales => {
             this.canales = canales;
         }, error => {this.alertService.error(error); });
-
         this.loadAll();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
@@ -77,6 +76,7 @@ export class EmpresaComponent implements OnInit {
             this.empresa = empresa;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
+
     }
 
     public onSubmit(): Promise<any> {
@@ -86,7 +86,7 @@ export class EmpresaComponent implements OnInit {
             this.apiService.store('empresa', this.empresa).subscribe(empresa => {
                 this.empresa = empresa;
 
-                let user:any = {}; 
+                let user:any = {};
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
@@ -101,7 +101,7 @@ export class EmpresaComponent implements OnInit {
                 this.saving = false;
                 resolve(null);
             },error => {this.alertService.error(error); this.saving = false; resolve(null);});
-            
+
         });
     }
 
@@ -116,7 +116,7 @@ export class EmpresaComponent implements OnInit {
         if(distrito){
             this.empresa.cod_municipio = distrito.cod_municipio;
             this.setMunicipio();
-            this.empresa.distrito = distrito.nombre; 
+            this.empresa.distrito = distrito.nombre;
             this.empresa.cod_distrito = distrito.cod;
         }
     }
@@ -124,10 +124,10 @@ export class EmpresaComponent implements OnInit {
     setMunicipio(){
         let municipio = this.municipios.find((item:any) => item.cod == this.empresa.cod_municipio && item.cod_departamento == this.empresa.cod_departamento);
         if(municipio){
-            this.empresa.municipio = municipio.nombre; 
+            this.empresa.municipio = municipio.nombre;
             this.empresa.cod_municipio = municipio.cod;
 
-            this.empresa.distrito = ''; 
+            this.empresa.distrito = '';
             this.empresa.cod_distrito = '';
         }
     }
@@ -135,13 +135,13 @@ export class EmpresaComponent implements OnInit {
     setDepartamento(){
         let departamento = this.departamentos.find((item:any) => item.cod == this.empresa.cod_departamento);
         if(departamento){
-            this.empresa.departamento = departamento.nombre; 
+            this.empresa.departamento = departamento.nombre;
             this.empresa.cod_departamento = departamento.cod;
 
         }
-        this.empresa.municipio = ''; 
+        this.empresa.municipio = '';
         this.empresa.cod_municipio = '';
-        this.empresa.distrito = ''; 
+        this.empresa.distrito = '';
         this.empresa.cod_distrito = '';
     }
 
@@ -190,11 +190,11 @@ export class EmpresaComponent implements OnInit {
         }
         console.log(this.empresa.cobra_iva);
     }
-     
+
 
     setFile(event:any) {
         this.empresa.file = event.target.files[0];
-        
+
         let formData:FormData = new FormData();
         for (let key in this.empresa) {
             if (this.empresa.hasOwnProperty(key)) {
@@ -216,7 +216,7 @@ export class EmpresaComponent implements OnInit {
 
     public onCheckMH():void {
         this.cheking = true;
-        
+
         this.onSubmit().then(() => {
             this.mhService.auth().subscribe(response => {
 
@@ -234,15 +234,15 @@ export class EmpresaComponent implements OnInit {
 
     public mostrarPassword(){
         this.showpassword = !this.showpassword;
-    }  
-    
+    }
+
     public mostrarPassword2(){
         this.showpassword2 = !this.showpassword2;
-    } 
+    }
 
     public onCheckFE() {
         this.cheking = true;
-        
+
             this.mhService.verificarFirmador().subscribe(response => {
                 this.cheking = false;
                 console.log(response.status)
@@ -407,10 +407,7 @@ export class EmpresaComponent implements OnInit {
             this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
           }
         );
-    }
-
-
-
+      }
 
     public copyToClipboard(text: string): void {
         const selBox = document.createElement('textarea');
@@ -429,10 +426,10 @@ export class EmpresaComponent implements OnInit {
 
     public saveCredentials() {
         this.saving = true;
-        
+
         if (!this.empresa.woocommerce_store_url || !this.empresa.woocommerce_consumer_key || !this.empresa.woocommerce_consumer_secret) {
             this.saving = false;
-            
+
             Swal.fire({
                 title: 'Error',
                 text: 'Todos los campos son requeridos',
@@ -454,14 +451,14 @@ export class EmpresaComponent implements OnInit {
             return;
         }
 
-        
+
         const credentials = {
             store_url: this.empresa.woocommerce_store_url,
             consumer_key: this.empresa.woocommerce_consumer_key,
             consumer_secret: this.empresa.woocommerce_consumer_secret,
             canal_id: this.empresa.woocommerce_canal_id,
         };
-        
+
         Swal.fire({
             title: 'Conectando...',
             text: 'Verificando conexión con WooCommerce',
@@ -470,7 +467,7 @@ export class EmpresaComponent implements OnInit {
                 Swal.showLoading();
             }
         });
-        
+
         this.apiService.store('usuario/save-credentials', credentials).subscribe(
             response => {
                 this.saving = false;
@@ -497,14 +494,13 @@ export class EmpresaComponent implements OnInit {
         );
     }
 
-
     public disconnectWooCommerce() {
         this.saving = true;
 
         this.empresa.woocommerce_store_url = '';
         this.empresa.woocommerce_consumer_key = '';
         this.empresa.woocommerce_consumer_secret = '';
-        
+
         this.apiService.store('usuario/disconnect-woocommerce', {}).subscribe(
             response => {
                 this.saving = false;
@@ -530,6 +526,7 @@ export class EmpresaComponent implements OnInit {
 
 
     }
+
 
     public exportarWooCommerce(){
         Swal.fire({
@@ -587,7 +584,7 @@ export class EmpresaComponent implements OnInit {
                 Swal.showLoading();
             }
         });
-        
+
         this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
             (data: Blob) => {
                 Swal.close();
@@ -600,22 +597,22 @@ export class EmpresaComponent implements OnInit {
                 });
                 const blob = new Blob([data], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
-                
+
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                
+
                 window.URL.revokeObjectURL(url);
                 this.downloading = false;
-                
+
                 this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
             },
-            (error) => { 
-                this.alertService.error('Error en la exportación: ' + error); 
-                this.downloading = false; 
+            (error) => {
+                this.alertService.error('Error en la exportación: ' + error);
+                this.downloading = false;
             }
         );
     }

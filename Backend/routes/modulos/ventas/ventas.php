@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Api\Ventas\EntradasController;
+use App\Http\Controllers\Api\Ventas\VentasImportController;
 use App\Http\Controllers\Api\WompiController;
 //use Route;
 use Illuminate\Support\Facades\Route;
@@ -31,5 +32,8 @@ use Illuminate\Support\Facades\Route;
     Route::get('/venta/wompi-link/{id}', [WompiController::class, 'wompiLink'])->name('wompi.link');  
     //ventas/acumulado
     Route::post('ventas-acumulado/exportar', [VentasController::class, 'acumuladoExport']);
+
+    Route::post('ventas/importar', [VentasImportController::class, 'importar']);
+
 
 ?>

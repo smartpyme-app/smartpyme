@@ -1,4 +1,3 @@
-// nuevo-empleado.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';

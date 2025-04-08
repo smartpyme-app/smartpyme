@@ -15,7 +15,6 @@ use Mail;
 class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable;
-
     protected $fillable = [
         'name',
         'email',
@@ -30,7 +29,7 @@ class User extends Authenticatable implements JWTSubject
         'modulo_citas',
         'codigo_autorizacion',
         'editar_precio_venta',
-        'woocommerce_status'
+        'woocommerce_status',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -52,37 +51,59 @@ class User extends Authenticatable implements JWTSubject
         }
     }
 
-    public function bienvenida(){
+    public function bienvenida()
+    {
         $usuario = User::where('id', $this->id)->with('empresa')->first();
-        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario ], function ($m) use ($usuario) {
+        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($usuario) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-            ->to($this->email)
-            ->subject('¡Bienvenido a SmartPyme!');
+                ->to($this->email)
+                ->subject('¡Bienvenido a SmartPyme!');
         });
     }
 
-    public function getNombreSucursalAttribute(){
+    public function getNombreSucursalAttribute()
+    {
         return $this->sucursal()->pluck('nombre')->first();
     }
 
-    public function empresa(){
+    public function empresa()
+    {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
-    public function sucursal(){
+    public function sucursal()
+    {
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
-    public function accesos(){
+    public function accesos()
+    {
         return $this->hasMany('App\Models\Admin\Acceso', 'id_usuario');
     }
 
-    public function getJWTIdentifier() {
-      return $this->getKey();
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
     }
 
-    public function getJWTCustomClaims() {
-      return [];
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
+    public function suscripciones()
+    {
+        return $this->hasMany(Suscripcion::class, 'usuario_id');
+    }
+
+    public function ordenesPago()
+    {
+        return $this->hasMany(OrdenPago::class, 'id_usuario');
+    }
+
+    public function metodoPago()
+    {
+        return $this->hasMany(MetodoPago::class, 'id_usuario');
     }
 
 }

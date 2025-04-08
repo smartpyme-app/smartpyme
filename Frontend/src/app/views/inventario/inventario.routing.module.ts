@@ -22,6 +22,7 @@ import { CategoriasComponent } from '@views/inventario/categorias/categorias.com
 import { ServiciosComponent } from '@views/inventario/servicios/servicios.component';
 import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
 import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
+import { AjusteMasivoComponent } from '@views/inventario/productos/producto/ajuste/ajuste-masivo.component';
 
 
 const routes: Routes = [
@@ -32,7 +33,9 @@ const routes: Routes = [
     children: [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
         { path: 'producto/crear', component: ProductoComponent, title: 'Producto' },
+        { path: 'ajuste/crear', component: AjusteMasivoComponent, title: 'Ajuste masivo' },
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
+        
 
         { path: 'consignas', component: ProductosConsignasComponent, title: 'Productos en consigna' },
         

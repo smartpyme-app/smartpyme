@@ -9,6 +9,8 @@ import Swal from 'sweetalert2';
   selector: 'app-planillas',
   templateUrl: './planillas.component.html',
 })
+
+
 export class PlanillasComponent implements OnInit {
   public planillas: any = [];
   public planilla: any = {};

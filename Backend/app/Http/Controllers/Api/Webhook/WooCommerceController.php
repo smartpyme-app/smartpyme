@@ -74,7 +74,7 @@ class WooCommerceController extends Controller
             );
 
             // 2. Crear Venta
-            $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id, $documento->id,$documento->correlativo);
+            $ventaData = $this->transformer->transformarVenta($request->all(), $cliente->id, $documento->id);
             $venta = Venta::create($ventaData);
 
             foreach ($request->line_items as $item) {

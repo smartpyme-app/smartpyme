@@ -22,18 +22,18 @@
             position: absolute;
             margin: 0px;
         }
-        #cliente        {top: 4cm; left: 2cm; width: 8cm; overflow: hidden;}
-        #direccion      {top: 5cm; left: 2.5cm; width: 7cm;}
-        #municipio      {top: 6.5cm; left: 3cm; width: 5cm;}
-        #departamento   {top: 7.5cm; left: 3cm; width: 5cm;}
+        #cliente        {top: 3.5cm; left: 2cm; width: 8cm; overflow: hidden;}
+        #direccion      {top: 4.5cm; left: 2.5cm; width: 7cm;}
+        #municipio      {top: 6cm; left: 3cm; width: 5cm;}
+        #departamento   {top: 7cm; left: 3cm; width: 5cm;}
         
-        #fecha          {top: 4cm; left: 14cm; }
-        #nrc            {top: 4.6cm; left: 14cm;}
-        #nit            {top: 5.2cm; left: 14cm; }
-        #giro            {top: 5.8cm; left: 14cm;}
+        #fecha          {top: 3.5cm; left: 14cm; }
+        #nrc            {top: 4.1cm; left: 14cm;}
+        #nit            {top: 5.7cm; left: 14cm; }
+        #giro            {top: 6.3cm; left: 14cm;}
         #condicion      {top: 7cm; left: 15cm; }
 
-        table   {position: absolute; top: 9.5cm; left: 0.2cm; text-align: left; border-collapse: collapse; width: 20cm;}
+        table   {position: absolute; top: 9cm; left: 0.2cm; text-align: left; border-collapse: collapse; width: 20cm;}
         table td{height: 0.7cm; text-align: left;}
 
         .cantidad{ width: 2.5cm; text-align: center;}
@@ -46,14 +46,14 @@
 
         #letras     {top: 19.9cm; left: 2.5cm; width: 11cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 19.5cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #iva        {top: 20.1cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #iva_retenido  {top: 20.7cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #sub_total  {top: 21.3cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #no_sujeta  {top: 21.9cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #exenta     {top: 22.5cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #cuenta_a_terceros {top: 23.1cm; left: 18.7cm; width: 1.5cm; text-align: right;}
-        #total      {top: 23.6cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #suma       {top: 19.9cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #iva        {top: 20.6cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #iva_retenido  {top: 21.3cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #sub_total  {top: 22cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #no_sujeta  {top: 22.7cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #exenta     {top: 23.4cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #cuenta_a_terceros {top: 23.7cm; left: 18.7cm; width: 1.5cm; text-align: right;}
+        #total      {top: 24cm; left: 18.7cm; width: 1.5cm; text-align: right;}
 
         .no-print{position: absolute;} 
 
@@ -90,7 +90,7 @@
         @foreach($venta->detalles as $detalle)
             <tr>
                 <td class="cantidad">   {{ number_format($detalle->cantidad, 0) }}</td>
-                <td class="producto">   {{ $detalle->nombre_producto  }} - {{ $detalle->producto()->pluck('codigo')->first() }}</td>
+                <td class="producto">   {{ $detalle->nombre_producto  }}</td>
                 <td class="precio">     ${{ number_format($detalle->precio, 2) }}</td>
                 <td class="sujetas">   </td>
                 <td class="exentas">    </td>
