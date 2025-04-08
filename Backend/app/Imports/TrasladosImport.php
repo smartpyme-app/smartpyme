@@ -29,7 +29,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
 
     public function startRow(): int
     {
-        return 2; // Empezamos en la fila 2 para omitir los encabezados
+        return 2; 
     }
 
 
@@ -127,7 +127,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                         throw new \Exception("No se encontró el producto compuesto ID {$composicion->id_compuesto}");
                     }
 
-                    // Calcular cantidad a trasladar para el compuesto
+               
                     $cantidadCompuesto = $cantidadTraslado * $composicion->cantidad;
 
                     // Buscar inventarios del componente
@@ -147,12 +147,12 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                         throw new \Exception("Stock insuficiente para el componente {$productoCompuesto->nombre} en bodega origen");
                     }
 
-                    // Actualizar inventario de componente en origen
+               
                     $inventarioCompuestoOrigen->stock -= $cantidadCompuesto;
                     $inventarioCompuestoOrigen->save();
                     $inventarioCompuestoOrigen->kardex($traslado, $cantidadCompuesto * -1);
 
-                    // Actualizar o crear inventario de componente en destino
+                    
                     if ($inventarioCompuestoDestino) {
                         $inventarioCompuestoDestino->stock += $cantidadCompuesto;
                         $inventarioCompuestoDestino->save();

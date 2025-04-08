@@ -470,7 +470,7 @@ class ProductosController extends Controller
                 $idProducto = $productoData['id_producto'];
                 $cantidad = $productoData['cantidad'];
 
-                // Si la cantidad es 0 o negativa, saltamos este producto
+                
                 if ($cantidad <= 0) {
                     continue;
                 }
@@ -490,20 +490,20 @@ class ProductosController extends Controller
                     ->where('id_bodega', $request->id_bodega_destino)
                     ->first();
 
-                // Validar que exista inventario en origen y destino
+               
                 if (!$origen) {
                     $errores[] = "Una de las sucursales no tiene inventario para el producto {$producto->nombre}.";
                     continue;
                 }
 
-                // Validar que haya suficiente stock
+                
                 if ($origen->stock < $cantidad) {
                     $errores[] = "La sucursal origen no tiene stock suficiente para el producto {$producto->nombre}.";
                     continue;
                 }
                 $user = Auth::user();
 
-                // Crear el registro de traslado
+             
                 $traslado = new Traslado();
                 $traslado->id_producto = $idProducto;
                 $traslado->id_bodega_de = $request->id_bodega_origen;
@@ -515,7 +515,7 @@ class ProductosController extends Controller
                 $traslado->estado = 'Confirmado';
                 $traslado->save();
 
-                // Actualizar inventario del producto principal
+                
                 $origen->stock -= $cantidad;
                 $origen->save();
                 $origen->kardex($traslado, $cantidad * -1);
@@ -532,7 +532,7 @@ class ProductosController extends Controller
                     $destino->kardex($traslado, $cantidad);
                 }
 
-                // Procesar composiciones si las hay
+                
                 $composicionesValidas = true;
 
                 foreach ($producto->composiciones as $comp) {
@@ -566,10 +566,10 @@ class ProductosController extends Controller
                         break;
                     }
 
-                    // Si llegamos aquí, la composición es válida
+                   
                 }
 
-                // Si hay algún problema con las composiciones, continuamos con el siguiente producto
+               
                 if (!$composicionesValidas) {
                     continue;
                 }
@@ -635,7 +635,7 @@ class ProductosController extends Controller
         $importador = new TrasladosImport($request->concepto);
         Excel::import($importador, $request->file('archivo'));
 
-        // Verificar si se actualizó algún producto
+       
         $trasladados = $importador->getTrasladados();
         $errores = $importador->getErrores();
 
