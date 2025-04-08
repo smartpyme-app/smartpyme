@@ -14,7 +14,7 @@
           <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
         </div>
         <div class="message-content p-3">
-          <p class="mb-0">{{ message.text }}</p>
+          <div class="mb-0" [innerHTML]="message.text | safeHtml"></div>
           
           <!-- Sugerencias -->
           <div *ngIf="message.suggestions && message.suggestions.length > 0" class="suggestions-container mt-2">

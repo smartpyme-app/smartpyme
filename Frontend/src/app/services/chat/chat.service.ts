@@ -1,4 +1,4 @@
-import { Injectable, Inject, Optional } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -43,14 +43,6 @@ export class ChatService {
     'Cuentas por pagar próximas a vencer',
     'Flujo de efectivo comparado con mes anterior',
     'Cuentas por pagar vencidas',
-    // 'Resumen de impuestos a pagar',
-    // "Rentabilidad del último trimestre",
-    // "Balance general actualizado",
-    // "Productos más vendidos",
-    // "Clientes con mayor deuda",
-    // "Gastos recurrentes más altos",
-    // "Métricas de crecimiento anual",
-    // "Margen de ganancia por producto",
   ];
 
   private drawerOpenSubject = new BehaviorSubject<boolean>(false);
@@ -59,8 +51,9 @@ export class ChatService {
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([
     {
       sender: 'bot',
-      text: '¡Hola! ¿En qué puedo ayudarte hoy?',
+      text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
       timestamp: new Date(),
+      suggestions: this.getRandomSuggestions(3)
     },
   ]);
   messages$ = this.messagesSubject.asObservable();
@@ -130,7 +123,7 @@ export class ChatService {
     this.messagesSubject.next([
       {
         sender: 'bot',
-        text: '¡Hola! Soy Jarvis, tu asistente financiero. ¿Qué te gustaría saber ahora? Te dejo estas recomendaciones:',
+        text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿Qué te gustaría saber ahora? Te dejo estas recomendaciones:</p>',
         timestamp: new Date(),
         suggestions: this.getRandomSuggestions(3),
       },
@@ -179,7 +172,7 @@ export class ChatService {
       // La configuración de maxTokens, temperature, etc. se maneja en el backend
     };
 
-    return this.http.post<{ message: string }>(
+    return this.http.post<{ message: string; suggestions?: string[] }>(
       `${environment.API_URL}/api/chat/bedrock`,
       request
     );
@@ -217,6 +210,7 @@ export class ChatService {
           sender: 'bot',
           text: response.message,
           timestamp: new Date(),
+          suggestions: response.suggestions || []
         };
         this.messagesSubject.next([...this.messagesSubject.value, botMessage]);
         this.loadingSubject.next(false);
@@ -225,7 +219,7 @@ export class ChatService {
         console.error('Error al procesar la consulta:', error);
         const errorMessage: ChatMessage = {
           sender: 'bot',
-          text: 'Lo siento, ha ocurrido un error al procesar tu consulta. Por favor, intenta de nuevo más tarde.',
+          text: '<p>Lo siento, ha ocurrido un error al procesar tu consulta. Por favor, intenta de nuevo más tarde.</p>',
           timestamp: new Date(),
         };
         this.messagesSubject.next([
@@ -272,18 +266,14 @@ export class ChatService {
       return;
     }
 
-    // Obtener la conversación
-    const conversationRequest = this.http.get<any>(
-      `${environment.API_URL}/api/chat/conversation/${id}`
-    );
-
-    conversationRequest.subscribe({
+    this.getConversation(id).subscribe({
       next: (response) => {
         // Convertir los mensajes del formato de la base de datos al formato del chat
         const messages: ChatMessage[] = response.messages.map((msg: any) => ({
           sender: msg.sender as 'user' | 'bot',
           text: msg.content,
           timestamp: new Date(msg.created_at),
+          suggestions: msg.metadata?.suggestions || []
         }));
 
         // Establecer la conversación actual
@@ -295,7 +285,7 @@ export class ChatService {
         this.messagesSubject.next([
           {
             sender: 'bot',
-            text: 'No se pudo cargar la conversación. Por favor, intenta de nuevo.',
+            text: '<p>No se pudo cargar la conversación. Por favor, intenta de nuevo.</p>',
             timestamp: new Date(),
           },
         ]);
@@ -317,8 +307,9 @@ export class ChatService {
     this.messagesSubject.next([
       {
         sender: 'bot',
-        text: '¡Hola! ¿En qué puedo ayudarte hoy?',
+        text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
         timestamp: new Date(),
+        suggestions: this.getRandomSuggestions(3)
       },
     ]);
   }
