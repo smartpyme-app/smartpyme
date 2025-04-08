@@ -364,11 +364,15 @@ export class ApiService {
         return false;
     }
 
-    canCreate(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
+    canCreate() {
+      let usuario = this.auth_user();
+      if (
+        usuario.tipo == 'Administrador' ||
+        usuario.tipo == 'Supervisor' ||
+        usuario.tipo == 'Supervisor Limitado'
+      )
+        return true;
+      return false;
     }
 
   canEdit() {
