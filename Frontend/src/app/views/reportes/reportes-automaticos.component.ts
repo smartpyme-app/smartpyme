@@ -1,8 +1,17 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, Pipe, PipeTransform } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
+
+@Pipe({
+  name: 'replace'
+})
+export class ReplacePipe implements PipeTransform {
+  transform(value: string, from: string, to: string): string {
+    return value.replace(new RegExp(from, 'g'), to);
+  }
+}
 
 @Component({
   selector: 'app-reportes-automaticos',
@@ -24,6 +33,8 @@ export class ReportesAutomaticosComponent implements OnInit {
   public eliminando: boolean = false;
   public emailInput: string = '';
   public emailPrueba: string = '';
+  public downloading: boolean = false;
+  public periodosExpandidos: boolean = false;
   public diasSemana: any[] = [
     { id: 1, nombre: 'Lunes', seleccionado: false },
     { id: 2, nombre: 'Martes', seleccionado: false },
@@ -35,6 +46,18 @@ export class ReportesAutomaticosComponent implements OnInit {
   ];
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
   public tiposReporteActivos: string[] = [];
+  public categorias: any[] = [];
+  //Estado Financiero Consolidado por Sucursales
+  public tiposReporte: any[] = [ 
+    {tipo: 'ventas-por-vendedor', nombre: 'Ventas por Vendedor'},
+     {tipo: 'ventas-por-categoria-vendedor', nombre: 'Ventas por Categoría y Vendedor'},
+     {tipo: 'estado-financiero-consolidado-sucursales', nombre: 'Estado Financiero Consolidado por Sucursales'},
+    ];
+    public configReporteActual: any = null;
+public modalRefFechas!: BsModalRef;
+public fechaInicio: string = '';
+public fechaFin: string = '';
+public fechaHoy: string = new Date().toISOString().split('T')[0];
 
   modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
@@ -57,13 +80,21 @@ export class ReportesAutomaticosComponent implements OnInit {
       (configuraciones) => {
         this.configuraciones = configuraciones;
         this.loading = false;
-        
+
         // Obtener los tipos de reporte activos para validación
         this.actualizarTiposReporteActivos();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+      }
+    );
+    this.apiService.getAll('categorias/list').subscribe(
+      (categorias) => {
+        this.categorias = categorias;
+      },
+      (error) => {
+        this.alertService.error(error);
       }
     );
   }
@@ -130,37 +161,96 @@ export class ReportesAutomaticosComponent implements OnInit {
       hora_nocturno: '19:00',
       dia_mes: 1,
       asunto_correo: '',
+      configuracion: [],
     };
-    
+
     // Restablecer los días de la semana seleccionados
-    this.diasSemana.forEach(dia => dia.seleccionado = false);
-    
+    this.diasSemana.forEach((dia) => (dia.seleccionado = false));
+
+    this.categorias.forEach((categoria) => {
+      categoria.seleccionada = true;
+      categoria.porcentaje = 100;
+    });
+
+    this.actualizarCategoriasSeleccionadas();
+
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
     });
   }
 
+  // openModal(template: TemplateRef<any>, configuracion: any) {
+  //   if (!configuracion || configuracion === null) {
+  //     this.configuracionActual = {};
+  //   } else {
+  //     this.configuracionActual = { ...configuracion };
+
+  //     // Si es semanal, configurar los días seleccionados
+  //     if (
+  //       this.configuracionActual.frecuencia === 'semanal' &&
+  //       this.configuracionActual.dias_semana
+  //     ) {
+  //       // Reiniciar todos los días
+  //       this.diasSemana.forEach((dia) => (dia.seleccionado = false));
+
+  //       // Seleccionar los días guardados
+  //       this.diasSemana.forEach((dia) => {
+  //         if (this.configuracionActual.dias_semana.includes(dia.id)) {
+  //           dia.seleccionado = true;
+  //         }
+  //       });
+  //     }
+  //   }
+
+  //   this.modalRef = this.modalService.show(template, {
+  //     class: 'modal-lg',
+  //     backdrop: 'static',
+  //   });
+  // }
+
   openModal(template: TemplateRef<any>, configuracion: any) {
     if (!configuracion || configuracion === null) {
       this.configuracionActual = {};
     } else {
       this.configuracionActual = { ...configuracion };
-      
+  
+      // Reiniciar todas las categorías
+      this.categorias.forEach(categoria => {
+        categoria.seleccionada = false;
+        categoria.porcentaje = 0;
+      });
+  
+      if (this.configuracionActual.tipo_reporte === 'ventas-por-categoria-vendedor') {
+        // Configurar las categorías seleccionadas
+        if (this.configuracionActual.configuracion) {
+          this.configuracionActual.configuracion.forEach((configCat: any) => {
+            const categoriaEncontrada = this.categorias.find(cat => cat.id === configCat.id);
+            if (categoriaEncontrada) {
+              categoriaEncontrada.seleccionada = true;
+              categoriaEncontrada.porcentaje = configCat.porcentaje || 100;
+            }
+          });
+        }
+      }
+  
       // Si es semanal, configurar los días seleccionados
-      if (this.configuracionActual.frecuencia === 'semanal' && this.configuracionActual.dias_semana) {
+      if (
+        this.configuracionActual.frecuencia === 'semanal' &&
+        this.configuracionActual.dias_semana
+      ) {
         // Reiniciar todos los días
-        this.diasSemana.forEach(dia => dia.seleccionado = false);
-        
+        this.diasSemana.forEach((dia) => (dia.seleccionado = false));
+  
         // Seleccionar los días guardados
-        this.diasSemana.forEach(dia => {
+        this.diasSemana.forEach((dia) => {
           if (this.configuracionActual.dias_semana.includes(dia.id)) {
             dia.seleccionado = true;
           }
         });
       }
     }
-
+  
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
@@ -169,6 +259,8 @@ export class ReportesAutomaticosComponent implements OnInit {
 
   public guardarConfiguracion() {
     // Validar que haya al menos un horario seleccionado
+    console.log(this.configuracionActual);
+    //return;
     if (
       !this.configuracionActual.envio_matutino &&
       !this.configuracionActual.envio_mediodia &&
@@ -211,13 +303,17 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     // Verificar si ya existe un reporte activo del mismo tipo
     if (this.configuracionActual.activo) {
-      const existeReporteActivo = this.tiposReporteActivos.includes(this.configuracionActual.tipo_reporte) &&
-        (!this.configuracionActual.id || 
-         this.configuraciones.data.some((c: any) => 
-           c.tipo_reporte === this.configuracionActual.tipo_reporte && 
-           c.activo && 
-           c.id !== this.configuracionActual.id
-         ));
+      const existeReporteActivo =
+        this.tiposReporteActivos.includes(
+          this.configuracionActual.tipo_reporte
+        ) &&
+        (!this.configuracionActual.id ||
+          this.configuraciones.data.some(
+            (c: any) =>
+              c.tipo_reporte === this.configuracionActual.tipo_reporte &&
+              c.activo &&
+              c.id !== this.configuracionActual.id
+          ));
 
       if (existeReporteActivo) {
         Swal.fire({
@@ -226,7 +322,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
           showCancelButton: true,
           confirmButtonText: 'Continuar y desactivar la existente',
-          cancelButtonText: 'Cancelar'
+          cancelButtonText: 'Cancelar',
         }).then((result) => {
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
@@ -311,8 +407,10 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     // Si se está activando, verificar si ya existe otro reporte activo del mismo tipo
     if (nuevoEstado) {
-      const existeReporteActivo = this.tiposReporteActivos.includes(config.tipo_reporte);
-      
+      const existeReporteActivo = this.tiposReporteActivos.includes(
+        config.tipo_reporte
+      );
+
       if (existeReporteActivo) {
         Swal.fire({
           icon: 'warning',
@@ -320,7 +418,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
           showCancelButton: true,
           confirmButtonText: 'Continuar y desactivar la existente',
-          cancelButtonText: 'Cancelar'
+          cancelButtonText: 'Cancelar',
         }).then((result) => {
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
@@ -366,14 +464,48 @@ export class ReportesAutomaticosComponent implements OnInit {
     });
   }
 
+  // public confirmarEnvioPrueba() {
+  //   this.enviandoPrueba = true;
+
+  //   const data = {
+  //     id_configuracion: this.configuracionEliminar.id,
+  //     email_prueba: this.emailPrueba,
+  //   };
+
+  //   this.apiService
+  //     .store('reportes-configuracion/enviar-prueba', data)
+  //     .subscribe(
+  //       (response) => {
+  //         this.enviandoPrueba = false;
+  //         this.modalRefPrueba?.hide();
+  //         this.alertService.success(
+  //           'Reporte enviado',
+  //           'El reporte de prueba ha sido enviado correctamente.'
+  //         );
+  //       },
+  //       (error) => {
+  //         this.enviandoPrueba = false;
+  //         this.alertService.error(error);
+  //       }
+  //     );
+  // }
+
   public confirmarEnvioPrueba() {
     this.enviandoPrueba = true;
-
+  
+    // Asegurarnos de que tengamos fechas válidas para la prueba
+    if (!this.fechaInicio || !this.fechaFin) {
+      // Usar fechas predeterminadas (este mes) si no hay seleccionadas
+      this.seleccionarPeriodo('mes');
+    }
+  
     const data = {
       id_configuracion: this.configuracionEliminar.id,
       email_prueba: this.emailPrueba,
+      fecha_inicio: this.fechaInicio,
+      fecha_fin: this.fechaFin
     };
-
+  
     this.apiService
       .store('reportes-configuracion/enviar-prueba', data)
       .subscribe(
@@ -382,7 +514,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           this.modalRefPrueba?.hide();
           this.alertService.success(
             'Reporte enviado',
-            'El reporte de prueba ha sido enviado correctamente.'
+            `El reporte de prueba para el período ${this.fechaInicio} al ${this.fechaFin} ha sido enviado correctamente.`
           );
         },
         (error) => {
@@ -422,7 +554,7 @@ export class ReportesAutomaticosComponent implements OnInit {
         }
       );
   }
-  
+
   private obtenerEmpresa(): number {
     const empresa = localStorage.getItem('SP_auth_user');
     if (empresa) {
@@ -437,9 +569,10 @@ export class ReportesAutomaticosComponent implements OnInit {
     value = value.replace(/\s+/g, ' ');
     value = value.trim();
     const empresa = this.obtenerEmpresa();
-    
-    this.configuracionActual.asunto_correo = `Reporte diario de ${value}` + ' ' + empresa;
-    
+
+    this.configuracionActual.asunto_correo =
+      `Reporte diario de ${value}` + ' ' + empresa;
+
     // Verificar si ya existe una configuración activa para este tipo de reporte
     if (this.tiposReporteActivos.includes(value)) {
       setTimeout(() => {
@@ -451,4 +584,257 @@ export class ReportesAutomaticosComponent implements OnInit {
       }, 100);
     }
   }
+
+  public seleccionarTodos(event: any) {
+    const checked = event.target.checked;
+    this.categorias.forEach((categoria) => {
+      categoria.seleccionada = checked;
+      if (checked) {
+        categoria.porcentaje = 100;
+      } else {
+        categoria.porcentaje = 0;
+      }
+    });
+    this.actualizarCategoriasSeleccionadas();
+  }
+
+  public actualizarPorcentaje(categoria: any) {
+    if (categoria.seleccionada) {
+      const index = this.configuracionActual.configuracion.findIndex(
+        (cat: any) => cat.id === categoria.id
+      );
+
+      if (index !== -1) {
+        this.configuracionActual.configuracion[index].porcentaje =
+          categoria.porcentaje;
+      }
+    }
+  }
+
+  public actualizarCategoriasSeleccionadas() {
+    this.configuracionActual.configuracion = this.categorias
+      .filter((categoria) => {
+        if (
+          categoria.seleccionada &&
+          (!categoria.porcentaje || categoria.porcentaje === 0)
+        ) {
+          categoria.porcentaje = 100;
+        }
+        return categoria.seleccionada;
+      })
+      .map((categoria) => ({
+        id: categoria.id,
+        nombre: categoria.nombre,
+        porcentaje: categoria.porcentaje || 100,
+      }));
+  }
+
+  public seleccionarTodosBtn() {
+    // Determinar si hay alguna categoría no seleccionada
+    const hayAlgunaNoSeleccionada = this.categorias.some(cat => !cat.seleccionada);
+    const nuevoEstado = hayAlgunaNoSeleccionada;
+    
+    this.categorias.forEach((categoria) => {
+      categoria.seleccionada = nuevoEstado;
+      if (nuevoEstado) {
+        categoria.porcentaje = 100;
+      } else {
+        categoria.porcentaje = 0;
+      }
+    });
+    
+    this.actualizarCategoriasSeleccionadas();
+  }
+
+
+  // public descargarReporte(config: any) {
+  //   let tipo = config.tipo_reporte;
+  //   tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre;
+
+  //   this.downloading = true; 
+  //   this.saving = true;
+  //       this.apiService.exportAcumulado('reportes-configuracion/exportar', config).subscribe((data:Blob) => {
+  //           const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  //           const url = window.URL.createObjectURL(blob);
+  //           const a = document.createElement('a');
+  //           a.href = url;
+  //           a.download = `${tipo}.xlsx`;
+  //           document.body.appendChild(a);
+  //           a.click();
+  //           document.body.removeChild(a);
+  //           window.URL.revokeObjectURL(url);
+  //           this.downloading = false; 
+  //           this.saving = false;
+  //         }, (error) => {this.alertService.error(error); this.downloading = false; this.saving = false; }
+  //       );
+  // }
+
+
+  // Método modificado para abrir el modal de selección de fechas
+public descargarReporte(config: any, template: TemplateRef<any>) {
+  this.configReporteActual = config;
+  this.fechaInicio = '';
+  this.fechaFin = '';
+  
+  // Establecer fechas predeterminadas (este mes)
+  this.seleccionarPeriodo('mes');
+  
+  this.modalRefFechas = this.modalService.show(template, {
+    class: 'modal-lg',
+    backdrop: 'static'
+  });
+}
+
+// Método para descargar el reporte con las fechas seleccionadas
+public descargarReporteConFechas() {
+  if (!this.fechaInicio || !this.fechaFin || this.fechaInicio > this.fechaFin) {
+    return;
+  }
+  
+  let tipo = this.configReporteActual.tipo_reporte;
+  tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
+
+  this.downloading = true;
+  
+  const params = {
+    id: this.configReporteActual.id,
+    fecha_inicio: this.fechaInicio,
+    fecha_fin: this.fechaFin
+  };
+
+  this.apiService.exportAcumulado('reportes-configuracion/exportar', params).subscribe(
+    (data: Blob) => {
+      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tipo}_${this.fechaInicio}_al_${this.fechaFin}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      this.downloading = false;
+      this.modalRefFechas.hide();
+    },
+    (error) => {
+      this.alertService.error(error);
+      this.downloading = false;
+    }
+  );
+}
+
+// Método para seleccionar períodos predefinidos
+// Variable para controlar la expansión/contracción de los períodos
+
+
+// Función para alternar la visualización de los períodos
+public toggleMostrarPeriodos(): void {
+  this.periodosExpandidos = !this.periodosExpandidos;
+}
+
+// Método para seleccionar períodos predefinidos
+public seleccionarPeriodo(periodo: string) {
+  const hoy = new Date();
+  let fechaInicio = new Date();
+  let fechaFin = new Date();
+  
+  switch(periodo) {
+    // Días
+    case 'hoy':
+      fechaInicio = new Date(hoy);
+      fechaFin = new Date(hoy);
+      break;
+    
+    case 'ayer':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 1);
+      fechaFin = new Date(fechaInicio);
+      break;
+    
+    case 'ultimos3':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 2);
+      break;
+    
+    case 'ultimos7':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 6);
+      break;
+    
+    // Semanas
+    case 'semana':
+      fechaInicio = new Date(hoy);
+      // Establecer al primer día de la semana (lunes)
+      const diaSemana = hoy.getDay();
+      const diff = diaSemana === 0 ? 6 : diaSemana - 1; // Considerar que el domingo es 0
+      fechaInicio.setDate(hoy.getDate() - diff);
+      break;
+    
+    case 'semanaAnterior':
+      fechaInicio = new Date(hoy);
+      const diffInicio = hoy.getDay() === 0 ? 6 : hoy.getDay() - 1;
+      fechaInicio.setDate(hoy.getDate() - diffInicio - 7);
+      fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + 6);
+      break;
+    
+    case 'ultimas2Semanas':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - 13);
+      break;
+    
+    // Meses
+    case 'mes':
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      break;
+    
+    case 'mesAnterior':
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+      break;
+    
+    case 'ultimos3Meses':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setMonth(hoy.getMonth() - 2);
+      fechaInicio.setDate(1);
+      break;
+    
+    case 'ultimos6Meses':
+      fechaInicio = new Date(hoy);
+      fechaInicio.setMonth(hoy.getMonth() - 5);
+      fechaInicio.setDate(1);
+      break;
+    
+    // Trimestres y Año
+    case 'trimestre':
+      const trimestreActual = Math.floor(hoy.getMonth() / 3);
+      fechaInicio = new Date(hoy.getFullYear(), trimestreActual * 3, 1);
+      fechaFin = new Date(hoy.getFullYear(), trimestreActual * 3 + 3, 0);
+      break;
+    
+    case 'trimestreAnterior':
+      const trimestreAnteriorMes = Math.floor((hoy.getMonth() - 3) / 3) * 3;
+      const anioTrimestreAnterior = hoy.getFullYear() + Math.floor(trimestreAnteriorMes / 12);
+      const mesTrimestreAnterior = ((trimestreAnteriorMes % 12) + 12) % 12;
+      fechaInicio = new Date(anioTrimestreAnterior, mesTrimestreAnterior, 1);
+      fechaFin = new Date(anioTrimestreAnterior, mesTrimestreAnterior + 3, 0);
+      break;
+    
+    case 'anio':
+      fechaInicio = new Date(hoy.getFullYear(), 0, 1);
+      fechaFin = new Date(hoy.getFullYear(), 11, 31);
+      break;
+    
+    case 'anioAnterior':
+      fechaInicio = new Date(hoy.getFullYear() - 1, 0, 1);
+      fechaFin = new Date(hoy.getFullYear() - 1, 11, 31);
+      break;
+  }
+  
+  // Convertir las fechas a formato YYYY-MM-DD
+  this.fechaInicio = fechaInicio.toISOString().split('T')[0];
+  this.fechaFin = fechaFin.toISOString().split('T')[0];
+}
+
+  
 }

@@ -14,5 +14,6 @@ use Illuminate\Support\Facades\Route;
     Route::delete('reportes-configuracion/{id}', [ReporteConfiguracionController::class, 'destroy']);
     
     Route::post('reportes-configuracion/enviar-prueba', [ReporteConfiguracionController::class, 'enviarPrueba']);
+    Route::post('reportes-configuracion/exportar', [ReporteConfiguracionController::class, 'exportar']);
 
     ?>

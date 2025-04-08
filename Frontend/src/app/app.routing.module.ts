@@ -44,6 +44,12 @@ const routes: Routes = [
       loadChildren: () => import('./views/paquetes/paquetes.module').then(m => m.PaquetesModule),
     },
 
+    // Planilla
+    {
+      path: '',
+      loadChildren: () => import('./views/planillas/planillas.module').then(m => m.PlanillasModule),
+    },
+
     // Proyectos
     {
       path: '', canActivate: [AuthGuard],

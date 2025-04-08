@@ -20,12 +20,14 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
      * @return \Illuminate\Support\Collection
      */
     public $request;
-    public $fecha;
+    public $fechaInicio;
+    public $fechaFin;
     public $id_empresa;
 
-    public function __construct($fecha = null, $id_empresa = null)
+    public function __construct($fechaInicio = null, $fechaFin = null, $id_empresa = null)
     {
-        $this->fecha = $fecha ?? Carbon::today()->format('Y-m-d');
+        $this->fechaInicio = $fechaInicio ?? Carbon::today()->format('Y-m-d');
+        $this->fechaFin = $fechaFin ?? Carbon::today()->format('Y-m-d');
         $this->id_empresa = $id_empresa;
     }
 
@@ -36,7 +38,7 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
 
     public function title(): string
     {
-        return 'Ventas por Vendedor - ' . $this->fecha;
+        return 'Ventas por Vendedor - ' . $this->fechaInicio . ' al ' . $this->fechaFin;
     }
 
     public function styles(Worksheet $sheet)
@@ -79,19 +81,42 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         ];
     }
 
+    // public function collection()
+    // {
+
+
+
+    //     $detalles = Detalle::whereHas('venta', function ($query) {
+    //         $query->where('fecha', '>=', $this->fechaInicio)
+    //             ->where('fecha', '<=', $this->fechaFin)
+    //             ->where('cotizacion', 0)
+    //             ->where('id_empresa', $this->id_empresa)
+    //             ->orderBy('id_vendedor', 'asc')
+    //             ->orderBy('id', 'asc');
+    //     })->get();
+
+
+    //     return $detalles;
+    // }
+
     public function collection()
     {
+        $fechaInicio = $this->fechaInicio;
+        $fechaFin = $this->fechaFin;
+        $id_empresa = $this->id_empresa;
 
+        $detalles = Detalle::whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
+            $query->where('fecha', '>=', $fechaInicio)
+                ->where('fecha', '<=', $fechaFin)
+                ->where('cotizacion', 0);
 
+            if ($id_empresa) {
+                $query->where('id_empresa', $id_empresa);
+            }
 
-        $detalles = Detalle::whereHas('venta', function ($query) {
-            $query->where('fecha', $this->fecha)
-                ->where('cotizacion', 0)
-                ->where('id_empresa', $this->id_empresa)
-                ->orderBy('id_vendedor', 'asc')
+            $query->orderBy('id_vendedor', 'asc')
                 ->orderBy('id', 'asc');
         })->get();
-
 
         return $detalles;
     }
