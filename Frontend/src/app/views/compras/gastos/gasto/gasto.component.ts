@@ -180,8 +180,8 @@ export class GastoComponent implements OnInit {
             case 'renta':
                 if(this.gasto.renta_retenida == 0){
                     this.gasto.renta_retenida = Number((this.gasto.sub_total * 0.10).toFixed(2));
-                    this.gasto.total += this.gasto.renta_retenida;
-                }else{ this.gasto.total -= this.gasto.renta_retenida; this.gasto.renta_retenida = 0;}
+                    this.gasto.total -= this.gasto.renta_retenida;
+                }else{ this.gasto.total += this.gasto.renta_retenida; this.gasto.renta_retenida = 0;}
                 break;
             case 'percepcion':
                 if(this.gasto.iva_percibido == 0){
