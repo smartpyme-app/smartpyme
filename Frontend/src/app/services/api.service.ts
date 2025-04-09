@@ -42,16 +42,17 @@ export class ApiService {
         console.log('filtros x', filtros);
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
     }
-    
-    exportAcumulado(url: string, filtros: any): Observable<Blob> {
-        console.log('Enviando filtros:', filtros);
-        return this.http.post(this.apiUrl + url, filtros, {
-            responseType: 'blob',
-            headers: new HttpHeaders({
-                'Authorization': 'Bearer ' + this.auth_token()
-            })
-        });
-    }
+
+    // En el ApiService
+        exportAcumulado(url: string, filtros: any): Observable<Blob> {
+            console.log('Enviando filtros:', filtros);
+            return this.http.post(this.apiUrl + url, filtros, {
+                responseType: 'blob',
+                headers: new HttpHeaders({
+                    'Authorization': 'Bearer ' + this.auth_token()
+                })
+            });
+        }
 
     logout() {
         let data:any = {};

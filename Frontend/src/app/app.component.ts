@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { SwUpdate } from '@angular/service-worker';
 import { ApiService } from '@services/api.service';
+import { ChatService } from '@services/chat/chat.service';
 
 import {
     IStepOption,
@@ -26,7 +27,7 @@ export class AppComponent implements OnInit {
     modalRefEndTour!: BsModalRef;
 
     constructor(private updates: SwUpdate, public apiService: ApiService, public alertService: AlertService,
-        private tourService: TourService, private modalService: BsModalService
+        private tourService: TourService, private modalService: BsModalService, private chatService: ChatService,
     ) {
 
         if (this.updates.isEnabled) {
@@ -41,7 +42,7 @@ export class AppComponent implements OnInit {
 
     ngOnInit() {
 
-
+        this.chatService.resetChat();
         this.usuario = this.apiService.auth_user();
         
         this.tourSteps = [
