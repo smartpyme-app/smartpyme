@@ -134,6 +134,10 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 // Webhook
 require base_path('routes/modulos/webhook/webhook.php');
 
+//token
+
+require base_path('routes/modulos/token/token.php');
+
 
 
 // Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');

@@ -80,7 +80,7 @@ class EmpresasController extends Controller
 
     public function read($id) {
 
-        $empresa = Empresa::findOrFail($id);
+        $empresa = Empresa::with('empresa_cliente')->findOrFail($id);
         return Response()->json($empresa, 200);
 
     }

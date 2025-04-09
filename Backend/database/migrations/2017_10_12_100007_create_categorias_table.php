@@ -11,27 +11,27 @@ class CreateCategoriasTable extends Migration
      *
      * @return void
      */
-    public function up()
-    {
-        Schema::create('categorias', function (Blueprint $table) {
-            $table->increments('id');
+    // public function up()
+    // {
+    //     Schema::create('categorias', function (Blueprint $table) {
+    //         $table->increments('id');
 
-            $table->string('nombre');
-            $table->string('img')->nullable();
-            $table->text('descripcion')->nullable();
-            $table->integer('empresa_id');
+    //         $table->string('nombre');
+    //         $table->string('img')->nullable();
+    //         $table->text('descripcion')->nullable();
+    //         $table->integer('empresa_id');
 
-            $table->timestamps();
-        });
-    }
+    //         $table->timestamps();
+    //     });
+    // }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
-    {
-        Schema::dropIfExists('categorias');
-    }
+    // /**
+    //  * Reverse the migrations.
+    //  *
+    //  * @return void
+    //  */
+    // public function down()
+    // {
+    //     Schema::dropIfExists('categorias');
+    // }
 }
