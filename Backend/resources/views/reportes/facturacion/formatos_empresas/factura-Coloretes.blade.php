@@ -20,7 +20,7 @@
         table th{border: 1px solid #000; text-align: center; line-height: 10px;}
         table td{height: 0.3cm; padding-left: 3px;}
 
-        table .footer{position: absolute; bottom: 0px;}
+/*        table.footer{position: absolute; bottom: 0px;}*/
         table.footer td{ border: 1px solid #000; line-height: 14px;}
 
         .cantidad{ width: 1.5cm; text-align: center;}

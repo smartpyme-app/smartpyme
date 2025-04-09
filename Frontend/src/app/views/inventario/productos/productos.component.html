@@ -22,7 +22,7 @@
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar" >
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
-                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-default tcla-F6">
+                <button [disabled]="downloading" tooltip="Descargar productos" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
@@ -285,5 +285,30 @@
         </div>
 
     </form>
+  </div>
+</ng-template>
+
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de inventario</h4>
+    <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de inventario en un archivo de Excel.</p>
+        <div class="row">
+            <div class="d-grid mt-4">
+                <label>Descargar detalle de productos:</label>
+                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()" class="btn btn-primary">
+                    <span *ngIf="!downloading">Descargar productos</span>
+                    <span *ngIf="downloading">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <label>Descargar detalle de inventario:</label>
+                <app-descargar-inventario></app-descargar-inventario>
+            </div>
+        </div>
   </div>
 </ng-template>

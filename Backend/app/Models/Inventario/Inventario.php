@@ -5,7 +5,7 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class Inventario extends Model {
 
@@ -125,8 +125,20 @@ class Inventario extends Model {
             $precio = $producto->precio;
         }
 
+        // if (!$costo) {
+        //     if(Auth::user()->empresa->valor_inventario == 'promedio' && $producto->costo_promedio > 0){
+        //         $costo = $producto->costo_promedio;
+        //     }else{
+        //         $costo = $producto->costo;
+        //     }
+        // }
         if (!$costo) {
-            if(Auth::user()->empresa->valor_inventario == 'promedio' && $producto->costo_promedio > 0){
+            // Si estamos en un webhook (no hay usuario autenticado)
+            if (!Auth::user()) {
+                $costo = $producto->costo;
+            } 
+         
+            else if(Auth::user()->empresa->valor_inventario == 'promedio' && $producto->costo_promedio > 0){
                 $costo = $producto->costo_promedio;
             }else{
                 $costo = $producto->costo;

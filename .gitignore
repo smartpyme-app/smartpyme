@@ -8,3 +8,4 @@ Backend/composer.lock
 Frontend/src/environments/environment.prod.ts
 Frontend/src/environments/environment.ts
 
+Frontend/src/environments/environment.ts

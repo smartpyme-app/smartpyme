@@ -149,13 +149,17 @@ class MHFactura extends Model
             ];
         }
 
-        if ($this->venta->cliente->nit) {
-            $this->venta->cliente->tipo_documento = '36';
-            $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
-        }
-        if ($this->venta->cliente->dui) {
-            $this->venta->cliente->tipo_documento = '13';
+        if($this->venta->cliente->tipo_documento){
             $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
+        }else{
+            if ($this->venta->cliente->nit) {
+                $this->venta->cliente->tipo_documento = '36';
+                $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
+            }
+            if ($this->venta->cliente->dui) {
+                $this->venta->cliente->tipo_documento = '13';
+                $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
+            }
         }
 
         return [

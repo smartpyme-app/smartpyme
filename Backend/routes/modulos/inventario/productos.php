@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 //use Route
+use App\Http\Controllers\Api\Webhook\WooCommerceController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
@@ -82,5 +83,9 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
     //productos/ajuste-masivo
     Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
+
+    Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    //productos/exportar/woocommerce
+    Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
 
 ?>
