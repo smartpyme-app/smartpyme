@@ -79,7 +79,16 @@ export class ApiService {
             return throwError(() => error);
           })
         );
-      }
+    }
+
+    downloadFile(blob: Blob, filename: string) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    }
 
     saludar(){var hours = new Date().getHours(); if(hours >= 12 && hours < 18){return 'Buenas tardes'; } else if(hours >= 18){return 'Buenas noches'; } else{return 'Buenos días'; } }
 
@@ -170,21 +179,39 @@ export class ApiService {
 
     isAdmin(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+            return true;
+        return false;
+    }
+
+    isAdminCreate(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador')
+            return true;
+        return false;
+    }
+
+    canCreate() {
+        let usuario = this.auth_user();
+        if (
+            usuario.tipo == 'Administrador' ||
+            usuario.tipo == 'Supervisor' ||
+            usuario.tipo == 'Supervisor Limitado'
+        )
             return true;
         return false;
     }
 
     canEdit(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
 
     canDelete(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
@@ -194,7 +221,7 @@ export class ApiService {
         const endDate = moment(event.endDate).utc().format('YYYYMMDDTHHmmss[Z]');
         const calendarLink = `https://www.google.com/calendar/event?action=TEMPLATE&dates=${startDate}/${endDate}&text=${encodeURIComponent(event.title)}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
         return calendarLink;
-      }
+    }
 
     getPosition(): Promise<any> {
        return new Promise((resolve, reject) => {
@@ -207,18 +234,62 @@ export class ApiService {
        });
     }
 
-    isAdminCreate(){
+    isSupervisorLimitado() {
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador')
-            return true;
+        if (usuario.tipo == 'Supervisor Limitado') return true;
         return false;
     }
 
-    canCreate(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
+    private loadConstants() {
+        this.http.get<any>(this.apiUrl + 'constants').subscribe(
+          (constants) => {
+            localStorage.setItem('SP_constants', JSON.stringify(constants));
+          },
+          (error) => {
+            console.error('Error cargando constantes:', error);
+          }
+        );
+    }
+
+    getConstants() {
+        const constants = localStorage.getItem('SP_constants');
+        return constants ? JSON.parse(constants) : null;
+    }
+
+    generatePayrollSlips(planillaId: number): Observable<Blob> {
+        return this.http
+          .get(`${this.apiUrl}planillas/${planillaId}/boletas`, {
+            responseType: 'blob',
+          })
+          .pipe(
+            map((response) => {
+              return new Blob([response], { type: 'application/pdf' });
+            }),
+            catchError((error) => {
+              console.error('Error downloading payroll slips:', error);
+              return throwError(() => error);
+            })
+          );
+    }
+
+    generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
+        return this.http
+          .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
+            responseType: 'blob',
+          })
+          .pipe(
+            map((response) => {
+              return new Blob([response], { type: 'application/pdf' });
+            }),
+            catchError((error) => {
+              console.error('Error downloading payroll slip:', error);
+              return throwError(() => error);
+            })
+          );
+    }
+
+    private handleError(error: HttpErrorResponse) {
+      return throwError(error);
     }
 
     getUserData(userId: number) {
@@ -231,74 +302,6 @@ export class ApiService {
               return null;
             }),
             catchError(this.handleError)
-          );
-        }
-
-  private handleError(error: HttpErrorResponse) {
-    return throwError(error);
-  }
-
-  isSupervisorLimitado() {
-    let usuario = this.auth_user();
-    if (usuario.tipo == 'Supervisor Limitado') return true;
-    return false;
-  }
-
-  private loadConstants() {
-    this.http.get<any>(this.apiUrl + 'constants').subscribe(
-      (constants) => {
-        localStorage.setItem('SP_constants', JSON.stringify(constants));
-      },
-      (error) => {
-        console.error('Error cargando constantes:', error);
-      }
-    );
-  }
-
-  getConstants() {
-    const constants = localStorage.getItem('SP_constants');
-    return constants ? JSON.parse(constants) : null;
-  }
-
-  generatePayrollSlips(planillaId: number): Observable<Blob> {
-    return this.http
-      .get(`${this.apiUrl}planillas/${planillaId}/boletas`, {
-        responseType: 'blob',
-      })
-      .pipe(
-        map((response) => {
-          return new Blob([response], { type: 'application/pdf' });
-        }),
-        catchError((error) => {
-          console.error('Error downloading payroll slips:', error);
-          return throwError(() => error);
-        })
-      );
-  }
-
-  generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
-    return this.http
-      .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
-        responseType: 'blob',
-      })
-      .pipe(
-        map((response) => {
-          return new Blob([response], { type: 'application/pdf' });
-        }),
-        catchError((error) => {
-          console.error('Error downloading payroll slip:', error);
-          return throwError(() => error);
-        })
-      );
-  }
-
-  downloadFile(blob: Blob, filename: string) {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
-  }
-
+        );
+    }
 }
