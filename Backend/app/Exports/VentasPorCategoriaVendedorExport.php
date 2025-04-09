@@ -71,7 +71,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     
         $ventasAgrupadas = collect();
         $vendedoresAgrupados = $ventasQuery->groupBy(function ($detalle) {
-            return $detalle->venta->vendedor ? $detalle->venta->vendedor->name : 'Sin vendedor';
+            return $detalle->vendedor ? $detalle->vendedor->name : 'Sin vendedor';
         });
     
         foreach ($vendedoresAgrupados as $nombreVendedor => $detallesVendedor) {
