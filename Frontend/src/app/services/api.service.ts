@@ -357,16 +357,19 @@ export class ApiService {
     return false;
   }
 
-  canCreate() {
-    let usuario = this.auth_user();
-    if (
-      usuario.tipo == 'Administrador' ||
-      usuario.tipo == 'Supervisor' ||
-      usuario.tipo == 'Supervisor Limitado'
-    )
-      return true;
-    return false;
-  }
+    isAdminCreate(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador')
+            return true;
+        return false;
+    }
+
+    canCreate(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+            return true;
+        return false;
+    }
 
   canEdit() {
     let usuario = this.auth_user();
@@ -473,7 +476,7 @@ export class ApiService {
         })
       );
   }
-  
+
 
   download(url: string): Observable<Blob> {
     return this.http.get(`${this.apiUrl}${url}`, {

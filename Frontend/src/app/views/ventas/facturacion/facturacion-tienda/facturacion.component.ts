@@ -146,6 +146,10 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
         this.impuestos = impuestos;
+        if (!this.venta.impuestos || this.venta.iva == 0) {
+          this.venta.impuestos = this.impuestos;
+          this.sumTotal();
+        }
       },
       (error) => {
         this.alertService.error(error);
@@ -208,7 +212,7 @@ export class FacturacionComponent implements OnInit {
           } else {
             this.documentos = this.documentos.filter(
               (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket'
+                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo'
             );
           }
         }
@@ -253,11 +257,6 @@ export class FacturacionComponent implements OnInit {
         sessionStorage.getItem('SP_corte')!
       ).id_caja;
       this.venta.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
-    }
-
-    if (!this.venta.impuestos || this.venta.iva == 0) {
-      this.venta.impuestos = this.impuestos;
-      this.sumTotal();
     }
 
     // Para proyectos
@@ -309,6 +308,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.tipo_dte = null;
             this.venta.numero_control = null;
             this.venta.codigo_generacion = null;
+            this.venta.impuestos = this.impuestos;
             this.venta.sello_mh = null;
             this.venta.dte = null;
             this.venta.dte_invalidacion = null;
@@ -316,6 +316,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
+            this.sumTotal();
           },
           (error) => {
             this.alertService.error(error);

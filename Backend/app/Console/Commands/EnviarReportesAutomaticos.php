@@ -111,14 +111,21 @@ class EnviarReportesAutomaticos extends Command
     
     private function enviarReporte(ReporteConfiguracion $configuracion)
     {
+        $fecha_inicio = Carbon::today()->format('Y-m-d');
+        $fecha_fin = Carbon::today()->format('Y-m-d');
         switch ($configuracion->tipo_reporte) {
             case 'ventas-por-vendedor':
                 $controller = new VentasController();
                 $empresa = Empresa::find($configuracion->id_empresa);
-                return $controller->enviarReporteProgramado($configuracion, $empresa);
-                
-            // Implementar otros tipos de reportes aquí
-                
+                return $controller->enviarReporteProgramado($configuracion, $empresa, $fecha_inicio, $fecha_fin);
+            case 'ventas-por-categoria-vendedor':
+                $controller = new VentasController();
+                $empresa = Empresa::find($configuracion->id_empresa);
+                return $controller->enviarReporteProgramado($configuracion, $empresa, $fecha_inicio, $fecha_fin);
+            case 'estado-financiero-consolidado-sucursales':
+                $controller = new VentasController();
+                $empresa = Empresa::find($configuracion->id_empresa);
+                return $controller->enviarReporteProgramado($configuracion, $empresa, $fecha_inicio, $fecha_fin);
             default:
                 throw new \Exception("Tipo de reporte no implementado: {$configuracion->tipo_reporte}");
         }
