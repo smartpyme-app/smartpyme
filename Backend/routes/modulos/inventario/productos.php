@@ -44,6 +44,9 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
 // Precios
 Route::post('/producto/precio',        [PreciosController::class, 'store']);
 Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
+Route::post('/producto/precio',        [PreciosController::class, 'store']);
+Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
+Route::post('/precios/importar',          [PreciosController::class, 'import']);
 
 // Proveedor
 Route::post('/producto/proveedor',        [ProveedorController::class, 'store']);

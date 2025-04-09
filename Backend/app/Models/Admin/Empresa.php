@@ -170,6 +170,10 @@ class Empresa extends Model {
         return $this->hasMany('App\Models\Admin\Canal', 'id_empresa');
     }
 
+    public function bodegas(){
+        return $this->hasMany('App\Models\Inventario\Bodega', 'id_empresa');
+    }
+
     public function sucursales(){
         return $this->hasMany('App\Models\Admin\Sucursal', 'id_empresa');
     }

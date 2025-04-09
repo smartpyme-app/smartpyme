@@ -42,10 +42,9 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
 
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
-                        ->when($request->tipo_documento, function($query) {
-                            return $query->whereHas('documento', function($q) {
-                                $q->where('nombre', 'Factura');
-                            });
+                        ->whereHas('documento', function ($q) {
+                            $q->where('nombre', 'Factura')
+                                ->orWhere('nombre', 'Factura de exportación');
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
@@ -65,10 +64,10 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
             $venta->fecha,
             $venta->correlativo,
             $venta->exenta,
-            $venta->sub_total,
+            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->sub_total,
             $venta->no_sujeta,
-            0,
-            $venta->total,
+            $venta->documento->nombre === 'Factura de exportación' ? $venta->sub_total : '0',
+            $venta->sub_total,
             $venta->cuenta_a_terceros,
         ];
     }

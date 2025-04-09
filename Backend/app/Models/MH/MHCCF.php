@@ -7,6 +7,7 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
+use Carbon\Carbon;
 
 class MHCCF extends Model
 {
@@ -102,8 +103,8 @@ class MHCCF extends Model
             "tipoOperacion" => $this->venta->tipoOperacion,
             "tipoContingencia" => $this->venta->tipoContingencia,
             "motivoContin" => $this->venta->motivoContin,
-            "fecEmi" => \Carbon\Carbon::parse($this->venta->fecha)->format('Y-m-d'),
-            "horEmi" => \Carbon\Carbon::parse($this->venta->created_at)->format('H:i:s'),
+            "fecEmi" => Carbon::parse($this->venta->fecha)->format('Y-m-d'),
+            "horEmi" => Carbon::parse($this->venta->created_at)->format('H:i:s'),
             "tipoMoneda" => $this->venta->moneda,
         ];
     }
@@ -202,8 +203,8 @@ class MHCCF extends Model
                       "codigo" => $this->venta->cod_metodo_pago,
                       "montoPago" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
                       "referencia" => NULL,
-                      "plazo" => NULL,
-                      "periodo" => NULL
+                      "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
+                      "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL
                     ]
                   ],
                   "numPagoElectronico" => ""
@@ -264,6 +265,16 @@ class MHCCF extends Model
         }
 
         return $detalles;
+    }
+
+    private function obtenerPlazo($dias_credito) {
+        if ($dias_credito <= 30) {
+            return "01"; // Corto plazo
+        } elseif ($dias_credito <= 60) {
+            return "02"; // Mediano plazo
+        } else {
+            return "03"; // Largo plazo
+        }
     }
 
 

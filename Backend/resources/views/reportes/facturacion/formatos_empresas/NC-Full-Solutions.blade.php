@@ -28,12 +28,13 @@
         }
 
         #fecha          {top: 3cm; left: 13cm; }
-        #nit            {top: 3.5cm; left: 13cm; }
+        #nit            {top: 3.5cm; left: 14cm; }
         #condicion      {top: 4cm; left: 13cm; }
         #cliente        {top: 3cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 3.5cm; left: 2.5cm; width: 9cm;}
+        #direccion      {top: 3.5cm; left: 2.5cm; width: 13cm;}
         #municipio      {top: 4cm; left: 2.5cm; width: 9cm;}
         #departamento      {top: 4cm; left: 7cm; width: 9cm;}
+        #vendedor      {top: 4cm; left: 13cm; }
 
 
         table   {position: absolute; top: 5cm; left: 1cm; text-align: left; border-collapse: collapse; }
@@ -84,6 +85,7 @@
         @if ($venta->id_cliente)
             <p id="nit"><b>DUI:</b> {{ $cliente->dui }}</p>
         @endif
+        <p id="vendedor"><b>Vendedor: </b>{{ $venta->venta->nombre_vendedor }}</p>
     </div>
 
     <table>

@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SmartPyme {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
+    <title>Sistema Impresiones {{$venta->nombre_documento}} - {{$venta->correlativo}}</title>
     <style>
 
         *{ font-size: 10px; margin: 0; padding: 0;}
         html, body{
-            width: 23.5cm; height: 21.5cm;
             font-family: serif;
             /*            border: 1px solid red;*/
         }
 
         #factura{
+            width: 23.5cm; height: 27cm;
             margin-left: 0cm;
             margin-top: -2cm;
             position: relative;

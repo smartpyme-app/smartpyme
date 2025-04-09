@@ -39,8 +39,8 @@ export class DevolucionesComprasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.filtros.inicio = null;
-        this.filtros.fin = this.apiService.date();
+        // this.filtros.inicio = null;
+        // this.filtros.fin = this.apiService.date();
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.id_proveedor = '';
