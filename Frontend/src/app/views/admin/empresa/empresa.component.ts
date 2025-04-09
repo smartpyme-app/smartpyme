@@ -34,6 +34,8 @@ export class EmpresaComponent implements OnInit {
     public procesando: boolean = false;
     public modalRef!: BsModalRef;
     public procesandoPruebas: boolean = false;
+    public correlativoInicial: number | undefined = undefined; 
+
     @ViewChild('modalTemplate')
     modalTemplate!: TemplateRef<any>;
 
@@ -375,14 +377,27 @@ export class EmpresaComponent implements OnInit {
         this.mhService.ejecutarPruebasMasivas(
           this.tipoSeleccionado, 
           this.cantidadFaltante, 
-          this.documentoBaseSeleccionado?.id
+          this.documentoBaseSeleccionado?.id,
+          this.correlativoInicial || undefined
         ).subscribe(
           (response) => {
             this.procesando = false;
-            this.cargarEstadisticasPruebas(); // Recargar estadísticas
             
             if (response.success) {
-              this.alertService.success('Proceso completado', response.message);
+              // Mostrar un mensaje más específico cuando se encola el trabajo
+              if (response.queued) {
+                this.alertService.success(
+                  'Proceso iniciado', 
+                  'Las pruebas se están ejecutando en segundo plano. Recibirá una notificación por correo electrónico cuando el proceso finalice.'
+                );
+              } else {
+                this.alertService.success('Proceso completado', response.message);
+              }
+              
+              // Refrescar las estadísticas después de un breve retraso
+              setTimeout(() => {
+                this.cargarEstadisticasPruebas();
+              }, 2000);
             } else {
               this.alertService.error(response.message);
             }

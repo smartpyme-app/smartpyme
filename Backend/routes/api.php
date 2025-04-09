@@ -115,19 +115,20 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Pruebas masivas
 	require base_path('routes/modulos/admin/pruebas-masivas-mh.php');
 
+	// planillas
+
+	require base_path('routes/modulos/planilla/empleados.php');
+	require base_path('routes/modulos/planilla/planillas.php');
+	require base_path('routes/modulos/planilla/cargos.php');
+	require base_path('routes/modulos/planilla/departamentos-planilla.php');
+    require base_path('routes/modulos/planilla/historialcontratos.php');
 
 	//Chatbot
 	require base_path('routes/modulos/chat/chat.php');
+
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
-    // planillas
 
-		require base_path('routes/modulos/planilla/empleados.php');
-		require base_path('routes/modulos/planilla/planillas.php');
-		require base_path('routes/modulos/planilla/cargos.php');
-		require base_path('routes/modulos/planilla/departamentos-planilla.php');
-
-    require base_path('routes/modulos/planilla/historialcontratos.php');
 });
 
 // Webhook
