@@ -86,6 +86,12 @@ use Illuminate\Support\Facades\Route;
     //producto/exportar-woocommerce post
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
+    //productos/exportar-traslado
+    Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
+    //productos/traslado-masivo/importar
+    Route::post('/productos/traslado-masivo/importar',          [ProductosController::class, 'importarTrasladosMasivos']);
+    //productos/traslado-masivo post
+    Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
 
 ?>
