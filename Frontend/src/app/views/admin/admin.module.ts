@@ -30,6 +30,7 @@ import { UsuarioComponent } from './usuarios/usuario/usuario.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
+// import { ThreedsModalComponent } from '../../auth/register/pago/modal/threeds-modal.component';
 
 @NgModule({
   imports: [
@@ -57,10 +58,10 @@ import { DocsComponent } from './docs/docs.component';
     UsuarioComponent,
     ReportesComponent,
     NotificacionesComponent,
-    DocsComponent
+    DocsComponent,
+    // ThreedsModalComponent
   ],
   exports: [
-    EmpresaComponent,
     EliminarDatosComponent,
     SuscripcionComponent,
     SucursalesComponent,

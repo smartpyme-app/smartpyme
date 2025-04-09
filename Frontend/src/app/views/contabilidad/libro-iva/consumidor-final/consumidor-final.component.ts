@@ -12,7 +12,7 @@ import * as moment from 'moment';
 
 export class ConsumidorFinalComponent implements OnInit {
 
-	public ivas:any[] = [];
+    public ivas:any[] = [];
     public years:any[] = [];
     public sucursales:any[] = [];
     public loading:boolean = false;
@@ -20,29 +20,35 @@ export class ConsumidorFinalComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-	ngOnInit() {   
-        const currentYear = new Date().getFullYear(); // Obtener el año actual
+    ngOnInit() {
+        const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
-        // Crear un array con el año actual y los 10 años anteriores
+
         for (let i = 0; i <= 10; i++) {
           this.years.push(currentYear - i);
         }
 
+        // Recuperar filtros del localStorage si existen
+        const savedFilters = localStorage.getItem('consumidores_filtros');
+        if (savedFilters) {
+            this.filtros = JSON.parse(savedFilters);
+        } else {
+            // Valores por defecto si no hay filtros guardados
+            this.filtros.id_sucursal = '';
+            this.filtros.tipo_documento = 'Crédito fiscal';
+            this.filtros.anio = currentYear;
+            this.filtros.mes = currentMonth;
+            this.filtros.time = 'day';
+        }
 
-        this.filtros.id_sucursal = '';
-        this.filtros.tipo_documento = 'Crédito fiscal';
-        this.filtros.anio = currentYear;
-        this.filtros.mes = currentMonth;
-        this.filtros.time = 'day';
-        
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -51,14 +57,16 @@ export class ConsumidorFinalComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(ivas => { 
+        // Guardar filtros en localStorage antes de cargar
+        localStorage.setItem('consumidores_filtros', JSON.stringify(this.filtros));
+
+        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setTime() {
-        // this.filtros.time = { this.filtros.anio, this.filtros.mes }; // Guardamos el mes y año en el filtro
         this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
         this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
         this.loadAll();
@@ -66,7 +74,23 @@ export class ConsumidorFinalComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    } 
+    }
+
+    public limpiarFiltros() {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        this.filtros = {
+            id_sucursal: '',
+            tipo_documento: 'Crédito fiscal',
+            anio: currentYear,
+            mes: currentMonth,
+            time: 'day'
+        };
+
+        localStorage.removeItem('consumidores_filtros');
+        this.setTime();
+    }
 
     public descargarLibro(){
         this.downloading = true;
@@ -89,7 +113,6 @@ export class ConsumidorFinalComponent implements OnInit {
         this.downloading = true;
         this.apiService.export('libro-iva/consumidores/descargar-anexo', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            // const blob = new Blob([data], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -101,6 +124,11 @@ export class ConsumidorFinalComponent implements OnInit {
             this.downloading = false;
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
+    }
+
+    public setSucursal(id: number) {
+        this.filtros.id_sucursal = id;
+        this.loadAll();
     }
 
     public descargarDTEConsumidorFinal(): void {
@@ -117,7 +145,7 @@ export class ConsumidorFinalComponent implements OnInit {
               this.downloading = false;
               return;
             }
-      
+
             // Si no es texto plano, es un archivo ZIP
             const url = window.URL.createObjectURL(data);
             const a = document.createElement('a');
