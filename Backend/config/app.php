@@ -182,6 +182,8 @@ return [
 
         Milon\Barcode\BarcodeServiceProvider::class,
 
+        App\Providers\AIServiceProvider::class,
+
 
     ],
 

@@ -11,6 +11,22 @@
                     <h2>Pago</h2>
                     <p>{{ user.name }} realiza el pago de tu plan {{ user.empresa.plan }} {{ user.empresa.tipo_plan }} a través de N1co.</p>
 
+                    <!-- <div class="col-md-12">
+                        <table class="table table-bordered my-3">
+                            <tbody>
+                                <tr>
+                                    <th>Plan</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ user.empresa.plan }}</td>
+                                    <td>{{ user.empresa.tipo_plan }}</td>
+                                    <td class="text-end">{{ user.empresa.total | currency:'USD':'symbol':'1.2' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div> -->
                     <div class="col-md-12">
                         <table class="table table-bordered my-3">
                             <tbody>
@@ -27,22 +43,214 @@
                             </tbody>
                         </table>
                     </div>
-                    <p>
-                        <b>Solo se realizará el cobro una vez pase el periodo de prueba de 15 días</b>. <br>
-                            Puedes desactivar tu suscripción en cualquier momento.
+                    <p *ngIf="!showDirectPayment" class="text-center">
+                        <b>Puedes pagar en este momento o después de 3 días de prueba</b>. <br>
+                            <!-- Puedes desactivar tu suscripción en cualquier momento. -->
                     </p>
                     <div class="d-grid gap-1">
-                        <h4 class="text-center my-4">
-                            Suscribite a través de
-                            <img src="assets/img/logo-n1co.png" height="30px;" alt="N1co">
-                        </h4>
-
-                        <button type="button" class="btn btn-lg btn-primary btn-block" (click)="checkout()">
-                                Suscribirme
-                        </button>
+                        <div class="row justify-content-md-center">
+                            <div class="col-12 col-md-8">
+                                <!-- <h4 class="text-center my-4">
+                                    Suscribirte a través de
+                                    <img src="assets/img/logo-n1co.png" height="30px;" alt="N1co">
+                                </h4> -->
+                                <div *ngIf="!showDirectPayment" class="mb-4">
+                                    <div class="d-grid gap-3">
+                                        <button class="btn btn-outline-primary" (click)="showDirectPayment = true">
+                                            <i class="fas fa-credit-card me-2"></i>
+                                            Pagar con tarjeta
+                                        </button>
+                                    </div>
+                                    <div class="d-grid gap-3">
+                                        <button class="btn btn-link text-decoration-none text-dark" (click)="backToHome()">
+                                            Pagar después
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                         </div>
                     </div>
 
+                    <div *ngIf="showDirectPayment" class="payment-form">
+                        <form (ngSubmit)="createMethodPaymentWithCharge()" #paymentForm="ngForm">
+                            <!-- Número de tarjeta -->
+                            <div class="mb-3">
+                                <label class="form-label">Número de Tarjeta</label>
+                                <div class="input-group">
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="paymentData.cardNumber"
+                                        name="cardNumber"
+                                        required
+                                        [ngClass]="{'is-invalid': cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)}"
+                                        pattern="[0-9\s]{13,19}"
+                                        maxlength="19"
+                                        placeholder="0000 0000 0000 0000"
+                                        #cardNumber="ngModel">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-credit-card"></i>
+                                    </span>
+                                </div>
+                                <div class="invalid-feedback" *ngIf="cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)">
+                                    Por favor, ingrese un número de tarjeta válido
+                                </div>
+                            </div>
 
+                            <!-- Nombre del titular -->
+                            <div class="mb-3">
+                                <label class="form-label">Nombre del Titular</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    [(ngModel)]="paymentData.cardHolder"
+                                    name="cardHolder"
+                                    required
+                                    [ngClass]="{'is-invalid': cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)}"
+                                    placeholder="Como aparece en la tarjeta"
+                                    #cardHolder="ngModel">
+                                <div class="invalid-feedback" *ngIf="cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)">
+                                    El nombre del titular es requerido
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- Mes de expiración -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Mes de expiración</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="paymentData.expirationMonth"
+                                        name="expirationMonth"
+                                        required
+                                        [ngClass]="{'is-invalid': expMonth.invalid && (expMonth.dirty || expMonth.touched)}"
+                                        pattern="(0[1-9]|1[0-2])"
+                                        maxlength="2"
+                                        placeholder="MM"
+                                        #expMonth="ngModel">
+                                    <div class="invalid-feedback" *ngIf="expMonth.invalid && (expMonth.dirty || expMonth.touched)">
+                                        Mes inválido (01-12)
+                                    </div>
+                                </div>
+
+                                <!-- Año de expiración -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Año de expiración</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="paymentData.expirationYear"
+                                        name="expirationYear"
+                                        required
+                                        [ngClass]="{'is-invalid': expYear.invalid && (expYear.dirty || expYear.touched)}"
+                                        pattern="[0-9]{2}"
+                                        maxlength="2"
+                                        placeholder="YY"
+                                        #expYear="ngModel">
+                                    <div class="invalid-feedback" *ngIf="expYear.invalid && (expYear.dirty || expYear.touched)">
+                                        Año inválido
+                                    </div>
+                                </div>
+
+                                <!-- CVV -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">CVV</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="paymentData.cvv"
+                                        name="cvv"
+                                        required
+                                        [ngClass]="{'is-invalid': cvv.invalid && (cvv.dirty || cvv.touched)}"
+                                        pattern="[0-9]{3,4}"
+                                        maxlength="4"
+                                        placeholder="123"
+                                        #cvv="ngModel">
+                                    <div class="invalid-feedback" *ngIf="cvv.invalid && (cvv.dirty || cvv.touched)">
+                                        CVV inválido
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- País -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">País</label>
+                                    <select 
+                                        class="form-control" 
+                                        [(ngModel)]="billingInfo.countryCode"
+                                        name="countryCode"
+                                        required
+                                        [ngClass]="{'is-invalid': countryCode.invalid && (countryCode.dirty || countryCode.touched)}"
+                                        #countryCode="ngModel">
+                                        <option value="" disabled selected>Seleccione un país</option>
+                                        <option value="SV">El Salvador</option>
+                                        <option value="US">Estados Unidos</option>
+                                        <option value="MX">México</option>
+                                        <!-- Agregar más opciones según sea necesario -->
+                                    </select>
+                                    <div class="invalid-feedback" *ngIf="countryCode.invalid && (countryCode.dirty || countryCode.touched)">
+                                        País inválido
+                                    </div>
+                                </div>
+
+                                <!-- Código de Estado -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Código de Estado</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="billingInfo.stateCode"
+                                        name="stateCode"
+                                        required
+                                        [ngClass]="{'is-invalid': stateCode.invalid && (stateCode.dirty || stateCode.touched)}"
+                                        maxlength="2"
+                                        placeholder="SS"
+                                        #stateCode="ngModel">
+                                    <div class="invalid-feedback" *ngIf="stateCode.invalid && (stateCode.dirty || stateCode.touched)">
+                                        Código de estado inválido
+                                    </div>
+                                </div>
+
+                                <!-- Código ZIP -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Código ZIP</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        [(ngModel)]="billingInfo.zipCode"
+                                        name="zipCode"
+                                        required
+                                        [ngClass]="{'is-invalid': zipCode.invalid && (zipCode.dirty || zipCode.touched)}"
+                                        maxlength="5"
+                                        placeholder="1101"
+                                        #zipCode="ngModel">
+                                    <div class="invalid-feedback" *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)">
+                                        Código ZIP inválido
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botones de acción -->
+                            <div class="d-grid gap-2">
+                                <button 
+                                    type="submit" 
+                                    class="btn btn-primary"
+                                    [disabled]="!paymentForm.form.valid || processingPayment">
+                                    <i class="fas fa-lock me-2"></i>
+                                    {{ processingPayment ? 'Procesando...' : 'Procesar Pago' }}
+                                </button>
+                                <button 
+                                    type="button" 
+                                    class="btn btn-outline-secondary"
+                                    (click)="showDirectPayment = false">
+                                    <i class="fas fa-times me-2"></i>
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                     <!-- <p class="text-center">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p> -->
                     <div class="bg-white text-center mt-5">
                         <p class="my-3">
@@ -54,8 +262,12 @@
                     </div>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>
+<app-threeds-modal 
+    *ngIf="mostrar3DSModal"
+    [authUrl]="urlAutenticacion"
+    (close)="mostrar3DSModal = false">
+</app-threeds-modal>
 

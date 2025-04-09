@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Inventario;
 
+use App\Exports\PlantillaInventarioExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,7 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
+use App\Imports\InventarioImport;
 use App\Exports\WooCommerceExport;
 use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
@@ -27,6 +29,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
+// use Auth;
+use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class ProductosController extends Controller
 {
@@ -182,14 +186,19 @@ class ProductosController extends Controller
             // 'costo.required' => 'Agregue el costo.'
         ]);
 
-        if ($request->id)
+        if ($request->id) {
             $producto = Producto::findOrFail($request->id);
-        else
+            $precioAnterior = $producto->precio;
+            $costoAnterior = $producto->costo;
+        } else {
+
             $producto = new Producto;
+        }
 
 
         $producto->fill($request->all());
         $producto->save();
+
 
         // Configurar inventarios para las bodegas
         if (!$request->id && $producto->tipo != 'Servicio') {
@@ -203,6 +212,18 @@ class ProductosController extends Controller
             }
         }
 
+        if ($request->id) {
+            if ($precioAnterior != $producto->precio || $costoAnterior != $producto->costo) {
+                $inventarios = Inventario::where('id_producto', $producto->id)->get();
+
+                foreach ($inventarios as $inventario) {
+                    if ($inventario->stock > 0) {
+                        $producto->id_usuario = Auth::id();
+                        $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
+                    }
+                }
+            }
+        }
 
         return Response()->json($producto, 200);
     }
@@ -406,10 +427,10 @@ class ProductosController extends Controller
 
         return Excel::download($productos, 'productos.xlsx');
     }
-
+    //exportarWooCommerceTemplate
     public function exportarWooCommerceTemplate(Request $request)
     {
-        $user = Auth::user();
+        $user = FacadesAuth::user();
         $id_empresa = $user->id_empresa;
 
         $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
@@ -653,4 +674,105 @@ class ProductosController extends Controller
             ], 200);
         }
     }
+
+    public function exportarPlantilla(Request $request)
+    {
+        $filtros = [
+            'id_bodega' => $request->id_bodega,
+            'id_categoria' => $request->id_categoria,
+            'buscador' => $request->buscador,
+        ];
+
+        return Excel::download(
+            new PlantillaInventarioExport($filtros),
+            'plantilla_ajuste_inventario_' . date('Ymd_His') . '.xlsx'
+        );
+    }
+
+    public function importarAjustes(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,xls,csv',
+            'detalle' => 'required|string',
+        ]);
+
+        $importador = new InventarioImport($request->detalle);
+        Excel::import($importador, $request->file('archivo'));
+
+        // Verificar si se actualizó algún producto
+        $actualizados = $importador->getActualizados();
+
+        if ($actualizados > 0) {
+            return Response()->json([
+                'message' => "Ajuste de inventario realizado exitosamente. Se actualizaron {$actualizados} productos.",
+                'actualizados' => $actualizados
+            ], 200);
+        } else {
+            return Response()->json([
+                'message' => 'No se realizó ningún cambio en el inventario. Verifica que los datos sean correctos.',
+                'actualizados' => 0
+            ], 200);
+        }
+    }
+
+
+    public function ajusteMasivo(Request $request)
+    {
+        //return dd($request->all());
+        // Validar request
+        $request->validate([
+            'detalle' => 'required|string|max:255',
+            'productos' => 'required|array',
+            'productos.*.id_producto' => 'required|exists:productos,id',
+            'productos.*.id_bodega' => 'required|exists:sucursal_bodegas,id',
+            'productos.*.stock_actual' => 'required|numeric|min:0',
+            'productos.*.stock_nuevo' => 'required|numeric|min:0',
+            'productos.*.diferencia' => 'required|numeric',
+        ]);
+
+        $productosActualizados = 0;
+
+        // Procesar cada producto
+        foreach ($request->productos as $item) {
+            if ($item['diferencia'] == 0) {
+                continue; // No hay cambio, saltamos
+            }
+
+            // Buscar el inventario del producto en la bodega específica
+            $inventario = Inventario::where('id_producto', $item['id_producto'])
+                ->where('id_bodega', $item['id_bodega'])
+                ->first();
+
+            if (!$inventario) {
+                continue; // Si no existe el inventario, saltamos
+            }
+
+            // Actualizar stock
+            $inventario->stock = $item['stock_nuevo'];
+            $inventario->save();
+
+            $ajuste = new Ajuste();
+            $ajuste->concepto = $request->detalle;
+            $ajuste->estado = 'Procesado';
+            $ajuste->id_producto = $item['id_producto'];
+            $ajuste->id_bodega = $item['id_bodega'];
+            $ajuste->id_usuario = Auth::id();
+            $ajuste->stock_actual = $item['stock_actual'];
+            $ajuste->stock_real = $item['stock_nuevo'];
+            $ajuste->ajuste = $item['diferencia'];
+            $ajuste->id_empresa = Auth::user()->id_empresa;
+            $ajuste->save();
+
+            $inventario->kardex($ajuste, $ajuste->ajuste);
+
+            $productosActualizados++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ajuste masivo procesado correctamente',
+            'actualizados' => $productosActualizados
+        ]);
+    }
+
 }
