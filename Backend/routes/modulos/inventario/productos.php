@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 //use Route;
+use App\Http\Controllers\Api\Webhook\WooCommerceController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
@@ -76,5 +77,9 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
+
+    Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    //productos/exportar/woocommerce
+    Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
 
 ?>

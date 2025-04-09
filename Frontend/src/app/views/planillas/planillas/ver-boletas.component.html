@@ -1,0 +1,34 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div>
+      <h4 class="page-heading">Vista Previa de Boletas</h4>
+      <p class="text-muted mb-0 font-weight-bold" *ngIf="planilla?.codigo">
+        Planilla: {{ planilla.codigo }} | 
+        Período: {{ planilla.fecha_inicio | date:'dd/MM/yyyy' }} - {{ planilla.fecha_fin | date:'dd/MM/yyyy' }}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-light text-danger" routerLink="/planilla">
+        <i class="fa fa-arrow-left"></i> Regresar
+      </button>
+    </div>
+  </section>
+  
+  <section class="bg-white p-4 rounded mb-3">
+    <div *ngIf="loading" class="text-center p-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+  
+    <div *ngIf="!loading && pdfUrl" class="pdf-container">
+      <object
+        [data]="pdfUrl"
+        type="application/pdf"
+        width="100%"
+        height="800">
+        <p>Tu navegador no puede mostrar PDFs. 
+          <a [href]="pdfUrl">Descarga el PDF</a>
+        </p>
+      </object>
+    </div>
+  </section>

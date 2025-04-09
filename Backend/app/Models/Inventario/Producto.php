@@ -27,6 +27,7 @@ class Producto extends Model {
         'tipo',
         'enable',
         'id_empresa',
+        'woocommerce_id'
     );
 
     protected $appends = ['nombre_categoria', 'img'];
@@ -78,7 +79,10 @@ class Producto extends Model {
     }
 
     public function inventarios(){
-        return $this->hasMany('App\Models\Inventario\Inventario','id_producto');
+        return $this->hasMany('App\Models\Inventario\Inventario', 'id_producto')
+                        ->whereHas('bodega', function ($query) {
+                            $query->where('activo', 1);
+                        });
     }
 
     public function sucursales(){

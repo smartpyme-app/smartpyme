@@ -6,8 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
-use App\Models\Admin\Sucursal;
-use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Ajuste;
 use App\Models\Inventario\Inventario;
@@ -19,10 +17,11 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 //use Auth;
+use App\Exports\WooCommerceExport;
+use Illuminate\Support\Facades\Auth;
 
 class ProductosController extends Controller
 {
@@ -423,4 +422,25 @@ class ProductosController extends Controller
 
         return Excel::download($productos, 'productos.xlsx');
     }
+
+    public function exportarWooCommerceTemplate(Request $request)
+    {
+        $user = Auth::user();
+        $id_empresa = $user->id_empresa;
+
+        $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
+
+        $productos = new WooCommerceExport();
+        $productos->filter($request);
+
+        return Excel::download(
+            $productos,
+            'productos_woocommerce_' . date('Y-m-d') . '.csv',
+            \Maatwebsite\Excel\Excel::CSV,
+            [
+                'Content-Type' => 'text/csv',
+            ]
+        );
+    }
+
 }
