@@ -31,6 +31,7 @@ import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.c
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { RetaceoComponent } from './retaceo/retaceo.component';
+import { RetaceosListComponent } from './retaceo/retaceos-list.component';
 import { OrdenCompraFormComponent } from './cotizaciones/components/orden-compra-form/orden-compra-form.component';
 
 const routes: Routes = [
@@ -76,7 +77,10 @@ const routes: Routes = [
       { path: 'gastos/dash', component: GastosDashComponent },
       { path: 'gastos/categorias', component: GastosCategoriasComponent },
 
-      { path: 'retaceo', component: RetaceoComponent },
+      // { path: 'retaceo', component: RetaceoComponent },
+      { path: 'retaceos', component: RetaceosListComponent },
+      { path: 'retaceo/crear', component: RetaceoComponent },
+      { path: 'retaceo/:id', component: RetaceoComponent },
 
     ]
   }

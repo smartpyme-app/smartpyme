@@ -39,7 +39,7 @@ class ComprasController extends Controller
     public function index(Request $request)
     {
 
-        $compras = Compra::when($request->inicio, function ($query) use ($request) {
+        $compras = Compra::with('retaceo')->when($request->inicio, function ($query) use ($request) {
             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
         })
             ->when($request->recurrente !== null, function ($q) use ($request) {
@@ -101,7 +101,7 @@ class ComprasController extends Controller
     public function read($id)
     {
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos')->first();
+        $compra = Compra::where('id', $id)->with('detalles.producto', 'proveedor', 'abonos')->first();
         $compra->saldo = $compra->saldo;
 
         return Response()->json($compra, 200);
