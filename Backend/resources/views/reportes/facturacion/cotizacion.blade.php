@@ -46,10 +46,13 @@
                 <tr>
                     <td>
                         <h1>{{ $venta->empresa()->pluck('nombre')->first() }}</h1>
-                        <p>
-                            {{ $venta->empresa()->pluck('municipio')->first() }}
-                            {{ $venta->empresa()->pluck('departamento')->first() }}
-                        </p>
+                       
+                        @if ($venta->empresa()->pluck('id')->first() != 420)
+                            <p>
+                                {{ $venta->empresa()->pluck('municipio')->first() }}
+                                {{ $venta->empresa()->pluck('departamento')->first() }}
+                            </p>
+                        @endif
                         <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
                         <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
                     </td>
@@ -71,15 +74,23 @@
                     <td>
                         <p>{{ $venta->nombre_cliente }}</p>
                         <p>
+                        @if ($venta->empresa()->pluck('id')->first() != 420)
                             {{ $venta->cliente()->pluck('municipio')->first() }}
                             {{ $venta->cliente()->pluck('departamento')->first() }}
+                        @endif
                             {{ $venta->cliente()->pluck('direccion')->first() }} <br>
                         </p>
                     </td>
                     <td>
-                        <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                        <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
-                        <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                        
+                        @if ($venta->empresa()->pluck('id')->first() != 420)
+                            <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                            <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                        @else
+                            <p>RTN:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                        @endif
                     </td>
                     <td>
                         <p class="text-right">Cotización #{{ $venta->correlativo }}</p>
