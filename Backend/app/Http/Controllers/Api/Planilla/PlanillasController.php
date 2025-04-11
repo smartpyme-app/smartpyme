@@ -512,7 +512,7 @@ class PlanillasController extends Controller
         ]);
     }
 
-    private function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
+    public function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
     {
         // Calcular renta según tabla de El Salvador
         $renta = 0;
