@@ -39,8 +39,8 @@
         .cantidad{ width: 1.5cm; text-align: center;}
         .producto{ width: 7cm; text-align: left;}
         .precio{ width: 1.5cm; text-align: center;}
-        .sujetas{ width: 1.2cm; text-align: right;}
-        .exentas{ width: 1.2cm; text-align: right;}
+        .sujetas{ width: 1.2cm; text-align: center;}
+        .exentas{ width: 1.2cm; text-align: center;}
         .gravadas{ width: 2cm; text-align: right;}
 
 
@@ -81,17 +81,9 @@
             <tr>
                 <td class="cantidad"> {{ number_format($detalle->cantidad, 0) }}</td>
                 <td class="producto"> {{ $detalle->nombre_producto  }} - {{ $detalle->producto()->pluck('codigo')->first() }}</td>
-                <td class="precio">
-                    @if ($venta->iva > 0)
-                        ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}
-                    @endif
-                </td>
+                <td class="precio">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
                 <td class="sujetas"> </td>
-                <td class="exentas">
-                    @if ($venta->iva == 0)
-                        ${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}
-                    @endif
-                </td>
+                <td class="exentas"> </td>
                 <td class="gravadas">${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }} </th>
             </tr>
         @endforeach
@@ -102,9 +94,7 @@
         {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
         <p id="suma"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>
-        @if ($venta->iva > 0)
-            <p id="sub_total"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>
-        @endif
+        <p id="sub_total"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>
         {{-- <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p> --}}
         @if($venta->no_sujeta > 0)
             <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
@@ -112,8 +102,8 @@
         @if($venta->iva_retenido > 0)
             <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
         @endif
-        @if ($venta->iva == 0)
-            <p id="exenta"> $ {{ number_format($venta->sub_total + $venta->iva, 2) }}</p>
+        @if($venta->exenta > 0)
+            <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p>
         @endif
 {{--        @if($venta->cuenta_a_terceros > 0)--}}
 {{--            <p id="cuenta_a_terceros"> $ {{ number_format($venta->cuenta_a_terceros, 2) }}</p>--}}

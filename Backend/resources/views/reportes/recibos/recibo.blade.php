@@ -113,24 +113,24 @@
                 <tr>
                   <td class="border-bottom">{{\Carbon\Carbon::parse($recibo->fecha)->format('d/m/Y')}}</td>
                   <td class="border-bottom">{{$recibo->concepto}}</td>
-                  <td class="text-right border-bottom">${{number_format($recibo->total,2)}}</td>
+                  <td class="text-right border-bottom">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($recibo->total, 2) }}</td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
                     <td colspan="1"></td>
                     <td class="text-right">Total</td>
-                    <td class="text-right">${{ number_format($venta->total, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->total, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="1"></td>
                     <td class="text-right">Abonos</td>
-                    <td class="text-right">${{ number_format($venta->abonos()->sum('total'), 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->abonos()->sum('total'), 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="1"></td>
                     <td class="text-right"><b>Saldo</b></td>
-                    <td class="text-right"><b>${{ number_format($venta->saldo, 2) }}</b></td>
+                    <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->saldo, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>

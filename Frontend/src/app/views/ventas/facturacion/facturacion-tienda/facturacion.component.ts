@@ -102,8 +102,7 @@ export class FacturacionComponent implements OnInit {
         this.usuarios = usuarios;
         if (
           this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
+          this.apiService.auth_user().tipo != 'Supervisor'
         ) {
           this.usuarios = this.usuarios.filter(
             (item: any) => item.id == this.apiService.auth_user().id

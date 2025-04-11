@@ -1,0 +1,161 @@
+/* Contenedor de empresas con scroll */
+.empresas-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border-radius: 0.075rem;
+}
+
+/* Estilizar la barra de desplazamiento */
+.empresas-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.empresas-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.empresas-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.empresas-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animaciones y transiciones */
+.fade {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.list-group-item {
+  transition: all 0.2s ease-in-out;
+  border-left: 5px solid transparent;
+}
+
+
+
+/* Diseño de la tabla */
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th, .table td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+}
+
+.table tbody tr {
+  border-left: 3px solid transparent;
+  transition: border 0.2s ease-in-out;
+}
+
+.table tbody tr:hover {
+  border-left-color: var(--bs-primary);
+}
+
+/* Contenedor de íconos */
+.icon-container {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+/* Mejoras de accesibilidad para el switch */
+.form-check-input {
+  cursor: pointer;
+  height: 1.25rem;
+  width: 2.5rem;
+}
+
+.form-check-input:checked {
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+}
+
+.form-check-label {
+  cursor: pointer;
+}
+
+/* Estilizado de las tarjetas */
+.card {
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.card-header {
+  border-bottom: none;
+}
+
+/* Estilizado de alertas */
+.alert {
+  border: none;
+  border-radius: 0.5rem;
+}
+
+/* Mejora visual de los botones */
+.btn {
+  border-radius: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  box-shadow: 0 2px 4px rgba(var(--bs-primary-rgb), 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(var(--bs-primary-rgb), 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+/* Mejoras de input */
+.input-group {
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.input-group:focus-within {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-control:focus {
+  box-shadow: none;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  .icon-container {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+}
+
+/* Estado de carga */
+.spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Diseño de badges */
+.badge {
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+}

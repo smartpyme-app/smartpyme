@@ -144,7 +144,7 @@ class AbonosController extends Controller
     public function print($id){
 
         $recibo = Abono::where('id', $id)->first();
-        $venta = Venta::where('id', $recibo->id_venta)->first();
+        $venta = Venta::with('empresa.currency')->where('id', $recibo->id_venta)->first();
 
         $pdf = PDF::loadView('reportes.recibos.recibo', compact('venta', 'recibo'));
         $pdf->setPaper('US Letter', 'portrait');
