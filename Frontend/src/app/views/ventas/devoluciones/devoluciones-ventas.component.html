@@ -246,7 +246,7 @@
                 Ver PDF
             </button>
 
-            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE(venta)" class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!sending">Enviar por correo</span>
                 <span *ngIf="sending">Enviando...</span>
             </button>
