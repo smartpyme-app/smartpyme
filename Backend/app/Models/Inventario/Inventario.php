@@ -115,6 +115,12 @@ class Inventario extends Model {
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Devolución Compra Anulada';
             }
+        }else if ($clase == 'App\Models\Inventario\Producto') {
+            // Es una actualización de producto
+            $clase = 'Actualización de producto';
+            // No es entrada ni salida, por lo que ambos valores serían NULL
+            $entradaCantidad = null;
+            $salidaCantidad = null;
         }else{
             // return null;
         }
@@ -132,12 +138,13 @@ class Inventario extends Model {
         //         $costo = $producto->costo;
         //     }
         // }
+
         if (!$costo) {
             // Si estamos en un webhook (no hay usuario autenticado)
             if (!Auth::user()) {
                 $costo = $producto->costo;
-            } 
-         
+            }
+            // Si hay usuario autenticado, usar la lógica original
             else if(Auth::user()->empresa->valor_inventario == 'promedio' && $producto->costo_promedio > 0){
                 $costo = $producto->costo_promedio;
             }else{

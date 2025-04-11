@@ -9,80 +9,80 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User as Usuario;
 use App\Models\User;
 use App\Services\WooCommerceApiClient;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 class UsuariosController extends Controller
 {
-    
 
-    public function index(Request $request) {
-       
+
+    public function index(Request $request)
+    {
+
         $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->with('sucursal')
-                                ->when($request->estado !== null, function($q) use ($request){
-                                    $q->where('enable', !!$request->estado);
-                                })
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('name', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('email', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                // ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+            ->with('sucursal')
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('name', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('email', 'like', "%" . $request->buscador . "%");
+            })
+            // ->orderBy('enable', 'desc')
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
 
         return Response()->json($usuarios, 200);
-
     }
 
-    public function list() {
-       
+    public function list()
+    {
+
         $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
-                            ->where('enable', true)
-                            ->orderBy('name','asc')->get();
+            ->where('enable', true)
+            ->orderBy('name', 'asc')->get();
 
         return Response()->json($usuarios, 200);
-
     }
 
 
-    public function read($id) {
-        
+    public function read($id)
+    {
+
         $usuario = Usuario::where('id', $id)->firstOrFail();
         return Response()->json($usuario, 200);
     }
 
-    public function filter(Request $request) {
+    public function filter(Request $request)
+    {
 
         $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
-                        ->when($request->sucursal_id, function($query) use ($request){
-                            return $query->where('sucursal_id', $request->sucursal_id);
-                        })
-                        ->when($request->tipo, function($query) use ($request){
-                            return $query->where('tipo', $request->tipo);
-                        })
-                        ->orderBy('id','desc')->paginate(100000);
+            ->when($request->sucursal_id, function ($query) use ($request) {
+                return $query->where('sucursal_id', $request->sucursal_id);
+            })
+            ->when($request->tipo, function ($query) use ($request) {
+                return $query->where('tipo', $request->tipo);
+            })
+            ->orderBy('id', 'desc')->paginate(100000);
 
         return Response()->json($usuarios, 200);
-
     }
 
-    public function search($txt) {
+    public function search($txt)
+    {
 
         $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
-                            ->where('name', 'like' ,'%' . $txt . '%')->paginate(15);
+            ->where('name', 'like', '%' . $txt . '%')->paginate(15);
         return Response()->json($usuarios, 200);
-
     }
 
 
@@ -90,24 +90,24 @@ class UsuariosController extends Controller
     {
         $request->validate([
             'name'          => 'required|max:255',
-            'email'         => 'required|unique:users,email,'.$request->id,
+            'email'         => 'required|unique:users,email,' . $request->id,
             'tipo'          => 'required',
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
             'id_bodega'     => 'required',
             'password'      => [
-                  'required_if:id,null',
-                  'confirmed',
-                  'min:8',
-                  'regex:/[a-z]/',
-                  'regex:/[A-Z]/',
-                  'regex:/[0-9]/',
-                  'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
+                'required_if:id,null',
+                'confirmed',
+                'min:8',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
             ],
 
         ]);
 
-        if($request->id)
+        if ($request->id)
             $usuario = Usuario::findOrFail($request->id);
         else
             $usuario = new Usuario;
@@ -116,11 +116,11 @@ class UsuariosController extends Controller
         if ($request->password) {
             $request['password'] = \Hash::make($request->password);
         }
-       
+
         // if (!$request->id) {
         //     $request['password'] = \Hash::make('smart');
         // }
-        
+
         $usuario->fill($request->all());
 
         if ($request->hasFile('file')) {
@@ -128,69 +128,111 @@ class UsuariosController extends Controller
                 Storage::delete($usuario->avatar);
             }
             $path   = $request->file('file');
-            $resize = Image::make($path)->resize(350,350)->encode('jpg', 75);
+            $resize = Image::make($path)->resize(350, 350)->encode('jpg', 75);
             $hash = md5($resize->__toString());
             $path = "usuarios/{$hash}.jpg";
-            $resize->save(public_path('img/'.$path), 50);
+            $resize->save(public_path('img/' . $path), 50);
             $usuario->avatar = "/" . $path;
         }
 
-        
+
         $usuario->save();
-        
-        if(!$request->id){
+
+        if (!$request->id) {
             $usuario->bienvenida();
         }
 
 
         return Response()->json($usuario, 200);
-
-
     }
 
     public function delete($id)
     {
-       
+
         $usuario = Usuario::findOrFail($id);
         $usuario->delete();
 
         return Response()->json($usuario, 201);
-
     }
 
     public function caja($id)
     {
-       
+
         $usuarios = Usuario::where('caja_id', $id)->get();
 
         return Response()->json($usuarios, 200);
-
     }
 
     public function validar(Request $request)
     {
 
         $supervisor = Usuario::where('codigo', $request->codigo)->first();
-        
+
         if (!$supervisor)
             return Response()->json(['error' => ['Datos incorrectos'], 'code' => 422], 422);
 
-        return Response()->json($supervisor, 200); 
-
+        return Response()->json($supervisor, 200);
     }
 
     public function auth(Request $request)
     {
-        
+
         $user = Usuario::where('username', $request->username)->firstOrFail();
 
         if (!Hash::check($request->password, $user->password))
             return Response()->json(['error' => ['Datos incorrectos'], 'code' => 422], 422);
 
-        return Response()->json($user, 200); 
-
+        return Response()->json($user, 200);
     }
 
+
+    // public function saveCredentials(Request $request)
+    // {
+    //     $request->validate([
+    //         'store_url' => 'required|url',
+    //         'consumer_key' => 'required|string',
+    //         'consumer_secret' => 'required|string'
+    //     ]);
+
+    //     $id_usuario = Auth::user()->id;
+    //     $usuario = User::findOrFail($id_usuario);
+
+    //     if (empty($usuario->woocommerce_api_key)) {
+    //         $usuario->woocommerce_api_key = Str::random(64);
+    //     }
+
+    //     $usuario->woocommerce_store_url = $request->store_url;
+    //     $usuario->woocommerce_consumer_key = $request->consumer_key;
+    //     $usuario->woocommerce_consumer_secret = $request->consumer_secret;
+
+    //     $usuario->save();
+    //     try {
+
+    //         $client = new WooCommerceApiClient(
+    //             $usuario->woocommerce_store_url,
+    //             $usuario->woocommerce_consumer_key,
+    //             $usuario->woocommerce_consumer_secret
+    //         );
+
+    //         $response = $client->get('products');
+    //         if ($response['status'] !== 'success') {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce'
+    //             ], 500);
+    //         } else {
+    //             return response()->json([
+    //                 'status' => 'success',
+    //                 'mensaje' => 'Credenciales guardadas correctamente. Conexión con WooCommerce establecida.'
+    //             ], 200);
+    //         }
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'mensaje' => 'Credenciales guardadas, pero no se pudo establecer conexión con WooCommerce: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     public function saveCredentials(Request $request)
     {
@@ -322,7 +364,4 @@ class UsuariosController extends Controller
             ], 500);
         }
     }
-
-
-
 }

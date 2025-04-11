@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
@@ -10,12 +11,12 @@ use Illuminate\Support\Facades\Log;
 
 class WooCommerceExportService
 {
-    public function exportarProductos(User $user, $productos, $bodega)
+    public function exportarProductos(User $user, $productos, $bodega, Empresa $empresa)
     {
         $client = new WooCommerceApiClient(
-            $user->woocommerce_store_url,
-            $user->woocommerce_consumer_key,
-            $user->woocommerce_consumer_secret
+            $empresa->woocommerce_store_url,
+            $empresa->woocommerce_consumer_key,
+            $empresa->woocommerce_consumer_secret
         );
 
         // Precalcular stocks para todos los productos de una vez

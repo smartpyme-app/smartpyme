@@ -1,7 +1,8 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Admin\UsuariosController;
 use App\Http\Controllers\Api\Admin\UsuariosMetaController;
+//use Route;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/usuarios',                 [UsuariosController::class, 'index']);
