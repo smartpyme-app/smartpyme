@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AIService
 {
+    
     protected $client;
     protected $modelId;
     protected $inferenceProfileArn;
