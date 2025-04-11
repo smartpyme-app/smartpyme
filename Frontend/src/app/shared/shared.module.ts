@@ -11,6 +11,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -85,6 +86,7 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
+    SafeHtmlPipe,
     ThreedsModalComponent,
     VerHistorialButtonComponent
   ],
@@ -116,8 +118,9 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    ThreedsModalComponent,
-    VerHistorialButtonComponent
+    VerHistorialButtonComponent,
+    SafeHtmlPipe,
+    ThreedsModalComponent
   ],
   providers: [AlertService],
 })
