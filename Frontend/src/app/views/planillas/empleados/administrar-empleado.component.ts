@@ -432,7 +432,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.saving = true;
     this.departamento.activo = true;
 
-    this.apiService.store('departamentos', this.departamento).subscribe(
+    this.apiService.store('departamentosPlanilla', this.departamento).subscribe(
       (response: any) => {
         this.alertService.success(
           'Exito',

@@ -106,15 +106,15 @@
                 <tr>
                     <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="border-bottom text-right">   ${{number_format($detalle->costo , 2) }}</td>
-                    <td class="border-bottom text-right">   ${{ number_format($detalle->total, 2) }}</th>
+                    <td class="border-bottom text-right">    {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->costo , 2) }}</td>
+                    <td class="border-bottom text-right">   {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>
                 </tr>
                 @if ($detalle->descuento > 0)
                     <tr>
                         <td>DESCUENTOS</td>
                         <td></td>
                         <td></td>
-                        <td class="text-right">- ${{ number_format($detalle->descuento, 2) }} </th>
+                        <td class="text-right">- {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </th>
                     </tr>
                 @endif
                 @endforeach
@@ -123,29 +123,29 @@
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Sumas</td>
-                    <td class="text-right">${{ number_format($compra->sub_total, 2) }}</td>
+                    <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->sub_total, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">IVA</td>
-                    <td class="text-right">${{ number_format($compra->iva, 2) }}</td>
+                    <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->iva, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Subtotal</td>
-                    <td class="text-right">${{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
+                    <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
                 </tr>
                 @if ($compra->percepcion)
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Percepción (1%)</td>
-                    <td class="text-right">${{ number_format($compra->percepcion, 2) }}</td>
+                    <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->percepcion, 2) }}</td>
                 </tr>
                 @endif
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right"><b>Total</b></td>
-                    <td class="text-right"><b>${{ number_format($compra->total, 2) }}</b></td>
+                    <td class="text-right"><b>{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->total, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>

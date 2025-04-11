@@ -60,6 +60,10 @@ class MHDTEController extends Controller
     public function generarDTENotaCredito(Request $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
         
+        if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
+            return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
+        }
+
         if ($devolucion->nombre_documento == 'Nota de crédito') {
             $mh = new MHNotaCredito;
             $DTE = $mh->generarDTE($devolucion);
