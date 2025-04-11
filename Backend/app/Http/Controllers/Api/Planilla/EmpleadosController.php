@@ -10,6 +10,8 @@ use App\Models\Planilla\DocumentoEmpleado;
 use App\Models\Planilla\Empleado;
 use App\Models\Planilla\HistorialContrato;
 use App\Models\Planilla\HistorialBaja;
+use App\Models\Planilla\Planilla;
+use App\Models\Planilla\PlanillaDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -96,6 +98,14 @@ class EmpleadosController extends Controller
         try {
             DB::beginTransaction();
 
+            $salarioAnterior = null;
+            if ($request->id) {
+                $empleadoExistente = Empleado::find($request->id);
+                if ($empleadoExistente) {
+                    $salarioAnterior = $empleadoExistente->salario_base;
+                }
+            }
+
             // Crear o actualizar empleado
             $empleado = Empleado::updateOrCreate(
                 ['id' => $request->id],
@@ -115,6 +125,9 @@ class EmpleadosController extends Controller
                     'estado' => $request->estado ?? PlanillaConstants::ESTADO_EMPLEADO_ACTIVO,
                 ]
             );
+
+            // Verificar si hubo cambio en el salario
+            $salarioCambiado = $salarioAnterior !== null && $salarioAnterior != $request->salario_base;
 
             // Crear o actualizar contacto de emergencia si existe
             if ($request->has('contacto_emergencia') && is_array($request->contacto_emergencia)) {
@@ -152,6 +165,10 @@ class EmpleadosController extends Controller
                 ]);
             }
 
+            if ($salarioCambiado) {
+                $this->actualizarPlanillasConNuevoSalario($empleado->id, $request->salario_base);
+            }    
+
             DB::commit();
             return $empleado;
         } catch (\Exception $e) {
@@ -159,6 +176,132 @@ class EmpleadosController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    private function actualizarPlanillasConNuevoSalario($idEmpleado, $nuevoSalario)
+    {
+        // Obtener todas las planillas en estado borrador que contengan al empleado
+        $planillasActivas = Planilla::where('estado', PlanillaConstants::PLANILLA_BORRADOR)
+            ->whereHas('detalles', function($query) use ($idEmpleado) {
+                $query->where('id_empleado', $idEmpleado);
+            })
+            ->get();
+        
+        // Si no hay planillas activas, no hay nada que actualizar
+        if ($planillasActivas->isEmpty()) {
+            return;
+        }
+        
+        Log::info("Actualizando salario en planillas para empleado ID: {$idEmpleado}. Nuevo salario: {$nuevoSalario}");
+        
+        foreach ($planillasActivas as $planilla) {
+            // Obtener el detalle del empleado en esta planilla
+            $detalle = PlanillaDetalle::where('id_planilla', $planilla->id)
+                ->where('id_empleado', $idEmpleado)
+                ->first();
+            
+            if (!$detalle) {
+                continue;
+            }
+            
+            // Guardar salario base anterior para calcular proporción
+            $salarioBaseAnterior = $detalle->salario_base;
+            
+            // Determinar días de referencia y factor de ajuste según tipo de planilla
+            $diasReferencia = 30;
+            $factorAjuste = 1;
+            
+            if ($planilla->tipo_planilla === 'quincenal') {
+                $diasReferencia = 15;
+                $factorAjuste = 2;
+            } elseif ($planilla->tipo_planilla === 'semanal') {
+                $diasReferencia = 7;
+                $factorAjuste = 4.33;
+            }
+            
+            // Actualizar salario base en detalle
+            $detalle->salario_base = $nuevoSalario;
+            
+            // Recalcular salario devengado según días laborados
+            $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
+                $nuevoSalario / $factorAjuste : $nuevoSalario;
+            $detalle->salario_devengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+            
+            // Recalcular ISSS y AFP
+            $baseISSSEmpleado = min($detalle->salario_devengado, 1000);
+            $detalle->isss_empleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+            $detalle->isss_patronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            $detalle->afp_empleado = $detalle->salario_devengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            $detalle->afp_patronal = $detalle->salario_devengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            
+            // Recalcular Renta
+            $baseRenta = $detalle->salario_devengado - $detalle->isss_empleado - $detalle->afp_empleado;
+            $baseRentaAnualizada = $baseRenta;
+            
+            if ($planilla->tipo_planilla !== 'mensual') {
+                $baseRentaAnualizada = $baseRenta * $factorAjuste;
+            }
+            
+            $detalle->renta = PlanillasController::calcularRentaAjustada($baseRentaAnualizada, $planilla->tipo_planilla, $factorAjuste);
+            
+            // Recalcular total de ingresos
+            $detalle->total_ingresos = $detalle->salario_devengado +
+                $detalle->monto_horas_extra +
+                $detalle->comisiones +
+                $detalle->bonificaciones +
+                $detalle->otros_ingresos;
+                
+            // Recalcular total de descuentos
+            $detalle->total_descuentos = $detalle->isss_empleado +
+                $detalle->afp_empleado +
+                $detalle->renta +
+                $detalle->prestamos +
+                $detalle->anticipos +
+                $detalle->otros_descuentos +
+                $detalle->descuentos_judiciales;
+                
+            // Recalcular sueldo neto
+            $detalle->sueldo_neto = $detalle->total_ingresos - $detalle->total_descuentos;
+            
+            // Guardar cambios
+            $detalle->save();
+            
+            Log::info("Actualizado detalle de planilla ID: {$detalle->id}, de salario {$salarioBaseAnterior} a {$nuevoSalario}");
+            
+            // Actualizar totales de la planilla
+            $planilla->actualizarTotales();
+        }
+        
+        Log::info("Finalizada actualización de salario en planillas para empleado ID: {$idEmpleado}");
+    }
+
+    // private function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
+    // {
+    //     // Calcular renta según tabla de El Salvador
+    //     $renta = 0;
+
+    //     if ($baseRenta <= PlanillaConstants::RENTA_MINIMA) {
+    //         return 0;
+    //     } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
+    //         $renta = (($baseRenta - PlanillaConstants::RENTA_MINIMA) *
+    //             PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) +
+    //             PlanillaConstants::IMPUESTO_PRIMER_TRAMO;
+    //     } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
+    //         $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) *
+    //             PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) +
+    //             PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO;
+    //     } else {
+    //         $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) *
+    //             PlanillaConstants::PORCENTAJE_TERCER_TRAMO) +
+    //             PlanillaConstants::IMPUESTO_TERCER_TRAMO;
+    //     }
+
+    //     // Si no es mensual, dividir la renta calculada por el factor de ajuste
+    //     if ($tipoPlanilla !== 'mensual') {
+    //         $renta = $renta / $factorAjuste;
+    //     }
+
+    //     return round($renta, 2);
+    // }
 
     public function getDocumentos($id)
     {
