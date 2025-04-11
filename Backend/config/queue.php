@@ -67,6 +67,14 @@ return [
             'block_for' => null,
         ],
 
+        'pruebas-masivas' => [
+            'driver' => 'database',
+            'table' => 'jobs',
+            'queue' => 'pruebas-masivas',
+            'retry_after' => 3600,
+            'after_commit' => true,
+        ],
+
     ],
 
     /*

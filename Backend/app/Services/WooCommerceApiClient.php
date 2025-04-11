@@ -41,7 +41,7 @@ class WooCommerceApiClient
         return $this->request('PUT', $endpoint, [], $data);
     }
 
- 
+
     public function delete($endpoint, $params = [])
     {
         return $this->request('DELETE', $endpoint, $params);

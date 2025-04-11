@@ -14,6 +14,12 @@ export class MHService {
     public url_consultadte: string = 'fesv/recepcion/consultadte';
     public url_anular_dte: string = '/fesv/anulardte';
     public url_contingencia: string = '/fesv/contingencia';
+    
+    public url_pruebas_estadisticas: string = 'mh/pruebas-masivas/estadisticas';
+    public url_pruebas_documentos: string = 'mh/pruebas-masivas/documentos-base';
+    public url_pruebas_ejecutar: string = 'mh/pruebas-masivas/ejecutar';
+    public url_pruebas_limpiar: string = 'mh/pruebas-masivas/limpiar';
+
 
     constructor(private http: HttpClient, private alertService: AlertService, private apiService: ApiService) { }
     
@@ -347,5 +353,43 @@ export class MHService {
         });
     }
 
+    obtenerEstadisticasPruebasMasivas(): Observable<any> {
+        return this.apiService.getAll(this.url_pruebas_estadisticas);
+    }
+    
+    obtenerDocumentosBase(): Observable<any> {
+        return this.apiService.getAll(this.url_pruebas_documentos);
+    }
 
+    ejecutarPruebasMasivas(tipo: string, cantidad: number, idDocumentoBase?: number, correlativoInicial?: number): Observable<any> {
+        const datos = {
+            tipo: tipo,
+            cantidad: cantidad,
+            id_documento_base: idDocumentoBase,
+            correlativo_inicial: correlativoInicial
+        };
+        
+        // Usa apiService para la llamada HTTP
+        // El endpoint procesará la solicitud de forma asíncrona
+        return this.apiService.store(this.url_pruebas_ejecutar, datos)
+            .pipe(
+                map(response => {
+                    // Manejar la respuesta exitosa (ahora incluye el campo 'queued')
+                    return response;
+                }),
+                catchError(error => {
+                    // Registrar y manejar errores
+                    console.error('Error al ejecutar pruebas masivas:', error);
+                    
+                    // Si hay un mensaje de error específico en la respuesta, úsalo
+                    if (error.error && error.error.message) {
+                        return throwError(error.error.message);
+                    }
+                    
+                    // De lo contrario, devolver un mensaje genérico o el error completo
+                    return throwError('Error al ejecutar pruebas masivas. Por favor, intente nuevamente.');
+                })
+            );
+    }
+    
 }

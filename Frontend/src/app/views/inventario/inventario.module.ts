@@ -51,6 +51,10 @@ import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias
 
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
+import { TrasladoMasivoComponent } from './productos/producto/traslado/traslado-masivo.component';
+import { ReactiveFormsModule } from '@angular/forms';
+
+import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo.component';
 
 @NgModule({
   imports: [
@@ -69,7 +73,8 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
     PopoverModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    ReactiveFormsModule
   ],
   declarations: [
   	ProductosComponent,
@@ -99,7 +104,9 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     CategoriasComponent,
     SubCategoriasComponent,
     BodegaComponent,
-    BodegasComponent
+    BodegasComponent,
+    TrasladoMasivoComponent,
+    AjusteMasivoComponent
   ],
   exports: [
   	ProductosComponent,
@@ -129,7 +136,9 @@ import { BodegasComponent } from './bodegas/bodegas.component';
     CategoriasComponent,
     SubCategoriasComponent,
     BodegaComponent,
-    BodegasComponent
+    BodegasComponent,
+    TrasladoMasivoComponent,
+    AjusteMasivoComponent
   ]
 })
 export class InventarioModule { }
