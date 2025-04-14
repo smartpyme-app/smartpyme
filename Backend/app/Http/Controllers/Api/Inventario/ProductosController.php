@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Sucursal;
+use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Ajuste;
 use App\Models\Inventario\Inventario;
