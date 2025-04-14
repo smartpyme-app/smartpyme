@@ -16,7 +16,7 @@ use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Constants\ConstantsController;
+//use App\Http\Controllers\Api\Constants\ConstantsController;
 use App\Http\Controllers\n1co\N1coChargeController;
 
 Route::get('/prueba', function () {
