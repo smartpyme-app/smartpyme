@@ -76,11 +76,11 @@
                     <!-- si la empresa NO ES salvadoreña -->
                     <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
                         <label for="departamento">Departamento:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.cod_municipio" name="empresa.municipio" placeholder="Escriba aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="empresa.departamento" placeholder="Escriba aquí">
                     </div>
                     <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
                         <label for="municipio">Municipio:</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.cod_departamento" name="empresa.departamento" placeholder="Escriba aquí">
+                        <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="empresa.municipio" placeholder="Escriba aquí">
                     </div>
 
 
