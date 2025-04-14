@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
+//use Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
 use Illuminate\Support\Facades\Route;
 
