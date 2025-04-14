@@ -46,10 +46,13 @@
                 <tr>
                     <td>
                         <h1>{{ $venta->empresa()->pluck('nombre')->first() }}</h1>
-                        <p>
-                            {{ $venta->empresa()->pluck('municipio')->first() }}
-                            {{ $venta->empresa()->pluck('departamento')->first() }}
-                        </p>
+                       
+                        @if ($venta->empresa()->pluck('id')->first() != 420)
+                            <p>
+                                {{ $venta->empresa()->pluck('municipio')->first() }}
+                                {{ $venta->empresa()->pluck('departamento')->first() }}
+                            </p>
+                        @endif
                         <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
                         <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
                     </td>
@@ -71,15 +74,23 @@
                     <td>
                         <p>{{ $venta->nombre_cliente }}</p>
                         <p>
+                        @if ($venta->empresa()->pluck('id')->first() != 420)
                             {{ $venta->cliente()->pluck('municipio')->first() }}
                             {{ $venta->cliente()->pluck('departamento')->first() }}
+                        @endif
                             {{ $venta->cliente()->pluck('direccion')->first() }} <br>
                         </p>
                     </td>
                     <td>
-                        <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                        <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
-                        <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                        
+                        @if ($venta->empresa()->pluck('id')->first() != 420)
+                            <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
+                            <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                        @else
+                            <p>RTN:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
+                            <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
+                        @endif
                     </td>
                     <td>
                         <p class="text-right">Cotización #{{ $venta->correlativo }}</p>
@@ -106,15 +117,15 @@
                 <tr>
                     <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="border-bottom text-right">   ${{number_format($detalle->precio , 2) }}</td>
-                    <td class="border-bottom text-right">   ${{ number_format($detalle->total, 2) }}</th>
+                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
+                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>
                 </tr>
                 @if ($detalle->descuento > 0)
                     <tr>
                         <td>DESCUENTOS</td>
                         <td></td>
                         <td></td>
-                        <td class="text-right">- ${{ number_format($detalle->descuento, 2) }} </th>
+                        <td class="text-right">- {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </th>
                     </tr>
                 @endif
                 @endforeach
@@ -123,22 +134,22 @@
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Sumas</td>
-                    <td class="text-right">${{ number_format($venta->sub_total, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">IVA</td>
-                    <td class="text-right">${{ number_format($venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->iva, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Subtotal</td>
-                    <td class="text-right">${{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right"><b>Total</b></td>
-                    <td class="text-right"><b>${{ number_format($venta->total, 2) }}</b></td>
+                    <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->total, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>
