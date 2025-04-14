@@ -54,6 +54,7 @@ import { BodegasComponent } from './bodegas/bodegas.component';
 import { TrasladoMasivoComponent } from './productos/producto/traslado/traslado-masivo.component';
 import { ReactiveFormsModule } from '@angular/forms';
 
+import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo.component';
 
 @NgModule({
   imports: [
@@ -104,7 +105,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent,
-    TrasladoMasivoComponent
+    TrasladoMasivoComponent,
+    AjusteMasivoComponent
   ],
   exports: [
   	ProductosComponent,
@@ -135,7 +137,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent,
-    TrasladoMasivoComponent
+    TrasladoMasivoComponent,
+    AjusteMasivoComponent
   ]
 })
 export class InventarioModule { }

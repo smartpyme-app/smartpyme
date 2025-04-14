@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
+//use Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,7 +60,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
-    
+
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);
     Route::post('promocion',          [PromocionesController::class, 'store']);
@@ -76,6 +77,12 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
+    //exportar-plantilla
+    Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);
+    //productos/ajuste-masivo/importar
+    Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
+    //productos/ajuste-masivo
+    Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
 
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
     //productos/exportar/woocommerce
