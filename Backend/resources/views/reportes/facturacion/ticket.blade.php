@@ -135,8 +135,8 @@
                         @endif
                     </td>
                     <td class="text-center">{{ $detalle->cantidad }}</td>
-                    <td class="text-center">${{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
-                    <td class="text-right">${{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }}G</td>
+                    <td class="text-center">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total + (($venta->iva != 0)  ? ($detalle->total * $iva) : 0), 2) }}G</td>
                 </tr>
                 @endforeach
             @endif
@@ -144,35 +144,35 @@
         <tfoot>
             <tr class="mt-4">
                 <td class="text-right" colspan="3">Sub Total:</td>
-                <td class="text-right">${{number_format($venta->sub_total + $venta->iva,2) }}</td>
+                <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
             </tr>
             <tr class="mt-4">
                 <td class="text-right" colspan="3">VENTA GRAVADA:</td>
-                <td class="text-right">${{number_format($venta->sub_total + $venta->iva,2) }}</td>
+                <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
             </tr>
             <tr>
                 <td class="text-right" colspan="3">VENTA EXENTA:</td>
-                <td class="text-right">${{number_format($venta->exenta,2) }}</td>
+                <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->exenta, 2) }}</td>
             </tr>
             <tr>
                 <td class="text-right" colspan="3">VENTA NO SUJETA:</td>
-                <td class="text-right">${{number_format($venta->no_sujeta,2) }}</td>
+                <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->no_sujeta, 2) }}</td>
             </tr>
             @if ($venta->cuenta_a_terceros > 0)
                 <tr>
                     <td class="text-right" colspan="3">CUENTA A TERCEROS:</td>
-                    <td class="text-right">${{number_format($venta->cuenta_a_terceros,2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->cuenta_a_terceros, 2) }}</td>
                 </tr>
             @endif
             @if ($venta->costo_envio)
                 <tr>
                     <td class="text-right" colspan="3">ENVIO:</td>
-                    <td class="text-right">${{number_format($venta->costo_envio,2)}}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->costo_envio, 2) }}</td>
                 </tr>
             @endif
             <tr>
                 <td class="text-right" colspan="3"><b>TOTAL</b>:</td>
-                <td class="text-right"><b>${{number_format($venta->total + $venta->costo_envio,2)}}</b></td>
+                <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->total + $venta->costo_envio, 2) }}</b></td>
             </tr>
         </tfoot>
     </table>
@@ -190,10 +190,10 @@
             <td>Método de pago:</td><td class="text-right">{{ $venta->forma_pago }}</td>
         </tr>
         <tr>
-            <td>Recibido:</td><td class="text-right">${{ number_format($venta->monto_pago,2)}}</td>
+            <td>Recibido:</td><td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->monto_pago, 2) }}</td>
         </tr>
         <tr>
-            <td>Cambio:</td><td class="text-right">${{ number_format($venta->cambio,2)}}</td>
+            <td>Cambio:</td><td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->cambio, 2) }}</td>
         </tr>
     </table>
 
