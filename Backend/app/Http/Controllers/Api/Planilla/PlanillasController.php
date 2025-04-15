@@ -202,14 +202,14 @@ class PlanillasController extends Controller
                             $planilla->id,
                             $request->tipo_planilla
                         );
-                        
+
                         // Solo guardar si el detalle no es null
                         if ($detalle) {
                             $detalle->save();
                             $empleadosIncluidos++;
                         } else {
                             $empleadosOmitidos++;
-                            Log::info("Empleado ID: {$detalleTemplate->empleado->id} omitido de la planilla por tener fecha de baja/fin");
+                            // Log::info("Empleado ID: {$detalleTemplate->empleado->id} omitido de la planilla por tener fecha de baja/fin");
                         }
                     }
                 }
@@ -221,14 +221,14 @@ class PlanillasController extends Controller
 
                 foreach ($empleados as $empleado) {
                     $detalle = $this->crearDetallePlanilla($empleado, $planilla->id, $request->tipo_planilla);
-                    
+
                     // Solo guardar si el detalle no es null
                     if ($detalle) {
                         $detalle->save();
                         $empleadosIncluidos++;
                     } else {
                         $empleadosOmitidos++;
-                        Log::info("Empleado ID: {$empleado->id} omitido de la planilla por tener fecha de baja/fin");
+                        // Log::info("Empleado ID: {$empleado->id} omitido de la planilla por tener fecha de baja/fin");
                     }
                 }
             }
@@ -248,15 +248,15 @@ class PlanillasController extends Controller
             $planilla = $planilla->fresh(['detalles']);
 
             // Verificar los totales calculados
-            Log::info('Totales de planilla actualizados', [
-                'id_planilla' => $planilla->id,
-                'total_salarios' => $planilla->total_salarios,
-                'total_deducciones' => $planilla->total_deducciones,
-                'total_neto' => $planilla->total_neto,
-                'total_aportes_patronales' => $planilla->total_aportes_patronales,
-                'empleados_incluidos' => $empleadosIncluidos,
-                'empleados_omitidos' => $empleadosOmitidos
-            ]);
+            // Log::info('Totales de planilla actualizados', [
+            //     'id_planilla' => $planilla->id,
+            //     'total_salarios' => $planilla->total_salarios,
+            //     'total_deducciones' => $planilla->total_deducciones,
+            //     'total_neto' => $planilla->total_neto,
+            //     'total_aportes_patronales' => $planilla->total_aportes_patronales,
+            //     'empleados_incluidos' => $empleadosIncluidos,
+            //     'empleados_omitidos' => $empleadosOmitidos
+            // ]);
 
             DB::commit();
 
@@ -393,7 +393,7 @@ class PlanillasController extends Controller
         // Determinar días de referencia según tipo de planilla
         $diasReferencia = 30; // Por defecto, mensual
         $factorAjuste = 1;
-    
+
         if ($tipoPlanilla === 'quincenal') {
             $diasReferencia = 15;
             $factorAjuste = 2; // 2 quincenas por mes
@@ -401,29 +401,30 @@ class PlanillasController extends Controller
             $diasReferencia = 7;
             $factorAjuste = 4.33; // ~4.33 semanas por mes (promedio)
         }
-        
+
         // Obtener las fechas de la planilla
         $planilla = Planilla::findOrFail($planillaId);
         $fechaInicioPlanilla = Carbon::parse($planilla->fecha_inicio)->startOfDay();
         $fechaFinPlanilla = Carbon::parse($planilla->fecha_fin)->startOfDay();
-        
+
         // Verificar si el empleado tiene fecha de baja o fin programada
         $tieneBajaProgramada = false;
         $diasProporcionales = $diasReferencia;
-        
+
         // Si la baja es anterior al inicio de la planilla, no incluir en la planilla
         if (($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay() < $fechaInicioPlanilla) ||
-            ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)) {
+            ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)
+        ) {
             // Verificar si debería estar inactivo pero no lo está
             if ($empleado->estado == PlanillaConstants::ESTADO_EMPLEADO_ACTIVO) {
                 // Log warning - empleado debería estar inactivo
                 Log::warning("Empleado {$empleado->id} ({$empleado->nombres} {$empleado->apellidos}) tiene fecha de baja/fin pasada pero sigue activo");
             }
-            
+
             // En este caso, no incluir en la planilla
             return null;
         }
-        
+
         // Calcular días proporcionales si hay baja programada dentro del período
         if ($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
             $tieneBajaProgramada = true;
@@ -432,59 +433,59 @@ class PlanillasController extends Controller
             $tieneBajaProgramada = true;
             $diasProporcionales = Carbon::parse($empleado->fecha_fin)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
         }
-        
+
         // Calcular días laborados
         $diasLaborados = $diasReferencia; // Por defecto, todos los días del período
-        
+
         // Ajustar días laborados si hay baja programada
         if ($tieneBajaProgramada) {
             // Asegurarse de que los días proporcionales no excedan los días de referencia
             $diasLaborados = min($diasProporcionales, $diasReferencia);
-            
+
             // Logging para depuración
-            Log::info("Empleado {$empleado->id} con baja programada: días proporcionales = {$diasLaborados} de {$diasReferencia}");
+            // Log::info("Empleado {$empleado->id} con baja programada: días proporcionales = {$diasLaborados} de {$diasReferencia}");
         }
-    
+
         // Obtener salario base mensual
         $salarioBaseMensual = $empleado->salario_base;
-    
+
         // Ajustar el salario base según el tipo de planilla
         $salarioBaseAjustado = $salarioBaseMensual;
         if ($tipoPlanilla !== 'mensual') {
             // Si no es mensual, ajustar según el factor correspondiente
             $salarioBaseAjustado = $salarioBaseMensual / $factorAjuste;
         }
-    
+
         // Calcular salario devengado según días laborados
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
-    
+
         // Calcular ISSS y AFP
         $descuentosLey = $this->calcularISSSyAFP($salarioDevengado);
-    
+
         // Calcular Renta - se debe ajustar para planilla no mensual
         $baseRenta = $salarioDevengado - $descuentosLey['isss_empleado'] - $descuentosLey['afp_empleado'];
-    
+
         // Para planillas no mensuales, ajustar la base para el cálculo de renta
         $baseRentaAnualizada = $baseRenta;
         if ($tipoPlanilla !== 'mensual') {
             // Multiplicamos por el factor para obtener el valor mensual equivalente
             $baseRentaAnualizada = $baseRenta * $factorAjuste;
         }
-    
+
         $renta = $this->calcularRentaAjustada($baseRentaAnualizada, $tipoPlanilla, $factorAjuste);
-    
+
         // Calcular total de deducciones
         $totalDeducciones =
             $descuentosLey['isss_empleado'] +
             $descuentosLey['afp_empleado'] +
             $renta;
-    
+
         // Calcular total de ingresos (por ahora solo salario devengado)
         $totalIngresos = $salarioDevengado;
-    
+
         // Calcular sueldo neto
         $sueldoNeto = $totalIngresos - $totalDeducciones;
-    
+
         return new PlanillaDetalle([
             'id_planilla' => $planillaId,
             'id_empleado' => $empleado->id,
@@ -744,26 +745,52 @@ class PlanillasController extends Controller
     {
         try {
             DB::beginTransaction();
-
-            $planilla = Planilla::findOrFail($id);
-
+    
+            $planilla = Planilla::with('detalles')->findOrFail($id);
+    
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 return response()->json([
                     'error' => 'Solo se pueden aprobar planillas en estado borrador'
                 ], 422);
             }
-
+    
+            // Actualizar el estado de la planilla principal
             $planilla->estado = PlanillaConstants::PLANILLA_APROBADA; // Aprobada
             $planilla->save();
-
+    
+            // Inicializar contador de detalles actualizados
+            $detallesActualizados = 0;
+    
+            // Actualizar el estado de todos los detalles activos
+            foreach ($planilla->detalles as $detalle) {
+                // Solo actualizamos los detalles que están en estado borrador o activo
+                if ($detalle->estado == PlanillaConstants::PLANILLA_BORRADOR || 
+                    $detalle->estado == PlanillaConstants::PLANILLA_ACTIVA) {
+                    
+                    $detalle->estado = PlanillaConstants::PLANILLA_APROBADA;
+                    $detalle->save();
+                    $detallesActualizados++;
+                }
+            }
+    
             DB::commit();
-
+    
+            // Log::info('Planilla aprobada exitosamente', [
+            //     'planilla_id' => $id,
+            //     'detalles_actualizados' => $detallesActualizados
+            // ]);
+    
             return response()->json([
-                'message' => 'Planilla aprobada exitosamente'
+                'message' => 'Planilla aprobada exitosamente',
+                'detalles_actualizados' => $detallesActualizados
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error($e->getMessage());
+            Log::error('Error al aprobar la planilla', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'error' => 'Error al aprobar la planilla: ' . $e->getMessage()
             ], 500);
@@ -778,10 +805,10 @@ class PlanillasController extends Controller
             $planilla = Planilla::with(['detalles.empleado', 'empresa'])->findOrFail($id);
 
             // Log inicial
-            Log::info('Iniciando procesamiento de planilla', [
-                'planilla_id' => $id,
-                'total_detalles' => $planilla->detalles->count()
-            ]);
+            // Log::info('Iniciando procesamiento de planilla', [
+            //     'planilla_id' => $id,
+            //     'total_detalles' => $planilla->detalles->count()
+            // ]);
 
             if ($planilla->estado != PlanillaConstants::PLANILLA_APROBADA) {
                 return response()->json([
@@ -792,27 +819,44 @@ class PlanillasController extends Controller
             // Verificar configuración de correo
             $this->verificarConfiguracionCorreo();
 
-            // Registrar gastos en contabilidad
-            $this->registrarGastosPlanilla($planilla);
+            // 1. Registrar gastos en contabilidad ANTES de cambiar estado
+            $resultadoGastos = $this->registrarGastosPlanilla($planilla);
 
+            if (!$resultadoGastos) {
+                throw new \Exception('Error al registrar los gastos de planilla');
+            }
+
+            // 2. Actualizar estado de la planilla y sus detalles
+            $planilla->estado = PlanillaConstants::PLANILLA_PAGADA;
+            $planilla->save();
+
+            // Actualizar detalles masivamente
+            PlanillaDetalle::where('id_planilla', $planilla->id)
+                ->whereIn('estado', [PlanillaConstants::PLANILLA_BORRADOR, PlanillaConstants::PLANILLA_APROBADA])
+                ->update(['estado' => PlanillaConstants::PLANILLA_PAGADA]);
+
+            // 3. Enviar correos tras el registro exitoso de gastos
             $emailsEnviados = 0;
             $errores = [];
             $detallesProcesados = 0;
             $empleadosSinEmail = 0;
             $empleadosInactivos = 0;
 
+            // Recargar planilla con detalles actualizados
+            $planilla = $planilla->fresh(['detalles.empleado', 'empresa']);
+
             // Enviar boletas por correo a cada empleado
             foreach ($planilla->detalles as $detalle) {
                 $detallesProcesados++;
 
                 // Log de cada detalle
-                Log::info('Procesando detalle de planilla', [
-                    'detalle_id' => $detalle->id,
-                    'empleado_id' => $detalle->empleado->id ?? 'No tiene empleado',
-                    'estado_detalle' => $detalle->estado,
-                    'tiene_empleado' => isset($detalle->empleado),
-                    'email_empleado' => $detalle->empleado->email ?? 'No tiene email'
-                ]);
+                // Log::info('Procesando detalle de planilla', [
+                //     'detalle_id' => $detalle->id,
+                //     'empleado_id' => $detalle->empleado->id ?? 'No tiene empleado',
+                //     'estado_detalle' => $detalle->estado,
+                //     'tiene_empleado' => isset($detalle->empleado),
+                //     'email_empleado' => $detalle->empleado->email ?? 'No tiene email'
+                // ]);
 
                 if (!isset($detalle->empleado)) {
                     Log::warning('Detalle sin empleado asociado', ['detalle_id' => $detalle->id]);
@@ -822,10 +866,10 @@ class PlanillasController extends Controller
 
                 if ($detalle->estado == PlanillaConstants::ESTADO_INACTIVO) {
                     $empleadosInactivos++;
-                    Log::info('Empleado inactivo en planilla', [
-                        'empleado_id' => $detalle->empleado->id,
-                        'estado' => $detalle->estado
-                    ]);
+                    // Log::info('Empleado inactivo en planilla', [
+                    //     'empleado_id' => $detalle->empleado->id,
+                    //     'estado' => $detalle->estado
+                    // ]);
                     continue;
                 }
 
@@ -845,10 +889,10 @@ class PlanillasController extends Controller
                 ];
 
                 try {
-                    Log::info('Intentando enviar correo', [
-                        'empleado_email' => $detalle->empleado->email,
-                        'empleado_id' => $detalle->empleado->id
-                    ]);
+                    // Log::info('Intentando enviar correo', [
+                    //     'empleado_email' => $detalle->empleado->email,
+                    //     'empleado_id' => $detalle->empleado->id
+                    // ]);
 
                     // Enviar correo de forma síncrona para mejor debugging
                     Mail::to($detalle->empleado->email)
@@ -861,10 +905,10 @@ class PlanillasController extends Controller
 
                     $emailsEnviados++;
 
-                    Log::info('Correo enviado exitosamente', [
-                        'empleado_email' => $detalle->empleado->email,
-                        'empleado_id' => $detalle->empleado->id
-                    ]);
+                    // Log::info('Correo enviado exitosamente', [
+                    //     'empleado_email' => $detalle->empleado->email,
+                    //     'empleado_id' => $detalle->empleado->id
+                    // ]);
                 } catch (\Exception $e) {
                     Log::error('Error enviando correo', [
                         'empleado_email' => $detalle->empleado->email,
@@ -877,20 +921,16 @@ class PlanillasController extends Controller
                 }
             }
 
-            // Actualizar estado de la planilla
-            $planilla->estado = PlanillaConstants::PLANILLA_PAGADA;
-            $planilla->save();
-
             DB::commit();
 
             // Log final con estadísticas
-            Log::info('Finalizado procesamiento de planilla', [
-                'detalles_procesados' => $detallesProcesados,
-                'emails_enviados' => $emailsEnviados,
-                'empleados_sin_email' => $empleadosSinEmail,
-                'empleados_inactivos' => $empleadosInactivos,
-                'total_errores' => count($errores)
-            ]);
+            // Log::info('Finalizado procesamiento de planilla', [
+            //     'detalles_procesados' => $detallesProcesados,
+            //     'emails_enviados' => $emailsEnviados,
+            //     'empleados_sin_email' => $empleadosSinEmail,
+            //     'empleados_inactivos' => $empleadosInactivos,
+            //     'total_errores' => count($errores)
+            // ]);
 
             return response()->json([
                 'message' => "Pago procesado exitosamente. Correos enviados: {$emailsEnviados}",
@@ -945,7 +985,7 @@ class PlanillasController extends Controller
             throw new \Exception('Configuración de correo incompleta. Falta: ' . implode(', ', $faltantes));
         }
 
-        Log::info('Configuración de correo verificada', $config);
+        // Log::info('Configuración de correo verificada', $config);
     }
 
     public function sendInvoicesByEmail($id)
@@ -1269,10 +1309,15 @@ class PlanillasController extends Controller
     }
 
 
-
     private function registrarGastosPlanilla(Planilla $planilla)
     {
         try {
+            // Log::info('Iniciando registro de gastos de planilla', [
+            //     'planilla_id' => $planilla->id,
+            //     'codigo' => $planilla->codigo,
+            //     'total_detalles' => $planilla->detalles->count()
+            // ]);
+    
             // Obtener o crear la categoría de gastos de planilla
             $categoria = Categoria::firstOrCreate(
                 [
@@ -1280,7 +1325,9 @@ class PlanillasController extends Controller
                     'id_empresa' => $planilla->id_empresa
                 ]
             );
-
+    
+            // Log::info('Categoría de gastos obtenida', ['categoria_id' => $categoria->id]);
+    
             // Obtener o crear el proveedor para planillas
             $proveedor = Proveedor::firstOrCreate(
                 [
@@ -1295,74 +1342,142 @@ class PlanillasController extends Controller
                     'id_sucursal' => $planilla->id_sucursal
                 ]
             );
-
-            // Agrupar los gastos por tipo
-            $gastos = [
-                'Sueldos y Salarios' => [
-                    'monto' => 0,
-                    'concepto' => 'Pago de salarios'
-                ],
-                'ISSS Empleado' => [
-                    'monto' => 0,
-                    'concepto' => 'Retención ISSS empleados'
-                ],
-                'ISSS Patronal' => [
-                    'monto' => 0,
-                    'concepto' => 'Aporte patronal ISSS'
-                ],
-                'AFP Empleado' => [
-                    'monto' => 0,
-                    'concepto' => 'Retención AFP empleados'
-                ],
-                'AFP Patronal' => [
-                    'monto' => 0,
-                    'concepto' => 'Aporte patronal AFP'
-                ],
-                'Renta' => [
-                    'monto' => 0,
-                    'concepto' => 'Retención de renta'
-                ]
-            ];
-
-            // Calcular totales
-            foreach ($planilla->detalles as $detalle) {
-                if ($detalle->estado === 1) {
-                    $gastos['Sueldos y Salarios']['monto'] += $detalle->salario_devengado;
-                    $gastos['ISSS Empleado']['monto'] += $detalle->isss_empleado;
-                    $gastos['ISSS Patronal']['monto'] += $detalle->isss_patronal;
-                    $gastos['AFP Empleado']['monto'] += $detalle->afp_empleado;
-                    $gastos['AFP Patronal']['monto'] += $detalle->afp_patronal;
-                    $gastos['Renta']['monto'] += $detalle->renta;
-                }
-            }
-
-            // Registrar cada tipo de gasto
+    
+            // Log::info('Proveedor para planillas obtenido', ['proveedor_id' => $proveedor->id]);
+    
+            // Contador para detalles procesados
+            $detallesProcesados = 0;
+            $gastosCreados = 0;
+    
+            // Totales para deducciones patronales
+            $totalISSS_Patronal = 0;
+            $totalAFP_Patronal = 0;
+    
+            // Fecha de pago
             $fecha_pago = now();
-            foreach ($gastos as $tipo => $datos) {
-                if ($datos['monto'] > 0) {
-                    Gasto::create([
-                        'fecha' => $fecha_pago,
-                        'fecha_pago' => $fecha_pago,
-                        'tipo_documento' => 'Planilla',
-                        'referencia' => $planilla->codigo,
-                        'concepto' => "{$datos['concepto']} - Planilla {$planilla->codigo}",
-                        'tipo' => $tipo,
-                        'estado' => 'Pagado',
-                        'forma_pago' => 'Transferencia',
-                        'total' => $datos['monto'],
-                        'id_proveedor' => $proveedor->id,
-                        'id_categoria' => $categoria->id,
-                        'id_usuario' => auth()->id(),
-                        'id_empresa' => $planilla->id_empresa,
-                        'id_sucursal' => $planilla->id_sucursal,
-                        'nota' => "Registro automático de gastos de planilla {$planilla->codigo} período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
-                    ]);
+    
+            // 1. Crear un gasto por cada empleado con su salario neto
+            foreach ($planilla->detalles as $detalle) {
+                $detallesProcesados++;
+    
+                // Incluir detalles con estado 1, 2 o 4
+                if ($detalle->estado == 1 || $detalle->estado == 2 || $detalle->estado == 4) {
+                    // Verificar si tiene empleado asociado
+                    if (!isset($detalle->empleado)) {
+                        Log::warning('Detalle sin empleado asociado', ['detalle_id' => $detalle->id]);
+                        continue;
+                    }
+    
+                    // Obtener el nombre completo del empleado
+                    $nombreEmpleado = $detalle->empleado->nombres . ' ' . $detalle->empleado->apellidos;
+                    
+                    // Salario neto (después de deducciones)
+                    $sueldoNeto = round(floatval($detalle->sueldo_neto ?? 0), 2);
+    
+                    // Acumular totales para deducciones patronales
+                    $isssPatronal = round(floatval($detalle->isss_patronal ?? 0), 2);
+                    $afpPatronal = round(floatval($detalle->afp_patronal ?? 0), 2);
+                    
+                    $totalISSS_Patronal += $isssPatronal;
+                    $totalAFP_Patronal += $afpPatronal;
+    
+                    // Solo crear gasto si el salario neto es mayor a cero
+                    if ($sueldoNeto > 0) {
+                        // Log::info('Creando gasto para salario neto de empleado', [
+                        //     'empleado' => $nombreEmpleado,
+                        //     'monto' => $sueldoNeto
+                        // ]);
+    
+                        $gastoEmpleado = Gasto::create([
+                            'fecha' => $fecha_pago,
+                            'fecha_pago' => $fecha_pago,
+                            'tipo_documento' => 'Planilla',
+                            'referencia' => $planilla->codigo,
+                            'concepto' => "Salario neto - {$nombreEmpleado}",
+                            'tipo' => 'Sueldos y Salarios',
+                            'estado' => 'Pagado',
+                            'forma_pago' => 'Transferencia',
+                            'total' => $sueldoNeto,
+                            'id_proveedor' => $proveedor->id,
+                            'id_categoria' => $categoria->id,
+                            'id_usuario' => auth()->id(),
+                            'id_empresa' => $planilla->id_empresa,
+                            'id_sucursal' => $planilla->id_sucursal,
+                            'nota' => "Pago de salario neto a {$nombreEmpleado} - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
+                        ]);
+    
+                        $gastosCreados++;
+                    }
                 }
             }
-
+    
+            // 2. Crear un gasto para el total de ISSS patronal
+            if ($totalISSS_Patronal > 0) {
+                // Log::info('Creando gasto para total de ISSS patronal', [
+                //     'monto' => $totalISSS_Patronal
+                // ]);
+    
+                $gastoISSS = Gasto::create([
+                    'fecha' => $fecha_pago,
+                    'fecha_pago' => $fecha_pago,
+                    'tipo_documento' => 'Planilla',
+                    'referencia' => $planilla->codigo,
+                    'concepto' => "Aporte patronal ISSS - Planilla {$planilla->codigo}",
+                    'tipo' => 'ISSS Patronal',
+                    'estado' => 'Pagado',
+                    'forma_pago' => 'Transferencia',
+                    'total' => $totalISSS_Patronal,
+                    'id_proveedor' => $proveedor->id,
+                    'id_categoria' => $categoria->id,
+                    'id_usuario' => auth()->id(),
+                    'id_empresa' => $planilla->id_empresa,
+                    'id_sucursal' => $planilla->id_sucursal,
+                    'nota' => "Aporte patronal total ISSS - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
+                ]);
+    
+                $gastosCreados++;
+            }
+    
+            // 3. Crear un gasto para el total de AFP patronal
+            if ($totalAFP_Patronal > 0) {
+                // Log::info('Creando gasto para total de AFP patronal', [
+                //     'monto' => $totalAFP_Patronal
+                // ]);
+    
+                $gastoAFP = Gasto::create([
+                    'fecha' => $fecha_pago,
+                    'fecha_pago' => $fecha_pago,
+                    'tipo_documento' => 'Planilla',
+                    'referencia' => $planilla->codigo,
+                    'concepto' => "Aporte patronal AFP - Planilla {$planilla->codigo}",
+                    'tipo' => 'AFP Patronal',
+                    'estado' => 'Pagado',
+                    'forma_pago' => 'Transferencia',
+                    'total' => $totalAFP_Patronal,
+                    'id_proveedor' => $proveedor->id,
+                    'id_categoria' => $categoria->id,
+                    'id_usuario' => auth()->id(),
+                    'id_empresa' => $planilla->id_empresa,
+                    'id_sucursal' => $planilla->id_sucursal,
+                    'nota' => "Aporte patronal total AFP - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
+                ]);
+    
+                $gastosCreados++;
+            }
+    
+            // Log::info('Finalizado registro de gastos de planilla', [
+            //     'detalles_procesados' => $detallesProcesados,
+            //     'gastos_creados' => $gastosCreados,
+            //     'total_isss_patronal' => $totalISSS_Patronal,
+            //     'total_afp_patronal' => $totalAFP_Patronal
+            // ]);
+    
             return true;
         } catch (\Exception $e) {
-            Log::error('Error registrando gastos de planilla: ' . $e->getMessage());
+            Log::error('Error registrando gastos de planilla', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }

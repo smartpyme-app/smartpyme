@@ -21,15 +21,14 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
 use App\Imports\InventarioImport;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\WooCommerceExport;
+use Illuminate\Support\Facades\Auth;
 use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
-// use Auth;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class ProductosController extends Controller
@@ -427,26 +426,7 @@ class ProductosController extends Controller
 
         return Excel::download($productos, 'productos.xlsx');
     }
-    //exportarWooCommerceTemplate
-    public function exportarWooCommerceTemplate(Request $request)
-    {
-        $user = FacadesAuth::user();
-        $id_empresa = $user->id_empresa;
 
-        $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
-
-        $productos = new WooCommerceExport();
-        $productos->filter($request);
-
-        return Excel::download(
-            $productos,
-            'productos_woocommerce_' . date('Y-m-d') . '.csv',
-            \Maatwebsite\Excel\Excel::CSV,
-            [
-                'Content-Type' => 'text/csv',
-            ]
-        );
-    }
 
     public function exportarPlantillaTraslado(Request $request)
     {
@@ -773,6 +753,26 @@ class ProductosController extends Controller
             'message' => 'Ajuste masivo procesado correctamente',
             'actualizados' => $productosActualizados
         ]);
+    }
+    
+    public function exportarWooCommerceTemplate(Request $request)
+    {
+        $user = Auth::user();
+        $id_empresa = $user->id_empresa;
+
+        $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
+
+        $productos = new WooCommerceExport();
+        $productos->filter($request);
+
+        return Excel::download(
+            $productos,
+            'productos_woocommerce_' . date('Y-m-d') . '.csv',
+            \Maatwebsite\Excel\Excel::CSV,
+            [
+                'Content-Type' => 'text/csv',
+            ]
+        );
     }
 
 }

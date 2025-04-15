@@ -138,7 +138,13 @@
                 </tr>
                 <tr>
                     <td colspan="2"></td>
-                    <td class="text-right">IVA</td>
+                    <td class="text-right">
+                        @if ($venta->empresa->pais == 'Honduras')
+                            ISV
+                        @else
+                            IVA
+                        @endif
+                    </td>
                     <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->iva, 2) }}</td>
                 </tr>
                 <tr>
