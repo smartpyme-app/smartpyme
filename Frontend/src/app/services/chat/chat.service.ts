@@ -35,7 +35,6 @@ export class ChatService {
     'Proyección de ingresos para el próximo mes',
     'Estado de resultados mensual',
     'Facturas pendientes por pagar',
-    'Resumen de impuestos a pagar',
     'Rentabilidad del mes actual',
     'Cuentas por cobrar con vencimiento en 30 días',
     'Total de egresos del mes',
