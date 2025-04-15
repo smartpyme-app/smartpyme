@@ -16,22 +16,36 @@ use App\Models\Admin\Canal;
 use App\Models\Admin\FormaDePago;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Bodega;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Transaccion;
 use App\Models\User;
 use Carbon\Carbon;
 use JWTAuth;
-use Mail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
+use App\Models\Plan;
+use App\Models\Suscripcion;
+use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AuthJWTController extends Controller
 {
     use SendsPasswordResetEmails;
 
+    private $suscripcionService;
 
-    public function login(Request $request){
+    public function __construct(SuscripcionService $suscripcionService)
+    {
+        $this->suscripcionService = $suscripcionService;
+    }
+
+
+    public function login(Request $request)
+    {
 
         $credentials = $request->only('email', 'password');
         $token = null;
@@ -58,34 +72,50 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        $suscripcion = $user->empresa->suscripcion()
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
         return response()->json(['token' => $token, 'user' => $user], 200);
-
-
     }
 
-    public function logout(Request $request){
+    public function logout(Request $request)
+    {
         $user = User::findOrFail($request->id_usuario);
         // $user->ultimo_logout = Carbon::now();
         $user->save();
 
         return response()->json(['user' => $user], 200);
-
     }
 
-    public function register(Request $request){
+    public function register(Request $request)
+    {
 
         $request->validate([
             'name'      => 'required',
-            'email'     => 'required|unique:users,email,'.$request->id,
+            'email'     => 'required|unique:users,email,' . $request->id,
             'password'  => [
-                  'required_if:id,null',
-                  // 'confirmed',
-                  'min:8',
-                  'regex:/[a-z]/',
-                  'regex:/[A-Z]/',
-                  'regex:/[0-9]/',
-                  'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
+                'required_if:id,null',
+                // 'confirmed',
+                'min:8',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
             ],
             'telefono'  => 'required',
             'empresa.nombre'   => 'required',
@@ -104,148 +134,209 @@ class AuthJWTController extends Controller
         try {
             if ($request->id) {
                 $empresa = Empresa::findOrFail($request['empresa']['id']);
-            }else{
+            } else {
                 $empresa = new Empresa();
             }
 
-        $empresa->activo = true;
-        $empresa->nombre = $request['empresa']['nombre'];
-        $empresa->nombre_propietario = $request->name;
-        $empresa->telefono = $request->telefono;
-        $empresa->iva   = $request['empresa']['iva'];
-        $empresa->plan   = $request['empresa']['plan'];
-        $empresa->correo   = $request->email;
-        $empresa->user_limit   = $request['empresa']['user_limit'];
-        $empresa->sucursal_limit   = $request['empresa']['sucursal_limit'];
-        $empresa->tipo_plan   = $request['empresa']['tipo_plan'];
-        $empresa->industria   = $request['empresa']['industria'];
-        $empresa->pais   = $request['empresa']['pais'];
+            $empresa->activo = true;
+            $empresa->nombre = $request['empresa']['nombre'];
+            $empresa->nombre_propietario = $request->name;
+            $empresa->telefono = $request->telefono;
+            $empresa->iva   = $request['empresa']['iva'];
+            $empresa->plan   = $this->getPlan($request['empresa']['plan'])->nombre;
+            $empresa->correo   = $request->email;
+            $empresa->user_limit   = $request['empresa']['user_limit'];
+            $empresa->sucursal_limit   = $request['empresa']['sucursal_limit'];
+            $empresa->tipo_plan   = $request['empresa']['tipo_plan'];
+            $empresa->industria   = $request['empresa']['industria'];
+            $empresa->pais   = $request['empresa']['pais'];
 
-        $mascara_dui= "0";
-        $mascara_nit= "0";
-        $mascara_nrc= "0";
-        $mascara_telefono= "0";
+            $mascara_dui = "0";
+            $mascara_nit = "0";
+            $mascara_nrc = "0";
+            $mascara_telefono = "0";
 
             switch ($request['empresa']['pais']) {
                 case 'El Salvador':
-                    $mascara_dui= "00000000-0";
-                    $mascara_nit= "0000000-000-000-0";
-                    $mascara_nrc= "0000-000000-000-00";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "00000000-0";
+                    $mascara_nit = "0000000-000-000-0";
+                    $mascara_nrc = "0000-000000-000-00";
+                    $mascara_telefono = "0000-0000";
                     break;
                 case 'Panama':
-                    $mascara_dui= "0-000-0000";
-                    $mascara_nit= "000-0000-000000";
-                    $mascara_nrc= "000-0000-000000";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "0-000-0000";
+                    $mascara_nit = "000-0000-000000";
+                    $mascara_nrc = "000-0000-000000";
+                    $mascara_telefono = "0000-0000";
                     break;
                 case 'Guatemala':
-                    $mascara_dui= "0000-0000-0000";
-                    $mascara_nit= "00000000-0";
-                    $mascara_nrc= "00000000-0";
-                    $mascara_telefono= "000-0000";
+                    $mascara_dui = "0000-0000-0000";
+                    $mascara_nit = "00000000-0";
+                    $mascara_nrc = "00000000-0";
+                    $mascara_telefono = "000-0000";
                     break;
                 case 'Belice':
-                    $mascara_dui= "00000000-0";
-                    $mascara_nit= "0000000-000-000-0";
-                    $mascara_nrc= "0000-000000-000-000";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "00000000-0";
+                    $mascara_nit = "0000000-000-000-0";
+                    $mascara_nrc = "0000-000000-000-000";
+                    $mascara_telefono = "0000-0000";
                     break;
                 case 'Honduras':
-                    $mascara_dui= "0000-0000-00000";
-                    $mascara_nit= "0000-0000-00000";
-                    $mascara_nrc= "0000-0000-00000";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "0000-0000-00000";
+                    $mascara_nit = "0000-0000-00000";
+                    $mascara_nrc = "0000-0000-00000";
+                    $mascara_telefono = "0000-0000";
                     break;
                 case 'Nicaragua':
-                    $mascara_dui= "0000-0000-00000";
-                    $mascara_nit= "000-000000-000-0";
-                    $mascara_nrc= "000-000000-00000";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "0000-0000-00000";
+                    $mascara_nit = "000-000000-000-0";
+                    $mascara_nrc = "000-000000-00000";
+                    $mascara_telefono = "0000-0000";
                     break;
                 case 'Costa Rica':
-                    $mascara_dui= "0-0000-0000";
-                    $mascara_nit= "0-0000-0000";
-                    $mascara_nrc= "0-0000-0000";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "0-0000-0000";
+                    $mascara_nit = "0-0000-0000";
+                    $mascara_nrc = "0-0000-0000";
+                    $mascara_telefono = "0000-0000";
                     break;
                 default:
-                    $mascara_dui= "00000000-0";
-                    $mascara_nit= "0000000-000-000-0";
-                    $mascara_nrc= "0000-000000-000-00";
-                    $mascara_telefono= "0000-0000";
+                    $mascara_dui = "00000000-0";
+                    $mascara_nit = "0000000-000-000-0";
+                    $mascara_nrc = "0000-000000-000-00";
+                    $mascara_telefono = "0000-0000";
             }
 
-        $empresa->validador_dui = $mascara_dui;
-        $empresa->validador_nit = $mascara_nit;
-        $empresa->validador_nrc = $mascara_nrc;
-        $empresa->validador_telefono = $mascara_telefono;
-        $empresa->total   = $request['empresa']['total'];
-        $empresa->moneda = $request['empresa']['moneda'];
-        $empresa->save();
+            $empresa->validador_dui = $mascara_dui;
+            $empresa->validador_nit = $mascara_nit;
+            $empresa->validador_nrc = $mascara_nrc;
+            $empresa->validador_telefono = $mascara_telefono;
+            $empresa->total   = $request['empresa']['total'];
+            $empresa->moneda = $request['empresa']['moneda'];
+            $empresa->save();
 
 
-        if (!$request->id) {
-            // Crear sucursal
+            if (!$request->id) {
+                // Crear cliente
+                $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
+                $empresa->cliente_id = $cliente->id;
+                $empresa->save();
+                // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
-            // Crear bodega
+                // Crear bodega
                 $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-           // Crear canales
-               Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
+                // Crear canales
+                Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
 
-            // Crear impuesto
-               Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
-           // Formas de pago
-               FormaDePago::create(['nombre' => 'Efectivo', 'id_empresa' => $empresa->id]);
-               FormaDePago::create(['nombre' => 'Transferencia', 'id_empresa' => $empresa->id]);
-               FormaDePago::create(['nombre' => 'Tarjeta de crédito/débito', 'id_empresa' => $empresa->id]);
-           // Crear documentos
-               Documento::create(['nombre' => 'Ticket', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Factura', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Crédito fiscal', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Cotización', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-               Documento::create(['nombre' => 'Orden de compra', 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-        }
+                // Crear impuesto
+                Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
+                // Formas de pago
+                FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 'id_empresa' => $empresa->id]);
+                FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 'id_empresa' => $empresa->id]);
+                FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TARJETA'), 'id_empresa' => $empresa->id]);
+                // Crear documentos
+                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_TICKET'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_FACTURA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+            }
 
-        if ($request->id) {
-            $usuario = User::findOrFail($request->id);
-        }else{
-            $usuario = new User();
-            $usuario->id_sucursal  = $sucursal->id;
-            $usuario->id_bodega    = $bodega->id;
-            $usuario->id_empresa   = $empresa->id;
-        }
+            if ($request->id) {
+                $usuario = User::findOrFail($request->id);
+            } else {
+                $usuario = new User();
+                $usuario->id_sucursal  = $sucursal->id;
+                $usuario->id_bodega    = $bodega->id;
+                $usuario->id_empresa   = $empresa->id;
+            }
 
-        $usuario->name         = $request->name;
-        $usuario->email        = $request->email;
-        $usuario->telefono     = $request->telefono;
-        $usuario->password     = bcrypt($request->password);
-        $usuario->tipo         = 'Administrador';
-        $usuario->enable       = true;
-        $usuario->save();
+            $usuario->name         = $request->name;
+            $usuario->email        = $request->email;
+            $usuario->telefono     = $request->telefono;
+            $usuario->password     = bcrypt($request->password);
+            $usuario->tipo         = config('constants.TIPO_USUARIO_ADMINISTRADOR');
+            $usuario->enable       = true;
+            $usuario->save();
 
 
-        DB::commit();
+            DB::commit();
 
-        $usuario->empresa = $usuario->empresa()->first();
+            $suscripcion = $this->createSuscripcion([
+                'empresa_id' => $empresa->id,
+                'plan_id' => $this->getPlan($request['empresa']['plan'])->id,
+                'usuario_id' => $usuario->id,
+                'tipo_plan' => $empresa->tipo_plan,
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+                'monto' => $request['empresa']['total'],
+                'id_pago' => null,
+                'id_orden' => null,
+                'estado_ultimo_pago' => null,
+                'fecha_ultimo_pago' => null,
+                'fecha_proximo_pago' => null,
+                'fin_periodo_prueba' => now()->addDays($this->getPlan($request['empresa']['plan'])->duracion_dias),
+                'fecha_cancelacion' => null,
+                'motivo_cancelacion' => null,
+                'requiere_factura' => false,
+                'nit' => null,
+                'nombre_factura' => $usuario->name,
+                'direccion_factura' => $empresa->direccion,
+                'intentos_cobro' => 0,
+                'ultimo_intento_cobro' => null,
+                'historial_pagos' => null
+            ]);
 
-        if ($empresa->plan == 'Emprendedor'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/WEwwXTOpy";
-        }
-        if ($empresa->plan == 'Estándar'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/yX99lF1Dl";
-        }
-        if ($empresa->plan == 'Avanzado'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
-        }
-        if ($empresa->plan == 'Pro'){
-            $usuario->url_n1co = "https://pay.n1co.shop/pl/vbj8Rh0y1";
-        }
+            $usuario->empresa = $usuario->empresa()->first();
 
-        // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
+            // if ($empresa->plan == config('constants.PLAN_EMPRENDEDOR')){
+            //     $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
+            // }
+            // if ($empresa->plan == config('constants.PLAN_ESTANDAR')){
+            //     $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
+            // }
+            // if ($empresa->plan == config('constants.PLAN_AVANZADO')){
+            //     $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
+            // }
+            // if ($empresa->plan == config('constants.PLAN_PRO')){
+            //     $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+            // }
+
+
+            // $paymentLink = $this->createPaymentLink([
+            //     'name' => "SmartPyme Plan " . $empresa->plan,
+            //     'description' => "Suscripción SmartPyme - Plan " . $empresa->plan,
+            //     'amount' => $empresa->total,
+            //     'user_id' => $usuario->id,
+            //     'plan' => $empresa->plan
+            // ]);
+
+            // if ($paymentLink['success']) {
+            //     $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
+            //     Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
+            // } else {
+            // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
+            // Usar URLs por defecto como fallback
+            switch ($empresa->plan) {
+                case config('constants.PLAN_EMPRENDEDOR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
+                    break;
+                case config('constants.PLAN_ESTANDAR'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
+                    break;
+                case config('constants.PLAN_AVANZADO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
+                    break;
+                case config('constants.PLAN_PRO'):
+                    $usuario->url_n1co = config('constants.URL_N1CO_PRO');
+                    break;
+            }
+            // }
+
+            $usuario->plan = $empresa->plan;
+            $usuario->plan_id = $suscripcion['plan_id'];
+
+            // $usuario->url_n1co = "https://pay.h4b.dev/pl/1l4ohx7";
 
             return response()->json($usuario, 200);
-
         } catch (\Exception $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
@@ -253,8 +344,6 @@ class AuthJWTController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-
-
     }
 
     protected function sendResetLinkEmail(Request $request)
@@ -267,8 +356,8 @@ class AuthJWTController extends Controller
         );
 
         return $response == Password::RESET_LINK_SENT
-                    ? $this->sendResetLinkResponse($response)
-                    : $this->sendResetLinkFailedResponse($request, $response);
+            ? $this->sendResetLinkResponse($response)
+            : $this->sendResetLinkFailedResponse($request, $response);
     }
 
     protected function sendResetLinkResponse($response)
@@ -282,14 +371,15 @@ class AuthJWTController extends Controller
     }
 
 
-    public function pagoCompletado($id_empresa){
+    public function pagoCompletado($id_empresa)
+    {
         $empresa = Empresa::where('id', $id_empresa)->firstOrFail();
 
         if ($empresa->pagos()->count() == 0) {
-            Mail::send('mails.bienvenida', ['empresa' => $empresa ], function ($m) use ($empresa) {
+            Mail::send('mails.bienvenida', ['empresa' => $empresa], function ($m) use ($empresa) {
                 $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                ->to($empresa->correo)
-                ->subject('¡Bienvenido a SmartPyme!');
+                    ->to($empresa->correo)
+                    ->subject('¡Bienvenido a SmartPyme!');
             });
         }
 
@@ -314,72 +404,373 @@ class AuthJWTController extends Controller
         ];
 
         // Notificar
-        Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
+        Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-            ->to(env('MAIL_TO_ADDRESS'))
-            ->cc('gabrielaq@smartpyme.sv')
-            ->cc('contact@smartpyme.sv')
-            ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+                ->to(env('MAIL_TO_ADDRESS'))
+                ->cc('gabrielaq@smartpyme.sv')
+                ->cc('contact@smartpyme.sv')
+                ->subject('Se ha registrado una nueva cuenta en SmartPyme');
         });
 
         return redirect()->route('payment.finish', Crypt::encrypt($empresa->id));
     }
 
-    public function pagoFinish($id_empresa){
+    public function pagoFinish($id_empresa)
+    {
         $transaccion = Empresa::findOrfail(Crypt::decrypt($id_empresa));
         return view('auth.payment-finish', compact('transaccion'));
     }
 
-    public function suscription($transaccion){
+    public function suscription($transaccion)
+    {
 
         $transaccion = Empresa::findOrfail(Crypt::decrypt($transaccion));
 
         $pdf = PDF::loadView('documentos.ticket-suscription', compact('transaccion'));
         $pdf->setPaper([0, 0, 365.669, 566.929133858]);
 
-        return $pdf->download($transaccion->descripcion . '-' .$transaccion->id .'.pdf');
+        return $pdf->download($transaccion->descripcion . '-' . $transaccion->id . '.pdf');
     }
 
-    public function cancelarSuscripcion(Request $request){
-        $request->validate([
-            'password'      => 'required',
-            'id'            => 'required',
-            'id_empresa'    => 'required',
-        ]);
+    // public function cancelarSuscripcion(Request $request)
+    // {
+    //     $request->validate([
+    //         'password'      => 'required',
+    //         'id'            => 'required',
+    //         'id_empresa'    => 'required',
+    //     ]);
 
 
-        $usuario = User::findOrfail($request->id);
+    //     $usuario = User::findOrfail($request->id);
 
-        if (!Hash::check($request->password, $usuario->password)) {
-            return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+    //     if (!Hash::check($request->password, $usuario->password)) {
+    //         return response()->json(['error' => ['La contraseña no es correcta'], 'code' => 422], 422);
+    //     }
+
+    //     $usuario->enable = false;
+    //     $usuario->save();
+
+    //     $empresa = Empresa::findOrfail($request->id_empresa);
+    //     $empresa->activo = false;
+    //     $empresa->fecha_cancelacion = date('Y-m-d');
+    //     $empresa->save();
+
+
+    //     $data = [
+    //         'titulo' => 'Cancelación de Suscripción.',
+    //         'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+    //     ];
+
+    //     // Notificar
+    //     Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
+    //         $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+    //             ->to(env('MAIL_TO_ADDRESS'))
+    //             ->cc(config('constants.MAIL_CC_ADDRESS_1'))
+    //             ->cc(config('constants.MAIL_CC_ADDRESS_2'))
+    //             ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+    //     });
+
+
+    //     return response()->json($usuario, 200);
+    // }
+
+    public function cancelarSuscripcion(Request $request)
+    {
+        try {
+            $request->validate([
+                'password'      => 'required',
+                'id'            => 'required|exists:users,id',
+                'id_empresa'    => 'required|exists:empresas,id',
+                'motivo_cancelacion' => 'required|string|max:500',
+            ]);
+
+            // Verificar contraseña
+            $usuario = User::findOrFail($request->id);
+            if (!Hash::check($request->password, $usuario->password)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'La contraseña ingresada no es correcta'
+                ], 422);
+            }
+
+            // Iniciar transacción para mantener consistencia en la base de datos
+            DB::beginTransaction();
+
+            // Actualizar suscripción
+            $suscripcion = Suscripcion::where('usuario_id', $usuario->id)
+                ->where('estado', '!=', config('constants.ESTADO_SUSCRIPCION_CANCELADO'))
+                ->latest()
+                ->first();
+
+            if ($suscripcion) {
+                // Obtener la fecha de fin del período actual
+                $fechaFinPeriodo = Carbon::parse($suscripcion->fecha_proximo_pago);
+
+                $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
+                $suscripcion->motivo_cancelacion = $request->motivo_cancelacion;
+                $suscripcion->fecha_cancelacion = now();
+                $suscripcion->save();
+
+                // Actualizar empresa
+                $empresa = Empresa::findOrFail($request->id_empresa);
+                $empresa->fecha_cancelacion = now();
+                $empresa->save();
+
+                // No desactivamos al usuario inmediatamente, lo haremos cuando venza su período actual
+                Log::info('Suscripción cancelada', [
+                    'usuario_id' => $usuario->id,
+                    'empresa_id' => $empresa->id,
+                    'fecha_desactivacion_programada' => $fechaFinPeriodo
+                ]);
+
+                // Enviar notificaciones
+                $this->enviarNotificacionesCancelacion($usuario, $empresa, $fechaFinPeriodo, $request->motivo_cancelacion);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tu suscripción ha sido cancelada. Podrás seguir usando el sistema hasta ' . $fechaFinPeriodo->format('d/m/Y'),
+                    'fecha_desactivacion' => $fechaFinPeriodo->format('Y-m-d')
+                ], 200);
+            } else {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No se encontró una suscripción activa para cancelar'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en cancelación de suscripción: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ocurrió un error al procesar la solicitud: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        $usuario->enable = false;
-        $usuario->save();
-
-        $empresa = Empresa::findOrfail($request->id_empresa);
-        $empresa->activo = false;
-        $empresa->fecha_cancelacion = date('Y-m-d');
-        $empresa->save();
-
-
-        $data = [
-            'titulo' => 'Cancelación de Suscripción.',
-            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' con ID: ' . $empresa->id . ' ha cancelado su suscripción.'
+    private function enviarNotificacionesCancelacion($usuario, $empresa, $fechaDesactivacion, $motivo)
+    {
+        // Notificar al administrador
+        $dataAdmin = [
+            'titulo' => 'Cancelación de Suscripción',
+            'descripcion' => 'El usuario ' . $usuario->name . ' de la empresa ' . $empresa->nombre . ' ha cancelado su suscripción.',
+            'motivo' => $motivo,
+            'fecha_desactivacion' => $fechaDesactivacion->format('d/m/Y')
         ];
 
-        // Notificar
-        Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
+        Mail::send('mails.notificacion_cancelacion_admin', ['data' => $dataAdmin], function ($m) {
             $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-            ->to(env('MAIL_TO_ADDRESS'))
-            ->cc('gabrielaq@smartpyme.sv')
-            ->cc('contact@smartpyme.sv')
-            ->subject('Se ha registrado una nueva cuenta en SmartPyme');
+                ->to(env('MAIL_TO_ADDRESS'))
+                ->cc(config('constants.MAIL_CC_ADDRESS_1'))
+                ->cc(config('constants.MAIL_CC_ADDRESS_2'))
+                ->subject('Cancelación de suscripción SmartPyme');
         });
 
+        // Notificar al usuario
+        $dataUsuario = [
+            'nombre' => $usuario->name,
+            'empresa' => $empresa->nombre,
+            'fecha_desactivacion' => $fechaDesactivacion->format('d/m/Y')
+        ];
 
-        return response()->json($usuario, 200);
+        Mail::send('mails.notificacion_cancelacion_usuario', ['data' => $dataUsuario], function ($m) use ($usuario) {
+            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                ->to($usuario->email)
+                ->subject('Confirmación de cancelación de suscripción');
+        });
+    }
+
+    protected function getApiToken(): string
+    {
+        try {
+            $baseUrl = env('N1CO_SANDBOX_URL', 'https://api-sandbox.n1co.shop/api/v2');
+
+            $response = Http::post($baseUrl . '/Token', [
+                'clientId' => env('CLIENT_ID'),
+                'clientSecret' => env('CLIENT_SECRET')
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['accessToken'];
+            }
+
+            Log::error('Error obteniendo token N1co', [
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
+
+            return '';
+        } catch (\Exception $e) {
+            Log::error('Exception obteniendo token N1co', [
+                'message' => $e->getMessage()
+            ]);
+            return '';
+        }
     }
 
 
+    public function createPaymentLink(array $data): array
+    {
+        try {
+            $baseUrl = 'https://api-pay-sandbox.n1co.shop/api/v2';
+            $apiToken = $this->getApiToken();
+
+            $payload = [
+                'orderName' => $data['name'] ?? 'Orden de SmartPyme',
+                'orderDescription' => $data['description'] ?? null,
+                'amount' => floatval($data['amount']),
+                'successUrl' => url('/api/pago-completado'),
+                'cancelUrl' => url('/api/pago-cancelado'),
+                'metadata' => [
+                    [
+                        'name' => 'userId',
+                        'value' => (string)$data['user_id']
+                    ],
+                    [
+                        'name' => 'plan',
+                        'value' => $data['plan']
+                    ]
+                ]
+            ];
+
+            Log::info('N1co Request Payload', $payload);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiToken,
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ])->post($baseUrl . '/paymentlink/checkout', $payload);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+
+                DB::table('ordenes_pagos')->insert([
+                    'id_orden' => $responseData['orderId'],
+                    'order_code' => $responseData['orderCode'],
+                    'id_usuario' => $data['user_id'],
+                    'plan' => $data['plan'],
+                    'monto' => number_format($data['amount'], 2, '.', ''),
+                    'estado' => 'pendiente',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                Log::info('Orden creada', [
+                    'response' => $responseData,
+                    'payload' => $payload
+                ]);
+
+                return [
+                    'success' => true,
+                    'paymentLinkUrl' => $responseData['paymentLinkUrl']
+                ];
+            }
+
+            Log::error('N1co Payment Link Error', [
+                'status' => $response->status(),
+                'response' => $response->body(),
+                'request_data' => $payload,
+                'url' => $baseUrl . '/paymentlink/checkout'
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error al crear enlace de pago: ' . ($response->json()['title'] ?? 'Error desconocido')
+            ];
+        } catch (\Exception $e) {
+            Log::error('N1co Payment Link Exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error al procesar la solicitud: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    private function createSuscripcion(array $data): array
+    {
+        $plan = Plan::find($data['plan_id']);
+
+        if ($plan && $plan->permite_periodo_prueba) {
+            $diasPrueba = $plan->dias_periodo_prueba;
+
+            $data = array_merge($data, [
+                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
+                'estado_ultimo_pago' => null,
+                'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
+                'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
+                'fin_periodo_prueba' => now()->addDays($diasPrueba),
+                'monto' => 0, // Sin costo durante el período de prueba
+                'intentos_cobro' => 0,
+                'ultimo_intento_cobro' => null,
+                'historial_pagos' => null,
+                'requiere_factura' => false,
+                'nit' => null,
+                'nombre_factura' => null,
+                'direccion_factura' => null
+            ]);
+        } else {
+            // Si el plan no permite período de prueba, mantener la configuración original
+            $data = array_merge($data, [
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+                'fecha_ultimo_pago' => null,
+                'fecha_proximo_pago' => null,
+                'fin_periodo_prueba' => null
+            ]);
+        }
+
+        return $this->suscripcionService->createSuscripcion($data);
+    }
+
+    private function getPlan($plan_id, $withName = false, $name = null)
+    {
+        $plan = null;
+        if ($withName) {
+            $plan = Plan::where('nombre', $name)->first();
+        } else {
+            $plan = Plan::find($plan_id);
+        }
+
+        return $plan;
+    }
+
+    public function me($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return Response()->json(['message' => 'Usuario no encontrado', 'code' => 404], 404);
+        }
+
+        $user->ultimo_login = Carbon::now();
+        $user->save();
+
+        $user->empresa = $user->empresa()->with('licencia')->first();
+        $suscripcion = $user->empresa->suscripcion()
+            ->whereNotIn('estado', [
+                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            ])
+            ->latest()
+            ->first();
+
+        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+        $user->tiene_suscripcion = !is_null($suscripcion);
+        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+
+        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+
+        return response()->json(['user' => $user], 200);
+    }
 }

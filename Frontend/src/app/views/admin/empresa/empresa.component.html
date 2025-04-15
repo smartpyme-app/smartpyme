@@ -1,8 +1,23 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
+  <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
 </section>
 
 <tabset>
+  <!-- <tab heading="Datos de mi empresa">
+    <form name="form" (ngSubmit)="onSubmit()">
+      <section class="bg-white p-4 rounded mb-3">
+        <div class="row justify-content-center">
+          <div class="form-group col-6 col-sm-4 col-md-2">
+            <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar"
+                    style="min-height: 100px;">
+              <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.logo}}" alt="logo"
+                   *ngIf="empresa.logo != null">
+              <img class="img-fluid"
+                   src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
+                   alt="logo" *ngIf="empresa.logo == null">
+              <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+            </figure>
+          </div> -->
     <tab heading="Datos de mi empresa">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
@@ -379,168 +394,759 @@
                 </button>
             </div>
         </div>
-    </tab>
-    <tab heading="Integraciones">
-        <section class="bg-white rounded p-4 mb-4">
+        <div class="row justify-content-center">
+          <!-- <div class="form-group col-6 col-sm-6 col-md-6 align-items-center justify-content-center" style="display: flex;">
+              <div class="btn btn-primary file-upload mr-3" type="button"> Agregar
+                  <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+              </div>
+              <div class="btn btn-primary" (click)="resetFileUploader()" type="button">Eliminar</div>
+          </div> -->
 
-            <div class="alert alert-info mb-4">
-                <i class="fa fa-info-circle me-2"></i> 
-                En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
+        </div>
+        <h5 class="mb-3">Datos de mi empresa</h5>
+        <div class="row">
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="nombre">Nombre</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.nombre" name="nombre"
+                   placeholder="Escriba aquí" required>
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="nombre_propietario">Propietario</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.nombre_propietario" name="nombre_propietario"
+                   placeholder="Escriba aquí">
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" class="form-control" [(ngModel)]="empresa.telefono" name="telefono"
+                   placeholder="Escriba aquí">
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="correo">Correo</label>
+            <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo"
+                   placeholder="Escriba aquí">
+          </div>
+
+          <!-- si la empresa ES salvadoreña -->
+          <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+            <label for="departamento">Departamento:</label>
+            <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0"
+                       name="empresa.departamento">
+              <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                {{ departamento.nombre }}
+              </ng-option>
+            </ng-select>
+          </div>
+
+          <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+            <label for="distrito">Distrito:</label>
+            <ng-select [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí"
+                       class="form-control form-select p-0" name="empresa.cod_distrito">
+              <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':empresa.cod_departamento"
+                         [value]="distrito.cod">
+                {{ distrito.nombre }}
+              </ng-option>
+            </ng-select>
+          </div>
+
+          <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">
+            <label for="municipio">Municipio:</label>
+            <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0"
+                       name="empresa.municipio">
+              <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':empresa.departamento"
+                         [value]="municipio.cod">
+                {{ municipio.nombre }}
+              </ng-option>
+            </ng-select>
+          </div>
+
+
+          <!-- si la empresa NO ES salvadoreña -->
+          <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
+            <label for="departamento">Departamento:</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.cod_municipio" name="empresa.municipio"
+                   placeholder="Escriba aquí">
+          </div>
+          <div class="form-group col-md-6 col-lg-4" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">
+            <label for="municipio">Municipio:</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.cod_departamento" name="empresa.departamento"
+                   placeholder="Escriba aquí">
+          </div>
+
+
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="direccion">Dirección</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion"
+                   placeholder="Escriba aquí">
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
+            <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí"
+                   [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'>
+          </div>
+          <div class="form-group col-md-6 col-lg-3">
+            <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
+            <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
+          </div>
+          <div class="form-group col-md-6 col-lg-3">
+            <label for="tipo_contribuyente">Tamaño</label>
+            <select class="form-select" [(ngModel)]="empresa.tipo_contribuyente" name="tipo_contribuyente">
+              <option value="">Seleccione aquí</option>
+              <option value="Pequeño">Pequeño</option>
+              <option value="Mediano">Mediano</option>
+              <option value="Grande">Grande</option>
+            </select>
+          </div>
+          <!-- <div class="form-group col-md-4">
+              <label for="tipo_establecimiento ">Tipo establecimiento:</label>
+              <select class="form-control" [(ngModel)]="empresa.tipo_establecimiento" name="tipo_establecimiento ">
+                  <option value="01">Sucursal/Agencia</option>
+                  <option value="02">Casa matriz</option>
+                  <option value="04">Bodega</option>
+                  <option value="20">Otro</option>
+              </select>
+          </div>
+          <div class="form-group col-md-4">
+              <label for="cod_estable_mh">Cod Establecimiento MH:</label>
+              <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable_mh" name="cod_estable_mh" placeholder="xxxx">
+          </div>
+          <div class="form-group col-md-4">
+              <label for="cod_estable">Cod Establecimiento:</label>
+              <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable" name="cod_estable" placeholder="xxxx">
+          </div> -->
+          <div class="form-group col-md-6">
+            <label for="actividad_economica">Actividad económica:</label>
+            <ng-select *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'"
+                       [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0"
+                       name="empresa.cod_actividad_economica">
+              <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
+                {{ actividad_economica.nombre }}
+              </ng-option>
+            </ng-select>
+
+            <input type="text" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" class="form-control"
+                   [(ngModel)]="empresa.giro" name="empresa.cod_actividad_economica" placeholder="Escriba aquí">
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="pais">País:</label>
+            <select class="form-select" name="pais" (change)="setPais()" [(ngModel)]="empresa.pais">
+              <option value="Belice">+501 Belice</option>
+              <option value="Guatemala">+502 Guatemala</option>
+              <option value="El Salvador">+503 El Salvador</option>
+              <option value="Honduras">+504 Honduras</option>
+              <option value="Nicaragua">+505 Nicaragua</option>
+              <option value="Costa Rica">+506 Costa Rica</option>
+              <option value="Panamá">+507 Panamá</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="moneda">Moneda:</label>
+            <select class="form-select" [(ngModel)]="empresa.moneda" name="moneda">
+              <option value="">Seleccione aquí</option>
+              <option value="USD">USD</option>
+              <option value="GTQ">GTQ</option>
+              <option value="CRC">CRC</option>
+              <option value="HNL">HNL</option>
+              <option value="BZD">BZD</option>
+              <option value="NIO">NIO</option>
+              <option value="PAB">PAB</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6 col-lg-4">
+            <label for="iva">IVA</label>
+            <div class="input-group">
+              <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva" placeholder="Escriba aquí">
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+          <!-- <div class="form-group col-md-12">
+              <label for="descripcion">Descripción</label>
+              <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escriba aquí">
+          </div> -->
+        </div>
+      </section>
+      <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+          <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+            <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+            <span *ngIf="saving">Guardando...</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </tab>
+  <tab heading="Preferencias del sistema">
+    <form name="form" (ngSubmit)="onSubmit()">
+      <section class="bg-white p-4 rounded mb-3">
+        <div class="row mt-3">
+          <h4 class="mb-0 fw-bold">Módulos habilitados</h4>
+          <div class="form-group col-md-6 col-xl-4 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="modulo_citas">Módulo de citas</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.modulo_citas" name="modulo_citas">
+            </div>
+          </div>
+          <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-4 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="modulo_citas">Módulo de proyectos</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.modulo_proyectos" name="modulo_proyectos">
+            </div>
+          </div>
+          <div *ngIf="apiService.auth_user().empresa.plan == 'Pro'" class="form-group col-md-6 col-xl-4 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="modulo_citas">Módulo de paquetes</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
+            </div>
+          </div>
+          <hr>
+          <h4 class="mb-0 fw-bold">Facturación</h4>
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Calcular el IVA por defecto.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="cobrar_iva">Cobrar IVA</label>
+              <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch"
+                     (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
+            </div>
+          </div>
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Vender sin stock sin autorización.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="vender_sin_stock">Vender sin stock</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Permitir cambiar el precio en facturación.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="editar_precio_venta">Editar precio</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.editar_precio_venta" name="editar_precio_venta">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Puedes agrupar todos los detalles en una sola descripción.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="agrupar_detalles_venta">Agrupar detalles</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.agrupar_detalles_venta" name="agrupar_detalles_venta">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Editar las descripciones de los detalles de productos.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="editar_descripcion_venta">Editar descripciones</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.editar_descripcion_venta" name="editar_descripcion_venta">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Se imprimirá el documento al momento de procesar la venta.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="impresion_en_facturacion">Imprimir en facturación</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.impresion_en_facturacion" name="impresion_en_facturacion">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Podrás seleccionar un vendedor por cada detalle de venta.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="vendedor_detalle_venta">Vendedor por detalle</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.vendedor_detalle_venta" name="vendedor_detalle_venta">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Habilitará el modulo para configurar Facturación Electrónica.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="facturacion_electronica">Facturación electrónica</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.facturacion_electronica" name="facturacion_electronica">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Los usuarios de tipo "Vendedor" podrán crear y editar productos.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="vendedor_inventario">Gestión de productos por vendedores</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.vendedor_inventario" name="vendedor_inventario">
+            </div>
+          </div>
+
+          <div class="form-group col-md-12 col-xl-6 without-label">
+            <p>Tendrás la opción de hacer ventas a consigna.</p>
+            <div class="form-switch bg-light-info rounded">
+              <label for="venta_consigna">Venta a consigna</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                     [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
+            </div>
+          </div>
+          <hr>
+          <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
+          <div class="form-group col-md-6">
+            <label for="valor_inventario">Valor de inventario:</label>
+            <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
+              <option value="anterior">Costo anterior</option>
+              <option value="promedio">Costo promedio ponderado</option>
+              <option value="ultimo">Costo última compra</option>
+            </select>
+          </div>
+
+          <!-- <div class="form-group col-md-12 col-xl-6 without-label">
+              <p>Habilitar términos y condiciones por defecto en las cotizaciones.</p>
+              <div class="form-switch bg-light-info rounded">
+                <label for="terms_cond_toggle">Términos y condiciones</label> -->
+          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.facturacion_electronica" name="terms_cond_toggle"> -->
+          <!-- <input class="form-check-input float-end" type="checkbox" role="switch" (change) = toggleDisplay()  name="terms_cond_toggle">
+        </div>
+    </div> -->
+
+          <!-- terminos y condiciones -->
+          <!--  <div class="form-group col-md-6 col-xl-8 without-label" >
+                 <label for="terms" class="my-3">Términos y condiciones Generales para documentos</label>
+                 <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
+           </div> -->
+          <p class="my-3 pt-5">
+            ¿Quieres eliminar los datos de tu cuenta?
+            <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
+          </p>
+        </div>
+
+      </section>
+      <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+          <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+            <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+            <span *ngIf="saving">Guardando...</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </tab>
+  <tab heading="Facturación electrónica" *ngIf="empresa.facturacion_electronica">
+    <section class="bg-white rounded p-3 mb-3">
+      <div class="row">
+        <div class="form-group col-md-6 col-lg-4">
+          <label for="mh_usuario">Usuario:</label>
+          <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario"
+                 placeholder="Escribe aquí">
+        </div>
+        <div class="form-group col-md-6 col-lg-4">
+          <label for="mh_contrasena">Contraseña de la API:</label>
+          <div class="input-group">
+            <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena"
+                   [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel"
+                   id="mh_contrasena" required/>
+            <button class="btn btn-light" type="button" (click)="mostrarPassword()">
+              <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-4">
+          <label for="mh_pwd_certificado">Clave Privada del Certificado:</label>
+          <div class="input-group">
+            <input [type]="showpassword2 ? 'text' : 'password'" class="form-control" name="mh_pwd_certificado"
+                   [(ngModel)]="empresa.mh_pwd_certificado" placeholder="Escribe aquí" #mh_pwd_certificado="ngModel"
+                   id="mh_pwd_certificado" required/>
+            <button class="btn btn-light" type="button" (click)="mostrarPassword2()">
+              <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword2, 'fa-eye': showpassword2 }"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-4">
+          <label for="fe_ambiente">Ambiente:</label>
+          <select name="fe_ambiente" class="form-select" (change)="cargarEstadisticasPruebas()"
+                  [(ngModel)]="empresa.fe_ambiente">
+            <option value="00">Pruebas</option>
+            <option value="01">Producción</option>
+          </select>
+        </div>
+        <!-- <div class="form-group col-md-6 col-lg-4">
+            <label for="cod_estable_mh">Cod. Establecimiento:</label>
+            <input type="text" class="form-control" [(ngModel)]="empresa.cod_estable_mh" name="cod_estable_mh" placeholder="Escribe aquí">
+        </div> -->
+        <div class="form-group col-md-6 col-xl-4 without-label">
+          <div class="form-switch bg-light-info rounded">
+            <label for="enviar_dte">Enviar DTE por correo</label>
+            <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
+                   [(ngModel)]="empresa.enviar_dte" name="enviar_dte">
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="bg-white rounded p-3 mb-3">
+      <div class="form-group col-sm-12 pt-2 pb-4">
+        <button [disabled]="cheking || !empresa.mh_usuario || !empresa.mh_contrasena || !empresa.mh_pwd_certificado"
+                (click)="onCheckMH()" class="btn btn-primary float-end">
+          <span *ngIf="!cheking">Comprobar datos</span>
+          <span *ngIf="cheking">Comprobando...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pruebas masivas -->
+
+    <section *ngIf="empresa.fe_ambiente == '00'" class="bg-white rounded p-4 mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="fa fa-rocket me-2"></i> Pruebas Masivas de Documentos</h5>
+        <!-- <button class="btn btn-primary" routerLink="/configuracion/pruebas-masivas">
+            <i class="fa fa-cogs me-1"></i> Administrar pruebas
+        </button> -->
+      </div>
+
+      <div class="alert alert-info">
+        <p><i class="fa fa-info-circle me-2"></i> El Ministerio de Hacienda requiere un mínimo de documentos para
+          validar su sistema:</p>
+        <ul class="mb-0">
+          <li>90 Facturas de Consumidor Final</li>
+          <li>75 Comprobantes de Crédito Fiscal</li>
+          <!-- <li>10 Notas de Crédito</li>
+          <li>5 Facturas de Exportación</li> -->
+        </ul>
+      </div>
+
+      <app-alerta-pruebas></app-alerta-pruebas>
+
+      <!-- <h3 class="form-label mb-2">Progreso General</h3> -->
+      <!-- <div class="progress mb-2" style="height: 25px;">
+          <div *ngIf="estadisticasPruebas" class="progress-bar" role="progressbar"
+               [style.width]="getTotalProgress() + '%'" [attr.aria-valuenow]="getTotalProgress()"
+               aria-valuemin="0" aria-valuemax="100">
+              {{getTotalProgress()}}% completado
+          </div>
+          <div *ngIf="!estadisticasPruebas" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+               style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+              Cargando...
+          </div>
+      </div> -->
+
+      <div class="row" *ngIf="estadisticasPruebas">
+        <div class="col-md-6 mb-3" *ngFor="let tipo of getKeysPruebas()">
+          <div class="card h-100" [ngClass]="isPruebaCompleta(tipo) ? 'border-success' : ''">
+            <div class="card-header d-flex justify-content-between">
+              <span class="fs-5">Generar {{ getLabelTipo(tipo) }}</span>
+              <!-- <span class="badge" [ngClass]="isPruebaCompleta(tipo) ? 'bg-success' : 'bg-primary'">
+                  {{estadisticasPruebas[tipo].emitidas}}/{{estadisticasPruebas[tipo].requeridas}}
+              </span> -->
+            </div>
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-center">
+                <button class="btn btn-md me-3"
+                        [ngClass]="isPruebaCompleta(tipo) ? 'btn-outline-success' : 'btn-outline-primary'"
+                        [disabled]="isPruebaCompleta(tipo)"
+                        (click)="ejecutarPruebasMasivas(mpruebasMasivas, tipo)" style="width: 150px;">
+                  <i class="fa" [ngClass]="isPruebaCompleta(tipo) ? 'fa-check' : 'fa-play'"></i>
+                  {{ isPruebaCompleta(tipo) ? 'Completado' : 'Generar faltantes' }}
+                </button>
+                <!-- <div class="progress flex-grow-1">
+                    <div class="progress-bar" [ngClass]="isPruebaCompleta(tipo) ? 'bg-success' : 'bg-primary'"
+                        role="progressbar" [style.width]="getProgresoTipo(tipo) + '%'"
+                        [attr.aria-valuenow]="getProgresoTipo(tipo)" aria-valuemin="0" aria-valuemax="100">
+                        {{getProgresoTipo(tipo)}}%
+                    </div>
+                </div> -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </tab>
+  <!--Integraciones api key para webhooks-->
+  <tab heading="Integraciones">
+    <section class="bg-white rounded p-4 mb-4">
+      <div class="row">
+        <!-- API Key Section -->
+        <div class="col-12 mb-5">
+          <h5 class="mb-3">Credenciales OAuth 2.0</h5>
+
+          <div class="alert alert-info mb-4">
+            <i class="fa fa-info-circle me-2"></i>
+            Estas credenciales son necesarias para autenticar sus aplicaciones externas con nuestra API.
+          </div>
+
+          <div *ngIf="cliente && cliente.id_client">
+            <div class="mb-3">
+              <label for="client_id" class="form-label">Clave de cliente:</label>
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       [value]="cliente.id_client"
+                       name="client_id"
+                       readonly>
+                <button class="btn btn-secondary"
+                        type="button"
+                        (click)="copyToClipboard(cliente.id_client)"
+                        tooltip="Copiar Client ID">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </div>
             </div>
 
-            <div class="row">
-                <!-- API Key Section -->
-                <div class="col-12 mb-5">
-                    <h5 class="mb-3">Clave de API</h5>
-                    <div class="form-group">
-                        <label for="key_webhook" class="form-label">Clave Api para integraciones:</label>
-                        <div class="input-group">
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_api_key" 
-                                   name="key_webhook" 
-                                   placeholder="API Key para integraciones" 
-                                   readonly>
-                            <button class="btn btn-secondary" 
-                                    type="button" 
-                                    (click)="copyToClipboard(empresa.woocommerce_api_key)" 
-                                    tooltip="Copiar API Key">
-                                <i class="fa fa-copy"></i>
-                            </button>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            Esta es su clave única para autenticar integraciones con sistemas externos
-                        </small>
-                    </div>
-                </div>
-
-    
-                <div class="col-12">
-                    <h5 class="mb-3">Integración WooCommerce</h5>
-                    
-                    <div class="row g-3">
-    
-                        <div class="col-12">
-                            <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
-                            <div class="input-group">
-                                <input type="text" 
-                                       class="form-control" 
-                                       [(ngModel)]="empresa.woocommerce_api_url" 
-                                       name="url_webhook_woocomerce" 
-                                       placeholder="URL del Webhook para WooCommerce" 
-                                       readonly>
-                                <button class="btn btn-secondary" 
-                                        type="button" 
-                                        (click)="copyToClipboard(empresa.woocommerce_api_url)" 
-                                        tooltip="Copiar URL">
-                                    <i class="fa fa-copy"></i>
-                                </button>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
-                            </small>
-                        </div>
-
-
-                        <div class="col-md-6">
-                            <label for="woocommerce_store_url" class="form-label">URL de la Tienda:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_store_url" 
-                                   name="woocommerce_store_url" 
-                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
-                                   placeholder="Ej: https://mitienda.com">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="woocommerce_consumer_key" class="form-label">Clave de API:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_consumer_key" 
-                                   name="woocommerce_consumer_key" 
-                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
-                                   placeholder="Ingrese su clave de API de WooCommerce">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="woocommerce_consumer_secret" class="form-label">Clave Secreta:</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   [(ngModel)]="empresa.woocommerce_consumer_secret" 
-                                   name="woocommerce_consumer_secret" 
-                                   [readonly]="empresa.status_conexion_woocommerce === 'connected'"
-                                   placeholder="Ingrese su clave secreta de WooCommerce">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="woocommerce_canal" class="form-label">Canal de ventas:</label>
-                            <select class="form-select" 
-                                    [(ngModel)]="empresa.woocommerce_canal_id" 
-                                    name="woocommerce_canal"
-                                    [disabled]="empresa.status_conexion_woocommerce === 'connected'">
-                                <option [value]="0" selected>Seleccione un canal</option>
-                                <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
-                            </select>
-                            <small class="text-muted">
-                                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce.
-                            </small>
-                        </div>
-
-       
-                        <div class="col-12">
-                            <div *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret" 
-                                class="alert mt-3" 
-                                [ngClass]="{'alert-success': empresa.woocommerce_status === 'connected', 'alert-warning': empresa.woocommerce_status === 'disconnected', 'alert-info': !empresa.woocommerce_status}">
-                                <i class="fa" [ngClass]="{'fa-check-circle': empresa.woocommerce_status === 'connected', 'fa-exclamation-circle': empresa.woocommerce_status === 'disconnected', 'fa-info-circle': !empresa.woocommerce_status}"></i>
-                                <span *ngIf="empresa.woocommerce_status === 'connected'"> Conexión establecida con WooCommerce</span>
-                                <span *ngIf="empresa.woocommerce_status === 'disconnected'"> Sin conexión con WooCommerce</span>
-                                <span *ngIf="!empresa.woocommerce_status"> Estado de conexión desconocido</span>
-                            </div>
-
-                            <div class="text-end mt-3">
-                                <button tooltip="importar productos a WooCommerce" 
-                                        (click)="exportarWooCommerce()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
-                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
-                                    Importar productos
-                                </button>
-                                
-                                <button tooltip="Descargar productos para importar en WooCommerce (F7)" 
-                                        (click)="descargarWooCommerce()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
-                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
-                                    Descargar productos
-                                </button>
-
-                                <button class="btn btn-light text-danger me-2" 
-                                        type="button"
-                                        *ngIf="empresa.is_current_user_connected_to_woocommerce"
-                                        (click)="disconnectWooCommerce()">
-                                    <i class="fa fa-unlink me-2"></i>
-                                    Desconectar WooCommerce
-                                </button>
-                                <button class="btn btn-light text-success" 
-                                        type="button" 
-                                        *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
-                                        [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
-                                        (click)="saveCredentials()">
-                                    <i class="fa fa-save me-2"></i>
-                                    Guardar Credenciales
-                                </button>
-                            </div>
-
-                            <div class="alert alert-info mt-3" 
-                                *ngIf="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce">
-                                <i class="fa fa-info-circle me-2"></i>
-                                Hay otros usuarios conectados a WooCommerce. Solo el usuario que estableció la conexión puede desconectarla.
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="mb-3">
+              <label for="client_secret" class="form-label">Clave Secreta:</label>
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       [value]="cliente.secret"
+                       name="client_secret"
+                       readonly>
+                <button class="btn btn-secondary"
+                        type="button"
+                        (click)="copyToClipboard(cliente.secret)"
+                        tooltip="Copiar Client Secret">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </div>
             </div>
-        </section>
-    </tab>
 
+            <div class="mb-3">
+              <button class="btn btn-light"
+                      type="button"
+                      (click)="downloadClientCredentials()"
+                      tooltip="Descargar Credenciales">
+                <i class="fa fa-download me-2"></i>
+                Descargar Credenciales
+              </button>
+            </div>
+          </div>
+        </div>
+        <hr class="mb-4">
+        <div class="col-12 mb-5">
+          <div class="alert alert-info mb-4">
+            <i class="fa fa-info-circle me-2"></i>
+            En esta sección encontrará las credenciales necesarias para realizar integraciones con sistemas externos.
+          </div>
+          <h5 class="mb-3">Clave de API</h5>
+          <div class="form-group">
+            <label for="key_webhook" class="form-label">Clave Api para integraciones:</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="empresa.woocommerce_api_key"
+                     name="key_webhook"
+                     placeholder="API Key para integraciones"
+                     readonly>
+              <button class="btn btn-secondary"
+                      type="button"
+                      (click)="copyToClipboard(empresa.woocommerce_api_key)"
+                      tooltip="Copiar API Key">
+                <i class="fa fa-copy"></i>
+              </button>
+            </div>
+            <small class="text-muted d-block mt-2">
+              Esta es su clave única para autenticar integraciones con sistemas externos
+            </small>
+          </div>
+        </div>
+
+
+        <div class="col-12">
+          <h5 class="mb-3">Integración WooCommerce</h5>
+
+          <div class="row g-3">
+
+            <div class="col-12">
+              <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       [(ngModel)]="empresa.woocommerce_api_url"
+                       name="url_webhook_woocomerce"
+                       placeholder="URL del Webhook para WooCommerce"
+                       readonly>
+                <button class="btn btn-secondary"
+                        type="button"
+                        (click)="copyToClipboard(empresa.woocommerce_api_url)"
+                        tooltip="Copiar URL">
+                  <i class="fa fa-copy"></i>
+                </button>
+              </div>
+              <small class="text-muted d-block mt-2">
+                Configure esta URL en su tienda WooCommerce para sincronizar datos automáticamente
+              </small>
+            </div>
+
+
+            <div class="col-md-6">
+              <label for="woocommerce_store_url" class="form-label">URL de la Tienda:</label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="empresa.woocommerce_store_url"
+                     name="woocommerce_store_url"
+                     [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                     placeholder="Ej: https://mitienda.com">
+            </div>
+
+            <div class="col-md-6">
+              <label for="woocommerce_consumer_key" class="form-label">Clave de API:</label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="empresa.woocommerce_consumer_key"
+                     name="woocommerce_consumer_key"
+                     [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                     placeholder="Ingrese su clave de API de WooCommerce">
+            </div>
+
+            <div class="col-md-6">
+              <label for="woocommerce_consumer_secret" class="form-label">Clave Secreta:</label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="empresa.woocommerce_consumer_secret"
+                     name="woocommerce_consumer_secret"
+                     [readonly]="empresa.status_conexion_woocommerce === 'connected'"
+                     placeholder="Ingrese su clave secreta de WooCommerce">
+            </div>
+
+            <div class="col-md-6">
+              <label for="woocommerce_canal" class="form-label">Canal de ventas:</label>
+              <select class="form-select"
+                      [(ngModel)]="empresa.woocommerce_canal_id"
+                      name="woocommerce_canal"
+                      [disabled]="empresa.status_conexion_woocommerce === 'connected'">
+                <option [value]="0" selected>Seleccione un canal</option>
+                <option *ngFor="let canal of canales" [value]="canal.id">{{ canal.nombre }}</option>
+              </select>
+              <small class="text-muted">
+                Este canal se asignará automáticamente a todas las ventas realizadas desde WooCommerce.
+              </small>
+            </div>
+
+
+            <div class="col-12">
+              <div
+                *ngIf="empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret"
+                class="alert mt-3"
+                [ngClass]="{'alert-success': empresa.woocommerce_status === 'connected', 'alert-warning': empresa.woocommerce_status === 'disconnected', 'alert-info': !empresa.woocommerce_status}">
+                <i class="fa"
+                   [ngClass]="{'fa-check-circle': empresa.woocommerce_status === 'connected', 'fa-exclamation-circle': empresa.woocommerce_status === 'disconnected', 'fa-info-circle': !empresa.woocommerce_status}"></i>
+                <span *ngIf="empresa.woocommerce_status === 'connected'"> Conexión establecida con WooCommerce</span>
+                <span *ngIf="empresa.woocommerce_status === 'disconnected'"> Sin conexión con WooCommerce</span>
+                <span *ngIf="!empresa.woocommerce_status"> Estado de conexión desconocido</span>
+              </div>
+
+              <div class="text-end mt-3">
+                <button tooltip="importar productos a WooCommerce"
+                        (click)="exportarWooCommerce()"
+                        class="btn btn-light me-2"
+                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                  <img src="/assets/icons/upload-cloud.png" class="icon me-2">
+                  Importar productos
+                </button>
+
+                <button tooltip="Descargar productos para importar en WooCommerce (F7)"
+                        (click)="descargarWooCommerce()"
+                        class="btn btn-light me-2"
+                        *ngIf="empresa.status_conexion_woocommerce === 'connected'">
+                  <img src="/assets/icons/woocommerce.png" class="icon me-2">
+                  Descargar productos
+                </button>
+
+                <button class="btn btn-light text-danger me-2"
+                        type="button"
+                        *ngIf="empresa.is_current_user_connected_to_woocommerce"
+                        (click)="disconnectWooCommerce()">
+                  <i class="fa fa-unlink me-2"></i>
+                  Desconectar WooCommerce
+                </button>
+                <button class="btn btn-light text-success"
+                        type="button"
+                        *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
+                        [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
+                        (click)="saveCredentials()">
+                  <i class="fa fa-save me-2"></i>
+                  Guardar Credenciales
+                </button>
+              </div>
+
+              <div class="alert alert-info mt-3"
+                   *ngIf="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce">
+                <i class="fa fa-info-circle me-2"></i>
+                Hay otros usuarios conectados a WooCommerce. Solo el usuario que estableció la conexión puede
+                desconectarla.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </tab>
 </tabset>
+
+
+<ng-template #mpruebasMasivas>
+  <div class="modal-header">
+    <div class="d-flex align-items-center justify-content-between">
+      <h4 class="modal-title">Confirmar Emisión Masiva</h4>
+      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+  </div>
+  <div class="modal-body">
+
+    <div class="alert alert-info">
+      <i class="fa fa-info-circle me-2"></i> El proceso se ejecutará en segundo plano y podrá continuar utilizando la
+      aplicación. Recibirá una notificación por correo electrónico cuando se complete.
+    </div>
+
+    <p>Está a punto de emitir <strong>{{ cantidadFaltante }}</strong> documentos de tipo
+      <strong>{{ getLabelTipo(tipoSeleccionado) }}</strong> en el ambiente de pruebas.</p>
+
+    <div class="form-group mb-3">
+      <label for="documentoBase">Documento base (opcional):</label>
+      <select class="form-select" id="documentoBase" [(ngModel)]="documentoBaseSeleccionado">
+        <option [ngValue]="null">Usar último documento emitido</option>
+        <option *ngFor="let doc of documentosBase" [ngValue]="doc">
+          {{ doc.numero_control }} - {{ doc.nombre_cliente }}
+        </option>
+      </select>
+      <small class="form-text text-muted">
+        Si no selecciona un documento base, se utilizará el último documento emitido de este tipo.
+      </small>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="correlativoInicial">Correlativo inicial:</label>
+      <input type="number" class="form-control" id="correlativoInicial"
+             [(ngModel)]="correlativoInicial"
+             min="1"
+             placeholder="Ej: 1001">
+      <small class="form-text text-muted">
+        Ingrese el número desde donde desea comenzar la generación de documentos.
+        Si lo deja vacío, se usará automáticamente el siguiente correlativo disponible.
+      </small>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="cantidad">Cantidad de documentos:</label>
+      <input type="number" class="form-control" id="cantidad" [(ngModel)]="cantidadFaltante" min="1" required>
+    </div>
+
+    <div class="alert alert-warning">
+      <i class="fa fa-exclamation-triangle me-2"></i> Esta acción no afectará sus correlativos reales y los documentos
+      generados no aparecerán en sus reportes normales.
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+    <button type="button" class="btn btn-primary" [disabled]="procesando" (click)="confirmarEjecucion()">
+            <span *ngIf="!procesando">
+                <i class="fa fa-paper-plane me-1"></i> Iniciar Emisión
+            </span>
+      <span *ngIf="procesando">
+                <i class="fa fa-spinner fa-spin me-1"></i> Iniciando proceso...
+            </span>
+    </button>
+  </div>
+</ng-template>

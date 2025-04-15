@@ -26,20 +26,26 @@ export class LibroComprasComponent implements OnInit {
     ) { }
 
     ngOnInit() {   
-        const currentYear = new Date().getFullYear(); // Obtener el año actual
+        const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
-        // Crear un array con el año actual y los 10 años anteriores
+        
         for (let i = 0; i <= 10; i++) {
           this.years.push(currentYear - i);
         }
 
+        // Recuperar filtros del localStorage si existen
+        const savedFilters = localStorage.getItem('compras_filtros');
+        if (savedFilters) {
+            this.filtros = JSON.parse(savedFilters);
+        } else {
+            // Valores por defecto si no hay filtros guardados
+            this.filtros.id_sucursal = '';
+            this.filtros.tipo_documento = 'Crédito fiscal';
+            this.filtros.anio = currentYear;
+            this.filtros.mes = currentMonth;
+            this.filtros.time = 'day';
+        }
 
-        this.filtros.id_sucursal = '';
-        this.filtros.tipo_documento = 'Crédito fiscal';
-        this.filtros.anio = currentYear;
-        this.filtros.mes = currentMonth;
-        this.filtros.time = 'day';
-        
         this.setTime();
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
@@ -51,6 +57,9 @@ export class LibroComprasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
+        // Guardar filtros en localStorage antes de cargar
+        localStorage.setItem('compras_filtros', JSON.stringify(this.filtros));
+
         this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(ivas => { 
             this.ivas = ivas;
             this.loading = false;
@@ -58,7 +67,6 @@ export class LibroComprasComponent implements OnInit {
     }
 
     public setTime() {
-        // this.filtros.time = { this.filtros.anio, this.filtros.mes }; // Guardamos el mes y año en el filtro
         this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
         this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
         this.loadAll();
@@ -66,6 +74,22 @@ export class LibroComprasComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
+    }
+
+    public limpiarFiltros() {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        this.filtros = {
+            id_sucursal: '',
+            tipo_documento: 'Crédito fiscal',
+            anio: currentYear,
+            mes: currentMonth,
+            time: 'day'
+        };
+
+        localStorage.removeItem('compras_filtros');
+        this.setTime();
     }
 
     public descargarLibro(){
@@ -102,5 +126,9 @@ export class LibroComprasComponent implements OnInit {
         );
     }
 
+    public setSucursal(id: number) {
+        this.filtros.id_sucursal = id;
+        this.loadAll();
+    }
 
 }

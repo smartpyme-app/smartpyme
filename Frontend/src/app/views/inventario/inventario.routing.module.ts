@@ -22,6 +22,7 @@ import { CategoriasComponent } from '@views/inventario/categorias/categorias.com
 import { ServiciosComponent } from '@views/inventario/servicios/servicios.component';
 import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
 import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
+import { TrasladoMasivoComponent } from '@views/inventario/productos/producto/traslado/traslado-masivo.component';
 import { AjusteMasivoComponent } from '@views/inventario/productos/producto/ajuste/ajuste-masivo.component';
 
 
@@ -62,6 +63,7 @@ const routes: Routes = [
 
         { path: 'bodegas', component: BodegasComponent },
         { path: 'bodega/:id', component: BodegaComponent },
+        { path: 'traslado-masivo/crear', component: TrasladoMasivoComponent, title: 'Traslado masivo' },
 
 
     ]
