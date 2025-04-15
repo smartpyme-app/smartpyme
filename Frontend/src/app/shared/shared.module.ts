@@ -11,6 +11,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -83,7 +84,8 @@ import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    VerHistorialButtonComponent
+    VerHistorialButtonComponent,
+    SafeHtmlPipe
   ],
   exports: [
     BusquedaClienteComponent,
@@ -113,7 +115,8 @@ import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    VerHistorialButtonComponent
+    VerHistorialButtonComponent,
+    SafeHtmlPipe
   ],
   providers: [AlertService],
 })

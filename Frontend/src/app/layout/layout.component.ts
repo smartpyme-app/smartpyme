@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 
 @Component({
   selector: 'app-layout',
