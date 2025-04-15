@@ -184,31 +184,34 @@ export class ChatService {
       console.warn('La empresa no tiene acceso a la funcionalidad de chat');
       return;
     }
-
+  
     if (!text.trim()) return;
-
+  
     const messages = this.messagesSubject.value;
     const userMessage: ChatMessage = {
       sender: 'user',
       text,
       timestamp: new Date(),
     };
-
+  
     // Añadir mensaje del usuario
     this.messagesSubject.next([...messages, userMessage]);
-
+  
     // Preparar el historial para enviar a Bedrock
     const conversationHistory = this.prepareConversationHistory(messages);
-
+  
     // Indicar que estamos cargando
     this.loadingSubject.next(true);
-
+  
     // Llamada a la API de Bedrock a través de nuestro backend
     this.callBedrockAPI(text, conversationHistory).subscribe({
       next: (response) => {
+        // Procesar el mensaje para gestionar SVGs
+        const processedMessage = this.processSVGInMessage(response.message);
+        
         const botMessage: ChatMessage = {
           sender: 'bot',
-          text: response.message,
+          text: processedMessage,
           timestamp: new Date(),
           suggestions: response.suggestions || []
         };
@@ -329,4 +332,207 @@ export class ChatService {
       { title }
     );
   }
+
+  private processSVGInMessage(message: string): string {
+    // Verifica si hay un SVG en el mensaje
+    if (message.includes('<svg')) {
+      // Extraer el SVG
+      const svgMatch = message.match(/<svg[\s\S]*?<\/svg>/);
+      
+      if (svgMatch) {
+        const svg = svgMatch[0];
+        
+        // Obtener dimensiones originales como referencia
+        const widthMatch = svg.match(/width="([^"]*)"/);
+        const heightMatch = svg.match(/height="([^"]*)"/);
+        
+        const width = widthMatch ? parseInt(widthMatch[1], 10) : 400;
+        const height = heightMatch ? parseInt(heightMatch[1], 10) : 300;
+        
+        // Extraer título del SVG si existe
+        const titleMatch = svg.match(/<title>(.*?)<\/title>/);
+        const svgTitle = titleMatch ? titleMatch[1] : 'Gráfico financiero';
+        
+        // Crear un ID único para este SVG
+        const svgId = 'svg-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000);
+        
+        // Modificar el SVG para agregarle un ID
+        const svgWithId = svg.replace('<svg', `<svg id="${svgId}"`);
+        
+        // Buscar texto adicional para incluir en la imagen
+        let additionalText = '';
+        const paragraphAfterSvg = message.match(/<\/svg>[\s\S]*?<p>([\s\S]*?)<\/p>/);
+        if (paragraphAfterSvg) {
+          additionalText = paragraphAfterSvg[1].replace(/<[^>]*>/g, '').trim();
+        }
+        
+        // Escapar comillas en los textos para evitar problemas con JavaScript
+        const escapedTitle = svgTitle.replace(/'/g, "\\'");
+        const escapedText = additionalText.replace(/'/g, "\\'");
+        
+        // Crear un contenedor con opciones de descarga
+        const wrappedSvg = `
+          <div class="svg-container" style="--svg-width: ${width}px; --svg-height: ${height}px;">
+            ${svgWithId}
+            <div class="svg-download-container mt-2 d-flex justify-content-end gap-2">
+              <button class="btn btn-sm btn-outline-primary svg-download-btn" 
+                      onclick="(function(){
+                        // Obtener el SVG
+                        const svgEl = document.getElementById('${svgId}');
+                        if (!svgEl) return;
+                        
+                        // Crear un canvas con padding extra
+                        const padding = 40; // 20px de padding en cada lado
+                        const canvasWidth = Math.max(${width} + (padding * 2), 500); // Mínimo 500px de ancho
+                        
+                        // Función para dividir texto en múltiples líneas
+                        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+                          if (!text) return 0;
+                          
+                          const words = text.split(' ');
+                          let line = '';
+                          let lines = 0;
+                          
+                          for(let n = 0; n < words.length; n++) {
+                            const testLine = line + words[n] + ' ';
+                            const metrics = ctx.measureText(testLine);
+                            const testWidth = metrics.width;
+                            
+                            if (testWidth > maxWidth && n > 0) {
+                              ctx.fillText(line, x, y + (lines * lineHeight));
+                              line = words[n] + ' ';
+                              lines++;
+                            } else {
+                              line = testLine;
+                            }
+                          }
+                          
+                          // Dibujar la última línea
+                          ctx.fillText(line, x, y + (lines * lineHeight));
+                          
+                          // Devolver el número total de líneas
+                          return lines + 1;
+                        }
+                        
+                        // Configuración inicial del canvas
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Establecer un tamaño temporal para medir el texto
+                        canvas.width = canvasWidth;
+                        canvas.height = 1000;
+                        
+                        // Configurar fuentes para medir el texto
+                        ctx.font = '14px Arial';
+                        
+                        // Calcular el espacio necesario para el texto adicional
+                        let textHeight = 0;
+                        if ('${escapedText}') {
+                          // Medir cuánto espacio necesitará el texto
+                          const maxTextWidth = canvasWidth - (padding * 2);
+                          const tempLines = '${escapedText}'.split('\\n');
+                          let totalLines = 0;
+                          
+                          tempLines.forEach(tempLine => {
+                            const dummyY = 0;
+                            const linesUsed = Math.ceil(ctx.measureText(tempLine).width / maxTextWidth);
+                            totalLines += Math.max(1, linesUsed);
+                          });
+                          
+                          textHeight = (totalLines * 20) + 30; // 20px por línea + margen
+                        }
+                        
+                        // Ahora establecer dimensiones finales del canvas
+                        const canvasHeight = ${height} + (padding * 2) + textHeight + 40; // +40 para título y margen inferior
+                        canvas.height = canvasHeight;
+                        
+                        // Limpiar el canvas y configurar de nuevo
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        // Crear imagen a partir del SVG
+                        const svgData = new XMLSerializer().serializeToString(svgEl);
+                        const img = new Image();
+                        
+                        img.onload = function() {
+                          // Fondo blanco
+                          ctx.fillStyle = 'white';
+                          ctx.fillRect(0, 0, canvas.width, canvas.height);
+                          
+                          // Dibujar la imagen en el canvas con padding
+                          ctx.drawImage(img, padding, padding + 25, ${width}, ${height});
+                          
+                          // Añadir título en la parte superior
+                          ctx.font = 'bold 16px Arial';
+                          ctx.fillStyle = '#333';
+                          ctx.textAlign = 'center';
+                          ctx.fillText('${escapedTitle}', canvasWidth / 2, padding / 2 + 16);
+                          
+                          // Añadir texto adicional si existe
+                          if ('${escapedText}') {
+                            ctx.font = '14px Arial';
+                            ctx.fillStyle = '#555';
+                            ctx.textAlign = 'center';
+                            
+                            const maxTextWidth = canvasWidth - 80; // 40px de margen a cada lado
+                            const textY = ${height} + padding + 45;
+                            
+                            wrapText(ctx, '${escapedText}', canvasWidth / 2, textY, maxTextWidth, 20);
+                          }
+                          
+                          // Añadir marca de agua pequeña
+                          ctx.font = '10px Arial';
+                          ctx.fillStyle = '#999';
+                          ctx.textAlign = 'right';
+                          ctx.fillText('Generado por Lucas - ' + new Date().toLocaleDateString(), canvasWidth - 10, canvasHeight - 10);
+                          
+                          // Convertir canvas a PNG
+                          const pngUrl = canvas.toDataURL('image/png');
+                          
+                          // Crear enlace de descarga
+                          const a = document.createElement('a');
+                          a.href = pngUrl;
+                          a.download = 'grafico-lucas-' + new Date().getTime() + '.png';
+                          a.style.display = 'none';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        };
+                        
+                        // Usar data URI directamente
+                        const dataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+                        img.src = dataUri;
+                      })()">
+                <i class="fa fa-file-image-o"></i> PNG
+              </button>
+              <button class="btn btn-sm btn-outline-primary svg-download-btn" 
+                      onclick="(function(){
+                        const svgEl = document.getElementById('${svgId}');
+                        if (!svgEl) return;
+                        
+                        const svgData = new XMLSerializer().serializeToString(svgEl);
+                        
+                        // Usar data URI directamente
+                        const dataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+                        const a = document.createElement('a');
+                        a.href = dataUri;
+                        a.download = 'grafico-lucas-' + new Date().getTime() + '.svg';
+                        a.style.display = 'none';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      })()">
+                <i class="fa fa-file-code-o"></i> SVG
+              </button>
+            </div>
+          </div>
+        `;
+        
+        // Reemplazar el SVG original con la versión envuelta
+        return message.replace(svg, wrappedSvg);
+      }
+    }
+    
+    return message;
+  }
+
 }
