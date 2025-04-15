@@ -62,12 +62,12 @@ export class EmpresaComponent implements OnInit {
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
-        setTimeout(() => {
-            if (this.empresa && this.empresa.fe_ambiente === '00') {
-                this.cargarEstadisticasPruebas();
-                this.cargarDocumentosBase();
-            }
-        }, 1000); 
+        // setTimeout(() => {
+        //     if (this.empresa && this.empresa.fe_ambiente === '00') {
+        //         this.cargarEstadisticasPruebas();
+        //         this.cargarDocumentosBase();
+        //     }
+        // }, 1000); 
 
     }
 
@@ -86,6 +86,13 @@ export class EmpresaComponent implements OnInit {
         this.apiService.store('empresa/getClienteById', {id_client}).subscribe(cliente => {
             this.cliente = cliente;
             this.loading = false;
+
+            // se cargan las estadisticas cuando ya esta inicializado la empresa
+            if (this.empresa && this.empresa.fe_ambiente === '00') {
+                this.cargarEstadisticasPruebas();
+                this.cargarDocumentosBase();
+            }
+            
         },error => {this.alertService.error(error); this.loading = false; });
 
     }
