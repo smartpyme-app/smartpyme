@@ -47,4 +47,10 @@ return [
         'secret' => env('STRIPE_SECRET')
     ],
 
+    'bedrock' => [
+        'key' => config('bedrock.key'),
+        'secret' => config('bedrock.secret'),
+        'region' => config('bedrock.region'),
+    ],
+
 ];

@@ -33,12 +33,49 @@ class Kernel extends ConsoleKernel
              ->everyFiveMinutes()
              ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
+        $schedule->command('metricas:empresas')
+            ->dailyAt('03:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                // env('ADMIN_EMAIL')
+                'joseespana94@gmail.com'
+            );
+
+        // Programar la actualización de métricas para todas las sucursales a las 4:00 AM
+        $schedule->command('metricas:sucursales')
+            ->dailyAt('04:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                'joseespana94@gmail.com'
+                // env('ADMIN_EMAIL')
+            );
+
+        $schedule->command('metricas:empresas --actualizar-historico')
+            ->monthlyOn(1, '02:00')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                'joseespana94@gmail.com'
+                // env('ADMIN_EMAIL')
+            );
+
+        $schedule->command('metricas:sucursales --actualizar-historico')
+            ->monthlyOn(1, '02:30')
+            ->runInBackground()
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(
+                'joseespana94@gmail.com'
+                // env('ADMIN_EMAIL')
+            );
+
         $schedule->command('empleados:actualizar-estado')
         ->dailyAt('00:01')
         ->appendOutputTo(storage_path('logs/empleados-estado.log'));
 
         $schedule->call(function () {
-                Log::info('Working');
+            Log::info('Working');
         })->daily();
     }
 
@@ -49,7 +86,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

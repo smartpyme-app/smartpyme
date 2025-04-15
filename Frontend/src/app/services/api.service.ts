@@ -4,6 +4,7 @@ import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
+import { ChatService } from '@services/chat/chat.service';
 
 import * as moment from 'moment';
 declare let $:any;

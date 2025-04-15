@@ -13,6 +13,7 @@ import { AdminFacturacionesComponent } from './facturaciones/admin-facturaciones
 import { AdminFacturacionComponent } from './facturaciones/facturacion/admin-facturacion.component';
 import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
+import { EmpresasFuncionalidadesComponent } from '@views/super-admin/funcionalidades/empresas-funcionalidades.component';
 
 
 const routes: Routes = [
@@ -34,6 +35,7 @@ const routes: Routes = [
 
         { path: 'facturaciones', component: AdminFacturacionesComponent, title: 'Facturacion' },
         { path: 'facturacion/crear', component: AdminFacturacionComponent, title: 'Facturacion' },
+        { path: 'funcionalidades', component: EmpresasFuncionalidadesComponent, title: 'Funcionalidades' },
     ]
   }
 ];
