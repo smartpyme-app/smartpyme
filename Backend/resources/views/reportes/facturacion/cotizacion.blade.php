@@ -46,13 +46,10 @@
                 <tr>
                     <td>
                         <h1>{{ $venta->empresa()->pluck('nombre')->first() }}</h1>
-                       
-                        @if ($venta->empresa()->pluck('id')->first() != 420)
-                            <p>
-                                {{ $venta->empresa()->pluck('municipio')->first() }}
-                                {{ $venta->empresa()->pluck('departamento')->first() }}
-                            </p>
-                        @endif
+                        <p>
+                            {{ $venta->empresa()->pluck('municipio')->first() }}
+                            {{ $venta->empresa()->pluck('departamento')->first() }}
+                        </p>
                         <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
                         <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
                     </td>
