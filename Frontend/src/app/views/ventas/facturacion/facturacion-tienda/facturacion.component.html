@@ -43,12 +43,31 @@
         <div class="form-group col-md-12 col-lg-4">
             <label for="">Cliente</label>
             <div class="input-group flex-nowrap">
-                <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="venta.id_cliente" class="form-select p-0">
-                    <ng-option value=""> Consumidor final </ng-option>
-                    <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
-                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                    </ng-option>
+                <ng-select name="id_cliente" 
+                        placeholder="Consumidor Final" 
+                        [(ngModel)]="venta.id_cliente"
+                        [items]="clientesFiltrados"
+                        bindValue="id"
+                        [typeahead]="clienteInput$"
+                        class="form-select p-0">
+                <ng-template ng-header-tmp>
+                    <div class="px-2 py-2">
+                    <input type="text" class="form-control form-control-sm" 
+                            placeholder="Buscar por nombre, teléfono, DUI o NIT" 
+                            [ngModel]="terminoBusqueda" 
+                            (ngModelChange)="buscarCliente($event)">
+                    </div>
+                </ng-template>
+                    <ng-option [value]="">Consumidor final</ng-option>
+                    <ng-option value="" *ngIf="loading">Cargando clientes...</ng-option>
+                    <ng-template ng-option-tmp let-item="item">
+                        {{ item.tipo == 'Empresa' ? item.nombre_empresa : item.nombre }}
+                        <small class="text-muted" *ngIf="item.telefono">(Tel: {{item.telefono}})</small>
+                        <small class="text-muted" *ngIf="item.dui">(DUI: {{item.dui}})</small>
+                        <small class="text-muted" *ngIf="item.nit">(NIT: {{item.nit}})</small>
+                        <small class="text-muted" *ngIf="item.correo">(Correo: {{item.correo}})</small>
+                        <small class="text-muted" *ngIf="item.ncr">(NCR: {{item.ncr}})</small>
+                    </ng-template>
                 </ng-select>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
             </div>
