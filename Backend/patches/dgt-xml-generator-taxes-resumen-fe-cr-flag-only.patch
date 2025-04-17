@@ -1,0 +1,42 @@
+diff --git a/src/Views/Components/taxes.xml.twig b/src/Views/Components/taxes.xml.twig
+--- a/src/Views/Components/taxes.xml.twig
++++ b/src/Views/Components/taxes.xml.twig
+@@ -10,7 +10,9 @@
+   {% if impIvaType %}
+   <CodigoTarifaIVA>{{ impIvaType.code }}</CodigoTarifaIVA>
+   {% endif %}
+-  {% if node == 'TotalDesgloseImpuesto' %}
++  {# TotalDesgloseImpuesto (resumen): XSD sin Tarifa; summary pasa fe_cr_es_total_desglose + include only. #}
++  {% if fe_cr_es_total_desglose|default(false) %}
+   <{{ nodeAmount }}>{{ (tax.amount|default(0))|number_format(2, '.', '') }}</{{ nodeAmount }}>
+   {% else %}
+   {% if tax.rate %}
+diff --git a/src/Views/Components/summary.xml.twig b/src/Views/Components/summary.xml.twig
+--- a/src/Views/Components/summary.xml.twig
++++ b/src/Views/Components/summary.xml.twig
+@@ -26,8 +26,12 @@
+   <TotalDescuentos>{{ (summary.total_discounts|default(0))|number_format(2, '.', '') }}</TotalDescuentos>
+   <TotalVentaNeta>{{ (summary.total_net_sale|default(0))|number_format(2, '.', '') }}</TotalVentaNeta>
+-  {% include 'Components/taxes.xml.twig' with { 'node': 'TotalDesgloseImpuesto',
+-  'nodeAmount': 'TotalMontoImpuesto', 'taxes': summary.taxes } %}
++  {% include 'Components/taxes.xml.twig' with {
++    'node': 'TotalDesgloseImpuesto',
++    'nodeAmount': 'TotalMontoImpuesto',
++    'taxes': summary.taxes,
++    'fe_cr_es_total_desglose': true
++  } only %}
+   <TotalImpuesto>{{ (summary.total_tax|default(0))|number_format(2, '.', '') }}</TotalImpuesto>
+   {% include 'Components/payments.xml.twig' %}
+   <TotalComprobante>{{ (summary.total_voucher|default(0))|number_format(2, '.', '') }}</TotalComprobante>
+diff --git a/src/Views/Components/items.xml.twig b/src/Views/Components/items.xml.twig
+--- a/src/Views/Components/items.xml.twig
++++ b/src/Views/Components/items.xml.twig
+@@ -42,8 +42,8 @@
+     <SubTotal>{{ (item.sub_total|default(0))|number_format(5, '.', '') }}</SubTotal>
+     <BaseImponible>{{ (item.taxable_base|default(0))|number_format(5, '.', '') }}</BaseImponible>
+     {% include 'Components/taxes.xml.twig' with { 'node': 'Impuesto',
+-    'nodeAmount': 'Monto', 'taxes': item.taxes } %}
++    'nodeAmount': 'Monto', 'taxes': item.taxes } only %}
+     {% set assumed = item.assumed_factory_tax ?? 0 %}
+     <ImpuestoAsumidoEmisorFabrica>{{ assumed|number_format(2, '.', '') }}</ImpuestoAsumidoEmisorFabrica>
+     <ImpuestoNeto>{{ (item.total_tax|default(0))|number_format(5, '.', '') }}</ImpuestoNeto>

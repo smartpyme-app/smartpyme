@@ -1,6 +1,4 @@
 import { DestroyRef, inject } from '@angular/core';
-import { Observable, takeUntil } from 'rxjs';
-import { Subject } from 'rxjs';
 import { subscriptionHelper } from '../utils/subscription.helper';
 
 /**
@@ -27,7 +25,13 @@ import { subscriptionHelper } from '../utils/subscription.helper';
  * ```
  */
 export abstract class BaseComponent {
-  protected destroyRef = inject(DestroyRef);
-  protected untilDestroyed = subscriptionHelper(this.destroyRef);
+  protected readonly destroyRef: DestroyRef;
+  protected readonly untilDestroyed: ReturnType<typeof subscriptionHelper>;
+
+  constructor() {
+    // inject() aquí asegura contexto de inyección válido (p. ej. Angular 19/20 + herencia).
+    this.destroyRef = inject(DestroyRef);
+    this.untilDestroyed = subscriptionHelper(this.destroyRef);
+  }
 }
 
