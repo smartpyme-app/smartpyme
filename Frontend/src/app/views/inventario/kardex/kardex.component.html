@@ -15,7 +15,7 @@
             <form name="form" (ngSubmit)="loadAll()" class="row">
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="">Bodega: </label>
-                    <select class="form-control form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario">
+                    <select class="form-control form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario" (change)="loadAll()">
                         <option [value]="bodega.id" *ngFor="let bodega of bodegas">
                             {{ bodega.nombre }}
                         </option>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="">Tipo: </label>
-                    <select name="detalle" [(ngModel)]="filtros.detalle" class="form-control form-select">
+                    <select name="detalle" [(ngModel)]="filtros.detalle" class="form-control form-select" (change)="loadAll()">
                         <option value="">Todos los tipos</option>
                         <option value="Venta">Ventas</option>
                         <option value="Compra">Compras</option>
