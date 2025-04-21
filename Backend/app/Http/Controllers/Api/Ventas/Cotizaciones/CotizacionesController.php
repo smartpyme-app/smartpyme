@@ -12,6 +12,7 @@ use App\Models\Ventas\Detalle;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
+use Auth;
 use App\Exports\CotizacionesExport;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -203,8 +204,13 @@ class CotizacionesController extends Controller
     public function generarDoc($id){
         $venta = Cotizacion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
 
-        $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
-        $pdf->setPaper('US Letter', 'portrait');
+        if(Auth::user()->id_empresa == 420){ //420
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }else{
+            $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }
         return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
 
     }
