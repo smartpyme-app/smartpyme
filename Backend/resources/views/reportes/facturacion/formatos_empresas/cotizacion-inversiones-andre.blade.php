@@ -95,7 +95,7 @@
                     <td>
                         <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
                         <p class="text-right">Cotización: {{ $venta->correlativo }}</p>
-                        <p class="text-right">ID Cliente: {{ $venta->codigo_cliente }}</p>
+                        <p class="text-right">ID Cliente: {{ $venta->cliente->codigo_cliente }}</p>
                         <p class="text-right">Válido hasta: {{ \Carbon\Carbon::parse($venta->fecha_expiracion)->format('d/m/Y') }}</p>
                     </td>
                 </tr>
