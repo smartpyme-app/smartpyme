@@ -29,7 +29,7 @@ import Swal from 'sweetalert2';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
     providers: [SumPipe],
-    
+
 })
 
 export class FacturacionCompraComponent extends BaseModalComponent implements OnInit {
@@ -90,7 +90,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private sumPipe:SumPipe,
-        private route: ActivatedRoute, 
+        private route: ActivatedRoute,
         private router: Router,
         private sharedDataService: SharedDataService,
         private funcionalidadesService: FuncionalidadesService
@@ -216,6 +216,17 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     public cargarDocumentos(){
+      // Lista de documentos permitidos para compras
+      const documentosPermitidos = [
+        'Factura',
+        'Crédito fiscal',
+        'Ticket',
+        'Recibo',
+        'Sujeto excluido',
+        'Recibo',
+        'Factura de exportación'
+      ];
+
         this.sharedDataService.getDocumentos()
           .pipe(this.untilDestroyed())
           .subscribe({
@@ -230,8 +241,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                       this.compra.referencia = documento.correlativo;
                   }
               }else{
-                  this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
-              }
+                // Filtrar solo los documentos permitidos, excluyendo notas de débito y crédito
+                this.documentos = this.documentos.filter((x:any) =>
+                  documentosPermitidos.includes(x.nombre) &&
+                  x.nombre != 'Nota de crédito' &&
+                  x.nombre != 'Nota de débito'
+                );              }
             },
             error: (error) => {
               this.alertService.error(error);

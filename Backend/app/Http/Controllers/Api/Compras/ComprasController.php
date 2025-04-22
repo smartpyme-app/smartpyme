@@ -338,6 +338,7 @@ class ComprasController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
+
     }
 
     public function facturacionConsigna(FacturacionConsignaRequest $request)
