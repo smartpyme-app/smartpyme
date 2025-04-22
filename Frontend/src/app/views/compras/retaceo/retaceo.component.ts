@@ -30,6 +30,13 @@ export class RetaceoComponent implements OnInit {
   public saving = false;
   public opAvanzadas = false;
   public distribucionManual: boolean = false;
+  public gastosTransporte: any[] = [];
+  public gastosSeguro: any[] = [];
+  public gastosOtros: any[] = [];
+
+  public selectedGastosTransporte: number[] = [];
+  public selectedGastosSeguro: number[] = [];
+  public selectedGastosOtros: number[] = [];
 
   constructor(
     public apiService: ApiService,
@@ -48,6 +55,79 @@ export class RetaceoComponent implements OnInit {
       this.cargarRetaceoExistente(+this.route.snapshot.paramMap.get('id')!);
     }
   }
+
+  obtenerConceptoGasto(id_gasto: number): string {
+    const gasto = this.gastos.find((g: any) => g.id === id_gasto);
+    return gasto ? gasto.concepto : 'Gasto no encontrado';
+  }
+
+
+  actualizarGastosSeleccionados(tipo: string) {
+    switch (tipo) {
+      case 'Transporte':
+        // Eliminar gastos que ya no están seleccionados
+        this.gastosTransporte = this.gastosTransporte.filter(gasto => 
+          this.selectedGastosTransporte.includes(gasto.id_gasto)
+        );
+        
+        // Agregar nuevos gastos seleccionados
+        this.selectedGastosTransporte.forEach(id_gasto => {
+          // Verificar si ya existe
+          const existe = this.gastosTransporte.some(g => g.id_gasto === id_gasto);
+          if (!existe) {
+            const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
+            this.gastosTransporte.push({
+              id_gasto: id_gasto,
+              tipo_gasto: 'Transporte',
+              monto: gastoInfo ? gastoInfo.total : 0
+            });
+          }
+        });
+        break;
+        
+      case 'Seguro':
+        // Lógica similar para seguro
+        this.gastosSeguro = this.gastosSeguro.filter(gasto => 
+          this.selectedGastosSeguro.includes(gasto.id_gasto)
+        );
+        
+        this.selectedGastosSeguro.forEach(id_gasto => {
+          const existe = this.gastosSeguro.some(g => g.id_gasto === id_gasto);
+          if (!existe) {
+            const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
+            this.gastosSeguro.push({
+              id_gasto: id_gasto,
+              tipo_gasto: 'Seguro',
+              monto: gastoInfo ? gastoInfo.total : 0
+            });
+          }
+        });
+        break;
+        
+      case 'Otro':
+        // Lógica similar para otros gastos
+        this.gastosOtros = this.gastosOtros.filter(gasto => 
+          this.selectedGastosOtros.includes(gasto.id_gasto)
+        );
+        
+        this.selectedGastosOtros.forEach(id_gasto => {
+          const existe = this.gastosOtros.some(g => g.id_gasto === id_gasto);
+          if (!existe) {
+            const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
+            this.gastosOtros.push({
+              id_gasto: id_gasto,
+              tipo_gasto: 'Otro',
+              monto: gastoInfo ? gastoInfo.total : 0
+            });
+          }
+        });
+        break;
+    }
+    
+    this.calcularTotalGastos();
+  }
+
+  
 
   cargarRetaceoExistente(id: number) {
     this.loading = true;
@@ -260,12 +340,11 @@ export class RetaceoComponent implements OnInit {
   }
 
   calcularTotalGastos() {
-    this.retaceo.total_gastos = (
-      parseFloat(this.gastoTransporte.monto || 0) +
-      parseFloat(this.gastoSeguro.monto || 0) +
-      parseFloat(this.gastoDAI.monto || 0) +
-      parseFloat(this.gastoOtros.monto || 0)
-    ).toFixed(2);
+    const totalTransporte = this.gastosTransporte.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    const totalSeguro = this.gastosSeguro.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    const totalOtros = this.gastosOtros.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    
+    this.retaceo.total_gastos = (totalTransporte + totalSeguro + totalOtros).toFixed(2);
   }
 
   calcularDistribucion() {
@@ -273,93 +352,72 @@ export class RetaceoComponent implements OnInit {
       this.alertService.error('No hay productos para distribuir los gastos');
       return;
     }
-
+  
     if (parseFloat(this.retaceo.total_gastos) <= 0) {
-      this.alertService.warning(
-        'No hay gastos para distribuir',
-        'Distribución'
-      );
+      this.alertService.warning('No hay gastos para distribuir', 'Distribución');
       return;
     }
-
+  
     const valorFobTotal = this.distribucion.reduce(
       (sum: number, item: any) => sum + parseFloat(item.valor_fob || 0),
       0
     );
-
+  
     if (valorFobTotal <= 0) {
       this.alertService.error('El valor FOB total debe ser mayor que cero');
       return;
     }
-
-    if (this.distribucionManual) {
-      const totalPorcentaje = this.distribucion.reduce(
-        (sum: number, item: any) =>
-          sum + parseFloat(item.porcentaje_distribucion || 0),
-        0
-      );
-
-      if (Math.abs(totalPorcentaje - 100) > 0.01) {
-        this.alertService.warning(
-          `La suma de porcentajes (${totalPorcentaje.toFixed(
-            2
-          )}%) debe ser 100%.`,
-          'Distribución'
-        );
-      }
-    } else {
-      // En modo automático, calculamos los porcentajes basados en el valor FOB
+  
+    // Calcular los porcentajes de distribución (modo automático o manual)
+    if (!this.distribucionManual) {
       this.distribucion.forEach((item: any) => {
         item.porcentaje_distribucion = (
-          (item.valor_fob / valorFobTotal) *
+          (parseFloat(item.valor_fob) / valorFobTotal) *
           100
         ).toFixed(2);
       });
     }
-
+  
+    // IMPORTANTE: Obtener el total de cada tipo de gasto
+    const totalTransporte = this.gastosTransporte.reduce(
+      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    const totalSeguro = this.gastosSeguro.reduce(
+      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    const totalOtros = this.gastosOtros.reduce(
+      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+  
+    // Distribuir los gastos según el porcentaje
     this.distribucion.forEach((item: any) => {
-      // Distribuir gastos según porcentaje
-      item.monto_transporte = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoTransporte.monto
-      ).toFixed(2);
-      item.monto_seguro = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoSeguro.monto
-      ).toFixed(2);
-      item.monto_otros = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoOtros.monto
-      ).toFixed(2);
-
+      // Asegurar que el porcentaje de distribución sea un número
+      const porcentaje = parseFloat(item.porcentaje_distribucion);
+      
+      // Calcular montos de gastos para este producto
+      item.monto_transporte = ((porcentaje / 100) * totalTransporte).toFixed(2);
+      item.monto_seguro = ((porcentaje / 100) * totalSeguro).toFixed(2);
+      item.monto_dai = ((parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai || 0)) / 100).toFixed(2);
+      item.monto_otros = ((porcentaje / 100) * totalOtros).toFixed(2);
+  
+      // Calcular landed cost y costo retaceado
       this.actualizarCostosProducto(item);
     });
-
-    this.retaceo.total_retaceado = this.distribucion
-      .reduce(
-        (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
-        0
-      )
-      .toFixed(2);
-
-    this.alertService.success(
-      'Distribución calculada correctamente',
-      'Distribución'
-    );
+  
+    this.recalcularTotalRetaceado();
+    this.alertService.success('Distribución calculada correctamente', 'Distribución');
   }
 
   onSubmit() {
     this.saving = true;
 
+    const gastos = [
+      ...this.gastosTransporte,
+      ...this.gastosSeguro,
+      ...this.gastosOtros
+    ].filter(gasto => gasto.id_gasto && parseFloat(gasto.monto) > 0);
+
     // Preparar objeto para enviar al servidor
     const datosRetaceo = {
       ...this.retaceo,
-      gastos: [
-        { ...this.gastoTransporte },
-        { ...this.gastoSeguro },
-        { ...this.gastoDAI },
-        { ...this.gastoOtros },
-      ],
+      gastos: gastos,
       distribucion: this.distribucion,
     };
 
@@ -402,16 +460,15 @@ export class RetaceoComponent implements OnInit {
     if (!this.distribucion || this.distribucion.length === 0) {
       return;
     }
-
+  
     // Verificar que la suma de porcentajes sea 100%
     const totalPorcentaje = this.distribucion.reduce(
       (sum: number, item: any) =>
         sum + parseFloat(item.porcentaje_distribucion || 0),
       0
     );
-
-    // Mostrar advertencia si los porcentajes no suman 100%, pero no normalizar automáticamente
-    // si estamos en modo manual
+  
+    // Mostrar advertencia si los porcentajes no suman 100%
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.warning(
         `La suma de porcentajes (${totalPorcentaje.toFixed(
@@ -419,7 +476,7 @@ export class RetaceoComponent implements OnInit {
         )}%) debe ser 100%.`,
         'Distribución'
       );
-
+  
       // Si no estamos en modo manual, normalizar
       if (!this.distribucionManual) {
         // Normalizar porcentajes para que sumen 100%
@@ -431,26 +488,32 @@ export class RetaceoComponent implements OnInit {
         });
       }
     }
-
-    // Calcular montos basados en los porcentajes actuales (sean normalizados o no)
+  
+    // IMPORTANTE: Calcular el total de cada tipo de gasto
+    const totalTransporte = this.gastosTransporte.reduce(
+      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    const totalSeguro = this.gastosSeguro.reduce(
+      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    const totalOtros = this.gastosOtros.reduce(
+      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+  
+    // Calcular montos basados en los porcentajes actuales
     this.distribucion.forEach((item: any) => {
-      // Distribuir gastos según porcentaje (excepto DAI)
-      item.monto_transporte = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoTransporte.monto
-      ).toFixed(2);
-      item.monto_seguro = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoSeguro.monto
-      ).toFixed(2);
-      item.monto_otros = (
-        (item.porcentaje_distribucion / 100) *
-        this.gastoOtros.monto
-      ).toFixed(2);
-
+      const porcentaje = parseFloat(item.porcentaje_distribucion || 0);
+      
+      // Distribuir gastos según porcentaje
+      item.monto_transporte = ((porcentaje / 100) * totalTransporte).toFixed(2);
+      item.monto_seguro = ((porcentaje / 100) * totalSeguro).toFixed(2);
+      item.monto_otros = ((porcentaje / 100) * totalOtros).toFixed(2);
+      
+      // Calcular el DAI según el porcentaje del producto
+      if (item.porcentaje_dai) {
+        item.monto_dai = ((parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai)) / 100).toFixed(2);
+      }
+  
       this.actualizarCostosProducto(item);
     });
-
+  
     this.recalcularTotalRetaceado();
   }
 
@@ -740,34 +803,39 @@ export class RetaceoComponent implements OnInit {
       return;
     }
   
-
-    this.gastoTransporte = { id_gasto: null, tipo_gasto: 'Transporte', monto: 0 };
-    this.gastoSeguro = { id_gasto: null, tipo_gasto: 'Seguro', monto: 0 };
-    this.gastoDAI = { id_gasto: null, tipo_gasto: 'DAI', monto: 0 };
-    this.gastoOtros = { id_gasto: null, tipo_gasto: 'Otro', monto: 0 };
-
+    // Limpiar los arrays
+    this.gastosTransporte = [];
+    this.gastosSeguro = [];
+    this.gastosOtros = [];
+    this.selectedGastosTransporte = [];
+    this.selectedGastosSeguro = [];
+    this.selectedGastosOtros = [];
+  
+    // Agrupar gastos por tipo
     gastos.forEach((gasto: any) => {
+      const gastoObj = {
+        id: gasto.id,
+        id_retaceo: gasto.id_retaceo,
+        id_gasto: gasto.id_gasto,
+        tipo_gasto: gasto.tipo_gasto,
+        monto: parseFloat(gasto.monto || 0)
+      };
+  
       switch (gasto.tipo_gasto) {
         case 'Transporte':
-          this.gastoTransporte = gasto;
+          this.gastosTransporte.push(gastoObj);
+          this.selectedGastosTransporte.push(gasto.id_gasto);
           break;
         case 'Seguro':
-          this.gastoSeguro = gasto;
-          break;
-        case 'DAI':
-          this.gastoDAI = gasto;
+          this.gastosSeguro.push(gastoObj);
+          this.selectedGastosSeguro.push(gasto.id_gasto);
           break;
         case 'Otro':
-          this.gastoOtros = gasto;
+          this.gastosOtros.push(gastoObj);
+          this.selectedGastosOtros.push(gasto.id_gasto);
           break;
       }
     });
-  
-
-    this.gastoTransporte.monto = parseFloat(this.gastoTransporte.monto || 0);
-    this.gastoSeguro.monto = parseFloat(this.gastoSeguro.monto || 0);
-    this.gastoDAI.monto = parseFloat(this.gastoDAI.monto || 0);
-    this.gastoOtros.monto = parseFloat(this.gastoOtros.monto || 0);
   }
   
   procesarDistribucionDelRetaceo(distribucion: any[]) {

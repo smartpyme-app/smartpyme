@@ -247,129 +247,140 @@
 
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Gastos e Impuestos</h6>
-
-  <div class="row">
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="id_gasto_transporte">Transporte</label>
-      <div class="input-group">
-        <ng-select
-          name="id_gasto_transporte"
-          placeholder="Seleccionar gasto"
-          [(ngModel)]="gastoTransporte.id_gasto"
-          (change)="setGastoMonto('Transporte')"
-          [disabled]="retaceo.id"
-          class="form-select p-0"
-        >
-          <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
-          <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} -
-            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
-          </ng-option>
-        </ng-select>
-      </div>
-      <div class="input-group mt-2">
-        <div class="input-group-text">$</div>
-        <input
-          type="number"
-          class="form-control"
-          [(ngModel)]="gastoTransporte.monto"
-          (change)="calcularTotalGastos()"
-          name="monto_transporte"
-          placeholder="Monto de transporte"
-        />
-      </div>
-    </div>
-
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="id_gasto_seguro">Seguro</label>
-      <div class="input-group">
-        <ng-select
-          name="id_gasto_seguro"
-          placeholder="Seleccionar gasto"
-          [(ngModel)]="gastoSeguro.id_gasto"
-          (change)="setGastoMonto('Seguro')"
-          [disabled]="retaceo.id"
-          class="form-select p-0"
-        >
-          <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
-          <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} -
-            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
-          </ng-option>
-        </ng-select>
-      </div>
-      <div class="input-group mt-2">
-        <div class="input-group-text">$</div>
-        <input
-          type="number"
-          class="form-control"
-          [(ngModel)]="gastoSeguro.monto"
-          (change)="calcularTotalGastos()"
-          name="monto_seguro"
-          placeholder="Monto de seguro"
-        />
+  
+  <div class="row mb-4">
+    <!-- Gastos de Transporte -->
+    <div class="col-md-4">
+      <label for="gastosTransporte">Transporte</label>
+      <ng-select
+        [items]="gastos"
+        [multiple]="true"
+        bindLabel="concepto"
+        bindValue="id"
+        placeholder="Seleccionar gastos de transporte"
+        [(ngModel)]="selectedGastosTransporte"
+        (change)="actualizarGastosSeleccionados('Transporte')"
+        [disabled]="retaceo.id"
+        appendTo="body"
+        class="form-select p-0"
+      >
+        <ng-template ng-label-tmp let-item="item">
+          {{ item.concepto }} ({{ item.total | currency:'USD':'symbol':'1.2' }})
+        </ng-template>
+        <ng-template ng-option-tmp let-item="item">
+          <div class="d-flex justify-content-between">
+            <span>{{ item.concepto }}</span>
+            <span>{{ item.total | currency:'USD':'symbol':'1.2' }}</span>
+          </div>
+        </ng-template>
+      </ng-select>
+      
+      <!-- Lista de gastos seleccionados -->
+      <div class="selected-items mt-2" *ngIf="gastosTransporte.length > 0">
+        <div class="card p-2 mb-2" *ngFor="let gasto of gastosTransporte">
+          <div class="d-flex justify-content-between align-items-center">
+            <small>{{ obtenerConceptoGasto(gasto.id_gasto) }}</small>
+            <div class="input-group input-group-sm" style="max-width: 120px;">
+              <span class="input-group-text">$</span>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="gasto.monto" 
+                (change)="calcularTotalGastos()"
+              >
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="form-group col-md-12 col-lg-3" *ngIf="false">
-      <label for="id_gasto_dai">DAI</label>
-      <div class="input-group">
-        <ng-select
-          name="id_gasto_dai"
-          placeholder="Seleccionar gasto"
-          [(ngModel)]="gastoDAI.id_gasto"
-          (change)="setGastoMonto('DAI')"
-          class="form-select p-0"
-        >
-          <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
-          <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} -
-            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
-          </ng-option>
-        </ng-select>
-      </div>
-      <div class="input-group mt-2">
-        <div class="input-group-text">$</div>
-        <input
-          type="number"
-          class="form-control"
-          [(ngModel)]="gastoDAI.monto"
-          (change)="calcularTotalGastos()"
-          name="monto_dai"
-          placeholder="Monto de DAI"
-        />
+    
+    <!-- Gastos de Seguro -->
+    <div class="col-md-4">
+      <label for="gastosSeguro">Seguro</label>
+      <ng-select
+        [items]="gastos"
+        [multiple]="true"
+        bindLabel="concepto"
+        bindValue="id"
+        placeholder="Seleccionar gastos de seguro"
+        [(ngModel)]="selectedGastosSeguro"
+        (change)="actualizarGastosSeleccionados('Seguro')"
+        [disabled]="retaceo.id"
+        appendTo="body"
+        class="form-select p-0"
+      >
+        <ng-template ng-label-tmp let-item="item">
+          {{ item.concepto }} ({{ item.total | currency:'USD':'symbol':'1.2' }})
+        </ng-template>
+        <ng-template ng-option-tmp let-item="item">
+          <div class="d-flex justify-content-between">
+            <span>{{ item.concepto }}</span>
+            <span>{{ item.total | currency:'USD':'symbol':'1.2' }}</span>
+          </div>
+        </ng-template>
+      </ng-select>
+      
+      <!-- Lista de gastos seleccionados -->
+      <div class="selected-items mt-2" *ngIf="gastosSeguro.length > 0">
+        <div class="card p-2 mb-2" *ngFor="let gasto of gastosSeguro">
+          <div class="d-flex justify-content-between align-items-center">
+            <small>{{ obtenerConceptoGasto(gasto.id_gasto) }}</small>
+            <div class="input-group input-group-sm" style="max-width: 120px;">
+              <span class="input-group-text">$</span>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="gasto.monto" 
+                (change)="calcularTotalGastos()"
+              >
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
+    
     <!-- Otros gastos -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="id_gasto_otros">Otros gastos</label>
-      <div class="input-group">
-        <ng-select
-          name="id_gasto_otros"
-          placeholder="Seleccionar gasto"
-          [(ngModel)]="gastoOtros.id_gasto"
-          (change)="setGastoMonto('Otro')"
-          [disabled]="retaceo.id"
-          class="form-select p-0"
-        >
-          <ng-option value="" *ngIf="loading"> Cargando gastos...</ng-option>
-          <ng-option *ngFor="let gasto of gastos" [value]="gasto.id">
-            {{ gasto.concepto }} -
-            {{ gasto.total | currency : "USD" : "symbol" : "1.2" }}
-          </ng-option>
-        </ng-select>
-      </div>
-      <div class="input-group mt-2">
-        <div class="input-group-text">$</div>
-        <input
-          type="number"
-          class="form-control"
-          [(ngModel)]="gastoOtros.monto"
-          (change)="calcularTotalGastos()"
-          name="monto_otros"
-          placeholder="Monto de otros gastos"
-        />
+    <div class="col-md-4">
+      <label for="gastosOtros">Otros gastos</label>
+      <ng-select
+        [items]="gastos"
+        [multiple]="true"
+        bindLabel="concepto"
+        bindValue="id"
+        placeholder="Seleccionar otros gastos"
+        [(ngModel)]="selectedGastosOtros"
+        (change)="actualizarGastosSeleccionados('Otro')"
+        [disabled]="retaceo.id"
+        appendTo="body"
+        class="form-select p-0"
+      >
+        <ng-template ng-label-tmp let-item="item">
+          {{ item.concepto }} ({{ item.total | currency:'USD':'symbol':'1.2' }})
+        </ng-template>
+        <ng-template ng-option-tmp let-item="item">
+          <div class="d-flex justify-content-between">
+            <span>{{ item.concepto }}</span>
+            <span>{{ item.total | currency:'USD':'symbol':'1.2' }}</span>
+          </div>
+        </ng-template>
+      </ng-select>
+      
+      <!-- Lista de gastos seleccionados -->
+      <div class="selected-items mt-2" *ngIf="gastosOtros.length > 0">
+        <div class="card p-2 mb-2" *ngFor="let gasto of gastosOtros">
+          <div class="d-flex justify-content-between align-items-center">
+            <small>{{ obtenerConceptoGasto(gasto.id_gasto) }}</small>
+            <div class="input-group input-group-sm" style="max-width: 120px;">
+              <span class="input-group-text">$</span>
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="gasto.monto" 
+                (change)="calcularTotalGastos()"
+              >
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -378,7 +389,7 @@
     <div class="col-md-12 text-end">
       <h5>
         Total de Gastos:
-        {{ retaceo.total_gastos | currency : "USD" : "symbol" : "1.2" }}
+        {{ retaceo.total_gastos | currency:'USD':'symbol':'1.2' }}
       </h5>
     </div>
   </div>
