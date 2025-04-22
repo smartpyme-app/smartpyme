@@ -391,59 +391,6 @@ export class RetaceoComponent implements OnInit {
     return impactoTotal;
   }
 
-  /**
-   * Recalcula la distribución cuando se edita manualmente un porcentaje
-   */
-  // recalcularDistribucion() {
-  //   if (!this.distribucion || this.distribucion.length === 0) {
-  //     return;
-  //   }
-
-  //   // Verificar que la suma de porcentajes sea 100%
-  //   const totalPorcentaje = this.distribucion.reduce(
-  //     (sum: number, item: any) =>
-  //       sum + parseFloat(item.porcentaje_distribucion || 0),
-  //     0
-  //   );
-
-  //   // Si el total no es aproximadamente 100%, normalizar
-  //   if (Math.abs(totalPorcentaje - 100) > 0.01) {
-  //     this.alertService.warning(
-  //       `La suma de porcentajes (${totalPorcentaje.toFixed(
-  //         2
-  //       )}%) debe ser 100%. Se normalizarán los valores.`,
-  //       'Distribución'
-  //     );
-
-  //     // Normalizar porcentajes para que sumen 100%
-  //     this.distribucion.forEach((item: any) => {
-  //       item.porcentaje_distribucion = (
-  //         (parseFloat(item.porcentaje_distribucion) / totalPorcentaje) *
-  //         100
-  //       ).toFixed(2);
-  //     });
-  //   }
-
-  //   this.distribucion.forEach((item: any) => {
-  //     // Distribuir gastos según porcentaje (excepto DAI)
-  //     item.monto_transporte = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoTransporte.monto
-  //     ).toFixed(2);
-  //     item.monto_seguro = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoSeguro.monto
-  //     ).toFixed(2);
-  //     item.monto_otros = (
-  //       (item.porcentaje_distribucion / 100) *
-  //       this.gastoOtros.monto
-  //     ).toFixed(2);
-
-  //     this.actualizarCostosProducto(item);
-  //   });
-
-  //   this.recalcularTotalRetaceado();
-  // }
 
   recalcularDistribucion() {
     if (!this.distribucion || this.distribucion.length === 0) {
