@@ -32,6 +32,9 @@ class LibrosIVAController extends Controller
                 $q->where('nombre', 'Factura')
                     ->orWhere('nombre', 'Factura de exportación');
             })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->orderByDesc('fecha')
@@ -88,6 +91,9 @@ class LibrosIVAController extends Controller
             ->whereHas('documento', function ($q) {
                 $q->where('nombre', 'Crédito fiscal');
             })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->orderByDesc('fecha')
@@ -122,6 +128,9 @@ class LibrosIVAController extends Controller
 
         $devoluciones = DevolucionVenta::with(['cliente'])
             ->where('enable', true)
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
@@ -307,6 +316,9 @@ class LibrosIVAController extends Controller
 
         $devoluciones = DevolucionCompra::with(['proveedor'])
             ->where('enable', true)
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 

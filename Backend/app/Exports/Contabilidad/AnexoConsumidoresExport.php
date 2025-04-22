@@ -30,6 +30,9 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping
                         ->whereHas('documento', function($q) {
                             $q->where('nombre', 'Factura');
                         })
+                        ->when($request->id_sucursal, function ($query) use ($request) {
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
