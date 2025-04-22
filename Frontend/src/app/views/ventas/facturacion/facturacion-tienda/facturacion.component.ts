@@ -32,7 +32,7 @@ export class FacturacionComponent implements OnInit {
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
-  // public clientes: any = [];
+  public clientes: any = [];
   public proyectos: any = [];
   public usuarios: any = [];
   public documentos: any = [];
@@ -181,16 +181,16 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    // this.apiService.getAll('clientes/list').subscribe(
-    //   (clientes) => {
-    //     this.clientes = clientes;
-    //     this.loading = false;
-    //   },
-    //   (error) => {
-    //     this.alertService.error(error);
-    //     this.loading = false;
-    //   }
-    // );
+    this.apiService.getAll('clientes/list').subscribe(
+      (clientes) => {
+        this.clientes = clientes;
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
 
     this.apiService.getAll('proyectos/list').subscribe(
       (proyectos) => {
@@ -259,7 +259,6 @@ export class FacturacionComponent implements OnInit {
     this.venta.detalle_banco = '';
     this.venta.id_cliente = '';
     this.venta.detalles = [];
-    this.venta.cliente = {};
     this.venta.descuento = 0;
     this.venta.sub_total = 0;
     this.venta.iva_percibido = 0;
@@ -326,9 +325,6 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
@@ -365,9 +361,6 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            if(!this.venta.cliente){
-                    this.venta.cliente = {};
-                }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
@@ -542,18 +535,16 @@ export class FacturacionComponent implements OnInit {
   }
 
   // Cliente
-  public setCliente(cliente:any){
-        if(cliente.id){
-            cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
-            this.venta.id_cliente = cliente.id;
-            this.venta.cliente = cliente;
-            if(cliente.tipo_contribuyente == "Grande") {
-                this.venta.retencion = 1;
-                this.sumTotal();
-            }
-        }
-        console.log(cliente);
+  public setCliente(cliente: any) {
+    if (!this.venta.id_cliente) {
+      this.clientes.push(cliente);
     }
+    this.venta.id_cliente = cliente.id;
+    if (cliente.tipo_contribuyente == 'Grande') {
+      this.venta.retencion = 1;
+      this.sumTotal();
+    }
+  }
 
   // Proyecto
   public setProyecto(proyecto: any) {
