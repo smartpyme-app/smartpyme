@@ -45,22 +45,28 @@ export class RetaceoComponent implements OnInit {
 
     // Si estamos editando un retaceo existente
     if (this.route.snapshot.paramMap.get('id')) {
-      this.loading = true;
-      this.apiService
-        .read('retaceo/', +this.route.snapshot.paramMap.get('id')!)
-        .subscribe(
-          (retaceo) => {
-            this.retaceo = retaceo;
-            this.cargarDetallesCompra();
-            this.cargarGastosRetaceo();
-            this.loading = false;
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
+      this.cargarRetaceoExistente(+this.route.snapshot.paramMap.get('id')!);
     }
+  }
+
+  cargarRetaceoExistente(id: number) {
+    this.loading = true;
+    this.apiService.read('retaceo/', id).subscribe(
+      (retaceo) => {
+        this.retaceo = retaceo;
+        
+        // Cargar gastos y distribución directamente del retaceo
+        this.procesarGastosDelRetaceo(retaceo.gastos);
+        this.procesarDistribucionDelRetaceo(retaceo.distribucion);
+        
+        this.calcularTotalGastos();
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
   }
 
   cargarFiltros() {
@@ -728,5 +734,80 @@ export class RetaceoComponent implements OnInit {
       default:
         return 'FOB'; // Valor predeterminado
     }
+  }
+  procesarGastosDelRetaceo(gastos: any[]) {
+    if (!gastos || gastos.length === 0) {
+      return;
+    }
+  
+
+    this.gastoTransporte = { id_gasto: null, tipo_gasto: 'Transporte', monto: 0 };
+    this.gastoSeguro = { id_gasto: null, tipo_gasto: 'Seguro', monto: 0 };
+    this.gastoDAI = { id_gasto: null, tipo_gasto: 'DAI', monto: 0 };
+    this.gastoOtros = { id_gasto: null, tipo_gasto: 'Otro', monto: 0 };
+
+    gastos.forEach((gasto: any) => {
+      switch (gasto.tipo_gasto) {
+        case 'Transporte':
+          this.gastoTransporte = gasto;
+          break;
+        case 'Seguro':
+          this.gastoSeguro = gasto;
+          break;
+        case 'DAI':
+          this.gastoDAI = gasto;
+          break;
+        case 'Otro':
+          this.gastoOtros = gasto;
+          break;
+      }
+    });
+  
+
+    this.gastoTransporte.monto = parseFloat(this.gastoTransporte.monto || 0);
+    this.gastoSeguro.monto = parseFloat(this.gastoSeguro.monto || 0);
+    this.gastoDAI.monto = parseFloat(this.gastoDAI.monto || 0);
+    this.gastoOtros.monto = parseFloat(this.gastoOtros.monto || 0);
+  }
+  
+  procesarDistribucionDelRetaceo(distribucion: any[]) {
+    if (!distribucion || distribucion.length === 0) {
+      return;
+    }
+  
+
+    this.distribucion = distribucion;
+  
+    
+    this.distribucion.forEach((item: any) => {
+  
+      item.cantidad = parseFloat(item.cantidad || 0);
+      item.costo_original = parseFloat(item.costo_original || 0);
+      item.valor_fob = parseFloat(item.valor_fob || 0);
+      item.porcentaje_distribucion = parseFloat(item.porcentaje_distribucion || 0);
+      item.porcentaje_dai = parseFloat(item.porcentaje_dai || 0);
+      
+
+      item.monto_transporte = parseFloat(item.monto_transporte || 0);
+      item.monto_seguro = parseFloat(item.monto_seguro || 0);
+      item.monto_dai = parseFloat(item.monto_dai || 0);
+      item.monto_otros = parseFloat(item.monto_otros || 0);
+      
+   
+      item.costo_landed = parseFloat(item.costo_landed || 0);
+      item.costo_retaceado = parseFloat(item.costo_retaceado || 0);
+  
+
+      if (item.id_producto) {
+        this.apiService.read('producto/', item.id_producto).subscribe(
+          (producto) => {
+            item.producto = producto;
+          },
+          (error) => {
+            console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
+          }
+        );
+      }
+    });
   }
 }
