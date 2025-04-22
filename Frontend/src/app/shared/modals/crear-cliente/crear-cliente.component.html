@@ -46,6 +46,10 @@
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
                         </div>
                         <div class="form-group col-6 col-lg-3">
+                            <label for="codigo_cliente">Código Cliente</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
                             <label for="correo">Correo</label>
                             <input type="email" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
                         </div>
@@ -242,6 +246,10 @@
                     <div class="form-group col-6">
                         <label for="nombre_empresa">Nombre comercial</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
+                    </div>
+                    <div class="form-group col-6 col-lg-3">
+                        <label for="codigo_cliente">Código de Cliente</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="tipo_persona">Tipo Persona:</label>
