@@ -40,38 +40,15 @@
     </div>
     <div class="row">
         <h6 class="mt-3">Detalles de la venta</h6>
-        <div class="form-group col-md-12 col-lg-4">
+       <div class="form-group col-md-12 col-lg-4">
             <label for="">Cliente</label>
-            <div class="input-group flex-nowrap">
-                <ng-select name="id_cliente" 
-                        placeholder="Consumidor Final" 
-                        [(ngModel)]="venta.id_cliente"
-                        [items]="clientesFiltrados"
-                        bindValue="id"
-                        [typeahead]="clienteInput$"
-                        class="form-select p-0">
-                <ng-template ng-header-tmp>
-                    <div class="px-2 py-2">
-                    <input type="text" class="form-control form-control-sm" 
-                            placeholder="Buscar por nombre, teléfono, DUI o NIT" 
-                            [ngModel]="terminoBusqueda" 
-                            (ngModelChange)="buscarCliente($event)">
-                    </div>
-                </ng-template>
-                    <ng-option [value]="">Consumidor final</ng-option>
-                    <ng-option value="" *ngIf="loading">Cargando clientes...</ng-option>
-                    <ng-template ng-option-tmp let-item="item">
-                        {{ item.tipo == 'Empresa' ? item.nombre_empresa : item.nombre }}
-                        <small class="text-muted" *ngIf="item.telefono">(Tel: {{item.telefono}})</small>
-                        <small class="text-muted" *ngIf="item.dui">(DUI: {{item.dui}})</small>
-                        <small class="text-muted" *ngIf="item.nit">(NIT: {{item.nit}})</small>
-                        <small class="text-muted" *ngIf="item.correo">(Correo: {{item.correo}})</small>
-                        <small class="text-muted" *ngIf="item.ncr">(NCR: {{item.ncr}})</small>
-                    </ng-template>
-                </ng-select>
-                <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
-            </div>
-        </div>
+           <div class="input-group w-100">
+               <div class="flex-grow-1">
+                   <app-buscador-clientes [cliente]="venta?.cliente" (selectCliente)="setCliente($event)"></app-buscador-clientes>
+               </div>
+               <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+           </div>
+       </div>
         <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
             <label for="observaciones">Observaciones:</label><br>
             <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones">
