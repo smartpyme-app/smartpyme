@@ -18,6 +18,10 @@
         <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
             <div class="row">
                 <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+                <div class="form-group col-6 col-lg-3">
+                  <label for="codigo_cliente">Código Cliente</label>
+                  <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+                </div>
                 <div class="form-group col-lg-3">
                     <label for="nombre">Nombre</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
@@ -30,10 +34,6 @@
                     <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label>
                     <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Número de Identificación</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
-                </div>
-                <div class="form-group col-6 col-lg-3">
-                    <label for="codigo_cliente">Código Cliente</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="correo">Correo</label>
@@ -109,7 +109,7 @@
         <div class="col-12" *ngIf="cliente.tipo == 'Empresa'" [ngClass]="{ 'order-1' :  cliente.tipo == 'Empresa', 'order-2' :  cliente.tipo == 'Persona' }">
             <div class="row">
                 <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
-                
+
                 <div class="form-group col-6 col-lg-4">
                     <label for="nombre_empresa">Empresa:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
@@ -218,7 +218,7 @@
                 <i class="fa fa-plus"></i> Agregar contacto
             </button>
         </div>
-        
+
         <div class="col-12">
             <div class="table-responsive">
                 <table class="table table-borderless table-hover" *ngIf="cliente.contactos?.length > 0">
@@ -256,6 +256,10 @@
     </div>
     <div class="row" *ngIf="cliente.tipo == 'Extranjero'">
             <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+          <div class="form-group col-6 col-lg-3">
+            <label for="codigo_cliente">Código de Cliente</label>
+            <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+          </div>
             <div class="form-group col-lg-3">
                 <label for="nombre">Nombre</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
@@ -281,10 +285,6 @@
             <div class="form-group col-6 col-lg-3">
                 <label for="nombre_empresa">Nombre comercial</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
-            </div>
-            <div class="form-group col-6 col-lg-3">
-                <label for="codigo_cliente">Código de Cliente</label>
-                <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
             </div>
             <div class="form-group col-6 col-lg-3">
                 <label for="tipo_persona">Tipo Persona:</label>
@@ -318,7 +318,7 @@
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
             </div>
     </div>
-    <div class="row">          
+    <div class="row">
         <div class="form-group col-md-12 mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                 <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
@@ -338,7 +338,7 @@
     <div class="modal-body">
       <form (ngSubmit)="submit($event)">
       <div class="row">
-          
+
           <div class="form-group col-md-6">
               <label for="nombre">Nombre:</label>
               <input type="text" class="form-control" name="nombre" [(ngModel)]="contacto.nombre">
@@ -379,9 +379,9 @@
               <label for="nota">Nota:</label>
               <textarea class="form-control" name="nota" [(ngModel)]="contacto.nota" cols="30" rows="2"></textarea>
           </div>
-                      
+
       </div>
-      <div class="row">          
+      <div class="row">
         <div class="form-group col-md-12 mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                 <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
