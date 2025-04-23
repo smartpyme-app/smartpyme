@@ -303,6 +303,8 @@ export class FacturacionComponent implements OnInit {
             this.venta = venta;
             if(!this.venta.cliente){
                 this.venta.cliente = {};
+            }else{
+              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
@@ -341,8 +343,10 @@ export class FacturacionComponent implements OnInit {
           (venta) => {
             this.venta = venta;
             if(!this.venta.cliente){
-                    this.venta.cliente = {};
-                }
+                this.venta.cliente = {};
+            }else{
+              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+            }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();

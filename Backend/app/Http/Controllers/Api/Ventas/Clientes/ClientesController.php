@@ -81,13 +81,19 @@ class ClientesController extends Controller
 
         $clientes = Cliente::where(function ($query) use ($txt, $txtClean) {
                 $query->where('nombre', 'like', '%' . $txt . '%')
+                      ->orWhere('apellido', 'like', $txt . '%')
                       ->orWhere('nombre_empresa', 'like', $txt . '%')
                       ->orWhere('nit', 'like', $txt . '%')
                       ->orWhere('dui', 'like', $txt . '%')
                       ->orWhere('telefono', 'like', $txt . '%')
+                      ->orWhere('empresa_telefono', 'like', $txt . '%')
+                      ->orWhere('red_social', 'like', $txt . '%')
+                      ->orWhere('etiquetas', 'like', $txt . '%')
+                      ->orWhere('codigo_cliente', 'like', $txt . '%')
                       ->orWhereRaw('REPLACE(ncr, "-", "") like ?', [$txtClean . '%'])
                       ->orWhereRaw('REPLACE(dui, "-", "") like ?', [$txtClean . '%']);
             })
+            ->where('enable', true)
             ->orderBy('nombre', 'asc')
             ->take(10)
             ->get();
