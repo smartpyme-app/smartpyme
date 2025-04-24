@@ -79,7 +79,7 @@
     
                 </div>
              </li>
-            <li class="mb-1">
+            <li class="mb-1" *ngIf="authUser?.tipo != 'Supervisor Limitado'">
                 <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/log-in.png" class="icon me-2">Compras
                 </button>
@@ -133,16 +133,17 @@
             <li tourAnchor="tour.notificaciones" id="tour.notificaciones" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center justify-content-between text-decoration-none py-1 w-100"><span><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</span><span class="badge bg-primary" *ngIf="notificaciones.total">{{ notificaciones.total ? notificaciones.total : 0 }}</span></a> </li>
             <li *ngIf="usuario.empresa.modulo_citas" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/calendar.png" class="icon me-2">Citas</a></li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
-            <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
+            <li *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor Limitado'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
                 <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Configuraciones
                 </button>
                 <div [collapse]="preferenciasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
+                    <!--mostrar estas opciones cuando es administrador pero al usuario limitado solo reportes automaticos-->
+                    <li *ngIf="apiService.auth_user().tipo == 'Administrador'" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
+                    <li *ngIf="apiService.auth_user().tipo == 'Administrador'" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
+                    <li *ngIf="apiService.auth_user().tipo == 'Administrador'" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
+                    <li *ngIf="apiService.auth_user().tipo == 'Administrador'" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
                     <!--Reportes automáticos-->
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes-automaticos']" tooltip="Reportes automáticos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file.png" class="icon me-2">Reportes automáticos</a></li>
                   </ul>

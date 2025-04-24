@@ -33,6 +33,9 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
                                 $q->where('nombre', 'Crédito fiscal');
                             });
                         })
+                        ->when($request->id_sucursal, function ($query) use ($request) {
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
@@ -40,6 +43,9 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
 
         $devoluciones = DevolucionVenta::with(['cliente'])
             ->where('enable', true)
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
