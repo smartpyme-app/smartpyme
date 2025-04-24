@@ -102,7 +102,6 @@ export class RetaceoComponent implements OnInit {
         this.bodegas = bodegas;
         this.loading = false;
         
-        // Una vez cargadas las bodegas, cargamos los datos para la bodega seleccionada
         this.cargarDatosPorBodega();
       }, 
       (error) => { 
@@ -118,7 +117,7 @@ export class RetaceoComponent implements OnInit {
     this.distribucion = [];
     this.retaceo.id_compra = null;
     
-    // Limpiar todos los gastos seleccionados
+
     Object.keys(this.gastosMap).forEach(tipo => {
       this.gastosMap[tipo].lista = [];
       this.gastosMap[tipo].seleccionados = [];
