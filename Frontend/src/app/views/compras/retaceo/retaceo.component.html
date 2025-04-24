@@ -18,10 +18,9 @@
             class="step-circle"
             [ngClass]="{
               active:
-                gastoTransporte.monto > 0 ||
-                gastoSeguro.monto > 0 ||
-                gastoDAI.monto > 0 ||
-                gastoOtros.monto > 0
+                gastosTransporte.length > 0 ||
+                gastosSeguro.length > 0 ||
+                gastosOtros.length > 0
             }"
           >
             2
@@ -30,10 +29,9 @@
             class="step-title"
             [ngClass]="{
               active:
-                gastoTransporte.monto > 0 ||
-                gastoSeguro.monto > 0 ||
-                gastoDAI.monto > 0 ||
-                gastoOtros.monto > 0
+                gastosTransporte.length > 0 ||
+                gastosSeguro.length > 0 ||
+                gastosOtros.length > 0
             }"
           >
             Agregar gastos
