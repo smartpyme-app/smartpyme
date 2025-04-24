@@ -335,9 +335,9 @@ export class RetaceoComponent implements OnInit {
     // Calcular los porcentajes de distribución (modo automático o manual)
     if (!this.distribucionManual) {
       this.distribucion.forEach((item) => {
-        item.porcentaje_distribucion = (
-          (parseFloat(item.valor_fob?.toString() || '0') / valorFobTotal) *
-          100
+        // Limitar a 3 decimales el porcentaje de distribución
+        item.porcentaje_distribucion = Number(
+          ((parseFloat(item.valor_fob?.toString() || '0') / valorFobTotal) * 100).toFixed(3)
         );
       });
     }
@@ -354,12 +354,12 @@ export class RetaceoComponent implements OnInit {
       // Asegurar que el porcentaje de distribución sea un número
       const porcentaje = parseFloat(item.porcentaje_distribucion?.toString() || '0');
       
-      // Calcular montos de gastos para este producto
-      item.monto_transporte = ((porcentaje / 100) * totalesPorTipo['Transporte']);
-      item.monto_seguro = ((porcentaje / 100) * totalesPorTipo['Seguro']);
-      item.monto_dai = ((parseFloat(item.valor_fob?.toString() || '0') * 
-                       parseFloat(item.porcentaje_dai?.toString() || '0')) / 100);
-      item.monto_otros = ((porcentaje / 100) * totalesPorTipo['Otro']);
+      // Calcular montos de gastos para este producto y redondear a 1 decimales
+      item.monto_transporte = Number(((porcentaje / 100) * totalesPorTipo['Transporte']).toFixed(1));
+      item.monto_seguro = Number(((porcentaje / 100) * totalesPorTipo['Seguro']).toFixed(1));
+      item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') * 
+                      parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
+      item.monto_otros = Number(((porcentaje / 100) * totalesPorTipo['Otro']).toFixed(1));
   
       // Calcular landed cost y costo retaceado
       this.actualizarCostosProducto(item);
@@ -449,7 +449,8 @@ export class RetaceoComponent implements OnInit {
         // Normalizar porcentajes para que sumen 100%
         this.distribucion.forEach((item) => {
           const val = parseFloat(item.porcentaje_distribucion?.toString() || '0');
-          item.porcentaje_distribucion = (val / totalPorcentaje) * 100;
+          // Redondear a 3 decimales máximo
+          item.porcentaje_distribucion = Number((val / totalPorcentaje * 100).toFixed(3));
         });
       }
     }
@@ -465,15 +466,17 @@ export class RetaceoComponent implements OnInit {
     this.distribucion.forEach((item) => {
       const porcentaje = parseFloat(item.porcentaje_distribucion?.toString() || '0');
       
-      // Distribuir gastos según porcentaje
-      item.monto_transporte = ((porcentaje / 100) * totalesPorTipo['Transporte']);
-      item.monto_seguro = ((porcentaje / 100) * totalesPorTipo['Seguro']);
-      item.monto_otros = ((porcentaje / 100) * totalesPorTipo['Otro']);
+      // Distribuir gastos según porcentaje y redondear a 2 decimales
+      item.monto_transporte = Number(((porcentaje / 100) * totalesPorTipo['Transporte']).toFixed(1));
+      item.monto_seguro = Number(((porcentaje / 100) * totalesPorTipo['Seguro']).toFixed(1));
+      item.monto_otros = Number(((porcentaje / 100) * totalesPorTipo['Otro']).toFixed(1));
       
       // Calcular el DAI según el porcentaje del producto
       if (item.porcentaje_dai) {
-        item.monto_dai = ((parseFloat(item.valor_fob?.toString() || '0') * 
-                          parseFloat(item.porcentaje_dai?.toString() || '0')) / 100);
+        // Redondear a 3 decimales el porcentaje DAI
+        item.porcentaje_dai = Number(parseFloat(item.porcentaje_dai.toString()).toFixed(1));
+        item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') * 
+                          parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
       }
   
       this.actualizarCostosProducto(item);
