@@ -230,7 +230,8 @@ export class RetaceoComponent implements OnInit {
       buscador: '',
       orden: 'fecha',
       direccion: 'desc',
-      paginate: 10
+      paginate: 10,
+      es_retaceo: true,
     };
   }
 

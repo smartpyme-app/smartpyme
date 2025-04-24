@@ -61,6 +61,9 @@ class GastosController extends Controller
                     ->when($request->dte && $request->dte == 1, function($query) {
                         return $query->whereNotNull('sello_mh');
                     })
+                    ->when($request->es_retaceo, function($query) use ($request){
+                        return $query->where('es_retaceo', true);
+                    })
                     ->when($request->buscador, function($query) use ($request){
                     return $query->whereHas('proveedor', function($q) use ($request){
                                 $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
