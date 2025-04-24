@@ -4,7 +4,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
-// Definir interfaces para mejorar la tipificación
+
 interface Gasto {
   id?: number;
   id_retaceo?: number;
@@ -48,8 +48,6 @@ export class RetaceoComponent implements OnInit {
   public saving = false;
   public opAvanzadas = false;
   public distribucionManual = false;
-  
-  // Mapa de tipos de gastos con sus listas y selectores
   public gastosMap: {
     [tipo: string]: {
       lista: Gasto[];
@@ -89,7 +87,6 @@ export class RetaceoComponent implements OnInit {
     this.cargarFiltros();
     this.cargarBodegas();
 
-    // Si estamos editando un retaceo existente
     if (this.route.snapshot.paramMap.get('id')) {
       this.cargarRetaceoExistente(+this.route.snapshot.paramMap.get('id')!);
     }
@@ -591,7 +588,7 @@ export class RetaceoComponent implements OnInit {
       .toFixed(2);
   }
 
-  // Métodos para calcular los totales (optimizados usando reduce)
+
   calcularTotalCantidad(): number {
     return this.distribucion.reduce(
       (total, item) => total + parseFloat(item.cantidad?.toString() || '0'),
