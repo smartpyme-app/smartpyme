@@ -6,6 +6,7 @@ import { ApiService } from '@services/api.service';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { firstValueFrom } from 'rxjs';
 import { NgForm } from '@angular/forms';
+import { HttpParams } from '@angular/common/http';
 import {
   DomSanitizer,
   SafeResourceUrl,
@@ -39,6 +40,8 @@ export class SuscripcionComponent implements OnInit {
     expirationYear: '',
     cvv: '',
   };
+
+  public pagoRecurrente = this.apiService.auth_user().empresa.pago_recurrente || false;
 
   public billingInfo = {
     countryCode: '',
@@ -436,14 +439,55 @@ export class SuscripcionComponent implements OnInit {
     }
   }
 
-  public imprimirDoc(recibo: any) {
-    window.open(
-      this.apiService.baseUrl +
-        '/api/suscripcion/recibo/pdf/' +
-        recibo.id +
-        '?token=' +
-        this.apiService.auth_token()
-    );
+  // public imprimirDoc(recibo: any) {
+  //   window.open(
+  //     this.apiService.baseUrl +
+  //       '/api/suscripcion/recibo/pdf/' +
+  //       recibo.id +
+  //       '?token=' +
+  //       this.apiService.auth_token()
+  //   );
+  // }
+
+  public imprimirRecibo(pago: any) {
+
+    if (!pago) {
+      console.error('Error: El objeto pago es nulo o indefinido');
+      this.alertService.error('No se puede imprimir el recibo: Datos de pago no disponibles');
+      return;
+    }
+    
+    if (!this.suscripcion) {
+      console.error('Error: El objeto suscripcion es nulo o indefinido');
+      this.alertService.error('No se puede imprimir el recibo: Datos de suscripción no disponibles');
+      return;
+    }
+    
+    const idSuscripcion = this.suscripcion.suscripcion?.id;
+    
+    if (!idSuscripcion) {
+      console.error('Error: El ID de suscripción no está definido');
+      this.alertService.error('No se puede imprimir el recibo: ID de suscripción no disponible');
+      return;
+    }
+  
+    const queryParams = [
+      `fecha=${encodeURIComponent(pago.fecha_transaccion || '')}`,
+      `monto=${encodeURIComponent(pago.monto || '')}`,
+      `estado=${encodeURIComponent(pago.estado || '')}`,
+      `plan=${encodeURIComponent(pago.plan || '')}`
+    ].join('&');
+    
+    const url = this.apiService.baseUrl +
+      '/api/suscripcion/' + 
+      idSuscripcion + 
+      '/recibo-suscripcion?' +
+      queryParams +
+      '&token=' +
+      this.apiService.auth_token();
+    
+    // console.log('URL generada:', url);
+    window.open(url);
   }
 
   public isFormValid(): boolean {
@@ -724,5 +768,33 @@ export class SuscripcionComponent implements OnInit {
     } catch (error) {
       console.error('Error al actualizar datos de usuario:', error);
     }
+  }
+
+  public onRecurrentPaymentChange(event: any): void {
+    this.saving = true;
+    const isRecurrent = event.target.checked;
+    
+    this.apiService.store('suscripcion/pago-recurrente', {
+      id_empresa: this.usuario.empresa.id,
+      pago_recurrente: isRecurrent
+    }).subscribe(
+      (response) => {
+        this.suscripcion.pago_recurrente = isRecurrent;
+        this.alertService.success(
+          'Éxito', 
+          `Pago recurrente ${isRecurrent ? 'activado' : 'desactivado'} exitosamente.`
+        );
+        this.saving = false;
+        this.loadAll(); // Para actualizar los datos desde el servidor
+      },
+      (error) => {
+        this.alertService.error(
+          error.error?.message || 'Error al actualizar el pago recurrente'
+        );
+        this.saving = false;
+        // Restaurar el estado anterior del interruptor
+        event.target.checked = !isRecurrent;
+      }
+    );
   }
 }

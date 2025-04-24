@@ -1,7 +1,9 @@
 <?php 
 
 use App\Http\Controllers\Api\Admin\SuscripcionesController;
+use App\Http\Controllers\Api\Admin\EmpresasController;
 use Illuminate\Support\Facades\Route;
+use Barryvdh\DomPDF\PDF;
 
     Route::get('/suscripciones',               [SuscripcionesController::class, 'index']);
     Route::get('/suscripciones/list',          [SuscripcionesController::class, 'list']);
@@ -14,5 +16,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/suscripcion/activar',        [SuscripcionesController::class, 'activateSystem']);
     Route::post('/suscripcion/suspender',      [SuscripcionesController::class, 'suspendSystem']);
     Route::get('/suscripciones/{id}/pagos',      [SuscripcionesController::class, 'getHistorialPagos']);
+    Route::get('/suscripcion/{id}/recibo-suscripcion',     [EmpresasController::class, 'printReciboSuscripcion']);
+    Route::post('/suscripcion/pago-recurrente',     [EmpresasController::class, 'updatePagoRecurrente']);
+
     
 ?>
