@@ -33,6 +33,7 @@ export class RetaceoComponent implements OnInit {
   public gastosTransporte: any[] = [];
   public gastosSeguro: any[] = [];
   public gastosOtros: any[] = [];
+  public bodegas: any = [];
 
   public selectedGastosTransporte: number[] = [];
   public selectedGastosSeguro: number[] = [];
@@ -48,7 +49,7 @@ export class RetaceoComponent implements OnInit {
   ngOnInit() {
     this.inicializarRetaceo();
     this.cargarFiltros();
-    this.cargarDatos();
+    this.cargarBodegas();
 
     // Si estamos editando un retaceo existente
     if (this.route.snapshot.paramMap.get('id')) {
@@ -56,13 +57,207 @@ export class RetaceoComponent implements OnInit {
     }
   }
 
+  cargarBodegas() {
+    this.loading = true;
+    this.apiService.getAll('bodegas/list').subscribe(
+      (bodegas) => {
+        this.bodegas = bodegas;
+        this.loading = false;
+        
+        // Una vez cargadas las bodegas, cargamos los datos para la bodega seleccionada
+        this.cargarDatosPorBodega();
+      }, 
+      (error) => { 
+        this.alertService.error(error); 
+        this.loading = false;
+      }
+    );
+  }
+
+  // Nueva función para manejar el cambio de bodega
+  onBodegaChange() {
+    this.compras = [];
+    this.gastos = [];
+    this.distribucion = [];
+    this.retaceo.id_compra = null;
+    
+    // Actualizar filtros con la nueva bodega seleccionada
+    this.filtros.id_sucursal = this.retaceo.id_sucursal;
+    
+    // Cargar datos específicos para esta bodega
+    this.cargarDatosPorBodega();
+  }
+
+  cargarDatosPorBodega() {
+    if (!this.retaceo.id_sucursal) return;
+    
+    this.loading = true;
+    this.filtros.id_sucursal = this.retaceo.id_sucursal;
+    
+    // Cargar compras filtradas por bodega
+    this.apiService.getAll('compras', this.filtros).subscribe(
+      (compras) => {
+        this.compras = compras.data.filter(
+          (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
+        );
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+
+    // Cargar gastos filtrados por bodega
+    this.apiService.getAll('gastos', this.filtros).subscribe(
+      (gastos) => {
+        this.gastos = gastos.data;
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
+
   obtenerConceptoGasto(id_gasto: number): string {
     const gasto = this.gastos.find((g: any) => g.id === id_gasto);
     return gasto ? gasto.concepto : 'Gasto no encontrado';
   }
 
+  actualizarEstado(nuevoEstado: string) {
+    this.loading = true;
 
-  actualizarGastosSeleccionados(tipo: string) {
+    const datosActualizacion = {
+      id: this.retaceo.id,
+      estado: nuevoEstado,
+    };
+
+    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
+      (response) => {
+        this.retaceo.estado = nuevoEstado;
+
+        let mensaje = '';
+        if (nuevoEstado === 'Aplicado') {
+          mensaje = 'El retaceo ha sido aplicado y los costos actualizados';
+        } else if (nuevoEstado === 'Anulado') {
+          mensaje = 'El retaceo ha sido anulado';
+        }
+
+        this.alertService.success(mensaje, 'Cambio de estado');
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
+
+  obtenerNombreColumnaIncoterm(): string {
+    switch (this.retaceo.incoterm) {
+      case 'FOB':
+        return 'FOB';
+      case 'CIF':
+        return 'CIF';
+      case 'EXW':
+        return 'EXW';
+      case 'FCA':
+        return 'FCA';
+      case 'FAS':
+        return 'FAS';
+      case 'CFR':
+        return 'CFR';
+      case 'CPT':
+        return 'CPT';
+      case 'CIP':
+        return 'CIP';
+      case 'DAT':
+        return 'DAT';
+      case 'DAP':
+        return 'DAP';
+      case 'DDP':
+        return 'DDP';
+      default:
+        return 'FOB'; // Valor predeterminado
+    }
+  }
+  
+  procesarGastosDelRetaceo(gastos: any[]) {
+    if (!gastos || gastos.length === 0) {
+      return;
+    }
+  
+    // Limpiar los arrays
+    this.gastosTransporte = [];
+    this.gastosSeguro = [];
+    this.gastosOtros = [];
+    this.selectedGastosTransporte = [];
+    this.selectedGastosSeguro = [];
+    this.selectedGastosOtros = [];
+  
+    // Agrupar gastos por tipo
+    gastos.forEach((gasto: any) => {
+      const gastoObj = {
+        id: gasto.id,
+        id_retaceo: gasto.id_retaceo,
+        id_gasto: gasto.id_gasto,
+        tipo_gasto: gasto.tipo_gasto,
+        monto: parseFloat(gasto.monto || 0)
+      };
+  
+      switch (gasto.tipo_gasto) {
+        case 'Transporte':
+          this.gastosTransporte.push(gastoObj);
+          this.selectedGastosTransporte.push(gasto.id_gasto);
+          break;
+        case 'Seguro':
+          this.gastosSeguro.push(gastoObj);
+          this.selectedGastosSeguro.push(gasto.id_gasto);
+          break;
+        case 'Otro':
+          this.gastosOtros.push(gastoObj);
+          this.selectedGastosOtros.push(gasto.id_gasto);
+          break;
+      }
+    });
+  }
+  
+  procesarDistribucionDelRetaceo(distribucion: any[]) {
+    if (!distribucion || distribucion.length === 0) {
+      return;
+    }
+  
+    this.distribucion = distribucion;
+  
+    this.distribucion.forEach((item: any) => {
+      item.cantidad = parseFloat(item.cantidad || 0);
+      item.costo_original = parseFloat(item.costo_original || 0);
+      item.valor_fob = parseFloat(item.valor_fob || 0);
+      item.porcentaje_distribucion = parseFloat(item.porcentaje_distribucion || 0);
+      item.porcentaje_dai = parseFloat(item.porcentaje_dai || 0);
+      
+      item.monto_transporte = parseFloat(item.monto_transporte || 0);
+      item.monto_seguro = parseFloat(item.monto_seguro || 0);
+      item.monto_dai = parseFloat(item.monto_dai || 0);
+      item.monto_otros = parseFloat(item.monto_otros || 0);
+      
+      item.costo_landed = parseFloat(item.costo_landed || 0);
+      item.costo_retaceado = parseFloat(item.costo_retaceado || 0);
+  
+      if (item.id_producto) {
+        this.apiService.read('producto/', item.id_producto).subscribe(
+          (producto) => {
+            item.producto = producto;
+          },
+          (error) => {
+            console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
+          }
+        );
+      }
+    });
+  }GastosSeleccionados(tipo: string) {
     switch (tipo) {
       case 'Transporte':
         // Eliminar gastos que ya no están seleccionados
@@ -127,8 +322,6 @@ export class RetaceoComponent implements OnInit {
     this.calcularTotalGastos();
   }
 
-  
-
   cargarRetaceoExistente(id: number) {
     this.loading = true;
     this.apiService.read('retaceo/', id).subscribe(
@@ -153,7 +346,6 @@ export class RetaceoComponent implements OnInit {
     this.filtros.id_sucursal = '';
     this.filtros.id_proveedor = '';
     this.filtros.id_usuario = '';
-    this.filtros.id_usuario = '';
     this.filtros.id_canal = '';
     this.filtros.id_documento = '';
     this.filtros.id_proyecto = '';
@@ -170,7 +362,7 @@ export class RetaceoComponent implements OnInit {
     this.retaceo = {
       fecha: this.apiService.date(),
       id_empresa: this.apiService.auth_user().id_empresa,
-      id_sucursal: this.apiService.auth_user().id_sucursal,
+      id_sucursal: this.apiService.auth_user().id_bodega,
       id_usuario: this.apiService.auth_user().id,
       total_gastos: 0,
       total_retaceado: 0,
@@ -189,35 +381,6 @@ export class RetaceoComponent implements OnInit {
     this.gastoOtros = { id_gasto: null, tipo_gasto: 'Otro', monto: 0 };
 
     this.distribucion = [];
-  }
-
-  cargarDatos() {
-    this.loading = true;
-
-    this.apiService.getAll('compras', this.filtros).subscribe(
-      (compras) => {
-        this.compras = compras.data.filter(
-          (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
-        );
-
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
-
-    // Cargar gastos (egresos)
-    this.apiService.getAll('gastos', this.filtros).subscribe(
-      (gastos) => {
-        this.gastos = gastos.data;
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
   }
 
   cargarDetallesCompra() {
@@ -684,7 +847,7 @@ export class RetaceoComponent implements OnInit {
       0
     );
   }
-  //calcularTotalRetaceado
+  
   calcularTotalRetaceado(): number {
     return this.distribucion.reduce(
       (total: number, item: any) =>
@@ -741,141 +904,67 @@ export class RetaceoComponent implements OnInit {
     }
   }
 
-  actualizarEstado(nuevoEstado: string) {
-    this.loading = true;
 
-    const datosActualizacion = {
-      id: this.retaceo.id,
-      estado: nuevoEstado,
-    };
-
-    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
-      (response) => {
-        this.retaceo.estado = nuevoEstado;
-
-        let mensaje = '';
-        if (nuevoEstado === 'Aplicado') {
-          mensaje = 'El retaceo ha sido aplicado y los costos actualizados';
-        } else if (nuevoEstado === 'Anulado') {
-          mensaje = 'El retaceo ha sido anulado';
+actualizarGastosSeleccionados(tipo: string) {
+  switch (tipo) {
+    case 'Transporte':
+      this.gastosTransporte = this.gastosTransporte.filter(gasto => 
+        this.selectedGastosTransporte.includes(gasto.id_gasto)
+      );
+      
+      this.selectedGastosTransporte.forEach(id_gasto => {
+        // Verificar si ya existe
+        const existe = this.gastosTransporte.some(g => g.id_gasto === id_gasto);
+        if (!existe) {
+          const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
+          this.gastosTransporte.push({
+            id_gasto: id_gasto,
+            tipo_gasto: 'Transporte',
+            monto: gastoInfo ? gastoInfo.total : 0
+          });
         }
-
-        this.alertService.success(mensaje, 'Cambio de estado');
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
-  }
-
-  obtenerNombreColumnaIncoterm(): string {
-    switch (this.retaceo.incoterm) {
-      case 'FOB':
-        return 'FOB';
-      case 'CIF':
-        return 'CIF';
-      case 'EXW':
-        return 'EXW';
-      case 'FCA':
-        return 'FCA';
-      case 'FAS':
-        return 'FAS';
-      case 'CFR':
-        return 'CFR';
-      case 'CPT':
-        return 'CPT';
-      case 'CIP':
-        return 'CIP';
-      case 'DAT':
-        return 'DAT';
-      case 'DAP':
-        return 'DAP';
-      case 'DDP':
-        return 'DDP';
-      default:
-        return 'FOB'; // Valor predeterminado
-    }
-  }
-  procesarGastosDelRetaceo(gastos: any[]) {
-    if (!gastos || gastos.length === 0) {
-      return;
-    }
-  
-    // Limpiar los arrays
-    this.gastosTransporte = [];
-    this.gastosSeguro = [];
-    this.gastosOtros = [];
-    this.selectedGastosTransporte = [];
-    this.selectedGastosSeguro = [];
-    this.selectedGastosOtros = [];
-  
-    // Agrupar gastos por tipo
-    gastos.forEach((gasto: any) => {
-      const gastoObj = {
-        id: gasto.id,
-        id_retaceo: gasto.id_retaceo,
-        id_gasto: gasto.id_gasto,
-        tipo_gasto: gasto.tipo_gasto,
-        monto: parseFloat(gasto.monto || 0)
-      };
-  
-      switch (gasto.tipo_gasto) {
-        case 'Transporte':
-          this.gastosTransporte.push(gastoObj);
-          this.selectedGastosTransporte.push(gasto.id_gasto);
-          break;
-        case 'Seguro':
-          this.gastosSeguro.push(gastoObj);
-          this.selectedGastosSeguro.push(gasto.id_gasto);
-          break;
-        case 'Otro':
-          this.gastosOtros.push(gastoObj);
-          this.selectedGastosOtros.push(gasto.id_gasto);
-          break;
-      }
-    });
-  }
-  
-  procesarDistribucionDelRetaceo(distribucion: any[]) {
-    if (!distribucion || distribucion.length === 0) {
-      return;
-    }
-  
-
-    this.distribucion = distribucion;
-  
-    
-    this.distribucion.forEach((item: any) => {
-  
-      item.cantidad = parseFloat(item.cantidad || 0);
-      item.costo_original = parseFloat(item.costo_original || 0);
-      item.valor_fob = parseFloat(item.valor_fob || 0);
-      item.porcentaje_distribucion = parseFloat(item.porcentaje_distribucion || 0);
-      item.porcentaje_dai = parseFloat(item.porcentaje_dai || 0);
+      });
+      break;
       
-
-      item.monto_transporte = parseFloat(item.monto_transporte || 0);
-      item.monto_seguro = parseFloat(item.monto_seguro || 0);
-      item.monto_dai = parseFloat(item.monto_dai || 0);
-      item.monto_otros = parseFloat(item.monto_otros || 0);
+    case 'Seguro':
+      // Lógica similar para seguro
+      this.gastosSeguro = this.gastosSeguro.filter(gasto => 
+        this.selectedGastosSeguro.includes(gasto.id_gasto)
+      );
       
-   
-      item.costo_landed = parseFloat(item.costo_landed || 0);
-      item.costo_retaceado = parseFloat(item.costo_retaceado || 0);
-  
-
-      if (item.id_producto) {
-        this.apiService.read('producto/', item.id_producto).subscribe(
-          (producto) => {
-            item.producto = producto;
-          },
-          (error) => {
-            console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
-          }
-        );
-      }
-    });
+      this.selectedGastosSeguro.forEach(id_gasto => {
+        const existe = this.gastosSeguro.some(g => g.id_gasto === id_gasto);
+        if (!existe) {
+          const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
+          this.gastosSeguro.push({
+            id_gasto: id_gasto,
+            tipo_gasto: 'Seguro',
+            monto: gastoInfo ? gastoInfo.total : 0
+          });
+        }
+      });
+      break;
+      
+    case 'Otro':
+      // Lógica similar para otros gastos
+      this.gastosOtros = this.gastosOtros.filter(gasto => 
+        this.selectedGastosOtros.includes(gasto.id_gasto)
+      );
+      
+      this.selectedGastosOtros.forEach(id_gasto => {
+        const existe = this.gastosOtros.some(g => g.id_gasto === id_gasto);
+        if (!existe) {
+          const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
+          this.gastosOtros.push({
+            id_gasto: id_gasto,
+            tipo_gasto: 'Otro',
+            monto: gastoInfo ? gastoInfo.total : 0
+          });
+        }
+      });
+      break;
   }
+  
+  this.calcularTotalGastos();
+}
 }

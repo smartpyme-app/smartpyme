@@ -1,4 +1,3 @@
-<!-- Encabezado -->
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
   <h3>Retaceo</h3>
   <button class="btn btn-light text-danger" routerLink="/retaceos">
@@ -78,7 +77,20 @@
     </div>
   </div>
 
-  <!-- si  *ngIf ="retaceo.id no poder selecionar otra compra pero si mostrar la compra seleccionada-->
+  <!-- Campo de Bodega con evento (change) para filtrar compras y gastos -->
+  <div class="form-group col-md-4 col-lg-3">
+    <label for="id_bodega">Bodega</label>
+    <select 
+      name="id_bodega" 
+      [(ngModel)]="retaceo.id_sucursal" 
+      (change)="onBodegaChange()"
+      [disabled]="retaceo.id" 
+      class="form-select">
+      <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+        {{ bodega.nombre }}
+      </option>
+    </select>
+  </div>
 
   <div class="row">
     <div class="form-group col-md-12 col-lg-4">
@@ -87,7 +99,7 @@
         <ng-select
           name="id_compra"
           placeholder="Seleccionar compra"
-          [disabled]="retaceo.id"
+          [disabled]="retaceo.id || !retaceo.id_sucursal"
           [(ngModel)]="retaceo.id_compra"
           (change)="cargarDetallesCompra()"
           class="form-select p-0"
@@ -258,7 +270,7 @@
         placeholder="Seleccionar gastos de transporte"
         [(ngModel)]="selectedGastosTransporte"
         (change)="actualizarGastosSeleccionados('Transporte')"
-        [disabled]="retaceo.id"
+        [disabled]="retaceo.id || !retaceo.id_sucursal"
         appendTo="body"
         class="form-select p-0"
       >
@@ -303,7 +315,7 @@
         placeholder="Seleccionar gastos de seguro"
         [(ngModel)]="selectedGastosSeguro"
         (change)="actualizarGastosSeleccionados('Seguro')"
-        [disabled]="retaceo.id"
+        [disabled]="retaceo.id || !retaceo.id_sucursal"
         appendTo="body"
         class="form-select p-0"
       >
@@ -348,7 +360,7 @@
         placeholder="Seleccionar otros gastos"
         [(ngModel)]="selectedGastosOtros"
         (change)="actualizarGastosSeleccionados('Otro')"
-        [disabled]="retaceo.id"
+        [disabled]="retaceo.id || !retaceo.id_sucursal"
         appendTo="body"
         class="form-select p-0"
       >
@@ -445,7 +457,6 @@
             <th class="text-center">Cantidad</th>
             <th class="text-end">Costo Antes</th>
             
-            <!-- <th class="text-end">FOB</th> -->
             <th class="text-end">{{ obtenerNombreColumnaIncoterm() }}</th>
             <th class="text-end">Dist. %</th>
             <th class="text-end">% DAI</th>
