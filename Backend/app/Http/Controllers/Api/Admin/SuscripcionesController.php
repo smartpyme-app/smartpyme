@@ -358,6 +358,7 @@ class SuscripcionesController extends Controller
         
         return $suscripcion->ordenesPago()
             ->select([
+                'id',
                 'id_orden',
                 'monto',
                 'estado',

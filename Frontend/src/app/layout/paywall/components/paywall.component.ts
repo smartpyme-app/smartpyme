@@ -15,9 +15,12 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 export class PaywallComponent implements OnInit {
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
   readonly PLANES = AppConstants.PLANES;
+  showAllPlans: boolean = true; 
 
   planName: string = '';
+  planId: number = 0; 
   price: number = 0;
+  montoPlanActual: number = this.apiService.auth_user().monto_plan;
   planFeatures: string[] = [];
   loading: boolean = false;
   estadoSuscripcion: string = '';
@@ -70,6 +73,24 @@ export class PaywallComponent implements OnInit {
     if (planData) {
       this.planFeatures = planData.CARACTERISTICAS;
       this.price = planData.PRECIO;
+      
+      // Establecer el ID del plan basado en el nombre seleccionado
+      switch (plan) {
+        case this.PLANES.EMPRENDEDOR.NOMBRE:
+          this.planId = AppConstants.PLANID.EMPRENDEDOR;
+          break;
+        case this.PLANES.ESTANDAR.NOMBRE:
+          this.planId = AppConstants.PLANID.ESTANDAR;
+          break;
+        case this.PLANES.AVANZADO.NOMBRE:
+          this.planId = AppConstants.PLANID.AVANZADO;
+          break;
+        case this.PLANES.PRO.NOMBRE:
+          this.planId = AppConstants.PLANID.PRO;
+          break;
+        default:
+          this.planId = 0;
+      }
     }
   }
 
@@ -116,7 +137,6 @@ export class PaywallComponent implements OnInit {
 
       const monthPadded = this.paymentData.expirationMonth.padStart(2, '0');
       const userData = this.apiService.auth_user();
-
       const paymentMethodData = {
         customer: {
           id: userData.id.toString(),
@@ -132,11 +152,14 @@ export class PaywallComponent implements OnInit {
           cvv: this.paymentData.cvv
         },
         plan: {
-          id_plan: userData.plan_id.toString(),
+          id_plan: this.planId.toString(),
           plan_name: this.planName
         },
         billingInfo: this.billingInfo
       };
+
+      console.log("Payment method data:", paymentMethodData);
+      
 
       const result = await this.n1coPaymentService.createPaymentMethod(paymentMethodData).toPromise();
 
@@ -229,7 +252,11 @@ export class PaywallComponent implements OnInit {
 
   togglePaymentForm() {
     this.showCardForm = !this.showCardForm;
+    // Actualizar la visibilidad de los planes
+    this.showAllPlans = !this.showCardForm;
   }
+  
+  
 
   logout() {
     this.apiService.logout();

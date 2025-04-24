@@ -12,7 +12,9 @@ use App\Models\Admin\Impuesto;
 use App\Models\Admin\Sucursal;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Inventario\Bodega;
+use App\Models\OrdenPago;
 use App\Models\Plan;
+use App\Models\Suscripcion;
 use App\Models\Transaccion;
 use App\Models\User;
 use App\Services\Suscripcion\SuscripcionService;
@@ -21,6 +23,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
 class EmpresasController extends Controller
@@ -250,6 +253,7 @@ class EmpresasController extends Controller
         $suscripcion = $empresa->suscripcion()->where('estado', 'activo')
             ->latest()
             ->first([
+                'id',
                 'estado', 
                 'fecha_proximo_pago', 
                 'fecha_ultimo_pago', 
@@ -261,11 +265,13 @@ class EmpresasController extends Controller
                 'fecha_proximo_pago', 
                 'fin_periodo_prueba'
             ]);
+
         
         if (!$suscripcion) {
             $suscripcion = $empresa->suscripcion()
                 ->latest()
                 ->first([
+                    'id',
                     'estado', 
                     'fecha_proximo_pago', 
                     'fecha_ultimo_pago', 
@@ -277,6 +283,11 @@ class EmpresasController extends Controller
                     'fecha_proximo_pago', 
                     'fin_periodo_prueba'
                 ]);
+        }
+
+
+        if ($empresa->pago_recurrente) {
+            $suscripcion->pago_recurrente_empresa = $empresa->pago_recurrente;
         }
         
         // Obtener el plan desde la suscripción o desde la empresa
@@ -306,11 +317,16 @@ class EmpresasController extends Controller
         foreach ($usuarios as $usuario) {
             $pagosPorUsuario = $usuario->ordenesPago()
                 ->select('plan', 'divisa', 'monto', 'estado', 'fecha_transaccion')
+                ->latest()
                 ->get()
                 ->toArray();
             
             $pagos = array_merge($pagos, $pagosPorUsuario);
         }
+        
+        usort($pagos, function($a, $b) {
+            return strtotime($b['fecha_transaccion']) - strtotime($a['fecha_transaccion']);
+        });
         
         // Obtener métodos de pago asociados a la empresa
         $metodoPago = null;
@@ -336,15 +352,61 @@ class EmpresasController extends Controller
         return Response()->json($dataResponse, 201);
     }
 
-    public function printRecibo($id){
+    // public function printRecibo($id){
 
-        $recibo = Transaccion::where('id', $id)->firstOrFail();
-        // return $recibo;
-        $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
-        $pdf->setPaper('US Letter', 'portrait');  
+    //     $recibo = Transaccion::where('id', $id)->firstOrFail();
+    //     // return $recibo;
+    //     $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+    //     $pdf->setPaper('US Letter', 'portrait');  
 
 
-        return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
+    //     return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
+    // }
+
+    public function printReciboSuscripcion($id, Request $request)
+    {
+        try {
+            Log::info('Imprimiendo recibo de suscripción con ID: ' . $id);
+            
+            // Obtener la suscripción
+            $suscripcion = Suscripcion::findOrFail($id);
+            
+            // Obtener datos del pago desde los parámetros
+            $fechaTransaccion = $request->get('fecha');
+            $monto = $request->get('monto');
+            $estado = $request->get('estado');
+            $plan = $request->get('plan');
+            
+            // Buscar empresa asociada
+            $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+            
+            // Preparar datos para la vista
+            $recibo = new \stdClass();
+            $recibo->id = 'R-' . time();
+            $recibo->concepto = "Pago de suscripción {$plan}";
+            $recibo->descripcion = "Plan {$plan} - {$suscripcion->tipo_plan}";
+            $recibo->total = $monto;
+            $recibo->estado = $estado;
+            $recibo->created_at = $fechaTransaccion ? 
+                                \Carbon\Carbon::parse($fechaTransaccion) : 
+                                now();
+            
+            // Asignar la empresa como una propiedad normal (no como función)
+            $recibo->empresa = $empresa;
+            
+            // Generar el PDF
+            $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
+            $pdf->setPaper('US Letter', 'portrait');
+            
+            return $pdf->stream("recibo-plan-{$plan}.pdf");
+        } catch (\Exception $e) {
+            Log::error('Error generando recibo: ' . $e->getMessage());
+            
+            return response()->json([
+                'error' => 'Error generando el recibo',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function eliminarDatos(Request $request){
@@ -419,6 +481,24 @@ class EmpresasController extends Controller
         }
 
         return $plan;
+    }
+
+    public function updatePagoRecurrente(Request $request)
+    {
+        $validated = $request->validate([
+            'id_empresa' => 'required|exists:empresas,id',
+            'pago_recurrente' => 'required|boolean',
+        ]);
+        
+        $empresa = Empresa::findOrFail($validated['id_empresa']);
+        $empresa->pago_recurrente = $validated['pago_recurrente'];
+        $empresa->save();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Pago recurrente actualizado exitosamente',
+            'data' => $empresa
+        ]);
     }
 
 }
