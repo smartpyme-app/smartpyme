@@ -164,18 +164,40 @@ export class GastoComponent implements OnInit {
         }
     }
 
-    public setTotal(){
-
-        if(this.gasto.impuesto){
-            this.gasto.total = (this.gasto.sub_total + (this.gasto.sub_total * (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
-            this.gasto.iva = (this.gasto.total - this.gasto.sub_total).toFixed(2);
-        }else{
+    public setTotal() {
+        if (this.gasto.impuesto) {
+           
+            const subTotal = parseFloat(this.gasto.sub_total) || 0;
+            const ivaRate = parseFloat(this.apiService.auth_user().empresa.iva) || 0;
+            
+            // Calcular el total con IVA
+            const totalWithIva = subTotal + (subTotal * (ivaRate / 100));
+            this.gasto.total = totalWithIva.toFixed(2);
+            
+            console.log(this.gasto.total);
+            
+            // Calcular el IVA
+            const ivaAmount = parseFloat(this.gasto.total) - subTotal;
+            this.gasto.iva = ivaAmount.toFixed(2);
+            
+            console.log(this.gasto.iva);
+        } else {
+          
             this.gasto.iva = 0;
-            this.gasto.total = this.gasto.sub_total;
+            this.gasto.total = parseFloat(this.gasto.sub_total).toFixed(2);
         }
-        this.gasto.renta_retenida = this.gasto.renta ? this.gasto.sub_total * 0.10 : 0;
-        this.gasto.iva_percibido = this.gasto.percepcion ? (this.gasto.sub_total * 0.01).toFixed(2) : 0;
-        this.gasto.total = (parseFloat(this.gasto.total) + parseFloat(this.gasto.iva_percibido) - parseFloat(this.gasto.renta_retenida)).toFixed(2);
+        
+        // Calcular retenciones e impuestos adicionales
+        const subTotal = parseFloat(this.gasto.sub_total) || 0;
+        this.gasto.renta_retenida = this.gasto.renta ? (subTotal * 0.10).toFixed(2) : 0;
+        this.gasto.iva_percibido = this.gasto.percepcion ? (subTotal * 0.01).toFixed(2) : 0;
+        
+        // Calcular el total final
+        const total = parseFloat(this.gasto.total) || 0;
+        const ivaPercibido = parseFloat(this.gasto.iva_percibido) || 0;
+        const rentaRetenida = parseFloat(this.gasto.renta_retenida) || 0;
+        
+        this.gasto.total = (total + ivaPercibido - rentaRetenida).toFixed(2);
     }
 
     public setSubTotal(){
