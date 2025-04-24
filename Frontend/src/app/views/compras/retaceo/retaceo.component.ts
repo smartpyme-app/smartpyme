@@ -4,6 +4,33 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
+// Definir interfaces para mejorar la tipificación
+interface Gasto {
+  id?: number;
+  id_retaceo?: number;
+  id_gasto: number;
+  tipo_gasto: 'Transporte' | 'Seguro' | 'DAI' | 'Otro';
+  monto: number;
+}
+
+interface ItemDistribucion {
+  id_retaceo?: number;
+  id_producto: number;
+  id_detalle_compra: number;
+  producto?: any;
+  cantidad: number;
+  costo_original: number;
+  valor_fob: number;
+  porcentaje_distribucion: number;
+  porcentaje_dai: number;
+  monto_transporte: number;
+  monto_seguro: number;
+  monto_dai: number;
+  monto_otros: number;
+  costo_landed: number;
+  costo_retaceado: number;
+}
+
 @Component({
   selector: 'app-retaceo',
   templateUrl: './retaceo.component.html',
@@ -11,33 +38,44 @@ import Swal from 'sweetalert2';
 })
 export class RetaceoComponent implements OnInit {
   public retaceo: any = {};
-  public compras: any = [];
-  public gastos: any = [];
-  public distribucion: any = [];
-  public detallesCompra: any = [];
+  public compras: any[] = [];
+  public gastos: any[] = [];
+  public distribucion: ItemDistribucion[] = [];
+  public detallesCompra: any[] = [];
   public filtros: any = {};
-
-  public gastoTransporte: any = {
-    id_gasto: null,
-    tipo_gasto: 'Transporte',
-    monto: 0,
-  };
-  public gastoSeguro: any = { id_gasto: null, tipo_gasto: 'Seguro', monto: 0 };
-  public gastoDAI: any = { id_gasto: null, tipo_gasto: 'DAI', monto: 0 };
-  public gastoOtros: any = { id_gasto: null, tipo_gasto: 'Otro', monto: 0 };
 
   public loading = false;
   public saving = false;
   public opAvanzadas = false;
-  public distribucionManual: boolean = false;
-  public gastosTransporte: any[] = [];
-  public gastosSeguro: any[] = [];
-  public gastosOtros: any[] = [];
-  public bodegas: any = [];
-
-  public selectedGastosTransporte: number[] = [];
-  public selectedGastosSeguro: number[] = [];
-  public selectedGastosOtros: number[] = [];
+  public distribucionManual = false;
+  
+  // Mapa de tipos de gastos con sus listas y selectores
+  public gastosMap: {
+    [tipo: string]: {
+      lista: Gasto[];
+      seleccionados: number[];
+    }
+  } = {
+    'Transporte': { lista: [], seleccionados: [] },
+    'Seguro': { lista: [], seleccionados: [] },
+    'Otro': { lista: [], seleccionados: [] }
+  };
+  
+  // Propiedades para mantener la compatibilidad con el HTML existente
+  public get gastosTransporte(): Gasto[] { return this.gastosMap['Transporte'].lista; }
+  public get gastosSeguro(): Gasto[] { return this.gastosMap['Seguro'].lista; }
+  public get gastosOtros(): Gasto[] { return this.gastosMap['Otro'].lista; }
+  
+  public get selectedGastosTransporte(): number[] { return this.gastosMap['Transporte'].seleccionados; }
+  public set selectedGastosTransporte(value: number[]) { this.gastosMap['Transporte'].seleccionados = value; }
+  
+  public get selectedGastosSeguro(): number[] { return this.gastosMap['Seguro'].seleccionados; }
+  public set selectedGastosSeguro(value: number[]) { this.gastosMap['Seguro'].seleccionados = value; }
+  
+  public get selectedGastosOtros(): number[] { return this.gastosMap['Otro'].seleccionados; }
+  public set selectedGastosOtros(value: number[]) { this.gastosMap['Otro'].seleccionados = value; }
+  
+  public bodegas: any[] = [];
 
   constructor(
     public apiService: ApiService,
@@ -74,12 +112,17 @@ export class RetaceoComponent implements OnInit {
     );
   }
 
-  // Nueva función para manejar el cambio de bodega
   onBodegaChange() {
     this.compras = [];
     this.gastos = [];
     this.distribucion = [];
     this.retaceo.id_compra = null;
+    
+    // Limpiar todos los gastos seleccionados
+    Object.keys(this.gastosMap).forEach(tipo => {
+      this.gastosMap[tipo].lista = [];
+      this.gastosMap[tipo].seleccionados = [];
+    });
     
     // Actualizar filtros con la nueva bodega seleccionada
     this.filtros.id_sucursal = this.retaceo.id_sucursal;
@@ -126,198 +169,33 @@ export class RetaceoComponent implements OnInit {
     return gasto ? gasto.concepto : 'Gasto no encontrado';
   }
 
-  actualizarEstado(nuevoEstado: string) {
-    this.loading = true;
-
-    const datosActualizacion = {
-      id: this.retaceo.id,
-      estado: nuevoEstado,
-    };
-
-    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
-      (response) => {
-        this.retaceo.estado = nuevoEstado;
-
-        let mensaje = '';
-        if (nuevoEstado === 'Aplicado') {
-          mensaje = 'El retaceo ha sido aplicado y los costos actualizados';
-        } else if (nuevoEstado === 'Anulado') {
-          mensaje = 'El retaceo ha sido anulado';
-        }
-
-        this.alertService.success(mensaje, 'Cambio de estado');
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
+  // Método optimizado para actualizar los gastos seleccionados
+  actualizarGastosSeleccionados(tipo: string) {
+    if (!this.gastosMap[tipo]) {
+      console.error(`Tipo de gasto no válido: ${tipo}`);
+      return;
+    }
+    
+    const gastoInfo = this.gastosMap[tipo];
+    
+    // Filtrar gastos que ya no están seleccionados
+    gastoInfo.lista = gastoInfo.lista.filter(gasto => 
+      gastoInfo.seleccionados.includes(gasto.id_gasto)
     );
-  }
-
-  obtenerNombreColumnaIncoterm(): string {
-    switch (this.retaceo.incoterm) {
-      case 'FOB':
-        return 'FOB';
-      case 'CIF':
-        return 'CIF';
-      case 'EXW':
-        return 'EXW';
-      case 'FCA':
-        return 'FCA';
-      case 'FAS':
-        return 'FAS';
-      case 'CFR':
-        return 'CFR';
-      case 'CPT':
-        return 'CPT';
-      case 'CIP':
-        return 'CIP';
-      case 'DAT':
-        return 'DAT';
-      case 'DAP':
-        return 'DAP';
-      case 'DDP':
-        return 'DDP';
-      default:
-        return 'FOB'; // Valor predeterminado
-    }
-  }
-  
-  procesarGastosDelRetaceo(gastos: any[]) {
-    if (!gastos || gastos.length === 0) {
-      return;
-    }
-  
-    // Limpiar los arrays
-    this.gastosTransporte = [];
-    this.gastosSeguro = [];
-    this.gastosOtros = [];
-    this.selectedGastosTransporte = [];
-    this.selectedGastosSeguro = [];
-    this.selectedGastosOtros = [];
-  
-    // Agrupar gastos por tipo
-    gastos.forEach((gasto: any) => {
-      const gastoObj = {
-        id: gasto.id,
-        id_retaceo: gasto.id_retaceo,
-        id_gasto: gasto.id_gasto,
-        tipo_gasto: gasto.tipo_gasto,
-        monto: parseFloat(gasto.monto || 0)
-      };
-  
-      switch (gasto.tipo_gasto) {
-        case 'Transporte':
-          this.gastosTransporte.push(gastoObj);
-          this.selectedGastosTransporte.push(gasto.id_gasto);
-          break;
-        case 'Seguro':
-          this.gastosSeguro.push(gastoObj);
-          this.selectedGastosSeguro.push(gasto.id_gasto);
-          break;
-        case 'Otro':
-          this.gastosOtros.push(gastoObj);
-          this.selectedGastosOtros.push(gasto.id_gasto);
-          break;
+    
+    // Agregar nuevos gastos seleccionados
+    gastoInfo.seleccionados.forEach(id_gasto => {
+      // Verificar si ya existe
+      const existe = gastoInfo.lista.some(g => g.id_gasto === id_gasto);
+      if (!existe) {
+        const gastoDetalle = this.gastos.find((g: any) => g.id === id_gasto);
+        gastoInfo.lista.push({
+          id_gasto: id_gasto,
+          tipo_gasto: tipo as any,
+          monto: gastoDetalle ? gastoDetalle.total : 0
+        });
       }
     });
-  }
-  
-  procesarDistribucionDelRetaceo(distribucion: any[]) {
-    if (!distribucion || distribucion.length === 0) {
-      return;
-    }
-  
-    this.distribucion = distribucion;
-  
-    this.distribucion.forEach((item: any) => {
-      item.cantidad = parseFloat(item.cantidad || 0);
-      item.costo_original = parseFloat(item.costo_original || 0);
-      item.valor_fob = parseFloat(item.valor_fob || 0);
-      item.porcentaje_distribucion = parseFloat(item.porcentaje_distribucion || 0);
-      item.porcentaje_dai = parseFloat(item.porcentaje_dai || 0);
-      
-      item.monto_transporte = parseFloat(item.monto_transporte || 0);
-      item.monto_seguro = parseFloat(item.monto_seguro || 0);
-      item.monto_dai = parseFloat(item.monto_dai || 0);
-      item.monto_otros = parseFloat(item.monto_otros || 0);
-      
-      item.costo_landed = parseFloat(item.costo_landed || 0);
-      item.costo_retaceado = parseFloat(item.costo_retaceado || 0);
-  
-      if (item.id_producto) {
-        this.apiService.read('producto/', item.id_producto).subscribe(
-          (producto) => {
-            item.producto = producto;
-          },
-          (error) => {
-            console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
-          }
-        );
-      }
-    });
-  }GastosSeleccionados(tipo: string) {
-    switch (tipo) {
-      case 'Transporte':
-        // Eliminar gastos que ya no están seleccionados
-        this.gastosTransporte = this.gastosTransporte.filter(gasto => 
-          this.selectedGastosTransporte.includes(gasto.id_gasto)
-        );
-        
-        // Agregar nuevos gastos seleccionados
-        this.selectedGastosTransporte.forEach(id_gasto => {
-          // Verificar si ya existe
-          const existe = this.gastosTransporte.some(g => g.id_gasto === id_gasto);
-          if (!existe) {
-            const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
-            this.gastosTransporte.push({
-              id_gasto: id_gasto,
-              tipo_gasto: 'Transporte',
-              monto: gastoInfo ? gastoInfo.total : 0
-            });
-          }
-        });
-        break;
-        
-      case 'Seguro':
-        // Lógica similar para seguro
-        this.gastosSeguro = this.gastosSeguro.filter(gasto => 
-          this.selectedGastosSeguro.includes(gasto.id_gasto)
-        );
-        
-        this.selectedGastosSeguro.forEach(id_gasto => {
-          const existe = this.gastosSeguro.some(g => g.id_gasto === id_gasto);
-          if (!existe) {
-            const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
-            this.gastosSeguro.push({
-              id_gasto: id_gasto,
-              tipo_gasto: 'Seguro',
-              monto: gastoInfo ? gastoInfo.total : 0
-            });
-          }
-        });
-        break;
-        
-      case 'Otro':
-        // Lógica similar para otros gastos
-        this.gastosOtros = this.gastosOtros.filter(gasto => 
-          this.selectedGastosOtros.includes(gasto.id_gasto)
-        );
-        
-        this.selectedGastosOtros.forEach(id_gasto => {
-          const existe = this.gastosOtros.some(g => g.id_gasto === id_gasto);
-          if (!existe) {
-            const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
-            this.gastosOtros.push({
-              id_gasto: id_gasto,
-              tipo_gasto: 'Otro',
-              monto: gastoInfo ? gastoInfo.total : 0
-            });
-          }
-        });
-        break;
-    }
     
     this.calcularTotalGastos();
   }
@@ -343,19 +221,21 @@ export class RetaceoComponent implements OnInit {
   }
 
   cargarFiltros() {
-    this.filtros.id_sucursal = '';
-    this.filtros.id_proveedor = '';
-    this.filtros.id_usuario = '';
-    this.filtros.id_canal = '';
-    this.filtros.id_documento = '';
-    this.filtros.id_proyecto = '';
-    this.filtros.forma_pago = '';
-    this.filtros.dte = '';
-    this.filtros.estado = '';
-    this.filtros.buscador = '';
-    this.filtros.orden = 'fecha';
-    this.filtros.direccion = 'desc';
-    this.filtros.paginate = 10;
+    this.filtros = {
+      id_sucursal: '',
+      id_proveedor: '',
+      id_usuario: '',
+      id_canal: '',
+      id_documento: '',
+      id_proyecto: '',
+      forma_pago: '',
+      dte: '',
+      estado: '',
+      buscador: '',
+      orden: 'fecha',
+      direccion: 'desc',
+      paginate: 10
+    };
   }
 
   inicializarRetaceo() {
@@ -371,14 +251,11 @@ export class RetaceoComponent implements OnInit {
       estado: 'Pendiente',
     };
 
-    this.gastoTransporte = {
-      id_gasto: null,
-      tipo_gasto: 'Transporte',
-      monto: 0,
-    };
-    this.gastoSeguro = { id_gasto: null, tipo_gasto: 'Seguro', monto: 0 };
-    this.gastoDAI = { id_gasto: null, tipo_gasto: 'DAI', monto: 0 };
-    this.gastoOtros = { id_gasto: null, tipo_gasto: 'Otro', monto: 0 };
+    // Limpiar todos los gastos
+    Object.keys(this.gastosMap).forEach(tipo => {
+      this.gastosMap[tipo].lista = [];
+      this.gastosMap[tipo].seleccionados = [];
+    });
 
     this.distribucion = [];
   }
@@ -395,7 +272,7 @@ export class RetaceoComponent implements OnInit {
         this.distribucion = [];
         this.detallesCompra.forEach((detalle: any) => {
           this.distribucion.push({
-            id_retaceo: null,
+            id_retaceo: 0,
             id_producto: detalle.id_producto,
             id_detalle_compra: detalle.id,
             producto: detalle.producto || { nombre: detalle.descripcion },
@@ -422,92 +299,16 @@ export class RetaceoComponent implements OnInit {
     );
   }
 
-  cargarGastosRetaceo() {
-    if (!this.retaceo.id) return;
-
-    this.apiService
-      .getAll('retaceo_gastos', { id_retaceo: this.retaceo.id })
-      .subscribe(
-        (gastos) => {
-          gastos.forEach((gasto: any) => {
-            switch (gasto.tipo_gasto) {
-              case 'Transporte':
-                this.gastoTransporte = gasto;
-                break;
-              case 'Seguro':
-                this.gastoSeguro = gasto;
-                break;
-              case 'DAI':
-                this.gastoDAI = gasto;
-                break;
-              case 'Otro':
-                this.gastoOtros = gasto;
-                break;
-            }
-          });
-
-          this.calcularTotalGastos();
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-
-    // Cargar distribución
-    this.apiService
-      .getAll('retaceo_distribucion', { id_retaceo: this.retaceo.id })
-      .subscribe(
-        (distribucion) => {
-          this.distribucion = distribucion;
-          // Obtener productos
-          this.distribucion.forEach((item: any) => {
-            this.apiService
-              .read('producto/', item.id_producto)
-              .subscribe((producto) => {
-                item.producto = producto;
-              });
-          });
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-  }
-
-  setGastoMonto(tipo: string) {
-    let gasto;
-    switch (tipo) {
-      case 'Transporte':
-        gasto = this.gastos.find(
-          (g: any) => g.id === this.gastoTransporte.id_gasto
-        );
-        if (gasto) this.gastoTransporte.monto = gasto.total || 0;
-        break;
-      case 'Seguro':
-        gasto = this.gastos.find(
-          (g: any) => g.id === this.gastoSeguro.id_gasto
-        );
-        if (gasto) this.gastoSeguro.monto = gasto.total || 0;
-        break;
-      case 'DAI':
-        gasto = this.gastos.find((g: any) => g.id === this.gastoDAI.id_gasto);
-        if (gasto) this.gastoDAI.monto = gasto.total || 0;
-        break;
-      case 'Otro':
-        gasto = this.gastos.find((g: any) => g.id === this.gastoOtros.id_gasto);
-        if (gasto) this.gastoOtros.monto = gasto.total || 0;
-        break;
-    }
-
-    this.calcularTotalGastos();
-  }
-
   calcularTotalGastos() {
-    const totalTransporte = this.gastosTransporte.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
-    const totalSeguro = this.gastosSeguro.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
-    const totalOtros = this.gastosOtros.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    // Calcular el total por cada tipo de gasto
+    const totales = Object.keys(this.gastosMap).reduce((sum, tipo) => {
+      const totalTipo = this.gastosMap[tipo].lista.reduce(
+        (acc, gasto) => acc + parseFloat(gasto.monto?.toString() || '0'), 0);
+      
+      return sum + totalTipo;
+    }, 0);
     
-    this.retaceo.total_gastos = (totalTransporte + totalSeguro + totalOtros).toFixed(2);
+    this.retaceo.total_gastos = totales.toFixed(2);
   }
 
   calcularDistribucion() {
@@ -522,7 +323,7 @@ export class RetaceoComponent implements OnInit {
     }
   
     const valorFobTotal = this.distribucion.reduce(
-      (sum: number, item: any) => sum + parseFloat(item.valor_fob || 0),
+      (sum, item) => sum + parseFloat(item.valor_fob?.toString() || '0'),
       0
     );
   
@@ -533,32 +334,32 @@ export class RetaceoComponent implements OnInit {
   
     // Calcular los porcentajes de distribución (modo automático o manual)
     if (!this.distribucionManual) {
-      this.distribucion.forEach((item: any) => {
+      this.distribucion.forEach((item) => {
         item.porcentaje_distribucion = (
-          (parseFloat(item.valor_fob) / valorFobTotal) *
+          (parseFloat(item.valor_fob?.toString() || '0') / valorFobTotal) *
           100
-        ).toFixed(2);
+        );
       });
     }
   
-    // IMPORTANTE: Obtener el total de cada tipo de gasto
-    const totalTransporte = this.gastosTransporte.reduce(
-      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
-    const totalSeguro = this.gastosSeguro.reduce(
-      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
-    const totalOtros = this.gastosOtros.reduce(
-      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    // Obtener total de cada tipo de gasto
+    const totalesPorTipo = {
+      'Transporte': this.calcularTotalPorTipoGasto('Transporte'),
+      'Seguro': this.calcularTotalPorTipoGasto('Seguro'),
+      'Otro': this.calcularTotalPorTipoGasto('Otro')
+    };
   
     // Distribuir los gastos según el porcentaje
-    this.distribucion.forEach((item: any) => {
+    this.distribucion.forEach((item) => {
       // Asegurar que el porcentaje de distribución sea un número
-      const porcentaje = parseFloat(item.porcentaje_distribucion);
+      const porcentaje = parseFloat(item.porcentaje_distribucion?.toString() || '0');
       
       // Calcular montos de gastos para este producto
-      item.monto_transporte = ((porcentaje / 100) * totalTransporte).toFixed(2);
-      item.monto_seguro = ((porcentaje / 100) * totalSeguro).toFixed(2);
-      item.monto_dai = ((parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai || 0)) / 100).toFixed(2);
-      item.monto_otros = ((porcentaje / 100) * totalOtros).toFixed(2);
+      item.monto_transporte = ((porcentaje / 100) * totalesPorTipo['Transporte']);
+      item.monto_seguro = ((porcentaje / 100) * totalesPorTipo['Seguro']);
+      item.monto_dai = ((parseFloat(item.valor_fob?.toString() || '0') * 
+                       parseFloat(item.porcentaje_dai?.toString() || '0')) / 100);
+      item.monto_otros = ((porcentaje / 100) * totalesPorTipo['Otro']);
   
       // Calcular landed cost y costo retaceado
       this.actualizarCostosProducto(item);
@@ -568,14 +369,24 @@ export class RetaceoComponent implements OnInit {
     this.alertService.success('Distribución calculada correctamente', 'Distribución');
   }
 
+  // Método auxiliar para calcular el total por tipo de gasto
+  calcularTotalPorTipoGasto(tipo: string): number {
+    if (!this.gastosMap[tipo]) return 0;
+    
+    return this.gastosMap[tipo].lista.reduce(
+      (acc, gasto) => acc + parseFloat(gasto.monto?.toString() || '0'), 0);
+  }
+
   onSubmit() {
     this.saving = true;
 
-    const gastos = [
-      ...this.gastosTransporte,
-      ...this.gastosSeguro,
-      ...this.gastosOtros
-    ].filter(gasto => gasto.id_gasto && parseFloat(gasto.monto) > 0);
+    // Aplanar todos los gastos en un solo array
+    const gastos = Object.keys(this.gastosMap).reduce((arr, tipo) => {
+      const gastosValidos = this.gastosMap[tipo].lista.filter(
+        gasto => gasto.id_gasto && parseFloat(gasto.monto?.toString() || '0') > 0
+      );
+      return [...arr, ...gastosValidos];
+    }, [] as Gasto[]);
 
     // Preparar objeto para enviar al servidor
     const datosRetaceo = {
@@ -597,9 +408,6 @@ export class RetaceoComponent implements OnInit {
     );
   }
 
-  toggleDiv() {
-    this.opAvanzadas = !this.opAvanzadas;
-  }
   calcularImpactoTotal(): number {
     if (!this.distribucion || this.distribucion.length === 0) {
       return 0;
@@ -607,17 +415,16 @@ export class RetaceoComponent implements OnInit {
 
     let impactoTotal = 0;
 
-    this.distribucion.forEach((item: any) => {
-      const costoOriginal = parseFloat(item.costo_original);
-      const costoRetaceado = parseFloat(item.costo_retaceado);
-      const cantidad = parseFloat(item.cantidad);
+    this.distribucion.forEach((item) => {
+      const costoOriginal = parseFloat(item.costo_original?.toString() || '0');
+      const costoRetaceado = parseFloat(item.costo_retaceado?.toString() || '0');
+      const cantidad = parseFloat(item.cantidad?.toString() || '0');
 
       impactoTotal += (costoRetaceado - costoOriginal) * cantidad;
     });
 
     return impactoTotal;
   }
-
 
   recalcularDistribucion() {
     if (!this.distribucion || this.distribucion.length === 0) {
@@ -626,52 +433,47 @@ export class RetaceoComponent implements OnInit {
   
     // Verificar que la suma de porcentajes sea 100%
     const totalPorcentaje = this.distribucion.reduce(
-      (sum: number, item: any) =>
-        sum + parseFloat(item.porcentaje_distribucion || 0),
+      (sum, item) => sum + parseFloat(item.porcentaje_distribucion?.toString() || '0'),
       0
     );
   
     // Mostrar advertencia si los porcentajes no suman 100%
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.warning(
-        `La suma de porcentajes (${totalPorcentaje.toFixed(
-          2
-        )}%) debe ser 100%.`,
+        `La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%.`,
         'Distribución'
       );
   
       // Si no estamos en modo manual, normalizar
       if (!this.distribucionManual) {
         // Normalizar porcentajes para que sumen 100%
-        this.distribucion.forEach((item: any) => {
-          item.porcentaje_distribucion = (
-            (parseFloat(item.porcentaje_distribucion) / totalPorcentaje) *
-            100
-          ).toFixed(2);
+        this.distribucion.forEach((item) => {
+          const val = parseFloat(item.porcentaje_distribucion?.toString() || '0');
+          item.porcentaje_distribucion = (val / totalPorcentaje) * 100;
         });
       }
     }
   
-    // IMPORTANTE: Calcular el total de cada tipo de gasto
-    const totalTransporte = this.gastosTransporte.reduce(
-      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
-    const totalSeguro = this.gastosSeguro.reduce(
-      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
-    const totalOtros = this.gastosOtros.reduce(
-      (sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+    // Obtener total de cada tipo de gasto
+    const totalesPorTipo = {
+      'Transporte': this.calcularTotalPorTipoGasto('Transporte'),
+      'Seguro': this.calcularTotalPorTipoGasto('Seguro'),
+      'Otro': this.calcularTotalPorTipoGasto('Otro')
+    };
   
     // Calcular montos basados en los porcentajes actuales
-    this.distribucion.forEach((item: any) => {
-      const porcentaje = parseFloat(item.porcentaje_distribucion || 0);
+    this.distribucion.forEach((item) => {
+      const porcentaje = parseFloat(item.porcentaje_distribucion?.toString() || '0');
       
       // Distribuir gastos según porcentaje
-      item.monto_transporte = ((porcentaje / 100) * totalTransporte).toFixed(2);
-      item.monto_seguro = ((porcentaje / 100) * totalSeguro).toFixed(2);
-      item.monto_otros = ((porcentaje / 100) * totalOtros).toFixed(2);
+      item.monto_transporte = ((porcentaje / 100) * totalesPorTipo['Transporte']);
+      item.monto_seguro = ((porcentaje / 100) * totalesPorTipo['Seguro']);
+      item.monto_otros = ((porcentaje / 100) * totalesPorTipo['Otro']);
       
       // Calcular el DAI según el porcentaje del producto
       if (item.porcentaje_dai) {
-        item.monto_dai = ((parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai)) / 100).toFixed(2);
+        item.monto_dai = ((parseFloat(item.valor_fob?.toString() || '0') * 
+                          parseFloat(item.porcentaje_dai?.toString() || '0')) / 100);
       }
   
       this.actualizarCostosProducto(item);
@@ -682,19 +484,17 @@ export class RetaceoComponent implements OnInit {
 
   guardarRetaceo() {
     const totalPorcentaje = this.distribucion.reduce(
-      (sum: number, item: any) =>
-        sum + parseFloat(item.porcentaje_distribucion || 0),
+      (sum, item) => sum + parseFloat(item.porcentaje_distribucion?.toString() || '0'),
       0
     );
 
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.error(
-        `La suma de porcentajes de distribución (${totalPorcentaje.toFixed(
-          2
-        )}%) debe ser exactamente 100% antes de guardar.`
+        `La suma de porcentajes de distribución (${totalPorcentaje.toFixed(2)}%) debe ser exactamente 100% antes de guardar.`
       );
       return;
     }
+    
     if (!this.distribucion || this.distribucion.length === 0) {
       this.alertService.error('No hay productos para aplicar el retaceo');
       return;
@@ -706,10 +506,10 @@ export class RetaceoComponent implements OnInit {
     }
 
     const faltaDAI = this.distribucion.some(
-      (item: any) =>
+      (item) =>
         item.porcentaje_dai === null ||
         item.porcentaje_dai === undefined ||
-        parseFloat(item.porcentaje_dai) < 0
+        parseFloat(item.porcentaje_dai?.toString() || '0') < 0
     );
 
     if (faltaDAI) {
@@ -755,11 +555,11 @@ export class RetaceoComponent implements OnInit {
     });
   }
 
-  calcularDAIProducto(item: any) {
+  calcularDAIProducto(item: ItemDistribucion) {
     item.monto_dai = (
-      (parseFloat(item.valor_fob) * parseFloat(item.porcentaje_dai)) /
-      100
-    ).toFixed(2);
+      (parseFloat(item.valor_fob?.toString() || '0') * 
+       parseFloat(item.porcentaje_dai?.toString() || '0')) / 100
+    );
 
     this.actualizarCostosProducto(item);
 
@@ -767,91 +567,91 @@ export class RetaceoComponent implements OnInit {
     this.recalcularTotalRetaceado();
   }
 
-  actualizarCostosProducto(item: any) {
+  actualizarCostosProducto(item: ItemDistribucion) {
     item.costo_landed = (
-      parseFloat(item.valor_fob) +
-      parseFloat(item.monto_transporte) +
-      parseFloat(item.monto_seguro) +
-      parseFloat(item.monto_dai) +
-      parseFloat(item.monto_otros)
-    ).toFixed(2);
+      parseFloat(item.valor_fob?.toString() || '0') +
+      parseFloat(item.monto_transporte?.toString() || '0') +
+      parseFloat(item.monto_seguro?.toString() || '0') +
+      parseFloat(item.monto_dai?.toString() || '0') +
+      parseFloat(item.monto_otros?.toString() || '0')
+    );
 
-    item.costo_retaceado = (item.costo_landed / item.cantidad).toFixed(2);
+    item.costo_retaceado = parseFloat(item.cantidad?.toString() || '0') > 0 ? 
+      (item.costo_landed / parseFloat(item.cantidad?.toString() || '1')) : 0;
   }
 
   recalcularTotalRetaceado() {
     this.retaceo.total_retaceado = this.distribucion
       .reduce(
-        (sum: number, item: any) => sum + parseFloat(item.costo_landed || 0),
+        (sum, item) => sum + parseFloat(item.costo_landed?.toString() || '0'),
         0
       )
       .toFixed(2);
   }
 
-  // Métodos para calcular los totales
+  // Métodos para calcular los totales (optimizados usando reduce)
   calcularTotalCantidad(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) => total + parseFloat(item.cantidad || 0),
+      (total, item) => total + parseFloat(item.cantidad?.toString() || '0'),
       0
     );
   }
 
   calcularTotalCostoAntes(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) =>
+      (total, item) =>
         total +
-        parseFloat(item.costo_original || 0) * parseFloat(item.cantidad || 0),
+        parseFloat(item.costo_original?.toString() || '0') * 
+        parseFloat(item.cantidad?.toString() || '0'),
       0
     );
   }
 
   calcularTotalFOB(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) => total + parseFloat(item.valor_fob || 0),
+      (total, item) => total + parseFloat(item.valor_fob?.toString() || '0'),
       0
     );
   }
 
   calcularTotalTransporte(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) =>
-        total + parseFloat(item.monto_transporte || 0),
+      (total, item) => total + parseFloat(item.monto_transporte?.toString() || '0'),
       0
     );
   }
 
   calcularTotalSeguro(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) => total + parseFloat(item.monto_seguro || 0),
+      (total, item) => total + parseFloat(item.monto_seguro?.toString() || '0'),
       0
     );
   }
 
   calcularTotalDAI(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) => total + parseFloat(item.monto_dai || 0),
+      (total, item) => total + parseFloat(item.monto_dai?.toString() || '0'),
       0
     );
   }
 
   calcularTotalOtros(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) => total + parseFloat(item.monto_otros || 0),
+      (total, item) => total + parseFloat(item.monto_otros?.toString() || '0'),
       0
     );
   }
 
   calcularTotalLanded(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) => total + parseFloat(item.costo_landed || 0),
+      (total, item) => total + parseFloat(item.costo_landed?.toString() || '0'),
       0
     );
   }
   
   calcularTotalRetaceado(): number {
     return this.distribucion.reduce(
-      (total: number, item: any) =>
-        total + parseFloat(item.costo_retaceado || 0),
+      (total, item) => total + parseFloat(item.costo_retaceado?.toString() || '0'),
       0
     );
   }
@@ -875,96 +675,130 @@ export class RetaceoComponent implements OnInit {
     }
 
     // Confirmar el cambio de estado
-    let mensaje = '';
-    let confirmacionNecesaria = true;
+    let mensaje = nuevoEstado === 'Aplicado' 
+      ? 'Esta acción aplicará los nuevos costos a los productos en inventario. ¿Desea continuar?'
+      : 'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
 
-    if (nuevoEstado === 'Aplicado') {
-      mensaje =
-        'Esta acción aplicará los nuevos costos a los productos en inventario. ¿Desea continuar?';
-    } else if (nuevoEstado === 'Anulado') {
-      mensaje =
-        'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
-    }
-
-    if (confirmacionNecesaria) {
-      Swal.fire({
-        title: 'Cambiar estado',
-        text: mensaje,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, cambiar',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.actualizarEstado(nuevoEstado);
-        }
-      });
-    } else {
-      this.actualizarEstado(nuevoEstado);
-    }
+    Swal.fire({
+      title: 'Cambiar estado',
+      text: mensaje,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.actualizarEstado(nuevoEstado);
+      }
+    });
   }
 
+  actualizarEstado(nuevoEstado: string) {
+    this.loading = true;
 
-actualizarGastosSeleccionados(tipo: string) {
-  switch (tipo) {
-    case 'Transporte':
-      this.gastosTransporte = this.gastosTransporte.filter(gasto => 
-        this.selectedGastosTransporte.includes(gasto.id_gasto)
-      );
-      
-      this.selectedGastosTransporte.forEach(id_gasto => {
-        // Verificar si ya existe
-        const existe = this.gastosTransporte.some(g => g.id_gasto === id_gasto);
-        if (!existe) {
-          const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
-          this.gastosTransporte.push({
-            id_gasto: id_gasto,
-            tipo_gasto: 'Transporte',
-            monto: gastoInfo ? gastoInfo.total : 0
-          });
-        }
-      });
-      break;
-      
-    case 'Seguro':
-      // Lógica similar para seguro
-      this.gastosSeguro = this.gastosSeguro.filter(gasto => 
-        this.selectedGastosSeguro.includes(gasto.id_gasto)
-      );
-      
-      this.selectedGastosSeguro.forEach(id_gasto => {
-        const existe = this.gastosSeguro.some(g => g.id_gasto === id_gasto);
-        if (!existe) {
-          const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
-          this.gastosSeguro.push({
-            id_gasto: id_gasto,
-            tipo_gasto: 'Seguro',
-            monto: gastoInfo ? gastoInfo.total : 0
-          });
-        }
-      });
-      break;
-      
-    case 'Otro':
-      // Lógica similar para otros gastos
-      this.gastosOtros = this.gastosOtros.filter(gasto => 
-        this.selectedGastosOtros.includes(gasto.id_gasto)
-      );
-      
-      this.selectedGastosOtros.forEach(id_gasto => {
-        const existe = this.gastosOtros.some(g => g.id_gasto === id_gasto);
-        if (!existe) {
-          const gastoInfo = this.gastos.find((g: any) => g.id === id_gasto);
-          this.gastosOtros.push({
-            id_gasto: id_gasto,
-            tipo_gasto: 'Otro',
-            monto: gastoInfo ? gastoInfo.total : 0
-          });
-        }
-      });
-      break;
+    const datosActualizacion = {
+      id: this.retaceo.id,
+      estado: nuevoEstado,
+    };
+
+    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
+      (response) => {
+        this.retaceo.estado = nuevoEstado;
+
+        let mensaje = nuevoEstado === 'Aplicado'
+          ? 'El retaceo ha sido aplicado y los costos actualizados'
+          : 'El retaceo ha sido anulado';
+
+        this.alertService.success(mensaje, 'Cambio de estado');
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
+
+  obtenerNombreColumnaIncoterm(): string {
+    const incoterms: { [key: string]: string } = {
+      'FOB': 'FOB',
+      'CIF': 'CIF',
+      'EXW': 'EXW',
+      'FCA': 'FCA',
+      'FAS': 'FAS',
+      'CFR': 'CFR',
+      'CPT': 'CPT',
+      'CIP': 'CIP',
+      'DAT': 'DAT',
+      'DAP': 'DAP',
+      'DDP': 'DDP'
+    };
+    
+    return incoterms[this.retaceo.incoterm] || 'FOB';
   }
   
-  this.calcularTotalGastos();
-}
+  procesarGastosDelRetaceo(gastos: any[]) {
+    if (!gastos || gastos.length === 0) {
+      return;
+    }
+  
+    // Limpiar todos los gastos
+    Object.keys(this.gastosMap).forEach(tipo => {
+      this.gastosMap[tipo].lista = [];
+      this.gastosMap[tipo].seleccionados = [];
+    });
+  
+    // Agrupar gastos por tipo
+    gastos.forEach((gasto: any) => {
+      const tipo = gasto.tipo_gasto;
+      
+      if (this.gastosMap[tipo]) {
+        const gastoObj: Gasto = {
+          id: gasto.id,
+          id_retaceo: gasto.id_retaceo,
+          id_gasto: gasto.id_gasto,
+          tipo_gasto: tipo as any,
+          monto: parseFloat(gasto.monto || 0)
+        };
+        
+        this.gastosMap[tipo].lista.push(gastoObj);
+        this.gastosMap[tipo].seleccionados.push(gasto.id_gasto);
+      }
+    });
+  }
+  
+  procesarDistribucionDelRetaceo(distribucion: any[]) {
+    if (!distribucion || distribucion.length === 0) {
+      return;
+    }
+  
+    this.distribucion = distribucion.map(item => ({
+      ...item,
+      cantidad: parseFloat(item.cantidad || 0),
+      costo_original: parseFloat(item.costo_original || 0),
+      valor_fob: parseFloat(item.valor_fob || 0),
+      porcentaje_distribucion: parseFloat(item.porcentaje_distribucion || 0),
+      porcentaje_dai: parseFloat(item.porcentaje_dai || 0),
+      monto_transporte: parseFloat(item.monto_transporte || 0),
+      monto_seguro: parseFloat(item.monto_seguro || 0),
+      monto_dai: parseFloat(item.monto_dai || 0),
+      monto_otros: parseFloat(item.monto_otros || 0),
+      costo_landed: parseFloat(item.costo_landed || 0),
+      costo_retaceado: parseFloat(item.costo_retaceado || 0),
+    }));
+  
+    // Cargar los productos para cada ítem de la distribución
+    this.distribucion.forEach((item) => {
+      if (item.id_producto) {
+        this.apiService.read('producto/', item.id_producto).subscribe(
+          (producto) => {
+            item.producto = producto;
+          },
+          (error) => {
+            console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
+          }
+        );
+      }
+    });
+  }
 }
