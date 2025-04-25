@@ -106,6 +106,11 @@ class Gasto extends Model {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
+    public function retaceoGasto()
+    {
+        return $this->hasOne('App\Models\Compras\Retaceo\RetaceoGasto', 'id_gasto');
+    }
+
 
 }
 
