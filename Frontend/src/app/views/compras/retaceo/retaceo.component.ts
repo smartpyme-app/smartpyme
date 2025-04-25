@@ -132,7 +132,9 @@ export class RetaceoComponent implements OnInit {
     
     this.loading = true;
     this.filtros.id_sucursal = this.retaceo.id_sucursal;
-    
+    if (this.route.snapshot.paramMap.get('id')) {
+      this.filtros.es_retaceo =false;
+    }
     // Cargar compras filtradas por bodega
     this.apiService.getAll('compras', this.filtros).subscribe(
       (compras) => {

@@ -21,6 +21,7 @@ use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use App\Models\OrdenCompra;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 
@@ -76,8 +77,15 @@ class ComprasController extends Controller
                 return $query->whereNotNull('sello_mh');
             })
             ->when($request->es_retaceo, function($query) use ($request) {
-                return $query->where('es_retaceo', true)
-                             ->whereDoesntHave('retaceo');
+                if($request->es_retaceo === 'true') {
+                    Log::info('Filtro es_retaceo 1: ' . $request->es_retaceo);
+                    return $query->where('es_retaceo', true)
+                                 ->whereDoesntHave('retaceo');
+                }else{
+                    Log::info('Filtro es_retaceo 2: ' . $request->es_retaceo);
+                    return $query->where('es_retaceo', true)
+                                 ->whereHas('retaceo');
+                }
             })
             ->where('cotizacion', 0)
             ->when($request->buscador, function ($query) use ($request) {

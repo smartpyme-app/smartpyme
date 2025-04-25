@@ -62,8 +62,13 @@ class GastosController extends Controller
                         return $query->whereNotNull('sello_mh');
                     })
                     ->when($request->es_retaceo, function($query) use ($request) {
-                        return $query->where('es_retaceo', true)
-                                     ->whereDoesntHave('retaceoGasto');
+                        if($request->es_retaceo === 'true') {
+                            return $query->where('es_retaceo', true)
+                                         ->whereDoesntHave('retaceoGasto');
+                        }else{
+                            return $query->where('es_retaceo', true)
+                                         ->whereHas('retaceoGasto');
+                        }
                     })
                     ->when($request->buscador, function($query) use ($request){
                     return $query->whereHas('proveedor', function($q) use ($request){
