@@ -4,7 +4,7 @@ namespace App\Models\Compras\Gastos;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 class Gasto extends Model {
 
     protected $table = 'egresos';

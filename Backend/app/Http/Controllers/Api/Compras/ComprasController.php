@@ -75,8 +75,9 @@ class ComprasController extends Controller
             ->when($request->dte && $request->dte == 1, function ($query) {
                 return $query->whereNotNull('sello_mh');
             })
-            ->when($request->es_retaceo, function($query) use ($request){
-                return $query->where('es_retaceo', true);
+            ->when($request->es_retaceo, function($query) use ($request) {
+                return $query->where('es_retaceo', true)
+                             ->whereDoesntHave('retaceo');
             })
             ->where('cotizacion', 0)
             ->when($request->buscador, function ($query) use ($request) {
