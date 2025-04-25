@@ -1,12 +1,26 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, EventEmitter, Output } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import * as moment from 'moment';
+
+interface Cliente {
+  id: number;
+  tipo?: string;
+  nombre_empresa?: string;
+  nombre?: string;  // Campo actualizado de nombre_completo a nombre según tu HTML
+  telefono?: string;
+  dui?: string;
+  nit?: string;
+  correo?: string;
+  ncr?: string;
+  nombre_display?: string; // Campo para mostrar en el selector
+}
 
 @Component({
   selector: 'app-facturacion',
@@ -14,6 +28,7 @@ import * as moment from 'moment';
   providers: [SumPipe],
 })
 export class FacturacionComponent implements OnInit {
+  @Output() clienteSeleccionado = new EventEmitter<any>();
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
@@ -38,6 +53,9 @@ export class FacturacionComponent implements OnInit {
   public duplicarventa = false;
   public facturarCotizacion = false;
   public api: boolean = false;
+  public clientesFiltrados: any[] = [];
+  public terminoBusqueda = '';
+  public clienteInput$ = new Subject<string>();
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -60,6 +78,14 @@ export class FacturacionComponent implements OnInit {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
     };
+    this.clienteInput$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged()
+      )
+      .subscribe(termino => {
+        this.buscarCliente(termino);
+      });
   }
 
   ngOnInit() {
@@ -102,8 +128,7 @@ export class FacturacionComponent implements OnInit {
         this.usuarios = usuarios;
         if (
           this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
+          this.apiService.auth_user().tipo != 'Supervisor'
         ) {
           this.usuarios = this.usuarios.filter(
             (item: any) => item.id == this.apiService.auth_user().id
@@ -234,6 +259,7 @@ export class FacturacionComponent implements OnInit {
     this.venta.detalle_banco = '';
     this.venta.id_cliente = '';
     this.venta.detalles = [];
+    this.venta.cliente = {};
     this.venta.descuento = 0;
     this.venta.sub_total = 0;
     this.venta.iva_percibido = 0;
@@ -300,6 +326,11 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            if(!this.venta.cliente){
+                this.venta.cliente = {};
+            }else{
+              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+            }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
@@ -336,6 +367,11 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            if(!this.venta.cliente){
+                this.venta.cliente = {};
+            }else{
+              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+            }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
@@ -510,16 +546,19 @@ export class FacturacionComponent implements OnInit {
   }
 
   // Cliente
-  public setCliente(cliente: any) {
-    if (!this.venta.id_cliente) {
-      this.clientes.push(cliente);
-    }
-    this.venta.id_cliente = cliente.id;
-    if (cliente.tipo_contribuyente == 'Grande') {
-      this.venta.retencion = 1;
-      this.sumTotal();
-    }
-  }
+    public setCliente(cliente:any){
+          if(cliente.id){
+              cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+              this.venta.id_cliente = cliente.id;
+              this.venta.cliente = cliente;
+              if(cliente.tipo_contribuyente == "Grande") {
+                  this.venta.retencion = 1;
+                  this.sumTotal();
+              }
+          }
+          console.log(cliente);
+      }
+
 
   // Proyecto
   public setProyecto(proyecto: any) {
@@ -837,5 +876,39 @@ export class FacturacionComponent implements OnInit {
         }
       );
     }
+  }
+
+  buscarCliente(termino: string) {
+    this.terminoBusqueda = termino;
+    
+    if (!termino) {
+      this.clientesFiltrados = this.clientes;
+      return;
+    }
+
+    const terminoLowerCase = termino.toLowerCase();
+    
+    // Buscar en todos los campos relevantes simultáneamente
+    this.clientesFiltrados = this.clientes.filter((cliente: Cliente) => {
+      // Buscar en nombre
+      const nombreBusqueda = cliente.tipo == 'Empresa' 
+        ? (cliente.nombre_empresa || '').toLowerCase() 
+        : (cliente.nombre || '').toLowerCase();
+      
+      // Buscar en teléfono, DUI y NIT
+      const telefonoBusqueda = (cliente.telefono || '').toLowerCase();
+      const duiBusqueda = (cliente.dui || '').toLowerCase();
+      const nitBusqueda = (cliente.nit || '').toLowerCase();
+      const correoBusqueda = (cliente.correo || '').toLowerCase();
+      const ncrBusqueda = (cliente.ncr || '').toLowerCase();
+      
+      // Si coincide con cualquiera de los campos, se incluye el cliente
+      return nombreBusqueda.includes(terminoLowerCase) || 
+             telefonoBusqueda.includes(terminoLowerCase) || 
+             duiBusqueda.includes(terminoLowerCase) || 
+             nitBusqueda.includes(terminoLowerCase) || 
+             correoBusqueda.includes(terminoLowerCase) || 
+             ncrBusqueda.includes(terminoLowerCase);
+    });
   }
 }

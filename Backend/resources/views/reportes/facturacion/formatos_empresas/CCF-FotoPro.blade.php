@@ -23,8 +23,8 @@
         }
 
         #cliente        {top: 4cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 4.5cm; left: 2.6cm; width: 11cm;}
-        #departamento   {top: 5cm; left: 3.3cm; width: 5cm;}
+        #direccion      {top: 4.5cm; left: 2.5cm; width: 11cm;}
+        #departamento   {top: 5cm; left: 3cm; width: 5cm;}
         #fecha          {top: 4cm; left: 14.5cm; }
 /*        #municipio      {top: 6.5cm; left: 2.2cm; width: 5cm;}*/
         #nrc            {top: 4.5cm; left: 14.5cm; width: 6cm;}
@@ -37,7 +37,7 @@
         table td{height: 0.5cm; text-align: left;}
 
         .cantidad{ width: 1.5cm; text-align: center;}
-        .producto{ width: 11cm; text-align: left;}
+        .producto{ width: 10.5cm; text-align: left;}
         .precio{ width: 2cm; text-align: center;}
         .sujetas{ width: 1.4cm; text-align: center;}
         .exentas{ width: 1.4cm; text-align: center;}
@@ -46,13 +46,13 @@
 
         #letras     {top: 12cm; left: 2cm; width: 11cm; word-break: break-all; white-space: normal;}
 
-        #suma       {top: 11.4cm; left: 18cm; width: 2cm; text-align: right;}
-        #iva        {top: 11.8cm; left: 18cm; width: 2cm; text-align: right;}
-        #sub_total  {top: 12.2cm; left: 18cm; width: 2cm; text-align: right;}
-        #iva_retenido  {top: 12.6cm; left: 18cm; width: 2cm; text-align: right;}
-        #no_sujeta  {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
-        #exenta     {top: 13.4cm; left: 18cm; width: 2cm; text-align: right;}
-        #total      {top: 13.6cm; left: 18cm; width: 2cm; text-align: right;}
+        #suma       {top: 11.4cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #iva        {top: 11.8cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #sub_total  {top: 12.2cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #iva_retenido  {top: 12.6cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #no_sujeta  {top: 13cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #exenta     {top: 13.4cm; left: 17.5cm; width: 2cm; text-align: right;}
+        #total      {top: 13.6cm; left: 17.5cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 

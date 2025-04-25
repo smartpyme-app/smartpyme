@@ -11,6 +11,7 @@ use App\Imports\Paquetes;
 use App\Exports\PaquetesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PaquetesController extends Controller
 {

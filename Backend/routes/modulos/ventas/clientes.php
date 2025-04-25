@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/clientes',                         [ClientesController::class, 'index']);
     Route::get('/clientes/list',                    [ClientesController::class, 'list']);
+    Route::get('/clientes/buscar/{text}',           [ClientesController::class, 'search']);
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);
     Route::post('/cliente',                         [ClientesController::class, 'store']);
     //storeContacto

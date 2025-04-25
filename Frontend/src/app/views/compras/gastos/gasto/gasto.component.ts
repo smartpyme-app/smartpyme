@@ -612,6 +612,7 @@ export class GastoComponent implements OnInit {
     }
   }
 
+
   /**
    * Intenta determinar la categoría del gasto basándose en las descripciones de los ítems
    */
