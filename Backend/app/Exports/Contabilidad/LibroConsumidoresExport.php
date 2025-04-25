@@ -52,6 +52,7 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
+                        ->orderByDesc('correlativo')
                         ->get();
         return $ventas;
         

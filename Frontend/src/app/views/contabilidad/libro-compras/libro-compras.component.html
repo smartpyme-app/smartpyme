@@ -3,14 +3,26 @@
     <div>
         <h2>Libro de Compras</h2>
     </div>
-    <div>
-        <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
-            Libro <img src="/assets/icons/download.png" class="icon">
+    <div class="dropdown">
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
+          Descargas 
         </button>
-        <!-- <button [disabled]="downloading" tooltip="Descargar Anexo" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
-            Anexo <img src="/assets/icons/download.png" class="icon">
-        </button> -->
-    </div>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Libro de compras
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Anexo
+            </button>
+          </li>
+        </ul>
+      </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -61,28 +73,28 @@
                 <table class="table table-bordered table-hover">
                     <thead>
                         <tr>
-                            <th class="">N°</th>
-                            <th class="">FECHA</th>
-                            <th class="">NÚMERO DE DOCUMENTO</th>
-                            <th class="">NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
-                            <th class="">NOMBRE DEL PROVEEDOR</th>
-                            <th class=" text-end">COMPRAS EXENTAS INTERNAS</th>
-                            <th class=" text-end">COMPRAS NO SUJETAS</th>
-                            <th class=" text-end">IMPORTACIONES E INTERNACIONES EXENTAS</th>
-                            <th class=" text-end">COMPRAS INTERNAS GRAVADAS</th>
-                            <th class=" text-end">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
-                            <th class=" text-end">CRÉDITO FISCAL</th>
-                            <th class=" text-end">ANTICIPO A CUENTA IVA PERCIBIDO</th>
-                            <th class=" text-end">TOTAL</th>
-                            <th class=" text-end">COMPRAS A SUJETOS EXCLUIDOS</th>
+                            <th>N°</th>
+                            <th>FECHA</th>
+                            <th>NÚMERO DE DOCUMENTO</th>
+                            <th>NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
+                            <th>NOMBRE DEL PROVEEDOR</th>
+                            <th class="text-end">COMPRAS EXENTAS INTERNAS</th>
+                            <th class="text-end">COMPRAS NO SUJETAS</th>
+                            <th class="text-end">IMPORTACIONES E INTERNACIONES EXENTAS</th>
+                            <th class="text-end">COMPRAS INTERNAS GRAVADAS</th>
+                            <th class="text-end">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
+                            <th class="text-end">CRÉDITO FISCAL</th>
+                            <th class="text-end">ANTICIPO A CUENTA IVA PERCIBIDO</th>
+                            <th class="text-end">TOTAL</th>
+                            <th class="text-end">COMPRAS A SUJETOS EXCLUIDOS</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="13" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="14" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="13" class="text-center" *ngIf="loading">
+                            <td colspan="14" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
@@ -92,45 +104,32 @@
                             <td>{{iva.num_documento}}</td>
                             <td>{{iva.nit_nrc}}</td>
                             <td>{{iva.nombre_proveedor}}</td>
-                            <td class="text-end">{{iva.compras_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.no_sujeta | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.importaciones_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.compras_gravadas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.credito_fiscal | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.importaciones_gravadas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.anticipo_iva_percibido | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.sujeto_excluido | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end text-nowrap">{{iva.compras_exentas | currency }}</td>
+                            <td class="text-end text-nowrap">{{iva.no_sujeta | currency }}</td>
+                            <td class="text-end text-nowrap">{{iva.importaciones_exentas | currency }}</td>
+                            <td class="text-end text-nowrap">{{iva.compras_gravadas | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.credito_fiscal | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.importaciones_gravadas | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.anticipo_iva_percibido | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.total | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.sujeto_excluido | currency}}</td>
 
-                        </tr>
-                        <tr>
-                            <td colspan="5" class="text-center"><b>Total</b></td>                                
-                            <td class="text-end"><b>{{ ivas | sum:'compras_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'importaciones_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'compras_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'credito_fiscal' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'importaciones_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'anticipo_iva_percibido' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'sujeto_excluido' | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     </tbody>
-                   <!--  <tfoot *ngIf="ivas?.length > 10">
+                    <tfoot *ngIf="ivas?.length > 0">
                         <tr>
-                            <th>Fecha</th>
-                            <th>Correlativo</th>
-                            <th>Proveedor</th>
-                            <th>NIT/NRC</th>
-                            <th>DUI</th>
-                            <th class="text-end">Compras Exentas</th>
-                            <th class="text-end">Compras No Sujetas</th>
-                            <th class="text-end">Compras Gravadas</th>
-                            <th class="text-end">IVA</th>
-                            <th class="text-end">Total</th>
+                            <td colspan="5" class="text-center"><b>Total</b></td>                                
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_exentas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'no_sujeta' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_exentas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_gravadas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'credito_fiscal' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_gravadas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'anticipo_iva_percibido' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'total' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'sujeto_excluido' | currency }}</b></td>
                         </tr>
-                    </tfoot> -->
-
+                    </tfoot>
                 </table>
             </div>
         </div>

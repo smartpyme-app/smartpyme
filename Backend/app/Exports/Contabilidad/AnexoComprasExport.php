@@ -40,21 +40,15 @@ class AnexoComprasExport implements FromCollection, WithMapping
 
     public function map($row): array{
 
-            $nombre = $row->dte['receptor']['nombre'] ?? '';
-            $dui = $row->dte['receptor']['numDocumento'] ?? '';
-            $nit_nrc = '';
-
-            if ($row->dte && $row->tipo_documento == 'Credito Fiscal' && $row->dte['receptor']) {
-                $nit_nrc = $row->dte['receptor']['nrc'] ? $row->dte['receptor']['nrc'] : $row->dte['receptor']['nit'];
-            }
+            $proveedor = $row->proveedor;
 
            $fields = [
               \Carbon\Carbon::parse($row->fecha)->format('d/m/Y'), //'Fecha',
               '4', //'Clase',
               '03', //'Tipo',
-              trim($row->correlativo), //'Numero Interno',
-              $nit_nrc, //'NIT o NRC',
-              $nombre, //'NIT o NRC',
+              $row->referencia,
+              $proveedor->nit ?? $proveedor->ncr, //'NIT o NRC',
+              $proveedor->nombre, //'NIT o NRC',
               $row->exenta + $row->no_sujeta, //'Exentas y no sujetas',
               '0.00', //'Internaciones Exentas y no sujetas',
               '0.00', //'Importaciones Exentas y no sujetas',
@@ -64,7 +58,7 @@ class AnexoComprasExport implements FromCollection, WithMapping
               '0.00', //'Importaciones Gravadas Servicios', 
               $row->iva ? $row->iva : '0.00', //'Credito fiscal', 
               $row->total ? $row->total : '0.00', //'Total',
-              '', //'DUI', 
+              $proveedor ? $proveedor->dui : '', //'DUI', 
               '0', //'Tipo de operacion', 
               '0', //'Clasificación', 
               '0', //'Sector', 

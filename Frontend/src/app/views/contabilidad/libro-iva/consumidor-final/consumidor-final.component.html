@@ -3,14 +3,6 @@
     <div>
         <h2>Libro Consumidor Final</h2>
     </div>
-    <div>
-        <!-- <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
-            Libro <img src="/assets/icons/download.png" class="icon">
-        </button>
-        <button [disabled]="downloading" tooltip="Descargar Anexo" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
-            Anexo <img src="/assets/icons/download.png" class="icon">
-        </button> -->
-    </div>
 
     <div class="dropdown">
         <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
@@ -101,10 +93,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="8" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="9" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="8" class="text-center" *ngIf="loading">
+                            <td colspan="9" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
