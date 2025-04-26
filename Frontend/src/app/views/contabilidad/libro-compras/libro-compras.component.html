@@ -98,7 +98,7 @@
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <tr class="animated fadeIn" *ngFor=" let iva of ivas; let i = index">
+                        <tr [ngClass]="{ 'table-danger': iva.credito_fiscal == 0 || !iva.nit_nrc }" *ngFor=" let iva of ivas; let i = index">
                             <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>{{iva.num_documento}}</td>
@@ -108,8 +108,8 @@
                             <td class="text-end text-nowrap">{{iva.no_sujeta | currency }}</td>
                             <td class="text-end text-nowrap">{{iva.importaciones_exentas | currency }}</td>
                             <td class="text-end text-nowrap">{{iva.compras_gravadas | currency}}</td>
-                            <td class="text-end text-nowrap">{{iva.credito_fiscal | currency}}</td>
                             <td class="text-end text-nowrap">{{iva.importaciones_gravadas | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.credito_fiscal | currency}}</td>
                             <td class="text-end text-nowrap">{{iva.anticipo_iva_percibido | currency}}</td>
                             <td class="text-end text-nowrap">{{iva.total | currency}}</td>
                             <td class="text-end text-nowrap">{{iva.sujeto_excluido | currency}}</td>

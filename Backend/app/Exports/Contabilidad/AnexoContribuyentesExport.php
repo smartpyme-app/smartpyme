@@ -10,7 +10,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
-class AnexoContribuyentesExport implements FromCollection, WithMapping
+class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
 
     public $request;
@@ -71,39 +71,38 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping
             }
 
             $fields = [
-                \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha
-                $venta->sello_mh ? '4' : '1', //B Clase DTE o Impreso,
-                $tipo, //C Tipo,
-                $venta->dte['identificacion']['numeroControl'] ?? '', //'D Num Resolucion
+                \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
+                $venta->sello_mh ? '4' : '1', //B Clase DTE o Impreso
+                $tipo, //C Tipo
+                $venta->dte['identificacion']['numeroControl'] ?? '', //D Num Resolución
                 $venta->dte['sello'] ?? '', //E Num Serie
-                $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo), //'F Num Documento
-                $venta->sello_mh ? '' : trim($venta->correlativo), //G Numero Control Interno
-                $cliente->ncr ? $cliente->ncr : $cliente->nit , //H NIT/NRC
+                $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo), //F Num Documento
+                $venta->sello_mh ? '' : trim($venta->correlativo), //G Número Control Interno
+                $cliente->ncr ?? $cliente->nit, //H NIT/NRC
                 $venta->dte['receptor']['nombre'] ?? $venta->nombre_cliente, //I Nombre
-                $venta->id_venta ? $venta->exenta * -1 : $venta->exenta, // J Exentas
-                $venta->id_venta ? $venta->no_sujeta * -1 : $venta->no_sujeta, // K No sujetas
-                $venta->id_venta ? $venta->sub_total * -1 : $venta->sub_total, // L Gravadas
-                $venta->id_venta ? $venta->iva * -1 : $venta->iva, // Debido fiscal
+                number_format($venta->exenta, 2, '.', ''), //J Exentas (formato numérico con 2 decimales)
+                number_format($venta->no_sujeta, 2, '.', ''), //K No sujetas (formato numérico con 2 decimales)
+                number_format($venta->sub_total, 2, '.', ''), //L Gravadas (formato numérico con 2 decimales)
+                number_format($venta->iva, 2, '.', ''), //M Debido fiscal (formato numérico con 2 decimales)
                 '0.00', //N Ventas a terceros
-                '0.00', //O Debito ventas a terceros
-                $venta->id_venta ? $venta->total * -1 : $venta->total, // P total
-                '', //Q DUI
-                $venta->exenta > 0 ? 2 : 1, //R Tipo operacion renta 1 Gravada 2 Exenta
-                '', //S Tipo ingreso renta
-                1, //T num de Anexo
-
+                '0.00', //O Débito ventas a terceros
+                number_format($venta->total, 2, '.', ''), //P Total (formato numérico con 2 decimales)
+                '', //Q DUI (vacío)
+                $venta->exenta > 0 ? 2 : 1, //R Tipo operación renta 1 Gravada 2 Exenta
+                1, //S Tipo ingreso renta
+                1, //T Número de Anexo
             ];
 
         return $fields;
     }
 
-    // public function getCsvSettings(): array
-    // {
-    //     return [
-    //         'delimiter' => ';',
-    //         'use_bom' => true,
-    //         'enclosure' => '',
-    //     ];
-    // }
+    public function getCsvSettings(): array
+    {
+        return [
+            'delimiter' => ';',
+            'enclosure' => '',
+            'use_bom' => false,
+        ];
+    }
 
 }

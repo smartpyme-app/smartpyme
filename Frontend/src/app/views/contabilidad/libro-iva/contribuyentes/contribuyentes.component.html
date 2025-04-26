@@ -107,11 +107,11 @@
                             </td>
                         </tr>
                         <tr class="animated fadeIn" *ngFor=" let iva of ivas; let i = index">
-                            <td>{{ i+1 }}</td>
+                            <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>{{iva.correlativo}}</td>
                             <td>{{iva.num_documento}}</td>
-                            <td>{{iva.nombre_cliente}}</td>
+                            <td class="text-nowrap"><span tooltip="{{ iva.nombre_cliente }}">{{iva.nombre_cliente | truncate:50}}</span></td>
                             <td>{{iva.nit_nrc}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
                             <td class="text-end">{{iva.ventas_no_sujetas | currency:'USD':'symbol':'1.2'}}</td>

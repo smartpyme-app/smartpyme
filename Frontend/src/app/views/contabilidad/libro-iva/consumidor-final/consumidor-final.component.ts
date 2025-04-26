@@ -85,22 +85,23 @@ export class ConsumidorFinalComponent implements OnInit {
         );
     }
 
-    public descargarAnexo(){
+    public descargarAnexo() {
         this.downloading = true;
-        this.apiService.export('libro-iva/consumidores/descargar-anexo', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            // const blob = new Blob([data], { type: 'text/csv' });
+        this.apiService.export('libro-iva/consumidores/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Anexo-consumidores.xlsx';
+            a.download = 'Anexo-consumidores.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
-        );
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
     }
 
     public descargarDTEConsumidorFinal(): void {

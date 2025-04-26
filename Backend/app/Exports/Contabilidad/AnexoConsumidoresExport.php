@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
-class AnexoConsumidoresExport implements FromCollection, WithMapping
+class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -66,7 +66,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping
                 $venta->exenta ? $venta->exenta : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad
                 $venta->no_sujeta ? $venta->no_sujeta : '0.00', //M No Sujetas
-                $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total, //N Gravadas'
+                $venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total, //N Gravadas'
                 '0.00', //O Exportacion interna'
                 $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0', //P Exportacion externa'
                 '0.00', //Q Exportacion servicios'
@@ -74,20 +74,20 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping
                 '0.00', //S Ventas a terceros
                 $venta->total ? $venta->total : '0.00', //T Total
                 $venta->exenta > 0 ? 2 : 1, //U Tipo operacion renta 1 Gravada 2 Exenta
-                '', //V Tipo ingreso renta
+                1, //V Tipo ingreso renta
                 2, //W num de Anexo
 
          ];
         return $fields;
     }
 
-    // public function getCsvSettings(): array
-    // {
-    //     return [
-    //         'delimiter' => ';',
-    //         'use_bom' => true,
-    //         'enclosure' => '',
-    //     ];
-    // }
+    public function getCsvSettings(): array
+    {
+        return [
+            'delimiter' => ';',
+            'enclosure' => '',
+            'use_bom' => false,
+        ];
+    }
 
 }
