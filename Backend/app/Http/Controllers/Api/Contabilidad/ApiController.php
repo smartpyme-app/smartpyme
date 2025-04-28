@@ -15,8 +15,11 @@ use App\Services\Contabilidad\ComprasService;
 use App\Services\Contabilidad\CXPService;
 use App\Services\Contabilidad\GastosService;
 use App\Services\Contabilidad\TransaccionesService;
+use App\Services\Contabilidad\RetaceoService;
 
 use App\Models\Bancos\Cuenta;
+use App\Models\Compras\Retaceo\Retaceo;
+use Illuminate\Support\Facades\Validator;
 
 class ApiController extends Controller
 {
@@ -27,23 +30,28 @@ class ApiController extends Controller
     protected $cxpService;
     protected $gastosService;
     protected $transaccionesService;
+    protected $retaceoService;
 
-    public function __construct(VentasService $ventasService,
-                                CXCService $cxcService, 
-                                ComprasService $comprasService, 
-                                CXPService $cxpService, 
-                                GastosService $gastosService, 
-                                TransaccionesService $transaccionesService)
-    {
+    public function __construct(
+        VentasService $ventasService,
+        CXCService $cxcService,
+        ComprasService $comprasService,
+        CXPService $cxpService,
+        GastosService $gastosService,
+        TransaccionesService $transaccionesService,
+        RetaceoService $retaceoService
+    ) {
         $this->ventasService = $ventasService;
         $this->cxcService = $cxcService;
         $this->gastosService = $gastosService;
         $this->comprasService = $comprasService;
         $this->cxpService = $cxpService;
         $this->transaccionesService = $transaccionesService;
+        $this->retaceoService = $retaceoService;
     }
 
-    public function venta(Request $venta) {
+    public function venta(Request $venta)
+    {
 
         $partida = Partida::where('referencia', 'Venta')->where('id_referencia', $venta->id)->first();
 
@@ -56,7 +64,8 @@ class ApiController extends Controller
         return Response()->json($venta, 200);
     }
 
-    public function compra(Request $compra) {
+    public function compra(Request $compra)
+    {
 
         $partida = Partida::where('referencia', 'Compra')->where('id_referencia', $compra->id)->first();
 
@@ -69,7 +78,8 @@ class ApiController extends Controller
         return Response()->json($compra, 200);
     }
 
-    public function gasto(Request $gasto) {
+    public function gasto(Request $gasto)
+    {
 
         $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $gasto->id)->first();
 
@@ -82,7 +92,8 @@ class ApiController extends Controller
         return Response()->json($gasto, 200);
     }
 
-    public function cxp(Request $cxp) {
+    public function cxp(Request $cxp)
+    {
 
         $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $cxp->id)->first();
 
@@ -95,7 +106,8 @@ class ApiController extends Controller
         return Response()->json($cxp, 200);
     }
 
-    public function cxc(Request $cxc) {
+    public function cxc(Request $cxc)
+    {
 
         $partida = Partida::where('referencia', 'Gasto')->where('id_referencia', $cxc->id)->first();
 
@@ -108,7 +120,8 @@ class ApiController extends Controller
         return Response()->json($cxc, 200);
     }
 
-    public function transaccion(Request $transaccion) {
+    public function transaccion(Request $transaccion)
+    {
 
         $partida = Partida::where('referencia', 'Transacción')->where('id_referencia', $transaccion->id)->first();
 
@@ -117,9 +130,31 @@ class ApiController extends Controller
         // }
 
         $this->transaccionesService->crearPartida($transaccion);
-        
+
         return Response()->json($transaccion, 200);
     }
 
 
+    public function retaceo(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id_retaceo' => 'required|exists:retaceos,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $retaceoService = new RetaceoService();
+            $partida = $retaceoService->crearPartida($request->id_retaceo);
+
+            return response()->json([
+                'message' => 'Partida contable generada correctamente',
+                'partida' => $partida
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 }

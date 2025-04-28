@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Contabilidad\ApiController;
 use App\Http\Controllers\Api\Contabilidad\LibrosIVAController;
+use Illuminate\Support\Facades\Route;
 
     Route::post('/contabilidad/partida/venta',  [ApiController::class, 'venta']);
     Route::post('/contabilidad/partida/compra',  [ApiController::class, 'compra']);
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\Contabilidad\LibrosIVAController;
     Route::post('/contabilidad/partida/transaccion',  [ApiController::class, 'transaccion']);
     Route::post('/contabilidad/partida/cxp',  [ApiController::class, 'cxp']);
     Route::post('/contabilidad/partida/cxc',  [ApiController::class, 'cxc']);
+    Route::post('/contabilidad/partida/retaceo',  [ApiController::class, 'retaceo']);
 
 
     Route::get('/libro-iva/consumidores',           [LibrosIVAController::class, 'consumidores']);
