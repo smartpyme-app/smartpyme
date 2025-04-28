@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Recibo de abono #{{ $recibo->id }} - {{ $recibo->nombre_cliente }}</title>
+    <title>Recibo de abono #{{ $recibo->correlativo }} - {{ $recibo->nombre_cliente }}</title>
     <style>
 
         *{ 
@@ -53,11 +53,11 @@
                         <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
                         <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
                     </td>
-                    <td class="text-right">
+                    <!-- <td class="text-right">
                         @if ($venta->empresa()->pluck('logo')->first())
                             <img width="150" height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
-                    </td>
+                    </td> -->
                 </tr>
             </tbody>
         </table>
@@ -84,7 +84,7 @@
                         <p><b>Teléfono:</b>{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>
-                        <p class="text-left"><b>Abono #:</b> {{ $recibo->id }}</p>
+                        <p class="text-left"><b>Abono #:</b> {{ $recibo->correlativo }}</p>
                         <p class="text-left"><b>Forma pago:</b> {{$recibo->forma_pago}}</p>
                         @if ($recibo->detalle_banco)
                             <p class="text-left"><b>Banco:</b> {{$recibo->detalle_banco}}</p>

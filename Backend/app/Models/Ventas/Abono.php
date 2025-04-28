@@ -4,9 +4,10 @@ namespace App\Models\Ventas;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
-class Abono extends Model {
+class Abono extends Model
+{
 
     protected $table = 'abonos_ventas';
     protected $fillable = array(
@@ -28,6 +29,7 @@ class Abono extends Model {
         'id_sucursal',
         'id_empresa',
     );
+    protected $appends = ['correlativo'];
 
     protected static function boot()
     {
@@ -40,17 +42,28 @@ class Abono extends Model {
         }
     }
 
-    public function venta(){
-        return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
+    public function venta()
+    {
+        return $this->belongsTo('App\Models\Ventas\Venta', 'id_venta');
     }
 
-    public function usuario(){
-        return $this->belongsTo('App\Models\User','id_usuario');
+    public function usuario()
+    {
+        return $this->belongsTo('App\Models\User', 'id_usuario');
     }
 
-    public function sucursal(){
-        return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
+    public function sucursal()
+    {
+        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
+    public function getCorrelativoAttribute()
+    {
 
+        $position = static::where('id_empresa', $this->id_empresa)
+            ->where('id', '<=', $this->id)
+            ->count();
+
+        return 'ABONO-' . str_pad($position, 5, '0', STR_PAD_LEFT);
+    }
 }

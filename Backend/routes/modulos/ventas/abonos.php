@@ -1,6 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Ventas\AbonosController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/ventas/abonos',           [AbonosController::class, 'index']);
     Route::get('/venta/abono/{id}',       [AbonosController::class, 'read']);
