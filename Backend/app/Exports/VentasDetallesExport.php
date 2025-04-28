@@ -25,6 +25,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
         return[
             'Fecha',
             'Cliente',
+            'Telefono',
             'DUI',
             'NIT',
             'Producto',
@@ -109,6 +110,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
            $fields = [
               $row->venta()->pluck('fecha')->first(),
               $row->venta()->first() ? $row->venta()->first()->nombre_cliente : 'Comsumidor Final',
+              $row->venta()->first()->cliente()->pluck('telefono')->first(),
               $row->venta()->first()->cliente()->pluck('dui')->first(),
               $row->venta()->first()->cliente()->pluck('nit')->first(),
               $row->producto()->pluck('nombre')->first(),
