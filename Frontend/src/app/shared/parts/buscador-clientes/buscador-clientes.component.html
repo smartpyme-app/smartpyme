@@ -1,12 +1,24 @@
-<form autocomplete="off" class="buscador">
-    <input id="cliente" type="text" name="cliente.nombre" class="form-control" placeholder="Nombre" [(ngModel)]="cliente.nombre" focus="true" id="example">
-    <ul class="list-group info">
-      <a href="javascript:void(0);" class="list-group-item text-primary" *ngIf="searching"> Buscando... </a>
-      <a href="javascript:void(0);" class="list-group-item text-warning" *ngIf="!searching && clientes?.data?.length == 0"> Ningun registro encontrado </a>
-    </ul>
-    <ul class="list-group opciones" *ngIf="clientes?.total > 0">
-      <a href="javascript:void(0);" class="list-group-item" (click)="selectCliente(cliente)" *ngFor=" let cliente of clientes?.data">
-        {{cliente.nombre}}<small *ngIf="cliente.registro"> - {{cliente.registro}}</small>
-      </a>
-    </ul>
+<form autocomplete="off" class="buscador position-relative w-100">
+  <div class="position-relative">
+    <input id="buscadorCliente" type="text" name="cliente.nombre" class="form-control pr-5" placeholder="Consumidor Final" (keyup)="cliente.nombre == '' ? clienteSelect(cliente) : ''" [(ngModel)]="cliente.nombre">
+    
+    <!-- Ícono de carga -->
+    <span *ngIf="searching" class="position-absolute end-0 top-50 translate-middle-y pe-2">
+      <i class="fas fa-circle-notch fa-spin text-primary"></i>
+    </span>
+
+    <!-- Mensaje de no encontrado (solo cuando no hay resultados y ya se ha buscado) -->
+    <span *ngIf="!searching && clientes?.length === 0 && cliente?.nombre?.length > 1 && searchExecuted" 
+          class="position-absolute end-0 top-50 translate-middle-y pe-2 text-warning">
+      <i class="fas fa-exclamation-circle"></i>
+    </span>
+
+  </div>
+
+  <ul class="list-group opciones" *ngIf="clientes?.length > 0">
+    <a href="javascript:void(0);" class="list-group-item" (click)="clienteSelect(cliente)" *ngFor="let cliente of clientes">
+      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }} <span *ngIf="cliente.dui || cliente.nrc">- </span> <small class="text-muted">{{ cliente.dui ?? cliente.nrc }}</small>
+    </a>
+  </ul>
 </form>
+
