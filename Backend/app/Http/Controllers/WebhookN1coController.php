@@ -613,7 +613,8 @@ class WebhookN1coController extends Controller
                 'empresa' => $empresa,
                 'usuario' => $user
             ], function ($m) use ($emailDestino, $empresa) {
-                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                 // $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                 $m->from('noreply@smartpyme.sv', 'SmartPyme')
                     ->to($emailDestino)
                     ->subject('Confirmación de Suscripción - ' . $empresa->nombre);
             });
@@ -641,7 +642,9 @@ class WebhookN1coController extends Controller
             'alejandro.a@smartpyme.sv'
         ];
 
-        $fromAddress = env('MAIL_FROM_ADDRESS');
+        // $fromAddress = env('MAIL_FROM_ADDRESS');
+        $fromAddress = 'noreply@smartpyme.sv';
+
 
         try {
             foreach ($adminEmails as $adminEmail) {

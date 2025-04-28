@@ -165,7 +165,8 @@ class N1coChargeController extends Controller
                 } else {
                     // Crear nueva orden con el método de pago existente
                     $plan = Plan::find($request->input('plan.id_plan'));
-                    $suscripcion = Suscripcion::where('usuario_id', $request->input('customer.id'))->where('plan_id', $plan->id)->first();
+                    // $suscripcion = Suscripcion::where('usuario_id', $request->input('customer.id'))->where('plan_id', $plan->id)->first();
+                    $suscripcion = Suscripcion::where('usuario_id', $request->input('customer.id'))->first();
 
                     $ordenPago = OrdenPago::create([
                         'id_usuario' => $request->input('customer.id'),
