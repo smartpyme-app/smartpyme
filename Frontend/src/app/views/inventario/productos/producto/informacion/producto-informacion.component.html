@@ -136,89 +136,62 @@
 
     <div class="row">
 
-      <h5 class="my-3 font-weight-bold">Organización</h5>
+      <div class="row" *ngIf="producto.tipo != 'Servicio'">
+        <h5 class="my-3 font-weight-bold">Organización</h5>
+            <!-- talla -->
 
-    <!-- talla -->
-    <!-- <div class="form-group col-md-12 col-lg-3">
-      <label for="talla" class="w-100">Talla</label>
-      <div class="input-group">
- 
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="talla" class="w-100">Talla</label>
+          <div class="input-group">
+            <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" name="producto.talla" placeholder="Selecciona o agrega una talla">
+              <ng-option *ngFor="let talla of tallas" [value]="talla.valor">
+                {{ talla.valor }}
+              </ng-option>
+            </ng-select>
+            <button type="button" class="btn btn-default" (click)="openModalAtributo('talla')" tooltip="Agregar talla">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
 
-        <ng-select [(ngModel)]="producto.talla" [items]="tallas" bindLabel="valor" [addTag]="true"
-          (change)="addAttribute($event, 'talla')" class="form-control form-select" placeholder="Selecciona o agrega una talla"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select>
-      </div>
-    </div> -->
+        <!-- color -->
 
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="talla" class="w-100">Talla</label>
-      <div class="input-group">
-        <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" name="producto.talla" placeholder="Selecciona o agrega una talla">
-          <ng-option *ngFor="let talla of tallas" [value]="talla.valor">
-            {{ talla.valor }}
-          </ng-option>
-        </ng-select>
-        <button type="button" class="btn btn-default" (click)="openModalAtributo('talla')" tooltip="Agregar talla">
-          <i class="fa fa-plus"></i>
-        </button>
-      </div>
-    </div>
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="color" class="w-100">Color</label>
+          <div class="input-group">
+          <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" name="producto.color" placeholder="Selecciona o agrega un color">
+            <ng-option *ngFor="let color of colores" [value]="color.valor">
+              {{ color.valor }}
+            </ng-option>
+          </ng-select>
+            <button type="button" class="btn btn-default" (click)="openModalAtributo('color')" tooltip="Agregar color">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <!-- material -->
 
-    <!-- color -->
-    <!-- <div class="form-group col-md-12 col-lg-3">
-      <label for="color" class="w-100">Color</label>
-      <div class="input-group">
-        <ng-select [(ngModel)]="producto.color" [items]="colores" bindLabel="valor" [addTag]="true"
-          (change)="addAttribute($event, 'color')" class="form-control form-select" placeholder="Selecciona o agrega un color"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select>
-      </div>
-    </div> -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="color" class="w-100">Color</label>
-      <div class="input-group">
-      <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" name="producto.color" placeholder="Selecciona o agrega un color">
-        <ng-option *ngFor="let color of colores" [value]="color.valor">
-          {{ color.valor }}
-        </ng-option>
-      </ng-select>
-        <button type="button" class="btn btn-default" (click)="openModalAtributo('color')" tooltip="Agregar color">
-          <i class="fa fa-plus"></i>
-        </button>
-      </div>
-    </div>
-    <!-- material -->
-    <!-- <div class="form-group col-md-12 col-lg-3">
-      <label for="material" class="w-100">Material</label>
-      <div class="input-group">
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="material" class="w-100">Material</label>
+          <div class="input-group">
+          <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" name="producto.material" placeholder="Selecciona o agrega un material">
+            <ng-option *ngFor="let material of materiales" [value]="material.valor">
+              {{ material.valor }}
+            </ng-option>
+          </ng-select>
+            <button type="button" class="btn btn-default" (click)="openModalAtributo('material')" tooltip="Agregar material">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
 
-        <ng-select [(ngModel)]="producto.material" [items]="materiales" bindLabel="valor" [addTag]="true"
-          (change)="addAttribute($event, 'material')" class="form-control form-select" placeholder="Selecciona o agrega un material"
-          style="padding-top: 0px; padding-bottom: 0px;">
-        </ng-select>
+        <!-- dimensiones -->
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="dimensiones">Dimensiones</label>
+          <input type="text" class="form-control" [(ngModel)]="producto.dimensiones" name="dimensiones"
+            placeholder="Escribe aquí">
+        </div>
       </div>
-    </div> -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="material" class="w-100">Material</label>
-      <div class="input-group">
-      <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" name="producto.material" placeholder="Selecciona o agrega un material">
-        <ng-option *ngFor="let material of materiales" [value]="material.valor">
-          {{ material.valor }}
-        </ng-option>
-      </ng-select>
-        <button type="button" class="btn btn-default" (click)="openModalAtributo('material')" tooltip="Agregar material">
-          <i class="fa fa-plus"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- dimensiones -->
-    <div class="form-group col-md-12 col-lg-3">
-      <label for="dimensiones">Dimensiones</label>
-      <input type="text" class="form-control" [(ngModel)]="producto.dimensiones" name="dimensiones"
-        placeholder="Escribe aquí">
-    </div>
 
     <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
 
