@@ -78,10 +78,10 @@ class ComprasController extends Controller
             })
             ->when($request->es_retaceo, function($query) use ($request) {
                 return $query->where('es_retaceo', true)
-                             ->when($request->es_retaceo === 'true', 
-                                 fn($q) => $q->whereDoesntHave('retaceo'),
-                                 fn($q) => $q->whereHas('retaceo')
-                             );
+                            ->when($request->es_retaceo === 'true',
+                                function($q) { return $q->whereDoesntHave('retaceo'); },
+                                function($q) { return $q->whereHas('retaceo'); }
+                            );
             })
             ->where('cotizacion', 0)
             ->when($request->buscador, function ($query) use ($request) {

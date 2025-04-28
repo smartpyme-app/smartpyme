@@ -63,10 +63,10 @@ class GastosController extends Controller
                     })
                     ->when($request->es_retaceo, function($query) use ($request) {
                         return $query->where('es_retaceo', true)
-                                     ->when($request->es_retaceo === 'true', 
-                                         fn($q) => $q->whereDoesntHave('retaceoGasto'),
-                                         fn($q) => $q->whereHas('retaceoGasto')
-                                     );
+                                    ->when($request->es_retaceo === 'true',
+                                        function($q) { return $q->whereDoesntHave('retaceoGasto'); },
+                                        function($q) { return $q->whereHas('retaceoGasto'); }
+                                    );
                     })
                     ->when($request->buscador, function($query) use ($request){
                     return $query->whereHas('proveedor', function($q) use ($request){
