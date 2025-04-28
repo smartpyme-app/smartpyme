@@ -21,7 +21,7 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-compras">Compras</button>
         </div>
         <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="setSucursal($event.target.value)">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
             </select>
@@ -163,7 +163,7 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>

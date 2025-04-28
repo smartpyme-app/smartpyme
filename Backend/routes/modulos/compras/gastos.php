@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Compras\Gastos\GastosController;
 use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
+use App\Http\Controllers\Api\Inventario\ProveedorController;
 
     Route::get('/gastos',             [GastosController::class, 'index']);
     Route::post('/gasto',             [GastosController::class, 'store']);
@@ -13,9 +14,12 @@ use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
 
     Route::post('/gastos/dash',         [GastosController::class, 'dash']);
 
+
     Route::get('/gastos/categorias',    [CategoriasController::class, 'index']);
     Route::post('/gastos/categoria',    [CategoriasController::class, 'store']);
     Route::delete('/gastos/categoria/{id}', [CategoriasController::class, 'delete']);
 
-
+    Route::post('/gastos/importar-json', [GastosController::class, 'importarJson']);
+    Route::post('/proveedores/buscar-nit', [ProveedorController::class, 'buscarPorNit']);
+    
 ?>
