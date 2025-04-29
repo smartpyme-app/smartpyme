@@ -354,7 +354,7 @@ class Empresa extends Model
 
     public function getCurrencySymbolAttribute()
     {
-        return $this->currency->currency_symbol;
+        return $this->currency ? $this->currency->currency_symbol : null;
     }
 
     public function inicializarEstadoPruebasMasivas()
