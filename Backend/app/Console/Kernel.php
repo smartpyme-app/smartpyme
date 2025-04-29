@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         'App\Console\Commands\Notificaciones',
+        'App\Console\Commands\VerificarSuscripcion'
     ];
 
     /**
@@ -25,7 +26,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Comandos existentes
         $schedule->command('generate:notificaciones')->daily();
         // $schedule->command('reporte:ventas-por-vendedor')
         //      ->dailyAt('23:59');
@@ -73,6 +74,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('empleados:actualizar-estado')
         ->dailyAt('00:01')
         ->appendOutputTo(storage_path('logs/empleados-estado.log'));
+
+        // Agregar el nuevo comando de verificación de suscripciones
+        $schedule->command('suscripciones:verificar')
+            ->daily()
+            ->at('01:00')
+            ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
 
         $schedule->call(function () {
             Log::info('Working');

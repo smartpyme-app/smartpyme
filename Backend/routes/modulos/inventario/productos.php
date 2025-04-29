@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Inventario\SucursalesController;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
 use Illuminate\Support\Facades\Route;
 
+
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
