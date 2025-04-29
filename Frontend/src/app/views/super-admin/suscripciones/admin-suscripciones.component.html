@@ -143,15 +143,13 @@
                   'bg-success':
                     empresa.suscripcion?.estado.toLowerCase() == 'activo',
                   'bg-danger':
-                    empresa.suscripcion?.estado.toLowerCase() == 'cancelado',
+                    empresa.suscripcion?.estado.toLowerCase() == 'cancelado' || empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
                   'bg-warning':
                     empresa.suscripcion?.estado.toLowerCase() == 'vencido',
                   'bg-info':
                     empresa.suscripcion?.estado.toLowerCase() == 'en prueba',
                   'bg-dark':
                     empresa.suscripcion?.estado.toLowerCase() == 'inactivo',
-                  'bg-danger':
-                    empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
                   'bg-secondary':
                     empresa.suscripcion?.estado.toLowerCase() == 'pendiente'
                 }"
