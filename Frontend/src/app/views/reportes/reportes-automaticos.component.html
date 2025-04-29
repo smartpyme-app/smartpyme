@@ -410,6 +410,38 @@
           Por ejemplo, un porcentaje del 90% para "Servicios" significa que se reportará el 90% de las ventas en esa categoría.
         </div> -->
       </div>
+      <div class="mb-4" *ngIf="configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor'" id="config-categorias">
+        <div class="form-group mb-3">
+          <label for="sucursales" class="form-label fw-bold">Sucursales</label>
+          <div class="mb-2">
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-secondary" 
+              (click)="toggleSelectAllSucursales()"
+            >
+              <i [ngClass]="{'fa-check-square-o': isAllSucursalesSelected(), 'fa-square-o': !isAllSucursalesSelected()}" class="fa me-1"></i>
+              {{ isAllSucursalesSelected() ? 'Deseleccionar todas' : 'Seleccionar todas' }}
+            </button>
+          </div>
+          <ng-select
+            [items]="sucursales"
+            bindLabel="nombre"
+            bindValue="id"
+            [multiple]="true"
+            placeholder="Seleccione sucursales"
+            [(ngModel)]="configuracionActual.sucursales"
+            name="sucursales"
+            clearable="true"
+          >
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.nombre }}
+            </ng-template>
+          </ng-select>
+          <small class="form-text text-muted">
+            Si no selecciona ninguna sucursal, el reporte incluirá datos de todas las sucursales. De lo contrario, se filtrará por las sucursales seleccionadas.
+          </small>
+        </div>
+      </div>
 
       <div class="form-group mb-3">
         <label for="frecuencia" class="form-label fw-bold"

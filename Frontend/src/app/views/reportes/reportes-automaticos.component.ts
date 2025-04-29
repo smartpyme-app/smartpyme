@@ -58,6 +58,7 @@ public modalRefFechas!: BsModalRef;
 public fechaInicio: string = '';
 public fechaFin: string = '';
 public fechaHoy: string = new Date().toISOString().split('T')[0];
+public sucursales: any[] = [];
 
   modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
@@ -92,6 +93,14 @@ public fechaHoy: string = new Date().toISOString().split('T')[0];
     this.apiService.getAll('categorias/list').subscribe(
       (categorias) => {
         this.categorias = categorias;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+    this.apiService.getAll('sucursales/list').subscribe(
+      (sucursales) => {
+        this.sucursales = sucursales;
       },
       (error) => {
         this.alertService.error(error);
@@ -162,6 +171,7 @@ public fechaHoy: string = new Date().toISOString().split('T')[0];
       dia_mes: 1,
       asunto_correo: '',
       configuracion: [],
+      sucursales: []
     };
 
     // Restablecer los días de la semana seleccionados
@@ -503,7 +513,8 @@ public fechaHoy: string = new Date().toISOString().split('T')[0];
       id_configuracion: this.configuracionEliminar.id,
       email_prueba: this.emailPrueba,
       fecha_inicio: this.fechaInicio,
-      fecha_fin: this.fechaFin
+      fecha_fin: this.fechaFin,
+      sucursales: this.configuracionEliminar.sucursales || []
     };
   
     this.apiService
@@ -834,6 +845,38 @@ public seleccionarPeriodo(periodo: string) {
   // Convertir las fechas a formato YYYY-MM-DD
   this.fechaInicio = fechaInicio.toISOString().split('T')[0];
   this.fechaFin = fechaFin.toISOString().split('T')[0];
+}
+
+public isAllSucursalesSelected(): boolean {
+  return this.configuracionActual.sucursales && 
+         this.sucursales.length > 0 && 
+         this.configuracionActual.sucursales.length === this.sucursales.length;
+}
+public toggleSelectAllSucursales(): void {
+  if (this.isAllSucursalesSelected()) {
+    this.configuracionActual.sucursales = [];
+  } else {
+    this.configuracionActual.sucursales = this.sucursales.map(s => s.id);
+  }
+}
+
+public getNombresSucursales(sucursalesIds: any[]): string {
+  if (!sucursalesIds || sucursalesIds.length === 0) {
+    return 'Todas';
+  }
+  
+  if (sucursalesIds.length === this.sucursales.length) {
+    return 'Todas';
+  }
+  
+  if (sucursalesIds.length <= 2) {
+    return sucursalesIds.map(id => {
+      const sucursal = this.sucursales.find(s => s.id == id);
+      return sucursal?.nombre || 'N/A';
+    }).join(', ');
+  }
+  
+  return `${sucursalesIds.length} sucursales seleccionadas`;
 }
 
   
