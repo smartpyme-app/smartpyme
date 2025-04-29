@@ -131,10 +131,12 @@ class EmpresasController extends Controller
 
 
         $empresa->save();
-
+        
+        if(!isset($request->isRegister) || $request->isRegister !== false) {
+        
         $suscripcion = $this->createSuscripcion([
             'empresa_id' => $empresa->id,
-            'plan_id' => $plan = $this->getPlan($empresa->plan)->id,
+            'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
             'usuario_id' => $usuario->id,
             'tipo_plan' => $empresa->tipo_plan,
             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
@@ -155,6 +157,8 @@ class EmpresasController extends Controller
             'ultimo_intento_cobro' => null,
             'historial_pagos' => null
         ]);
+
+    }
 
         //Crear sucursal
             if(!$request->id){
@@ -475,7 +479,7 @@ class EmpresasController extends Controller
     {
        $plan= null;
         if ($withName) {
-            $plan= Plan::where('nombre',$name)->first();
+            $plan= Plan::where('nombre', $name)->first();
         }else{
             $plan= Plan::find($plan_id);
         }

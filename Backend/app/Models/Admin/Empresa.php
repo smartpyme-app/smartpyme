@@ -83,7 +83,8 @@ class Empresa extends Model
         'vendedor_inventario',
 
         //Para facturación
-        'id_cliente'
+        'id_cliente',
+        'id_documento',
     ];
 
     protected $casts = [
