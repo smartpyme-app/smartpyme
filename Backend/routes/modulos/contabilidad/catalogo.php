@@ -12,5 +12,4 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/catalogo-cuentas/importar',   [CuentasController::class, 'importCuentas']);
 
-
 ?>
