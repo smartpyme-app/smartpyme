@@ -15,20 +15,19 @@ use Illuminate\Support\Str;
 
 class PagosController extends Controller
 {
-
     public function index(Request $request)
     {
 
-        $planes = Pago::paginate();
+        $pagos = Pago::latest()->paginate();
 
-        return Response()->json($planes, 200);
+        return Response()->json($pagos, 200);
     }
 
     public function read($id)
     {
 
-        $plan = Pago::where('id', $id)->firstOrFail();
-        return Response()->json($plan, 200);
+        $pago = Pago::where('id', $id)->firstOrFail();
+        return Response()->json($pago, 200);
     }
 
     public function newPayment(Request $request)
