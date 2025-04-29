@@ -75,7 +75,7 @@ export class AdminPagosComponent implements OnInit {
         );
     }
 
-    openModal(template: TemplateRef<any>, pago: any = {}) {
+    public openModal(template: TemplateRef<any>, pago: any = {}) {
             this.loadEmpresas();
             this.loadPlanes();
 
@@ -179,5 +179,11 @@ export class AdminPagosComponent implements OnInit {
           this.modalRef.hide();
           this.alertService.modal = false;
         },error => {this.alertService.error(error); this.saving = false; });
+  }
+
+
+  openModalEdit(template: TemplateRef<any>, pago: any = {}) {
+    this.pago = {...pago};
+    this.openModal(template, pago);
   }
 }
