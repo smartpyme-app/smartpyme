@@ -42,13 +42,6 @@ class N1coChargeController extends Controller
         ]);
     }
 
-    // public function createSuscripcion(Request $request)
-    // {
-    //     $user = User::find($request->input('customer.id'));
-    //     $empresa = Empresa::find($user->id_empresa);
-    //     $plan = Plan::find($request->input('plan.id_plan'));
-    // }
-
     public function createPaymentMethod(Request $request)
     {
         try {

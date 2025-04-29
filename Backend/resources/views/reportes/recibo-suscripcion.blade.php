@@ -83,10 +83,10 @@
     <div class="row">
         <div class="col-lg-12 text-center">
             <center>
-                <img src="{{ public_path('img/smartpyme.png') }}" id="img"></center>
+            <img src="{{ public_path('img/smartpyme.png') }}" id="img"></center>
             <p class="text-center" id="empresa">San Salvador, El Salvador</p>
         </div><br><br>
-        <h4 class="" id="empresa">Detalles del Pago</h4><br>
+        <h4 class="" id="empresa">Detalles de Pago</h4><br>
         <div class="col-lg-12" id="cliente">
             <p><b>Ticket #: </b>{{$recibo->id }}</p>
             <p><b>Empresa: </b>{{ $recibo->empresa->nombre ?? 'N/A' }}</p>

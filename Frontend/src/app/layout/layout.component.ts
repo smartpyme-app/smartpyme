@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
-import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 
 @Component({
   selector: 'app-layout',
@@ -233,14 +233,14 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
   }
 
   shouldShowCancellationBanner(): boolean {
-    return this.usuario && 
-           this.usuario.suscripcion && 
+    return this.usuario &&
+           this.usuario.suscripcion &&
            this.usuario.suscripcion.estado === this.ESTADOS_SUSCRIPCION.CANCELADO;
   }
-  
+
   getCancellationMessage(): string {
     if (!this.shouldShowCancellationBanner()) return '';
-    
+
     const fechaDesactivacion = new Date(this.usuario.suscripcion.fecha_proximo_pago);
     return `Tu suscripción ha sido cancelada. Podrás seguir utilizando el sistema hasta el ${fechaDesactivacion.toLocaleDateString()}.`;
   }

@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
 use Illuminate\Support\Facades\Route;
-//use App\Http\Controllers\Api\Constants\ConstantsController;
 use App\Http\Controllers\n1co\N1coChargeController;
 
 Route::get('/prueba', function () {
@@ -82,6 +81,13 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');
 
+	// Empleados
+	// require base_path('routes/modulos/empleados/empleados.php');
+	// require base_path('routes/modulos/empleados/planillas.php');
+	// require base_path('routes/modulos/empleados/comisiones.php');
+	// require base_path('routes/modulos/empleados/asistencias.php');
+	// require base_path('routes/modulos/empleados/metas.php');
+
 	// Contabilidad
 	require base_path('routes/modulos/contabilidad/activos.php');
 	require base_path('routes/modulos/contabilidad/cajas-chicas.php');
@@ -102,19 +108,19 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/usuarios.php');
 	require base_path('routes/modulos/admin/accesos.php');
 	require base_path('routes/modulos/admin/licencias.php');
-
 	require base_path('routes/modulos/admin/suscripciones.php');
 
 	require base_path('routes/modulos/admin/MH.php');
-	require base_path('routes/modulos/admin/reportes-automaticos.php');
+    require base_path('routes/modulos/admin/reportes-automaticos.php');
 
-	// Super Admin
+
+    // Super Admin
 	require base_path('routes/modulos/super-admin/usuarios.php');
 	require base_path('routes/modulos/super-admin/planes.php');
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 
-	//Chatbot
+	//require base_path('chatbot
 	require base_path('routes/modulos/chat/chat.php');
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
@@ -149,6 +155,8 @@ require base_path('routes/modulos/webhook/webhook.php');
 require base_path('routes/modulos/token/token.php');
 
 
+
+require base_path('routes/modulos/webhook/webhook.php');
 
 // Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
 

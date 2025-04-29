@@ -645,7 +645,6 @@ class WebhookN1coController extends Controller
         // $fromAddress = env('MAIL_FROM_ADDRESS');
         $fromAddress = 'noreply@smartpyme.sv';
 
-
         try {
             foreach ($adminEmails as $adminEmail) {
                 Mail::send('mails.admin-pago-notificacion', [

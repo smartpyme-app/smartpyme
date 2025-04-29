@@ -66,6 +66,7 @@ import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-fun
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent,
+    AdminSucursalComponent,
     EmpresasFuncionalidadesComponent
   ],
   exports: [

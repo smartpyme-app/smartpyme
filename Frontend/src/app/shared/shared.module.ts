@@ -86,9 +86,9 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
+    VerHistorialButtonComponent,
     SafeHtmlPipe,
-    ThreedsModalComponent,
-    VerHistorialButtonComponent
+    ThreedsModalComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -118,9 +118,9 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
+    ThreedsModalComponent,
     VerHistorialButtonComponent,
-    SafeHtmlPipe,
-    ThreedsModalComponent
+    SafeHtmlPipe
   ],
   providers: [AlertService],
 })

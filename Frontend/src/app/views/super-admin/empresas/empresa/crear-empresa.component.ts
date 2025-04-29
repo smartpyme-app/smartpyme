@@ -88,6 +88,7 @@ export class CrearEmpresaComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
+        this.empresa.isRegister = false;
         this.apiService.store('empresa', this.empresa).subscribe(empresa => {
             this.saving = false;
             if(!this.empresa.id){

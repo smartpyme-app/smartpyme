@@ -149,11 +149,12 @@ class EmpresasController extends Controller
 
 
         $empresa->save();
-
-        if(!$request->id) {
+        
+        if(!isset($request->isRegister) || $request->isRegister !== false) {
+            
             $suscripcion = $this->createSuscripcion([
                 'empresa_id' => $empresa->id,
-                'plan_id' => $plan = $this->getPlan($empresa->plan)->id,
+                'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
                 'usuario_id' => $usuario->id,
                 'tipo_plan' => $empresa->tipo_plan,
                 'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
@@ -174,6 +175,7 @@ class EmpresasController extends Controller
                 'ultimo_intento_cobro' => null,
                 'historial_pagos' => null
             ]);
+
         }
 
         //Crear sucursal
@@ -274,29 +276,30 @@ class EmpresasController extends Controller
             ->latest()
             ->first([
                 'id',
-                'estado',
-                'fecha_proximo_pago',
-                'fecha_ultimo_pago',
-                'fin_periodo_prueba',
-                'tipo_plan',
-                'created_at',
+                'estado', 
+                'fecha_proximo_pago', 
+                'fecha_ultimo_pago', 
+                'fin_periodo_prueba', 
+                'tipo_plan', 
+                'created_at', 
                 'monto',
                 'fecha_ultimo_pago',
                 'fecha_proximo_pago',
                 'fin_periodo_prueba'
             ]);
 
+        
         if (!$suscripcion) {
             $suscripcion = $empresa->suscripcion()
                 ->latest()
                 ->first([
                     'id',
-                    'estado',
-                    'fecha_proximo_pago',
-                    'fecha_ultimo_pago',
-                    'fin_periodo_prueba',
-                    'tipo_plan',
-                    'created_at',
+                    'estado', 
+                    'fecha_proximo_pago', 
+                    'fecha_ultimo_pago', 
+                    'fin_periodo_prueba', 
+                    'tipo_plan', 
+                    'created_at', 
                     'monto',
                     'fecha_ultimo_pago',
                     'fecha_proximo_pago',
@@ -304,11 +307,11 @@ class EmpresasController extends Controller
                 ]);
         }
 
+
         if ($empresa->pago_recurrente) {
             $suscripcion->pago_recurrente_empresa = $empresa->pago_recurrente;
         }
-
-
+        
         // Obtener el plan desde la suscripción o desde la empresa
         $plan = null;
         if ($suscripcion && $suscripcion->plan_id) {
@@ -342,11 +345,11 @@ class EmpresasController extends Controller
 
             $pagos = array_merge($pagos, $pagosPorUsuario);
         }
-
+        
         usort($pagos, function($a, $b) {
             return strtotime($b['fecha_transaccion']) - strtotime($a['fecha_transaccion']);
         });
-
+        
         // Obtener métodos de pago asociados a la empresa
         $metodoPago = null;
         foreach ($usuarios as $usuario) {
@@ -376,7 +379,7 @@ class EmpresasController extends Controller
     //     $recibo = Transaccion::where('id', $id)->firstOrFail();
     //     // return $recibo;
     //     $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
-    //     $pdf->setPaper('US Letter', 'portrait');
+    //     $pdf->setPaper('US Letter', 'portrait');  
 
 
     //     return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
@@ -494,7 +497,7 @@ class EmpresasController extends Controller
     {
        $plan= null;
         if ($withName) {
-            $plan= Plan::where('nombre',$name)->first();
+            $plan= Plan::where('nombre', $name)->first();
         }else{
             $plan= Plan::find($plan_id);
         }
@@ -519,6 +522,5 @@ class EmpresasController extends Controller
             'data' => $empresa
         ]);
     }
-
 
 }

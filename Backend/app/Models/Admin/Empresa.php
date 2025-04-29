@@ -85,6 +85,10 @@ class Empresa extends Model
 
         //Permiso para vendedores
         'vendedor_inventario',
+
+        //Para facturación
+        'id_cliente',
+        'id_documento',
         'woocommerce_api_key',
         'woocommerce_store_url',
         'woocommerce_consumer_key',
@@ -98,8 +102,6 @@ class Empresa extends Model
         'woocommerce_error',
         'woocommerce_canal_id',
 
-        //Para facturación
-        'id_cliente'
     ];
 
     protected $casts = [
@@ -263,7 +265,6 @@ class Empresa extends Model
         return $this->belongsTo(Currency::class, 'moneda', 'currency_code');
     }
 
-
     public function getRecibosPendientesAttribute()
     {
         return $this->pagos()->where('estado', 'Pendiente')->count();
@@ -295,7 +296,26 @@ class Empresa extends Model
         return $re->count();
     }
 
-    //mandar usuario que esta autenticado
+    public function suscripcion()
+    {
+        return $this->hasOne(Suscripcion::class, 'empresa_id');
+    }
+
+    public function departamentos()
+    {
+        return $this->belongsToMany(DepartamentoEmpresa::class, 'empresa_departamento')
+                    ->withPivot('estado')
+                    ->withTimestamps();
+    }
+
+    public function cargos()
+    {
+        return $this->belongsToMany(CargoEmpresa::class, 'empresa_cargo')
+                    ->withPivot('estado')
+                    ->withTimestamps();
+    }
+
+
     public function user()
     {
 
@@ -376,11 +396,6 @@ class Empresa extends Model
 
         return $estadoPruebas;
 
-    }
-
-        public function suscripcion()
-    {
-        return $this->hasOne(Suscripcion::class, 'empresa_id');
     }
 
     public function suscripcionActiva()
