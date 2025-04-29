@@ -26,6 +26,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use JWTAuth;
 
+
 class EmpresasController extends Controller
 {
 
@@ -37,7 +38,7 @@ class EmpresasController extends Controller
     }
 
     public function index(Request $request) {
-       
+
         $empresas = Empresa::when($request->activo !== null, function($q) use ($request){
             $q->where('activo', !!$request->activo);
         })
@@ -71,7 +72,7 @@ class EmpresasController extends Controller
     }
 
     public function list() {
-       
+
         $empresas = Empresa::orderby('nombre')
                                 ->where('activo', true)
                                 ->get();
@@ -83,7 +84,7 @@ class EmpresasController extends Controller
 
     public function read($id) {
 
-        $empresa = Empresa::findOrFail($id);
+        $empresa = Empresa::with('empresa_cliente')->findOrFail($id);
         return Response()->json($empresa, 200);
 
     }
@@ -99,7 +100,7 @@ class EmpresasController extends Controller
             $empresa = Empresa::findOrFail($request->id);
         else
             $empresa = new Empresa;
-        
+
         //Bloquear usuarios
         if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
             foreach ($empresa->usuarios()->get() as $usuario) {
@@ -150,32 +151,32 @@ class EmpresasController extends Controller
         $empresa->save();
         
         if(!isset($request->isRegister) || $request->isRegister !== false) {
-        
-        $suscripcion = $this->createSuscripcion([
-            'empresa_id' => $empresa->id,
-            'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
-            'usuario_id' => $usuario->id,
-            'tipo_plan' => $empresa->tipo_plan,
-            'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-            'monto' => $plan->precio,
-            'id_pago' => null,
-            'id_orden' => null,
-            'estado_ultimo_pago' => null,
-            'fecha_ultimo_pago' => null,
-            'fecha_proximo_pago' => null,
-            'fin_periodo_prueba' => now()->addDays($plan->duracion_dias),
-            'fecha_cancelacion' => null,
-            'motivo_cancelacion' => null,
-            'requiere_factura' => false,
-            'nit' => null,
-            'nombre_factura' => $empresa->nombre,
-            'direccion_factura' => $empresa->direccion,
-            'intentos_cobro' => 0,
-            'ultimo_intento_cobro' => null,
-            'historial_pagos' => null
-        ]);
+            
+            $suscripcion = $this->createSuscripcion([
+                'empresa_id' => $empresa->id,
+                'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
+                'usuario_id' => $usuario->id,
+                'tipo_plan' => $empresa->tipo_plan,
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+                'monto' => $plan->precio,
+                'id_pago' => null,
+                'id_orden' => null,
+                'estado_ultimo_pago' => null,
+                'fecha_ultimo_pago' => null,
+                'fecha_proximo_pago' => null,
+                'fin_periodo_prueba' => now()->addDays($plan->duracion_dias),
+                'fecha_cancelacion' => null,
+                'motivo_cancelacion' => null,
+                'requiere_factura' => false,
+                'nit' => null,
+                'nombre_factura' => $empresa->nombre,
+                'direccion_factura' => $empresa->direccion,
+                'intentos_cobro' => 0,
+                'ultimo_intento_cobro' => null,
+                'historial_pagos' => null
+            ]);
 
-    }
+        }
 
         //Crear sucursal
             if(!$request->id){
@@ -207,13 +208,13 @@ class EmpresasController extends Controller
 
     }
 
-    private function createSuscripcion(array $data): array 
+    private function createSuscripcion(array $data): array
     {
         $plan = Plan::find($data['plan_id']);
-        
+
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
-            
+
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
                 'estado_ultimo_pago' => null,
@@ -238,10 +239,10 @@ class EmpresasController extends Controller
                 'fin_periodo_prueba' => null
             ]);
         }
-    
+
         return $this->suscripcionService->createSuscripcion($data);
     }
-    
+
 
     public function delete($id)
     {
@@ -282,8 +283,8 @@ class EmpresasController extends Controller
                 'tipo_plan', 
                 'created_at', 
                 'monto',
-                'fecha_ultimo_pago', 
-                'fecha_proximo_pago', 
+                'fecha_ultimo_pago',
+                'fecha_proximo_pago',
                 'fin_periodo_prueba'
             ]);
 
@@ -300,8 +301,8 @@ class EmpresasController extends Controller
                     'tipo_plan', 
                     'created_at', 
                     'monto',
-                    'fecha_ultimo_pago', 
-                    'fecha_proximo_pago', 
+                    'fecha_ultimo_pago',
+                    'fecha_proximo_pago',
                     'fin_periodo_prueba'
                 ]);
         }
@@ -318,7 +319,7 @@ class EmpresasController extends Controller
         } else {
             $plan = Plan::where('nombre', $empresa->plan)->first();
         }
-        
+
         $planData = null;
         if ($plan) {
             $planData = [
@@ -327,13 +328,13 @@ class EmpresasController extends Controller
                 'precio' => $plan->precio
             ];
         }
-        
+
         // Obtener todos los pagos de la empresa
         $pagos = [];
-        
+
         // Buscar todos los usuarios de la empresa
         $usuarios = User::where('id_empresa', $empresa->id)->get();
-        
+
         // Recopilar los pagos de todos los usuarios de la empresa
         foreach ($usuarios as $usuario) {
             $pagosPorUsuario = $usuario->ordenesPago()
@@ -341,7 +342,7 @@ class EmpresasController extends Controller
                 ->latest()
                 ->get()
                 ->toArray();
-            
+
             $pagos = array_merge($pagos, $pagosPorUsuario);
         }
         
@@ -356,20 +357,20 @@ class EmpresasController extends Controller
                 ->where('es_predeterminado', true)
                 ->where('esta_activo', true)
                 ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
-            
+
             if ($metodo) {
                 $metodoPago = $metodo;
                 break;
             }
         }
-        
+
         $dataResponse = [
             'suscripcion' => $suscripcion,
             'pagos' => $pagos,
             'plan' => $planData,
             'metodoPago' => $metodoPago
         ];
-        
+
         return Response()->json($dataResponse, 201);
     }
 
@@ -473,7 +474,7 @@ class EmpresasController extends Controller
         if ($request->m_gastos) {
             DB::table('egresos')->where('id_empresa', $empresa->id)->delete();
         }
-        
+
         if ($request->m_presupuestos) {
             DB::table('presupuestos')->where('id_empresa', $empresa->id)->delete();
         }
@@ -488,7 +489,7 @@ class EmpresasController extends Controller
             ->orderBy('nombre', 'asc')
             ->where('activo', true)
             ->get();
-        
+
         return response()->json($empresas);
     }
 

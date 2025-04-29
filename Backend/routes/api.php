@@ -24,7 +24,6 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
-
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 
@@ -110,6 +109,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/accesos.php');
 	require base_path('routes/modulos/admin/licencias.php');
 	require base_path('routes/modulos/admin/suscripciones.php');
+
 	require base_path('routes/modulos/admin/MH.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
 
@@ -120,10 +120,14 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 
-	//Crequire base_path('rhatbot
+	//require base_path('chatbot
 	require base_path('routes/modulos/chat/chat.php');
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
+
+	// Pruebas masivas
+	require base_path('routes/modulos/admin/pruebas-masivas-mh.php');
+
 
 	// planillas
 
@@ -132,11 +136,25 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/planilla/cargos.php');
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');
 
-	require base_path('routes/modulos/planilla/historialcontratos.php');
+    require base_path('routes/modulos/planilla/historialcontratos.php');
+
+	//Chatbot
+	require base_path('routes/modulos/chat/chat.php');
+
+	//Funcionalidades
+	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
+
 
 });
 
-//webhook
+// Webhook
+require base_path('routes/modulos/webhook/webhook.php');
+
+//token
+
+require base_path('routes/modulos/token/token.php');
+
+
 
 require base_path('routes/modulos/webhook/webhook.php');
 

@@ -43,9 +43,7 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
-
 import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
-
 
 
 @NgModule({

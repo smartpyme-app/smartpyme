@@ -5,22 +5,22 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateProductoImagenesTable extends Migration {
 
-    public function up()
-    {
-        Schema::create('producto_imagenes', function(Blueprint $table)
-        {
-            $table->increments('id');
+    // public function up()
+    // {
+    //     Schema::create('producto_imagenes', function(Blueprint $table)
+    //     {
+    //         $table->increments('id');
 
-            $table->string('img');
-            $table->integer('id_producto');
+    //         $table->string('img');
+    //         $table->integer('id_producto');
 
-            $table->timestamps();
-        });
-    }
+    //         $table->timestamps();
+    //     });
+    // }
 
-    public function down()
-    {
-        Schema::drop('producto_imagenes');
-    }
+    // public function down()
+    // {
+    //     Schema::drop('producto_imagenes');
+    // }
 
 }
