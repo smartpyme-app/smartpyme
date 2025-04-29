@@ -83,14 +83,14 @@
     <div class="row">
         <div class="col-lg-12 text-center">
             <center>
-            <img src="{{ public_path('img/SmartPyme-logo-blue.png') }}" id="img"></center>
+            <img src="{{ public_path('img/smartpyme.png') }}" id="img"></center>
             <p class="text-center" id="empresa">San Salvador, El Salvador</p>
         </div><br><br>
-        <h4 class="" id="empresa">Detalles del Pago</h4><br>
+        <h4 class="" id="empresa">Detalles de Pago</h4><br>
         <div class="col-lg-12" id="cliente">
             <p><b>Ticket #: </b>{{$recibo->id }}</p>
-            <p><b>Empresa: </b>{{$recibo->empresa()->pluck('nombre')->first() }}</p>
-            <p><b>A nombre de: </b>{{$recibo->empresa()->first()->usuarios()->pluck('name')->first() }}</p>
+            <p><b>Empresa: </b>{{ $recibo->empresa->nombre ?? 'N/A' }}</p>
+            <p><b>A nombre de: </b>{{ isset($recibo->empresa->usuarios) && count($recibo->empresa->usuarios) > 0 ? $recibo->empresa->usuarios[0]->name : 'N/A' }}</p>
             <p><b>Estado: </b><span style="background-color: #DCFCE7 ; color: #14532D ; padding: 7px;">{{$recibo->estado}}</span></p>
             <p><b>Fecha: </b>{{$recibo->created_at->format('d/m/Y h:m:s a')}}</p>
         </div><br>
@@ -137,9 +137,9 @@
             <p>
                 Para realizar el pago por favor contactar:
                 <br>
-                Tel.: +503 7723-5932
+                Tel.: +503 7732-5932
                 <br>
-                Email: gabrielaq@analyticsas.com
+                Email: contact@smartpyme.sv
             </p>
         </div>
     </div>

@@ -99,6 +99,22 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+        'suscripciones' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/suscripciones/suscripciones-'.date('Y-m-d').'.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'permission' => 0664,
+            'rotate' => true
+        ],
+        'n1co' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/n1co/cargos-'.date('Y-m-d').'.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'permission' => 0664,
+        ],
     ],
 
 ];
