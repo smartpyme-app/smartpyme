@@ -64,6 +64,6 @@ class Abono extends Model
             ->where('id', '<=', $this->id)
             ->count();
 
-        return 'ABONO-' . str_pad($position, 5, '0', STR_PAD_LEFT);
+        return  str_pad($position, 5, '0', STR_PAD_LEFT);
     }
 }
