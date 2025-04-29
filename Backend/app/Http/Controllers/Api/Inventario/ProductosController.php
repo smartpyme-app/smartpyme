@@ -21,10 +21,10 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Imports\Productos;
 use App\Exports\ProductosExport;
 use App\Imports\InventarioImport;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\WooCommerceExport;
-use Illuminate\Support\Facades\Auth;
 use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
 use Illuminate\Support\Facades\DB;
@@ -471,7 +471,7 @@ class ProductosController extends Controller
                 $idProducto = $productoData['id_producto'];
                 $cantidad = $productoData['cantidad'];
 
-                
+
                 if ($cantidad <= 0) {
                     continue;
                 }
@@ -491,20 +491,20 @@ class ProductosController extends Controller
                     ->where('id_bodega', $request->id_bodega_destino)
                     ->first();
 
-               
+
                 if (!$origen) {
                     $errores[] = "Una de las sucursales no tiene inventario para el producto {$producto->nombre}.";
                     continue;
                 }
 
-                
+
                 if ($origen->stock < $cantidad) {
                     $errores[] = "La sucursal origen no tiene stock suficiente para el producto {$producto->nombre}.";
                     continue;
                 }
                 $user = Auth::user();
 
-             
+
                 $traslado = new Traslado();
                 $traslado->id_producto = $idProducto;
                 $traslado->id_bodega_de = $request->id_bodega_origen;
@@ -516,7 +516,7 @@ class ProductosController extends Controller
                 $traslado->estado = 'Confirmado';
                 $traslado->save();
 
-                
+
                 $origen->stock -= $cantidad;
                 $origen->save();
                 $origen->kardex($traslado, $cantidad * -1);
@@ -533,7 +533,7 @@ class ProductosController extends Controller
                     $destino->kardex($traslado, $cantidad);
                 }
 
-                
+
                 $composicionesValidas = true;
 
                 foreach ($producto->composiciones as $comp) {
@@ -567,10 +567,10 @@ class ProductosController extends Controller
                         break;
                     }
 
-                   
+
                 }
 
-               
+
                 if (!$composicionesValidas) {
                     continue;
                 }
@@ -636,7 +636,7 @@ class ProductosController extends Controller
         $importador = new TrasladosImport($request->concepto);
         Excel::import($importador, $request->file('archivo'));
 
-       
+
         $trasladados = $importador->getTrasladados();
         $errores = $importador->getErrores();
 
@@ -754,7 +754,7 @@ class ProductosController extends Controller
             'actualizados' => $productosActualizados
         ]);
     }
-    
+
     public function exportarWooCommerceTemplate(Request $request)
     {
         $user = Auth::user();
@@ -774,5 +774,4 @@ class ProductosController extends Controller
             ]
         );
     }
-
 }

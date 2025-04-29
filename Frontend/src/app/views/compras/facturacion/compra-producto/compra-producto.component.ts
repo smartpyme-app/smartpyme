@@ -34,45 +34,61 @@ export class CompraProductoComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        console.log(this.compra);
+
         this.searchControl.valueChanges
-          .pipe(
-            debounceTime(500),
-            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
-              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
-                catchError(error => {
-                  console.error('Error en la búsqueda:', error);
-                  this.productos = []; // Limpiar resultados en caso de error.
-                  this.loading = false; // Asegurar que el estado de carga se actualice.
-                  return of([]); // Retornar un observable vacío para que el flujo continúe.
-                })
+              .pipe(
+                debounceTime(500),
+                filter((query: string) => query.trim().length > 0),
+                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
               )
-            )
-          )
-          .subscribe({
-            next: (results: any[]) => {
-              this.productos = Array.isArray(results) ? results : [];
-              this.loading = false;
+              .subscribe((results: any[]) => {
+                this.productos = Array.isArray(results) ? results : [];
+                this.loading = false;
 
-              if (
-                results &&
-                results.length === 1 &&
-                this.buscador === results[0].codigo
-              ) {
-                this.selectProducto(results[0]);
-              }
-            },
-            error: (err) => {
-              console.error('Error no controlado:', err); // Log en caso de un error en la suscripción.
-            }
-          });
+                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
+                    this.selectProducto(results[0]);
+                }
+              });
+    }
 
-        // this.buscador = '';
-        // const input = document.getElementById('producto')!;
-        // const producto = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
-        // const debouncedInput = producto.pipe(debounceTime(500));
-        // const subscribe = debouncedInput.subscribe(val => { this.searchProducto(); });
+    public loadAll() {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_categoria = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.paginate = 5;
+
+        this.filtrarProductos();
+    }
+
+    public filtrarProductos(){
+        this.loading = true;
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+            this.productos = productos;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    public setOrden(columna: string) {
+        if (this.filtros.orden === columna) {
+          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.filtros.orden = columna;
+          this.filtros.direccion = 'asc';
+        }
+
+        this.filtrarProductos();
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
+            this.productos = productos;
+            this.loading = false;
+        }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
