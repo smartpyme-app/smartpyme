@@ -430,17 +430,16 @@ export class ReportesAutomaticosComponent implements OnInit {
     const nuevoEstado = !config.activo;
     const configId = config.id;
 
-    // Si se está activando, verificar si ya existe otro reporte activo del mismo tipo
+  
     if (nuevoEstado) {
       let existeReporteActivo = false;
 
       if (config.tipo_reporte !== 'ventas-por-categoria-vendedor') {
-        // Para tipos de reporte diferentes, seguimos validando solo por tipo
+   
         existeReporteActivo = this.tiposReporteActivos.includes(
           config.tipo_reporte
         );
       } else {
-        // Para "ventas-por-categoria-vendedor", validamos por combinación de tipo y sucursales
         const sucursalesStr = [...(config.sucursales || [])].sort().join(',');
         existeReporteActivo = this.tiposReporteActivos.includes(
           `${config.tipo_reporte}|${sucursalesStr}`
