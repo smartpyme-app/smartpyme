@@ -32,6 +32,7 @@ class Bodega extends Model {
                 });
             }
         }
+        
     }
     
     public function getNombreSucursalAttribute()
