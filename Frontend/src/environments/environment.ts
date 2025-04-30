@@ -4,12 +4,11 @@
 
 export const environment = {
   production: false,
-  // API_URL: 'http://localhost:8000',
-  API_URL: 'https://api.smartpyme.site',
+  API_URL: 'http://localhost:8000',
+  // API_URL: 'https://api.smartpyme.site',
   // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
 };
-
 
 /*
  * For easier debugging in development mode, you can import the following file
