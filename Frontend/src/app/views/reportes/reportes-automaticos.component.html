@@ -62,106 +62,113 @@
 
   <div class="row">
     <div class="table-responsive">
-      <table class="table table-borderless table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Tipo de Reporte</th>
-            <th>Frecuencia</th>
-            <th>Horarios</th>
-            <th>Destinatarios</th>
-            <th>Estado</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td
-              colspan="6"
-              class="text-center"
-              *ngIf="configuraciones?.total < 1 && !loading"
-            >
-              <span class="badge bg-primary"
-                >No hay configuraciones de reportes automáticos</span
-              >
-            </td>
-            <td colspan="6" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
-            </td>
-          </tr>
+      <!-- Modificar la tabla para incluir la columna de sucursales -->
+<table class="table table-borderless table-hover mb-0">
+  <thead>
+    <tr>
+      <th>Tipo de Reporte</th>
+      <th>Frecuencia</th>
+      <th>Horarios</th>
+      <th>Destinatarios</th>
+      <th>Sucursales</th>
+      <th>Estado</th>
+      <th class="text-center">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td
+        colspan="7" 
+        class="text-center"
+        *ngIf="configuraciones?.total < 1 && !loading"
+      >
+        <span class="badge bg-primary"
+          >No hay configuraciones de reportes automáticos</span
+        >
+      </td>
+      <td colspan="7" class="text-center" *ngIf="loading">
+        <span class="badge bg-primary">Cargando...</span>
+      </td>
+    </tr>
 
-          <tr *ngFor="let config of configuraciones?.data">
-            <td>
-              <span *ngIf="config.tipo_reporte === 'ventas-por-vendedor'"
-                >Ventas por Vendedor</span
-              >
-              <span *ngIf="config.tipo_reporte === 'ventas-diarias'"
-                >Ventas Diarias</span
-              >
-              <span *ngIf="config.tipo_reporte === 'productos-vendidos'"
-                >Productos Vendidos</span
-              >
-              <span *ngIf="config.tipo_reporte === 'ventas-por-categoria-vendedor'"
-                >Ventas por Categoría y Vendedor</span>
-              <span *ngIf="config.tipo_reporte === 'estado-financiero-consolidado-sucursales'"
-                >Estado Financiero Consolidado por Sucursales</span
-              >
-              <span
-                *ngIf="
-                  config.tipo_reporte !== 'ventas-por-vendedor' &&
-                  config.tipo_reporte !== 'ventas-diarias' &&
-                  config.tipo_reporte !== 'productos-vendidos' &&
-                  config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
-                  config.tipo_reporte !== 'estado-financiero-consolidado-sucursales'
-                "
-                >{{ config.tipo_reporte }}</span
-              >
-            </td>
-            <td>
-              <span *ngIf="config.frecuencia === 'diario'">Diario</span>
-              <span *ngIf="config.frecuencia === 'semanal'">Semanal</span>
-              <span *ngIf="config.frecuencia === 'mensual'"
-                >Mensual (Día {{ config.dia_mes }})</span
-              >
-            </td>
-            <td>
-              <div class="d-flex flex-wrap gap-1">
-                <span *ngIf="config.envio_matutino" class="badge bg-info">{{
-                  formatHora(config.hora_matutino)
-                }}</span>
-                <span *ngIf="config.envio_mediodia" class="badge bg-info">{{
-                  formatHora(config.hora_mediodia)
-                }}</span>
-                <span *ngIf="config.envio_nocturno" class="badge bg-info">{{
-                  formatHora(config.hora_nocturno)
-                }}</span>
-              </div>
-            </td>
-            <td>
-              <span tooltip="{{ config.destinatarios.join(', ') }}">
-                {{ config.destinatarios.length }} destinatario(s)
-              </span>
-            </td>
-            <td>
-              <span *ngIf="config.activo" class="badge bg-success">Activo</span>
-              <span *ngIf="!config.activo" class="badge bg-secondary"
-                >Inactivo</span
-              >
-            </td>
-            <td class="text-center">
-              <span
-                class="btn"
-                [popover]="accionesTemplate"
-                [outsideClick]="true"
-                tooltip="Acciones"
-                container="body"
-                [popoverContext]="{ config: config }"
-              >
-                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <tr *ngFor="let config of configuraciones?.data">
+      <td>
+        <span *ngIf="config.tipo_reporte === 'ventas-por-vendedor'"
+          >Ventas por Vendedor</span
+        >
+        <span *ngIf="config.tipo_reporte === 'ventas-diarias'"
+          >Ventas Diarias</span
+        >
+        <span *ngIf="config.tipo_reporte === 'productos-vendidos'"
+          >Productos Vendidos</span
+        >
+        <span *ngIf="config.tipo_reporte === 'ventas-por-categoria-vendedor'"
+          >Ventas por Categoría y Vendedor</span
+        >
+        <span *ngIf="config.tipo_reporte === 'estado-financiero-consolidado-sucursales'"
+          >Estado Financiero Consolidado por Sucursales</span
+        >
+        <span
+          *ngIf="
+            config.tipo_reporte !== 'ventas-por-vendedor' &&
+            config.tipo_reporte !== 'ventas-diarias' &&
+            config.tipo_reporte !== 'productos-vendidos' &&
+            config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
+            config.tipo_reporte !== 'estado-financiero-consolidado-sucursales'
+          "
+          >{{ config.tipo_reporte }}</span
+        >
+      </td>
+      <td>
+        <span *ngIf="config.frecuencia === 'diario'">Diario</span>
+        <span *ngIf="config.frecuencia === 'semanal'">Semanal</span>
+        <span *ngIf="config.frecuencia === 'mensual'"
+          >Mensual (Día {{ config.dia_mes }})</span
+        >
+      </td>
+      <td>
+        <div class="d-flex flex-wrap gap-1">
+          <span *ngIf="config.envio_matutino" class="badge bg-info">{{
+            formatHora(config.hora_matutino)
+          }}</span>
+          <span *ngIf="config.envio_mediodia" class="badge bg-info">{{
+            formatHora(config.hora_mediodia)
+          }}</span>
+          <span *ngIf="config.envio_nocturno" class="badge bg-info">{{
+            formatHora(config.hora_nocturno)
+          }}</span>
+        </div>
+      </td>
+      <td>
+        <span tooltip="{{ config.destinatarios.join(', ') }}">
+          {{ config.destinatarios.length }} destinatario(s)
+        </span>
+      </td>
+      <!-- Nueva celda para mostrar las sucursales -->
+      <td>
+        {{ getNombresSucursales(config.sucursales) }}
+      </td>
+      <td>
+        <span *ngIf="config.activo" class="badge bg-success">Activo</span>
+        <span *ngIf="!config.activo" class="badge bg-secondary"
+          >Inactivo</span
+        >
+      </td>
+      <td class="text-center">
+        <span
+          class="btn"
+          [popover]="accionesTemplate"
+          [outsideClick]="true"
+          tooltip="Acciones"
+          container="body"
+          [popoverContext]="{ config: config }"
+        >
+          <i class="fa fa-ellipsis-vertical fa-fw"></i>
+        </span>
+      </td>
+    </tr>
+  </tbody>
+</table>
     </div>
 
     <div class="col-12" *ngIf="configuraciones?.last_page > 1">

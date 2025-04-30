@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Reportes\VentasPorVendedorController;
 use App\Models\Admin\ReporteConfiguracion;
+use App\Models\Admin\Sucursal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +21,6 @@ class ReporteConfiguracionController extends Controller
         $id_empresa = Auth::user()->id_empresa;
         $query = ReporteConfiguracion::where('id_empresa', $id_empresa);
 
-        // Aplicar filtros de búsqueda
         if ($request->has('buscador') && $request->buscador) {
             $query->where(function ($q) use ($request) {
                 $q->where('tipo_reporte', 'like', '%' . $request->buscador . '%')
@@ -40,50 +40,6 @@ class ReporteConfiguracionController extends Controller
         return $query->paginate($paginate);
     }
 
-
-    // public function store(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'tipo_reporte' => 'required|string',
-    //         'frecuencia' => 'required|in:diario,semanal,mensual',
-    //         'destinatarios' => 'required|array|min:1',
-    //         'destinatarios.*' => 'email',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json(['error' => $validator->errors()], 422);
-    //     }
-
-
-    //     if ($request->frecuencia === 'semanal' && empty($request->dias_semana)) {
-    //         return response()->json(['error' => 'Debe seleccionar al menos un día de la semana'], 422);
-    //     }
-
-    //     if ($request->frecuencia === 'mensual' && !$request->dia_mes) {
-    //         return response()->json(['error' => 'Debe seleccionar un día del mes'], 422);
-    //     }
-
-
-    //     if (!$request->envio_matutino && !$request->envio_mediodia && !$request->envio_nocturno) {
-    //         return response()->json(['error' => 'Debe seleccionar al menos un horario de envío'], 422);
-    //     }
-
-
-    //     $datos = $request->all();
-    //     $datos['id_empresa'] = Auth::user()->id_empresa;
-
-
-    //     if (isset($datos['id']) && $datos['id']) {
-    //         $configuracion = ReporteConfiguracion::findOrFail($datos['id']);
-    //         $configuracion->update($datos);
-    //     } else {
-    //         $configuracion = ReporteConfiguracion::create($datos);
-    //     }
-
-    //     return response()->json($configuracion, 200);
-    // }
-
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -91,12 +47,12 @@ class ReporteConfiguracionController extends Controller
             'frecuencia' => 'required|in:diario,semanal,mensual',
             'destinatarios' => 'required|array|min:1',
             'destinatarios.*' => 'email',
+            'sucursales' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
-
 
         if ($request->frecuencia === 'semanal' && empty($request->dias_semana)) {
             return response()->json(['error' => 'Debe seleccionar al menos un día de la semana'], 422);
@@ -106,7 +62,6 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'Debe seleccionar un día del mes'], 422);
         }
 
-
         if (!$request->envio_matutino && !$request->envio_mediodia && !$request->envio_nocturno) {
             return response()->json(['error' => 'Debe seleccionar al menos un horario de envío'], 422);
         }
@@ -114,24 +69,47 @@ class ReporteConfiguracionController extends Controller
         $datos = $request->all();
         $datos['id_empresa'] = Auth::user()->id_empresa;
 
+        if (empty($datos['sucursales'])) {
+            $datos['sucursales'] = Sucursal::where('id_empresa', Auth::user()->id_empresa)
+                ->pluck('id')
+                ->toArray();
+        }
+
+        $datos['sucursales'] = $this->normalizarSucursales($datos['sucursales']);
 
         if (isset($datos['activo']) && $datos['activo']) {
+            if ($datos['tipo_reporte'] === 'ventas-por-categoria-vendedor') {
+                $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
+                    ->where('tipo_reporte', $datos['tipo_reporte'])
+                    ->where('activo', true);
 
-            $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
-                ->where('tipo_reporte', $datos['tipo_reporte'])
-                ->where('activo', true);
+                if (isset($datos['id']) && $datos['id']) {
+                    $existeConfiguracionActiva->where('id', '!=', $datos['id']);
+                }
 
+                $configuracionesExistentes = $existeConfiguracionActiva->get();
 
-            if (isset($datos['id']) && $datos['id']) {
-                $existeConfiguracionActiva->where('id', '!=', $datos['id']);
-            }
+                foreach ($configuracionesExistentes as $config) {
+                    if ($this->sonSucursalesEquivalentes($datos['sucursales'], $config->sucursales)) {
+                        $config->activo = false;
+                        $config->save();
+                    }
+                }
+            } else {
+                $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
+                    ->where('tipo_reporte', $datos['tipo_reporte'])
+                    ->where('activo', true);
 
-            $configuracionExistente = $existeConfiguracionActiva->first();
+                if (isset($datos['id']) && $datos['id']) {
+                    $existeConfiguracionActiva->where('id', '!=', $datos['id']);
+                }
 
-            if ($configuracionExistente) {
+                $configuracionExistente = $existeConfiguracionActiva->first();
 
-                $configuracionExistente->activo = false;
-                $configuracionExistente->save();
+                if ($configuracionExistente) {
+                    $configuracionExistente->activo = false;
+                    $configuracionExistente->save();
+                }
             }
         }
 
@@ -156,28 +134,6 @@ class ReporteConfiguracionController extends Controller
         return response()->json($configuracion, 200);
     }
 
-    // public function updateEstado(Request $request, $id)
-    // {
-    //     $configuracion = ReporteConfiguracion::findOrFail($id);
-    //     if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
-    //         return response()->json(['error' => 'No tiene permiso para modificar esta configuración'], 403);
-    //     }
-
-    //     $validator = Validator::make($request->all(), [
-    //         'activo' => 'required|boolean',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json(['error' => $validator->errors()], 422);
-    //     }
-
-    //     $configuracion->activo = $request->activo;
-    //     $configuracion->save();
-
-    //     return response()->json($configuracion, 200);
-    // }
-
-
     public function updateEstado(Request $request, $id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
@@ -193,19 +149,32 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-
         if ($request->activo) {
+            if ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
+                $configuracionesActivas = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
+                    ->where('tipo_reporte', $configuracion->tipo_reporte)
+                    ->where('activo', true)
+                    ->where('id', '!=', $id)
+                    ->get();
 
-            $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
-                ->where('tipo_reporte', $configuracion->tipo_reporte)
-                ->where('activo', true)
-                ->where('id', '!=', $id)
-                ->first();
+                // Verificar si hay alguna configuración con sucursales equivalentes
+                foreach ($configuracionesActivas as $configActiva) {
+                    if ($this->sonSucursalesEquivalentes($configuracion->sucursales, $configActiva->sucursales)) {
+                        $configActiva->activo = false;
+                        $configActiva->save();
+                    }
+                }
+            } else {
+                $existeConfiguracionActiva = ReporteConfiguracion::where('id_empresa', Auth::user()->id_empresa)
+                    ->where('tipo_reporte', $configuracion->tipo_reporte)
+                    ->where('activo', true)
+                    ->where('id', '!=', $id)
+                    ->first();
 
-            if ($existeConfiguracionActiva) {
-
-                $existeConfiguracionActiva->activo = false;
-                $existeConfiguracionActiva->save();
+                if ($existeConfiguracionActiva) {
+                    $existeConfiguracionActiva->activo = false;
+                    $existeConfiguracionActiva->save();
+                }
             }
         }
 
@@ -213,6 +182,55 @@ class ReporteConfiguracionController extends Controller
         $configuracion->save();
 
         return response()->json($configuracion, 200);
+    }
+
+    private function sonSucursalesEquivalentes($sucursales1, $sucursales2)
+    {
+        $sucursales1 = $this->normalizarSucursales($sucursales1);
+        $sucursales2 = $this->normalizarSucursales($sucursales2);
+
+        if (empty($sucursales1) && empty($sucursales2)) {
+            return true;
+        }
+        $todasSucursales = Sucursal::where('id_empresa', Auth::user()->id_empresa)
+            ->pluck('id')
+            ->toArray();
+        $todasSucursalesOrdenadas = collect($todasSucursales)->sort()->values()->toArray();
+
+        $primeroEsTodas = !empty($sucursales1) && count($sucursales1) === count($todasSucursalesOrdenadas) &&
+            empty(array_diff($sucursales1, $todasSucursalesOrdenadas));
+
+        $segundoEsTodas = !empty($sucursales2) && count($sucursales2) === count($todasSucursalesOrdenadas) &&
+            empty(array_diff($sucursales2, $todasSucursalesOrdenadas));
+
+        if (($primeroEsTodas && empty($sucursales2)) || ($segundoEsTodas && empty($sucursales1))) {
+            return true;
+        }
+
+        if ($primeroEsTodas && $segundoEsTodas) {
+            return true;
+        }
+        return json_encode($sucursales1) === json_encode($sucursales2);
+    }
+
+    private function normalizarSucursales($sucursales)
+    {
+ 
+        if (is_array($sucursales)) {
+            return collect($sucursales)->sort()->values()->toArray();
+        }
+  
+        else if (is_string($sucursales)) {
+            try {
+                return collect(json_decode($sucursales, true))->sort()->values()->toArray();
+            } catch (\Exception $e) {
+                return [];
+            }
+        }
+ 
+        else {
+            return [];
+        }
     }
 
 
@@ -255,7 +273,7 @@ class ReporteConfiguracionController extends Controller
         $fecha_inicio = $request->fecha_inicio;
         $fecha_fin = $request->fecha_fin;
 
-       try {
+        try {
             switch ($configuracion->tipo_reporte) {
                 case 'ventas-por-vendedor':
                     $controller = new VentasController();
@@ -299,7 +317,8 @@ class ReporteConfiguracionController extends Controller
         }
     }
 
-    public function exportar(Request $request){
+    public function exportar(Request $request)
+    {
         Log::info($request->all());
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:reporte_configuraciones,id',
@@ -343,5 +362,5 @@ class ReporteConfiguracionController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al exportar el reporte: ' . $e->getMessage()], 500);
         }
- }
+    }
 }
