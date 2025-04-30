@@ -28,28 +28,21 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $compras = Compra::with('proveedor')
-            ->whereHas('proveedor', function ($q) {
-                $q->whereNotNull('dui')
-                  ->orWhereNotNull('nit')
-                  ->orWhereNotNull('ncr');
-            })
-            ->where('iva' , '>', 0)
+        $compras = Compra::with(['proveedor'])
             ->where('estado', '!=', 'Anulada')
-            ->when($request->id_sucursal, function($q) use ($request){
+            ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
+            ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->orderBy('id', 'desc')->get();
+            ->map(function ($compra) {
+                $compra->origen = 'compra';
+                return $compra;
+            });
 
         $gastos = Gasto::with('proveedor')
-            ->whereHas('proveedor', function ($q) {
-                $q->whereNotNull('dui')
-                  ->orWhereNotNull('nit')
-                  ->orWhereNotNull('ncr');
-            })
             ->where('iva' , '>', 0)
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
@@ -57,14 +50,13 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             })
             ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($gasto) {
+                $gasto->origen = 'gasto';
+                return $gasto;
+            });
 
         $devoluciones = Devolucion::with('proveedor')
-            ->whereHas('proveedor', function ($q) {
-                $q->whereNotNull('dui')
-                  ->orWhereNotNull('nit')
-                  ->orWhereNotNull('ncr');
-            })
             ->where('iva' , '>', 0)
             ->where('enable', true)
             ->when($request->id_sucursal, function ($query) use ($request) {
@@ -72,7 +64,11 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             })
             ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($devolucion) {
+                $devolucion->origen = 'devolucion';
+                return $devolucion;
+            });
 
 
         $libroCompras = $compras->merge($compras)->merge($devoluciones)->merge($gastos)->sortBy(function ($item) {
@@ -119,9 +115,9 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $compra->total, //O Total
                 (!$proveedor->nit && !$proveedor->ncr) ? str_replace('-', '', $proveedor->dui) : '', //P DUI'
                 $compra->exenta > 0 ? 2 : 1, //Q Tipo operación renta 1 Gravada 2 Exenta
-                1, //R Clasificación 1 costo 2 gasto
-                2, //S Sector' 1 Industria 2 Comercio 3 Agropecuario 4 Servicios
-                5, //T Tipo de costo/gasto'
+                $compra->origen == 'gasto' ? 2 : 1, //R Clasificación 1 costo 2 gasto
+                $this->tipoSector($compra->sector), //S Sector' 1 Industria 2 Comercio 3 Agropecuaria 4 Servicios
+                $this->tipoTipo($compra->tipo), //T Tipo de costo/gasto'
                 3, //U Anexo
          ];
         return $fields;
@@ -135,5 +131,29 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             'use_bom' => false,
         ];
     }
+
+    function tipoSector($sector) {
+        switch ($sector) {
+            case 'Industria': return 1;
+            case 'Comercio': return 2;
+            case 'Agropecuaria': return 3;
+            case 'Servicios, profesiones, artes y oficios': return 4;
+            default: return null;
+        }
+    }
+
+    function tipoTipo($tipo) {
+        switch ($tipo) {
+            case 'Gastos de venta sin donación': return 1;
+            case 'Gastos de administración sin donación': return 2;
+            case 'Gastos financieros sin donación': return 3;
+            case 'Costo artículos producidos/comprados importaciones/internaciones': return 4;
+            case 'Costo artículos producidos/comprados interno': return 5;
+            case 'Costos indirectos de fabricación': return 6;
+            case 'Mano de obra': return 7;
+            default: return null;
+        }
+    }
+
 
 }

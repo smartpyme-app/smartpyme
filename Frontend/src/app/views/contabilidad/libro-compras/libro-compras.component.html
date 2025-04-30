@@ -98,7 +98,7 @@
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <tr [ngClass]="{ 'table-danger': iva.credito_fiscal == 0 || !iva.nit_nrc }" *ngFor=" let iva of ivas; let i = index">
+                        <tr [tooltip]="!iva.nit_nrc ? 'Faltan datos del proveedor' : ''" [ngClass]="{ 'table-danger': !iva.nit_nrc }" *ngFor=" let iva of ivas; let i = index">
                             <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>{{iva.num_documento}}</td>

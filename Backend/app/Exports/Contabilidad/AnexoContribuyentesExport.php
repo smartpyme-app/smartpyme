@@ -89,7 +89,7 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
                 number_format($venta->total, 2, '.', ''), //P Total (formato numérico con 2 decimales)
                 '', //Q DUI (vacío)
                 $venta->exenta > 0 ? 2 : 1, //R Tipo operación renta 1 Gravada 2 Exenta
-                1, //S Tipo ingreso renta
+                $this->tipoRenta($venta->tipo_renta), //S Tipo ingreso renta
                 1, //T Número de Anexo
             ];
 
@@ -103,6 +103,24 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
             'enclosure' => '',
             'use_bom' => false,
         ];
+    }
+
+    function tipoRenta($tipo) {
+        switch ($tipo) {
+            case 'Profesiones, Artes y Oficios': return 1;
+            case 'Actividades de Servicios': return 2;
+            case 'Actividades Comerciales': return 3;
+            case 'Actividades Industriales': return 4;
+            case 'Actividades Agropecuarias': return 5;
+            case 'Utilidades y Dividendos': return 6;
+            case 'Exportaciones de bienes': return 7;
+            case 'Servicios Realizados en el Exterior y Utilizados en El Salvador': return 8;
+            case 'Exportaciones de servicios': return 9;
+            case 'Otras Rentas Gravables': return 10;
+            case 'Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910': return 12;
+            case 'Sujetos pasivos excluidos': return 13;
+            default: return null;
+        }
     }
 
 }

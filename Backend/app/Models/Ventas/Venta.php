@@ -65,7 +65,8 @@ class Venta extends Model {
         'regimen',
         'seguro',
         'flete',
-        'no_sujeta'
+        'no_sujeta',
+        'tipo_renta',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];

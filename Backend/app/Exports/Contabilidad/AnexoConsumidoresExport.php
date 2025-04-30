@@ -74,7 +74,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 '0.00', //S Ventas a terceros
                 $venta->total ? $venta->total : '0.00', //T Total
                 $venta->exenta > 0 ? 2 : 1, //U Tipo operacion renta 1 Gravada 2 Exenta
-                1, //V Tipo ingreso renta
+                $this->tipoRenta($venta->tipo_renta), //V Tipo ingreso renta
                 2, //W num de Anexo
 
          ];
@@ -89,5 +89,24 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             'use_bom' => false,
         ];
     }
+
+    function tipoRenta($tipo) {
+        switch ($tipo) {
+            case 'Profesiones, Artes y Oficios': return 1;
+            case 'Actividades de Servicios': return 2;
+            case 'Actividades Comerciales': return 3;
+            case 'Actividades Industriales': return 4;
+            case 'Actividades Agropecuarias': return 5;
+            case 'Utilidades y Dividendos': return 6;
+            case 'Exportaciones de bienes': return 7;
+            case 'Servicios Realizados en el Exterior y Utilizados en El Salvador': return 8;
+            case 'Exportaciones de servicios': return 9;
+            case 'Otras Rentas Gravables': return 10;
+            case 'Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910': return 12;
+            case 'Sujetos pasivos excluidos': return 13;
+            default: return null;
+        }
+    }
+
 
 }

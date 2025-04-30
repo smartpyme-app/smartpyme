@@ -4,4 +4,9 @@ ALTER TABLE empresas ADD valor_inventario varchar(255) NOT NULL default 'ultimo'
 
 ALTER TABLE ventas ADD condicion varchar(255) NULL default 'Contado' after num_cotizacion;
 
+ALTER TABLE compras ADD tipo varchar(255) NULL after fecha_pago;
+ALTER TABLE compras ADD sector varchar(255) NULL after tipo;
+
+ALTER TABLE ventas ADD tipo_renta varchar(255) NULL after fecha_pago;
+
 
