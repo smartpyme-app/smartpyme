@@ -14,6 +14,7 @@
 
 use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
+use App\Http\Controllers\Api\Admin\SuscripcionesController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\n1co\N1coChargeController;
@@ -46,6 +47,9 @@ require base_path('routes/modulos/auth.php');
 Route::group(['middleware' => ['jwt.auth']], function () {
 
 	Route::get('constants', [ConstantsController::class, 'getAppConstants']);
+
+	Route::get('/suscripcion/get-alert',     [SuscripcionesController::class, 'getAlertSuscription']);
+	Route::get('/suscripcion/isvisible-alert', [SuscripcionesController::class, 'isVisibleAlertSuscription']);
 
 	require base_path('routes/modulos/dash.php');
 	require base_path('routes/modulos/facturacion.php');

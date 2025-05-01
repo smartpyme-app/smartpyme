@@ -66,6 +66,7 @@ class Empresa extends Model
         'modulo_citas',
         'modulo_proyectos',
         'activo',
+        'alerta_suscripcion',
         'cotizacion_compras_terminos',
 
         //Facturacíon

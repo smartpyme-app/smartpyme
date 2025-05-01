@@ -6,6 +6,10 @@ use App\Http\Controllers\Api\Admin\ReportesController;
 
     Route::get('/empresas',        	        [EmpresasController::class, 'index'])->middleware('superadmin');
     Route::get('/empresas/list',            [EmpresasController::class, 'list'])->middleware('superadmin');
+
+    Route::get('/empresa/get-alert',     [EmpresasController::class, 'getAlertSuscription']);
+    Route::get('/empresa/isvisible-alert', [EmpresasController::class, 'isVisibleAlertSuscription']);
+
     Route::post('/empresa',                 [EmpresasController::class, 'store']);
     Route::get('/empresa/{id}',             [EmpresasController::class, 'read']);
 
@@ -22,6 +26,8 @@ use App\Http\Controllers\Api\Admin\ReportesController;
     
     Route::post('/reporte/requisicion-compras',    [ReportesController::class, 'requisicionCompra']);
     Route::get('/reporte/corte/{id}',              [ReportesController::class, 'corte']);
+
+
 
 
 ?>

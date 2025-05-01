@@ -21,16 +21,16 @@ class WebhookN1coController extends Controller
     {
         try {
 
-            Log::debug('N1co Webhook: Configuration', [
-                'secret_configured' => !empty(config('services.nico.webhook_secret')),
-                'secret_length' => strlen(config('services.nico.webhook_secret'))
-            ]);
-            // Log inicial de la solicitud
-            Log::info('N1co Webhook: Request received', [
-                'headers' => $request->headers->all(),
-                'content' => $request->getContent(),
-                'raw_payload' => $request->all()
-            ]);
+            // Log::debug('N1co Webhook: Configuration', [
+            //     'secret_configured' => !empty(config('services.nico.webhook_secret')),
+            //     'secret_length' => strlen(config('services.nico.webhook_secret'))
+            // ]);
+            // // Log inicial de la solicitud
+            // Log::info('N1co Webhook: Request received', [
+            //     'headers' => $request->headers->all(),
+            //     'content' => $request->getContent(),
+            //     'raw_payload' => $request->all()
+            // ]);
 
             // Verificar la firma del webhook
             $signature = $request->header('X-H4B-Hmac-Sha256');
@@ -119,97 +119,316 @@ class WebhookN1coController extends Controller
         }
     }
 
+    // private function handleSuccessfulPayment($payload)
+    // {
+    //     try {
+    //         $metadata = $payload['metadata'];
+
+    //         Log::info('Procesando pago exitoso', [
+    //             'payload' => $payload
+    //         ]);
+
+    //         // Buscar la orden usando el checkoutNote
+    //         $ordenPago = OrdenPago::where('id_orden', $payload['orderReference'])
+    //             // ->where('id_orden_n1co', $payload['orderId'])
+    //             ->first();
+
+    //         if ($ordenPago) {
+    //             Log::info('Orden de pago encontrada en handleSuccessfulPayment', [
+    //                 'ordenPago' => $ordenPago
+    //             ]);
+
+    //             $ordenPago->update([
+    //                 'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
+    //                 'item_id' => $metadata['orderDetail'][0]['itemId'] ?? null,
+    //                 'fecha_transaccion' => Carbon::parse($metadata['TransactionDate'])->format('Y-m-d H:i:s'),
+    //                 'payment_id' => $metadata['PaymentId'],
+    //                 'charge_id' => $metadata['ChargeId']
+    //             ]);
+
+    //             // Buscar el usuario
+    //             $user = User::find($ordenPago->id_usuario);
+    //             $plan = Plan::find($ordenPago->id_plan);
+    //             $tipoPlan = $plan->duracion_dias == 30 ? 'Mensual' : $plan->tipo_plan;
+
+    //             if ($user) {
+
+    //                 $esNuevaSuscripcion = !Suscripcion::where('usuario_id', $user->id)
+    //                     ->where('estado', config('constants.ESTADO_SUSCRIPCION_ACTIVO'))
+    //                     ->exists();
+
+
+    //                 // Actualizar o crear suscripción
+    //                 $suscripcion = Suscripcion::updateOrCreate(
+    //                     ['usuario_id' => $user->id],
+    //                     [
+    //                         'plan_id' => $plan->id,
+    //                         'tipo_plan' => $tipoPlan,
+    //                         'empresa_id' => $user->id_empresa,
+    //                         'metodo_pago' => config('constants.METODO_PAGO_N1CO'),
+    //                         'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+    //                         'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
+    //                         'fecha_ultimo_pago' => now(),
+    //                         'fecha_proximo_pago' => now()->addMonth(),
+    //                         'id_pago' => $metadata['PaymentId'],
+    //                         'id_orden' => $payload['orderId'],
+    //                         'monto' => $ordenPago->monto
+    //                     ]
+    //                 );
+
+    //                 $empresa = Empresa::find($user->id_empresa);
+    //                 Log::info('Empresa encontrada', [
+    //                     'empresa' => $empresa
+    //                 ]);
+
+    //                 $empresa->update([
+    //                     'metodo_pago' => config('constants.METODO_PAGO_N1CO')
+    //                 ]);
+
+    //                 $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
+
+
+    //                 $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
+
+
+    //                 Log::info('Empresa actualizada', [
+    //                     'empresa' => $empresa->metodo_pago
+    //                 ]);
+
+    //                 Log::info('Suscripción actualizada', [
+    //                     'user_id' => $user->id,
+    //                     'order_id' => $payload['orderId']
+    //                 ]);
+
+    //                 $ordenPago->generarVenta();
+
+    //             } else {
+    //                 Log::error('Usuario no encontrado', [
+    //                     'user_id' => $ordenPago->id_usuario,
+    //                 ]);
+    //             }
+    //         } else {
+    //             Log::warning('Orden de pago no encontrada', [
+    //                 'payload' => $payload
+    //             ]);
+    //         }
+
+    //         return response()->json(['status' => 'success']);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error procesando pago exitoso', [
+    //             'error' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString(),
+    //             'payload' => $payload
+    //         ]);
+
+    //         return response()->json(['error' => 'Error procesando pago'], 500);
+    //     }
+    // }
+
     private function handleSuccessfulPayment($payload)
     {
         try {
             $metadata = $payload['metadata'];
 
-            Log::info('Procesando pago exitoso', [
-                'payload' => $payload
-            ]);
+            // Log::info('Procesando pago exitoso', [
+            //     'payload' => $payload
+            // ]);
 
-            // Buscar la orden usando el checkoutNote
+            // Buscar la orden usando el orderReference
             $ordenPago = OrdenPago::where('id_orden', $payload['orderReference'])
-                // ->where('id_orden_n1co', $payload['orderId'])
                 ->first();
 
-            if ($ordenPago) {
-                Log::info('Orden de pago encontrada en handleSuccessfulPayment', [
-                    'ordenPago' => $ordenPago
-                ]);
-
-                $ordenPago->update([
-                    'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
-                    'item_id' => $metadata['orderDetail'][0]['itemId'] ?? null,
-                    'fecha_transaccion' => Carbon::parse($metadata['TransactionDate'])->format('Y-m-d H:i:s'),
-                    'payment_id' => $metadata['PaymentId'],
-                    'charge_id' => $metadata['ChargeId']
-                ]);
-
-                // Buscar el usuario
-                $user = User::find($ordenPago->id_usuario);
-                $plan = Plan::find($ordenPago->id_plan);
-                $tipoPlan = $plan->duracion_dias == 30 ? 'Mensual' : $plan->tipo_plan;
-
-                if ($user) {
-
-                    $esNuevaSuscripcion = !Suscripcion::where('usuario_id', $user->id)
-                        ->where('estado', config('constants.ESTADO_SUSCRIPCION_ACTIVO'))
-                        ->exists();
-
-
-                    // Actualizar o crear suscripción
-                    $suscripcion = Suscripcion::updateOrCreate(
-                        ['usuario_id' => $user->id],
-                        [
-                            'plan_id' => $plan->id,
-                            'tipo_plan' => $tipoPlan,
-                            'empresa_id' => $user->id_empresa,
-                            'metodo_pago' => config('constants.METODO_PAGO_N1CO'),
-                            'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-                            'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
-                            'fecha_ultimo_pago' => now(),
-                            'fecha_proximo_pago' => now()->addMonth(),
-                            'id_pago' => $metadata['PaymentId'],
-                            'id_orden' => $payload['orderId'],
-                            'monto' => $ordenPago->monto
-                        ]
-                    );
-
-                    $empresa = Empresa::find($user->id_empresa);
-                    Log::info('Empresa encontrada', [
-                        'empresa' => $empresa
-                    ]);
-
-                    $empresa->update([
-                        'metodo_pago' => config('constants.METODO_PAGO_N1CO')
-                    ]);
-
-                    $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
-
-
-                    $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
-
-
-                    Log::info('Empresa actualizada', [
-                        'empresa' => $empresa->metodo_pago
-                    ]);
-
-                    Log::info('Suscripción actualizada', [
-                        'user_id' => $user->id,
-                        'order_id' => $payload['orderId']
-                    ]);
-
-                    $ordenPago->generarVenta();
-
-                } else {
-                    Log::error('Usuario no encontrado', [
-                        'user_id' => $ordenPago->id_usuario,
-                    ]);
-                }
-            } else {
+            if (!$ordenPago) {
                 Log::warning('Orden de pago no encontrada', [
                     'payload' => $payload
+                ]);
+                return response()->json(['status' => 'success']);
+            }
+
+            // Verificar si ya se procesó este pago (evita procesamiento duplicado)
+            if (
+                $ordenPago->estado === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO') && 
+                $ordenPago->payment_id === $metadata['PaymentId'] &&
+                $ordenPago->charge_id === $metadata['ChargeId']
+            ) {
+                Log::info('Pago ya procesado anteriormente, ignorando evento duplicado', [
+                    'orden_id' => $ordenPago->id_orden,
+                    'payment_id' => $metadata['PaymentId']
+                ]);
+                return response()->json(['status' => 'success']);
+            }
+
+            // Log::info('Orden de pago encontrada en handleSuccessfulPayment', [
+            //     'ordenPago' => $ordenPago
+            // ]);
+
+            $ordenPago->update([
+                'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
+                'item_id' => $metadata['orderDetail'][0]['itemId'] ?? null,
+                'fecha_transaccion' => Carbon::parse($metadata['TransactionDate'])->format('Y-m-d H:i:s'),
+                'payment_id' => $metadata['PaymentId'],
+                'charge_id' => $metadata['ChargeId']
+            ]);
+
+            // Buscar el usuario
+            $user = User::find($ordenPago->id_usuario);
+            $plan = Plan::find($ordenPago->id_plan);
+            
+            // Determinar si el plan es mensual o anual
+            $esMensual = $plan->duracion_dias == 30 || $plan->duracion_dias == 31;
+            $tipoPlan = $esMensual ? 'Mensual' : $plan->tipo_plan;
+
+            if ($user) {
+                // Buscar si ya existe una suscripción
+                $suscripcionExistente = Suscripcion::where('usuario_id', $user->id)->first();
+                $esNuevaSuscripcion = !$suscripcionExistente || 
+                                    !in_array($suscripcionExistente->estado, [
+                                        config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+                                        config('constants.ESTADO_SUSCRIPCION_PENDIENTE'),
+                                        config('constants.ESTADO_SUSCRIPCION_VENCIDO')
+                                    ]);
+
+                // Calcular la nueva fecha de próximo pago
+                $fechaProximoPago = null;
+                
+                if ($esNuevaSuscripcion) {
+                    // Si es nueva suscripción
+                    if ($esMensual) {
+                        // Para planes mensuales, usar addMonth para mantener el mismo día
+                        $fechaProximoPago = now()->addMonth();
+                    } else {
+                        // Para otros planes, sumar días exactos
+                        $fechaProximoPago = now()->addDays($plan->duracion_dias);
+                    }
+                    
+                    Log::info('Nueva suscripción creada', [
+                        'es_mensual' => $esMensual,
+                        'fecha_actual' => now()->format('Y-m-d'),
+                        'fecha_vencimiento' => $fechaProximoPago->format('Y-m-d')
+                    ]);
+                } else {
+                    // Si es renovación, calculamos en base a la fecha de vencimiento existente
+                    if ($suscripcionExistente->fecha_proximo_pago && $suscripcionExistente->fecha_proximo_pago->isFuture()) {
+                        // Si aún no ha vencido
+                        if ($esMensual) {
+                            // Para planes mensuales, agregar un mes manteniendo el día
+                            $fechaProximoPago = $suscripcionExistente->fecha_proximo_pago->copy()->addMonth();
+                        } else {
+                            // Para otros planes, sumar días exactos
+                            $fechaProximoPago = $suscripcionExistente->fecha_proximo_pago->copy()->addDays($plan->duracion_dias);
+                        }
+                        
+                        Log::info('Renovación anticipada, extendiendo desde la fecha de vencimiento actual', [
+                            'es_mensual' => $esMensual,
+                            'fecha_vencimiento_actual' => $suscripcionExistente->fecha_proximo_pago->format('Y-m-d'),
+                            'nueva_fecha_vencimiento' => $fechaProximoPago->format('Y-m-d')
+                        ]);
+                    } else {
+                        // Si ya venció, verificamos cuánto tiempo ha pasado desde el vencimiento
+                        $fechaVencimiento = $suscripcionExistente->fecha_proximo_pago;
+                        
+                        // Si no hay fecha de vencimiento o ha pasado más de un ciclo completo
+                        if (!$fechaVencimiento || now()->diffInDays($fechaVencimiento) > $plan->duracion_dias) {
+                            // Si ha pasado más de un ciclo, establecemos un nuevo ciclo desde hoy
+                            if ($esMensual) {
+                                // Para planes mensuales, agregar un mes desde ahora
+                                $fechaProximoPago = now()->addMonth();
+                            } else {
+                                // Para otros planes, sumar días exactos
+                                $fechaProximoPago = now()->addDays($plan->duracion_dias);
+                            }
+                            
+                            Log::info('Renovación muy tardía (más de un ciclo), estableciendo nuevo ciclo desde hoy', [
+                                'es_mensual' => $esMensual,
+                                'fecha_vencimiento_anterior' => $fechaVencimiento ? $fechaVencimiento->format('Y-m-d') : 'N/A',
+                                'dias_desde_vencimiento' => $fechaVencimiento ? now()->diffInDays($fechaVencimiento) : 'N/A',
+                                'dias_plan' => $plan->duracion_dias,
+                                'nueva_fecha_vencimiento' => $fechaProximoPago->format('Y-m-d')
+                            ]);
+                        } else {
+                            // Si ha pasado menos de un ciclo, mantenemos el ciclo original
+                            if ($esMensual) {
+                                // Para planes mensuales, agregar un mes a la fecha de vencimiento anterior
+                                $fechaProximoPago = $fechaVencimiento->copy()->addMonth();
+                            } else {
+                                // Para otros planes, sumar días exactos
+                                $fechaProximoPago = $fechaVencimiento->copy()->addDays($plan->duracion_dias);
+                            }
+                            
+                            Log::info('Renovación tardía (menos de un ciclo), manteniendo ciclo original', [
+                                'es_mensual' => $esMensual,
+                                'dias_desde_vencimiento' => now()->diffInDays($fechaVencimiento),
+                                'fecha_vencimiento_anterior' => $fechaVencimiento->format('Y-m-d'),
+                                'nueva_fecha_vencimiento' => $fechaProximoPago->format('Y-m-d')
+                            ]);
+                        }
+                    }
+                }
+
+                // Actualizar o crear suscripción
+                $suscripcion = Suscripcion::updateOrCreate(
+                    ['usuario_id' => $user->id],
+                    [
+                        'plan_id' => $plan->id,
+                        'tipo_plan' => $tipoPlan,
+                        'empresa_id' => $user->id_empresa,
+                        'metodo_pago' => config('constants.METODO_PAGO_N1CO'),
+                        'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+                        'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
+                        'fecha_ultimo_pago' => now(),
+                        'fecha_proximo_pago' => $fechaProximoPago,
+                        'id_pago' => $metadata['PaymentId'],
+                        'id_orden' => $payload['orderId'],
+                        'monto' => $ordenPago->monto,
+                        'created_at' => now(),
+                        // 'updated_at' => now()
+                    ]
+                );
+
+                $empresa = Empresa::find($user->id_empresa);
+                Log::info('Empresa encontrada', [
+                    'empresa' => $empresa
+                ]);
+
+                $empresa->update([
+                    'metodo_pago' => config('constants.METODO_PAGO_N1CO')
+                ]);
+
+                if (method_exists($this, 'enviarCorreoSuscripcion')) {
+                    $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
+                }
+
+                if (method_exists($this, 'enviarNotificacionPagoAdmin')) {
+                    $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
+                }
+
+                // Log::info('Empresa actualizada', [
+                //     'empresa' => $empresa->metodo_pago
+                // ]);
+
+                // Log::info('Suscripción actualizada', [
+                //     'user_id' => $user->id,
+                //     'order_id' => $payload['orderId'],
+                //     'fecha_proximo_pago' => $fechaProximoPago->format('Y-m-d'),
+                //     'es_nueva_suscripcion' => $esNuevaSuscripcion
+                // ]);
+
+                // Si este método existe, lo llamamos
+                if (method_exists($ordenPago, 'generarVenta')) {
+                    try {
+                        $ordenPago->generarVenta();
+                    } catch (\Exception $e) {
+                        Log::error('Error al generar venta', [
+                            'error' => $e->getMessage(),
+                            'ordenPago' => $ordenPago->id_orden
+                        ]);
+                        // Continuamos con el proceso a pesar del error
+                    }
+                }
+
+            } else {
+                Log::error('Usuario no encontrado', [
+                    'user_id' => $ordenPago->id_usuario,
                 ]);
             }
 

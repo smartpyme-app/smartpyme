@@ -15,6 +15,7 @@ export class LayoutComponent {
   public elem: any;
   public isfullscreen: boolean = false;
   public isVisible: boolean = false;
+  public visibleAlertMessage: boolean = false;
 
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
 
@@ -27,6 +28,8 @@ export class LayoutComponent {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.mostrarAlertaSuscripcion();
+
+    this.getAlertSuscription();
   }
 
   RedirectSuscripcion() {
@@ -243,5 +246,31 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
 
     const fechaDesactivacion = new Date(this.usuario.suscripcion.fecha_proximo_pago);
     return `Tu suscripción ha sido cancelada. Podrás seguir utilizando el sistema hasta el ${fechaDesactivacion.toLocaleDateString()}.`;
+  }
+
+  dismissAlert() {
+    this.visibleAlertMessage = false;
+    
+    this.apiService.getAll('empresa/isvisible-alert').subscribe(
+      (response: any) => {
+        console.log('Alerta desactivada correctamente:', response);
+        
+        if (this.usuario && this.usuario.empresa) {
+          this.usuario.empresa.alerta_suscripcion = false;
+          this.getAlertSuscription();
+        }
+      },
+      (error) => {
+        console.error('Error al desactivar la alerta:', error);
+      }
+    );
+  }
+
+  getAlertSuscription() {
+      
+    this.apiService.getAll('empresa/get-alert').subscribe((data: any) => {
+      this.visibleAlertMessage = data.alerta_suscripcion;
+
+    });
   }
 }
