@@ -205,7 +205,11 @@ class LibrosIVAController extends Controller
             ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->get();
+            ->get()
+            ->map(function ($compra) {
+                $compra->origen = 'compra';
+                return $compra;
+            });
 
         $comprasData = $compras->map(function ($compra) {
             $proveedor = optional($compra->proveedor()->first());
@@ -229,7 +233,8 @@ class LibrosIVAController extends Controller
                 'sujeto_excluido' => 0,
                 'no_sujeta' => 0,
                 'id_compra' => $compra->id,
-                'compra' => $compra,
+                'registro' => $compra,
+                'origen' => $compra->origen,
             ];
 
 
@@ -256,7 +261,11 @@ class LibrosIVAController extends Controller
             ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($gasto) {
+                $gasto->origen = 'gasto';
+                return $gasto;
+            });
 
         // Transformar gastos
         $gastosData = $gastos->map(function ($gasto) {
@@ -279,7 +288,8 @@ class LibrosIVAController extends Controller
                 'credito_cuenta_terceros' => 0,
                 'total'                 => 0,
                 'sujeto_excluido'       => 0,
-                'gasto' => $gasto,
+                'registro' => $gasto,
+                'origen' => $gasto->origen,
             ];
 
             switch ($gasto->tipo_documento) {
@@ -304,7 +314,11 @@ class LibrosIVAController extends Controller
             ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($devolucion) {
+                $devolucion->origen = 'devolucion';
+                return $devolucion;
+            });
 
 
         // Transformar gastos
@@ -329,7 +343,8 @@ class LibrosIVAController extends Controller
                 'credito_cuenta_terceros' => 0,
                 'total'                 => 0,
                 'sujeto_excluido'       => 0,
-                'devolucion' => $devolucion,
+                'registro' => $devolucion,
+                'origen' => $devolucion->origen,
             ];
 
             switch ($devolucion->tipo_documento) {

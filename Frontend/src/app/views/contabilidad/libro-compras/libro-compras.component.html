@@ -56,18 +56,12 @@
                   {{ year }}
                 </option>
             </select>
-            <!-- <div class="btn-group"> -->
-
-                <!-- <button class="btn tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtros.time == 'day', 'btn-default': filtros.time != 'day' }" (click)="setTime('day')">Hoy</button> -->
-                <!-- <button class="btn tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtros.time == 'week', 'btn-default': filtros.time != 'week' }" (click)="setTime('week')">Semana</button> -->
-                <!-- <button class="btn tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</button> -->
-                <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
-            <!-- </div> -->
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
         </div>
     </div>
 
     <div class="row">
+
         <div class="col-12">
             <div class="table-responsive bg-white">
                 <table class="table table-bordered table-hover">
@@ -101,9 +95,9 @@
                         <tr [tooltip]="!iva.nit_nrc ? 'Faltan datos del proveedor' : ''" [ngClass]="{ 'table-danger': !iva.nit_nrc }" *ngFor=" let iva of ivas; let i = index">
                             <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.num_documento}}</td>
+                            <td>{{iva.num_documento}}<a *ngIf="iva?.registro?.id" class="float-end d-none" target="blank" tooltip="Ver información de la transacción" routerLink="/{{iva.origen}}/{{iva?.registro?.id}}"><i class="fa fa-eye"></i></a></td>
                             <td>{{iva.nit_nrc}}</td>
-                            <td>{{iva.nombre_proveedor}}</td>
+                            <td>{{iva.nombre_proveedor}}<a *ngIf="iva?.registro?.id_proveedor" class="float-end d-none" target="blank" tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{iva?.registro?.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                             <td class="text-end text-nowrap">{{iva.compras_exentas | currency }}</td>
                             <td class="text-end text-nowrap">{{iva.no_sujeta | currency }}</td>
                             <td class="text-end text-nowrap">{{iva.importaciones_exentas | currency }}</td>

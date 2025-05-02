@@ -64,6 +64,10 @@ export class LibroComprasComponent implements OnInit {
         this.loadAll();
     }
 
+    get faltaNombre(): boolean {
+        return this.ivas.some((item:any) => !item.nit_nrc);
+    }
+
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
     }
