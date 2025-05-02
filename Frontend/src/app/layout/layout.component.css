@@ -6,3 +6,11 @@
 .cursor-pointer {
   cursor: pointer;
 }
+
+.alert-warning {
+    background-color: #fde69c !important;
+}
+
+.alert-danger {
+    background-color: #FFDAD6 !important;
+}

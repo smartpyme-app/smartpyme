@@ -522,4 +522,42 @@ class EmpresasController extends Controller
         ]);
     }
 
+    public function getAlertSuscription()
+    {
+        try {
+            $id_empresa = auth()->user()->id_empresa;
+            
+            $empresa = Empresa::findOrFail($id_empresa);
+            return response()->json([
+                'alerta_suscripcion' => $empresa->alerta_suscripcion
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'alerta_suscripcion' => false
+            ], 500);
+        }
+    }
+
+    public function isVisibleAlertSuscription(Request $request)
+    {
+        try {
+            $id_empresa = auth()->user()->id_empresa;
+            
+            $empresa = Empresa::findOrFail($id_empresa);
+            $empresa->alerta_suscripcion = false;
+            $empresa->save();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Alerta desactivada correctamente',
+                'alerta_suscripcion' => false
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al desactivar la alerta: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
