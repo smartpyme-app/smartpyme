@@ -88,33 +88,201 @@ class EmpresasController extends Controller
 
     }
 
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'nombre'        => 'required|max:255',
+    //         'iva'       => 'required|numeric',
+    //     ]);
+
+    //     if($request->id)
+    //         $empresa = Empresa::findOrFail($request->id);
+    //     else
+    //         $empresa = new Empresa;
+        
+    //     //Bloquear usuarios
+    //     if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
+    //         foreach ($empresa->usuarios()->get() as $usuario) {
+    //             $usuario->enable = false;
+    //             $usuario->save();
+    //         }
+    //     }
+    //     //Des bloquear usuario Administrador
+    //     if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')){
+    //         foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
+    //             $usuario->enable = true;
+    //             $usuario->save();
+    //         }
+    //     }
+
+    //     $woocommerceFields = [
+    //         'woocommerce_api_key',
+    //         'woocommerce_store_url',
+    //         'woocommerce_consumer_key',
+    //         'woocommerce_consumer_secret',
+    //         'woocommerce_status'
+    //     ];
+
+    //     $woocommerceValues = [];
+    //     foreach ($woocommerceFields as $field) {
+    //         $woocommerceValues[$field] = $empresa->$field;
+    //     }
+
+    //     $empresa->fill($request->all());
+
+    //     if ($request->hasFile('file')) {
+    //         if ($request->id && $empresa->logo && $empresa->logo != 'empresas/default.jpg') {
+    //             Storage::delete($empresa->logo);
+    //         }
+    //         $path   = $request->file('file');
+    //         $resize = Image::make($path)->resize(350,350)->encode('jpg', 75);
+    //         $hash = md5($resize->__toString());
+    //         $path = "empresas/{$hash}.jpg";
+    //         $resize->save(public_path('img/'.$path), 50);
+    //         $empresa->logo = "/" . $path;
+    //     }
+
+    //     foreach ($woocommerceFields as $field) {
+    //         $empresa->$field = $woocommerceValues[$field];
+    //     }
+
+
+    //     $empresa->save();
+        
+    //     if(!isset($request->isRegister) || $request->isRegister !== false) {
+        
+    //         $suscripcion = $this->createSuscripcion([
+    //             'empresa_id' => $empresa->id,
+    //             'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
+    //             'usuario_id' => $usuario->id,
+    //             'tipo_plan' => $empresa->tipo_plan,
+    //             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
+    //             'monto' => $plan->precio,
+    //             'id_pago' => null,
+    //             'id_orden' => null,
+    //             'estado_ultimo_pago' => null,
+    //             'fecha_ultimo_pago' => null,
+    //             'fecha_proximo_pago' => null,
+    //             'fin_periodo_prueba' => now()->addDays($plan->duracion_dias),
+    //             'fecha_cancelacion' => null,
+    //             'motivo_cancelacion' => null,
+    //             'requiere_factura' => false,
+    //             'nit' => null,
+    //             'nombre_factura' => $empresa->nombre,
+    //             'direccion_factura' => $empresa->direccion,
+    //             'intentos_cobro' => 0,
+    //             'ultimo_intento_cobro' => null,
+    //             'historial_pagos' => null
+    //         ]);
+
+    //     }
+
+    //     //Crear sucursal
+    //         if(!$request->id){
+    //             // Crear cliente
+    //                 $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
+    //                 $empresa->cliente_id = $cliente->id;
+    //                 $empresa->save();
+    //             // Crear sucursal
+    //             $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+    //             // Crear bodega
+    //             $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+    //             // Crear canales
+    //             Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
+    //             // Crear impuesto
+    //             Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
+    //             // Formas de pago
+    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 'id_empresa' => $empresa->id]);
+    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 'id_empresa' => $empresa->id]);
+    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TARJETA'), 'id_empresa' => $empresa->id]);
+    //             // Crear documentos
+    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_TICKET'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_FACTURA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+    //         }
+
+    //     return Response()->json($empresa, 200);
+
+    // }
+
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'        => 'required|max:255',
-            'iva'       => 'required|numeric',
+            'nombre' => 'required|max:255',
+            'iva' => 'required|numeric',
         ]);
 
-        if($request->id)
-            $empresa = Empresa::findOrFail($request->id);
-        else
-            $empresa = new Empresa;
+        if ($request->id) {
+            $empresa = $this->updateEmpresa($request);
+        } else {
+            $empresa = $this->createEmpresa($request);
+        }
+
+        return Response()->json($empresa, 200);
+    }
+
+    private function updateEmpresa(Request $request)
+    {
+        $empresa = Empresa::findOrFail($request->id);
         
-        //Bloquear usuarios
-        if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
+        $this->handleUserAccountStatus($empresa, $request);
+        
+        $woocommerceValues = $this->preserveWoocommerceSettings($empresa);
+        
+        $empresa->fill($request->all());
+        
+        if ($request->hasFile('file')) {
+            $empresa->logo = $this->handleLogoUpload($request, $empresa);
+        }
+        
+        $this->restoreWoocommerceSettings($empresa, $woocommerceValues);
+        
+        $empresa->save();
+        
+        return $empresa;
+    }
+
+    private function createEmpresa(Request $request)
+    {
+        $empresa = new Empresa;
+        $empresa->fill($request->all());
+        
+        if ($request->hasFile('file')) {
+            $empresa->logo = $this->handleLogoUpload($request, $empresa);
+        }
+        
+        $empresa->save();
+        
+        if (!isset($request->isRegister) || $request->isRegister !== false) {
+            $this->createCompanySubscription($empresa, $request);
+        }
+        
+        $this->createInitialCompanyStructure($empresa);
+        
+        return $empresa;
+    }
+
+    private function handleUserAccountStatus(Empresa $empresa, Request $request)
+    {
+        if (($empresa->activo == '1') && ($request['activo'] == '0')) {
             foreach ($empresa->usuarios()->get() as $usuario) {
                 $usuario->enable = false;
                 $usuario->save();
             }
         }
-        //Des bloquear usuario Administrador
-        if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')){
+        
+        if (($empresa->activo == '0') && ($request['activo'] == '1')) {
             foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
                 $usuario->enable = true;
                 $usuario->save();
             }
         }
+    }
 
+    private function preserveWoocommerceSettings(Empresa $empresa)
+    {
         $woocommerceFields = [
             'woocommerce_api_key',
             'woocommerce_store_url',
@@ -127,34 +295,39 @@ class EmpresasController extends Controller
         foreach ($woocommerceFields as $field) {
             $woocommerceValues[$field] = $empresa->$field;
         }
-
-        $empresa->fill($request->all());
-
-        if ($request->hasFile('file')) {
-            if ($request->id && $empresa->logo && $empresa->logo != 'empresas/default.jpg') {
-                Storage::delete($empresa->logo);
-            }
-            $path   = $request->file('file');
-            $resize = Image::make($path)->resize(350,350)->encode('jpg', 75);
-            $hash = md5($resize->__toString());
-            $path = "empresas/{$hash}.jpg";
-            $resize->save(public_path('img/'.$path), 50);
-            $empresa->logo = "/" . $path;
-        }
-
-        foreach ($woocommerceFields as $field) {
-            $empresa->$field = $woocommerceValues[$field];
-        }
-
-
-        $empresa->save();
         
-        if(!isset($request->isRegister) || $request->isRegister !== false) {
+        return $woocommerceValues;
+    }
+
+    private function restoreWoocommerceSettings(Empresa $empresa, array $woocommerceValues)
+    {
+        foreach ($woocommerceValues as $field => $value) {
+            $empresa->$field = $value;
+        }
+    }
+
+    private function handleLogoUpload(Request $request, Empresa $empresa)
+    {
+        if ($request->id && $empresa->logo && $empresa->logo != 'empresas/default.jpg') {
+            Storage::delete($empresa->logo);
+        }
         
-        $suscripcion = $this->createSuscripcion([
+        $path = $request->file('file');
+        $resize = Image::make($path)->resize(350, 350)->encode('jpg', 75);
+        $hash = md5($resize->__toString());
+        $path = "empresas/{$hash}.jpg";
+        $resize->save(public_path('img/' . $path), 50);
+        
+        return "/" . $path;
+    }
+
+    private function createCompanySubscription(Empresa $empresa, Request $request)
+    {
+        $plan = $this->getPlan($empresa->plan, true, $empresa->plan);
+        
+        $this->createSuscripcion([
             'empresa_id' => $empresa->id,
-            'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
-            'usuario_id' => $usuario->id,
+            'plan_id' => $plan->id,
             'tipo_plan' => $empresa->tipo_plan,
             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
             'monto' => $plan->precio,
@@ -174,37 +347,75 @@ class EmpresasController extends Controller
             'ultimo_intento_cobro' => null,
             'historial_pagos' => null
         ]);
-
     }
 
-        //Crear sucursal
-            if(!$request->id){
-                // Crear cliente
-                    $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
-                    $empresa->cliente_id = $cliente->id;
-                    $empresa->save();
-                // Crear sucursal
-                $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
-                // Crear bodega
-                $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-                // Crear canales
-                Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
-                // Crear impuesto
-                Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
-                // Formas de pago
-                FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 'id_empresa' => $empresa->id]);
-                FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 'id_empresa' => $empresa->id]);
-                FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TARJETA'), 'id_empresa' => $empresa->id]);
-                // Crear documentos
-                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_TICKET'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_FACTURA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-                Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-            }
+    private function createInitialCompanyStructure(Empresa $empresa)
+    {
+        $sucursal = Sucursal::create([
+            'nombre' => $empresa->nombre, 
+            'id_empresa' => $empresa->id
+        ]);
+        
+        $bodega = Bodega::create([
+            'nombre' => $empresa->nombre, 
+            'id_sucursal' => $sucursal->id, 
+            'id_empresa' => $empresa->id
+        ]);
+        
+        Canal::create([
+            'nombre' => $empresa->nombre, 
+            'enable' => true, 
+            'id_empresa' => $empresa->id
+        ]);
+        
+        Impuesto::create([
+            'nombre' => 'IVA', 
+            'porcentaje' => $empresa->iva, 
+            'id_empresa' => $empresa->id
+        ]);
+        
+        $this->createPaymentMethods($empresa);
+        
+        $this->createDocuments($sucursal, $empresa);
+    }
 
-        return Response()->json($empresa, 200);
+    private function createPaymentMethods(Empresa $empresa)
+    {
+        FormaDePago::create([
+            'nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 
+            'id_empresa' => $empresa->id
+        ]);
+        
+        FormaDePago::create([
+            'nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 
+            'id_empresa' => $empresa->id
+        ]);
+        
+        FormaDePago::create([
+            'nombre' => config('constants.TIPO_PAGO_TARJETA'), 
+            'id_empresa' => $empresa->id
+        ]);
+    }
 
+    private function createDocuments(Sucursal $sucursal, Empresa $empresa)
+    {
+        $documentTypes = [
+            'TIPO_DOCUMENTO_TICKET',
+            'TIPO_DOCUMENTO_FACTURA',
+            'TIPO_DOCUMENTO_CREDITO_FISCAL',
+            'TIPO_DOCUMENTO_COTIZACION',
+            'TIPO_DOCUMENTO_ORDEN_COMPRA'
+        ];
+        
+        foreach ($documentTypes as $type) {
+            Documento::create([
+                'nombre' => config('constants.' . $type), 
+                'correlativo' => 1, 
+                'activo' => 1, 
+                'id_sucursal' => $sucursal->id, 
+                'id_empresa' => $empresa->id
+            ]);
+        }
     }
 
     private function createSuscripcion(array $data): array 
@@ -215,12 +426,12 @@ class EmpresasController extends Controller
             $diasPrueba = $plan->dias_periodo_prueba;
             
             $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
+                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
                 'estado_ultimo_pago' => null,
-                'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
-                'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
+                'fecha_ultimo_pago' => null,
+                'fecha_proximo_pago' => now()->addDays($diasPrueba),
                 'fin_periodo_prueba' => now()->addDays($diasPrueba),
-                'monto' => 0, // Sin costo durante el período de prueba
+                'monto' => 0,
                 'intentos_cobro' => 0,
                 'ultimo_intento_cobro' => null,
                 'historial_pagos' => null,
