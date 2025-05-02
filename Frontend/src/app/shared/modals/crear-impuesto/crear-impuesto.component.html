@@ -1,0 +1,42 @@
+<button type="button" class="btn btn-default tcla-F2" (click)="openModal(mimpuesto)">
+    <i *ngIf="!id_impuesto" tooltip="Crear nuevo impuesto (F2)" class="fa fa-plus"></i>
+    <i *ngIf="id_impuesto" tooltip="Editar impuesto (F2)" class="fa fa-pencil-alt"></i>
+</button>
+
+<ng-template #mimpuesto>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">
+            <span *ngIf="!id_impuesto">Nuevo impuesto</span>
+            <span *ngIf="id_impuesto">Editar impuesto</span>
+        </h3>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body p-3">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form (ngSubmit)="onSubmit()">
+            <div class="row">
+                <div class="col-12">
+                    <div class="row">
+                        <h6 class="col-12 pb-2 mb-2">Información del impuesto</h6>
+                        <div class="form-group col-lg-13">
+                            <label for="nombre">Nombre del impuesto</label>
+                            <input type="text" class="form-control" placeholder="Ej. IVA, Retención, etc." name="nombre" [(ngModel)]="impuesto.nombre">
+                        </div>
+                        <div class="form-group col-lg-13">
+                            <label for="porcentaje">Porcentaje (%)</label>
+                            <input type="number" class="form-control" placeholder="Ej. 13" name="porcentaje" [(ngModel)]="impuesto.porcentaje">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-13 mt-3">
+                    <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                        <span *ngIf="!saving">Guardar impuesto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</ng-template>
