@@ -63,7 +63,10 @@ class Kardex extends Model {
             $detalle = \App\Models\Inventario\Ajuste::find($this->referencia);
             $info = 'Ajuste #' . $this->referencia;
         }
-
+        if ($this->detalle == 'Actualización de producto') {
+            $info = 'Actualización de producto';
+        }
+        
         return $info;
     }
 
@@ -86,6 +89,10 @@ class Kardex extends Model {
         if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             return 'ajuste';
         }
+        if ($this->detalle == 'Actualización de producto') {
+            return 'producto';
+        }
+
     }
 
     public function inventario(){

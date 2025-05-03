@@ -21,6 +21,7 @@ use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use App\Models\OrdenCompra;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 
@@ -39,7 +40,7 @@ class ComprasController extends Controller
     public function index(Request $request)
     {
 
-        $compras = Compra::when($request->inicio, function ($query) use ($request) {
+        $compras = Compra::with('retaceo')->when($request->inicio, function ($query) use ($request) {
             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
         })
             ->when($request->recurrente !== null, function ($q) use ($request) {
@@ -75,6 +76,13 @@ class ComprasController extends Controller
             ->when($request->dte && $request->dte == 1, function ($query) {
                 return $query->whereNotNull('sello_mh');
             })
+            ->when($request->es_retaceo, function($query) use ($request) {
+                return $query->where('es_retaceo', true)
+                            ->when($request->es_retaceo === 'true',
+                                function($q) { return $q->whereDoesntHave('retaceo'); },
+                                function($q) { return $q->whereHas('retaceo'); }
+                            );
+            })
             ->where('cotizacion', 0)
             ->when($request->buscador, function ($query) use ($request) {
                 return $query->whereHas('proveedor', function ($q) use ($request) {
@@ -101,7 +109,7 @@ class ComprasController extends Controller
     public function read($id)
     {
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos')->first();
+        $compra = Compra::where('id', $id)->with('detalles.producto', 'proveedor', 'abonos')->first();
         $compra->saldo = $compra->saldo;
 
         return Response()->json($compra, 200);

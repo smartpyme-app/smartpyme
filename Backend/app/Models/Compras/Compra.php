@@ -4,8 +4,7 @@ namespace App\Models\Compras;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
-
+use Illuminate\Support\Facades\Auth;
 class Compra extends Model {
 
     protected $table = 'compras';
@@ -47,7 +46,8 @@ class Compra extends Model {
         'id_empresa',
         'dte',
         'dte_invalidacion',
-        'no_sujeta'
+        'no_sujeta',
+        'es_retaceo',
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
@@ -124,6 +124,10 @@ class Compra extends Model {
 
     public function devoluciones(){
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
+    }
+
+    public function retaceo(){
+        return $this->hasOne('App\Models\Compras\Retaceo\Retaceo', 'id_compra');
     }
 
 

@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
-use App\Models\Inventario\Bodega;
 use Illuminate\Support\Facades\Log;
 use JWTAuth;
 

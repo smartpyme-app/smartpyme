@@ -28,7 +28,7 @@ class GastosController extends Controller
 
     public function index(Request $request) {
        
-        $gastos = Gasto::when($request->id_proveedor, function($query) use ($request){
+        $gastos = Gasto::with('retaceoGasto')->when($request->id_proveedor, function($query) use ($request){
                             return $query->where('id_proveedor', $request->id_proveedor);
                         })
                     ->when($request->estado, function($query) use ($request){
@@ -60,6 +60,13 @@ class GastosController extends Controller
                     })
                     ->when($request->dte && $request->dte == 1, function($query) {
                         return $query->whereNotNull('sello_mh');
+                    })
+                    ->when($request->es_retaceo, function($query) use ($request) {
+                        return $query->where('es_retaceo', true)
+                                    ->when($request->es_retaceo === 'true',
+                                        function($q) { return $q->whereDoesntHave('retaceoGasto'); },
+                                        function($q) { return $q->whereHas('retaceoGasto'); }
+                                    );
                     })
                     ->when($request->buscador, function($query) use ($request){
                     return $query->whereHas('proveedor', function($q) use ($request){

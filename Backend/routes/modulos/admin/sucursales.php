@@ -1,6 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Admin\SucursalesController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/sucursales',               [SucursalesController::class, 'index']);
     Route::get('/sucursales/list',          [SucursalesController::class, 'list']);
