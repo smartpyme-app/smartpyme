@@ -109,26 +109,25 @@ export class ContribuyentesComponent implements OnInit {
         );
     }
 
-    public descargarAnexo(){
+    public descargarAnexo() {
         this.downloading = true;
         this.apiService.export('libro-iva/contribuyentes/descargar-anexo', this.filtros).subscribe((data: Blob) => {
-          const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'Anexo-contribuyentes.xlsx';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          this.downloading = false;
-        }, (error) => {this.alertService.error(error); this.downloading = false; });
+            const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Anexo-contribuyentes.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
     }
 
-    public setSucursal(id: number) {
-        this.filtros.id_sucursal = id;
-        this.loadAll();
-    }
 
     public descargarDTECreditoFiscal(): void {
         this.downloading = true;

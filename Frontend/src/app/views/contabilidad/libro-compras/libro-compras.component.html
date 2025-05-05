@@ -3,14 +3,26 @@
     <div>
         <h2>Libro de Compras</h2>
     </div>
-    <div>
-        <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
-            Libro <img src="/assets/icons/download.png" class="icon">
+    <div class="dropdown">
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
+          Descargas 
         </button>
-        <!-- <button [disabled]="downloading" tooltip="Descargar Anexo" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
-            Anexo <img src="/assets/icons/download.png" class="icon">
-        </button> -->
-    </div>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Libro de compras
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Anexo
+            </button>
+          </li>
+        </ul>
+      </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -44,13 +56,6 @@
                   {{ year }}
                 </option>
             </select>
-            <!-- <div class="btn-group"> -->
-
-                <!-- <button class="btn tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtros.time == 'day', 'btn-default': filtros.time != 'day' }" (click)="setTime('day')">Hoy</button> -->
-                <!-- <button class="btn tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtros.time == 'week', 'btn-default': filtros.time != 'week' }" (click)="setTime('week')">Semana</button> -->
-                <!-- <button class="btn tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</button> -->
-                <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
-            <!-- </div> -->
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
             <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
                 <i class="fa fa-refresh"></i>
@@ -59,81 +64,69 @@
     </div>
 
     <div class="row">
+
         <div class="col-12">
             <div class="table-responsive bg-white">
                 <table class="table table-bordered table-hover">
                     <thead>
                         <tr>
-                            <th class="">N°</th>
-                            <th class="">FECHA</th>
-                            <th class="">NÚMERO DE DOCUMENTO</th>
-                            <th class="">NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
-                            <th class="">NOMBRE DEL PROVEEDOR</th>
-                            <th class=" text-end">COMPRAS EXENTAS INTERNAS</th>
-                            <th class=" text-end">COMPRAS NO SUJETAS</th>
-                            <th class=" text-end">IMPORTACIONES E INTERNACIONES EXENTAS</th>
-                            <th class=" text-end">COMPRAS INTERNAS GRAVADAS</th>
-                            <th class=" text-end">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
-                            <th class=" text-end">CRÉDITO FISCAL</th>
-                            <th class=" text-end">ANTICIPO A CUENTA IVA PERCIBIDO</th>
-                            <th class=" text-end">TOTAL</th>
-                            <th class=" text-end">COMPRAS A SUJETOS EXCLUIDOS</th>
+                            <th>N°</th>
+                            <th>FECHA</th>
+                            <th>NÚMERO DE DOCUMENTO</th>
+                            <th>NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
+                            <th>NOMBRE DEL PROVEEDOR</th>
+                            <th class="text-end">COMPRAS EXENTAS INTERNAS</th>
+                            <th class="text-end">COMPRAS NO SUJETAS</th>
+                            <th class="text-end">IMPORTACIONES E INTERNACIONES EXENTAS</th>
+                            <th class="text-end">COMPRAS INTERNAS GRAVADAS</th>
+                            <th class="text-end">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
+                            <th class="text-end">CRÉDITO FISCAL</th>
+                            <th class="text-end">ANTICIPO A CUENTA IVA PERCIBIDO</th>
+                            <th class="text-end">TOTAL</th>
+                            <th class="text-end">COMPRAS A SUJETOS EXCLUIDOS</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="13" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="14" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="13" class="text-center" *ngIf="loading">
+                            <td colspan="14" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <tr class="animated fadeIn" *ngFor=" let iva of ivas; let i = index">
+                        <tr [tooltip]="!iva.nit_nrc ? 'Faltan datos del proveedor' : ''" [ngClass]="{ 'table-danger': !iva.nit_nrc }" *ngFor=" let iva of ivas; let i = index">
                             <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.num_documento}}</td>
+                            <td>{{iva.num_documento}}<a *ngIf="iva?.registro?.id" class="float-end d-none" target="blank" tooltip="Ver información de la transacción" routerLink="/{{iva.origen}}/{{iva?.registro?.id}}"><i class="fa fa-eye"></i></a></td>
                             <td>{{iva.nit_nrc}}</td>
-                            <td>{{iva.nombre_proveedor}}</td>
-                            <td class="text-end">{{iva.compras_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.no_sujeta | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.importaciones_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.compras_gravadas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.credito_fiscal | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.importaciones_gravadas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.anticipo_iva_percibido | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.sujeto_excluido | currency:'USD':'symbol':'1.2'}}</td>
+                            <td>{{iva.nombre_proveedor}}<a *ngIf="iva?.registro?.id_proveedor" class="float-end d-none" target="blank" tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{iva?.registro?.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="text-end text-nowrap">{{iva.compras_exentas | currency }}</td>
+                            <td class="text-end text-nowrap">{{iva.no_sujeta | currency }}</td>
+                            <td class="text-end text-nowrap">{{iva.importaciones_exentas | currency }}</td>
+                            <td class="text-end text-nowrap">{{iva.compras_gravadas | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.importaciones_gravadas | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.credito_fiscal | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.anticipo_iva_percibido | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.total | currency}}</td>
+                            <td class="text-end text-nowrap">{{iva.sujeto_excluido | currency}}</td>
 
-                        </tr>
-                        <tr>
-                            <td colspan="5" class="text-center"><b>Total</b></td>                                
-                            <td class="text-end"><b>{{ ivas | sum:'compras_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'importaciones_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'compras_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'credito_fiscal' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'importaciones_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'anticipo_iva_percibido' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'sujeto_excluido' | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     </tbody>
-                   <!--  <tfoot *ngIf="ivas?.length > 10">
+                    <tfoot *ngIf="ivas?.length > 0">
                         <tr>
-                            <th>Fecha</th>
-                            <th>Correlativo</th>
-                            <th>Proveedor</th>
-                            <th>NIT/NRC</th>
-                            <th>DUI</th>
-                            <th class="text-end">Compras Exentas</th>
-                            <th class="text-end">Compras No Sujetas</th>
-                            <th class="text-end">Compras Gravadas</th>
-                            <th class="text-end">IVA</th>
-                            <th class="text-end">Total</th>
+                            <td colspan="5" class="text-center"><b>Total</b></td>                                
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_exentas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'no_sujeta' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_exentas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_gravadas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'credito_fiscal' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_gravadas' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'anticipo_iva_percibido' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'total' | currency }}</b></td>
+                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'sujeto_excluido' | currency }}</b></td>
                         </tr>
-                    </tfoot> -->
-
+                    </tfoot>
                 </table>
             </div>
         </div>

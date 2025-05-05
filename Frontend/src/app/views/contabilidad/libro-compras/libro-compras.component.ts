@@ -72,6 +72,10 @@ export class LibroComprasComponent implements OnInit {
         this.loadAll();
     }
 
+    get faltaNombre(): boolean {
+        return this.ivas.some((item:any) => !item.nit_nrc);
+    }
+
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
     }
@@ -109,21 +113,23 @@ export class LibroComprasComponent implements OnInit {
         );
     }
 
-    public descargarAnexo(){
+    public descargarAnexo() {
         this.downloading = true;
-        this.apiService.export('libro-iva/compras/descargar-anexo', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        this.apiService.export('libro-iva/compras/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Anexo de compras.xlsx';
+            a.download = 'Anexo-compras.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
-        );
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
     }
 
     public setSucursal(id: number) {

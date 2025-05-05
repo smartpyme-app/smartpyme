@@ -46,12 +46,12 @@ class LibrosIVAController extends Controller
 
             return [
                 'fecha'                 => $venta->fecha,
-                'correlativo'           => $venta->correlativo,
+                'correlativo'           => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
                 'num_control_interno'   => $venta->correlativo,
                 'ventas_exentas'        => $venta->exenta,
-                'ventas_gravadas'       => $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->sub_total,
-                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->sub_total : '0',
-                'total'                 => $venta->sub_total,
+                'ventas_gravadas'       => $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
+                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
+                'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
                 'no_sujeta'            => $venta->no_sujeta,
                 'id_venta'              => $venta->id,
@@ -61,7 +61,9 @@ class LibrosIVAController extends Controller
 
 
         // Ordenamos por 'correlativo' de forma descendente y reindexamos
-        $ivas = $ivas->sortByDesc('num_documento')->values()->all();
+        $ivas = $ivas->sortByDesc(function ($item) {
+                return [$item['fecha'], $item['correlativo']];
+            })->values()->all();
         // Log::info($ivas);
 
         return response()->json($ivas, 200);
@@ -80,7 +82,7 @@ class LibrosIVAController extends Controller
         $consumidores = new AnexoConsumidoresExport();
         $consumidores->filter($request);
 
-        return Excel::download($consumidores, 'AnexoConsumidoresExport.xlsx');
+        return Excel::download($consumidores, 'AnexoConsumidoresExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function contribuyentes(Request $request)
@@ -105,10 +107,10 @@ class LibrosIVAController extends Controller
 
             return [
                 'fecha'                 => $venta->fecha,
-                'correlativo'         => $venta->correlativo,
-                'num_documento'         => $venta->correlativo,
+                'correlativo'           => $venta->correlativo,
+                'num_documento'         => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
                 'nombre_cliente'        => $venta->nombre_cliente,
-                'nit_nrc'               => $cliente->nit ?? $cliente->ncr,
+                'nit_nrc'               => $cliente->ncr ?? $cliente->nit,
                 'ventas_exentas'        => $venta->exenta,
                 'ventas_no_sujetas'     => $venta->no_sujeta,
                 'ventas_gravadas'       => $venta->sub_total,
@@ -186,7 +188,8 @@ class LibrosIVAController extends Controller
         $contribuyentes = new AnexoContribuyentesExport();
         $contribuyentes->filter($request);
 
-        return Excel::download($contribuyentes, 'AnexoContribuyentesExport.xlsx');
+        return Excel::download($contribuyentes, 'AnexoContribuyentesExport.csv', \Maatwebsite\Excel\Excel::CSV);
+
     }
 
     public function compras(Request $request)
@@ -198,47 +201,26 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
+            ->where('iva' , '>', 0)
+            ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->get();
-
-
-        // Transformar compras
-        // $comprasData = $compras->map(function ($compra) {
-        //     $proveedor = optional($compra->proveedor);
-
-        //     return [
-        //         'fecha'                 => $compra->fecha,
-        //         'clase_documento'       => 1,
-        //         'tipo_documento'        => $compra->tipo_documento,
-        //         'num_documento'         => $compra->referencia,
-        //         'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
-        //         'nombre_proveedor'      => $compra->nombre_proveedor,
-        //         'compras_exentas'       => $compra->exenta,
-        //         'importaciones_exentas' => 0,
-        //         'compras_gravadas'      => $compra->sub_total,
-        //         'importaciones_gravadas' => 0,
-        //         'credito_fiscal'        => $compra->iva,
-        //         'anticipo_iva_percibido' => $compra->percepcion,
-        //         'compras_cuenta_terceros' => 0,
-        //         'credito_cuenta_terceros' => 0,
-        //         'total'                 => $compra->tipo_documento != 'Sujeto excluido' ? $compra->total : 0,
-        //         'sujeto_excluido'       => $compra->tipo_documento == 'Sujeto excluido' ? $compra->total : 0,
-        //         'no_sujeta'            => $compra->no_sujeta,
-        //         'id_compra'             => $compra->id,
-        //     ];
-        // });
+            ->get()
+            ->map(function ($compra) {
+                $compra->origen = 'compra';
+                return $compra;
+            });
 
         $comprasData = $compras->map(function ($compra) {
-            $proveedor = optional($compra->proveedor);
+            $proveedor = optional($compra->proveedor()->first());
 
             $data = [
                 'fecha' => $compra->fecha,
                 'clase_documento' => 1,
                 'tipo_documento' => $compra->tipo_documento,
                 'num_documento' => $compra->referencia,
-                'nit_nrc' => $proveedor->nit ?? $proveedor->ncr,
-                'nombre_proveedor' => $compra->nombre_proveedor,
+                'nit_nrc' => $proveedor->ncr ?? $proveedor->nit,
+                'nombre_proveedor' => $proveedor->nombre,
                 'compras_exentas' => 0,
                 'importaciones_exentas' => 0,
                 'compras_gravadas' => 0,
@@ -251,6 +233,8 @@ class LibrosIVAController extends Controller
                 'sujeto_excluido' => 0,
                 'no_sujeta' => 0,
                 'id_compra' => $compra->id,
+                'registro' => $compra,
+                'origen' => $compra->origen,
             ];
 
 
@@ -274,19 +258,25 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
+            ->where('iva' , '>', 0)
+            ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($gasto) {
+                $gasto->origen = 'gasto';
+                return $gasto;
+            });
 
         // Transformar gastos
         $gastosData = $gastos->map(function ($gasto) {
-            $proveedor = optional($gasto->proveedor);
+            $proveedor = optional($gasto->proveedor()->first());
 
             $data = [
                 'fecha'                 => $gasto->fecha,
                 'clase_documento'       => 1, // Por ejemplo, otro tipo de documento para gastos
                 'tipo_documento'        => $gasto->tipo_documento,
                 'num_documento'         => $gasto->referencia,
-                'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
+                'nit_nrc'               => $proveedor->ncr ?? $proveedor->nit,
                 'nombre_proveedor'      => $gasto->nombre_proveedor,
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
@@ -298,6 +288,8 @@ class LibrosIVAController extends Controller
                 'credito_cuenta_terceros' => 0,
                 'total'                 => 0,
                 'sujeto_excluido'       => 0,
+                'registro' => $gasto,
+                'origen' => $gasto->origen,
             ];
 
             switch ($gasto->tipo_documento) {
@@ -319,13 +311,19 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
+            ->where('iva' , '>', 0)
+            ->where('tipo_documento', 'Crédito fiscal')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($devolucion) {
+                $devolucion->origen = 'devolucion';
+                return $devolucion;
+            });
 
 
         // Transformar gastos
         $devolucionesData = $devoluciones->map(function ($devolucion) {
-            $proveedor = optional($devolucion->proveedor);
+            $proveedor = optional($devolucion->proveedor()->first());
 
 
             $data = [
@@ -333,7 +331,7 @@ class LibrosIVAController extends Controller
                 'clase_documento'       => 1,
                 'tipo_documento'        => $devolucion->tipo_documento,
                 'num_documento'         => $devolucion->referencia,
-                'nit_nrc'               => $proveedor->nit ?? $proveedor->ncr,
+                'nit_nrc'               => $proveedor->ncr ?? $proveedor->nit,
                 'nombre_proveedor'      => $devolucion->nombre_proveedor,
                 'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
@@ -345,6 +343,8 @@ class LibrosIVAController extends Controller
                 'credito_cuenta_terceros' => 0,
                 'total'                 => 0,
                 'sujeto_excluido'       => 0,
+                'registro' => $devolucion,
+                'origen' => $devolucion->origen,
             ];
 
             switch ($devolucion->tipo_documento) {
@@ -388,7 +388,7 @@ class LibrosIVAController extends Controller
         $compras = new AnexoComprasExport();
         $compras->filter($request);
 
-        return Excel::download($compras, 'AnexoComprasExport.xlsx');
+        return Excel::download($compras, 'AnexoComprasExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function GlobalDttesExport(Request $request)
