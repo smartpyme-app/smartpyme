@@ -394,13 +394,13 @@ class WebhookN1coController extends Controller
                     'metodo_pago' => config('constants.METODO_PAGO_N1CO')
                 ]);
 
-                // if (method_exists($this, 'enviarCorreoSuscripcion')) {
-                //     $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
-                // }
+                if (method_exists($this, 'enviarCorreoSuscripcion')) {
+                    $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
+                }
 
-                // if (method_exists($this, 'enviarNotificacionPagoAdmin')) {
-                //     $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
-                // }
+                if (method_exists($this, 'enviarNotificacionPagoAdmin')) {
+                    $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
+                }
 
                 // Si este método existe, lo llamamos
                 if (method_exists($ordenPago, 'generarVenta')) {
