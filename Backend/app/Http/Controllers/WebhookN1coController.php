@@ -239,7 +239,7 @@ class WebhookN1coController extends Controller
                 ->first();
 
             if (!$ordenPago) {
-                Log::warning('Orden de pago no encontrada', [
+                Log::channel('payments_error')->warning('Orden de pago no encontrada', [
                     'payload' => $payload
                 ]);
                 return response()->json(['status' => 'success']);
@@ -251,7 +251,7 @@ class WebhookN1coController extends Controller
                 $ordenPago->payment_id === $metadata['PaymentId'] &&
                 $ordenPago->charge_id === $metadata['ChargeId']
             ) {
-                Log::info('Pago ya procesado anteriormente, ignorando evento duplicado', [
+                Log::channel('payments_success')->info('Pago ya procesado anteriormente, ignorando evento duplicado', [
                     'orden_id' => $ordenPago->id_orden,
                     'payment_id' => $metadata['PaymentId']
                 ]);
@@ -301,7 +301,7 @@ class WebhookN1coController extends Controller
                         $fechaProximoPago = now()->addDays($plan->duracion_dias);
                     }
                     
-                    Log::info('Nueva suscripción creada', [
+                    Log::channel('payments_success')->info('Nueva suscripción creada', [
                         'es_mensual' => $esMensual,
                         'fecha_actual' => now()->format('Y-m-d'),
                         'fecha_vencimiento' => $fechaProximoPago->format('Y-m-d')
@@ -318,7 +318,7 @@ class WebhookN1coController extends Controller
                             $fechaProximoPago = $suscripcionExistente->fecha_proximo_pago->copy()->addDays($plan->duracion_dias);
                         }
                         
-                        Log::info('Renovación anticipada, extendiendo desde la fecha de vencimiento actual', [
+                        Log::channel('payments_success')->info('Renovación anticipada, extendiendo desde la fecha de vencimiento actual', [
                             'es_mensual' => $esMensual,
                             'fecha_vencimiento_actual' => $suscripcionExistente->fecha_proximo_pago->format('Y-m-d'),
                             'nueva_fecha_vencimiento' => $fechaProximoPago->format('Y-m-d')
@@ -338,7 +338,7 @@ class WebhookN1coController extends Controller
                                 $fechaProximoPago = now()->addDays($plan->duracion_dias);
                             }
                             
-                            Log::info('Renovación muy tardía (más de un ciclo), estableciendo nuevo ciclo desde hoy', [
+                            Log::channel('payments_success')->info('Renovación muy tardía (más de un ciclo), estableciendo nuevo ciclo desde hoy', [
                                 'es_mensual' => $esMensual,
                                 'fecha_vencimiento_anterior' => $fechaVencimiento ? $fechaVencimiento->format('Y-m-d') : 'N/A',
                                 'dias_desde_vencimiento' => $fechaVencimiento ? now()->diffInDays($fechaVencimiento) : 'N/A',
@@ -355,7 +355,7 @@ class WebhookN1coController extends Controller
                                 $fechaProximoPago = $fechaVencimiento->copy()->addDays($plan->duracion_dias);
                             }
                             
-                            Log::info('Renovación tardía (menos de un ciclo), manteniendo ciclo original', [
+                            Log::channel('payments_success')->info('Renovación tardía (menos de un ciclo), manteniendo ciclo original', [
                                 'es_mensual' => $esMensual,
                                 'dias_desde_vencimiento' => now()->diffInDays($fechaVencimiento),
                                 'fecha_vencimiento_anterior' => $fechaVencimiento->format('Y-m-d'),
@@ -386,7 +386,7 @@ class WebhookN1coController extends Controller
                 );
 
                 $empresa = Empresa::find($user->id_empresa);
-                Log::info('Empresa encontrada', [
+                Log::channel('payments_success')->info('Empresa encontrada', [
                     'empresa' => $empresa
                 ]);
 
@@ -394,31 +394,20 @@ class WebhookN1coController extends Controller
                     'metodo_pago' => config('constants.METODO_PAGO_N1CO')
                 ]);
 
-                if (method_exists($this, 'enviarCorreoSuscripcion')) {
-                    $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
-                }
+                // if (method_exists($this, 'enviarCorreoSuscripcion')) {
+                //     $this->enviarCorreoSuscripcion($user, $suscripcion, $empresa);
+                // }
 
-                if (method_exists($this, 'enviarNotificacionPagoAdmin')) {
-                    $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
-                }
-
-                // Log::info('Empresa actualizada', [
-                //     'empresa' => $empresa->metodo_pago
-                // ]);
-
-                // Log::info('Suscripción actualizada', [
-                //     'user_id' => $user->id,
-                //     'order_id' => $payload['orderId'],
-                //     'fecha_proximo_pago' => $fechaProximoPago->format('Y-m-d'),
-                //     'es_nueva_suscripcion' => $esNuevaSuscripcion
-                // ]);
+                // if (method_exists($this, 'enviarNotificacionPagoAdmin')) {
+                //     $this->enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion);
+                // }
 
                 // Si este método existe, lo llamamos
                 if (method_exists($ordenPago, 'generarVenta')) {
                     try {
                         $ordenPago->generarVenta();
                     } catch (\Exception $e) {
-                        Log::error('Error al generar venta', [
+                        Log::channel('payments_error')->error('Error al generar venta', [
                             'error' => $e->getMessage(),
                             'ordenPago' => $ordenPago->id_orden
                         ]);
@@ -427,14 +416,14 @@ class WebhookN1coController extends Controller
                 }
 
             } else {
-                Log::error('Usuario no encontrado', [
+                Log::channel('payments_error')->error('Usuario no encontrado', [
                     'user_id' => $ordenPago->id_usuario,
                 ]);
             }
 
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
-            Log::error('Error procesando pago exitoso', [
+            Log::channel('payments_error')->error('Error procesando pago exitoso', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'payload' => $payload
@@ -479,21 +468,21 @@ class WebhookN1coController extends Controller
 
     private function handleOrderFinalized($payload)
     {
-        Log::info('N1co Webhook: Order finalized', ['orderId' => $payload['orderId']]);
+        Log::channel('payments_success')->info('N1co Webhook: Order finalized', ['orderId' => $payload['orderId']]);
         // Implementar lógica para orden finalizada
         return response()->json(['status' => 'success']);
     }
 
     private function handleSuccessfulReverse($payload)
     {
-        Log::info('N1co Webhook: Payment reversed successfully', ['orderId' => $payload['orderId']]);
+        Log::channel('payments_success')->info('N1co Webhook: Payment reversed successfully', ['orderId' => $payload['orderId']]);
         // Implementar lógica para reversión exitosa
         return response()->json(['status' => 'success']);
     }
 
     private function handleRequires3ds($payload)
     {
-        Log::info('N1co Webhook: Payment requires 3DS', ['orderId' => $payload['orderId']]);
+        Log::channel('payments_success')->info('N1co Webhook: Payment requires 3DS', ['orderId' => $payload['orderId']]);
 
         return response()->json(['status' => 'success']);
     }
@@ -501,7 +490,7 @@ class WebhookN1coController extends Controller
     private function handle3DSAuthSuccess($payload)
     {
         try {
-            Log::info('N1co Webhook: 3DS Authentication successful', [
+            Log::channel('payments_success')->info('N1co Webhook: 3DS Authentication successful', [
                 'orderId' => $payload['orderId'],
                 'orderReference' => $payload['orderReference'],
                 'authenticationId' => $payload['metadata']['authenticationId'] ?? null
@@ -518,7 +507,7 @@ class WebhookN1coController extends Controller
             ]);
 
             if (!$ordenPago) {
-                Log::warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
+                Log::channel('payments_error')->warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
                     'orderReference' => $payload['orderReference']
                 ]);
                 return response()->json([
@@ -533,7 +522,7 @@ class WebhookN1coController extends Controller
                 'authentication_id' => $payload['metadata']['authenticationId'],
             ]);
 
-            Log::info('N1co Webhook: Estado de autenticación 3DS actualizado exitosamente', [
+            Log::channel('payments_success')->info('N1co Webhook: Estado de autenticación 3DS actualizado exitosamente', [
                 'orderReference' => $payload['orderReference'],
                 'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA')
             ]);
@@ -543,7 +532,7 @@ class WebhookN1coController extends Controller
                 'message' => 'Estado de autenticación actualizado correctamente'
             ]);
         } catch (\Exception $e) {
-            Log::error('N1co Webhook: Error procesando autenticación 3DS exitosa', [
+            Log::channel('payments_error')->error('N1co Webhook: Error procesando autenticación 3DS exitosa', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'payload' => $payload
@@ -559,7 +548,7 @@ class WebhookN1coController extends Controller
     private function handle3DSAuthFailed($payload)
     {
         try {
-            Log::info('N1co Webhook: 3DS Authentication failed', [
+            Log::channel('payments_error')->info('N1co Webhook: 3DS Authentication failed', [
                 'orderId' => $payload['orderId'],
                 'orderReference' => $payload['orderReference'],
                 'authenticationId' => $payload['metadata']['authenticationId'] ?? null
@@ -583,7 +572,7 @@ class WebhookN1coController extends Controller
             ]);
 
             if (!$ordenPago) {
-                Log::warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
+                Log::channel('payments_error')->warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
                     'orderReference' => $payload['orderReference']
                 ]);
                 return response()->json([
@@ -607,11 +596,11 @@ class WebhookN1coController extends Controller
                 'estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')
             ]);
 
-            Log::info('N1co Webhook: Suscripcion actualizada fail', [
+            Log::channel('payments_error')->info('N1co Webhook: Suscripcion actualizada fail', [
                 'suscripcion' => $suscripcion
             ]);
 
-            Log::info('N1co Webhook: Estado de autenticación 3DS actualizado a fallido', [
+            Log::channel('payments_error')->info('N1co Webhook: Estado de autenticación 3DS actualizado a fallido', [
                 'orderReference' => $payload['orderReference'],
                 'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
             ]);
@@ -621,7 +610,7 @@ class WebhookN1coController extends Controller
                 'message' => 'Estado de autenticación actualizado correctamente'
             ]);
         } catch (\Exception $e) {
-            Log::error('N1co Webhook: Error procesando autenticación 3DS fallida', [
+            Log::channel('payments_error')->error('N1co Webhook: Error procesando autenticación 3DS fallida', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'payload' => $payload
@@ -637,7 +626,7 @@ class WebhookN1coController extends Controller
     private function handle3DSAuthError($payload)
     {
         try {
-            Log::info('N1co Webhook: 3DS Authentication error', [
+            Log::channel('payments_error')->info('N1co Webhook: 3DS Authentication error', [
                 'orderId' => $payload['orderId'],
                 'orderReference' => $payload['orderReference'],
                 'reason' => $payload['metadata']['reason'] ?? 'No reason provided',
@@ -649,7 +638,7 @@ class WebhookN1coController extends Controller
                 ->first();
 
             if (!$ordenPago) {
-                Log::warning('N1co Webhook: Orden de pago no encontrada para error 3DS', [
+                Log::channel('payments_error')->warning('N1co Webhook: Orden de pago no encontrada para error 3DS', [
                     'orderReference' => $payload['orderReference']
                 ]);
                 return response()->json([
@@ -665,7 +654,7 @@ class WebhookN1coController extends Controller
                 config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
             );
 
-            Log::info('N1co Webhook: Estado de autenticación 3DS actualizado a fallido', [
+            Log::channel('payments_error')->info('N1co Webhook: Estado de autenticación 3DS actualizado a fallido', [
                 'orderReference' => $payload['orderReference'],
                 'newStatus' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
             ]);
@@ -673,7 +662,7 @@ class WebhookN1coController extends Controller
 
             $suscripcion = Suscripcion::where('id_orden', $payload['orderReference'])->first();
 
-            Log::info('N1co Webhook: Suscripcion encontrada', [
+            Log::channel('payments_error')->info('N1co Webhook: Suscripcion encontrada', [
                 'suscripcion' => $suscripcion
             ]);
 
@@ -688,7 +677,7 @@ class WebhookN1coController extends Controller
                 'message' => 'Estado de autenticación actualizado a fallido'
             ]);
         } catch (\Exception $e) {
-            Log::error('N1co Webhook: Error procesando fallo de autenticación 3DS', [
+            Log::channel('payments_error')->error('N1co Webhook: Error procesando fallo de autenticación 3DS', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'payload' => $payload
@@ -705,14 +694,14 @@ class WebhookN1coController extends Controller
     private function verifySignature($payload, $signature)
     {
         if (empty($signature)) {
-            Log::error('N1co Webhook: Empty signature provided');
+            Log::channel('payments_error')->error('N1co Webhook: Empty signature provided');
             return false;
         }
 
         $secret = config('services.nico.webhook_secret');
 
         if (empty($secret)) {
-            Log::error('N1co Webhook: Webhook secret not configured');
+            Log::channel('payments_error')->error('N1co Webhook: Webhook secret not configured');
             return false;
         }
 
@@ -727,7 +716,7 @@ class WebhookN1coController extends Controller
         );
 
         // Log para debugging
-        Log::debug('N1co Webhook: Signature details', [
+        Log::channel('payments_error')->debug('N1co Webhook: Signature details', [
             'received_signature' => $signature,
             'calculated_signature' => $calculatedSignature,
             'payload_sample' => substr($payload, 0, 100) . '...' // solo para debug
@@ -739,7 +728,7 @@ class WebhookN1coController extends Controller
     public function createPaymentLink($plan, $cliente)
     {
         try {
-            Log::info('Creando enlace de pago N1co', [
+            Log::channel('payments_success')->info('Creando enlace de pago N1co', [
                 'plan' => $plan->nombre,
                 'cliente' => $cliente->email
             ]);
@@ -786,7 +775,7 @@ class WebhookN1coController extends Controller
                     ]
                 ]);
 
-                Log::info('Enlace de pago creado exitosamente', [
+                Log::channel('payments_success')->info('Enlace de pago creado exitosamente', [
                     'orderId' => $result['orderId'],
                     'url' => $result['paymentLinkUrl']
                 ]);
@@ -798,7 +787,7 @@ class WebhookN1coController extends Controller
                 ];
             }
 
-            Log::error('Error al crear enlace de pago', [
+            Log::channel('payments_error')->error('Error al crear enlace de pago', [
                 'response' => $response->json()
             ]);
 
@@ -808,7 +797,7 @@ class WebhookN1coController extends Controller
                 'details' => $response->json()
             ];
         } catch (\Exception $e) {
-            Log::error('Error al crear enlace de pago', [
+            Log::channel('payments_error')->error('Error al crear enlace de pago', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -838,13 +827,13 @@ class WebhookN1coController extends Controller
                     ->subject('Confirmación de Suscripción - ' . $empresa->nombre);
             });
 
-            Log::info('Correo de confirmación de suscripción enviado', [
+            Log::channel('payments_success')->info('Correo de confirmación de suscripción enviado', [
                 'email' => $emailDestino
             ]);
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Error al enviar correo de confirmación', [
+            Log::channel('payments_error')->error('Error al enviar correo de confirmación', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -880,7 +869,7 @@ class WebhookN1coController extends Controller
                 });
             }
 
-            Log::info('Notificación de pago enviada a administradores', [
+            Log::channel('payments_success')->info('Notificación de pago enviada a administradores', [
                 'empresa' => $empresa->nombre,
                 'monto' => $ordenPago->monto,
                 'es_nueva' => $esNuevaSuscripcion
@@ -888,7 +877,7 @@ class WebhookN1coController extends Controller
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Error al enviar notificación de pago a administradores', [
+            Log::channel('payments_error')->error('Error al enviar notificación de pago a administradores', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
