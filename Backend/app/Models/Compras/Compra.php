@@ -16,7 +16,6 @@ class Compra extends Model {
         'sello_mh',
         'fecha',
         'estado',
-        // 'tipo',
         'forma_pago',
         'tipo_documento',
         // 'condicion',
@@ -47,7 +46,9 @@ class Compra extends Model {
         'id_empresa',
         'dte',
         'dte_invalidacion',
-        'no_sujeta'
+        'no_sujeta',
+        'sector',
+        'tipo'
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
