@@ -261,13 +261,14 @@ class AuthJWTController extends Controller
 
             DB::commit();
 
+            $plan = $this->getPlan($request['empresa']['plan']);
             $suscripcion = $this->createSuscripcion([
                 'empresa_id' => $empresa->id,
-                'plan_id' => $this->getPlan($request['empresa']['plan'])->id,
+                'plan_id' => $plan->id,
                 'usuario_id' => $usuario->id,
                 'tipo_plan' => $empresa->tipo_plan,
-                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-                'monto' => $request['empresa']['total'],
+                'estado' => config('constants.ESTADO_SUSCRIPCION_PRUEBA'),
+                'monto' => $plan->precio,
                 'id_pago' => null,
                 'id_orden' => null,
                 'estado_ultimo_pago' => null,
@@ -706,7 +707,7 @@ class AuthJWTController extends Controller
                 'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
                 'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
                 'fin_periodo_prueba' => now()->addDays($diasPrueba),
-                'monto' => 0, // Sin costo durante el período de prueba
+                'monto' => $plan->precio, // Sin costo durante el período de prueba
                 'intentos_cobro' => 0,
                 'ultimo_intento_cobro' => null,
                 'historial_pagos' => null,
