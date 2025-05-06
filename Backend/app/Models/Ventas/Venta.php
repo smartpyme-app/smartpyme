@@ -33,6 +33,7 @@ class Venta extends Model {
         'cambio',
         'iva_percibido',
         'iva_retenido',
+        'renta_retenida',
         'iva',
         'total_costo',
         'descuento',

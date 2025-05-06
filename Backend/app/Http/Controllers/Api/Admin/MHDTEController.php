@@ -287,12 +287,15 @@ class MHDTEController extends Controller
             }
         }
 
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        }
 
         $DTE = $registro->dte;
+
         if (!$DTE) {
-            return 'No se encontró el DTE';
+            return response()->json(['error' => 'El registro no tiene DTE.'], 404);
         }
-        // return $DTE;
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
@@ -354,6 +357,10 @@ class MHDTEController extends Controller
             }
         }
 
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        }
+
         if ($registro->dte_invalidacion)
             $DTE = $registro->dte_invalidacion;
         else
@@ -387,8 +394,15 @@ class MHDTEController extends Controller
             }
         }
 
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        }
 
         $DTE = $registro->dte;
+
+        if (!$DTE) {
+            return response()->json(['error' => 'El registro no tiene DTE.'], 404);
+        }
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 

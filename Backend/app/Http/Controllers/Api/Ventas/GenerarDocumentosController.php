@@ -232,6 +232,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 13 ){ //400
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.factura-sujeto-excluido', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
