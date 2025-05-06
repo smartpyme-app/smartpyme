@@ -11,6 +11,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -42,6 +43,10 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
+
+import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
+
+
 
 @NgModule({
   imports: [
@@ -83,7 +88,9 @@ import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    VerHistorialButtonComponent
+    VerHistorialButtonComponent,
+    SafeHtmlPipe,
+    ThreedsModalComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -113,7 +120,9 @@ import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    VerHistorialButtonComponent
+    ThreedsModalComponent,
+    VerHistorialButtonComponent,
+    SafeHtmlPipe
   ],
   providers: [AlertService],
 })

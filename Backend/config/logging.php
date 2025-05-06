@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'daily'),
 
     /*
     |--------------------------------------------------------------------------
@@ -98,6 +98,34 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'suscripciones' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/suscripciones/suscripciones.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'permission' => 0664,
+            'rotate' => true
+        ],
+        'n1co' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/n1co/cargos.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'permission' => 0664,
+        ],
+        'payments_success' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/n1co/transacciones/payments_success.log'),
+            'level' => 'info',
+            'days' => 30,
+        ],
+        'payments_error' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/n1co/transacciones/payments_error.log'),
+            'level' => 'error',
+            'days' => 30,
         ],
     ],
 

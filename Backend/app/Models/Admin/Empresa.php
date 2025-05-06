@@ -2,8 +2,10 @@
 
 namespace App\Models\Admin;
 
+use App\Models\Currency;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
+use App\Models\Suscripcion;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -53,6 +55,8 @@ class Empresa extends Model
         'cobra_iva',
         'tipo_plan',
         'fecha_cancelacion',
+        'metodo_pago',
+        'pago_recurrente',
         'referido',
         'campania',
         'wompi_aplicativo',
@@ -62,6 +66,7 @@ class Empresa extends Model
         'modulo_citas',
         'modulo_proyectos',
         'activo',
+        'alerta_suscripcion',
         'cotizacion_compras_terminos',
 
         //Facturacíon
@@ -81,6 +86,10 @@ class Empresa extends Model
 
         //Permiso para vendedores
         'vendedor_inventario',
+
+        //Para facturación
+        'id_cliente',
+        'id_documento',
         'woocommerce_api_key',
         'woocommerce_store_url',
         'woocommerce_consumer_key',
@@ -101,7 +110,7 @@ class Empresa extends Model
         'facturacion_electronica' => 'boolean',
     ];
 
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce','currency_symbol'];
 
     public function limiteUsuarios()
     {
@@ -119,6 +128,10 @@ class Empresa extends Model
 
     public function getEstadoPlanAttribute()
     {
+        if (!$this->created_at) {
+            return ['estado' => 'Sin fecha de creación', 'dias_faltantes' => null];
+        }
+
         $pago_mes = $this->pagos()->whereMonth('created_at', date('m'))->whereYear('created_at', date('Y'))->count();
 
         $dias_creaccion = $this->created_at->diffInDays(Carbon::now());
@@ -248,6 +261,11 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'moneda', 'currency_code');
+    }
+
     public function getRecibosPendientesAttribute()
     {
         return $this->pagos()->where('estado', 'Pendiente')->count();
@@ -272,6 +290,11 @@ class Empresa extends Model
     {
         $re = $this->recordatorios()->where('leido', false)->get();
         return $re->count();
+    }
+
+    public function suscripcion()
+    {
+        return $this->hasOne(Suscripcion::class, 'empresa_id');
     }
 
     public function departamentos()
@@ -323,6 +346,16 @@ class Empresa extends Model
     public function canal()
     {
         return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
+    }
+
+    public function getCurrencySymbolAttribute()
+    {
+        return $this->currency ? $this->currency->currency_symbol : null;
+    }
+
+    public function suscripcionActiva()
+    {
+        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
     }
 
     public function inicializarEstadoPruebasMasivas()

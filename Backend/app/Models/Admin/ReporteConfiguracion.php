@@ -27,7 +27,8 @@ class ReporteConfiguracion extends Model
         'destinatarios',
         'asunto_correo',
         'id_empresa',
-        'configuracion'
+        'configuracion',
+        'sucursales',
     ];
 
     protected $casts = [
@@ -38,9 +39,9 @@ class ReporteConfiguracion extends Model
         'destinatarios' => 'array',
         'dias_semana' => 'array',
         'configuracion' => 'array',
+        'sucursales' => 'array',
     ];
 
-  
     public function debeEnviarseHoy()
     {
         $hoy = Carbon::today();

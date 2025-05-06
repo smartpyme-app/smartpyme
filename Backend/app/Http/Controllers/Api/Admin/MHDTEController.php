@@ -60,6 +60,10 @@ class MHDTEController extends Controller
     public function generarDTENotaCredito(Request $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
         
+        if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
+            return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
+        }
+
         if ($devolucion->nombre_documento == 'Nota de crédito') {
             $mh = new MHNotaCredito;
             $DTE = $mh->generarDTE($devolucion);
@@ -283,12 +287,15 @@ class MHDTEController extends Controller
             }
         }
 
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        }
 
         $DTE = $registro->dte;
+
         if (!$DTE) {
-            return 'No se encontró el DTE';
+            return response()->json(['error' => 'El registro no tiene DTE.'], 404);
         }
-        // return $DTE;
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
@@ -350,6 +357,10 @@ class MHDTEController extends Controller
             }
         }
 
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        }
+
         if ($registro->dte_invalidacion)
             $DTE = $registro->dte_invalidacion;
         else
@@ -383,8 +394,15 @@ class MHDTEController extends Controller
             }
         }
 
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
+        }
 
         $DTE = $registro->dte;
+
+        if (!$DTE) {
+            return response()->json(['error' => 'El registro no tiene DTE.'], 404);
+        }
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 

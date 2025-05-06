@@ -173,7 +173,7 @@
                 <tr>
                     <td colspan="3"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">Importe Gravado 15%:</td> 
-                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->iva, 2) }}</td>
+                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
                 </tr>
                 <tr>
                     <td colspan="3">RANGO AUTORIZADO: 000-002-01-00002401 / 000-002-01-00002600</td>
@@ -188,7 +188,7 @@
                 <tr>
                     <td colspan="3"></td>
                     <td style="padding: 0 3px 0 0; text-align: right;">ISV 15%:</td>
-                    <td style="border: 1px solid black;"><span style="float: left;">L </span></td>
+                    <td style="text-align: right; border: 1px solid black;"><span style="float: left;">L </span>{{ number_format($venta->iva, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="3"><p style="color: red;">Original: Cliente</p></td>

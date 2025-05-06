@@ -41,27 +41,30 @@ class Kardex extends Model {
         $info = '';
         if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
             $detalle = \App\Models\Ventas\Venta::find($this->referencia);
-            $info = $detalle->nombre_documento . ' #' . $detalle->correlativo;
+            $info = $detalle->nombre_documento;
         }
         if (str_contains($this->detalle, 'Devolución Venta')) {
             $detalle = \App\Models\Ventas\Devoluciones\Devolucion::find($this->referencia);
-            $info = ($detalle->nombre_documento ? $detalle->nombre_documento : 'Devolución') . ' #' . $detalle->id;
+            $info = ($detalle->nombre_documento ? $detalle->nombre_documento : 'Devolución');
         }
         if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             $detalle = \App\Models\Compras\Compra::find($this->referencia);
-            $info = $detalle->tipo_documento . ' #' . $detalle->referencia;
+            $info = $detalle->tipo_documento;
         }
         if (str_contains($this->detalle, 'Devolución Compra')) {
             $detalle = \App\Models\Compras\Devoluciones\Devolucion::find($this->referencia);
-            $info = ($detalle->tipo_documento ? $detalle->tipo_documento : 'Devolución') . ' #' . $detalle->id;
+            $info = ($detalle->tipo_documento ? $detalle->tipo_documento : 'Devolución');
         }
         if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
             $detalle = \App\Models\Inventario\Traslado::find($this->referencia);
-            $info = 'Traslado #' . $this->referencia;
+            $info = 'Traslado';
         }
         if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             $detalle = \App\Models\Inventario\Ajuste::find($this->referencia);
-            $info = 'Ajuste #' . $this->referencia;
+            $info = 'Ajuste';
+        }
+        if ($this->detalle == 'Actualización de producto') {
+            $info = 'Actualización de producto';
         }
 
         return $info;
@@ -85,6 +88,9 @@ class Kardex extends Model {
         }
         if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             return 'ajuste';
+        }
+        if ($this->detalle == 'Actualización de producto') {
+            return 'producto';
         }
     }
 

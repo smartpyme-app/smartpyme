@@ -46,6 +46,9 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
                             $q->where('nombre', 'Factura')
                                 ->orWhere('nombre', 'Factura de exportación');
                         })
+                        ->when($request->id_sucursal, function ($query) use ($request) {
+                            return $query->where('id_sucursal', $request->id_sucursal);
+                        })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')

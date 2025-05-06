@@ -200,15 +200,16 @@ export class DevolucionesVentasComponent implements OnInit {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
+            this.enviarDTE(this.venta);
         }).catch((error) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);
         });
     }
 
-    enviarDTE(){
+    enviarDTE(venta:any){
         this.sending = true;
-        this.apiService.store('enviarDTENotaCredito', this.venta).subscribe(dte => {
+        this.apiService.store('enviarDTENotaCredito', venta).subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{

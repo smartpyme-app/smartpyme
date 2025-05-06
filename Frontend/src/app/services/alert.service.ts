@@ -18,14 +18,28 @@ export class AlertService {
     }
 
     success(titulo: any = null, message: any) {
+        console.log(message);
         this.alertSubject.next({'tipo': 'alert-success' ,'titulo': titulo, 'mensaje' : message});
     }
 
     warning(titulo: any = null, message: any) {
+        console.log(message);
+
+        if (message?.error?.error) {
+            message = message.error.error;
+        } else if (message?.error) {
+            message = message.error;
+        } else if (message?.message) {
+            message = message.message;
+        } else {
+            message = JSON.stringify(message);
+        }
+
         this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : message});
     }
 
     info(titulo: any = null, message: any) {
+        console.log(message);
         this.alertSubject.next({'tipo': 'alert-info' ,'titulo': titulo, 'mensaje' : message});
     }
 

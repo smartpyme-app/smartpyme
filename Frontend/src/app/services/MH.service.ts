@@ -173,9 +173,9 @@ export class MHService {
                         }
                     });
 
-                },error => {reject('No se pudo firmar el DTE');});
+                },error => {reject(error);});
 
-            },error => {reject('No se pudo generar el DTE');});
+            },error => {reject(error);});
         });
     }
 
@@ -216,9 +216,9 @@ export class MHService {
                         }
                     });
 
-                },error => {reject('No se pudo firmar el DTE');});
+                },error => {reject(error);});
 
-            },error => {reject('No se pudo generar el DTE');});
+            },error => {reject(error);});
         });
     }
 
@@ -259,9 +259,9 @@ export class MHService {
                         }
                     });
 
-                },error => {reject('No se pudo firmar el DTE');});
+                },error => {reject(error);});
 
-            },error => {reject('No se pudo generar el DTE');});
+            },error => {reject(error);});
         });
     }
 
@@ -302,9 +302,9 @@ export class MHService {
                         }
                     });
 
-                },error => {reject('No se pudo firmar el DTE');});
+                },error => {reject(error);});
 
-            },error => {reject('No se pudo generar el DTE');});
+            },error => {reject(error);});
         });
     }
 
@@ -347,9 +347,9 @@ export class MHService {
                         }
                     });
 
-                },error => {reject('No se pudo firmar el DTE');});
+                },error => {reject(error);});
 
-            },error => {reject('No se pudo generar el DTE');});
+            },error => {reject(error);});
         });
     }
 

@@ -103,22 +103,22 @@
         <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>
         {{-- <p id="correlativo">{{ $venta->correlativo }}</p> --}}
 
-        <p id="suma"> $ {{ number_format($venta->sub_total, 2) }}</p>
-        <p id="iva"> $ {{ number_format($venta->iva, 2) }}</p>
-        <p id="sub_total"> $ {{ number_format($venta->total, 2) }}</p>
+        <p id="suma"> ${{ number_format($venta->sub_total, 2) }}</p>
+        <p id="iva"> ${{ number_format($venta->iva, 2) }}</p>
+        <p id="sub_total"> ${{ number_format($venta->total, 2) }}</p>
         @if($venta->iva_retenido > 0)
-            <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
+            <p id="iva_retenido"> ${{ number_format($venta->iva_retenido, 2) }}</p>
         @endif
         @if($venta->no_sujeta > 0)
-            <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
+            <p id="no_sujeta"> ${{ number_format($venta->no_sujeta, 2) }}</p>
         @endif
         @if($venta->exenta > 0)
-            <p id="exenta"> $ {{ number_format($venta->exenta, 2) }}</p>
+            <p id="exenta"> ${{ number_format($venta->exenta, 2) }}</p>
         @endif
         @if($venta->cuenta_a_terceros > 0)
-            <p id="cuenta_a_terceros"> $ {{ number_format($venta->cuenta_a_terceros, 2) }}</p>
+            <p id="cuenta_a_terceros"> ${{ number_format($venta->cuenta_a_terceros, 2) }}</p>
         @endif
-        <p id="total"> <b>$ {{ number_format($venta->total, 2) }}</b></p>
+        <p id="total"> <b>${{ number_format($venta->total, 2) }}</b></p>
     </div>
 </section>
 
