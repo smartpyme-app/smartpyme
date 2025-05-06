@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/empresas',        	        [EmpresasController::class, 'index'])->middleware('superadmin');
     Route::get('/empresas/list',            [EmpresasController::class, 'list'])->middleware('superadmin');
+
+    Route::get('/empresa/get-alert',     [EmpresasController::class, 'getAlertSuscription']);
+    Route::get('/empresa/isvisible-alert', [EmpresasController::class, 'isVisibleAlertSuscription']);
+
     Route::post('/empresa',                 [EmpresasController::class, 'store']);
     Route::get('/empresa/{id}',             [EmpresasController::class, 'read']);
 
@@ -27,5 +31,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/reporte/corte/{id}',              [ReportesController::class, 'corte']);
     //getClienteById
     Route::post('empresa/getClienteById',              [ClientController::class, 'getClienteById']);
+
+
 
 ?>

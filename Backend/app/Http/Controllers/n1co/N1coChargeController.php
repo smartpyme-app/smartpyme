@@ -69,7 +69,7 @@ class N1coChargeController extends Controller
             $metodoPago = MetodoPago::where('id_usuario', $customerId)->where('esta_activo', true)->where('es_predeterminado', true)->first();
 
             if ($metodoPago && $request->input('updatePaymentMethod') == false && $request->input('showPaymentForm') == false) {
-                Log::info('Método de pago encontrado', [
+                Log::channel('payments_success')->info('Método de pago encontrado', [
                     'metodo_pago' => $metodoPago
                 ]);
 
@@ -108,14 +108,14 @@ class N1coChargeController extends Controller
                             ]
                         ];
 
-                        Log::info('Reintentando cargo para orden fallida', [
+                        Log::channel('payments_success')->info('Reintentando cargo para orden fallida', [
                             'orden_id' => $ordenPago->id_orden,
                             'charge_data' => $chargeData
                         ]);
 
                         $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
-                        Log::info('Resultado del reintento de cargo', [
+                        Log::channel('payments_success')->info('Resultado del reintento de cargo', [
                             'charge_result' => $chargeResult
                         ]);
 
@@ -139,7 +139,7 @@ class N1coChargeController extends Controller
                         }
 
                         if (!$chargeResult['success']) {
-                            Log::error('Error en reintento de cargo', [
+                            Log::channel('payments_error')->error('Error en reintento de cargo', [
                                 'error' => $chargeResult['error']
                             ]);
                             return response()->json([
@@ -206,7 +206,7 @@ class N1coChargeController extends Controller
 
                     $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
-                    Log::info('Resultado de la creación del cargo', [
+                    Log::channel('payments_success')->info('Resultado de la creación del cargo', [
                         'charge_result' => $chargeResult
                     ]);
 
@@ -255,6 +255,9 @@ class N1coChargeController extends Controller
                 $result = $this->n1coGateway->createPaymentMethod($paymentData);
 
                 if (!$result['success']) {
+                    Log::channel('payments_error')->error('Error al crear método de pago', [
+                        'error' => $result['error']
+                    ]);
                     return response()->json([
                         'success' => false,
                         'message' => 'Error al crear método de pago',
@@ -349,12 +352,12 @@ class N1coChargeController extends Controller
 
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
-            Log::info('Resultado de la creación del cargo', [
+            Log::channel('payments_success')->info('Resultado de la creación del cargo', [
                 'charge_result' => $chargeResult
             ]);
 
             if (!$chargeResult['success']) {
-                Log::error('Error al crear cargo', [
+                Log::channel('payments_error')->error('Error al crear cargo', [
                     'message' => $chargeResult['error']
                 ]);
                 $paymentMethod->update(['is_active' => false]);
@@ -368,7 +371,7 @@ class N1coChargeController extends Controller
                 $order->updateStatusAuthentication3DS($authenticationId, $authenticationUrl, config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'));
 
 
-                Log::info('ID de autenticación 3DS', [
+                Log::channel('payments_success')->info('ID de autenticación 3DS', [
                     'authentication_id' => $authenticationId
                 ]);
 
@@ -387,7 +390,7 @@ class N1coChargeController extends Controller
                 'data' => $chargeResult['data']
             ]);
         } catch (\Exception $e) {
-            Log::error('Error en createPaymentMethod controller:', [
+            Log::channel('payments_error')->error('Error en createPaymentMethod controller:', [
                 'message' => $e->getMessage()
             ]);
 
@@ -446,6 +449,9 @@ class N1coChargeController extends Controller
             $result = $this->n1coGateway->createPaymentMethod($paymentData);
 
             if (!$result['success']) {
+                Log::channel('payments_error')->error('Error al crear nuevo método de pago', [
+                    'error' => $result['error']
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Error al crear nuevo método de pago',
@@ -493,7 +499,7 @@ class N1coChargeController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Error en updateMethodPayment:', [
+            Log::channel('payments_error')->error('Error en updateMethodPayment:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -604,7 +610,7 @@ class N1coChargeController extends Controller
             // Realizar el cargo
             $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
-            Log::info('Resultado de la creación del cargo', [
+            Log::channel('payments_success')->info('Resultado de la creación del cargo', [
                 'charge_result' => $chargeResult
             ]);
 
@@ -660,7 +666,7 @@ class N1coChargeController extends Controller
                     'data' => $chargeResult['data']
                 ]);
             } else {
-                // Si hubo un error en el cargo
+                    // Si hubo un error en el cargo
                 $ordenPago->update([
                     'estado' => 'fallido'
                 ]);
@@ -672,7 +678,7 @@ class N1coChargeController extends Controller
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Error en processChargeReady:', [
+            Log::channel('payments_error')->error('Error en processChargeReady:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -714,6 +720,9 @@ class N1coChargeController extends Controller
             );
 
             if (!$result['success']) {
+                Log::channel('payments_error')->error('Error al procesar el cargo processCharge', [
+                    'error' => $result['error']
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Error al procesar el cargo processCharge',
@@ -726,7 +735,7 @@ class N1coChargeController extends Controller
                 'data' => $result['data']
             ]);
         } catch (\Exception $e) {
-            Log::error('Error processing charge', [
+            Log::channel('payments_error')->error('Error processing charge', [
                 'message' => $e->getMessage()
             ]);
 
@@ -743,11 +752,14 @@ class N1coChargeController extends Controller
         try {
             $result = $this->n1coGateway->processCharge3DS($request->all());
 
-            Log::info('Resultado de la creación del cargo', [
+            Log::channel('payments_success')->info('Resultado de la creación del cargo', [
                 'charge_result' => $result
             ]);
 
             if (!$result['success']) {
+                Log::channel('payments_error')->error('Error al procesar el cargo processCharge3DS', [
+                    'error' => $result['error']
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Error al procesar el cargo processCharge3DS',
@@ -762,7 +774,7 @@ class N1coChargeController extends Controller
                 'currency' => $result['currency']
             ]);
         } catch (\Exception $e) {
-            Log::error('Error processing charge 3DS', [
+            Log::channel('payments_error')->error('Error processing charge 3DS', [
                 'message' => $e->getMessage()
             ]);
 
@@ -779,7 +791,7 @@ class N1coChargeController extends Controller
         $data = $request->all();
         $result = $this->n1coGateway->checkAuthenticationStatus($data);
 
-        Log::info('Resultado de la verificación de autenticación', [
+        Log::channel('payments_success')->info('Resultado de la verificación de autenticación', [
             'result' => $result
         ]);
 

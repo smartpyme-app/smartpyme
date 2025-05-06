@@ -26,9 +26,11 @@ class Bodega extends Model {
         parent::boot();
 
         if (Auth::check()) {
-            static::addGlobalScope('empresa', function (Builder $builder) {
-                $builder->where('id_empresa', Auth::user()->id_empresa);
-            });
+            if (Auth::user()->id_empresa != 2) {
+                static::addGlobalScope('empresa', function (Builder $builder) {
+                    $builder->where('id_empresa', Auth::user()->id_empresa);
+                });
+            }
         }
         
     }

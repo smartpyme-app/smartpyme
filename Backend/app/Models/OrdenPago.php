@@ -118,12 +118,12 @@ class OrdenPago extends Model
             'id_producto' => $producto->id,
             'descripcion' => $producto->nombre,
             'cantidad' => 1,
-            'precio' => $this->monto,
+            'precio' => $this->monto / 1.13,
             'costo' => 0,
             'descuento' => 0,
-            'gravada' => $this->monto,
+            'gravada' => $this->monto / 1.13,
             'total_costo' => 0,
-            'total' => $this->monto,
+            'total' => $this->monto / 1.13,
             'id_venta' => $venta->id,
         ]);
 

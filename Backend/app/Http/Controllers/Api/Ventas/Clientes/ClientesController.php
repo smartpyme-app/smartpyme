@@ -91,7 +91,8 @@ class ClientesController extends Controller
                       ->orWhere('etiquetas', 'like', $txt . '%')
                       ->orWhere('codigo_cliente', 'like', $txt . '%')
                       ->orWhereRaw('REPLACE(ncr, "-", "") like ?', [$txtClean . '%'])
-                      ->orWhereRaw('REPLACE(dui, "-", "") like ?', [$txtClean . '%']);
+                      ->orWhereRaw('REPLACE(dui, "-", "") like ?', [$txtClean . '%'])
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ['%' . $txt . '%']);
             })
             ->where('enable', true)
             ->orderBy('nombre', 'asc')

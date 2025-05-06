@@ -24,10 +24,10 @@ export class AdminPagosComponent implements OnInit {
     modalRef!: BsModalRef;
     selectedFile: File | null = null;
 
-    constructor( 
-        public apiService: ApiService, 
+    constructor(
+        public apiService: ApiService,
         private alertService: AlertService,
-        private route: ActivatedRoute, 
+        private route: ActivatedRoute,
         private router: Router,
         private modalService: BsModalService
     ) { }
@@ -38,10 +38,10 @@ export class AdminPagosComponent implements OnInit {
         this.filtros.orden = 'fecha_transaccion';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 15;
-        
+
         // Establecer fecha máxima como hoy
         this.maxDate = formatDate(new Date(), 'yyyy-MM-dd', 'en');
-        
+
         this.loadAll();
     }
 
@@ -111,7 +111,7 @@ export class AdminPagosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.pagos.path + '?page='+ event.page).subscribe(pagos => { 
+        this.apiService.paginate(this.pagos.path + '?page='+ event.page).subscribe(pagos => {
             this.pagos = pagos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -120,11 +120,11 @@ export class AdminPagosComponent implements OnInit {
 
     public onPlanSelected(planId: string) {
         if (!planId) return;
-        
+
         const plan = this.planes.find((p: any) => p.id == planId);
         if (plan) {
             this.pago.monto = plan.precio;
-            
+
             // Calcular fecha del próximo pago basado en duración del plan
             if (plan.duracion_dias) {
                 const fechaBase = new Date();
@@ -147,10 +147,10 @@ export class AdminPagosComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        
+
         // Asegurarse de que las fechas estén en el formato correcto para el backend
         const pagoData = {...this.pago};
-        
+
         this.apiService.store('pago/new', pagoData).subscribe(
             response => {
                 if (!this.pago.id) {
@@ -180,7 +180,6 @@ export class AdminPagosComponent implements OnInit {
           this.alertService.modal = false;
         },error => {this.alertService.error(error); this.saving = false; });
   }
-
 
   openModalEdit(template: TemplateRef<any>, pago: any = {}) {
     this.pago = {...pago};
