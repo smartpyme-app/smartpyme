@@ -24,6 +24,7 @@ class Venta extends Model {
         'forma_pago',
         'tipo_documento',
         'num_cotizacion',
+        'num_orden',
         'condicion',
         'referencia',
         // 'nombre',
@@ -191,6 +192,10 @@ class Venta extends Model {
 
     public function abonos(){
         return $this->hasMany('App\Models\Ventas\Abono','id_venta');
+    }
+
+    public function cotizacion(){
+        return $this->hasOne('App\Models\Ventas\Venta','num_cotizacion');
     }
 
     public function devoluciones(){
