@@ -32,6 +32,7 @@ import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
+import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
 
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
@@ -86,6 +87,7 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
+    CrearImpuestoComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     ThreedsModalComponent
@@ -117,6 +119,7 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
+    CrearImpuestoComponent,
     CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,
