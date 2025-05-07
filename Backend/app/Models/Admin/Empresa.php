@@ -357,4 +357,44 @@ class Empresa extends Model
     {
         return $this->suscripciones()->where('estado', 'activo')->latest()->first();
     }
+
+    public function inicializarEstadoPruebasMasivas()
+    {
+        $estadoPruebas = [
+            'completado' => false,
+            'fecha_completado' => null,
+            'tipos' => [
+                'facturas' => [
+                    'requeridas' => 90,
+                    'emitidas' => 0
+                ],
+                'creditosFiscales' => [
+                    'requeridas' => 75,
+                    'emitidas' => 0
+                ],
+                'notasCredito' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ],
+                'notasDebito' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ],
+                'facturasExportacion' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ],
+                'sujetoExcluido' => [
+                    'requeridas' => 0,
+                    'emitidas' => 0
+                ]
+            ]
+        ];
+
+        // Actualizar el campo en la base de datos
+        $this->fe_pruebas_estadisticas = $estadoPruebas;
+        $this->save();
+
+        return $estadoPruebas;
+    }
 }
