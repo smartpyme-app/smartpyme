@@ -129,6 +129,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
 
+	// Pruebas masivas
+	require base_path('routes/modulos/admin/pruebas-masivas-mh.php');
+
 	// planillas
 
 	require base_path('routes/modulos/planilla/empleados.php');
