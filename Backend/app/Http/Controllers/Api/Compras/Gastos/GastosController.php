@@ -123,6 +123,7 @@ class GastosController extends Controller
             'id_usuario'    => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
+            'area_empresa'   => 'nullable',
         ],[
             'tipo.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
