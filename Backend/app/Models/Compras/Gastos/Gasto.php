@@ -33,6 +33,7 @@ class Gasto extends Model {
         'iva_percibido',
         'total',
         'nota',
+        'area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
