@@ -1123,14 +1123,17 @@ class VentasController extends Controller
 
             $ventasDelDia = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->count();
 
             $totalVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
 
             $vendedoresConVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->distinct('id_vendedor')
                 ->count('id_vendedor');
 
@@ -1203,16 +1206,19 @@ class VentasController extends Controller
                 $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->count();
 
                 $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->sum('total');
 
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->distinct('id_vendedor')
                     ->count('id_vendedor');
             } else {
@@ -1320,14 +1326,17 @@ class VentasController extends Controller
             if($configuracion->tipo_reporte === 'ventas-por-vendedor') {
                 $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->count();
     
                 $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->sum('total');
     
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->distinct('id_vendedor')
                     ->count('id_vendedor');
             }else{
