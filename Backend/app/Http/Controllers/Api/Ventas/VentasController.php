@@ -1123,15 +1123,18 @@ class VentasController extends Controller
 
             $ventasDelDia = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->count();
 
             $totalVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
 
             $vendedoresConVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
                 ->distinct('id_vendedor')
+                ->where('estado', '!=', 'Anulada')
                 ->count('id_vendedor');
 
             $destinatarios = [
