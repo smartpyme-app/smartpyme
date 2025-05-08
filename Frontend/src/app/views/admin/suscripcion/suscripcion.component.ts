@@ -12,12 +12,14 @@ import {
   SafeResourceUrl,
   SafeHtml,
 } from '@angular/platform-browser';
+import { Estado } from '../../../models/estado.interface';
 
 @Component({
   selector: 'app-suscripcion',
   templateUrl: './suscripcion.component.html',
 })
 export class SuscripcionComponent implements OnInit {
+  
   public suscripcion: any = {};
   public usuario: any = {};
   public loading = false;
@@ -26,6 +28,9 @@ export class SuscripcionComponent implements OnInit {
   public showPaymentForm = false;
   public updatePaymentMethod = false;
   public checkboxUpdate = true;
+  public estadoSeleccionado: any = null;
+  public paises = [];
+  public estados: Estado[] = [];
 
   public processingPayment = false;
   public mostrar3DSModal = false;
@@ -99,6 +104,44 @@ export class SuscripcionComponent implements OnInit {
         this.loading = false;
       }
     );
+
+    this.getPaises();
+
+  }
+
+  getPaises() {
+    this.apiService.getAll('paises-suscripcion', this.paises).subscribe(paises => { 
+      this.paises = paises;
+    }, error => {this.alertService.error(error); });
+  }
+
+  getEstados(countryCode: string) {
+    this.apiService.getAll(`estados-por-pais/${countryCode}`, []).subscribe(
+      estados => { 
+        this.estados = estados;
+      }, 
+      error => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
+  onPaisChange() {
+    if (this.billingInfo.countryCode) {
+      this.getEstados(this.billingInfo.countryCode);      
+      this.billingInfo.stateCode = '';      
+      this.billingInfo.zipCode = '';
+    }
+  }
+
+  onEstadoChange() {
+    if (this.billingInfo.stateCode) {
+      const estadoSeleccionado = this.estados.find(estado => estado.codigo === this.billingInfo.stateCode);
+      
+      if (estadoSeleccionado && estadoSeleccionado.codigo_postal) {
+        this.billingInfo.zipCode = estadoSeleccionado.codigo_postal;
+      }
+    }
   }
 
   public async payWithSavedMethod() {
