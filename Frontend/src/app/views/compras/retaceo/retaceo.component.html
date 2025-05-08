@@ -80,11 +80,11 @@
   <!-- Campo de Bodega con evento (change) para filtrar compras y gastos -->
   <div class="form-group col-md-4 col-lg-3">
     <label for="id_bodega">Bodega</label>
-    <select 
-      name="id_bodega" 
-      [(ngModel)]="retaceo.id_sucursal" 
+    <select
+      name="id_bodega"
+      [(ngModel)]="retaceo.id_bodega"
       (change)="onBodegaChange()"
-      [disabled]="retaceo.id" 
+      [disabled]="retaceo.id"
       class="form-select">
       <option [value]="bodega.id" *ngFor="let bodega of bodegas">
         {{ bodega.nombre }}
@@ -257,7 +257,7 @@
 
 <section class="card border-0 p-3 mb-3">
   <h6 class="mt-3">Gastos e Impuestos</h6>
-  
+
   <div class="row mb-4">
     <!-- Gastos de Transporte -->
     <div class="col-md-4">
@@ -284,7 +284,7 @@
           </div>
         </ng-template>
       </ng-select>
-      
+
       <!-- Lista de gastos seleccionados -->
       <div class="selected-items mt-2" *ngIf="gastosTransporte.length > 0">
         <div class="card p-2 mb-2" *ngFor="let gasto of gastosTransporte">
@@ -292,10 +292,10 @@
             <small>{{ obtenerConceptoGasto(gasto.id_gasto) }}</small>
             <div class="input-group input-group-sm" style="max-width: 120px;">
               <span class="input-group-text">$</span>
-              <input 
-                type="number" 
-                class="form-control" 
-                [(ngModel)]="gasto.monto" 
+              <input
+                type="number"
+                class="form-control"
+                [(ngModel)]="gasto.monto"
                 (change)="calcularTotalGastos()"
               >
             </div>
@@ -303,7 +303,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Gastos de Seguro -->
     <div class="col-md-4">
       <label for="gastosSeguro">Seguro</label>
@@ -329,7 +329,7 @@
           </div>
         </ng-template>
       </ng-select>
-      
+
       <!-- Lista de gastos seleccionados -->
       <div class="selected-items mt-2" *ngIf="gastosSeguro.length > 0">
         <div class="card p-2 mb-2" *ngFor="let gasto of gastosSeguro">
@@ -337,10 +337,10 @@
             <small>{{ obtenerConceptoGasto(gasto.id_gasto) }}</small>
             <div class="input-group input-group-sm" style="max-width: 120px;">
               <span class="input-group-text">$</span>
-              <input 
-                type="number" 
-                class="form-control" 
-                [(ngModel)]="gasto.monto" 
+              <input
+                type="number"
+                class="form-control"
+                [(ngModel)]="gasto.monto"
                 (change)="calcularTotalGastos()"
               >
             </div>
@@ -348,7 +348,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Otros gastos -->
     <div class="col-md-4">
       <label for="gastosOtros">Otros gastos</label>
@@ -374,7 +374,7 @@
           </div>
         </ng-template>
       </ng-select>
-      
+
       <!-- Lista de gastos seleccionados -->
       <div class="selected-items mt-2" *ngIf="gastosOtros.length > 0">
         <div class="card p-2 mb-2" *ngFor="let gasto of gastosOtros">
@@ -382,10 +382,10 @@
             <small>{{ obtenerConceptoGasto(gasto.id_gasto) }}</small>
             <div class="input-group input-group-sm" style="max-width: 120px;">
               <span class="input-group-text">$</span>
-              <input 
-                type="number" 
-                class="form-control" 
-                [(ngModel)]="gasto.monto" 
+              <input
+                type="number"
+                class="form-control"
+                [(ngModel)]="gasto.monto"
                 (change)="calcularTotalGastos()"
               >
             </div>
@@ -456,7 +456,7 @@
             <th>Producto</th>
             <th class="text-center">Cantidad</th>
             <th class="text-end">Costo Antes</th>
-            
+
             <th class="text-end">{{ obtenerNombreColumnaIncoterm() }}</th>
             <th class="text-end">Dist. %</th>
             <th class="text-end">% DAI</th>

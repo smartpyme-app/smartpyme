@@ -58,21 +58,21 @@ export class RetaceoComponent implements OnInit {
     'Seguro': { lista: [], seleccionados: [] },
     'Otro': { lista: [], seleccionados: [] }
   };
-  
+
   // Propiedades para mantener la compatibilidad con el HTML existente
   public get gastosTransporte(): Gasto[] { return this.gastosMap['Transporte'].lista; }
   public get gastosSeguro(): Gasto[] { return this.gastosMap['Seguro'].lista; }
   public get gastosOtros(): Gasto[] { return this.gastosMap['Otro'].lista; }
-  
+
   public get selectedGastosTransporte(): number[] { return this.gastosMap['Transporte'].seleccionados; }
   public set selectedGastosTransporte(value: number[]) { this.gastosMap['Transporte'].seleccionados = value; }
-  
+
   public get selectedGastosSeguro(): number[] { return this.gastosMap['Seguro'].seleccionados; }
   public set selectedGastosSeguro(value: number[]) { this.gastosMap['Seguro'].seleccionados = value; }
-  
+
   public get selectedGastosOtros(): number[] { return this.gastosMap['Otro'].seleccionados; }
   public set selectedGastosOtros(value: number[]) { this.gastosMap['Otro'].seleccionados = value; }
-  
+
   public bodegas: any[] = [];
 
   constructor(
@@ -98,11 +98,11 @@ export class RetaceoComponent implements OnInit {
       (bodegas) => {
         this.bodegas = bodegas;
         this.loading = false;
-        
+
         this.cargarDatosPorBodega();
-      }, 
-      (error) => { 
-        this.alertService.error(error); 
+      },
+      (error) => {
+        this.alertService.error(error);
         this.loading = false;
       }
     );
@@ -113,25 +113,25 @@ export class RetaceoComponent implements OnInit {
     this.gastos = [];
     this.distribucion = [];
     this.retaceo.id_compra = null;
-    
+
 
     Object.keys(this.gastosMap).forEach(tipo => {
       this.gastosMap[tipo].lista = [];
       this.gastosMap[tipo].seleccionados = [];
     });
-    
+
     // Actualizar filtros con la nueva bodega seleccionada
-    this.filtros.id_sucursal = this.retaceo.id_sucursal;
-    
+    this.filtros.id_bodega = this.retaceo.id_bodega;
+
     // Cargar datos específicos para esta bodega
     this.cargarDatosPorBodega();
   }
 
   cargarDatosPorBodega() {
-    if (!this.retaceo.id_sucursal) return;
-    
+    if (!this.retaceo.id_bodega) return;
+
     this.loading = true;
-    this.filtros.id_sucursal = this.retaceo.id_sucursal;
+    this.filtros.id_bodega = this.retaceo.id_bodega;
     if (this.route.snapshot.paramMap.get('id')) {
       this.filtros.es_retaceo =false;
     }
@@ -173,14 +173,14 @@ export class RetaceoComponent implements OnInit {
       console.error(`Tipo de gasto no válido: ${tipo}`);
       return;
     }
-    
+
     const gastoInfo = this.gastosMap[tipo];
-    
+
     // Filtrar gastos que ya no están seleccionados
-    gastoInfo.lista = gastoInfo.lista.filter(gasto => 
+    gastoInfo.lista = gastoInfo.lista.filter(gasto =>
       gastoInfo.seleccionados.includes(gasto.id_gasto)
     );
-    
+
     // Agregar nuevos gastos seleccionados
     gastoInfo.seleccionados.forEach(id_gasto => {
       // Verificar si ya existe
@@ -194,7 +194,7 @@ export class RetaceoComponent implements OnInit {
         });
       }
     });
-    
+
     this.calcularTotalGastos();
   }
 
@@ -203,11 +203,11 @@ export class RetaceoComponent implements OnInit {
     this.apiService.read('retaceo/', id).subscribe(
       (retaceo) => {
         this.retaceo = retaceo;
-        
+
         // Cargar gastos y distribución directamente del retaceo
         this.procesarGastosDelRetaceo(retaceo.gastos);
         this.procesarDistribucionDelRetaceo(retaceo.distribucion);
-        
+
         this.calcularTotalGastos();
         this.loading = false;
       },
@@ -220,6 +220,7 @@ export class RetaceoComponent implements OnInit {
 
   cargarFiltros() {
     this.filtros = {
+      id_bodega: '',
       id_sucursal: '',
       id_proveedor: '',
       id_usuario: '',
@@ -241,7 +242,8 @@ export class RetaceoComponent implements OnInit {
     this.retaceo = {
       fecha: this.apiService.date(),
       id_empresa: this.apiService.auth_user().id_empresa,
-      id_sucursal: this.apiService.auth_user().id_bodega,
+      id_bodega: this.apiService.auth_user().id_bodega,
+      id_sucursal: this.apiService.auth_user().id_sucursal,
       id_usuario: this.apiService.auth_user().id,
       total_gastos: 0,
       total_retaceado: 0,
@@ -303,10 +305,10 @@ export class RetaceoComponent implements OnInit {
     const totales = Object.keys(this.gastosMap).reduce((sum, tipo) => {
       const totalTipo = this.gastosMap[tipo].lista.reduce(
         (acc, gasto) => acc + parseFloat(gasto.monto?.toString() || '0'), 0);
-      
+
       return sum + totalTipo;
     }, 0);
-    
+
     this.retaceo.total_gastos = totales.toFixed(2);
   }
 
@@ -315,22 +317,22 @@ export class RetaceoComponent implements OnInit {
       this.alertService.error('No hay productos para distribuir los gastos');
       return;
     }
-  
+
     if (parseFloat(this.retaceo.total_gastos) <= 0) {
       this.alertService.warning('No hay gastos para distribuir', 'Distribución');
       return;
     }
-  
+
     const valorFobTotal = this.distribucion.reduce(
       (sum, item) => sum + parseFloat(item.valor_fob?.toString() || '0'),
       0
     );
-  
+
     if (valorFobTotal <= 0) {
       this.alertService.error('El valor FOB total debe ser mayor que cero');
       return;
     }
-  
+
     // Calcular los porcentajes de distribución (modo automático o manual)
     if (!this.distribucionManual) {
       this.distribucion.forEach((item) => {
@@ -340,30 +342,30 @@ export class RetaceoComponent implements OnInit {
         );
       });
     }
-  
+
     // Obtener total de cada tipo de gasto
     const totalesPorTipo = {
       'Transporte': this.calcularTotalPorTipoGasto('Transporte'),
       'Seguro': this.calcularTotalPorTipoGasto('Seguro'),
       'Otro': this.calcularTotalPorTipoGasto('Otro')
     };
-  
+
     // Distribuir los gastos según el porcentaje
     this.distribucion.forEach((item) => {
       // Asegurar que el porcentaje de distribución sea un número
       const porcentaje = parseFloat(item.porcentaje_distribucion?.toString() || '0');
-      
+
       // Calcular montos de gastos para este producto y redondear a 1 decimales
       item.monto_transporte = Number(((porcentaje / 100) * totalesPorTipo['Transporte']).toFixed(1));
       item.monto_seguro = Number(((porcentaje / 100) * totalesPorTipo['Seguro']).toFixed(1));
-      item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') * 
-                      parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
+      item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') *
+        parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
       item.monto_otros = Number(((porcentaje / 100) * totalesPorTipo['Otro']).toFixed(1));
-  
+
       // Calcular landed cost y costo retaceado
       this.actualizarCostosProducto(item);
     });
-  
+
     this.recalcularTotalRetaceado();
     this.alertService.success('Distribución calculada correctamente', 'Distribución');
   }
@@ -371,7 +373,7 @@ export class RetaceoComponent implements OnInit {
   // Método auxiliar para calcular el total por tipo de gasto
   calcularTotalPorTipoGasto(tipo: string): number {
     if (!this.gastosMap[tipo]) return 0;
-    
+
     return this.gastosMap[tipo].lista.reduce(
       (acc, gasto) => acc + parseFloat(gasto.monto?.toString() || '0'), 0);
   }
@@ -429,20 +431,20 @@ export class RetaceoComponent implements OnInit {
     if (!this.distribucion || this.distribucion.length === 0) {
       return;
     }
-  
+
     // Verificar que la suma de porcentajes sea 100%
     const totalPorcentaje = this.distribucion.reduce(
       (sum, item) => sum + parseFloat(item.porcentaje_distribucion?.toString() || '0'),
       0
     );
-  
+
     // Mostrar advertencia si los porcentajes no suman 100%
     if (Math.abs(totalPorcentaje - 100) > 0.01) {
       this.alertService.warning(
         `La suma de porcentajes (${totalPorcentaje.toFixed(2)}%) debe ser 100%.`,
         'Distribución'
       );
-  
+
       // Si no estamos en modo manual, normalizar
       if (!this.distribucionManual) {
         // Normalizar porcentajes para que sumen 100%
@@ -453,34 +455,34 @@ export class RetaceoComponent implements OnInit {
         });
       }
     }
-  
+
     // Obtener total de cada tipo de gasto
     const totalesPorTipo = {
       'Transporte': this.calcularTotalPorTipoGasto('Transporte'),
       'Seguro': this.calcularTotalPorTipoGasto('Seguro'),
       'Otro': this.calcularTotalPorTipoGasto('Otro')
     };
-  
+
     // Calcular montos basados en los porcentajes actuales
     this.distribucion.forEach((item) => {
       const porcentaje = parseFloat(item.porcentaje_distribucion?.toString() || '0');
-      
+
       // Distribuir gastos según porcentaje y redondear a 2 decimales
       item.monto_transporte = Number(((porcentaje / 100) * totalesPorTipo['Transporte']).toFixed(1));
       item.monto_seguro = Number(((porcentaje / 100) * totalesPorTipo['Seguro']).toFixed(1));
       item.monto_otros = Number(((porcentaje / 100) * totalesPorTipo['Otro']).toFixed(1));
-      
+
       // Calcular el DAI según el porcentaje del producto
       if (item.porcentaje_dai) {
         // Redondear a 3 decimales el porcentaje DAI
         item.porcentaje_dai = Number(parseFloat(item.porcentaje_dai.toString()).toFixed(1));
-        item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') * 
-                          parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
+        item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') *
+          parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
       }
-  
+
       this.actualizarCostosProducto(item);
     });
-  
+
     this.recalcularTotalRetaceado();
   }
 
@@ -496,7 +498,7 @@ export class RetaceoComponent implements OnInit {
       );
       return;
     }
-    
+
     if (!this.distribucion || this.distribucion.length === 0) {
       this.alertService.error('No hay productos para aplicar el retaceo');
       return;
@@ -530,15 +532,15 @@ export class RetaceoComponent implements OnInit {
       html: `
       <div class="text-start">
         <p>Esta acción actualizará los costos de <strong>${
-          this.distribucion.length
-        }</strong> productos en inventario.</p>
+        this.distribucion.length
+      }</strong> productos en inventario.</p>
         <ul>
           <li>Total de gastos a distribuir: <strong>${
-            this.retaceo.total_gastos
-          }</strong></li>
+        this.retaceo.total_gastos
+      }</strong></li>
           <li>Impacto en el valor del inventario: <strong class="${
-            impactoTotal > 0 ? 'text-success' : 'text-danger'
-          }">${impactoTotal.toFixed(2)}</strong></li>
+        impactoTotal > 0 ? 'text-success' : 'text-danger'
+      }">${impactoTotal.toFixed(2)}</strong></li>
         </ul>
         <p class="mt-3 fw-bold">¿Confirma aplicar estos cambios?</p>
         <p class="text-muted small">Esta acción modificará permanentemente los costos de los productos en el inventario.</p>
@@ -559,8 +561,8 @@ export class RetaceoComponent implements OnInit {
 
   calcularDAIProducto(item: ItemDistribucion) {
     item.monto_dai = (
-      (parseFloat(item.valor_fob?.toString() || '0') * 
-       parseFloat(item.porcentaje_dai?.toString() || '0')) / 100
+      (parseFloat(item.valor_fob?.toString() || '0') *
+        parseFloat(item.porcentaje_dai?.toString() || '0')) / 100
     );
 
     this.actualizarCostosProducto(item);
@@ -578,7 +580,7 @@ export class RetaceoComponent implements OnInit {
       parseFloat(item.monto_otros?.toString() || '0')
     );
 
-    item.costo_retaceado = parseFloat(item.cantidad?.toString() || '0') > 0 ? 
+    item.costo_retaceado = parseFloat(item.cantidad?.toString() || '0') > 0 ?
       (item.costo_landed / parseFloat(item.cantidad?.toString() || '1')) : 0;
   }
 
@@ -603,7 +605,7 @@ export class RetaceoComponent implements OnInit {
     return this.distribucion.reduce(
       (total, item) =>
         total +
-        parseFloat(item.costo_original?.toString() || '0') * 
+        parseFloat(item.costo_original?.toString() || '0') *
         parseFloat(item.cantidad?.toString() || '0'),
       0
     );
@@ -650,7 +652,7 @@ export class RetaceoComponent implements OnInit {
       0
     );
   }
-  
+
   calcularTotalRetaceado(): number {
     return this.distribucion.reduce(
       (total, item) => total + parseFloat(item.costo_retaceado?.toString() || '0'),
@@ -677,7 +679,7 @@ export class RetaceoComponent implements OnInit {
     }
 
     // Confirmar el cambio de estado
-    let mensaje = nuevoEstado === 'Aplicado' 
+    let mensaje = nuevoEstado === 'Aplicado'
       ? 'Esta acción aplicará los nuevos costos a los productos en inventario. ¿Desea continuar?'
       : 'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
 
@@ -735,25 +737,25 @@ export class RetaceoComponent implements OnInit {
       'DAP': 'DAP',
       'DDP': 'DDP'
     };
-    
+
     return incoterms[this.retaceo.incoterm] || 'FOB';
   }
-  
+
   procesarGastosDelRetaceo(gastos: any[]) {
     if (!gastos || gastos.length === 0) {
       return;
     }
-  
+
     // Limpiar todos los gastos
     Object.keys(this.gastosMap).forEach(tipo => {
       this.gastosMap[tipo].lista = [];
       this.gastosMap[tipo].seleccionados = [];
     });
-  
+
     // Agrupar gastos por tipo
     gastos.forEach((gasto: any) => {
       const tipo = gasto.tipo_gasto;
-      
+
       if (this.gastosMap[tipo]) {
         const gastoObj: Gasto = {
           id: gasto.id,
@@ -762,18 +764,18 @@ export class RetaceoComponent implements OnInit {
           tipo_gasto: tipo as any,
           monto: parseFloat(gasto.monto || 0)
         };
-        
+
         this.gastosMap[tipo].lista.push(gastoObj);
         this.gastosMap[tipo].seleccionados.push(gasto.id_gasto);
       }
     });
   }
-  
+
   procesarDistribucionDelRetaceo(distribucion: any[]) {
     if (!distribucion || distribucion.length === 0) {
       return;
     }
-  
+
     this.distribucion = distribucion.map(item => ({
       ...item,
       cantidad: parseFloat(item.cantidad || 0),
@@ -788,7 +790,7 @@ export class RetaceoComponent implements OnInit {
       costo_landed: parseFloat(item.costo_landed || 0),
       costo_retaceado: parseFloat(item.costo_retaceado || 0),
     }));
-  
+
     // Cargar los productos para cada ítem de la distribución
     this.distribucion.forEach((item) => {
       if (item.id_producto) {
