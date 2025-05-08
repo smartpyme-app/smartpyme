@@ -71,11 +71,13 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
                 ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
                 
             $gastos = Gasto::where('id_sucursal', $sucursal->id)
                 ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
                 
             $balance = $ventas - $gastos;
