@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Inventario\Proveedor;
+use App\Models\Compras\Proveedores\Proveedor as ProveedorToGasto;
 use Illuminate\Support\Facades\Crypt;
 use Auth;
 
@@ -28,6 +29,21 @@ class ProveedorController extends Controller
 
         return Response()->json($proveedor, 200);
 
+    }
+
+    public function buscarPorNit(Request $request)
+    {
+        $request->validate([
+            'nit' => 'required|string',
+        ]);
+        
+        $proveedor = ProveedorToGasto::where('nit', $request->nit)->first();
+        
+        if (!$proveedor) {
+            return response()->json(['message' => 'Proveedor no encontrado'], 404);
+        }
+        
+        return response()->json($proveedor, 200);
     }
 
 

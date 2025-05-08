@@ -1,6 +1,13 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ gasto.id ? 'Editar ' : 'Crear ' }} Gasto</h3>
-    <button class="btn btn-light text-danger" routerLink="/gastos"><i class="fa fa-arrow-left"></i> Regresar</button>
+
+    <div class="d-flex align-items-center float-end gap-3">
+        <button class="btn btn-primary me-2" *ngIf="!gasto.id" (click)="openJsonImport(jsonImportTemplate)">
+            <i class="fa fa-file-import"></i> Importar JSON
+        </button>
+
+        <button class="btn btn-light text-danger" routerLink="/gastos"><i class="fa fa-arrow-left"></i> Regresar</button>
+    </div>
 </div>
 
 <form autocomplete="off" (ngSubmit)="onSubmit()">
@@ -185,5 +192,28 @@
         </div>
     </div>
 </form>
+
+<ng-template #jsonImportTemplate>
+    <div class="modal-header">
+      <h4 class="modal-title">Importar Gasto desde JSON</h4>
+      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-3">
+        <label for="jsonFile" class="form-label">Seleccionar archivo JSON</label>
+        <input type="file" class="form-control" id="jsonFile" (change)="handleFileInput($event)" accept=".json">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">O pegar contenido JSON</label>
+        <textarea class="form-control" rows="10" [(ngModel)]="jsonContent" name="jsonContent"></textarea>
+      </div>
+      <div class="d-grid">
+        <button type="button" [disabled]="processingJson || !jsonContent.trim()" class="btn btn-primary" (click)="processJsonData()">
+            <span *ngIf="!processingJson">Procesar</span>
+            <span *ngIf="processingJson">Procesando...</span>
+          </button>
+      </div>
+    </div>
+  </ng-template>
 
 
