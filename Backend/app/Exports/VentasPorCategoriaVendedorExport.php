@@ -77,8 +77,9 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
         // Consulta base para obtener los detalles de ventas
         $ventasQuery = Detalle::whereHas('venta', function ($q) use ($sucursalesIds) {
             $q->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
-                ->where('id_empresa', $this->id_empresa)
-                ->where('cotizacion', 0);
+            ->where('id_empresa', $this->id_empresa)
+            ->where('cotizacion', 0)
+            ->where('estado', '!=', 'Anulada');
                 
             if (!empty($sucursalesIds)) {
                 $q->whereIn('id_sucursal', $sucursalesIds);
