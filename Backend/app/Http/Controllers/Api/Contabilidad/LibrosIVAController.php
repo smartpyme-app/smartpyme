@@ -14,6 +14,8 @@ use App\Exports\Contabilidad\LibroContribuyentesExport;
 use App\Exports\Contabilidad\AnexoContribuyentesExport;
 use App\Exports\Contabilidad\LibroConsumidoresExport;
 use App\Exports\Contabilidad\AnexoConsumidoresExport;
+use App\Exports\Contabilidad\LibroAnuladosExport;
+use App\Exports\Contabilidad\AnexoAnuladosExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
@@ -190,6 +192,64 @@ class LibrosIVAController extends Controller
 
         return Excel::download($contribuyentes, 'AnexoContribuyentesExport.csv', \Maatwebsite\Excel\Excel::CSV);
 
+    }
+
+    public function anulados(Request $request)
+    {
+
+        $ventas = Venta::with(['cliente', 'documento'])
+            ->where('estado', 'Anulada')
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderByDesc('fecha')
+            ->get();
+
+        $ivas = $ventas->map(function ($venta) {
+            $documento = $venta->documento;
+            $cliente = optional($venta->cliente);
+
+            return [
+                'resolucion'            => $venta->sello_mh ? $venta->dte['identificacion']['numeroControl'] : '',
+                'clase'                 => $venta->sello_mh ? 4 : 1, // DTE o impreso
+                'desde_pre'             => $venta->sello_mh ? 0 : trim($venta->correlativo),
+                'hasta_pre'             => $venta->sello_mh ? 0 : trim($venta->correlativo),
+                'tipo_documento'        => $venta->nombre_documento,
+                'tipo_detalle'          => 'Documento Anulado',
+                'serie'                 => $venta->sello_mh ? $venta->dte['sello'] : '',
+                'desde'                 => $venta->sello_mh ? 0 : trim($venta->correlativo),
+                'hasta'                 => $venta->sello_mh ? 0 : trim($venta->correlativo),
+                'codigo_generacion'     => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : '',
+            ];
+        });
+        //
+
+
+        // Ordenamos por 'correlativo' de forma descendente y reindexamos
+        $ivas = $ivas->sortByDesc(function ($item) {
+                return [$item['desde']];
+            })->values()->all();
+        // Log::info($ivas);
+
+        return response()->json($ivas, 200);
+    }
+
+    public function anuladosLibroExport(Request $request)
+    {
+        $anulados = new LibroAnuladosExport();
+        $anulados->filter($request);
+
+        return Excel::download($anulados, 'LibroAnuladosExport.xlsx');
+    }
+
+    public function anuladosAnexoExport(Request $request)
+    {
+        $anulados = new AnexoAnuladosExport();
+        $anulados->filter($request);
+
+        return Excel::download($anulados, 'AnexoAnuladosExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function compras(Request $request)
@@ -384,6 +444,111 @@ class LibrosIVAController extends Controller
     }
 
     public function comprasAnexoExport(Request $request)
+    {
+        $compras = new AnexoComprasExport();
+        $compras->filter($request);
+
+        return Excel::download($compras, 'AnexoComprasExport.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
+    public function comprasSujetosExcluidos(Request $request)
+    {
+
+        // Obtener las compras
+        $compras = Compra::with(['proveedor'])
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->where('iva' , '>', 0)
+            ->where('tipo_documento', 'Sujeto excluido')
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->get()
+            ->map(function ($compra) {
+                $compra->origen = 'compra';
+                return $compra;
+            });
+
+        $comprasData = $compras->map(function ($compra) {
+            $proveedor = optional($compra->proveedor()->first());
+
+            $data = [
+                'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
+                'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
+                'proveedor' => $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
+                'fecha' => $compra->fecha,  // D - FECHA DE EMISI N DEL DOCUMENTO
+                'serie' => $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
+                'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
+                'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
+                'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
+                'tipo_operacion' => 0,  // I - TIPO DE OPERACIÖN
+                'clasificacion' => 0,  // J - CLASIFICACI M
+                'sector' => 0,  // K - SECTOR
+                'tipo' => 0,  // L - TIPO DE COSTO / GASTO
+                'num_anexo' => 5,  // M - NUMERO DE ANEXO
+            ];
+            return $data;
+        });
+
+        // Obtener los gastos
+        $gastos = Gasto::with(['proveedor'])
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->where('iva' , '>', 0)
+            ->where('tipo_documento', 'Sujeto excluido')
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get()
+            ->map(function ($gasto) {
+                $gasto->origen = 'gasto';
+                return $gasto;
+            });
+
+        // Transformar gastos
+        $gastosData = $gastos->map(function ($gasto) {
+            $proveedor = optional($gasto->proveedor()->first());
+
+            $data = [
+                'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',
+                'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,
+                'proveedor' => $gasto->nombre_proveedor,
+                'fecha' => $gasto->fecha,
+                'serie' => '',
+                'referencia' => $gasto->referencia,
+                'total' => $gasto->total,
+                'iva' => $gasto->iva,
+                'tipo_operacion' => 0,
+                'clasificacion' => 0,
+                'sector' => 0,
+                'tipo' => 0,
+                'num_anexo' => 5,
+            ];
+
+            return $data;
+        });
+
+        // Unir y ordenar ambas colecciones por fecha
+        $libroSujetoExcluido = collect($comprasData)
+            ->merge(collect($gastosData))
+            ->sortBy('fecha')
+            ->values()
+            ->all();
+
+        return response()->json($libroSujetoExcluido, 200);
+    }
+
+
+    public function comprasLibroSujetosExcluidosExport(Request $request)
+    {
+        $compras = new LibroComprasExport();
+        $compras->filter($request);
+
+        return Excel::download($compras, 'LibroComprasExport.xlsx');
+    }
+
+    public function comprasAnexoSujetosExcluidosExport(Request $request)
     {
         $compras = new AnexoComprasExport();
         $compras->filter($request);

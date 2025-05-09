@@ -17,6 +17,14 @@ use Illuminate\Support\Facades\Route;
     Route::get('/libro-iva/compras',                        [LibrosIVAController::class, 'compras']);
     Route::get('/libro-iva/compras/descargar-libro',         [LibrosIVAController::class, 'comprasLibroExport']);
     Route::get('/libro-iva/compras/descargar-anexo',         [LibrosIVAController::class, 'comprasAnexoExport']);
+    
+    Route::get('/libro-iva/anulados',                        [LibrosIVAController::class, 'anulados']);
+    Route::get('/libro-iva/anulados/descargar-libro',         [LibrosIVAController::class, 'anuladosLibroExport']);
+    Route::get('/libro-iva/anulados/descargar-anexo',         [LibrosIVAController::class, 'anuladosAnexoExport']);
+    
+    Route::get('/libro-iva/compras-sujetos-excluidos',                        [LibrosIVAController::class, 'comprasSujetosExcluidos']);
+    Route::get('/libro-iva/compras-sujetos-excluidos/descargar-libro',         [LibrosIVAController::class, 'comprasSujetosExcluidosLibroExport']);
+    Route::get('/libro-iva/compras-sujetos-excluidos/descargar-anexo',         [LibrosIVAController::class, 'comprasSujetosExcluidosAnexoExport']);
 
 
 ?>

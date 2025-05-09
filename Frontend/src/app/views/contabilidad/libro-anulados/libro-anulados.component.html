@@ -1,9 +1,8 @@
 
 <section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
     <div>
-        <h2>Libro Consumidor Final</h2>
+        <h2>Libro de Anulados</h2>
     </div>
-
     <div class="dropdown">
         <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
                 data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
@@ -13,7 +12,7 @@
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
-                Libro de IVA
+                Libro de anulados
             </button>
           </li>
           <li>
@@ -22,26 +21,19 @@
                 Anexo
             </button>
           </li>
-          <li>
-            <button class="dropdown-item d-flex align-items-center" (click)="descargarDTEConsumidorFinal()" title="Descargar DTEs en zip como JSON ">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
-                DTEs
-            </button>
-          </li>
         </ul>
       </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
-    <div class="d-flex">
-        <div class="col-md-8 d-flex gap-2 mb-3">
+    <div class="row">
+        <div class="col-lg-8 d-flex gap-2 mb-3">
             <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
-            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
-            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-anulados">Anulados</button>
-            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-anulados">Anulados</button>
         </div>
-        <div class="col-md-4 d-flex gap-2 justify-content-end  mb-3">
+        <div class="col-lg-4 d-flex gap-2 justify-content-end  mb-3">
             <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
@@ -65,63 +57,51 @@
                   {{ year }}
                 </option>
             </select>
-            <!-- <div class="btn-group"> -->
-
-                <!-- <button class="btn tcla-F6" tooltip="Hoy (F6)" [ngClass]="{'btn-primary': filtros.time == 'day', 'btn-default': filtros.time != 'day' }" (click)="setTime('day')">Hoy</button> -->
-                <!-- <button class="btn tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtros.time == 'week', 'btn-default': filtros.time != 'week' }" (click)="setTime('week')">Semana</button> -->
-                <!-- <button class="btn tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</button> -->
-                <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
-            <!-- </div> -->
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
         </div>
     </div>
 
     <div class="row">
+
         <div class="col-12">
             <div class="table-responsive bg-white">
-                <table class="table table-bordered table-hover mr-top" id="tablaReporte">
+                <table class="table table-bordered table-hover">
                     <thead>
                         <tr>
                             <th>N°</th>
-                            <th>Fecha</th>
-                            <th>Correlativo</th>
-                            <th class="text-end">Ventas Exentas</th>
-                            <th class="text-end">Ventas Gravadas</th>
-                            <th class="text-end">Ventas No Sujetas</th>
-                            <th class="text-end">Exportaciones</th>
-                            <th class="text-end">Total</th>
-                            <th class="text-end">Venta a Cuenta de Terceros</th>
+                            <th>RESOLUCION</th>
+                            <th>CLASE</th>
+                            <th>DESDE PRE</th>
+                            <th>HASTA PRE</th>
+                            <th>TIPO DOCUMENTO</th>
+                            <th>TIPO DETALLE</th>
+                            <th>SERIE</th>
+                            <th>DESDE</th>
+                            <th>HASTA</th>
+                            <th>CODIGO GENERACION</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="9" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="14" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="9" class="text-center" *ngIf="loading">
+                            <td colspan="14" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <tr class="animated fadeIn" *ngFor=" let iva of ivas; let i = index">
-                            <td>{{ i+1 }}</td>
-                            <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.correlativo}}</td>
-                            <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.ventas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.exportaciones | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
-
-                        </tr>
-                        <tr>
-                            <td colspan="3" class="text-center"><b>Total</b></td>                                
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'exportaciones' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <tr *ngFor=" let iva of ivas; let i = index">
+                            <td class="text-nowrap">{{ i + 1 }}</td>
+                            <td class="text-nowrap">{{iva.resolucion}}</td>
+                            <td class="text-nowrap">{{iva.clase}}<a *ngIf="iva?.registro?.id" class="float-end d-none" target="blank" tooltip="Ver información de la transacción" routerLink="/{{iva.origen}}/{{iva?.registro?.id}}"><i class="fa fa-eye"></i></a></td>
+                            <td class="text-nowrap">{{iva.desde_pre}}</td>
+                            <td class="text-nowrap">{{iva.hasta_pre}}<a *ngIf="iva?.registro?.id_proveedor" class="float-end d-none" target="blank" tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{iva?.registro?.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="text-nowrap">{{iva.tipo_documento}}</td>
+                            <td class="text-nowrap">{{iva.tipo_detalle}}</td>
+                            <td class="text-nowrap">{{iva.serie}}</td>
+                            <td class="text-nowrap">{{iva.desde}}</td>
+                            <td class="text-nowrap">{{iva.hasta}}</td>
+                            <td class="text-nowrap">{{iva.codigo_generacion}}</td>
                         </tr>
                     </tbody>
                 </table>

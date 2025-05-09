@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
 
 class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
+
     public $request;
 
     public function filter(Request $request)
