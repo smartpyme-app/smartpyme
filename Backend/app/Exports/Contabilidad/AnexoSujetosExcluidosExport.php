@@ -10,8 +10,9 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
-class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSettings
+class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -37,6 +38,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
+            ->get()
             ->map(function ($compra) {
                 $compra->origen = 'compra';
                 return $compra;
@@ -56,6 +58,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 return $gasto;
             });
 
+
         $libroCompras = $compras->merge($compras)->merge($gastos)->sortBy(function ($item) {
                 return [$item['fecha']];
             });
@@ -67,23 +70,24 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
     public function map($compra): array{
 
             $proveedor = optional($compra->proveedor()->first());
+
             $data = [
-                'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
-                'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
-                'proveedor' => $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
-                'fecha' => $compra->fecha,  // D - FECHA DE EMISI N DEL DOCUMENTO
-                'serie' => $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
-                'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
-                'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
-                'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
-                'tipo_operacion' => 0,  // I - TIPO DE OPERACIÖN
-                'clasificacion' => 0,  // J - CLASIFICACI M
-                'sector' => 0,  // K - SECTOR
-                'tipo' => 0,  // L - TIPO DE COSTO / GASTO
-                'num_anexo' => 5,  // M - NUMERO DE ANEXO
+                $proveedor->nit ? 2 : 1,  // A - TIPO DE DOCUMENTO
+                $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
+                $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
+                \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'),  // D - FECHA DE EMISI N DEL DOCUMENTO
+                $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
+                $compra->referencia,  // F - NUMERO DE DOCUMENTO
+                $compra->total,  // G - MONTO DE LA OPERACIÖN
+                $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
+                $compra->exenta > 0 ? 2 : 1,  // I - TIPO DE OPERACIÖN
+                $compra->origen == 'gasto' ? 2 : 1 ,  // J - CLASIFICACI Costo gasto
+                $this->tipoSector($compra->sector),  // K - SECTOR
+                $this->tipo($compra->tipo),  // L - TIPO DE COSTO / GASTO
+                5,  // M - NUMERO DE ANEXO
             ];
 
-        return $data;
+            return $data;
     }
 
     public function getCsvSettings(): array
@@ -101,11 +105,11 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             case 'Comercio': return 2;
             case 'Agropecuaria': return 3;
             case 'Servicios, profesiones, artes y oficios': return 4;
-            default: return null;
+            default: return '0';
         }
     }
 
-    function tipoTipo($tipo) {
+    function tipo($tipo) {
         switch ($tipo) {
             case 'Gastos de venta sin donación': return 1;
             case 'Gastos de administración sin donación': return 2;
@@ -114,7 +118,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             case 'Costo artículos producidos/comprados interno': return 5;
             case 'Costos indirectos de fabricación': return 6;
             case 'Mano de obra': return 7;
-            default: return null;
+            default: return '0';
         }
     }
 

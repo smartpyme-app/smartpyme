@@ -1,7 +1,7 @@
 
 <section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
     <div>
-        <h2>Libro de Compras</h2>
+        <h2>Libro de Sujetos Excluidos</h2>
     </div>
     <div class="dropdown">
         <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
@@ -12,7 +12,7 @@
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
                 <img src="/assets/icons/download.png" class="icon me-2"> 
-                Libro de compras
+                Libro de sujetos excluidos
             </button>
           </li>
           <li>
@@ -30,9 +30,9 @@
         <div class="col-md-8 d-flex gap-2 mb-3">
             <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
-            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-compras">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-anulados">Anulados</button>
-            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
         </div>
         <div class="col-md-4 d-flex gap-2 justify-content-end  mb-3">
             <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
@@ -59,9 +59,6 @@
                 </option>
             </select>
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
-            <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
-                <i class="fa fa-refresh"></i>
-              </button>
         </div>
     </div>
 
@@ -72,20 +69,19 @@
                 <table class="table table-bordered table-hover">
                     <thead>
                         <tr>
-                            <th>N°</th>
-                            <th>FECHA</th>
-                            <th>NÚMERO DE DOCUMENTO</th>
-                            <th>NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
-                            <th>NOMBRE DEL PROVEEDOR</th>
-                            <th class="text-end">COMPRAS EXENTAS INTERNAS</th>
-                            <th class="text-end">COMPRAS NO SUJETAS</th>
-                            <th class="text-end">IMPORTACIONES E INTERNACIONES EXENTAS</th>
-                            <th class="text-end">COMPRAS INTERNAS GRAVADAS</th>
-                            <th class="text-end">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
-                            <th class="text-end">CRÉDITO FISCAL</th>
-                            <th class="text-end">ANTICIPO A CUENTA IVA PERCIBIDO</th>
-                            <th class="text-end">TOTAL</th>
-                            <th class="text-end">COMPRAS A SUJETOS EXCLUIDOS</th>
+                            <th>TIPO DE DOCUMENTO</th>
+                            <th>NUMERO DE NIT, DUI, OTRO DOCUMENTO</th>
+                            <th>NOMBRE, RAZÓN SOCIAL O DENOMINACIÓN</th>
+                            <th>FECHA DE EMISIÓN DEL DOCUMENTO</th>
+                            <th>NUMERO DE SERIE DEL DOCUMENTO</th>
+                            <th>NUMERO DE DOCUMENTO</th>
+                            <th>MONTO DE LA OPERACIÓN</th>
+                            <th>MONTO DE LA RETENCIÓN IVA 13%</th>
+                            <th>TIPO DE OPERACIÓN</th>
+                            <th>CLASIFICACIÓN</th>
+                            <th>SECTOR</th>
+                            <th>TIPO DE COSTO / GASTO</th>
+                            <th>NUMERO DE ANEXO</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -97,38 +93,22 @@
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
-                        <tr [tooltip]="!iva.nit_nrc ? 'Faltan datos del proveedor' : ''" [ngClass]="{ 'table-danger': !iva.nit_nrc }" *ngFor=" let iva of ivas; let i = index">
-                            <td>{{ i + 1 }}</td>
-                            <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.num_documento}}<a *ngIf="iva?.registro?.id" class="float-end d-none" target="blank" tooltip="Ver información de la transacción" routerLink="/{{iva.origen}}/{{iva?.registro?.id}}"><i class="fa fa-eye"></i></a></td>
-                            <td>{{iva.nit_nrc}}</td>
-                            <td>{{iva.nombre_proveedor}}<a *ngIf="iva?.registro?.id_proveedor" class="float-end d-none" target="blank" tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{iva?.registro?.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
-                            <td class="text-end text-nowrap">{{iva.compras_exentas | currency }}</td>
-                            <td class="text-end text-nowrap">{{iva.no_sujeta | currency }}</td>
-                            <td class="text-end text-nowrap">{{iva.importaciones_exentas | currency }}</td>
-                            <td class="text-end text-nowrap">{{iva.compras_gravadas | currency}}</td>
-                            <td class="text-end text-nowrap">{{iva.importaciones_gravadas | currency}}</td>
-                            <td class="text-end text-nowrap">{{iva.credito_fiscal | currency}}</td>
-                            <td class="text-end text-nowrap">{{iva.anticipo_iva_percibido | currency}}</td>
-                            <td class="text-end text-nowrap">{{iva.total | currency}}</td>
-                            <td class="text-end text-nowrap">{{iva.sujeto_excluido | currency}}</td>
-
+                        <tr *ngFor=" let iva of ivas; let i = index">
+                            <td>{{ iva.tipo_documento }}</td>
+                            <td>{{ iva.num_documento }}</td>
+                            <td>{{ iva.proveedor }}</td>
+                            <td>{{ iva.fecha }}</td>
+                            <td>{{ iva.serie }}</td>
+                            <td>{{ iva.referencia }}</td>
+                            <td>{{ iva.total }}</td>
+                            <td>{{ iva.iva }}</td>
+                            <td>{{ iva.tipo_operacion }}</td>
+                            <td>{{ iva.clasificacion }}</td>
+                            <td>{{ iva.sector }}</td>
+                            <td>{{ iva.tipo }}</td>
+                            <td>{{ iva.num_anexo }}</td>
                         </tr>
                     </tbody>
-                    <tfoot *ngIf="ivas?.length > 0">
-                        <tr>
-                            <td colspan="5" class="text-center"><b>Total</b></td>                                
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_exentas' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'no_sujeta' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_exentas' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_gravadas' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'credito_fiscal' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_gravadas' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'anticipo_iva_percibido' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'total' | currency }}</b></td>
-                            <td class="text-end text-nowrap"><b>{{ ivas | sum:'sujeto_excluido' | currency }}</b></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         </div>
