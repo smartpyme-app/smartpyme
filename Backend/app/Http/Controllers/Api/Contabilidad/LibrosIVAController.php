@@ -16,6 +16,8 @@ use App\Exports\Contabilidad\LibroConsumidoresExport;
 use App\Exports\Contabilidad\AnexoConsumidoresExport;
 use App\Exports\Contabilidad\LibroAnuladosExport;
 use App\Exports\Contabilidad\AnexoAnuladosExport;
+use App\Exports\Contabilidad\LibroSujetosExcluidosExport;
+use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
@@ -482,10 +484,10 @@ class LibrosIVAController extends Controller
                 'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
                 'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
                 'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
-                'tipo_operacion' => 0,  // I - TIPO DE OPERACIÖN
-                'clasificacion' => 0,  // J - CLASIFICACI M
-                'sector' => 0,  // K - SECTOR
-                'tipo' => 0,  // L - TIPO DE COSTO / GASTO
+                'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
+                'clasificacion' =>  'Costo' ,  // J - CLASIFICACI Costo gasto
+                'sector' => $compra->sector,  // K - SECTOR
+                'tipo' =>   $compra->tipo,  // L - TIPO DE COSTO / GASTO
                 'num_anexo' => 5,  // M - NUMERO DE ANEXO
             ];
             return $data;
@@ -519,10 +521,10 @@ class LibrosIVAController extends Controller
                 'referencia' => $gasto->referencia,
                 'total' => $gasto->total,
                 'iva' => $gasto->iva,
-                'tipo_operacion' => 0,
-                'clasificacion' => 0,
-                'sector' => 0,
-                'tipo' => 0,
+                'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
+                'clasificacion' => 'Gasto' ,  // J - CLASIFICACI Costo gasto
+                'sector' => $compra->sector,  // K - SECTOR
+                'tipo' =>   $compra->tipo,  // L - TIPO DE COSTO / GASTO
                 'num_anexo' => 5,
             ];
 
@@ -540,20 +542,20 @@ class LibrosIVAController extends Controller
     }
 
 
-    public function comprasLibroSujetosExcluidosExport(Request $request)
+    public function comprasSujetosExcluidosLibroExport(Request $request)
     {
-        $compras = new LibroComprasExport();
+        $compras = new LibroSujetosExcluidosExport();
         $compras->filter($request);
 
-        return Excel::download($compras, 'LibroComprasExport.xlsx');
+        return Excel::download($compras, 'LibroSujetosExcluidos.xlsx');
     }
 
-    public function comprasAnexoSujetosExcluidosExport(Request $request)
+    public function comprasSujetosExcluidosAnexoExport(Request $request)
     {
-        $compras = new AnexoComprasExport();
+        $compras = new AnexoSujetosExcluidosExport();
         $compras->filter($request);
 
-        return Excel::download($compras, 'AnexoComprasExport.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download($compras, 'AnexoSujetosExcluidos.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function GlobalDttesExport(Request $request)

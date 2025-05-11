@@ -74,12 +74,12 @@ export class LibroComprasSujetosExcluidosComponent implements OnInit {
 
     public descargarLibro(){
         this.downloading = true;
-        this.apiService.export('libro-iva/compras/descargar-libro', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('libro-iva/compras-sujetos-excluidos/descargar-libro', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Libro de compras.xlsx';
+            a.download = 'Libro de compras-sujetos-excluidos.xlsx';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -91,12 +91,12 @@ export class LibroComprasSujetosExcluidosComponent implements OnInit {
 
     public descargarAnexo() {
         this.downloading = true;
-        this.apiService.export('libro-iva/compras/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('libro-iva/compras-sujetos-excluidos/descargar-anexo', this.filtros).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Anexo-compras.csv';
+            a.download = 'Anexo-compras-sujetos-excluidos.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

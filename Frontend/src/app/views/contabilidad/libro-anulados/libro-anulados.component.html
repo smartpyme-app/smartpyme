@@ -32,6 +32,7 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-anulados">Anulados</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
         </div>
         <div class="col-lg-4 d-flex gap-2 justify-content-end  mb-3">
             <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
