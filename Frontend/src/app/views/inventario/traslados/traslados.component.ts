@@ -95,6 +95,7 @@ export class TrasladosComponent implements OnInit {
 
     public setProducto(){
         this.producto = this.productos.find((item:any) => item.id == this.traslado.id_producto);
+        this.traslado.costo = this.producto.costo;
     }
 
     public setSucursalDe(){
@@ -151,6 +152,12 @@ export class TrasladosComponent implements OnInit {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    generarPartidaContable(traslado:any){
+        this.apiService.store('contabilidad/partida/traslado', traslado).subscribe(traslado => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
     }
 
     public descargar(){
