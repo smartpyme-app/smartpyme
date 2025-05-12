@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor;
 
 use App\Models\Admin\Sucursal;
 use App\Models\Ventas\Detalle;
