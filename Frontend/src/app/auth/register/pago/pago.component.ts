@@ -5,6 +5,7 @@ import { ApiService } from '@services/api.service';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { firstValueFrom } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Estado } from '../../../models/estado.interface';
 
 @Component({
   selector: 'app-pago',
@@ -33,6 +34,9 @@ export class PagoComponent implements OnInit {
     public processingPayment = false;
     public mostrar3DSModal = false;
     public urlAutenticacion!: SafeResourceUrl;
+    public estadoSeleccionado: any = null;
+    public paises = [];
+    public estados: Estado[] = [];
 
     constructor(
         private apiService: ApiService,
@@ -45,6 +49,7 @@ export class PagoComponent implements OnInit {
 
     ngOnInit() {
         this.user = this.apiService.register_user();
+        this.getPaises();
     }
 
     // Método original para checkout N1co
@@ -247,5 +252,40 @@ export class PagoComponent implements OnInit {
     abrirModal3DS() {
         this.mostrar3DSModal = true;
         this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl('https://front-3ds-sandbox.n1co.com/authentication/test');
+      }
+
+      getPaises() {
+        this.apiService.getAll('paises-suscripcion', this.paises).subscribe(paises => { 
+          this.paises = paises;
+        }, error => {this.alertService.error(error); });
+      }
+    
+      getEstados(countryCode: string) {
+        this.apiService.getAll(`estados-por-pais/${countryCode}`, []).subscribe(
+          estados => { 
+            this.estados = estados;
+          }, 
+          error => {
+            this.alertService.error(error);
+          }
+        );
+      }
+    
+      onPaisChange() {
+        if (this.billingInfo.countryCode) {
+          this.getEstados(this.billingInfo.countryCode);      
+          this.billingInfo.stateCode = '';      
+          this.billingInfo.zipCode = '';
+        }
+      }
+    
+      onEstadoChange() {
+        if (this.billingInfo.stateCode) {
+          const estadoSeleccionado = this.estados.find(estado => estado.codigo === this.billingInfo.stateCode);
+          
+          if (estadoSeleccionado && estadoSeleccionado.codigo_postal) {
+            this.billingInfo.zipCode = estadoSeleccionado.codigo_postal;
+          }
+        }
       }
 }
