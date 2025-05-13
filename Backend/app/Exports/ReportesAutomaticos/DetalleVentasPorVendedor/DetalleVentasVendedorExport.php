@@ -115,9 +115,6 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
             $sheets[] = new DetalleVentasVendedorSheet($vendedor, $ventasVendedor);
         }
         
-        // Crear la hoja de resumen
-        $sheets[] = new DetalleVentasResumenSheet('Resumen', $this->detalleVentas, $this->vendedoresUnicos);
-        
         return $sheets;
     }
 }

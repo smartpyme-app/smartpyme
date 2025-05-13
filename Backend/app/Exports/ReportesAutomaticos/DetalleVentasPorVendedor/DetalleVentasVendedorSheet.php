@@ -30,6 +30,29 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
         try {
             $ventasFormateadas = collect();
             
+            foreach ($this->ventas as $venta) {
+                $ventasFormateadas->push([
+                    'nombre_vendedor' => $venta->nombre_vendedor,
+                    'correlativo' => $venta->correlativo,
+                    'tipo_documento' => $venta->tipo_documento,
+                    'fecha' => $venta->fecha,
+                    'hora' => $venta->hora,
+                    'nombre_cliente' => $venta->nombre_cliente,
+                    'nombre_sucursal' => $venta->nombre_sucursal,
+                    'nombre_categoria' => $venta->nombre_categoria,
+                    'nombre_producto' => $venta->nombre_producto,
+                    'cantidad' => $venta->cantidad,
+                    'precio' => $venta->precio,
+                    'descuento' => $venta->descuento,
+                    'subtotal' => $venta->subtotal,
+                    'total_con_descuento' => $venta->total_con_descuento,
+                    'es_resumen' => false,
+                    'total_transacciones' => ''
+                ]);
+            }
+            
+            $ventasFormateadas->push($this->emptyRow());
+            
             $totalVentas = $this->ventas->sum('total_con_descuento');
             $totalProductos = $this->ventas->sum('cantidad');
             $totalTransacciones = $this->ventas->pluck('correlativo')->unique()->count();
@@ -52,29 +75,6 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
                 'es_resumen' => true,
                 'total_transacciones' => $totalTransacciones
             ]);
-            
-            $ventasFormateadas->push($this->emptyRow());
-            
-            foreach ($this->ventas as $venta) {
-                $ventasFormateadas->push([
-                    'nombre_vendedor' => $venta->nombre_vendedor,
-                    'correlativo' => $venta->correlativo,
-                    'tipo_documento' => $venta->tipo_documento,
-                    'fecha' => $venta->fecha,
-                    'hora' => $venta->hora,
-                    'nombre_cliente' => $venta->nombre_cliente,
-                    'nombre_sucursal' => $venta->nombre_sucursal,
-                    'nombre_categoria' => $venta->nombre_categoria,
-                    'nombre_producto' => $venta->nombre_producto,
-                    'cantidad' => $venta->cantidad,
-                    'precio' => $venta->precio,
-                    'descuento' => $venta->descuento,
-                    'subtotal' => $venta->subtotal,
-                    'total_con_descuento' => $venta->total_con_descuento,
-                    'es_resumen' => false,
-                    'total_transacciones' => ''
-                ]);
-            }
             
             return $ventasFormateadas;
             
