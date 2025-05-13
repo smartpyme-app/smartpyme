@@ -64,7 +64,6 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public function styles(Worksheet $sheet)
     {
         return [
-            // Estilo para los encabezados
             1 => ['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'EEEEEE']]],
         ];
     }
@@ -72,13 +71,6 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public function collection()
     {
         try {
-            // Registrar entrada en el log para depuración
-            // Log::info('Iniciando collection en VentasPorCategoriaVendedorExport', [
-            //     'fechaInicio' => $this->fechaInicio,
-            //     'fechaFin' => $this->fechaFin
-            // ]);
-    
-            // Filtrar por fecha, empresa y estado no anulado
             $query = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
                 ->join('categorias as cat', 'pro.id_categoria', '=', 'cat.id')
@@ -88,32 +80,26 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
                 ->where('vv.id_empresa', $this->id_empresa)
                 ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
     
-            // Aplicar filtro de sucursales si está definido
             if (!empty($this->sucursales)) {
                 $query->whereIn('vv.id_sucursal', $this->sucursales);
             }
     
-            // Obtener los datos base agrupados por categoría y vendedor
             $ventasData = $query->select(
                 'cat.id as id_categoria',
                 'cat.nombre as nombre_categoria',
                 'us.name as nombre_vendedor',
-                // DB::raw('SUM(dv.total) as total_ventas')
+                'us.id as id_vendedor',
                 DB::raw('SUM(dv.total - COALESCE(dv.descuento, 0)) as total_ventas')
             )
-                ->groupBy('cat.id', 'cat.nombre', 'us.name')
-                ->orderBy('cat.nombre')
+                ->groupBy('cat.id', 'cat.nombre', 'us.name', 'us.id')
+                ->orderBy('us.name')
                 ->get();
-    
-            // Log::info('Datos de ventas obtenidos', ['count' => count($ventasData)]);
-    
-            // Obtener lista de vendedores únicos
-            $vendedores = $ventasData->pluck('nombre_vendedor')->unique()->values()->toArray();
-            // Log::info('Vendedores únicos', ['vendedores' => $vendedores]);
     
             // Obtener lista de categorías únicas
             $categorias = $ventasData->pluck('nombre_categoria', 'id_categoria')->unique();
-            // Log::info('Categorías únicas', ['count' => count($categorias)]);
+    
+            // Obtener lista de vendedores únicos
+            $vendedores = $ventasData->pluck('nombre_vendedor', 'id_vendedor')->unique();
     
             // Crear un mapa de porcentajes por categoría
             $porcentajesCategorias = [];
@@ -127,79 +113,65 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
                     }
                 }
             }
-            // Log::info('Porcentajes por categoría', ['count' => count($porcentajesCategorias)]);
     
-            // Preparar estructura para el formato requerido
             $resultadoFormateado = [];
     
-            // Inicializar estructura para cada categoría
-            foreach ($categorias as $id => $nombre) {
-                $porcentaje = isset($porcentajesCategorias[$id]) ? $porcentajesCategorias[$id]['porcentaje'] : 1;
-                $nombreConPorcentaje = $nombre . ' (' . ($porcentaje * 100) . '%)';
-                
+            // Inicializar estructura para cada vendedor
+            foreach ($vendedores as $id => $nombre) {
                 $resultadoFormateado[$id] = [
-                    'id_categoria' => $id,
-                    'Categoria' => $nombreConPorcentaje,
+                    'id_vendedor' => $id,
+                    'Vendedor' => $nombre,
                 ];
     
-                // Inicializar columnas de vendedores con cero
-                foreach ($vendedores as $vendedor) {
-                    $resultadoFormateado[$id][$vendedor] = 0;
+                // Inicializar columnas de categorías con cero
+                foreach ($categorias as $idCat => $nombreCat) {
+                    $porcentaje = isset($porcentajesCategorias[$idCat]) ? $porcentajesCategorias[$idCat]['porcentaje'] : 1;
+                    $nombreConPorcentaje = $nombreCat . ' (' . ($porcentaje * 100) . '%)';
+                    $resultadoFormateado[$id][$nombreConPorcentaje] = 0;
                 }
     
-                // Inicializar columna de total
+                // Inicializar columna de total por vendedor
                 $resultadoFormateado[$id]['TOTAL'] = 0;
             }
     
-            // Inicializar fila de totales con estructura idéntica a las otras filas
+            // Inicializar fila de totales
             $totales = [
-                'id_categoria' => null,
-                'Categoria' => 'TOTAL'
+                'id_vendedor' => null,
+                'Vendedor' => 'TOTAL'
             ];
             
-            foreach ($vendedores as $vendedor) {
-                $totales[$vendedor] = 0;
+            foreach ($categorias as $idCat => $nombreCat) {
+                $porcentaje = isset($porcentajesCategorias[$idCat]) ? $porcentajesCategorias[$idCat]['porcentaje'] : 1;
+                $nombreConPorcentaje = $nombreCat . ' (' . ($porcentaje * 100) . '%)';
+                $totales[$nombreConPorcentaje] = 0;
             }
             
             $totales['TOTAL'] = 0;
     
-            // Log::info('Estructura inicializada', [
-            //     'num_categorias' => count($resultadoFormateado),
-            //     'totales_keys' => array_keys($totales)
-            // ]);
-    
             // Llenar la estructura con los datos de ventas
             foreach ($ventasData as $venta) {
+                $idVendedor = $venta->id_vendedor;
                 $idCategoria = $venta->id_categoria;
-                $vendedor = $venta->nombre_vendedor;
+                $nombreCategoria = $venta->nombre_categoria;
                 $total = $venta->total_ventas;
-    
-                // Verificar que la categoría existe en nuestro resultado formateado
-                if (!isset($resultadoFormateado[$idCategoria])) {
-                    Log::warning('Categoría no encontrada en estructura', [
-                        'id_categoria' => $idCategoria,
-                        'nombre' => $venta->nombre_categoria
-                    ]);
-                    continue;
-                }
     
                 // Aplicar el porcentaje si existe
                 if (isset($porcentajesCategorias[$idCategoria])) {
                     $total = $total * $porcentajesCategorias[$idCategoria]['porcentaje'];
                 }
     
-                // Asignar valor a la celda correspondiente
-                $resultadoFormateado[$idCategoria][$vendedor] = $total;
+                // Determinar nombre de categoría con porcentaje
+                $porcentaje = isset($porcentajesCategorias[$idCategoria]) ? $porcentajesCategorias[$idCategoria]['porcentaje'] : 1;
+                $nombreConPorcentaje = $nombreCategoria . ' (' . ($porcentaje * 100) . '%)';
     
-                // Actualizar total por categoría
-                $resultadoFormateado[$idCategoria]['TOTAL'] += $total;
+                // Asignar valor a la celda correspondiente
+                $resultadoFormateado[$idVendedor][$nombreConPorcentaje] = $total;
     
                 // Actualizar total por vendedor
-                if (isset($totales[$vendedor])) {
-                    $totales[$vendedor] += $total;
-                } else {
-                    $totales[$vendedor] = $total;
-                }
+                $resultadoFormateado[$idVendedor]['TOTAL'] += $total;
+    
+                // Actualizar total por categoría
+                $totales[$nombreConPorcentaje] += $total;
     
                 // Actualizar total general
                 $totales['TOTAL'] += $total;
@@ -210,11 +182,6 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
             
             // Agregar la fila de totales
             $resultado->push($totales);
-    
-            // Log::info('Resultado final generado', [
-            //     'num_filas' => $resultado->count(),
-            //     'example_keys' => $resultado->first() ? array_keys($resultado->first()) : []
-            // ]);
     
             return $resultado;
             
@@ -227,7 +194,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
             // En caso de error, devolver una estructura básica para evitar que la exportación falle completamente
             return collect([
                 [
-                    'Categoria' => 'Error al generar el reporte',
+                    'Vendedor' => 'Error al generar el reporte',
                     'TOTAL' => 0
                 ]
             ]);
@@ -237,11 +204,10 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public function headings(): array
     {
         try {
-            // Log::info('Generando encabezados para el reporte');
-            
-            // Obtener los vendedores para las columnas
-            $vendedores = DB::table('detalles_venta as dv')
-                ->join('users as us', 'dv.id_vendedor', '=', 'us.id')
+            // Obtener las categorías para las columnas
+            $categorias = DB::table('detalles_venta as dv')
+                ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
+                ->join('categorias as cat', 'pro.id_categoria', '=', 'cat.id')
                 ->join('ventas as vv', 'dv.id_venta', '=', 'vv.id')
                 ->where('vv.estado', '!=', 'Anulada')
                 ->where('vv.id_empresa', $this->id_empresa)
@@ -249,24 +215,37 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     
             // Aplicar filtro de sucursales si está definido
             if (!empty($this->sucursales)) {
-                $vendedores->whereIn('vv.id_sucursal', $this->sucursales);
+                $categorias->whereIn('vv.id_sucursal', $this->sucursales);
             }
     
-            $vendedores = $vendedores->select('us.name')
+            $categorias = $categorias->select('cat.id', 'cat.nombre')
                 ->distinct()
-                ->pluck('name')
-                ->toArray();
+                ->orderBy('cat.nombre')
+                ->get();
     
-            // Log::info('Vendedores para encabezados', ['vendedores' => $vendedores]);
-    
-            // Construir encabezados: Categoría, [Vendedores...], TOTAL
-            $encabezados = ['Categoría'];
-            foreach ($vendedores as $vendedor) {
-                $encabezados[] = $vendedor;
+            // Crear un mapa de porcentajes por categoría
+            $porcentajesCategorias = [];
+            if ($this->configuracion && isset($this->configuracion->configuracion) && !empty($this->configuracion->configuracion)) {
+                foreach ($this->configuracion->configuracion as $config) {
+                    if (isset($config['id']) && isset($config['nombre']) && isset($config['porcentaje'])) {
+                        $porcentajesCategorias[$config['id']] = [
+                            'nombre' => $config['nombre'],
+                            'porcentaje' => $config['porcentaje'] / 100 // Convertir a decimal para multiplicar
+                        ];
+                    }
+                }
             }
+    
+            $encabezados = ['Vendedor'];
+            
+            foreach ($categorias as $categoria) {
+                $porcentaje = isset($porcentajesCategorias[$categoria->id]) ? $porcentajesCategorias[$categoria->id]['porcentaje'] * 100 : 100;
+                $nombreConPorcentaje = $categoria->nombre . ' (' . $porcentaje . '%)';
+                $encabezados[] = $nombreConPorcentaje;
+            }
+            
             $encabezados[] = 'TOTAL';
     
-            // Log::info('Encabezados generados', ['encabezados' => $encabezados]);
             return $encabezados;
             
         } catch (\Exception $e) {
@@ -276,27 +255,26 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
             ]);
             
             // En caso de error, devolver encabezados básicos
-            return ['Categoría', 'TOTAL'];
+            return ['Vendedor', 'TOTAL'];
         }
     }
     
     public function map($fila): array
     {
         try {
-            // Asegurarse de que la clave 'Categoria' exista
-            if (!isset($fila['Categoria'])) {
-                // Log::warning('Fila sin campo Categoria en map', ['keys' => array_keys($fila)]);
-                $categoria = 'Sin categoría';
+            // Asegurarse de que la clave 'Vendedor' exista
+            if (!isset($fila['Vendedor'])) {
+                $vendedor = 'Sin vendedor';
             } else {
-                $categoria = $fila['Categoria'];
+                $vendedor = $fila['Vendedor'];
             }
             
-            $resultado = [$categoria];
+            $resultado = [$vendedor];
     
             // Obtener los encabezados para asegurarnos de recorrer las columnas en el orden correcto
             $encabezados = $this->headings();
             
-            // Saltamos el primer encabezado que es 'Categoría'
+            // Saltamos el primer encabezado que es 'Vendedor'
             for ($i = 1; $i < count($encabezados); $i++) {
                 $columna = $encabezados[$i];
                 
