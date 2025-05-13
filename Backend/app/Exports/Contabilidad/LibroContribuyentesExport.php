@@ -4,23 +4,41 @@ namespace App\Exports\Contabilidad;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Auth;
 
-class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings
+class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
+
     public $request;
     private $index = 1;
 
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            BeforeSheet::class => function (BeforeSheet $event) {
+                $event->sheet->insertNewRowBefore(1, 4);
+
+                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
+                $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
+                $event->sheet->setCellValue('E3', 'Folio N°:');
+                $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')));
+                $event->sheet->setCellValue('E4', 'Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
+
+            },
+        ];
     }
 
     public function headings():array{
@@ -91,15 +109,15 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 $venta->correlativo ?? 'N/A',
                 $venta->nombre_cliente ?? 'N/A',
                 $cliente->nit ?? $cliente->ncr ?? 'N/A',
-                $venta->id_venta ? $venta->exenta * -1 : $venta->exenta,
-                $venta->id_venta ? $venta->no_sujeta * -1 : $venta->no_sujeta,
+                $venta->exenta > 0 ? $venta->exenta * -1 : $venta->exenta,
+                $venta->no_sujeta > 0 ? $venta->no_sujeta * -1 : $venta->no_sujeta,
                 $venta->id_venta ? $venta->sub_total * -1 : $venta->sub_total,
                 $venta->id_venta ? $venta->iva * -1 : $venta->iva,
                 0,
-                $venta->id_venta ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
+                $venta->cuenta_a_terceros > 0 ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
                 0,
-                $venta->id_venta ? $venta->iva_retenido * -1 : $venta->iva_retenido,
-                $venta->id_venta ? $venta->iva_percibido * -1 : $venta->iva_percibido,
+                $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
+                $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 $venta->id_venta ? $venta->total * -1 : $venta->total,
             ];
 

@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
 
-class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
     private $index = 1;
@@ -28,7 +28,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
 
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A1', 'LIBRO DE DOCUMENTOS ANULADOS ');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
                 $event->sheet->setCellValue('E3', 'Folio N°:');
@@ -41,15 +41,16 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
 
     public function headings():array{
         return[
-            'N°',
-            'Fecha',
-            'Correlativo',
-            'Ventas Exentas',
-            'Ventas Gravadas',
-            'Ventas No Sujetas',
-            'Exportaciones',
-            'Total',
-            'Venta a Cuenta de Terceros',
+            'Resolucion',
+            'Clase',
+            'Desde Pre',
+            'Hasta Pre',
+            'Tipo Documento',
+            'Tipo Detalle',
+            'Serie',
+            'Desde',
+            'Hasta',
+            'Codigo Generacion',
         ];
     }
 
@@ -58,19 +59,15 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
         $ventas = Venta::with(['cliente', 'documento'])
-                        ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function ($q) {
-                            $q->where('nombre', 'Factura')
-                                ->orWhere('nombre', 'Factura de exportación');
-                        })
-                        ->when($request->id_sucursal, function ($query) use ($request) {
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->whereBetween('fecha', [$request->inicio, $request->fin])
-                        ->where('cotizacion', 0)
-                        ->orderByDesc('fecha')
-                        ->orderByDesc('correlativo')
-                        ->get();
+            ->where('estado', 'Anulada')
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->where('cotizacion', 0)
+            ->orderByDesc('fecha')
+            ->get();
+
         return $ventas;
         
     }
@@ -81,15 +78,17 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         $cliente = optional($venta->cliente);
 
         return [
-            $this->index++,
-            $venta->fecha,
-            $venta->correlativo,
-            $venta->exenta,
-            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->sub_total,
-            $venta->no_sujeta,
-            $venta->documento->nombre === 'Factura de exportación' ? $venta->sub_total : '0',
-            $venta->sub_total,
-            $venta->cuenta_a_terceros,
+            // $this->index++,
+            $venta->sello_mh ? $venta->dte['identificacion']['numeroControl'] : '',
+            $venta->sello_mh ? 4 : 1, // DTE o impreso
+            $venta->sello_mh ? '0' : trim($venta->correlativo),
+            $venta->sello_mh ? '0' : trim($venta->correlativo),
+            $venta->nombre_documento,
+            'Documento Anulado',
+            $venta->sello_mh ? $venta->dte['sello'] : '',
+            $venta->sello_mh ? '0' : trim($venta->correlativo),
+            $venta->sello_mh ? '0' : trim($venta->correlativo),
+            $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : '',
         ];
     }
 }

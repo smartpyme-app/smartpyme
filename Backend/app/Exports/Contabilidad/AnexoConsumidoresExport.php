@@ -9,11 +9,9 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
-class AnexoConsumidoresExport implements FromCollection, WithMapping
+class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
+
     public $request;
 
     public function filter(Request $request)
@@ -28,7 +26,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
-                            $q->where('nombre', 'Factura');
+                            $q->where('nombre', 'Factura')->orWhere('nombre', 'Factura de exportación');
                         })
                         ->when($request->id_sucursal, function ($query) use ($request) {
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -41,45 +39,72 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping
         
     }
 
-    public function map($row): array{
+    public function map($venta): array{
 
-            $nombre = $row->dte['receptor']['nombre'] ?? '';
-            $dui = $row->dte['receptor']['numDocumento'] ?? '';
+            $documento = $venta->documento;
+            $cliente = optional($venta->cliente);
+
+            $tipo = '01'; //CF
+
+            if ($documento && $documento->nombre == 'Factura de exportación') {
+                $tipo = '11';
+            }
 
            $fields = [
-              \Carbon\Carbon::parse($row->fecha)->format('d/m/Y'), //'Fecha',
-              '4', //'Clase',
-              '01', //'Tipo',
-              $row->dte['identificacion']['numeroControl'] ?? '', //'Resolucion',
-              $row->dte['sello'] ?? '', //'Serie',
-              $row->dte['identificacion']['codigoGeneracion'] ?? '', //'Numero',
-              $row->dte['identificacion']['codigoGeneracion'] ?? '', //'Numero',
-              trim($row->correlativo), //'Numero Interno',
-              trim($row->correlativo), //'Numero Interno',
-              NULL, //'Caja registradora',
-              $row->exenta ? $row->exenta : '0.00', //'Exentas',
-              '0.00', //'No Exentas no sujetas a proporcionalidad',
-              $row->no_sujeta ? $row->no_sujeta : '0.00', //'No Sujetas',
-              $row->total ? $row->total : '0.00', //'Gravadas', 
-              '0.00', //'Exportacion interna', 
-              '0.00', //'Exportacion externa', 
-              '0.00', //'Exportacion servicios', 
-              '0.00', //'Ventas zonas francas', 
-              '0.00', //'Ventas a terceros',
-              $row->total ? $row->total : '0.00', //'Total',
-              2, //'Anexo',
+                \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha
+                $venta->sello_mh ? '4' : '1', //B Clase DTE o Impreso,
+                '01', //C Tipo
+                $venta->dte['identificacion']['numeroControl'] ?? '', //D Resolucion
+                $venta->dte['sello'] ?? '', //E Serie
+                $venta->dte['identificacion']['codigoGeneracion'] ?? '', //F Numero Interno del
+                $venta->dte['identificacion']['codigoGeneracion'] ?? '', //G Numero Interno al
+                trim($venta->correlativo), //H Numero Control
+                trim($venta->correlativo), //I Numero Control
+                NULL, //J Caja registradora
+                $venta->exenta ? $venta->exenta : '0.00', //K Exentas
+                '0.00', //L No Exentas no sujetas a proporcionalidad
+                $venta->no_sujeta ? $venta->no_sujeta : '0.00', //M No Sujetas
+                $venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total, //N Gravadas'
+                '0.00', //O Exportacion interna'
+                $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0', //P Exportacion externa'
+                '0.00', //Q Exportacion servicios'
+                '0.00', //R Ventas zonas francas'
+                '0.00', //S Ventas a terceros
+                $venta->total ? $venta->total : '0.00', //T Total
+                $venta->exenta > 0 ? 2 : 1, //U Tipo operacion renta 1 Gravada 2 Exenta
+                $this->tipoRenta($venta->tipo_renta), //V Tipo ingreso renta
+                2, //W num de Anexo
 
          ];
         return $fields;
     }
 
-    // public function getCsvSettings(): array
-    // {
-    //     return [
-    //         'delimiter' => ';',
-    //         'use_bom' => true,
-    //         'enclosure' => '',
-    //     ];
-    // }
+    public function getCsvSettings(): array
+    {
+        return [
+            'delimiter' => ';',
+            'enclosure' => '',
+            'use_bom' => false,
+        ];
+    }
+
+    function tipoRenta($tipo) {
+        switch ($tipo) {
+            case 'Profesiones, Artes y Oficios': return 1;
+            case 'Actividades de Servicios': return 2;
+            case 'Actividades Comerciales': return 3;
+            case 'Actividades Industriales': return 4;
+            case 'Actividades Agropecuarias': return 5;
+            case 'Utilidades y Dividendos': return 6;
+            case 'Exportaciones de bienes': return 7;
+            case 'Servicios Realizados en el Exterior y Utilizados en El Salvador': return 8;
+            case 'Exportaciones de servicios': return 9;
+            case 'Otras Rentas Gravables': return 10;
+            case 'Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910': return 12;
+            case 'Sujetos pasivos excluidos': return 13;
+            default: return null;
+        }
+    }
+
 
 }
