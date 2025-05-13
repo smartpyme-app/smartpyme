@@ -180,6 +180,7 @@
                   <select
                     class="form-control"
                     [(ngModel)]="billingInfo.countryCode"
+                    (change)="onPaisChange()"
                     name="countryCode"
                     required
                     [ngClass]="{
@@ -192,10 +193,7 @@
                     <option value="" disabled selected>
                       Seleccione un país
                     </option>
-                    <option value="SV">El Salvador</option>
-                    <option value="US">Estados Unidos</option>
-                    <option value="MX">México</option>
-                    <!-- Agregar más opciones según sea necesario -->
+                    <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
                   </select>
                   <div
                     class="invalid-feedback"
@@ -210,30 +208,30 @@
 
                 <!-- Código de Estado -->
                 <div class="col-md-4 mb-3">
-                  <label class="form-label">Código Estado</label>
-                  <input
-                    type="text"
+                  <label class="form-label">Estado</label>
+                  <select
                     class="form-control"
                     [(ngModel)]="billingInfo.stateCode"
                     name="stateCode"
+                    (change)="onEstadoChange()"
                     required
                     [ngClass]="{
                       'is-invalid':
                         stateCode.invalid &&
                         (stateCode.dirty || stateCode.touched)
                     }"
-                    maxlength="2"
-                    placeholder="SS"
                     #stateCode="ngModel"
-                  />
+                  >
+                    <option value="" disabled selected>Selecciona estado</option>
+                    <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                  </select>
                   <div
                     class="invalid-feedback"
                     *ngIf="
-                      stateCode.invalid &&
-                      (stateCode.dirty || stateCode.touched)
+                      stateCode.invalid && (stateCode.dirty || stateCode.touched)
                     "
                   >
-                    Código de estado inválido
+                    Estado inválido
                   </div>
                 </div>
 

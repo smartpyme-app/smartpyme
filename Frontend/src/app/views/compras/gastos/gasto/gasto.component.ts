@@ -122,7 +122,13 @@ export class GastoComponent implements OnInit {
 
           if (this.gasto.iva_percibido > 0) this.gasto.percepcion = true;
 
-          if (this.gasto.renta_retenida > 0) this.gasto.renta = true;
+          if (this.gasto.renta_retenida > 0)
+            this.gasto.renta = true;
+
+          if (!this.gasto.area_empresa) {
+            this.gasto.area_empresa = '';
+          }
+
           this.loading = false;
         },
         (error) => {
@@ -144,6 +150,7 @@ export class GastoComponent implements OnInit {
       this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
       this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.gasto.id_usuario = this.apiService.auth_user().id;
+      this.gasto.area_empresa = '';
 
       if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
         this.gasto.id_proyecto =
