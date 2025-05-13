@@ -57,6 +57,16 @@
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3">
+                <label for="area_empresa">Area empresa:</label>
+                <input 
+                type="text" 
+                [(ngModel)]="gasto.area_empresa" 
+                name="area_empresa" 
+                class="form-control" 
+                id="area_empresa" 
+                placeholder="Ingrese el área de la empresa">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="gasto.tipo_documento" class="form-select">
                     <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
