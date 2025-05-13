@@ -64,6 +64,10 @@ export class ReportesAutomaticosComponent implements OnInit {
       tipo: 'estado-financiero-consolidado-sucursales',
       nombre: 'Estado Financiero Consolidado por Sucursales',
     },
+    {
+      tipo: 'detalle-ventas-vendedor',
+      nombre: 'Detalle de Ventas por Vendedor',
+    },
   ];
   public configReporteActual: any = null;
   public modalRefFechas!: BsModalRef;

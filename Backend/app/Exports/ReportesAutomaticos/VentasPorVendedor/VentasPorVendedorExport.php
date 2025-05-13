@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\ReportesAutomaticos\VentasPorVendedor;
 
 use App\Models\Ventas\Detalle;
 use Illuminate\Support\Facades\Auth;

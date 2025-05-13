@@ -138,7 +138,6 @@ class GastosController extends Controller
         else
             $gasto = new Gasto;
 
-        Log::info($request->all());
 
         $gasto->fill($request->all());
         $gasto->save();
