@@ -6,6 +6,7 @@ import { AppConstants } from '../../../constants/app.constants';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Estado } from '../../../models/estado.interface';
 
 @Component({
   selector: 'app-paywall',
@@ -25,6 +26,9 @@ export class PaywallComponent implements OnInit {
   loading: boolean = false;
   estadoSuscripcion: string = '';
   diasFaltantes: number = 0;
+  public estadoSeleccionado: any = null;
+  public paises = [];
+  public estados: Estado[] = [];
   
   showCardForm: boolean = false;
   paymentData = {
@@ -64,6 +68,43 @@ export class PaywallComponent implements OnInit {
       this.estadoSuscripcion = userData.estado_suscripcion;
       this.diasFaltantes = userData.dias_faltantes;
       this.setPlanFeatures(userData.plan);
+    }
+
+    this.getPaises();
+  }
+
+  getPaises() {
+    this.apiService.getAll('paises-suscripcion', this.paises).subscribe(paises => { 
+      this.paises = paises;
+    }, error => {this.alertService.error(error); });
+  }
+
+  getEstados(countryCode: string) {
+    this.apiService.getAll(`estados-por-pais/${countryCode}`, []).subscribe(
+      estados => { 
+        this.estados = estados;
+      }, 
+      error => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
+  onPaisChange() {
+    if (this.billingInfo.countryCode) {
+      this.getEstados(this.billingInfo.countryCode);      
+      this.billingInfo.stateCode = '';      
+      this.billingInfo.zipCode = '';
+    }
+  }
+
+  onEstadoChange() {
+    if (this.billingInfo.stateCode) {
+      const estadoSeleccionado = this.estados.find(estado => estado.codigo === this.billingInfo.stateCode);
+      
+      if (estadoSeleccionado && estadoSeleccionado.codigo_postal) {
+        this.billingInfo.zipCode = estadoSeleccionado.codigo_postal;
+      }
     }
   }
 
