@@ -141,7 +141,11 @@ class ChequesController extends Controller
     public function generarDoc($id){
         $cheque = Cheque::where('id', $id)->firstOrFail();
         
-        $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+        if(Auth::user()->id_empresa == 415){ //415 
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+        }else{
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+        }
         $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream('cheque-' . $cheque->correlativo . '.pdf');
