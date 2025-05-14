@@ -37,7 +37,7 @@ class EmpresasController extends Controller
     }
 
     public function index(Request $request) {
-       
+
         $empresas = Empresa::when($request->activo !== null, function($q) use ($request){
             $q->where('activo', !!$request->activo);
         })
@@ -71,7 +71,7 @@ class EmpresasController extends Controller
     }
 
     public function list() {
-       
+
         $empresas = Empresa::orderby('nombre')
                                 ->where('activo', true)
                                 ->get();
@@ -83,7 +83,7 @@ class EmpresasController extends Controller
 
     public function read($id) {
 
-        $empresa = Empresa::findOrFail($id);
+        $empresa = Empresa::with('empresa_cliente')->findOrFail($id);
         return Response()->json($empresa, 200);
 
     }
@@ -99,7 +99,7 @@ class EmpresasController extends Controller
     //         $empresa = Empresa::findOrFail($request->id);
     //     else
     //         $empresa = new Empresa;
-        
+
     //     //Bloquear usuarios
     //     if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
     //         foreach ($empresa->usuarios()->get() as $usuario) {
@@ -148,9 +148,9 @@ class EmpresasController extends Controller
 
 
     //     $empresa->save();
-        
+
     //     if(!isset($request->isRegister) || $request->isRegister !== false) {
-        
+
     //         $suscripcion = $this->createSuscripcion([
     //             'empresa_id' => $empresa->id,
     //             'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
@@ -226,21 +226,21 @@ class EmpresasController extends Controller
     private function updateEmpresa(Request $request)
     {
         $empresa = Empresa::findOrFail($request->id);
-        
+
         $this->handleUserAccountStatus($empresa, $request);
-        
+
         $woocommerceValues = $this->preserveWoocommerceSettings($empresa);
-        
+
         $empresa->fill($request->all());
-        
+
         if ($request->hasFile('file')) {
             $empresa->logo = $this->handleLogoUpload($request, $empresa);
         }
-        
+
         $this->restoreWoocommerceSettings($empresa, $woocommerceValues);
-        
+
         $empresa->save();
-        
+
         return $empresa;
     }
 
@@ -248,19 +248,19 @@ class EmpresasController extends Controller
     {
         $empresa = new Empresa;
         $empresa->fill($request->all());
-        
+
         if ($request->hasFile('file')) {
             $empresa->logo = $this->handleLogoUpload($request, $empresa);
         }
-        
+
         $empresa->save();
-        
+
         if (!isset($request->isRegister) || $request->isRegister !== false) {
             $this->createCompanySubscription($empresa, $request);
         }
-        
+
         $this->createInitialCompanyStructure($empresa);
-        
+
         return $empresa;
     }
 
@@ -272,7 +272,7 @@ class EmpresasController extends Controller
                 $usuario->save();
             }
         }
-        
+
         if (($empresa->activo == '0') && ($request['activo'] == '1')) {
             foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
                 $usuario->enable = true;
@@ -295,7 +295,7 @@ class EmpresasController extends Controller
         foreach ($woocommerceFields as $field) {
             $woocommerceValues[$field] = $empresa->$field;
         }
-        
+
         return $woocommerceValues;
     }
 
@@ -311,20 +311,20 @@ class EmpresasController extends Controller
         if ($request->id && $empresa->logo && $empresa->logo != 'empresas/default.jpg') {
             Storage::delete($empresa->logo);
         }
-        
+
         $path = $request->file('file');
         $resize = Image::make($path)->resize(350, 350)->encode('jpg', 75);
         $hash = md5($resize->__toString());
         $path = "empresas/{$hash}.jpg";
         $resize->save(public_path('img/' . $path), 50);
-        
+
         return "/" . $path;
     }
 
     private function createCompanySubscription(Empresa $empresa, Request $request)
     {
         $plan = $this->getPlan($empresa->plan, true, $empresa->plan);
-        
+
         $this->createSuscripcion([
             'empresa_id' => $empresa->id,
             'plan_id' => $plan->id,
@@ -352,47 +352,47 @@ class EmpresasController extends Controller
     private function createInitialCompanyStructure(Empresa $empresa)
     {
         $sucursal = Sucursal::create([
-            'nombre' => $empresa->nombre, 
+            'nombre' => $empresa->nombre,
             'id_empresa' => $empresa->id
         ]);
-        
+
         $bodega = Bodega::create([
-            'nombre' => $empresa->nombre, 
-            'id_sucursal' => $sucursal->id, 
+            'nombre' => $empresa->nombre,
+            'id_sucursal' => $sucursal->id,
             'id_empresa' => $empresa->id
         ]);
-        
+
         Canal::create([
-            'nombre' => $empresa->nombre, 
-            'enable' => true, 
+            'nombre' => $empresa->nombre,
+            'enable' => true,
             'id_empresa' => $empresa->id
         ]);
-        
+
         Impuesto::create([
-            'nombre' => 'IVA', 
-            'porcentaje' => $empresa->iva, 
+            'nombre' => 'IVA',
+            'porcentaje' => $empresa->iva,
             'id_empresa' => $empresa->id
         ]);
-        
+
         $this->createPaymentMethods($empresa);
-        
+
         $this->createDocuments($sucursal, $empresa);
     }
 
     private function createPaymentMethods(Empresa $empresa)
     {
         FormaDePago::create([
-            'nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 
+            'nombre' => config('constants.TIPO_PAGO_EFECTIVO'),
             'id_empresa' => $empresa->id
         ]);
-        
+
         FormaDePago::create([
-            'nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 
+            'nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'),
             'id_empresa' => $empresa->id
         ]);
-        
+
         FormaDePago::create([
-            'nombre' => config('constants.TIPO_PAGO_TARJETA'), 
+            'nombre' => config('constants.TIPO_PAGO_TARJETA'),
             'id_empresa' => $empresa->id
         ]);
     }
@@ -406,25 +406,25 @@ class EmpresasController extends Controller
             'TIPO_DOCUMENTO_COTIZACION',
             'TIPO_DOCUMENTO_ORDEN_COMPRA'
         ];
-        
+
         foreach ($documentTypes as $type) {
             Documento::create([
-                'nombre' => config('constants.' . $type), 
-                'correlativo' => 1, 
-                'activo' => 1, 
-                'id_sucursal' => $sucursal->id, 
+                'nombre' => config('constants.' . $type),
+                'correlativo' => 1,
+                'activo' => 1,
+                'id_sucursal' => $sucursal->id,
                 'id_empresa' => $empresa->id
             ]);
         }
     }
 
-    private function createSuscripcion(array $data): array 
+    private function createSuscripcion(array $data): array
     {
         $plan = Plan::find($data['plan_id']);
-        
+
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
-            
+
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
                 'estado_ultimo_pago' => null,
@@ -449,10 +449,10 @@ class EmpresasController extends Controller
                 'fin_periodo_prueba' => null
             ]);
         }
-    
+
         return $this->suscripcionService->createSuscripcion($data);
     }
-    
+
 
     public function delete($id)
     {
@@ -486,33 +486,33 @@ class EmpresasController extends Controller
             ->latest()
             ->first([
                 'id',
-                'estado', 
-                'fecha_proximo_pago', 
-                'fecha_ultimo_pago', 
-                'fin_periodo_prueba', 
-                'tipo_plan', 
-                'created_at', 
+                'estado',
+                'fecha_proximo_pago',
+                'fecha_ultimo_pago',
+                'fin_periodo_prueba',
+                'tipo_plan',
+                'created_at',
                 'monto',
-                'fecha_ultimo_pago', 
-                'fecha_proximo_pago', 
+                'fecha_ultimo_pago',
+                'fecha_proximo_pago',
                 'fin_periodo_prueba'
             ]);
 
-        
+
         if (!$suscripcion) {
             $suscripcion = $empresa->suscripcion()
                 ->latest()
                 ->first([
                     'id',
-                    'estado', 
-                    'fecha_proximo_pago', 
-                    'fecha_ultimo_pago', 
-                    'fin_periodo_prueba', 
-                    'tipo_plan', 
-                    'created_at', 
+                    'estado',
+                    'fecha_proximo_pago',
+                    'fecha_ultimo_pago',
+                    'fin_periodo_prueba',
+                    'tipo_plan',
+                    'created_at',
                     'monto',
-                    'fecha_ultimo_pago', 
-                    'fecha_proximo_pago', 
+                    'fecha_ultimo_pago',
+                    'fecha_proximo_pago',
                     'fin_periodo_prueba'
                 ]);
         }
@@ -521,7 +521,7 @@ class EmpresasController extends Controller
         if ($empresa->pago_recurrente) {
             $suscripcion->pago_recurrente_empresa = $empresa->pago_recurrente;
         }
-        
+
         // Obtener el plan desde la suscripción o desde la empresa
         $plan = null;
         if ($suscripcion && $suscripcion->plan_id) {
@@ -529,7 +529,7 @@ class EmpresasController extends Controller
         } else {
             $plan = Plan::where('nombre', $empresa->plan)->first();
         }
-        
+
         $planData = null;
         if ($plan) {
             $planData = [
@@ -538,13 +538,13 @@ class EmpresasController extends Controller
                 'precio' => $plan->precio
             ];
         }
-        
+
         // Obtener todos los pagos de la empresa
         $pagos = [];
-        
+
         // Buscar todos los usuarios de la empresa
         $usuarios = User::where('id_empresa', $empresa->id)->get();
-        
+
         // Recopilar los pagos de todos los usuarios de la empresa
         foreach ($usuarios as $usuario) {
             $pagosPorUsuario = $usuario->ordenesPago()
@@ -552,14 +552,14 @@ class EmpresasController extends Controller
                 ->latest()
                 ->get()
                 ->toArray();
-            
+
             $pagos = array_merge($pagos, $pagosPorUsuario);
         }
-        
+
         usort($pagos, function($a, $b) {
             return strtotime($b['fecha_transaccion']) - strtotime($a['fecha_transaccion']);
         });
-        
+
         // Obtener métodos de pago asociados a la empresa
         $metodoPago = null;
         foreach ($usuarios as $usuario) {
@@ -567,20 +567,20 @@ class EmpresasController extends Controller
                 ->where('es_predeterminado', true)
                 ->where('esta_activo', true)
                 ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
-            
+
             if ($metodo) {
                 $metodoPago = $metodo;
                 break;
             }
         }
-        
+
         $dataResponse = [
             'suscripcion' => $suscripcion,
             'pagos' => $pagos,
             'plan' => $planData,
             'metodoPago' => $metodoPago
         ];
-        
+
         return Response()->json($dataResponse, 201);
     }
 
@@ -589,7 +589,7 @@ class EmpresasController extends Controller
     //     $recibo = Transaccion::where('id', $id)->firstOrFail();
     //     // return $recibo;
     //     $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
-    //     $pdf->setPaper('US Letter', 'portrait');  
+    //     $pdf->setPaper('US Letter', 'portrait');
 
 
     //     return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');
@@ -599,19 +599,19 @@ class EmpresasController extends Controller
     {
         try {
             Log::info('Imprimiendo recibo de suscripción con ID: ' . $id);
-            
+
             // Obtener la suscripción
             $suscripcion = Suscripcion::findOrFail($id);
-            
+
             // Obtener datos del pago desde los parámetros
             $fechaTransaccion = $request->get('fecha');
             $monto = $request->get('monto');
             $estado = $request->get('estado');
             $plan = $request->get('plan');
-            
+
             // Buscar empresa asociada
             $empresa = Empresa::findOrFail($suscripcion->empresa_id);
-            
+
             // Preparar datos para la vista
             $recibo = new \stdClass();
             $recibo->id = 'R-' . time();
@@ -619,21 +619,21 @@ class EmpresasController extends Controller
             $recibo->descripcion = "Plan {$plan} - {$suscripcion->tipo_plan}";
             $recibo->total = $monto;
             $recibo->estado = $estado;
-            $recibo->created_at = $fechaTransaccion ? 
-                                \Carbon\Carbon::parse($fechaTransaccion) : 
+            $recibo->created_at = $fechaTransaccion ?
+                                \Carbon\Carbon::parse($fechaTransaccion) :
                                 now();
-            
+
             // Asignar la empresa como una propiedad normal (no como función)
             $recibo->empresa = $empresa;
-            
+
             // Generar el PDF
             $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
             $pdf->setPaper('US Letter', 'portrait');
-            
+
             return $pdf->stream("recibo-plan-{$plan}.pdf");
         } catch (\Exception $e) {
             Log::error('Error generando recibo: ' . $e->getMessage());
-            
+
             return response()->json([
                 'error' => 'Error generando el recibo',
                 'message' => $e->getMessage()
@@ -684,7 +684,7 @@ class EmpresasController extends Controller
         if ($request->m_gastos) {
             DB::table('egresos')->where('id_empresa', $empresa->id)->delete();
         }
-        
+
         if ($request->m_presupuestos) {
             DB::table('presupuestos')->where('id_empresa', $empresa->id)->delete();
         }
@@ -699,7 +699,7 @@ class EmpresasController extends Controller
             ->orderBy('nombre', 'asc')
             ->where('activo', true)
             ->get();
-        
+
         return response()->json($empresas);
     }
 
@@ -721,11 +721,11 @@ class EmpresasController extends Controller
             'id_empresa' => 'required|exists:empresas,id',
             'pago_recurrente' => 'required|boolean',
         ]);
-        
+
         $empresa = Empresa::findOrFail($validated['id_empresa']);
         $empresa->pago_recurrente = $validated['pago_recurrente'];
         $empresa->save();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Pago recurrente actualizado exitosamente',
@@ -737,7 +737,7 @@ class EmpresasController extends Controller
     {
         try {
             $id_empresa = auth()->user()->id_empresa;
-            
+
             $empresa = Empresa::findOrFail($id_empresa);
             return response()->json([
                 'alerta_suscripcion' => $empresa->alerta_suscripcion
@@ -753,11 +753,11 @@ class EmpresasController extends Controller
     {
         try {
             $id_empresa = auth()->user()->id_empresa;
-            
+
             $empresa = Empresa::findOrFail($id_empresa);
             $empresa->alerta_suscripcion = false;
             $empresa->save();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Alerta desactivada correctamente',

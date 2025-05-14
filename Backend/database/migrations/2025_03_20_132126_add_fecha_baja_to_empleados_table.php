@@ -30,3 +30,4 @@ class AddFechaBajaToEmpleadosTable extends Migration
         });
     }
 }
+
