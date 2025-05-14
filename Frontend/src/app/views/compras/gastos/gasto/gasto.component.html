@@ -187,7 +187,52 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
                 </div>
             </div>
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-4 col-lg-3 without-label">
+                <div class="form-switch bg-light-info rounded">
+                    <label for="switch_otros_impuestos">Otros impuestos</label>
+                    <input class="form-check-input float-end" 
+                           type="checkbox" 
+                           role="switch" 
+                           id="switch_otros_impuestos"
+                           (change)="setOtrosImpuestos()" 
+                           [(ngModel)]="mostrar_otros_impuestos" 
+                           name="mostrar_otros_impuestos">
+                </div>
+            </div>
+
+            <div class="form-group col-md-8 col-lg-8" *ngIf="mostrar_otros_impuestos">
+                <label for="">Selecciona los impuestos aplicables</label>
+                <div class="input-group flex-nowrap">
+                    <ng-select 
+                        name="otros_impuestos" 
+                        placeholder="Seleccione impuestos" 
+                        [(ngModel)]="gasto.otros_impuestos" 
+                        [multiple]="true"
+                        (change)="onImpuestosChange()"
+                        class="form-select p-0">
+                        <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.id">
+                            {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                        </ng-option>
+                    </ng-select>
+                    <app-crear-impuesto (update)="setImpuesto($event)"></app-crear-impuesto>
+                </div>
+                
+                <!-- Lista de impuestos seleccionados -->
+                <div class="mt-2 mb-3" *ngIf="impuestos_seleccionados.length > 0">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span *ngFor="let impuesto of impuestos_seleccionados" class="badge bg-light-info text-info">
+                            {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="row" *ngIf="gasto.impuestos_valores && gasto.impuestos_valores.length > 0">
+                <div class="form-group col-md-4 col-lg-4" *ngFor="let impuestoValor of gasto.impuestos_valores">
+                    <label for="">{{ impuestoValor.nombre }}:</label>
+                    <input type='number' disabled class="form-control" [name]="'impuesto_'+impuestoValor.id_impuesto" [(ngModel)]="impuestoValor.valor"/>
+                </div>
+            </div>
+            <div class="form-group col-md-12 col-lg-12">
                 <label for="">Observaciones:</label>
                 <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
             </div>

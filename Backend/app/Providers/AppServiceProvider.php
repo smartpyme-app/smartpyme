@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\AIService;
-use App\Services\ContextService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
@@ -21,13 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton(ContextService::class, function ($app) {
-            return new ContextService();
-        });
-
-        $this->app->singleton(AIService::class, function ($app) {
-            return new AIService();
-        });
+        //
     }
 
     /**

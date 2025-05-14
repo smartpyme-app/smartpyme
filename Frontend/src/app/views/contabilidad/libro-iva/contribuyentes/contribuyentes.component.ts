@@ -20,29 +20,35 @@ export class ContribuyentesComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-    ngOnInit() {   
-        const currentYear = new Date().getFullYear(); // Obtener el año actual
+    ngOnInit() {
+        const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
-        // Crear un array con el año actual y los 10 años anteriores
+
         for (let i = 0; i <= 10; i++) {
           this.years.push(currentYear - i);
         }
 
+        // Recuperar filtros del localStorage si existen
+        const savedFilters = localStorage.getItem('contribuyentes_filtros');
+        if (savedFilters) {
+            this.filtros = JSON.parse(savedFilters);
+        } else {
+            // Valores por defecto si no hay filtros guardados
+            this.filtros.id_sucursal = '';
+            this.filtros.tipo_documento = 'Crédito fiscal';
+            this.filtros.anio = currentYear;
+            this.filtros.mes = currentMonth;
+            this.filtros.time = 'day';
+        }
 
-        this.filtros.id_sucursal = '';
-        this.filtros.tipo_documento = 'Crédito fiscal';
-        this.filtros.anio = currentYear;
-        this.filtros.mes = currentMonth;
-        this.filtros.time = 'day';
         this.setTime();
 
-
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -51,14 +57,16 @@ export class ContribuyentesComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/contribuyentes', this.filtros).subscribe(ivas => { 
+        // Guardar filtros en localStorage antes de cargar
+        localStorage.setItem('contribuyentes_filtros', JSON.stringify(this.filtros));
+
+        this.apiService.getAll('libro-iva/contribuyentes', this.filtros).subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setTime() {
-        // this.filtros.time = { this.filtros.anio, this.filtros.mes }; // Guardamos el mes y año en el filtro
         this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
         this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
         this.loadAll();
@@ -66,8 +74,23 @@ export class ContribuyentesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    } 
+    }
 
+    public limpiarFiltros() {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        this.filtros = {
+            id_sucursal: '',
+            tipo_documento: 'Crédito fiscal',
+            anio: currentYear,
+            mes: currentMonth,
+            time: 'day'
+        };
+
+        localStorage.removeItem('contribuyentes_filtros');
+        this.setTime();
+    }
 
     public descargarLibro(){
         this.downloading = true;
@@ -120,7 +143,7 @@ export class ContribuyentesComponent implements OnInit {
               this.downloading = false;
               return;
             }
-      
+
             // Si no es texto plano, es un archivo ZIP
             const url = window.URL.createObjectURL(data);
             const a = document.createElement('a');

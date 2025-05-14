@@ -26,10 +26,21 @@ Route::get('/prueba', function () {
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
-
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
 require base_path('routes/modulos/n1co/suscripciones-n1co.php');
+
+Route::group(['prefix' => 'payment'], function () {
+    Route::post('method', [N1coChargeController::class, 'createPaymentMethod']);
+    Route::post('process', [N1coChargeController::class, 'processCharge']);
+    Route::post('process-ready', [N1coChargeController::class, 'processChargeReady']);
+    Route::post('process/3ds', [N1coChargeController::class, 'processCharge3DS']);
+    Route::post('update-method-payment', [N1coChargeController::class, 'updateMethodPayment']);
+    Route::post('check-auth-status', [N1coChargeController::class, 'checkAuthenticationStatus']);
+    Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
+    Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
+
+});
 
 // require base_path('routes/modulos/n1co/payment.php');
 require base_path('routes/modulos/auth.php');
@@ -114,7 +125,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 
-	//Crequire base_path('rhatbot
+	//require base_path('chatbot
 	require base_path('routes/modulos/chat/chat.php');
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
@@ -130,10 +141,21 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');
 
 	require base_path('routes/modulos/planilla/historialcontratos.php');
-
+	//Funcionalidades
+	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
 });
 
-//webhook
+// Webhook
+require base_path('routes/modulos/webhook/webhook.php');
+
+// Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
+
+
+//token
+
+require base_path('routes/modulos/token/token.php');
+
+
 
 require base_path('routes/modulos/webhook/webhook.php');
 

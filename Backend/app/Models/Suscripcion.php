@@ -121,7 +121,7 @@ class Suscripcion extends Model
         
         return $fechaActual->diffInDays($fechaProximoPago);
     }
-
+    
     public function calcularDiasFaltantesPrueba(): int
     {
         $fechaActual = now();

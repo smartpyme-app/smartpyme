@@ -11,28 +11,28 @@ class CreateCategoriaSubcategoriasTable extends Migration
      *
      * @return void
      */
-    public function up()
-    {
-        Schema::create('categoria_subcategorias', function (Blueprint $table) {
-            $table->increments('id');
+    // public function up()
+    // {
+    //     Schema::create('categoria_subcategorias', function (Blueprint $table) {
+    //         $table->increments('id');
 
-            $table->string('nombre');
-            $table->string('img')->nullable();
-            $table->text('descripcion')->nullable();
-            $table->integer('categoria_id')->unsigned()->index();
+    //         $table->string('nombre');
+    //         $table->string('img')->nullable();
+    //         $table->text('descripcion')->nullable();
+    //         $table->integer('categoria_id')->unsigned()->index();
 
-            $table->softDeletes();
-            $table->timestamps();
-        });
-    }
+    //         $table->softDeletes();
+    //         $table->timestamps();
+    //     });
+    // }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
-    {
-        Schema::dropIfExists('categoria_subcategorias');
-    }
+    // /**
+    //  * Reverse the migrations.
+    //  *
+    //  * @return void
+    //  */
+    // public function down()
+    // {
+    //     Schema::dropIfExists('categoria_subcategorias');
+    // }
 }
