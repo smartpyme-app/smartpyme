@@ -282,7 +282,7 @@ class LibrosIVAController extends Controller
                 'tipo_documento' => $compra->tipo_documento,
                 'num_documento' => $compra->referencia,
                 'nit_nrc' => $proveedor->ncr ?? $proveedor->nit,
-                'nombre_proveedor' => $proveedor->nombre,
+                'nombre_proveedor' => $compra->nombre_proveedor,
                 'compras_exentas' => 0,
                 'importaciones_exentas' => 0,
                 'compras_gravadas' => 0,
