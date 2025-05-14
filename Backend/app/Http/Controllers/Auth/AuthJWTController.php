@@ -218,7 +218,7 @@ class AuthJWTController extends Controller
             if (!$request->id) {
                 // Crear cliente
                 $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
-                $empresa->cliente_id = $cliente->id;
+                $empresa->id_cliente = $cliente->id;
                 $empresa->save();
                 // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);

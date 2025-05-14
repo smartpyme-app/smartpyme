@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use App\Http\Controllers\Api\Admin\SuscripcionesController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
+use App\Http\Controllers\n1co\EstadoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\n1co\N1coChargeController;
 
@@ -27,16 +28,17 @@ Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class,
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
+require base_path('routes/modulos/n1co/suscripciones-n1co.php');
 
 Route::group(['prefix' => 'payment'], function () {
-	Route::post('method', [N1coChargeController::class, 'createPaymentMethod']);
-	Route::post('process', [N1coChargeController::class, 'processCharge']);
-	Route::post('process-ready', [N1coChargeController::class, 'processChargeReady']);
-	Route::post('process/3ds', [N1coChargeController::class, 'processCharge3DS']);
-	Route::post('update-method-payment', [N1coChargeController::class, 'updateMethodPayment']);
-	Route::post('check-auth-status', [N1coChargeController::class, 'checkAuthenticationStatus']);
-	Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
-	Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
+    Route::post('method', [N1coChargeController::class, 'createPaymentMethod']);
+    Route::post('process', [N1coChargeController::class, 'processCharge']);
+    Route::post('process-ready', [N1coChargeController::class, 'processChargeReady']);
+    Route::post('process/3ds', [N1coChargeController::class, 'processCharge3DS']);
+    Route::post('update-method-payment', [N1coChargeController::class, 'updateMethodPayment']);
+    Route::post('check-auth-status', [N1coChargeController::class, 'checkAuthenticationStatus']);
+    Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
+    Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
 
 });
 
@@ -113,7 +115,6 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/accesos.php');
 	require base_path('routes/modulos/admin/licencias.php');
 	require base_path('routes/modulos/admin/suscripciones.php');
-
 	require base_path('routes/modulos/admin/MH.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
 
@@ -132,7 +133,6 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Pruebas masivas
 	require base_path('routes/modulos/admin/pruebas-masivas-mh.php');
 
-
 	// planillas
 
 	require base_path('routes/modulos/planilla/empleados.php');
@@ -140,19 +140,16 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/planilla/cargos.php');
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');
 
-    require base_path('routes/modulos/planilla/historialcontratos.php');
-
-	//Chatbot
-	require base_path('routes/modulos/chat/chat.php');
-
+	require base_path('routes/modulos/planilla/historialcontratos.php');
 	//Funcionalidades
 	require base_path('routes/modulos/funcionalidades/funcionalidades.php');
-
-
 });
 
 // Webhook
 require base_path('routes/modulos/webhook/webhook.php');
+
+// Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
+
 
 //token
 

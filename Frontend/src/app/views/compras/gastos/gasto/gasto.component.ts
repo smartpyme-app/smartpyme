@@ -31,7 +31,7 @@ export class GastoComponent implements OnInit {
     public impuestos_seleccionados: any[] = [];
     modalRef?: BsModalRef;
 
-	constructor( 
+	constructor(
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
 	) { }
@@ -99,10 +99,17 @@ export class GastoComponent implements OnInit {
                 if(this.gasto.renta_retenida > 0)
                     this.gasto.renta = true;
 
+              if (this.gasto.renta_retenida > 0)
+                this.gasto.renta = true;
+
+              if (!this.gasto.area_empresa) {
+                this.gasto.area_empresa = '';
+              }
+
                 if (this.gasto.otros_impuestos) {
-                    if (typeof this.gasto.otros_impuestos === 'object' && 
+                    if (typeof this.gasto.otros_impuestos === 'object' &&
                         this.gasto.otros_impuestos.seleccionados) {
-                        
+
                         this.gasto.otros_impuestos = this.gasto.otros_impuestos.seleccionados;
                         this.gasto.impuestos_valores = this.gasto.otros_impuestos.valores;
                     }
@@ -110,7 +117,7 @@ export class GastoComponent implements OnInit {
 
                 if (this.tieneOtrosImpuestos(this.gasto.otros_impuestos)) {
                     this.mostrar_otros_impuestos = true;
-                    
+
                     if (this.impuestos && this.impuestos.length > 0) {
                         this.cargarImpuestosSeleccionados();
                     }
@@ -132,8 +139,9 @@ export class GastoComponent implements OnInit {
             this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
             this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.gasto.id_usuario = this.apiService.auth_user().id;
-            
-            this.gasto.otros_impuestos = []; 
+            this.gasto.area_empresa = '';
+
+            this.gasto.otros_impuestos = [];
             this.gasto.impuestos_valores = [];
 
             if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
@@ -171,16 +179,16 @@ export class GastoComponent implements OnInit {
                 this.gasto.otros_impuestos = [];
             }
         }
-        
+
         this.impuestos_seleccionados = [];
-        
+
         this.gasto.otros_impuestos.forEach((impuestoId: number) => {
             const impuesto = this.impuestos.find((imp: any) => imp.id === impuestoId);
             if (impuesto) {
                 this.impuestos_seleccionados.push(impuesto);
             }
         });
-        
+
         this.calcularValoresImpuestos();
     }
 
@@ -195,7 +203,7 @@ export class GastoComponent implements OnInit {
         this.impuestos_seleccionados.forEach(impuesto => {
             const subtotal = parseFloat(this.gasto.sub_total) || 0;
             const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
-            
+
             this.gasto.impuestos_valores.push({
                 id_impuesto: impuesto.id,
                 nombre: impuesto.nombre,
@@ -235,7 +243,7 @@ export class GastoComponent implements OnInit {
 
     public setFechaPago(){
         if (this.gasto.condicion == 'Contado') {
-            this.gasto.estado = 'Pagado';    
+            this.gasto.estado = 'Pagado';
             this.gasto.fecha_pago = moment().format('YYYY-MM-DD');
         }else{
             this.gasto.estado = 'Pendiente';
@@ -286,13 +294,13 @@ export class GastoComponent implements OnInit {
         if (this.mostrar_otros_impuestos && Array.isArray(this.gasto.otros_impuestos) && this.gasto.otros_impuestos.length > 0) {
             // Recalcular valores de impuestos
             this.calcularValoresImpuestos();
-            
+
             // Sumar al total
             this.gasto.impuestos_valores.forEach((impValue: any) => {
                 total += parseFloat(impValue.valor);
             });
         }
-        
+
         // Establecer el total final
         this.gasto.total = total.toFixed(2);
     }
@@ -318,7 +326,7 @@ export class GastoComponent implements OnInit {
             this.gasto.iva = 0;
             this.gasto.sub_total = this.gasto.total;
         }
-        
+
         this.setTotal();
     }
 
@@ -336,16 +344,16 @@ export class GastoComponent implements OnInit {
         if(this.duplicargasto){
             this.gasto.recurrente = false;
         }
-        
-        if (this.mostrar_otros_impuestos && 
-            Array.isArray(this.gasto.otros_impuestos) && 
+
+        if (this.mostrar_otros_impuestos &&
+            Array.isArray(this.gasto.otros_impuestos) &&
             this.gasto.otros_impuestos.length > 0) {
-            
+
             const datosImpuestos = {
                 seleccionados: this.gasto.otros_impuestos,
                 valores: this.gasto.impuestos_valores
             };
-            
+
             this.gasto.otros_impuestos = datosImpuestos;
         } else {
             this.gasto.otros_impuestos = [];
@@ -365,11 +373,11 @@ export class GastoComponent implements OnInit {
     public setOtrosImpuestos() {
 
         if (this.mostrar_otros_impuestos) {
-            
+
             if (!Array.isArray(this.gasto.otros_impuestos)) {
                 this.gasto.otros_impuestos = [];
             }
-            
+
             if (!this.gasto.impuestos_valores) {
                 this.gasto.impuestos_valores = [];
             }
@@ -380,7 +388,7 @@ export class GastoComponent implements OnInit {
                 this.gasto.impuestos_valores = [];
             }
         }
-        
+
         this.setTotal();
     }
 
@@ -388,9 +396,9 @@ export class GastoComponent implements OnInit {
         if (!Array.isArray(this.gasto.otros_impuestos)) {
             this.gasto.otros_impuestos = [];
         }
-        
+
         this.impuestos_seleccionados = [];
-        
+
         if (this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
             this.gasto.otros_impuestos.forEach((impuestoId: number) => {
                 const impuesto = this.impuestos.find((imp: any) => imp.id === impuestoId);
@@ -401,31 +409,31 @@ export class GastoComponent implements OnInit {
         } else {
             this.gasto.impuestos_valores = [];
         }
-        
+
         this.setTotal();
     }
 
     public setImpuesto(impuesto:any) {
         this.impuestos.push(impuesto);
-        
+
         if (!Array.isArray(this.gasto.otros_impuestos)) {
             this.gasto.otros_impuestos = [];
         }
-        
+
         this.gasto.otros_impuestos.push(impuesto.id);
-        
+
         this.impuestos_seleccionados.push(impuesto);
-        
+
         this.setTotal();
     }
 
     private tieneOtrosImpuestos(otrosImpuestos: any): boolean {
         if (!otrosImpuestos) return false;
-        
+
         if (Array.isArray(otrosImpuestos)) {
             return otrosImpuestos.length > 0;
         }
-        
+
         return otrosImpuestos !== false && otrosImpuestos !== null && otrosImpuestos !== undefined;
     }
 
@@ -447,14 +455,14 @@ export class GastoComponent implements OnInit {
 
     processJsonData() {
       this.processingJson = true;
-  
+
       try {
         // Parsear el JSON
         const jsonData = JSON.parse(this.jsonContent);
-  
+
         // Mapear los datos del JSON al modelo de Gasto
         this.mapJsonToGasto(jsonData);
-  
+
         // Cerrar el modal y mostrar mensaje de éxito
         this.modalRef?.hide();
         this.alertService.success(
@@ -484,21 +492,21 @@ export class GastoComponent implements OnInit {
           this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
           this.gasto.id_usuario = this.apiService.auth_user().id;
         }
-  
+
         // Mapear datos de identificación
         if (jsonData.identificacion) {
           // Fecha
           if (jsonData.identificacion.fecEmi) {
             this.gasto.fecha = jsonData.identificacion.fecEmi;
           }
-  
+
           // Referencia
           if (jsonData.identificacion.numeroControl) {
             this.gasto.referencia = jsonData.identificacion.numeroControl
               .split('-')
               .pop();
           }
-  
+
           // Tipo de documento
           if (jsonData.identificacion.tipoDte) {
             // Convertir el código de tipo DTE a un nombre de documento
@@ -511,27 +519,27 @@ export class GastoComponent implements OnInit {
               '11': 'Factura de Exportación',
               '14': 'Sujeto excluido',
             };
-  
+
             this.gasto.tipo_documento =
               tiposDte[jsonData.identificacion.tipoDte] || 'Factura';
           }
-  
+
           // Valores para DTE
           this.gasto.codigo_generacion =
             jsonData.identificacion.codigoGeneracion || '';
           this.gasto.numero_control = jsonData.identificacion.numeroControl || '';
         }
-  
+
         // Mapear datos del proveedor
         if (jsonData.emisor) {
           this.buscarCrearProveedor(jsonData.emisor);
         }
-  
+
         // Mapear conceptos e ítems
         if (jsonData.cuerpoDocumento && jsonData.cuerpoDocumento.length > 0) {
           // Usar la primera descripción como concepto principal
           this.gasto.concepto = jsonData.cuerpoDocumento[0].descripcion;
-  
+
           // Si hay más de un ítem, añadirlos como nota
           if (jsonData.cuerpoDocumento.length > 1) {
             const itemsAdicionales = jsonData.cuerpoDocumento
@@ -543,14 +551,14 @@ export class GastoComponent implements OnInit {
                   })`
               )
               .join('\n');
-  
+
             this.gasto.nota = `Detalle adicional:\n${itemsAdicionales}`;
           }
-  
+
           // Intentar determinar categoría basada en las descripciones
           this.determinarCategoria(jsonData.cuerpoDocumento);
         }
-  
+
         // Mapear totales financieros
         if (jsonData.resumen) {
           // Montos base
@@ -559,7 +567,7 @@ export class GastoComponent implements OnInit {
           } else if (jsonData.resumen.totalGravada) {
             this.gasto.sub_total = parseFloat(jsonData.resumen.totalGravada);
           }
-  
+
           // IVA
           if (jsonData.resumen.tributos && jsonData.resumen.tributos.length > 0) {
             const iva = jsonData.resumen.tributos.find(
@@ -570,7 +578,7 @@ export class GastoComponent implements OnInit {
               this.gasto.impuesto = true;
             }
           }
-  
+
           // Retención de renta
           if (
             jsonData.resumen.reteRenta &&
@@ -579,7 +587,7 @@ export class GastoComponent implements OnInit {
             this.gasto.renta_retenida = parseFloat(jsonData.resumen.reteRenta);
             this.gasto.renta = true;
           }
-  
+
           // Percepción
           if (
             jsonData.resumen.ivaPerci1 &&
@@ -588,14 +596,14 @@ export class GastoComponent implements OnInit {
             this.gasto.iva_percibido = parseFloat(jsonData.resumen.ivaPerci1);
             this.gasto.percepcion = true;
           }
-  
+
           // Total
           if (jsonData.resumen.totalPagar) {
             this.gasto.total = parseFloat(jsonData.resumen.totalPagar);
           } else if (jsonData.resumen.montoTotalOperacion) {
             this.gasto.total = parseFloat(jsonData.resumen.montoTotalOperacion);
           }
-  
+
           // Forma de pago
           if (jsonData.resumen.pagos && jsonData.resumen.pagos.length > 0) {
             const formaPagoCodigos: { [key: string]: string } = {
@@ -609,15 +617,15 @@ export class GastoComponent implements OnInit {
               '08': 'Dinero electrónico',
               '99': 'Otros',
             };
-  
+
             const pago = jsonData.resumen.pagos[0];
             this.gasto.forma_pago = formaPagoCodigos[pago.codigo] || 'Efectivo';
-  
+
             // Manejo de crédito
             if (pago.codigo === '06') {
               this.gasto.credito = true;
               this.gasto.estado = 'Pendiente';
-  
+
               // Si hay plazo, calcular fecha de pago
               if (pago.plazo) {
                 const fechaPago = moment(this.gasto.fecha)
@@ -627,7 +635,7 @@ export class GastoComponent implements OnInit {
               }
             }
           }
-  
+
           // Condición de operación
           if (jsonData.resumen.condicionOperacion) {
             if (jsonData.resumen.condicionOperacion === 1) {
@@ -640,7 +648,7 @@ export class GastoComponent implements OnInit {
             }
           }
         }
-  
+
         // Actualizar los cálculos para asegurar consistencia
         this.setTotal();
       } catch (error) {
@@ -672,12 +680,12 @@ export class GastoComponent implements OnInit {
         Planilla: ['planilla', 'salario', 'sueldo', 'nómina'],
         Préstamos: ['préstamo', 'crédito', 'financiamiento'],
       };
-  
+
       // Concatenar todas las descripciones
       const descripcionCompleta = items
         .map((item) => item.descripcion.toLowerCase())
         .join(' ');
-  
+
       // Buscar coincidencias con palabras clave
       for (const [categoria, keywords] of Object.entries(categoriasKeywords)) {
         for (const keyword of keywords) {
@@ -697,12 +705,12 @@ export class GastoComponent implements OnInit {
             p.nit === emisorData.nit ||
             (p.nombre_empresa && p.nombre_empresa.includes(emisorData.nombre))
         );
-  
+
         if (proveedorExistente) {
           this.gasto.id_proveedor = proveedorExistente.id;
           return;
         }
-  
+
         try {
           // Intentar buscar en el backend por NIT
           const response = await this.apiService
@@ -710,7 +718,7 @@ export class GastoComponent implements OnInit {
             .toPromise();
           if (response && response.id) {
             this.gasto.id_proveedor = response.id;
-  
+
             // Añadir a la lista local si no existe
             if (!this.proveedores.find((p: any) => p.id === response.id)) {
               this.proveedores.push(response);
@@ -720,7 +728,7 @@ export class GastoComponent implements OnInit {
         } catch (error) {
           // Proveedor no encontrado, continuar para crearlo
         }
-  
+
         // Si llegamos aquí, necesitamos crear un nuevo proveedor
         const nuevoProveedor = {
           tipo: 'Empresa',
@@ -736,7 +744,7 @@ export class GastoComponent implements OnInit {
           id_empresa: this.apiService.auth_user().id_empresa,
           id_usuario: this.apiService.auth_user().id,
         };
-  
+
         try {
           const proveedorCreado = await this.apiService
             .store('proveedor', nuevoProveedor)
@@ -756,5 +764,4 @@ export class GastoComponent implements OnInit {
         }
       }
     }
-
 }

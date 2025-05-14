@@ -114,12 +114,20 @@
               >
               <span
                 *ngIf="
+                  config.tipo_reporte ===
+                  'detalle-ventas-vendedor'
+                "
+                >Detalle de Ventas por Vendedor</span
+              >
+              <span
+                *ngIf="
                   config.tipo_reporte !== 'ventas-por-vendedor' &&
                   config.tipo_reporte !== 'ventas-diarias' &&
                   config.tipo_reporte !== 'productos-vendidos' &&
                   config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
                   config.tipo_reporte !==
-                    'estado-financiero-consolidado-sucursales'
+                    'estado-financiero-consolidado-sucursales' &&
+                  config.tipo_reporte !== 'detalle-ventas-vendedor'
                 "
                 >{{ config.tipo_reporte }}</span
               >

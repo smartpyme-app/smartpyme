@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\ReportesAutomaticos\EstadoFinancieroConsolidadoSucursales;
 
 use App\Models\Admin\Sucursal;
 use App\Models\Compras\Gastos\Gasto;
@@ -33,11 +33,11 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
         $this->fechaFin = $fechaFin ?? Carbon::today()->format('Y-m-d');
         $this->id_empresa = $id_empresa;
         
-        Log::info('Generando Estado Financiero Consolidado: ', [
-            'fechaInicio' => $this->fechaInicio,
-            'fechaFin' => $this->fechaFin,
-            'empresa' => $this->id_empresa
-        ]);
+        // Log::info('Generando Estado Financiero Consolidado: ', [
+        //     'fechaInicio' => $this->fechaInicio,
+        //     'fechaFin' => $this->fechaFin,
+        //     'empresa' => $this->id_empresa
+        // ]);
     }
 
     public function title(): string
@@ -71,11 +71,13 @@ class EstadoFinancieroConsolidadoSucursalesExport implements FromCollection, Wit
                 ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
                 
             $gastos = Gasto::where('id_sucursal', $sucursal->id)
                 ->whereBetween('fecha', [$this->fechaInicio, $this->fechaFin])
                 ->where('id_empresa', $this->id_empresa)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
                 
             $balance = $ventas - $gastos;

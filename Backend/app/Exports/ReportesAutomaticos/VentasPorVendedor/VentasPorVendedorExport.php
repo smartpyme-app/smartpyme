@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\ReportesAutomaticos\VentasPorVendedor;
 
 use App\Models\Ventas\Detalle;
 use Illuminate\Support\Facades\Auth;
@@ -108,7 +108,8 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         $detalles = Detalle::whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
             $query->where('fecha', '>=', $fechaInicio)
                 ->where('fecha', '<=', $fechaFin)
-                ->where('cotizacion', 0);
+                ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada');
 
             if ($id_empresa) {
                 $query->where('id_empresa', $id_empresa);

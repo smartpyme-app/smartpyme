@@ -404,6 +404,7 @@
                 <select
                   class="form-control"
                   [(ngModel)]="billingInfo.countryCode"
+                  (change)="onPaisChange()"
                   name="countryCode"
                   required
                   [ngClass]="{
@@ -413,11 +414,10 @@
                   }"
                   #countryCode="ngModel"
                 >
-                  <option value="" disabled selected>Seleccione un país</option>
-                  <option value="SV">El Salvador</option>
-                  <option value="US">Estados Unidos</option>
-                  <option value="MX">México</option>
-                  <!-- Agregar más opciones según sea necesario -->
+                  <option value="" disabled selected>
+                    Seleccione un país
+                  </option>
+                  <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
                 </select>
                 <div
                   class="invalid-feedback"
@@ -432,29 +432,30 @@
 
               <!-- Código de Estado -->
               <div class="col-md-4 mb-3">
-                <label class="form-label">Código de Estado</label>
-                <input
-                  type="text"
+                <label class="form-label">Estado</label>
+                <select
                   class="form-control"
                   [(ngModel)]="billingInfo.stateCode"
                   name="stateCode"
+                  (change)="onEstadoChange()"
                   required
                   [ngClass]="{
                     'is-invalid':
                       stateCode.invalid &&
                       (stateCode.dirty || stateCode.touched)
                   }"
-                  maxlength="2"
-                  placeholder="SS"
                   #stateCode="ngModel"
-                />
+                >
+                  <option value="" disabled selected>Selecciona estado</option>
+                  <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                </select>
                 <div
                   class="invalid-feedback"
                   *ngIf="
                     stateCode.invalid && (stateCode.dirty || stateCode.touched)
                   "
                 >
-                  Código de estado inválido
+                  Estado inválido
                 </div>
               </div>
 
@@ -477,7 +478,9 @@
                 />
                 <div
                   class="invalid-feedback"
-                  *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)"
+                  *ngIf="
+                    zipCode.invalid && (zipCode.dirty || zipCode.touched)
+                  "
                 >
                   Código ZIP inválido
                 </div>
@@ -729,6 +732,7 @@
                   [(ngModel)]="billingInfo.countryCode"
                   name="countryCode"
                   required
+                  (change)="onPaisChange()"
                   [ngClass]="{
                     'is-invalid':
                       countryCode.invalid &&
@@ -736,11 +740,8 @@
                   }"
                   #countryCode="ngModel"
                 >
-                  <option value="" disabled selected>Seleccione un país</option>
-                  <option value="SV">El Salvador</option>
-                  <option value="US">Estados Unidos</option>
-                  <option value="MX">México</option>
-                  <!-- Agregar más opciones según sea necesario -->
+                  <option value="" disabled selected>Selecciona país</option>
+                  <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
                 </select>
                 <div
                   class="invalid-feedback"
@@ -755,11 +756,11 @@
 
               <!-- Código de Estado -->
               <div class="col-md-4 mb-3">
-                <label class="form-label">Código de Estado</label>
-                <input
-                  type="text"
+                <label class="form-label">Estado</label>
+                <select
                   class="form-control"
                   [(ngModel)]="billingInfo.stateCode"
+                  (change)="onEstadoChange()"
                   name="stateCode"
                   required
                   [ngClass]="{
@@ -767,17 +768,18 @@
                       stateCode.invalid &&
                       (stateCode.dirty || stateCode.touched)
                   }"
-                  maxlength="2"
-                  placeholder="SS"
                   #stateCode="ngModel"
-                />
+                >
+                  <option value="" disabled selected>Selecciona estado</option>
+                  <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                </select>
                 <div
                   class="invalid-feedback"
                   *ngIf="
                     stateCode.invalid && (stateCode.dirty || stateCode.touched)
                   "
                 >
-                  Código de estado inválido
+                  Estado inválido
                 </div>
               </div>
 
@@ -794,8 +796,8 @@
                     'is-invalid':
                       zipCode.invalid && (zipCode.dirty || zipCode.touched)
                   }"
-                  maxlength="5"
-                  placeholder="1101"
+                  maxlength="10"
+                  placeholder="Ejemplo: 1101"
                   #zipCode="ngModel"
                 />
                 <div

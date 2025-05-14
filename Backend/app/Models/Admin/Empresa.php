@@ -358,6 +358,11 @@ class Empresa extends Model
         return $this->currency ? $this->currency->currency_symbol : null;
     }
 
+    public function suscripcionActiva()
+    {
+        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
+    }
+
     public function inicializarEstadoPruebasMasivas()
     {
         $estadoPruebas = [
@@ -396,11 +401,5 @@ class Empresa extends Model
         $this->save();
 
         return $estadoPruebas;
-
-    }
-
-    public function suscripcionActiva()
-    {
-        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
     }
 }

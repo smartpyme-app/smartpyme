@@ -153,6 +153,8 @@
                 <h1>Reporte de Ventas por Categoría y Vendedor</h1>
             @elseif($datos['tipo_reporte'] === 'estado-financiero-consolidado-sucursales')
                 <h1>Estado Financiero Consolidado por Sucursales</h1>
+            @elseif($datos['tipo_reporte'] === 'detalle-ventas-vendedor')
+                <h1>Detalle de Ventas por Vendedor</h1>
             @else
                 <h1>Reporte Financiero</h1>
             @endif
@@ -204,6 +206,15 @@
                     <h2>Resumen del reporte:</h2>
                     <!-- Si tienes datos específicos para este tipo de reporte, agrégalos aquí -->
                     <p>Este reporte proporciona una visión global del desempeño financiero de cada sucursal, mostrando ventas, gastos y el balance resultante durante el período especificado.</p>
+                </div>
+                
+            @elseif($datos['tipo_reporte'] === 'detalle-ventas-vendedor')
+                <p>Adjunto encontrará el detalle de ventas por vendedor para el período seleccionado.</p>
+                
+                <div class="summary detalle-ventas">
+                    <h2>Resumen del reporte:</h2>
+                    <!-- Si tienes datos específicos para este tipo de reporte, agrégalos aquí -->
+                    <p>Este reporte muestra el detalle de ventas realizadas por cada vendedor, incluyendo información sobre los productos vendidos, clientes, formas de pago y totales.</p>
                 </div>
                 
             @endif

@@ -35,7 +35,7 @@ export class EmpresaComponent implements OnInit {
     public procesando: boolean = false;
     public modalRef!: BsModalRef;
     public procesandoPruebas: boolean = false;
-    public correlativoInicial: number | undefined = undefined; 
+    public correlativoInicial: number | undefined = undefined;
 
     @ViewChild('modalTemplate')
     modalTemplate!: TemplateRef<any>;
@@ -62,14 +62,8 @@ export class EmpresaComponent implements OnInit {
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
-        // setTimeout(() => {
-        //     if (this.empresa && this.empresa.fe_ambiente === '00') {
-        //         this.cargarEstadisticasPruebas();
-        //         this.cargarDocumentosBase();
-        //     }
-        // }, 1000); 
-
     }
+
 
     public loadAll() {
         this.loading = true;
@@ -78,6 +72,12 @@ export class EmpresaComponent implements OnInit {
             //empresa.empresa_cliente.id_client
             this.getClienteById(this.empresa.empresa_cliente.id_client);
             this.loading = false;
+
+            //Se cargan las facturas cuando ya se ha inicializado la empresa
+            if (this.empresa && this.empresa.fe_ambiente === '00') {
+                this.cargarEstadisticasPruebas();
+                this.cargarDocumentosBase();
+            }
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
@@ -92,7 +92,7 @@ export class EmpresaComponent implements OnInit {
                 this.cargarEstadisticasPruebas();
                 this.cargarDocumentosBase();
             }
-            
+
         },error => {this.alertService.error(error); this.loading = false; });
 
     }
@@ -296,11 +296,11 @@ export class EmpresaComponent implements OnInit {
             );
         }
     }
-    
+
       getKeysPruebas(): string[] {
         return this.estadisticasPruebas ? Object.keys(this.estadisticasPruebas) : [];
       }
-    
+
       getLabelTipo(tipo: string): string {
         const labels: { [key: string]: string } = {
           'facturas': 'Facturas',
@@ -310,55 +310,55 @@ export class EmpresaComponent implements OnInit {
         //   'facturasExportacion': 'Exportación',
         //   'sujetoExcluido': 'Sujeto Excluido'
         };
-        
+
         return labels[tipo] || tipo;
       }
-    
+
       isPruebaCompleta(tipo: string): boolean {
         if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
           return false;
         }
-        
+
         return this.estadisticasPruebas[tipo].emitidas >= this.estadisticasPruebas[tipo].requeridas;
       }
-    
+
       getProgresoTipo(tipo: string): number {
         if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
           return 0;
         }
-        
+
         const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
         return Math.min(100, Math.round((emitidas / requeridas) * 100));
       }
-    
+
       getTotalProgress(): number {
         if (!this.estadisticasPruebas) {
           return 0;
         }
-        
+
         // Verificar si todos los tipos de documentos han alcanzado el mínimo requerido
-        const todosCompletados = Object.values(this.estadisticasPruebas).every((stat: any) => 
+        const todosCompletados = Object.values(this.estadisticasPruebas).every((stat: any) =>
           stat.emitidas >= stat.requeridas
         );
-        
+
         // Si todos los tipos han alcanzado el mínimo, mostrar 100%
         if (todosCompletados) {
           return 100;
         }
-        
+
         // Caso contrario, calcular el porcentaje real pero limitado a 100%
         let totalEmitidos = 0;
         let totalRequeridos = 0;
-        
+
         Object.values(this.estadisticasPruebas).forEach((stat: any) => {
           // Para cada tipo, considerar como máximo el número requerido
           totalEmitidos += Math.min(stat.emitidas, stat.requeridas);
           totalRequeridos += stat.requeridas;
         });
-        
+
         return Math.min(100, Math.round((totalEmitidos / totalRequeridos) * 100));
       }
-    
+
       cargarDocumentosBase() {
         this.apiService.getAll('mh/pruebas-masivas/documentos-base').subscribe(
           (data) => {
@@ -370,48 +370,48 @@ export class EmpresaComponent implements OnInit {
           }
         );
       }
-      
+
       // Modifica este método para que abra el modal
       ejecutarPruebasMasivas(template: TemplateRef<any>, tipo: string) {
         this.tipoSeleccionado = tipo;
-        
+
         // Calcular cuántos documentos faltan
         if (this.estadisticasPruebas && this.estadisticasPruebas[tipo]) {
           const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
-          
+
           // Mostrar el modal usando el template pasado como parámetro
           this.modalRef = this.modalService.show(template, {
             class: 'modal-md'
           });
         }
       }
-      
+
       // Método para confirmar y ejecutar la emisión
       confirmarEjecucion() {
         this.modalRef.hide();
         this.procesando = true;
-        
+
         // Llamada al servicio para ejecutar las pruebas
         this.mhService.ejecutarPruebasMasivas(
-          this.tipoSeleccionado, 
-          this.cantidadFaltante, 
+          this.tipoSeleccionado,
+          this.cantidadFaltante,
           this.documentoBaseSeleccionado?.id,
           this.correlativoInicial || undefined
         ).subscribe(
           (response) => {
             this.procesando = false;
-            
+
             if (response.success) {
               // Mostrar un mensaje más específico cuando se encola el trabajo
               if (response.queued) {
                 this.alertService.success(
-                  'Proceso iniciado', 
+                  'Proceso iniciado',
                   'Las pruebas se están ejecutando en segundo plano. Recibirá una notificación por correo electrónico cuando el proceso finalice.'
                 );
               } else {
                 this.alertService.success('Proceso completado', response.message);
               }
-              
+
               // Refrescar las estadísticas después de un breve retraso
               setTimeout(() => {
                 this.cargarEstadisticasPruebas();
@@ -641,15 +641,15 @@ export class EmpresaComponent implements OnInit {
           this.alertService.warning('No hay credenciales disponibles para descargar', 'No se encontraron credenciales de cliente. Contacte al administrador para generar nuevas credenciales.');
           return;
         }
-        
+
         const contenido = `OAuth Client Credentials:
-        
+
       Client ID: ${this.cliente.id_client}
       Client Secret: ${this.cliente.secret}
       Nombre: ${this.cliente.name || this.empresa.nombre}
       Fecha de Creación: ${new Date(this.cliente.created_at).toLocaleDateString()}
       `;
-      
+
         const blob = new Blob([contenido], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -659,7 +659,7 @@ export class EmpresaComponent implements OnInit {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         this.alertService.success('Credenciales descargadas', 'El archivo de texto con las credenciales ha sido generado correctamente.');
       }
 
