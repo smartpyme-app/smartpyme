@@ -47,12 +47,14 @@ class ProductosController extends Controller
                 return $query->where('id_categoria', $request->id_categoria);
             })
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('marca', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
+                return $query->where(function ($subQuery) use ($request) {
+                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
+                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+                });
             })
             ->when($request->sin_stock, function ($query) use ($request) {
                 return $query->join('inventario', 'productos.id', '=', 'inventario.id_producto')
@@ -119,6 +121,7 @@ class ProductosController extends Controller
                     ->orWhere('codigo', 'like', "%$query%")
                     ->orWhere('etiquetas', 'like', "%$query%");
             })
+            ->whereIn('tipo', ['Producto', 'Compuesto']) 
             ->take(15)
             ->get();
 
