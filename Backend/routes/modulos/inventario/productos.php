@@ -10,8 +10,8 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
-//use Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
+//use Route;
 use Illuminate\Support\Facades\Route;
 
 
@@ -84,9 +84,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
     //productos/ajuste-masivo
     Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
-
+    //producto/exportar-woocommerce post
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
-    //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
     //productos/exportar-traslado
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
@@ -94,4 +93,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/traslado-masivo/importar',          [ProductosController::class, 'importarTrasladosMasivos']);
     //productos/traslado-masivo post
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
+
+
 ?>

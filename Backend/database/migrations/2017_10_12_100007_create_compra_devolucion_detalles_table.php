@@ -10,36 +10,36 @@ class CreateCompraDevolucionDetallesTable extends Migration {
 	 *
 	 * @return void
 	 */
-	public function up()
-	{
-		Schema::create('compra_devolucion_detalles', function(Blueprint $table)
-		{
-			$table->increments('id');
+	//public function up()
+	// {
+	// 	Schema::create('compra_devolucion_detalles', function(Blueprint $table)
+	// 	{
+	// 		$table->increments('id');
 			
-			$table->integer('producto_id');
-			$table->decimal('cantidad', 9,2);
-			$table->decimal('costo', 9,2);
-			$table->decimal('descuento', 5,2)->default(0);
-			$table->decimal('no_sujeta', 9,2)->default(0);
-            $table->decimal('exenta', 9,2)->default(0);
-            $table->decimal('gravada', 9,2)->default(0);
-			$table->decimal('subtotal', 9,2)->default(0);
-			$table->decimal('iva', 9,2)->default(0);
-			$table->decimal('total', 9,2)->default(0);
-			$table->integer('devolucion_id');
+	// 		$table->integer('producto_id');
+	// 		$table->decimal('cantidad', 9,2);
+	// 		$table->decimal('costo', 9,2);
+	// 		$table->decimal('descuento', 5,2)->default(0);
+	// 		$table->decimal('no_sujeta', 9,2)->default(0);
+    //         $table->decimal('exenta', 9,2)->default(0);
+    //         $table->decimal('gravada', 9,2)->default(0);
+	// 		$table->decimal('subtotal', 9,2)->default(0);
+	// 		$table->decimal('iva', 9,2)->default(0);
+	// 		$table->decimal('total', 9,2)->default(0);
+	// 		$table->integer('devolucion_id');
 
-			$table->timestamps();
-		});
-	}
+	// 		$table->timestamps();
+	// 	});
+	// }
 
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::drop('compra_devolucion_detalles');
-	}
+	// /**
+	//  * Reverse the migrations.
+	//  *
+	//  * @return void
+	//  */
+	// public function down()
+	// {
+	// 	Schema::drop('compra_devolucion_detalles');
+	// }
 
 }

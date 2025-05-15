@@ -22,16 +22,16 @@
             margin: 0px;
         }
 
-        #fecha          {top: 5.5cm; left: 16cm; }
-        #nit            {top: 6cm; left: 16cm; }
-        #condicion      {top: 6.7cm; left: 16.5cm; }
-        #cliente        {top: 5cm; left: 2.5cm; width: 9cm;}
-        #direccion      {top: 5.5cm; left: 2.5cm; width: 9cm;}
-        #municipio      {top: 6cm; left: 2.5cm; width: 9cm;}
-        #departamento      {top: 6.7cm; left: 2.5cm; width: 9cm;}
+        #fecha          {top: 4.2cm; left: 16cm; }
+        #nit            {top: 4.7cm; left: 16cm; }
+        #condicion      {top: 4.9cm; left: 16.5cm; }
+        #cliente        {top: 3.5cm; left: 2.5cm; width: 9cm;}
+        #direccion      {top: 4.2cm; left: 2.5cm; width: 9cm;}
+        #municipio      {top: 4.7cm; left: 2.5cm; width: 9cm;}
+        #departamento      {top: 5.5cm; left: 2.5cm; width: 9cm;}
 
 
-        table   {position: absolute; top: 8.3cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
+        table   {position: absolute; top: 7cm; left: 0.6cm; text-align: left; border-collapse: collapse; }
         table td{height: 0.4cm; text-align: left;}
 
         .cantidad{ width: 1.3cm; text-align: center;}
@@ -43,13 +43,13 @@
         .gravadas{ width: 2cm; text-align: right;}
         
 
-        #letras     {top: 13.3cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
+        #letras     {top: 12cm; left: 2cm; width: 9cm; word-break: break-all; white-space: normal;}
         #correlativo{top: 17cm; left: 2cm;; width: 9cm;;}
 
-        #suma       {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
+        #suma       {top: 11.7cm; left: 18cm; width: 2cm; text-align: right;}
         #no_sujeta  {top: 12.5cm; left: 18cm; width: 2cm; text-align: right;}
         #exenta     {top: 13cm; left: 18cm; width: 2cm; text-align: right;}
-        #total      {top: 15.9cm; left: 18cm; width: 2cm; text-align: right;}
+        #total      {top: 14.6cm; left: 18cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}
 

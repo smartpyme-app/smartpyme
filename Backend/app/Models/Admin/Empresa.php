@@ -271,6 +271,11 @@ class Empresa extends Model
         return $this->pagos()->where('estado', 'Pendiente')->count();
     }
 
+    public function empresa_cliente(){
+        return $this->hasOne('App\Models\Token\EmpresaCliente', 'id_empresa');
+        //return $this->hasMany('App\Models\Token\EmpresaCliente', 'id_empresa');
+    }
+
     public function getLastPayAttribute()
     {
         return $this->pagos()->pluck('created_at')->last();
