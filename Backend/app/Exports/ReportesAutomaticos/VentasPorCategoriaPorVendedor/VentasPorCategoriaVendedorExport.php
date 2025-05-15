@@ -43,6 +43,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
 
         if ($configuracion && isset($configuracion->sucursales) && !empty($configuracion->sucursales)) {
             $this->sucursalesData = Sucursal::whereIn('id', $configuracion->sucursales)->get()->keyBy('id');
+            $this->sucursales = $configuracion->sucursales;
         } else {
             $this->sucursalesData = Sucursal::where('id_empresa', $id_empresa)->get()->keyBy('id');
             if ($configuracion) {
@@ -71,6 +72,12 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public function collection()
     {
         try {
+
+            $categoriasIds = [];
+            if ($this->configuracion && isset($this->configuracion->configuracion) && !empty($this->configuracion->configuracion)) {
+                $categoriasIds = collect($this->configuracion->configuracion)->pluck('id')->toArray();
+            }
+
             $query = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
                 ->join('categorias as cat', 'pro.id_categoria', '=', 'cat.id')
@@ -80,7 +87,11 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
                 ->where('vv.id_empresa', $this->id_empresa)
                 ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
     
-            if (!empty($this->sucursales)) {
+                if (!empty($categoriasIds)) {
+                    $query->whereIn('cat.id', $categoriasIds);
+                }
+            
+                if (!empty($this->sucursales)) {
                 $query->whereIn('vv.id_sucursal', $this->sucursales);
             }
     
@@ -204,6 +215,12 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public function headings(): array
     {
         try {
+
+            $categoriasIds = [];
+            if ($this->configuracion && isset($this->configuracion->configuracion) && !empty($this->configuracion->configuracion)) {
+                $categoriasIds = collect($this->configuracion->configuracion)->pluck('id')->toArray();
+            }
+
             // Obtener las categorías para las columnas
             $categorias = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
@@ -212,6 +229,10 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
                 ->where('vv.estado', '!=', 'Anulada')
                 ->where('vv.id_empresa', $this->id_empresa)
                 ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
+
+            if (!empty($categoriasIds)) {
+                $categorias->whereIn('cat.id', $categoriasIds);
+            }
     
             // Aplicar filtro de sucursales si está definido
             if (!empty($this->sucursales)) {
