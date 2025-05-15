@@ -66,6 +66,7 @@ class Venta extends Model {
         'seguro',
         'flete',
         'no_sujeta',
+        'tipo_operacion',
         'tipo_renta',
     );
 

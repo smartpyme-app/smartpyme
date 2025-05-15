@@ -13,16 +13,18 @@ use Illuminate\Http\Request;
 
 class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
+
     public $request;
+
+    public function __construct()
+    {
+        setlocale(LC_NUMERIC, 'en_US.UTF-8');
+    }
 
     public function filter(Request $request)
     {
         $this->request = $request;
     }
-
 
     public function collection()
     {
@@ -87,23 +89,23 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
                 strlen($compra->referencia) >= 15 ? '4' : '1', //B Clase DTE o Impreso
                 $tipo, //C Tipo
-                $compra->referencia, //D Num Documento
-                $proveedor->ncr ? $proveedor->ncr : $proveedor->nit,  // E - NIT o NRC
+                str_replace('-', '', $compra->referencia), //D Num Documento
+                $proveedor->ncr ? str_replace('-', '', $proveedor->ncr) : str_replace('-', '', $proveedor->nit),  // E - NIT o NRC
                 $compra->nombre_proveedor,  // F - NOMBRE, RAZ N SOCIAL O DENOMINACI N
-                '0',  // G - Compras internas exentas
-                $compra->exenta ?? '0' ,  // H - Internaciones exentas
-                '0',  // I - Importaciones exentas
+                '0.00',  // G - Compras internas exentas
+                $compra->exenta > 0  ? $compra->exenta : '0.00' ,  // H - Internaciones exentas
+                '0.00',  // I - Importaciones exentas
                 $compra->sub_total,  // J - Compras gravadas
-                '0',  // K - Internaciones gravadas
-                '0',  // l - Importaciones gravadas de bienes
-                '0',  // M - Importaciones gravadas de servicios
+                '0.00',  // K - Internaciones gravadas
+                '0.00',  // l - Importaciones gravadas de bienes
+                '0.00',  // M - Importaciones gravadas de servicios
                 $compra->iva,  // N - credito fiscal
                 $compra->total,  // O - total
                 null,  // P - dui
-                $compra->exenta > 0 ? 2 : 1,  // Q - TIPO DE OPERACIÖN
-                $compra->origen == 'gasto' ? 2 : 1 ,  // R - CLASIFICACI Costo gasto
+                $this->tipoOperacion($compra->tipo_operacion),  // Q - SECTOR
+                $this->tipoClasificacion($compra->clasificacion),  // R - SECTOR
                 $this->tipoSector($compra->sector),  // S - SECTOR
-                $this->tipo($compra->tipo),  // T - TIPO DE COSTO / GASTO
+                $this->tipo($compra->tipo_gasto),  // T - TIPO DE COSTO / GASTO
                 'num_anexo' => 3,  // U - NUMERO DE ANEXO
             ];
 
@@ -119,13 +121,31 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
         ];
     }
 
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return null;
+        }
+    }
+
+    function tipoClasificacion($clasificacion) {
+        switch ($clasificacion) {
+            case 'Costo': return 1;
+            case 'Gasto': return 2;
+            default: return null;
+        }
+    }
+
     function tipoSector($sector) {
         switch ($sector) {
             case 'Industria': return 1;
             case 'Comercio': return 2;
             case 'Agropecuaria': return 3;
             case 'Servicios, profesiones, artes y oficios': return 4;
-            default: return '0';
+            default: return null;
         }
     }
 
@@ -138,7 +158,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             case 'Costo artículos producidos/comprados interno': return 5;
             case 'Costos indirectos de fabricación': return 6;
             case 'Mano de obra': return 7;
-            default: return '0';
+            default: return null;
         }
     }
 

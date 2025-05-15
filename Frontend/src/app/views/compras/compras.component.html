@@ -106,7 +106,6 @@
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.tipo_documento == 'Sujeto excluido' && compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
-
                                     <a  *ngIf="apiService.canEdit()" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
@@ -290,14 +289,20 @@
             <div class="form-group col-md-6">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
-                    <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                    <option value="Ticket">Ticket</option>
+                    <option value="Nota de crédito">Nota de crédito</option>
+                    <option value="Nota de débito">Nota de débito</option>
+                    <option value="Factura de exportación">Factura de exportación</option>
+                    <option value="Factura">Factura</option>
+                    <option value="Sujeto excluido">Sujeto excluido</option>
+                    <option value="Crédito fiscal">Crédito fiscal</option>
                 </select>
             </div>
             <div class="form-group col-md-6">
                 <label for="referencia">Referencia:</label><br>
                 <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia">
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-12">
                 <label for="id_usuario">Usuario:</label>
                 <ng-select [(ngModel)]="compra.id_usuario" class="form-select p-0" name="id_usuario">
                     <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
@@ -306,8 +311,26 @@
                 </ng-select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.tipo">Tipo:</label>
-                <select name="tipo" class="form-select" [(ngModel)]="compra.tipo">
+                <label for="tipo_operacion">Tipo de operación:</label>
+                <select name="tipo_operacion" class="form-select" [(ngModel)]="compra.tipo_operacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Gravada">No Gravada</option>
+                    <option value="Excluido">Excluido</option>
+                    <option value="Mixta">Mixta</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="clasificacion">Clasificación:</label>
+                <select name="clasificacion" class="form-select" [(ngModel)]="compra.clasificacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Costo">Costo</option>
+                    <option value="Gasto">Gasto</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_gasto">Tipo:</label>
+                <select name="tipo_gasto" class="form-select" [(ngModel)]="compra.tipo_gasto">
                     <option [ngValue]="null">Seleccione aquí</option>
                     <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
                     <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
@@ -319,7 +342,7 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.sector">Sector:</label>
+                <label for="sector">Sector:</label>
                 <select name="sector" class="form-select" [(ngModel)]="compra.sector">
                     <option [ngValue]="null">Seleccione aquí</option>
                     <option value="Industria">Industria</option>
@@ -342,7 +365,6 @@
     </form>
   </div>
 </ng-template>
-
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">

@@ -117,6 +117,9 @@
                                     <a *ngIf="apiService.canEdit()" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
+                                    <!-- <a  *ngIf="apiService.canEdit()" (click)="openModalEdit(mgasto, gasto)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a> -->
                                     <a *ngIf="gasto.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
@@ -140,6 +143,104 @@
         </div>
     </div>
 </section>
+
+<ng-template #mgasto>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Editar gasto</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form name="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="fecha">Fecha:</label>
+                <input type="date" [(ngModel)]="gasto.fecha" name="fecha" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="forma_pago">Método de pago:</label>
+                <select name="forma_pago" [(ngModel)]="gasto.forma_pago" class="form-select">
+                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="tipo_documento">Documento</label>
+                <select name="tipo_documento" [(ngModel)]="gasto.tipo_documento" class="form-select">
+                    <option value="Ticket">Ticket</option>
+                    <option value="Nota de crédito">Nota de crédito</option>
+                    <option value="Nota de débito">Nota de débito</option>
+                    <option value="Factura de exportación">Factura de exportación</option>
+                    <option value="Factura">Factura</option>
+                    <option value="Sujeto excluido">Sujeto excluido</option>
+                    <option value="Crédito fiscal">Crédito fiscal</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="referencia">Referencia:</label><br>
+                <input type="number" class="form-control" [(ngModel)]="gasto.referencia" name="referencia">
+            </div>
+            <div class="form-group col-md-12">
+                <label for="id_usuario">Usuario:</label>
+                <ng-select [(ngModel)]="gasto.id_usuario" class="form-select p-0" name="id_usuario">
+                    <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_operacion">Tipo de operación:</label>
+                <select name="tipo_operacion" class="form-select" [(ngModel)]="gasto.tipo_operacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Gravada">No Gravada</option>
+                    <option value="Excluido">Excluido</option>
+                    <option value="Mixta">Mixta</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="clasificacion">Clasificación:</label>
+                <select name="clasificacion" class="form-select" [(ngModel)]="gasto.clasificacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Costo">Costo</option>
+                    <option value="Gasto">Gasto</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_gasto">Tipo:</label>
+                <select name="tipo_gasto" class="form-select" [(ngModel)]="gasto.tipo_gasto">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
+                    <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
+                    <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
+                    <option value="Costo artículos producidos/gastodos importaciones/internaciones">Costo artículos producidos/gastodos importaciones/internaciones</option>
+                    <option value="Costo artículos producidos/gastodos interno">Costo artículos producidos/gastodos interno</option>
+                    <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
+                    <option value="Mano de obra">Mano de obra</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="sector">Sector:</label>
+                <select name="sector" class="form-select" [(ngModel)]="gasto.sector">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Industria">Industria</option>
+                    <option value="Comercio">Comercio</option>
+                    <option value="Agropecuaria">Agropecuaria</option>
+                    <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12">
+                <label for="observaciones">Observaciones:</label>
+                <textarea class="form-control" [(ngModel)]="gasto.observaciones" name="observaciones" cols="30" rows="3"></textarea>
+            </div>
+            <div class="d-grid mt-4">
+                <button [disabled]="saving" class="btn btn-primary btn-block">
+                    <span *ngIf="!saving">Guardar</span>
+                    <span *ngIf="saving">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </form>
+  </div>
+</ng-template>
 
 
 <ng-template #mfilter>

@@ -47,8 +47,10 @@ class Compra extends Model {
         'dte',
         'dte_invalidacion',
         'no_sujeta',
+        'clasificacion',
+        'tipo_operacion',
         'sector',
-        'tipo'
+        'tipo_gasto'
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];

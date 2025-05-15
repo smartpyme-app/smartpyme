@@ -294,6 +294,16 @@
                 <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
             </div>
             <div class="form-group col-sm-12">
+                <label for="tipo_operacion">Tipo de operación:</label>
+                <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Gravada">No Gravada</option>
+                    <option value="Excluido">Excluido</option>
+                    <option value="Mixta">Mixta</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-12">
                 <label for="filtro.tipo_renta">Tipo de ingreso:</label>
                 <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -315,7 +325,7 @@
                 <div class="form-group col-md-12 without-label">
                     <div class="form-switch bg-light-info rounded">
                       <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
-                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
+                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="venta.descripcion_personalizada">
                     </div>
                 </div>
                 <div class="form-group col-md-12" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">

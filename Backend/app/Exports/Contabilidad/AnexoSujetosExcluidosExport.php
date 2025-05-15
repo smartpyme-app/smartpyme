@@ -14,10 +14,14 @@ use Carbon\Carbon;
 
 class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
+
+
     public $request;
+
+    public function __construct()
+    {
+        setlocale(LC_NUMERIC, 'en_US.UTF-8');
+    }
 
     public function filter(Request $request)
     {

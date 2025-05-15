@@ -14,6 +14,11 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
 
     public $request;
 
+    public function __construct()
+    {
+        setlocale(LC_NUMERIC, 'en_US.UTF-8');
+    }
+
     public function filter(Request $request)
     {
         $this->request = $request;
