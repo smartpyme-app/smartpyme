@@ -13,6 +13,7 @@ class ReporteConfiguracion extends Model
     protected $table = 'reporte_configuraciones';
 
     protected $fillable = [
+        'nombre_reporte',
         'tipo_reporte',
         'activo',
         'frecuencia',
