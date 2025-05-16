@@ -62,7 +62,7 @@ class AjustesService
 
             if ($ajuste->ajuste < 0) {
                 // 🔻 FALTANTE → Disminuye el inventario, se registra una pérdida
-                $cuenta_perdida = Cuenta::find($cuenta_categoria->id_cuenta_contable_perdida ?? $cuenta_categoria->id_cuenta_contable_inventario); // Asegúrate de tener este campo
+                $cuenta_perdida = Cuenta::find($cuenta_categoria->id_cuenta_contable_perdida ?? $configuracion->id_cuenta_perdida_ajuste); // Asegúrate de tener este campo
                 Detalle::create([
                     'id_cuenta'         => $cuenta_perdida->id,
                     'codigo'            => $cuenta_perdida->codigo,
@@ -85,7 +85,7 @@ class AjustesService
                 ]);
             } else {
                 // 🔺 SOBRANTE → Aumenta el inventario, se registra una ganancia
-                $cuenta_ganancia = Cuenta::find($cuenta_categoria->id_cuenta_contable_ganancia ?? $cuenta_categoria->id_cuenta_contable_inventario); // Asegúrate de tener este campo
+                $cuenta_ganancia = Cuenta::find($cuenta_categoria->id_cuenta_contable_ganancia ?? $configuracion->id_cuenta_ganancia_ajuste); // Asegúrate de tener este campo
                 Detalle::create([
                     'id_cuenta'         => $cuenta_inventario->id,
                     'codigo'            => $cuenta_inventario->codigo,
