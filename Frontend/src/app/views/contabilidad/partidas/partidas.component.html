@@ -1,6 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Partidas</h2>
   <div class="d-flex gap-2">
+    <button (click)="openFilter(mclosepartidas)" tooltip="Generar reporte" class="btn btn-default"> Cerrar Partidas</button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
       src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
     <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
@@ -116,6 +117,7 @@
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                 </a>
+                <a href="#" class="list-group-item list-group-item-action border-0 click">Cerrar Partida</a>
                 <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()"
                    (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
@@ -472,5 +474,59 @@
       </div>
 
     </div>
+  </div>
+</ng-template>
+
+<!-- cerrar partidas -->
+<ng-template #mclosepartidas>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center">Cerrar Partidas</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarPartidas()">
+      <div class="row">
+
+        <div class="form-group col-sm-6">
+          <label for="">Del:</label>
+          <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+        </div>
+        <div class="form-group col-sm-6">
+          <label for="">Al:</label>
+          <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+        </div>
+<!--        <div class="form-group col-sm-6">-->
+<!--          <label for="filtros.estado">Estado:</label>-->
+<!--          <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">-->
+<!--            <option value="">Todos</option>-->
+<!--            <option value="Aplicada">Aplicadas</option>-->
+<!--            <option value="Pendiente">Pendientes</option>-->
+<!--            <option value="Anulada">Anuladas</option>-->
+<!--          </select>-->
+<!--        </div>-->
+<!--        <div class="form-group col-sm-6">-->
+<!--          <label for="filtros.tipo">Tipo:</label>-->
+<!--          <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">-->
+<!--            <option value="">Todos</option>-->
+<!--            <option value="Ingreso">Ingreso</option>-->
+<!--            <option value="CxC">CxC</option>-->
+<!--            <option value="CxP">CxP</option>-->
+<!--            <option value="Diario">Diario</option>-->
+<!--            <option value="Cierre">Cierre</option>-->
+<!--            <option value="Egreso">Egreso</option>-->
+<!--          </select>-->
+<!--        </div>-->
+      </div>
+
+      <div class="d-grid mt-3">
+        <button type="submit" [disabled]="loading" class="btn btn-primary">
+          <span *ngIf="!loading">Cerrar</span>
+          <span *ngIf="loading">Cerrando...</span>
+        </button>
+      </div>
+    </form>
   </div>
 </ng-template>
