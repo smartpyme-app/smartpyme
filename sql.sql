@@ -1,7 +1,10 @@
 -- Costo promedio
-ALTER TABLE productos ADD costo_promedio decimal(10,2) NOT NULL default 0 after costo;
-ALTER TABLE empresas ADD valor_inventario varchar(255) NOT NULL default 'ultimo' after vender_sin_stock;
+ALTER TABLE ajustes ADD costo decimal(10,2) NULL default 0 after ajuste;
+ALTER TABLE traslados ADD costo decimal(10,2) NULL default 0 after cantidad;
+ALTER TABLE traslado_detalles ADD costo decimal(10,2) NOT NULL after cantidad;
 
-ALTER TABLE ventas ADD condicion varchar(255) NULL default 'Contado' after num_cotizacion;
+
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_perdida_ajuste INT NULL after id_cuenta_renta_retenida_compras;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_ganancia_ajuste INT NULL after id_cuenta_perdida_ajuste;
 
 

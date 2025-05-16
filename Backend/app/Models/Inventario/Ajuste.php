@@ -16,6 +16,7 @@ class Ajuste extends Model {
         'stock_actual',
         'stock_real',
         'ajuste',
+        'costo',
         'estado',
         'id_empresa',
         'id_usuario',

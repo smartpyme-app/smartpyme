@@ -16,6 +16,8 @@ use App\Services\Contabilidad\CXPService;
 use App\Services\Contabilidad\GastosService;
 use App\Services\Contabilidad\TransaccionesService;
 use App\Services\Contabilidad\RetaceoService;
+use App\Services\Contabilidad\AjustesService;
+use App\Services\Contabilidad\TrasladosService;
 
 use App\Models\Bancos\Cuenta;
 use App\Models\Compras\Retaceo\Retaceo;
@@ -39,7 +41,9 @@ class ApiController extends Controller
         CXPService $cxpService,
         GastosService $gastosService,
         TransaccionesService $transaccionesService,
-        RetaceoService $retaceoService
+        RetaceoService $retaceoService,
+        AjustesService $ajustesService,
+        TrasladosService $trasladosService
     ) {
         $this->ventasService = $ventasService;
         $this->cxcService = $cxcService;
@@ -48,6 +52,8 @@ class ApiController extends Controller
         $this->cxpService = $cxpService;
         $this->transaccionesService = $transaccionesService;
         $this->retaceoService = $retaceoService;
+        $this->ajustesService = $ajustesService;
+        $this->trasladosService = $trasladosService;
     }
 
     public function venta(Request $venta)
@@ -132,6 +138,36 @@ class ApiController extends Controller
         $this->transaccionesService->crearPartida($transaccion);
 
         return Response()->json($transaccion, 200);
+    }
+
+
+    public function ajuste(Request $ajuste)
+    {
+
+        $partida = Partida::where('referencia', 'Ajuste')->where('id_referencia', $ajuste->id)->first();
+
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
+        // }
+
+        $this->ajustesService->crearPartida($ajuste);
+
+        return Response()->json($ajuste, 200);
+    }
+
+
+    public function traslado(Request $traslado)
+    {
+
+        $partida = Partida::where('referencia', 'Ajuste')->where('id_referencia', $traslado->id)->first();
+
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la compra.', 'code' => 400], 400);
+        // }
+
+        $this->trasladosService->crearPartida($traslado);
+
+        return Response()->json($traslado, 200);
     }
 
 
