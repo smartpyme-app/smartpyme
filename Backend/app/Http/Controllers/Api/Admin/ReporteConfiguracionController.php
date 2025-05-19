@@ -44,6 +44,7 @@ class ReporteConfiguracionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'nombre_reporte' => 'nullable|string',
             'tipo_reporte' => 'required|string',
             'frecuencia' => 'required|in:diario,semanal,mensual',
             'destinatarios' => 'required|array|min:1',

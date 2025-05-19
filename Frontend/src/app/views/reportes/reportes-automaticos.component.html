@@ -66,6 +66,7 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
+            <th>Nombre</th>
             <th>Tipo de Reporte</th>
             <th>Frecuencia</th>
             <th>Horarios</th>
@@ -91,6 +92,7 @@
           </tr>
 
           <tr *ngFor="let config of configuraciones?.data">
+            <td>{{ config.nombre_reporte || "Sin nombre" }}</td>
             <td>
               <span *ngIf="config.tipo_reporte === 'ventas-por-vendedor'"
                 >Ventas por Vendedor</span
@@ -268,6 +270,21 @@
     <app-notificaciones-container></app-notificaciones-container>
 
     <form (ngSubmit)="guardarConfiguracion()">
+
+      <!-- Nombre del reporte -->
+      <div class="form-group mb-3">
+        <label for="nombre_reporte" class="form-label fw-bold"
+          >Nombre del Reporte</label
+        >
+        <input
+          type="text"
+          class="form-control"
+          id="nombre_reporte"
+          [(ngModel)]="configuracionActual.nombre_reporte"
+          name="nombre_reporte"
+          required
+        />
+      </div>
       <!-- Tipo de Reporte -->
       <div class="form-group mb-3">
         <label for="tipo_reporte" class="form-label fw-bold"

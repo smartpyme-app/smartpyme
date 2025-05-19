@@ -290,10 +290,10 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
+            <!-- <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
                 <label for="fecha_pago">Fecha de pago:</label>
                 <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
-            </div>
+            </div> -->
             <div class="form-group col-md-6">
                 <label for="num_cotizacion">Núm Cotización:</label>
                 <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
@@ -302,11 +302,39 @@
                 <label for="num_orden">Núm de orden:</label>
                 <input type="number" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden">
             </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_operacion">Tipo de operación:</label>
+                <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Gravada">No Gravada</option>
+                    <option value="Excluido">Excluido</option>
+                    <option value="Mixta">Mixta</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.tipo_renta">Tipo de ingreso:</label>
+                <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                    <option value="Actividades de Servicios">Actividades de Servicios</option>
+                    <option value="Actividades Comerciales">Actividades Comerciales</option>
+                    <option value="Actividades Industriales">Actividades Industriales</option>
+                    <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                    <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                    <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                    <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
+                    <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                    <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                    <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
+                    <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                </select>
+            </div>
             <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
                 <div class="form-group col-md-12 without-label">
                     <div class="form-switch bg-light-info rounded">
                       <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar descripción</label>
-                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
+                      <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.descripcion_personalizada" name="venta.descripcion_personalizada">
                     </div>
                 </div>
                 <div class="form-group col-md-12" *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">

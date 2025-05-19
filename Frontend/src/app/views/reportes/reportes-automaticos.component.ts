@@ -5,6 +5,8 @@ import {
   Pipe,
   PipeTransform,
 } from '@angular/core';
+import { ConfiguracionReporte, crearConfiguracionDefault, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
+
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -25,8 +27,9 @@ export class ReplacePipe implements PipeTransform {
 })
 export class ReportesAutomaticosComponent implements OnInit {
   public configuraciones: any = [];
-  public configuracionActual: any = {};
-  public configuracionEliminar: any = {};
+  public configuracionActual: ConfiguracionReporte = crearConfiguracionDefault();
+  public configuracionEliminar: ConfiguracionReporte = crearConfiguracionDefault();
+  public configReporteActual: ConfiguracionReporte | null = null;
   public filtros: any = {
     buscador: '',
     paginate: 10,
@@ -69,7 +72,6 @@ export class ReportesAutomaticosComponent implements OnInit {
       nombre: 'Detalle de Ventas por Vendedor',
     },
   ];
-  public configReporteActual: any = null;
   public modalRefFechas!: BsModalRef;
   public fechaInicio: string = '';
   public fechaFin: string = '';
@@ -189,22 +191,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   }
 
   openModalConfigurar(template: TemplateRef<any>) {
-    this.configuracionActual = {
-      activo: true,
-      tipo_reporte: '',
-      frecuencia: 'diario',
-      destinatarios: [],
-      envio_matutino: true,
-      hora_matutino: '08:00',
-      envio_mediodia: false,
-      hora_mediodia: '13:00',
-      envio_nocturno: false,
-      hora_nocturno: '19:00',
-      dia_mes: 1,
-      asunto_correo: '',
-      configuracion: [],
-      sucursales: [], // Se inicializa vacío, pero lo llenaremos después
-    };
+    this.configuracionActual = crearConfiguracionDefault();
 
     // Restablecer los días de la semana seleccionados
     this.diasSemana.forEach((dia) => (dia.seleccionado = false));
@@ -230,7 +217,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
   openModal(template: TemplateRef<any>, configuracion: any) {
     if (!configuracion || configuracion === null) {
-      this.configuracionActual = {};
+      this.configuracionActual = crearConfiguracionDefault();
     } else {
       this.configuracionActual = { ...configuracion };
 
@@ -268,7 +255,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
         // Seleccionar los días guardados
         this.diasSemana.forEach((dia) => {
-          if (this.configuracionActual.dias_semana.includes(dia.id)) {
+          if (this.configuracionActual.dias_semana?.includes(dia.id)) {
             dia.seleccionado = true;
           }
         });
@@ -559,7 +546,7 @@ export class ReportesAutomaticosComponent implements OnInit {
     this.eliminando = true;
 
     this.apiService
-      .delete('reportes-configuracion/', this.configuracionEliminar.id)
+      .delete('reportes-configuracion/', this.configuracionEliminar.id!)
       .subscribe(
         (response) => {
           this.eliminando = false;
@@ -694,19 +681,18 @@ export class ReportesAutomaticosComponent implements OnInit {
       this.alertService.error('Por favor seleccione un rango de fechas válido');
       return;
     }
-  
-    // Obtener el tipo de reporte
-    let tipo = this.configReporteActual.tipo_reporte;
+
+    let tipo = this.configReporteActual?.tipo_reporte;
     tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
   
     this.downloading = true;
   
     // Preparar parámetros para la petición
     const params = {
-      id: this.configReporteActual.id,
+      id: this.configReporteActual?.id,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,
-      sucursales: this.configReporteActual.sucursales || [],
+      sucursales: this.configReporteActual?.sucursales || [],
     };
   
     // Determinar la ruta y tipo de archivo según el tipo de reporte

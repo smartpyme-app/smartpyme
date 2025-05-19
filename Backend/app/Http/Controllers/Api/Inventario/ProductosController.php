@@ -47,6 +47,14 @@ class ProductosController extends Controller
                 return $query->where('id_categoria', $request->id_categoria);
             })
             ->when($request->buscador, function ($query) use ($request) {
+//                return $query->where(function ($subQuery) use ($request) {
+//                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
+//                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
+//                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
+//                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
+//                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
+//                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+//                });
                 return $query->where('nombre', 'like', '%' . $request->buscador . '%')
                     ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
                     ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
@@ -119,6 +127,7 @@ class ProductosController extends Controller
                     ->orWhere('codigo', 'like', "%$query%")
                     ->orWhere('etiquetas', 'like', "%$query%");
             })
+            //->whereIn('tipo', ['Producto', 'Compuesto'])
             ->take(15)
             ->get();
 
@@ -593,7 +602,7 @@ class ProductosController extends Controller
                 $idProducto = $productoData['id_producto'];
                 $cantidad = $productoData['cantidad'];
 
-                
+
                 if ($cantidad <= 0) {
                     continue;
                 }
@@ -613,20 +622,20 @@ class ProductosController extends Controller
                     ->where('id_bodega', $request->id_bodega_destino)
                     ->first();
 
-               
+
                 if (!$origen) {
                     $errores[] = "Una de las sucursales no tiene inventario para el producto {$producto->nombre}.";
                     continue;
                 }
 
-                
+
                 if ($origen->stock < $cantidad) {
                     $errores[] = "La sucursal origen no tiene stock suficiente para el producto {$producto->nombre}.";
                     continue;
                 }
                 $user = Auth::user();
 
-             
+
                 $traslado = new Traslado();
                 $traslado->id_producto = $idProducto;
                 $traslado->id_bodega_de = $request->id_bodega_origen;
@@ -638,7 +647,7 @@ class ProductosController extends Controller
                 $traslado->estado = 'Confirmado';
                 $traslado->save();
 
-                
+
                 $origen->stock -= $cantidad;
                 $origen->save();
                 $origen->kardex($traslado, $cantidad * -1);
@@ -655,7 +664,7 @@ class ProductosController extends Controller
                     $destino->kardex($traslado, $cantidad);
                 }
 
-                
+
                 $composicionesValidas = true;
 
                 foreach ($producto->composiciones as $comp) {
@@ -689,10 +698,10 @@ class ProductosController extends Controller
                         break;
                     }
 
-                   
+
                 }
 
-               
+
                 if (!$composicionesValidas) {
                     continue;
                 }
@@ -758,7 +767,7 @@ class ProductosController extends Controller
         $importador = new TrasladosImport($request->concepto);
         Excel::import($importador, $request->file('archivo'));
 
-       
+
         $trasladados = $importador->getTrasladados();
         $errores = $importador->getErrores();
 
