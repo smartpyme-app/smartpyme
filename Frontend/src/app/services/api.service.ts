@@ -54,6 +54,24 @@ export class ApiService {
         });
     }
 
+    exportAcumuladoReportes(url: string, filtros: any): Observable<Blob> {
+        console.log('Enviando filtros:', filtros);
+        return this.http.post(this.apiUrl + url, filtros, {
+            responseType: 'blob',
+            observe: 'response', 
+            headers: new HttpHeaders({
+                'Authorization': 'Bearer ' + this.auth_token()
+            })
+        }).pipe(
+            map(response => {
+                // Devolver el blob con el Content-Type correcto
+                return new Blob([response.body!], { 
+                    type: response.headers.get('Content-Type') || 'application/octet-stream' 
+                });
+            })
+        );
+    }
+
     logout() {
         let data:any = {};
         if (this.autenticated()) {

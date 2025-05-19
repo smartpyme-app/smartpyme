@@ -227,12 +227,25 @@
       <i class="fa fa-fw fa-trash"></i> Eliminar
     </a>
     <!--descargar reporte por configuracion-->
-    <a
+    <a 
       (click)="descargarReporte(config, mSeleccionarFechas)"
       *ngIf="config.activo"
       class="list-group-item list-group-item-action border-0 click text-success"
     >
+    <span>
       <i class="fa fa-fw fa-download"></i> Descargar
+    </span>
+
+    </a>
+
+    <a 
+      (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
+      *ngIf="config.activo && getPermissionsPDf(config.tipo_reporte)"
+      class="list-group-item list-group-item-action border-0 click text-primary"
+    >
+    <span>
+      <i class="fa fa-fw fa-download"></i> Descargar PDF
+    </span>
     </a>
   </div>
 </ng-template>
