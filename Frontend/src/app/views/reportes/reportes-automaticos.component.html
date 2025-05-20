@@ -242,7 +242,7 @@
 
     <a 
       (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
-      *ngIf="config.activo && config.tipo_reporte === 'ventas-por-categoria-vendedor'"
+      *ngIf="config.activo && getPermissionsPDf(config.tipo_reporte)"
       class="list-group-item list-group-item-action border-0 click text-primary"
     >
     <span>
