@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 export class VendedorProductosComponent implements OnInit {
 
     public productos:any = [];
+    public usuario:any = {};
     public loading:boolean = false;
     public filtros:any = {};
     public producto:any = {};
@@ -25,6 +26,8 @@ export class VendedorProductosComponent implements OnInit {
     ngOnInit() {
 
         this.loadAll();
+
+        this.usuario = this.apiService.auth_user();
 
         this.apiService.getAll('categorias').subscribe(categorias => {
             this.categorias = categorias;
