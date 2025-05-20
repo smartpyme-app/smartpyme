@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-partidas',
   templateUrl: './partidas.component.html',
-  styles: ['.bn_mrgn { margin-left: 10px; }'],
+  styleUrls: ['./partidas.component.scss']
 })
 export class PartidasComponent implements OnInit {
   public partidas: any = [];
@@ -26,27 +26,10 @@ export class PartidasComponent implements OnInit {
     tipo_cuenta: 'all',
   };
   public catalogo: any = [];
-
-  // months = [
-  //   { value: '01', label: 'Enero' },
-  //   { value: '02', label: 'Febrero' },
-  //   { value: '03', label: 'Marzo' },
-  //   { value: '04', label: 'Abril' },
-  //   { value: '05', label: 'Mayo' },
-  //   { value: '06', label: 'Junio' },
-  //   { value: '07', label: 'Julio' },
-  //   { value: '08', label: 'Agosto' },
-  //   { value: '09', label: 'Septiembre' },
-  //   { value: '10', label: 'Octubre' },
-  //   { value: '11', label: 'Noviembre' },
-  //   { value: '12', label: 'Diciembre' },
-  // ];
-
-  //generar los meses dinamicos
-  // months = [];
-  months: Array<{ value: number; label: string }> = [];
-
-  years: number[] = [];
+  public months: Array<{ value: number; label: string }> = [];
+  public years: number[] = [];
+  public selectedMonth: number = new Date().getMonth() + 1;
+  public selectedYear: number = new Date().getFullYear();
 
   modalRef!: BsModalRef;
 
@@ -67,37 +50,30 @@ export class PartidasComponent implements OnInit {
     );
 
     this.loadAll();
+    this.generateMonths();
+    this.generateYears();
   }
 
   generateMonths() {
-    this.months = [];
-    const currentDate = new Date();
-    const selectedYear = this.reporte.year;
-
-
-    let maxMonth =
-      selectedYear < currentDate.getFullYear()
-        ? 12
-        : currentDate.getMonth() + 1;
-
-
-    if (selectedYear <= currentDate.getFullYear()) {
-      for (let month = 1; month <= maxMonth; month++) {
-        this.months.push({
-          value: month,
-          label: moment()
-            .locale('es')
-            .month(month - 1)
-            .format('MMMM'),
-        });
-      }
-    }
+    this.months = [
+      { value: 1, label: 'Enero' },
+      { value: 2, label: 'Febrero' },
+      { value: 3, label: 'Marzo' },
+      { value: 4, label: 'Abril' },
+      { value: 5, label: 'Mayo' },
+      { value: 6, label: 'Junio' },
+      { value: 7, label: 'Julio' },
+      { value: 8, label: 'Agosto' },
+      { value: 9, label: 'Septiembre' },
+      { value: 10, label: 'Octubre' },
+      { value: 11, label: 'Noviembre' },
+      { value: 12, label: 'Diciembre' }
+    ];
   }
 
-  onYearChange() {
-    this.generateMonths();
-  
-    this.reporte.month = 1;
+  generateYears() {
+    const currentYear = new Date().getFullYear();
+    this.years = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
   }
 
   public setOrden(columna: string) {
@@ -122,20 +98,10 @@ export class PartidasComponent implements OnInit {
     this.filtrarPartidas();
 
     this.reporte.month = new Date().getMonth() + 1;
-    // console.log('month', this.reporte.month)
     this.reporte.year = new Date().getFullYear();
     this.reporte.tipo_descarga = 'pdf';
     this.reporte.tipo_cuenta = 'all';
     this.reporte.concepto = '';
-    this.generateYears();
-    this.generateMonths();
-  }
-
-  generateYears() {
-    const currentYear = new Date().getFullYear();
-    for (let year = 2023; year <= currentYear; year++) {
-      this.years.push(year);
-    }
   }
 
   public filtrarPartidas() {
@@ -376,5 +342,46 @@ export class PartidasComponent implements OnInit {
     } else {
       alert('Por favor, llenar los campos requeridos.');
     }
+  }
+
+  public cerrarPartidas() {
+    if (!this.selectedMonth || !this.selectedYear) {
+      this.alertService.error('Por favor seleccione un mes y año');
+      return;
+    }
+
+    this.apiService.store('partidas/cerrar', { month: this.selectedMonth, year: this.selectedYear }).subscribe({
+      next: (response) => {
+        if (this.modalRef) {
+          this.modalRef.hide();
+        }
+        setTimeout(() => {
+          this.alertService.modal = false;
+          this.alertService.success('Partidas cerradas', 'Las partidas han sido cerradas exitosamente');
+          this.filtrarPartidas();
+        }, 300);
+      },
+      error: (error) => {
+        if (this.modalRef) {
+          this.modalRef.hide();
+        }
+        setTimeout(() => {
+          this.alertService.modal = false;
+          this.alertService.error(error.error.error || 'Error al cerrar las partidas');
+        }, 300);
+      }
+    });
+  }
+
+  public abrirPartida(partida: any) {
+    this.apiService.store('partidas/abrir', { id: partida.id }).subscribe({
+      next: (response) => {
+        this.alertService.success('Partida abierta', 'La partida ha sido reabierta exitosamente.');
+        this.filtrarPartidas();
+      },
+      error: (error) => {
+        this.alertService.error(error.error.error || 'Error al abrir la partida');
+      }
+    });
   }
 }

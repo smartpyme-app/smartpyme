@@ -1,6 +1,8 @@
 <div class="d-flex justify-content-end mb-3">
     <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
-        <a (click)="openModal(mcuenta, {})" class="btn btn-default tcla-F6" title="Agregar cuenta"><img src="/assets/icons/list.png" class="icon"></a>
+        <button type="button" (click)="openModal(mcuenta, {})" class="btn btn-default tcla-F6" title="Agregar cuenta" [disabled]="partida.estado === 'Cerrada'">
+            <img src="/assets/icons/list.png" class="icon">
+        </button>
     </div>
 </div>
 
@@ -28,7 +30,7 @@
                 <tr *ngFor="let detalle of partida?.detalles; let i = index">
                     <!-- detalle de vendedor  -->
                     <td>
-                        <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta">
+                        <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
                             <ng-option value="">Seleccione aquí</ng-option>
                             <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
                                 <div class="d-flex align-items-center">
@@ -39,17 +41,17 @@
                         </ng-select>
                     </td>
                     <td>
-                        <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto">
+                        <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
                     </td>
                     <td>
-                        <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe">
+                        <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" [disabled]="partida.estado === 'Cerrada'">
                     </td>
                     <td>
-                        <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber">
+                        <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" [disabled]="partida.estado === 'Cerrada'">
                     </td>
                     <td>
                       <div class="d-flex gap-2 justify-content-center">
-                        <button type="button" class="btn btn-light" (click)="delete(detalle)">
+                        <button type="button" class="btn btn-light" (click)="delete(detalle)" [disabled]="partida.estado === 'Cerrada'">
                           <img src="/assets/icons/trash.png" class="icon">
                         </button>
                       </div>
@@ -86,7 +88,7 @@
 
             <div class="form-group col-md-12">
                 <label for="detalle.id_cuenta">Cuenta del catálogo:</label>
-                <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta">
+                <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
                     <ng-option value="">Seleccione aquí</ng-option>
                     <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
                         <div class="d-flex align-items-center">
@@ -99,21 +101,21 @@
 
             <div class="form-group col-md-12 col-lg-12">
                 <label for="detalle.concepto">Concepto:</label>
-                <input type="text" class="form-control" name="concepto" [(ngModel)]="detalle.concepto">
+                <input type="text" class="form-control" name="concepto" [(ngModel)]="detalle.concepto" [disabled]="partida.estado === 'Cerrada'">
             </div>
 
             <div class="form-group col-md-12 col-lg-6">
                 <label for="detalle.debe">Debe:</label>
-                <input type="text" class="form-control" name="debe" [(ngModel)]="detalle.debe">
+                <input type="text" class="form-control" name="debe" [(ngModel)]="detalle.debe" [disabled]="partida.estado === 'Cerrada'">
             </div>
 
             <div class="form-group col-md-12 col-lg-6">
                 <label for="detalle.haber">Haber:</label>
-                <input type="text" class="form-control" name="haber" [(ngModel)]="detalle.haber">
+                <input type="text" class="form-control" name="haber" [(ngModel)]="detalle.haber" [disabled]="partida.estado === 'Cerrada'">
             </div>
 
             <div class="d-grid mt-4">
-                <button [disabled]="loading" class="btn btn-primary btn-block">
+                <button [disabled]="loading || partida.estado === 'Cerrada'" class="btn btn-primary btn-block">
                     <span *ngIf="!loading">Agregar</span>
                     <span *ngIf="loading">Agregando...</span>
                 </button>

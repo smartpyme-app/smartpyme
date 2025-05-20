@@ -57,6 +57,7 @@
         <option value="Aplicada">Aplicada</option>
         <option value="Pendiente">Pendiente</option>
         <option value="Anulada">Anulada</option>
+        <option value="Cerrada">Cerrada</option>
       </select>
 
 
@@ -97,7 +98,12 @@
           <!-- Estado -->
           <td>
             <span class="badge py-2" style="font-size: 0.8rem;"
-                  [ngClass]="{'bg-warning' : partida?.estado == 'Pendiente', 'bg-danger' : partida?.estado == 'Anulada', 'bg-success' : partida?.estado == 'Aplicada'}">{{ partida.estado }}</span>
+                  [ngClass]="{
+                    'bg-warning' : partida?.estado == 'Pendiente',
+                    'bg-danger' : partida?.estado == 'Anulada',
+                    'bg-success' : partida?.estado == 'Aplicada',
+                    'bg-secondary' : partida?.estado == 'Cerrada'
+                  }">{{ partida.estado }}</span>
             <!--  <select name="enable" class="form-select w-auto border-0" (change)="setEstadoChange(partida)" [ngClass]="{'bg-light-warning' : partida?.estado == 'Pendiente', 'bg-light-success' : partida?.estado == 'Aplicada', 'bg-light-danger' : partida?.estado == 'Anulada'}" [(ngModel)]="partida.estado">
                  <option value="Aplicada">Aplicada</option>
                  <option value="Pendiente" >Pendiente</option>
@@ -117,19 +123,23 @@
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                 </a>
-                <a href="#" class="list-group-item list-group-item-action border-0 click">Cerrar Partida</a>
                 <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()"
                    (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-check"></i> Aplicar
                 </a>
-                <a *ngIf="partida.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')"
+                <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-ban"></i> Anular
                 </a>
                 <a *ngIf="partida.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-check"></i> Revertir anulación
+                </a>
+                <a *ngIf="partida.estado == 'Cerrada' && apiService.auth_user().tipo == 'Administrador'"
+                   (click)="abrirPartida(partida)"
+                   class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-unlock"></i> Abrir partida
                 </a>
               </div>
             </ng-template>
@@ -487,44 +497,25 @@
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="filtrarPartidas()">
+    <form autocomplete="off" (ngSubmit)="cerrarPartidas()">
       <div class="row">
-
         <div class="form-group col-sm-6">
-          <label for="">Del:</label>
-          <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+          <label for="month">Mes:</label>
+          <select class="form-select" name="month" [(ngModel)]="selectedMonth">
+            <option *ngFor="let month of months" [value]="month.value">{{month.label}}</option>
+          </select>
         </div>
         <div class="form-group col-sm-6">
-          <label for="">Al:</label>
-          <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+          <label for="year">Año:</label>
+          <select class="form-select" name="year" [(ngModel)]="selectedYear">
+            <option *ngFor="let year of years" [value]="year">{{year}}</option>
+          </select>
         </div>
-<!--        <div class="form-group col-sm-6">-->
-<!--          <label for="filtros.estado">Estado:</label>-->
-<!--          <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">-->
-<!--            <option value="">Todos</option>-->
-<!--            <option value="Aplicada">Aplicadas</option>-->
-<!--            <option value="Pendiente">Pendientes</option>-->
-<!--            <option value="Anulada">Anuladas</option>-->
-<!--          </select>-->
-<!--        </div>-->
-<!--        <div class="form-group col-sm-6">-->
-<!--          <label for="filtros.tipo">Tipo:</label>-->
-<!--          <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">-->
-<!--            <option value="">Todos</option>-->
-<!--            <option value="Ingreso">Ingreso</option>-->
-<!--            <option value="CxC">CxC</option>-->
-<!--            <option value="CxP">CxP</option>-->
-<!--            <option value="Diario">Diario</option>-->
-<!--            <option value="Cierre">Cierre</option>-->
-<!--            <option value="Egreso">Egreso</option>-->
-<!--          </select>-->
-<!--        </div>-->
       </div>
-
       <div class="d-grid mt-3">
-        <button type="submit" [disabled]="loading" class="btn btn-primary">
-          <span *ngIf="!loading">Cerrar</span>
-          <span *ngIf="loading">Cerrando...</span>
+        <button type="submit" [disabled]="saving" class="btn btn-primary">
+          <span *ngIf="!saving">Cerrar Partidas</span>
+          <span *ngIf="saving">Cerrando...</span>
         </button>
       </div>
     </form>
