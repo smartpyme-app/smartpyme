@@ -46,10 +46,15 @@ class UsuariosController extends Controller
     }
 
     public function list() {
-       
-        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
-                            ->where('enable', true)
-                            ->orderBy('name','asc')->get();
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($Usuario->tipo == 'Administrador') {
+            $usuarios = Usuario::where('enable', true)->orderBy('name','asc')->get();
+        }else{
+            $usuarios = Usuario::where('id_sucursal', $Usuario->id_sucursal)
+                                ->where('enable', true)
+                                ->orderBy('name','asc')->get();
+        }
 
         return Response()->json($usuarios, 200);
 
