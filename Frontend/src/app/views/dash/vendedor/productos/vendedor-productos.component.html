@@ -85,10 +85,10 @@
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                         <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div *ngIf="filtros.id_sucursal">
-                                {{ producto.inventarios | sum:'stock' }}
-                            </div>
-                            <div *ngIf="!filtros.id_sucursal">
+                            <!-- <div *ngIf="filtros.id_sucursal"> -->
+                                {{ producto.inventarios | filter:'id_bodega': usuario.id_bodega | sum:'stock' }}
+                            <!-- </div> -->
+                            <!-- <div *ngIf="!filtros.id_sucursal">
                                 <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                     {{ producto.inventarios | sum:'stock' }}
                                 </span>
@@ -111,7 +111,7 @@
                                         </tbody>
                                     </table>
                                 </ng-template>
-                            </div>
+                            </div> -->
                         </td>
                         <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" >
                             <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">

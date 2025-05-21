@@ -100,10 +100,14 @@
     <div class="container_fluid" id="body">
         <div id="header">
             <p id="cliente">{{$venta->nombre_cliente}}</p>
-            <p id="direccion">{{$cliente->direccion}}</p>
+            @if ($venta->id_cliente)
+                <p id="direccion">{{$cliente->direccion}}</p>
+            @endif
             <p id="condicion">{{$venta->estado == 'Pendiente' ? 'Crédito' : 'Contado'}}</p>
             <p id="fecha">{{Carbon\Carbon::parse($venta->fecha)->format('d/m/Y')}}</p>
-            <p id="nit">{{$cliente->nit}}</p>
+            @if ($venta->id_cliente)
+                <p id="nit">{{$cliente->nit}}</p>
+            @endif
         </div>        
         <table id="tabla">
             <thead>

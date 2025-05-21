@@ -1,0 +1,151 @@
+
+<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
+    <div>
+        <h2>Libro de Anulados</h2>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
+          Descargas 
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Libro de anulados
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Anexo
+            </button>
+          </li>
+        </ul>
+      </div>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-lg-8 d-flex gap-2 mb-3">
+            <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-anulados">Anulados</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
+        </div>
+        <div class="col-lg-4 d-flex gap-2 justify-content-end  mb-3">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
+                <option value="">Todas las sucursales</option>
+                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
+            </select>
+            <select class="form-select" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+            <select class="form-select" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
+              <option *ngFor="let year of years" [value]="year">
+                  {{ year }}
+                </option>
+            </select>
+            <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-12">
+            <div class="table-responsive bg-white">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>RESOLUCION</th>
+                            <th>CLASE</th>
+                            <th>DESDE PRE</th>
+                            <th>HASTA PRE</th>
+                            <th>TIPO DOCUMENTO</th>
+                            <th>TIPO DETALLE</th>
+                            <th>SERIE</th>
+                            <th>DESDE</th>
+                            <th>HASTA</th>
+                            <th>CODIGO GENERACION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="14" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                                <span class="badge bg-primary">No tiene ivas registrados</span>
+                            </td>
+                            <td colspan="14" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                        <tr *ngFor=" let iva of ivas; let i = index">
+                            <td class="text-nowrap">{{ i + 1 }}</td>
+                            <td class="text-nowrap">{{iva.resolucion}}</td>
+                            <td class="text-nowrap">{{iva.clase}}<a *ngIf="iva?.registro?.id" class="float-end d-none" target="blank" tooltip="Ver información de la transacción" routerLink="/{{iva.origen}}/{{iva?.registro?.id}}"><i class="fa fa-eye"></i></a></td>
+                            <td class="text-nowrap">{{iva.desde_pre}}</td>
+                            <td class="text-nowrap">{{iva.hasta_pre}}<a *ngIf="iva?.registro?.id_proveedor" class="float-end d-none" target="blank" tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{iva?.registro?.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="text-nowrap">{{iva.tipo_documento}}</td>
+                            <td class="text-nowrap">{{iva.tipo_detalle}}</td>
+                            <td class="text-nowrap">{{iva.serie}}</td>
+                            <td class="text-nowrap">{{iva.desde}}</td>
+                            <td class="text-nowrap">{{iva.hasta}}</td>
+                            <td class="text-nowrap">{{iva.codigo_generacion}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center no-margin">Filtros</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form autocomplete="off" (ngSubmit)="loadAll()">
+        <div class="row mb-3">
+            <div class="form-group col-md-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+
+            <div class="form-group col-md-12">
+                <label for="filtros.sucursal">Sucursal:</label>
+                <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
+                    <option value="">Todos</option>
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="d-grid">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

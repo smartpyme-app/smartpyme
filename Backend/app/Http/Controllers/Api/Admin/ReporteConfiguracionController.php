@@ -43,6 +43,7 @@ class ReporteConfiguracionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'nombre_reporte' => 'nullable|string',
             'tipo_reporte' => 'required|string',
             'frecuencia' => 'required|in:diario,semanal,mensual',
             'destinatarios' => 'required|array|min:1',
@@ -319,7 +320,6 @@ class ReporteConfiguracionController extends Controller
 
     public function exportar(Request $request)
     {
-        Log::info($request->all());
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:reporte_configuraciones,id',
         ]);
@@ -353,6 +353,10 @@ class ReporteConfiguracionController extends Controller
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
                     return $resultado;
                 case 'estado-financiero-consolidado-sucursales':
+                    $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
+                case 'detalle-ventas-vendedor':
                     $controller = new VentasController();
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
                     return $resultado;

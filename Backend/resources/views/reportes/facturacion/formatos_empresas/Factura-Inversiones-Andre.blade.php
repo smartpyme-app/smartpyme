@@ -37,6 +37,7 @@
         #op td {
             border: 1px solid black;
             height: 0.3cm;
+            text-align: center;
         }
 
         #op th{
@@ -91,8 +92,8 @@
                         <h1 style="color: red; font-size: 1.2em;">000-002-1- {{ str_pad($venta->correlativo, 8, '0', STR_PAD_LEFT)}}</h1>
                         <br>
                         <p><b>FECHA:</b> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-                        <p><b>ID Cliente:</b> {{ $venta->id_cliente }}</p>
-                        <p><b>Cotización:</b></p>
+                        <p><b>ID Cliente:</b> {{ $venta->cliente->codigo_cliente }}</p>
+                        <p><b>Cotización:</b> {{ $venta->num_cotizacion }}</p>
                         <p><b>RTN:</b> {{ $venta->id_cliente ? $cliente->nit : '' }}</p>
                         <p><b>Teléfono:</b> {{ $venta->id_cliente ? $cliente->telefono : '' }}</p>
                     </td>
@@ -113,12 +114,12 @@
             </thead>
             <tbody>
                 <tr>
+                    <td>{{ $venta->num_orden }}</td>
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td></td>
-                    <td></td> 
-                    <td></td> 
+                    <td>{{ \Carbon\Carbon::parse($venta->fecha_pago)->format('d/m/Y') }}</td> 
+                    <td>{{ $venta->condicion }}</td> 
                 </tr>
             </tbody>
         </table>

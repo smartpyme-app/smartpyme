@@ -199,6 +199,10 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 315 ){ //315
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Factura-Sistemas-de-Impresion', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
@@ -232,7 +236,7 @@ class GenerarDocumentosController extends Controller
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 13 ){ //400
+            elseif(Auth::user()->id_empresa == 400 ){ //400
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Sujeto-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
@@ -355,6 +359,10 @@ class GenerarDocumentosController extends Controller
             }
             elseif(Auth::user()->id_empresa == 400 ){ //400
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
+            elseif(Auth::user()->id_empresa == 315 ){ //315
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.CCF-Sistemas-de-Impresion', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
             else{

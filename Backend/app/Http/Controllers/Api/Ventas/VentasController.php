@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\Api\Ventas;
 
-use App\Exports\EstadoFinancieroConsolidadoSucursalesExport;
+use App\Exports\ReportesAutomaticos\EstadoFinancieroConsolidadoSucursales\EstadoFinancieroConsolidadoSucursalesExport;
+use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorExport;
 use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -30,8 +31,8 @@ use Barryvdh\DomPDF\Facade as PDF;
 
 use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
-use App\Exports\VentasPorCategoriaVendedorExport;
-use App\Exports\VentasPorVendedorExport;
+use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
+use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
@@ -1123,15 +1124,18 @@ class VentasController extends Controller
 
             $ventasDelDia = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->count();
 
             $totalVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->sum('total');
 
             $vendedoresConVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
                 ->distinct('id_vendedor')
+                ->where('estado', '!=', 'Anulada')
                 ->count('id_vendedor');
 
             $destinatarios = [
@@ -1203,17 +1207,20 @@ class VentasController extends Controller
                 $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->count();
 
                 $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->sum('total');
 
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
                     ->distinct('id_vendedor')
+                    ->where('estado', '!=', 'Anulada')
                     ->count('id_vendedor');
             } else {
                 $ventasDelDia = 0;
@@ -1224,7 +1231,8 @@ class VentasController extends Controller
             $asuntos_correos = [
                 'ventas-por-vendedor' => 'Reporte de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-por-categoria-vendedor' => 'Reporte de Ventas por Categoría y Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
-                'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin
+                'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1281,8 +1289,11 @@ class VentasController extends Controller
                 $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
                 $filename = "ventas-por-categoria-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
-                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
                 $filename = "estado-financiero-consolidado-sucursales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $filename = "detalle-ventas-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1320,15 +1331,18 @@ class VentasController extends Controller
             if($configuracion->tipo_reporte === 'ventas-por-vendedor') {
                 $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->count();
     
                 $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->sum('total');
     
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
                     ->distinct('id_vendedor')
+                    ->where('estado', '!=', 'Anulada')
                     ->count('id_vendedor');
             }else{
                 $ventasDelDia = 0;
@@ -1339,7 +1353,8 @@ class VentasController extends Controller
             $asuntos_correos = [
                 'ventas-por-vendedor' => 'Reporte de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'ventas-por-categoria-vendedor' => 'Reporte de Ventas por Categoría y Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
-                'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin
+                'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $datos = [
@@ -1388,14 +1403,31 @@ class VentasController extends Controller
             'configuracion' => $configuracion
         ]);
 
-        if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
-            $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
-        } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
-            $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
-        } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
-            $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
-        } else {
-            return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+        // if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+        //     $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+        // } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
+        //     $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+        // } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
+        //     $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+        // } else {
+        //     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+        // }
+
+        switch ($configuracion->tipo_reporte) {
+            case 'ventas-por-vendedor':
+                $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                break;
+            case 'ventas-por-categoria-vendedor':
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                break;
+            case 'estado-financiero-consolidado-sucursales':
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                break;
+            case 'detalle-ventas-vendedor':
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion->sucursales);
+                break;
+            default:
+                return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
         }
 
         return Excel::download($export, $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '.xlsx');

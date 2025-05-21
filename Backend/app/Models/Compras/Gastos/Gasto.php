@@ -34,6 +34,7 @@ class Gasto extends Model {
         'otros_impuestos',
         'total',
         'nota',
+        'area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',

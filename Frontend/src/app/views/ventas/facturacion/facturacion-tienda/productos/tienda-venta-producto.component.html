@@ -75,32 +75,37 @@
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                                 <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                                 <td class="text-right">
-                                    <div *ngIf="filtros.id_sucursal">
-                                        {{ producto.inventarios | sum:'stock' }}
+                                    <div *ngIf="apiService.auth_user().tipo == 'Ventas' ">
+                                        {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
                                     </div>
-                                    <div *ngIf="!filtros.id_sucursal">
-                                        <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                    <div *ngIf="apiService.auth_user().tipo != 'Ventas' ">
+                                        <div *ngIf="filtros.id_sucursal">
                                             {{ producto.inventarios | sum:'stock' }}
-                                        </span>
-                                        <span *ngIf="producto?.inventarios?.length == 0" >
-                                            Sin control
-                                        </span>
-                                        <ng-template #popTemplate>
-                                            <table width="200px">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Sucursal</th>
-                                                        <th class="text-right">Stock</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr *ngFor="let inventario of producto?.inventarios">
-                                                        <td>{{ inventario.nombre_sucursal}}</td>
-                                                        <td class="text-right">{{ inventario.stock }}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </ng-template>
+                                        </div>
+                                        <div *ngIf="!filtros.id_sucursal">
+                                            <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                                {{ producto.inventarios | sum:'stock' }}
+                                            </span>
+                                            <span *ngIf="producto?.inventarios?.length == 0" >
+                                                Sin control
+                                            </span>
+                                            <ng-template #popTemplate>
+                                                <table width="200px">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Sucursal</th>
+                                                            <th class="text-right">Stock</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr *ngFor="let inventario of producto?.inventarios">
+                                                            <td>{{ inventario.nombre_sucursal}}</td>
+                                                            <td class="text-right">{{ inventario.stock }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </ng-template>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="text-end">

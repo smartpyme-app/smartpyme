@@ -14,6 +14,7 @@ class Venta extends Model {
         'numero_control',
         'codigo_generacion',
         'sello_mh',
+        'prueba_masiva',
         'fecha',
         'correlativo',
         'estado',
@@ -24,6 +25,7 @@ class Venta extends Model {
         'forma_pago',
         'tipo_documento',
         'num_cotizacion',
+        'num_orden',
         'condicion',
         'referencia',
         // 'nombre',
@@ -66,7 +68,8 @@ class Venta extends Model {
         'regimen',
         'seguro',
         'flete',
-        'no_sujeta'
+        'no_sujeta',
+        'tipo_renta',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
@@ -191,6 +194,10 @@ class Venta extends Model {
 
     public function abonos(){
         return $this->hasMany('App\Models\Ventas\Abono','id_venta');
+    }
+
+    public function cotizacion(){
+        return $this->hasOne('App\Models\Ventas\Venta','num_cotizacion');
     }
 
     public function devoluciones(){

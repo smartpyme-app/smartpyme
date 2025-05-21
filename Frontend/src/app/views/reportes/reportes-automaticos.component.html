@@ -66,6 +66,7 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
+            <th>Nombre</th>
             <th>Tipo de Reporte</th>
             <th>Frecuencia</th>
             <th>Horarios</th>
@@ -91,6 +92,7 @@
           </tr>
 
           <tr *ngFor="let config of configuraciones?.data">
+            <td>{{ config.nombre_reporte || "Sin nombre" }}</td>
             <td>
               <span *ngIf="config.tipo_reporte === 'ventas-por-vendedor'"
                 >Ventas por Vendedor</span
@@ -114,12 +116,20 @@
               >
               <span
                 *ngIf="
+                  config.tipo_reporte ===
+                  'detalle-ventas-vendedor'
+                "
+                >Detalle de Ventas por Vendedor</span
+              >
+              <span
+                *ngIf="
                   config.tipo_reporte !== 'ventas-por-vendedor' &&
                   config.tipo_reporte !== 'ventas-diarias' &&
                   config.tipo_reporte !== 'productos-vendidos' &&
                   config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
                   config.tipo_reporte !==
-                    'estado-financiero-consolidado-sucursales'
+                    'estado-financiero-consolidado-sucursales' &&
+                  config.tipo_reporte !== 'detalle-ventas-vendedor'
                 "
                 >{{ config.tipo_reporte }}</span
               >
@@ -219,12 +229,25 @@
       <i class="fa fa-fw fa-trash"></i> Eliminar
     </a>
     <!--descargar reporte por configuracion-->
-    <a
+    <a 
       (click)="descargarReporte(config, mSeleccionarFechas)"
       *ngIf="config.activo"
       class="list-group-item list-group-item-action border-0 click text-success"
     >
+    <span>
       <i class="fa fa-fw fa-download"></i> Descargar
+    </span>
+
+    </a>
+
+    <a 
+      (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
+      *ngIf="config.activo && config.tipo_reporte === 'ventas-por-categoria-vendedor'"
+      class="list-group-item list-group-item-action border-0 click text-primary"
+    >
+    <span>
+      <i class="fa fa-fw fa-download"></i> Descargar PDF
+    </span>
     </a>
   </div>
 </ng-template>
@@ -247,6 +270,21 @@
     <app-notificaciones-container></app-notificaciones-container>
 
     <form (ngSubmit)="guardarConfiguracion()">
+
+      <!-- Nombre del reporte -->
+      <div class="form-group mb-3">
+        <label for="nombre_reporte" class="form-label fw-bold"
+          >Nombre del Reporte</label
+        >
+        <input
+          type="text"
+          class="form-control"
+          id="nombre_reporte"
+          [(ngModel)]="configuracionActual.nombre_reporte"
+          name="nombre_reporte"
+          required
+        />
+      </div>
       <!-- Tipo de Reporte -->
       <div class="form-group mb-3">
         <label for="tipo_reporte" class="form-label fw-bold"

@@ -809,12 +809,12 @@ export class FacturacionComponent implements OnInit {
     );
   }
 
-  public setBodega(bodega: any) {
+  public setBodega() {
 
-  //  console.log("bodega", bodega);
-    this.venta.id_bodega = bodega;
+    let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
+   // console.log("bodega", bodegaSeleccionada);
+    this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
-    let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == bodega);
     if (bodegaSeleccionada) {
      // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
