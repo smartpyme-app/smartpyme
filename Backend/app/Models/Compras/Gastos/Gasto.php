@@ -31,6 +31,7 @@ class Gasto extends Model {
         'renta_retenida',
         'iva',
         'iva_percibido',
+        'otros_impuestos',
         'total',
         'nota',
         'area_empresa',
@@ -40,6 +41,10 @@ class Gasto extends Model {
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+    ];
+
+    protected $casts = [
+        'otros_impuestos' => 'json',
     ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];

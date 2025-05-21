@@ -86,6 +86,11 @@ const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/citas/citas.module').then(m => m.CitasModule),
         },
+        // Planilla
+        {
+          path: '',
+          loadChildren: () => import('./views/planillas/planillas.module').then(m => m.PlanillasModule),
+        },
         // Admin
         {
           path: '',

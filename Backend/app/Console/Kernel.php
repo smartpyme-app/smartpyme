@@ -34,6 +34,12 @@ class Kernel extends ConsoleKernel
              ->everyFiveMinutes()
              ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
+        // Agregar el nuevo comando de verificación de suscripciones
+        $schedule->command('suscripciones:verificar')
+            ->daily()
+            ->at('01:00')
+            ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
+
         $schedule->command('metricas:empresas')
             ->dailyAt('03:00')
             ->runInBackground()
@@ -72,14 +78,8 @@ class Kernel extends ConsoleKernel
             );
 
         $schedule->command('empleados:actualizar-estado')
-        ->dailyAt('00:01')
-        ->appendOutputTo(storage_path('logs/empleados-estado.log'));
-
-        // Agregar el nuevo comando de verificación de suscripciones
-        $schedule->command('suscripciones:verificar')
-            ->daily()
-            ->at('01:00')
-            ->appendOutputTo(storage_path('logs/verificar-suscripciones.log'));
+            ->dailyAt('00:01')
+            ->appendOutputTo(storage_path('logs/empleados-estado.log'));
 
         $schedule->call(function () {
             Log::info('Working');

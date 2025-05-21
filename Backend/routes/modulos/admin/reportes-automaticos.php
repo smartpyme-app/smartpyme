@@ -15,5 +15,6 @@ use Illuminate\Support\Facades\Route;
     
     Route::post('reportes-configuracion/enviar-prueba', [ReporteConfiguracionController::class, 'enviarPrueba']);
     Route::post('reportes-configuracion/exportar', [ReporteConfiguracionController::class, 'exportar']);
+    Route::post('reportes-configuracion/exportar-pdf', [ReporteConfiguracionController::class, 'exportarPDF']);
 
     ?>

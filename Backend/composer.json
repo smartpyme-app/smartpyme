@@ -17,12 +17,14 @@
         "guzzlehttp/guzzle": "^7.0.1",
         "intervention/image": "^2.7",
         "laravel/framework": "^8.0",
+        "laravel/passport": "^10.0",
         "laravel/tinker": "^2.0",
         "laravel/ui": "^3.1",
         "luecano/numero-a-letras": "^2.0",
         "maatwebsite/excel": "^3.1",
         "magarrent/laravel-currency-formatter": "^1.0",
         "milon/barcode": "^9.0",
+        "mpdf/mpdf": "^8.2",
         "tymon/jwt-auth": "^1.0"
     },
     "require-dev": {

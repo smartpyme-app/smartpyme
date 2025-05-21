@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorPdfExport;
+use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorPdfExport;
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Reportes\VentasPorVendedorController;
 use App\Models\Admin\ReporteConfiguracion;
 use App\Models\Admin\Sucursal;
 use Illuminate\Http\Request;
@@ -365,6 +366,127 @@ class ReporteConfiguracionController extends Controller
             }
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al exportar el reporte: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarPDF(Request $request)
+    {
+        // Iniciar el registro de logs
+        Log::info('Iniciando exportación de PDF', [
+            'request_data' => $request->all()
+        ]);
+        
+        try {
+            // Validar datos de entrada
+            $validatedData = $request->validate([
+                'id' => 'required|integer',
+                'fecha_inicio' => 'required|date',
+                'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+                'sucursales' => 'sometimes|array',
+            ]);
+            
+            Log::info('Datos validados correctamente', [
+                'validatedData' => $validatedData
+            ]);
+            
+            try {
+                // Buscar la configuración
+                $configuracion = ReporteConfiguracion::findOrFail($validatedData['id']);
+                Log::info('Configuración encontrada', [
+                    'id' => $configuracion->id,
+                    'tipo_reporte' => $configuracion->tipo_reporte,
+                    'id_empresa' => $configuracion->id_empresa
+                ]);
+                
+                // Actualizar sucursales si se proporcionaron
+                if (isset($validatedData['sucursales'])) {
+                    $configuracion->sucursales = $validatedData['sucursales'];
+                    Log::info('Sucursales actualizadas', [
+                        'sucursales' => $configuracion->sucursales
+                    ]);
+                }
+        
+                // Verificar si existe un exportador PDF para este tipo de reporte
+                Log::info('Preparando exportador para tipo de reporte', [
+                    'tipo_reporte' => $configuracion->tipo_reporte
+                ]);
+                
+                switch ($configuracion->tipo_reporte) {
+                    case 'ventas-por-categoria-vendedor':
+                        Log::info('Creando exportador VentasPorCategoriaVendedorPdfExport');
+                        $exporter = new VentasPorCategoriaVendedorPdfExport(
+                            $validatedData['fecha_inicio'],
+                            $validatedData['fecha_fin'],
+                            $configuracion->id_empresa,
+                            $configuracion,
+                            $configuracion->sucursales
+                        );
+                        Log::info('Exportador creado, iniciando download()');
+                        try {
+                            $response = $exporter->download();
+                            Log::info('Download completado exitosamente');
+                            return $response;
+                        } catch (\Exception $e) {
+                            Log::error('Error en el método download() de VentasPorCategoriaVendedorPdfExport', [
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                            throw $e; // Re-lanzar para ser capturado por el catch exterior
+                        }
+                        
+                    case 'detalle-ventas-vendedor':
+                        Log::info('Creando exportador DetalleVentasVendedorPdfExport');
+                        $exporter = new DetalleVentasVendedorPdfExport(
+                            $validatedData['fecha_inicio'],
+                            $validatedData['fecha_fin'],
+                            $configuracion->id_empresa,
+                            $configuracion,
+                            $configuracion->sucursales
+                        );
+                        Log::info('Exportador creado, iniciando download()');
+                        try {
+                            $response = $exporter->download();
+                            Log::info('Download completado exitosamente');
+                            return $response;
+                        } catch (\Exception $e) {
+                            Log::error('Error en el método download() de DetalleVentasVendedorPdfExport', [
+                                'error' => $e->getMessage(),
+                                'file' => $e->getFile(),
+                                'line' => $e->getLine(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                            throw $e; // Re-lanzar para ser capturado por el catch exterior
+                        }
+                        
+                    default:
+                        Log::warning('Formato PDF no disponible para el tipo de reporte', [
+                            'tipo_reporte' => $configuracion->tipo_reporte
+                        ]);
+                        return response()->json(['error' => 'Formato PDF no disponible para este tipo de reporte'], 422);
+                }
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                Log::error('Configuración de reporte no encontrada', [
+                    'id' => $validatedData['id'] ?? null,
+                    'error' => $e->getMessage()
+                ]);
+                return response()->json(['error' => 'La configuración de reporte solicitada no existe'], 404);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Error de validación en la solicitud', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json(['error' => 'Datos de solicitud inválidos', 'details' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error no controlado al exportar reporte PDF', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json(['error' => 'Error al generar el PDF: ' . $e->getMessage()], 500);
         }
     }
 }

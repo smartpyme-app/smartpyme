@@ -4,7 +4,6 @@ import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
-import { ChatService } from '@services/chat/chat.service';
 
 import * as moment from 'moment';
 declare let $:any;
@@ -52,6 +51,24 @@ export class ApiService {
                 'Authorization': 'Bearer ' + this.auth_token()
             })
         });
+    }
+
+    exportAcumuladoReportes(url: string, filtros: any): Observable<Blob> {
+        console.log('Enviando filtros:', filtros);
+        return this.http.post(this.apiUrl + url, filtros, {
+            responseType: 'blob',
+            observe: 'response', 
+            headers: new HttpHeaders({
+                'Authorization': 'Bearer ' + this.auth_token()
+            })
+        }).pipe(
+            map(response => {
+                // Devolver el blob con el Content-Type correcto
+                return new Blob([response.body!], { 
+                    type: response.headers.get('Content-Type') || 'application/octet-stream' 
+                });
+            })
+        );
     }
 
     logout() {

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Recibo de abono #{{ $recibo->id }} - {{ $recibo->nombre_cliente }}</title>
+    <title>Recibo de abono #{{ $recibo->correlativo }} - {{ $recibo->nombre_cliente }}</title>
     <style>
 
         *{ 
@@ -84,7 +84,7 @@
                         <p><b>Teléfono:</b>{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>
-                        <p class="text-left"><b>Abono #:</b> {{ $recibo->id }}</p>
+                        <p class="text-left"><b>Abono #:</b> {{ $recibo->correlativo }}</p>
                         <p class="text-left"><b>Forma pago:</b> {{$recibo->forma_pago}}</p>
                         @if ($recibo->detalle_banco)
                             <p class="text-left"><b>Banco:</b> {{$recibo->detalle_banco}}</p>

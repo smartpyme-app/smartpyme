@@ -1134,6 +1134,7 @@ class VentasController extends Controller
 
             $vendedoresConVentas = Venta::where('fecha', $fecha)
                 ->where('cotizacion', 0)
+                ->where('estado', '!=', 'Anulada')
                 ->distinct('id_vendedor')
                 ->where('estado', '!=', 'Anulada')
                 ->count('id_vendedor');
@@ -1219,6 +1220,7 @@ class VentasController extends Controller
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('id_empresa', $empresa->id)
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->distinct('id_vendedor')
                     ->where('estado', '!=', 'Anulada')
                     ->count('id_vendedor');
@@ -1341,6 +1343,7 @@ class VentasController extends Controller
     
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
                     ->distinct('id_vendedor')
                     ->where('estado', '!=', 'Anulada')
                     ->count('id_vendedor');
