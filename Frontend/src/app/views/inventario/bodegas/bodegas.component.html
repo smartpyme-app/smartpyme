@@ -70,7 +70,7 @@
                         <td>{{ bodega.nombre }}</td>
                         <td>{{ bodega.nombre_sucursal }}</td>
                         <td>
-                            <select name="activo" class="form-select w-auto border-0" (change)="setEstado(bodega)" [(ngModel)]="bodega.activo" [ngClass]="{'bg-light-danger' : bodega?.activo == '0', 'bg-light-success' : bodega?.activo == '1'}">
+                            <select name="activo" [disabled]="!apiService.canChange()" class="form-select w-auto border-0" (change)="setEstado(bodega)" [(ngModel)]="bodega.activo" [ngClass]="{'bg-light-danger' : bodega?.activo == '0', 'bg-light-success' : bodega?.activo == '1'}">
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>

@@ -203,6 +203,7 @@
     </a>
     <a
       (click)="cambiarEstado(config)"
+      *ngIf="apiService.canChange()"
       class="list-group-item list-group-item-action border-0 click"
     >
       <i
@@ -216,14 +217,14 @@
     </a>
     <a
       (click)="enviarReportePrueba(mEnvioPrueba, config)"
-      *ngIf="config.activo"
+      *ngIf="config.activo && apiService.canChange()"
       class="list-group-item list-group-item-action border-0 click"
     >
       <i class="fa fa-fw fa-paper-plane"></i> Enviar prueba
     </a>
     <a
       (click)="eliminarConfiguracion(mEliminar, config)"
-      *ngIf="config.activo"
+      *ngIf="config.activo && apiService.canChange()"
       class="list-group-item list-group-item-action border-0 click text-danger"
     >
       <i class="fa fa-fw fa-trash"></i> Eliminar
