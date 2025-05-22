@@ -89,6 +89,9 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
                     ->when($request->estado !== null, function($q) use ($request){
                         $q->where('enable', !!$request->estado);
                     })
+                    ->when($request->marca, function ($query) use ($request) {
+                        return $query->where('marca', 'like', '%' . $request->marca . '%');
+                    })
                     ->whereIn('tipo', ['Producto', 'Compuesto'])
                     // ->whereNotIn('id_categoria', [1,2])
                     ->orderBy('enable', 'desc')
