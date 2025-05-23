@@ -17,6 +17,7 @@ export class ProductosComponent implements OnInit {
     public bodegas:any = [];
     public categorias:any = [];
     public proveedores:any = [];
+    public marcas:any = [];
 
     public ajuste:any = {};
     public inventario:any = {};
@@ -38,6 +39,10 @@ export class ProductosComponent implements OnInit {
         this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('productos/marca-productos').subscribe(marcas => { 
+            this.marcas = marcas;
+        }, error => {this.alertService.error(error); });
         
     }
 
@@ -45,6 +50,7 @@ export class ProductosComponent implements OnInit {
         this.filtros.id_bodega = '';
         this.filtros.id_categoria = '';
         this.filtros.id_proveedor = '';
+        this.filtros.marca = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'nombre';
@@ -64,6 +70,10 @@ export class ProductosComponent implements OnInit {
 
         if(!this.filtros.id_categoria){
             this.filtros.id_categoria = '';
+        }
+
+        if(!this.filtros.marca){
+            this.filtros.marca = '';
         }
 
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 

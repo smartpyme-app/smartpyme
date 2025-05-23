@@ -80,6 +80,10 @@ class ProductosController extends Controller
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })
+
+            ->when($request->marca, function ($query) use ($request) {
+                return $query->where('marca', 'like', '%' . $request->marca . '%');
+            })
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             // ->whereNotIn('id_categoria', [1,2])
             ->orderBy('enable', 'desc')
@@ -785,4 +789,36 @@ class ProductosController extends Controller
             ], 200);
         }
     }
+
+    public function getMarcas()
+    {
+        try {
+            $marcasRaw = Producto::where('marca', '!=', '')
+                ->whereNotNull('marca')
+                ->where('id_empresa', Auth::user()->id_empresa)
+                ->where('enable', 1)
+                ->where('tipo', 'Producto')
+                ->distinct()
+                ->orderBy('marca', 'asc')
+                ->pluck('marca');
+
+            $marcas = $marcasRaw->map(function($marca) {
+                return [
+                    'id' => $marca,
+                    'nombre' => $marca
+                ];
+            });
+
+            Log::info('Marcas obtenidas:', $marcas->toArray());
+
+            return response()->json($marcas);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener las marcas',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

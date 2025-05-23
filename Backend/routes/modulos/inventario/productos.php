@@ -94,4 +94,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/traslado-masivo/importar',          [ProductosController::class, 'importarTrasladosMasivos']);
     //productos/traslado-masivo post
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
+
+    Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
 ?>
