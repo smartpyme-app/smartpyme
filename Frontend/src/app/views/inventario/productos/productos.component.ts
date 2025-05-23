@@ -9,17 +9,19 @@ import Swal from 'sweetalert2';
   templateUrl: './productos.component.html',
 })
 export class ProductosComponent implements OnInit {
-  public productos: any = [];
-  public loading: boolean = false;
-  public downloading: boolean = false;
-  public filtros: any = {};
-  public producto: any = {};
-  public bodegas: any = [];
-  public categorias: any = [];
-  public proveedores: any = [];
-    public connected:boolean = false;
-  public ajuste: any = {};
-  public inventario: any = {};
+
+    public productos:any = [];
+    public loading:boolean = false;
+    public downloading:boolean = false;
+    public filtros:any = {};
+    public producto:any = {};
+    public bodegas:any = [];
+    public categorias:any = [];
+    public proveedores:any = [];
+    public marcas:any = [];
+
+    public ajuste:any = {};
+    public inventario:any = {};
 
   modalRef!: BsModalRef;
 
@@ -41,32 +43,33 @@ export class ProductosComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bodegas/list').subscribe(
-      (bodegas) => {
-        this.bodegas = bodegas;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
-  }
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
+        }, error => {this.alertService.error(error); });
 
-  public loadAll() {
-    const filtrosGuardados = localStorage.getItem('productosFiltros');
+        this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
+            this.marcas = marcas;
+        }, error => {this.alertService.error(error); });
 
-    if (filtrosGuardados) {
-      this.filtros = JSON.parse(filtrosGuardados);
-    } else {
-      this.filtros.id_bodega = '';
-      this.filtros.id_categoria = '';
-      this.filtros.id_proveedor = '';
-      this.filtros.estado = '';
-      this.filtros.buscador = '';
-      this.filtros.orden = 'nombre';
-      this.filtros.direccion = 'asc';
-      this.filtros.sin_stock = '';
-      this.filtros.paginate = 10;
     }
+
+    public loadAll() {
+      const filtrosGuardados = localStorage.getItem('productosFiltros');
+
+      if (filtrosGuardados) {
+        this.filtros = JSON.parse(filtrosGuardados);
+      } else {
+        this.filtros.id_bodega = '';
+        this.filtros.id_categoria = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.marca = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'nombre';
+        this.filtros.direccion = 'asc';
+        this.filtros.sin_stock = '';
+        this.filtros.paginate = 10;
+      }
 
     this.filtrarProductos();
   }
@@ -83,20 +86,18 @@ export class ProductosComponent implements OnInit {
       this.filtros.id_categoria = '';
     }
 
-    this.apiService.getAll('productos', this.filtros).subscribe(
-      (productos) => {
-        this.productos = productos;
-        this.loading = false;
-        if (this.modalRef) {
-          this.modalRef.hide();
+        if(!this.filtros.marca){
+            this.filtros.marca = '';
         }
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
-  }
+
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
+            this.productos = productos;
+            this.loading = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+        }, error => {this.alertService.error(error); this.loading = false;});
+    }
 
   public setEstado(producto: any) {
     this.apiService.store('producto', producto).subscribe(

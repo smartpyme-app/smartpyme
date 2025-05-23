@@ -233,6 +233,19 @@
                     </option>
                 </select>
             </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.marca">Marca:</label>
+                <ng-select name="marca" 
+                        placeholder="Todas"
+                        [(ngModel)]="filtros.marca" 
+                        (ngModelChange)="filtrarProductos()" 
+                        class="form-select p-0">
+                    <ng-option value="">Todas</ng-option>
+                    <ng-option *ngFor="let marca of marcas" [value]="marca.id">
+                        {{ marca.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
             <div class="form-group col-md-12 without-label">
                 <div class="form-switch bg-light-info rounded">
                   <label for="sin_stock">Con stock bajo</label>

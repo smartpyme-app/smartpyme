@@ -84,8 +84,9 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
     //productos/ajuste-masivo
     Route::post('/productos/ajuste-masivo', [ProductosController::class, 'ajusteMasivo']);
-    //producto/exportar-woocommerce post
+
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
+    //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
     //productos/exportar-traslado
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
@@ -94,5 +95,5 @@ use Illuminate\Support\Facades\Route;
     //productos/traslado-masivo post
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
-
+    Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
 ?>
