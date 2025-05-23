@@ -57,8 +57,8 @@ class UsuariosController extends Controller
         }
 
         return Response()->json($usuarios, 200);
-    }
 
+    }
 
     public function read($id)
     {

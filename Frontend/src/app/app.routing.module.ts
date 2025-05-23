@@ -15,6 +15,7 @@ import { PaymentSuccessPaywallComponent }    from './layout/paywall/components/p
 import { LockComponent }    from './auth/lock/lock.component';
 import { ForgetComponent }    from './auth/forget/forget.component';
 import { QuicklinkStrategy } from 'ngx-quicklink';
+import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 
 
 const routes: Routes = [
@@ -71,7 +72,7 @@ const routes: Routes = [
         // Compras
         {
           path: '',
-          canActivate: [AdminGuard],
+          canActivate: [AdminGuard,SupervisorLimitadoGuard],
           loadChildren: () => import('./views/compras/compras.module').then(m => m.ComprasModule),
         },
         // Contabilidad
