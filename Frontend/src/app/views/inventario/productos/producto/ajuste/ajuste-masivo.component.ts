@@ -77,32 +77,7 @@ export class AjusteMasivoComponent implements OnInit {
 
         this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
             this.productos = productos;
-            
-            // Limpiar y reconstruir el mapa de productos
-            this.productosMap.clear();
-            
-            // Preparar los productos para el ajuste masivo
-            if (this.productos?.data) {
-                this.productos.data.forEach((producto: any) => {
-                    // Guardamos en el mapa para acceso rápido
-                    this.productosMap.set(producto.id, producto);
-                    
-                    producto.seleccionado = false;
-                    producto.stock_nuevo = null;
-                    producto.diferencia = 0;
-                    
-                    // Si hay un filtro de bodega, establecer el inventario actual
-                    if (this.filtros.id_bodega) {
-                        const inventario = producto.inventarios.find((inv: any) => inv.id_bodega == this.filtros.id_bodega);
-                        if (inventario) {
-                            producto.inventario_actual = inventario;
-                            producto.stock_actual = inventario.stock;
-                            producto.stock_nuevo = inventario.stock;
-                        }
-                    }
-                });
-            }
-            
+            this.procesarProductosRecibidos();
             this.loading = false;
             
             if(this.modalRef){
@@ -268,7 +243,34 @@ export class AjusteMasivoComponent implements OnInit {
         this.loading = true;
         this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
             this.productos = productos;
+            this.procesarProductosRecibidos();
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
+    }
+
+    private procesarProductosRecibidos() {
+        this.seleccionados = [];
+        this.ajusteMasivo.productos = [];
+        
+        this.productosMap.clear();
+        
+        if (this.productos?.data) {
+            this.productos.data.forEach((producto: any) => {
+                this.productosMap.set(producto.id, producto);
+                
+                producto.seleccionado = false;
+                producto.stock_nuevo = null;
+                producto.diferencia = 0;
+                
+                if (this.filtros.id_bodega) {
+                    const inventario = producto.inventarios.find((inv: any) => inv.id_bodega == this.filtros.id_bodega);
+                    if (inventario) {
+                        producto.inventario_actual = inventario;
+                        producto.stock_actual = inventario.stock;
+                        producto.stock_nuevo = inventario.stock;
+                    }
+                }
+            });
+        }
     }
 }

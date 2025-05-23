@@ -9,12 +9,13 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User as Usuario;
 use App\Models\User;
 use App\Services\WooCommerceApiClient;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Validators\ValidationException;
 
@@ -44,12 +45,16 @@ class UsuariosController extends Controller
         return Response()->json($usuarios, 200);
     }
 
-    public function list()
-    {
+    public function list() {
+        $usuario = JWTAuth::parseToken()->authenticate();
 
-        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
-            ->where('enable', true)
-            ->orderBy('name', 'asc')->get();
+        if ($usuario->tipo == 'Administrador') {
+            $usuarios = Usuario::where('enable', true)->orderBy('name','asc')->get();
+        }else{
+            $usuarios = Usuario::where('id_sucursal', $usuario->id_sucursal)
+                                ->where('enable', true)
+                                ->orderBy('name','asc')->get();
+        }
 
         return Response()->json($usuarios, 200);
     }

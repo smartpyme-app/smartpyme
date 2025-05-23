@@ -201,6 +201,7 @@
         *ngIf="
           !usuario.tiene_suscripcion &&
           usuario.estado_suscripcion?.toLowerCase() !== 'en prueba' &&
+          visibleAlertMessage &&
           usuario.id_empresa != 2
         "
       >

@@ -14,7 +14,8 @@
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>
             <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
-                <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                <option value="">Seleccione aquí</option>
+                <option [value]="usuario.id" *ngFor="let usuario of usuarios | filter:'id_sucursal':venta.id_sucursal">
                     {{ usuario.name }}
                 </option>
             </select>
