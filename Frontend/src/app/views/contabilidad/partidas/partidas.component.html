@@ -501,21 +501,27 @@
       <div class="row">
         <div class="form-group col-sm-6">
           <label for="month">Mes:</label>
-          <select class="form-select" name="month" [(ngModel)]="selectedMonth">
+          <select class="form-select" name="month" [(ngModel)]="selectedMonth" [disabled]="saving">
             <option *ngFor="let month of months" [value]="month.value">{{month.label}}</option>
           </select>
         </div>
         <div class="form-group col-sm-6">
           <label for="year">Año:</label>
-          <select class="form-select" name="year" [(ngModel)]="selectedYear">
+          <select class="form-select" name="year" [(ngModel)]="selectedYear" [disabled]="saving">
             <option *ngFor="let year of years" [value]="year">{{year}}</option>
           </select>
         </div>
       </div>
-      <div class="d-grid mt-3">
+      <div class="d-flex justify-content-between mt-3">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()" [disabled]="saving">
+          Cancelar
+        </button>
         <button type="submit" [disabled]="saving" class="btn btn-primary">
           <span *ngIf="!saving">Cerrar Partidas</span>
-          <span *ngIf="saving">Cerrando...</span>
+          <span *ngIf="saving">
+            <i class="fa fa-spinner fa-spin me-1"></i>
+            Cerrando...
+          </span>
         </button>
       </div>
     </form>

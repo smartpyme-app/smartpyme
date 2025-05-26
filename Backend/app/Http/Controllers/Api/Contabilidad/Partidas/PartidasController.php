@@ -876,14 +876,14 @@ class PartidasController extends Controller
             $startDate = Carbon::create($year, $month, 1)->startOfMonth();
             $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
-            // Actualizar todas las partidas del mes y año especificados
+            // Actualizar solo las partidas aplicadas del mes y año especificados
             $partidas = Partida::whereBetween('fecha', [$startDate, $endDate])
-                ->where('estado', '!=', 'Cerrada')
+                ->where('estado', 'Aplicada')
                 ->where('id_empresa', auth()->user()->id_empresa)
                 ->update(['estado' => 'Cerrada']);
 
             return response()->json([
-                'message' => 'Partidas cerradas exitosamente',
+                'message' => 'Partidas aplicadas cerradas exitosamente',
                 'partidas_cerradas' => $partidas
             ]);
 

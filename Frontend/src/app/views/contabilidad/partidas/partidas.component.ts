@@ -350,25 +350,16 @@ export class PartidasComponent implements OnInit {
       return;
     }
 
+    this.saving = true;
     this.apiService.store('partidas/cerrar', { month: this.selectedMonth, year: this.selectedYear }).subscribe({
       next: (response) => {
-        if (this.modalRef) {
-          this.modalRef.hide();
-        }
-        setTimeout(() => {
-          this.alertService.modal = false;
-          this.alertService.success('Partidas cerradas', 'Las partidas han sido cerradas exitosamente');
-          this.filtrarPartidas();
-        }, 300);
+        this.saving = false;
+        this.alertService.success('Partidas cerradas', 'Las partidas han sido cerradas exitosamente');
+        this.filtrarPartidas();
       },
       error: (error) => {
-        if (this.modalRef) {
-          this.modalRef.hide();
-        }
-        setTimeout(() => {
-          this.alertService.modal = false;
-          this.alertService.error(error.error.error || 'Error al cerrar las partidas');
-        }, 300);
+        this.saving = false;
+        this.alertService.error(error.error.error || 'Error al cerrar las partidas');
       }
     });
   }
