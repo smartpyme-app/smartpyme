@@ -77,7 +77,7 @@
                             Teléfono: 2670-1407 Servicio al cliente: 3324-9180
                         </p>
                     </td>
-                </tr>   
+                </tr>
             </tbody>
         </table>
         <table>
@@ -154,7 +154,7 @@
             <tfoot>
                 <tr>
                     <td colspan="4" class="text-right">SUB TOTAL EN LEMPIRAS</td>
-                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4" class="text-right">TASA DE IMPUESTO</td>
