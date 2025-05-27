@@ -157,13 +157,18 @@ class MHCCF extends Model
         $tributos = NULL;
 
         if ($this->venta->iva > 0) {
+        }
+
+        if ($this->venta->iva > 0) {
             $tributos = collect();
             if ($this->venta->iva){ 
                 $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva, 2, '.', ''))]);
             }
+            $this->venta->gravada = $this->venta->sub_total;
+        }else{
+            $this->venta->gravada = 0;
+            $this->venta->exenta = $this->venta->sub_total;
         }
-
-        $this->venta->gravada = $this->venta->sub_total;
 
         return 
             [
@@ -239,9 +244,18 @@ class MHCCF extends Model
                 $detalle->tipo_item = 1;
             }
 
-
+            $tributos = NULL;
             $detalle->codTributo = NULL;
-            $detalle->gravada = $detalle->total;
+
+            if ($this->venta->iva > 0) {
+                $tributos = collect();
+                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva,2, '.', ''))]);
+                $detalle->gravada = $detalle->total;
+            }else{
+                $detalle->gravada = 0;
+                $detalle->exenta = $detalle->total;
+            }
+
 
             // Producto no Gravado
                if ($detalle->cuenta_a_terceros > 0) {
@@ -259,7 +273,7 @@ class MHCCF extends Model
                        "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                        "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
                        "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
-                       "tributos" => ['20'],
+                       "tributos" => $tributos,
                        "psv" => 0,
                        "noGravado" => 0,
                        // "ivaItem" => floatval($detalle->iva)
@@ -298,7 +312,7 @@ class MHCCF extends Model
                        "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                        "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
                        "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
-                       "tributos" => ['20'],
+                       "tributos" => $tributos,
                        "psv" => 0,
                        "noGravado" => 0,
                        // "ivaItem" => floatval($detalle->iva)
