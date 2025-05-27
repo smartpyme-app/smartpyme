@@ -249,7 +249,7 @@ class MHCCF extends Model
 
             if ($this->venta->iva > 0) {
                 $tributos = collect();
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva,2, '.', ''))]);
+                $tributos = ['20'];
                 $detalle->gravada = $detalle->total;
             }else{
                 $detalle->gravada = 0;
