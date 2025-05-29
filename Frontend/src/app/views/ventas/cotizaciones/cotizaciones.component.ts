@@ -211,5 +211,18 @@ public setEstado(cotizacion: any) {
     );
   }
 
+  changeStateCotizacion(ventaId: number, estado: string) {
+    this.apiService.store('cotizacion/changeState', { id: ventaId, estado: estado }).subscribe(data => {
+      this.alertService.success('Cotización anulada', 'La cotización fue anulada exitosamente.');
+      this.filtrarVentas();
+    }, error => { this.alertService.error(error); });
+  }
+
+  public duplicarCotizacion(id: number) {
+    this.apiService.store('cotizacion/duplicar', { id: id }).subscribe(data => {
+      this.alertService.success('Cotización duplicada', 'La cotización fue duplicada exitosamente.');
+      this.filtrarVentas();
+    }, error => { this.alertService.error(error); });
+  }
 
 }

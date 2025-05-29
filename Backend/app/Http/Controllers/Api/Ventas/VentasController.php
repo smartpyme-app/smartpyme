@@ -32,6 +32,7 @@ use App\Models\ComboProducto;
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use App\Models\Inventario\CustomFields\ProductCustomField;
+use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -496,6 +497,13 @@ class VentasController extends Controller
                 $cotizacion = CotizacionVenta::find($request->num_cotizacion);
                 $cotizacion->estado = 'Facturada';
                 $cotizacion->save();
+
+                // verificar si la cotizacion tiene una orden de produccion para cambiar su estado
+                $orden = OrdenProduccion::where('id_cotizacion_venta', $cotizacion->id)->first();
+                if ($orden) {
+                    $orden->estado = 'facturada';
+                    $orden->save();
+                }
             }
             DB::commit();
             return Response()->json($venta, 200);
