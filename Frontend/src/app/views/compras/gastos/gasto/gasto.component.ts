@@ -9,6 +9,7 @@ import * as moment from 'moment';
 @Component({
   selector: 'app-gasto',
   templateUrl: './gasto.component.html',
+  styleUrls: ['./gasto.component.css'],
 })
 export class GastoComponent implements OnInit {
   public gasto: any = {};
@@ -27,6 +28,11 @@ export class GastoComponent implements OnInit {
   public impuestos: any = [];
   public mostrar_otros_impuestos = false;
   public impuestos_seleccionados: any[] = [];
+  public iva_active: boolean = false;
+  public percepcion_active: boolean = false;
+  public renta_active: boolean = false;
+  public opciones_avanzadas_active: boolean = false;
+
 
   public jsonContent: string = '';
   public processingJson: boolean = false;
@@ -135,9 +141,9 @@ export class GastoComponent implements OnInit {
       this.apiService.read('gasto/', id).subscribe(
         (gasto) => {
           this.gasto = gasto;
-          if (this.gasto.iva > 0) this.gasto.impuesto = true;
+          if (this.gasto.iva > 0) this.iva_active = true;
 
-          if (this.gasto.iva_percibido > 0) this.gasto.percepcion = true;
+          if (this.gasto.iva_percibido > 0) this.percepcion_active = true;
 
           if (this.gasto.renta_retenida > 0)
             this.gasto.renta = true;
@@ -324,6 +330,14 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  public setPercepcion() {
+    this.setTotal();
+  }
+
+  public setRenta() {
+    this.setTotal();
+  }
+
   // public setTotal() {
   //   if (this.gasto.impuesto) {
   //     this.gasto.total = (
@@ -373,7 +387,7 @@ export class GastoComponent implements OnInit {
     let total = subtotal;
 
     // Calcular IVA si está habilitado
-    if(this.gasto.impuesto){
+    if(this.iva_active){
         const ivaRate = this.apiService.auth_user().empresa.iva / 100;
         const ivaValue = subtotal * ivaRate;
         this.gasto.iva = ivaValue.toFixed(2);
@@ -383,7 +397,7 @@ export class GastoComponent implements OnInit {
     }
 
     // Calcular renta si está habilitada
-    if(this.gasto.renta) {
+    if(this.renta_active) {
         this.gasto.renta_retenida = (subtotal * 0.10).toFixed(2);
         total -= parseFloat(this.gasto.renta_retenida);
     } else {
@@ -391,7 +405,7 @@ export class GastoComponent implements OnInit {
     }
 
     // Calcular percepción si está habilitada
-    if(this.gasto.percepcion) {
+    if(this.percepcion_active) {
         this.gasto.iva_percibido = (subtotal * 0.01).toFixed(2);
         total += parseFloat(this.gasto.iva_percibido);
     } else {
@@ -414,7 +428,7 @@ export class GastoComponent implements OnInit {
   }
   
   public setSubTotal(){
-    if(this.gasto.impuesto){
+    if(this.iva_active){
         this.gasto.sub_total = (parseFloat(this.gasto.total) / (1 + (this.apiService.auth_user().empresa.iva / 100))).toFixed(2);
         this.gasto.iva = (parseFloat(this.gasto.total) - parseFloat(this.gasto.sub_total)).toFixed(2);
     }else{
@@ -424,6 +438,10 @@ export class GastoComponent implements OnInit {
     
     this.setTotal();
   } 
+
+  public onIvaChange() {
+      this.setTotal();
+  }
 
   public selectTipoDocumento() {
     if (this.gasto.tipo_documento == 'Sujeto excluido') {
@@ -690,7 +708,7 @@ export class GastoComponent implements OnInit {
           );
           if (iva) {
             this.gasto.iva = parseFloat(iva.valor);
-            this.gasto.impuesto = true;
+            this.iva_active = true;
           }
         }
 
@@ -709,7 +727,7 @@ export class GastoComponent implements OnInit {
           parseFloat(jsonData.resumen.ivaPerci1) > 0
         ) {
           this.gasto.iva_percibido = parseFloat(jsonData.resumen.ivaPerci1);
-          this.gasto.percepcion = true;
+          this.percepcion_active = true;
         }
 
         // Total
@@ -881,7 +899,9 @@ export class GastoComponent implements OnInit {
         }
       }
     }
+  }
 
-    // Si no se encontró coincidencia, se dejara la categoría predeterminada
+  onOpcionesAvanzadasChange() {
+   this.opciones_avanzadas_active = !this.opciones_avanzadas_active; 
   }
 }
