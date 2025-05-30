@@ -265,18 +265,18 @@
                 *ngFor="let field of customFields"
                 [hidden]="!hasCustomField(field.id)"
               >
-                {{ field.name }}
+                {{ field?.name }}
               </th>
               <th class="text-center">Cantidad</th>
               <th
                 class="text-center"
-                *ngIf="cotizacion.estado === 'aceptada' && isDetalles"
+                *ngIf="(cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles"
               >
                 Cantidad Producida
               </th>
               <th
                 class="text-center"
-                *ngIf="cotizacion.estado === 'aceptada' && isDetalles"
+                *ngIf="(cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles"
               >
                 Porcentaje
               </th>
@@ -299,9 +299,9 @@
               <td>
                 <div class="d-flex align-items-center gap-2">
                   <div class="ms-2">
-                    <p class="mb-0">{{ detalle.producto.nombre }}</p>
+                    <p class="mb-0">{{ detalle.producto?.nombre }}</p>
                     <small class="text-muted"
-                      >Código: {{ detalle.producto.codigo }}</small
+                      >Código: {{ detalle.producto?.codigo }}</small
                     >
                   </div>
                 </div>
@@ -324,7 +324,7 @@
               <td
                 class="text-center"
                 *ngIf="
-                  cotizacion.estado?.toLowerCase() === 'aceptada' && editar
+                  (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && editar
                 "
                 style="width: 100px"
               >
@@ -342,7 +342,7 @@
               <td
                 class="text-center"
                 *ngIf="
-                  cotizacion.estado?.toLowerCase() === 'aceptada' &&
+                  (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') &&
                   !editar &&
                   isDetalles
                 "
@@ -357,7 +357,7 @@
               <td
                 style="width: 150px"
                 *ngIf="
-                  cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles
+                  (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles
                 "
               >
                 <div class="d-flex align-items-center">
@@ -406,7 +406,7 @@
     </button>
     <button
       *ngIf="
-        isDetalles && editar && cotizacion.estado?.toLowerCase() === 'aceptada'
+        isDetalles && editar && (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso')
       "
       type="submit"
       class="btn btn-primary"

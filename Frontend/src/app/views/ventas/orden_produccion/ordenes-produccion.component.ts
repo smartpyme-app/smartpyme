@@ -83,6 +83,32 @@ export class OrdenesProduccionComponent implements OnInit {
     );
   }
 
+  changeStateOrden(ordenId: number, estado: string) {
+    this.apiService.store('orden-produccion/cambiar-estado-orden', { id: ordenId, estado: estado }).subscribe(
+      data => {
+        this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
+        this.filtrarOrdenes();
+      }, 
+      error => {
+        if (error.status === 400 && error.error && error.error.message) {
+          let mensaje = error.error.message;
+          
+          if (error.error.detalles_incompletos && error.error.detalles_incompletos.length > 0) {
+            mensaje += '<br><br><strong>Productos pendientes:</strong><ul>';
+            error.error.detalles_incompletos.forEach((detalle: any) => {
+              mensaje += `<li>Producto ID: ${detalle.producto_id} - Faltante: ${detalle.cantidad_faltante} unidades</li>`;
+            });
+            mensaje += '</ul>';
+          }
+          
+          this.alertService.error(mensaje);
+        } else {
+          this.alertService.error('Ocurrió un error al actualizar el estado de la orden.');
+        }
+      }
+    );
+  }
+
   public setPagination(event: any): void {
     this.loading = true;
     this.apiService.paginate(this.ordenes.path + '?page=' + event.page, this.filtros).subscribe(ordenes => {
