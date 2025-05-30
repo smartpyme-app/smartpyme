@@ -361,9 +361,16 @@ export class RetaceoComponent implements OnInit {
       // Calcular montos de gastos para este producto y redondear a 1 decimales
       item.monto_transporte = Number(((porcentaje / 100) * totalesPorTipo['Transporte']).toFixed(3));
       item.monto_seguro = Number(((porcentaje / 100) * totalesPorTipo['Seguro']).toFixed(3));
-      item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') *
-        parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(3));
       item.monto_otros = Number(((porcentaje / 100) * totalesPorTipo['Otro']).toFixed(3));
+
+      // Calcular la base para el DAI (suma de valor FOB + transporte + seguro + otros)
+      const baseDAI = parseFloat(item.valor_fob?.toString() || '0') +
+                     parseFloat(item.monto_transporte?.toString() || '0') +
+                     parseFloat(item.monto_seguro?.toString() || '0') +
+                     parseFloat(item.monto_otros?.toString() || '0');
+
+      // Calcular el DAI aplicando el porcentaje a la base
+      item.monto_dai = Number(((baseDAI * parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(4));
 
       // Calcular landed cost y costo retaceado
       this.actualizarCostosProducto(item);
@@ -563,10 +570,14 @@ export class RetaceoComponent implements OnInit {
   }
 
   calcularDAIProducto(item: ItemDistribucion) {
-    item.monto_dai = (
-      (parseFloat(item.valor_fob?.toString() || '0') *
-        parseFloat(item.porcentaje_dai?.toString() || '0')) / 100
-    );
+    // Calcular la base para el DAI (suma de valor FOB + transporte + seguro + otros)
+    const baseDAI = parseFloat(item.valor_fob?.toString() || '0') +
+                   parseFloat(item.monto_transporte?.toString() || '0') +
+                   parseFloat(item.monto_seguro?.toString() || '0') +
+                   parseFloat(item.monto_otros?.toString() || '0');
+
+    // Calcular el DAI aplicando el porcentaje a la base
+    item.monto_dai = Number(((baseDAI * parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(4));
 
     this.actualizarCostosProducto(item);
 
