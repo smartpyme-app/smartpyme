@@ -222,9 +222,7 @@ export class ApiService {
 
     canEdit(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' 
-            // || usuario.tipo == 'Supervisor Limitado'
-        )
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
             return true;
         return false;
     }
