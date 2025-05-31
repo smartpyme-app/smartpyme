@@ -214,7 +214,7 @@ export class ApiService {
         if (
             usuario.tipo == 'Administrador' ||
             usuario.tipo == 'Supervisor' 
-            // || usuario.tipo == 'Supervisor Limitado'
+            || usuario.tipo == 'Supervisor Limitado'
         )
             return true;
         return false;
