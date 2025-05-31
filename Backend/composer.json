@@ -23,6 +23,7 @@
         "maatwebsite/excel": "^3.1",
         "magarrent/laravel-currency-formatter": "^1.0",
         "milon/barcode": "^9.0",
+        "mpdf/mpdf": "^8.2",
         "tymon/jwt-auth": "^1.0"
     },
     "require-dev": {
