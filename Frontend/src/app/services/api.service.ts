@@ -213,8 +213,8 @@ export class ApiService {
         let usuario = this.auth_user();
         if (
             usuario.tipo == 'Administrador' ||
-            usuario.tipo == 'Supervisor' ||
-            usuario.tipo == 'Supervisor Limitado'
+            usuario.tipo == 'Supervisor' 
+            // || usuario.tipo == 'Supervisor Limitado'
         )
             return true;
         return false;
@@ -222,7 +222,18 @@ export class ApiService {
 
     canEdit(){
         let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' 
+            // || usuario.tipo == 'Supervisor Limitado'
+        )
+            return true;
+        return false;
+    }
+
+    canChange(){
+        let usuario = this.auth_user();
+        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' 
+            // || usuario.tipo == 'Supervisor Limitado'
+        )
             return true;
         return false;
     }

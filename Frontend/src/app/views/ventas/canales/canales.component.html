@@ -59,7 +59,7 @@
                         <td>{{canal.nombre }}</td>
                         <td>{{canal.descripcion}}</td>
                         <td>
-                            <select name="enable" [(ngModel)]="canal.enable" class="form-select w-auto border-0" (change)="setEstado(canal)" [ngClass]="{'bg-light-danger' : canal.enable == 0, 'bg-light-success' : canal.enable == 1}">
+                            <select [disabled]="!apiService.canChange()" name="enable" [(ngModel)]="canal.enable" class="form-select w-auto border-0" (change)="setEstado(canal)" [ngClass]="{'bg-light-danger' : canal.enable == 0, 'bg-light-success' : canal.enable == 1}">
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>
