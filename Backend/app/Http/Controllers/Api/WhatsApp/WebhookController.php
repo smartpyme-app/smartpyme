@@ -48,11 +48,9 @@ class WebhookController extends Controller
     public function handle(Request $request)
     {
         try {
-            // Log del payload para debugging (limitado en desarrollo)
             if (config('app.env') === 'production') {
                 Log::info('WhatsApp webhook recibido', ['payload' => $request->all()]);
             } else {
-                // En desarrollo, log simplificado para evitar "over 9 levels deep"
                 Log::info('📱 WhatsApp webhook recibido [DEV]', [
                     'from' => $request->input('entry.0.changes.0.value.messages.0.from'),
                     'message' => $request->input('entry.0.changes.0.value.messages.0.text.body'),
@@ -60,13 +58,10 @@ class WebhookController extends Controller
                 ]);
             }
 
-            // Validar que el request tenga la estructura esperada
             if (!$this->isValidWebhook($request)) {
                 Log::warning('Webhook inválido recibido');
                 return response()->json(['status' => 'invalid_webhook'], 400);
             }
-
-            // Procesar el mensaje
             $result = $this->whatsAppService->processIncomingMessage($request->all());
 
             if ($result['success']) {
@@ -80,7 +75,6 @@ class WebhookController extends Controller
                 ]);
             }
 
-            // Siempre responder 200 para que Facebook no reintente
             return response()->json(['status' => 'received'], 200);
 
         } catch (Exception $e) {
@@ -89,14 +83,10 @@ class WebhookController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            // Responder 200 para evitar reintentos infinitos
             return response()->json(['status' => 'error'], 200);
         }
     }
 
-    /**
-     * Validar estructura del webhook
-     */
     private function isValidWebhook(Request $request): bool
     {
         $data = $request->all();

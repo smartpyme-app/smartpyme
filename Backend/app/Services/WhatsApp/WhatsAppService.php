@@ -20,34 +20,25 @@ class WhatsAppService
         $this->responseBuilder = $responseBuilder;
     }
 
-    /**
-     * Procesar mensaje entrante desde webhook
-     */
     public function processIncomingMessage(array $webhookData): array
     {
         try {
-            // Extraer datos del webhook
             $messageData = $this->extractMessageData($webhookData);
             
             if (!$messageData) {
                 return ['success' => false, 'error' => 'No message data found'];
             }
 
-            // Buscar o crear sesión
             $session = WhatsAppSession::findOrCreateByNumber($messageData['from']);
 
-            // Guardar mensaje entrante
             $this->saveIncomingMessage($messageData, $session);
 
-            // Procesar según el estado de la sesión
             $response = $this->messageHandler->handle($session, $messageData['body']);
 
-            // Enviar respuesta (con modo desarrollo/producción)
             if ($response) {
                 $sent = $this->responseBuilder->sendMessage($messageData['from'], $response);
                 
                 if ($sent) {
-                    // Guardar mensaje saliente
                     $this->saveOutgoingMessage($messageData['from'], $response, $session);
                 }
 
@@ -66,9 +57,6 @@ class WhatsAppService
         }
     }
 
-    /**
-     * Extraer datos del mensaje del webhook de Facebook
-     */
     private function extractMessageData(array $webhookData): ?array
     {
         try {
@@ -76,14 +64,12 @@ class WhatsAppService
             $changes = $entry['changes'][0];
             $value = $changes['value'];
 
-            // Verificar que hay mensajes
             if (!isset($value['messages']) || empty($value['messages'])) {
                 return null;
             }
 
             $message = $value['messages'][0];
 
-            // Solo procesar mensajes de texto por ahora
             if (!isset($message['text']['body'])) {
                 return null;
             }
@@ -105,9 +91,6 @@ class WhatsAppService
         }
     }
 
-    /**
-     * Guardar mensaje entrante
-     */
     private function saveIncomingMessage(array $messageData, WhatsAppSession $session): void
     {
         WhatsAppMessage::createIncoming(
@@ -118,9 +101,6 @@ class WhatsAppService
         );
     }
 
-    /**
-     * Guardar mensaje saliente
-     */
     private function saveOutgoingMessage(string $number, string $content, WhatsAppSession $session): void
     {
         WhatsAppMessage::createOutgoing(

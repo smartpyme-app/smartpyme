@@ -17,12 +17,8 @@ class ResponseBuilder
         $this->accessToken = config('services.whatsapp.access_token');
     }
 
-    /**
-     * Enviar mensaje de texto (con modo desarrollo)
-     */
     public function sendMessage(string $to, string $message): bool
     {
-        // MODO DESARROLLO: Solo simular envío
         if (config('app.env') !== 'production') {
             Log::info('📱 [MODO DESARROLLO] Mensaje simulado enviado', [
                 'to' => $to,
@@ -30,21 +26,15 @@ class ResponseBuilder
                 'length' => strlen($message)
             ]);
             
-            // Simular éxito en desarrollo
             return true;
         }
 
-        // MODO PRODUCCIÓN: Envío real
         return $this->sendRealMessage($to, $message);
     }
 
-    /**
-     * Envío real de mensaje (solo producción)
-     */
     private function sendRealMessage(string $to, string $message): bool
     {
         try {
-            // Validar configuración
             if (empty($this->accessToken) || empty($this->apiUrl)) {
                 Log::error('Configuración WhatsApp incompleta', [
                     'has_token' => !empty($this->accessToken),
@@ -95,9 +85,6 @@ class ResponseBuilder
         }
     }
 
-    /**
-     * Enviar mensaje con botones interactivos
-     */
     public function sendButtonMessage(string $to, string $bodyText, array $buttons): bool
     {
         try {
@@ -156,9 +143,6 @@ class ResponseBuilder
         }
     }
 
-    /**
-     * Enviar lista interactiva
-     */
     public function sendListMessage(string $to, string $bodyText, string $buttonText, array $sections): bool
     {
         try {
@@ -207,9 +191,6 @@ class ResponseBuilder
         }
     }
 
-    /**
-     * Enviar documento/archivo
-     */
     public function sendDocument(string $to, string $documentUrl, string $caption = '', string $filename = ''): bool
     {
         try {

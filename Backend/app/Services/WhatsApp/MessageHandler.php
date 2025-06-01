@@ -9,20 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class MessageHandler
 {
-    /**
-     * Manejar mensaje según el estado de la sesión
-     */
     public function handle(WhatsAppSession $session, string $message): ?string
     {
-        // Normalizar mensaje
         $message = trim(strtolower($message));
 
-        // Comandos globales
         if ($this->isGlobalCommand($message)) {
             return $this->handleGlobalCommand($session, $message);
         }
 
-        // Manejar según estado
         switch ($session->status) {
             case 'pending_code':
                 return $this->handlePendingCode($session, $message);
@@ -38,18 +32,13 @@ class MessageHandler
         }
     }
 
-    /**
-     * Verificar comandos globales
-     */
+ 
     private function isGlobalCommand(string $message): bool
     {
         $globalCommands = ['hola', 'inicio', 'menu', 'ayuda', 'salir', 'reset'];
         return in_array($message, $globalCommands);
     }
 
-    /**
-     * Manejar comandos globales
-     */
     private function handleGlobalCommand(WhatsAppSession $session, string $message): string
     {
         switch ($message) {
@@ -71,17 +60,12 @@ class MessageHandler
         }
     }
 
-    /**
-     * Manejar cuando está esperando código de empresa
-     */
     private function handlePendingCode(WhatsAppSession $session, string $message): string
     {
-        // Verificar intentos excesivos
         if ($session->shouldBlockForTooManyAttempts()) {
             return "❌ Demasiados intentos fallidos. Escribe 'reset' para reiniciar o contacta soporte.";
         }
 
-        // Intentar conectar con empresa
         $empresa = $session->connectToCompany($message);
 
         if ($empresa) {
@@ -99,23 +83,17 @@ class MessageHandler
                "Escribe 'ayuda' si necesitas asistencia.";
     }
 
-    /**
-     * Manejar cuando está esperando email de usuario
-     */
     private function handlePendingUser(WhatsAppSession $session, string $message): string
     {
-        // Verificar intentos excesivos
+        
         if ($session->shouldBlockForTooManyAttempts()) {
             return "❌ Demasiados intentos fallidos. Escribe 'reset' para reiniciar.";
         }
 
-        // Validar formato de email básico
         if (!filter_var($message, FILTER_VALIDATE_EMAIL)) {
             return "❌ Formato de email inválido.\n\n" .
                    "Por favor, escribe un email válido (ejemplo: usuario@empresa.com)";
         }
-
-        // Intentar conectar con usuario
         $usuario = $session->connectToUser($message);
 
         if ($usuario) {
@@ -136,12 +114,9 @@ class MessageHandler
                "Escribe 'empresa' para cambiar de empresa.";
     }
 
-    /**
-     * Manejar usuario conectado (menú principal)
-     */
     private function handleConnectedUser(WhatsAppSession $session, string $message): string
     {
-        // Verificar permisos del usuario
+        
         $permissions = $session->usuario->getWhatsAppPermissions();
 
         switch ($message) {
@@ -178,9 +153,6 @@ class MessageHandler
         }
     }
 
-    /**
-     * Mensaje de bienvenida
-     */
     private function getWelcomeMessage(): string
     {
         return "👋 ¡Hola! Bienvenido a *SmartPyme*\n\n" .
@@ -188,9 +160,6 @@ class MessageHandler
                "Por favor, escribe el código de tu empresa:";
     }
 
-    /**
-     * Menú principal personalizado
-     */
     private function getMainMenu(WhatsAppSession $session): string
     {
         $permissions = $session->usuario->getWhatsAppPermissions();
@@ -226,9 +195,6 @@ class MessageHandler
         return $menu;
     }
 
-    /**
-     * Mensaje de ayuda
-     */
     private function getHelpMessage(): string
     {
         return "🆘 *Ayuda - SmartPyme WhatsApp*\n\n" .
@@ -242,12 +208,8 @@ class MessageHandler
                "Contacta a tu administrador del sistema.";
     }
 
-    /**
-     * Información de ventas (placeholder)
-     */
     private function getSalesInfo(WhatsAppSession $session): string
     {
-        // Aquí irían las consultas reales a la base de datos
         return "📈 *Resumen de Ventas*\n\n" .
                "🏢 Empresa: {$session->empresa->nombre}\n" .
                "📅 Período: Hoy\n\n" .
@@ -258,9 +220,6 @@ class MessageHandler
                "Escribe 'menu' para volver al menú principal.";
     }
 
-    /**
-     * Información de inventario (placeholder)
-     */
     private function getInventoryInfo(WhatsAppSession $session): string
     {
         return "📦 *Estado de Inventario*\n\n" .
@@ -272,9 +231,6 @@ class MessageHandler
                "Escribe 'menu' para volver al menú principal.";
     }
 
-    /**
-     * Información de clientes (placeholder)
-     */
     private function getCustomersInfo(WhatsAppSession $session): string
     {
         return "👥 *Información de Clientes*\n\n" .
@@ -286,9 +242,6 @@ class MessageHandler
                "Escribe 'menu' para volver al menú principal.";
     }
 
-    /**
-     * Menú de reportes (placeholder)
-     */
     private function getReportsMenu(WhatsAppSession $session): string
     {
         return "📊 *Reportes Disponibles*\n\n" .
