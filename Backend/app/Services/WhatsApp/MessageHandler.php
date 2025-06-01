@@ -313,6 +313,7 @@ class MessageHandler
     private function handleConnectedUser(WhatsAppSession $session, string $message): string
     {
         // Manejar IDs de botones primero
+        $cleanMessage = strtolower(trim($message));
         switch ($message) {
             case 'ventas_hoy':
                 return $this->getSalesInfo($session);
@@ -324,7 +325,21 @@ class MessageHandler
                 return $this->getInventoryInfo($session);
         }
 
-        // Manejar números tradicionales
+
+        switch ($cleanMessage) {
+            case '📈 ventas':
+            case 'ventas':
+                return $this->getSalesInfo($session);
+            case '💰 flujo efectivo':
+            case 'flujo efectivo':
+            case 'flujo':
+                return $this->getCashFlowInfo($session);
+            case '📦 inventario':
+            case 'inventario':
+                return $this->getInventoryInfo($session);
+        }
+
+
         switch ($message) {
             case '1':
                 return $this->getSalesInfo($session);
@@ -348,6 +363,8 @@ class MessageHandler
             default:
                 return "❌ Opción no válida.\n\n" . $this->getMainMenu($session);
         }
+
+        return "❌ Opción no válida.\n\n" . $this->getMainMenu($session);
     }
 
     private function getCashFlowInfo(WhatsAppSession $session): string

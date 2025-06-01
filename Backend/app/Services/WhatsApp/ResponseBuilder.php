@@ -17,19 +17,124 @@ class ResponseBuilder
         $this->accessToken = config('services.whatsapp.access_token');
     }
 
-    public function sendMessage(string $to, string $message): bool
+    public function sendMessage(string $to, $message): bool
+    {
+        if (is_array($message)) {
+            return $this->sendInteractiveMessage($to, $message);
+        }
+        return $this->sendTextMessage($to, $message);
+    }
+
+    private function sendTextMessage(string $to, string $message): bool
     {
         if (config('app.env') !== 'production') {
-            Log::info('📱 [MODO DESARROLLO] Mensaje simulado enviado', [
+            Log::info('📱 [MODO DESARROLLO] Mensaje texto simulado', [
                 'to' => $to,
                 'message' => $message,
                 'length' => strlen($message)
             ]);
-            
+            return true;
+        }
+        return $this->sendRealMessage($to, $message);
+    }
+
+    private function sendInteractiveMessage(string $to, array $messageData): bool
+    {
+        if (config('app.env') !== 'production') {
+            $simulatedText = $this->convertButtonsToText($messageData);
+
+            Log::info('📱 [MODO DESARROLLO] Botones simulados como texto', [
+                'to' => $to,
+                'type' => $messageData['type'] ?? 'unknown',
+                'buttons_count' => count($messageData['buttons'] ?? []),
+                'simulated_text_length' => strlen($simulatedText)
+            ]);
+
             return true;
         }
 
-        return $this->sendRealMessage($to, $message);
+        if ($messageData['type'] === 'buttons') {
+            return $this->sendRealButtonMessage($to, $messageData['body'], $messageData['buttons']);
+        }
+
+        return false;
+    }
+
+    private function convertButtonsToText(array $messageData): string
+    {
+        $text = $messageData['body'] . "\n\n";
+        $text .= "🔘 *Opciones disponibles:*\n";
+
+        foreach ($messageData['buttons'] as $button) {
+            $text .= "• " . $button['title'] . "\n";
+        }
+
+        $text .= "\n💡 *Envía el texto del botón que quieres seleccionar*";
+
+        return $text;
+    }
+
+    private function sendRealButtonMessage(string $to, string $body, array $buttons): bool
+    {
+        try {
+            // Validar configuración
+            if (empty($this->accessToken) || empty($this->apiUrl)) {
+                Log::error('Configuración WhatsApp incompleta para botones');
+                return false;
+            }
+
+            $formattedButtons = [];
+            foreach ($buttons as $button) {
+                $formattedButtons[] = [
+                    'type' => 'reply',
+                    'reply' => [
+                        'id' => $button['id'],
+                        'title' => substr($button['title'], 0, 20)
+                    ]
+                ];
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Content-Type' => 'application/json',
+            ])->post($this->apiUrl, [
+                'messaging_product' => 'whatsapp',
+                'to' => $to,
+                'type' => 'interactive',
+                'interactive' => [
+                    'type' => 'button',
+                    'body' => [
+                        'text' => $body
+                    ],
+                    'action' => [
+                        'buttons' => $formattedButtons
+                    ]
+                ]
+            ]);
+
+            if ($response->successful()) {
+                Log::info('📱 Botones WhatsApp enviados exitosamente', [
+                    'to' => $to,
+                    'buttons_count' => count($buttons)
+                ]);
+                return true;
+            }
+
+            Log::error('❌ Error enviando botones WhatsApp', [
+                'to' => $to,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return false;
+        } catch (Exception $e) {
+            Log::error('💥 Excepción enviando botones WhatsApp', [
+                'to' => $to,
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
     }
 
     private function sendRealMessage(string $to, string $message): bool
@@ -72,7 +177,6 @@ class ResponseBuilder
             ]);
 
             return false;
-
         } catch (Exception $e) {
             Log::error('💥 Excepción enviando mensaje WhatsApp', [
                 'to' => $to,
@@ -132,7 +236,6 @@ class ResponseBuilder
             ]);
 
             return false;
-
         } catch (Exception $e) {
             Log::error('Excepción enviando mensaje con botones', [
                 'to' => $to,
@@ -180,7 +283,6 @@ class ResponseBuilder
             ]);
 
             return false;
-
         } catch (Exception $e) {
             Log::error('Excepción enviando lista interactiva', [
                 'to' => $to,
@@ -195,11 +297,11 @@ class ResponseBuilder
     {
         try {
             $document = ['link' => $documentUrl];
-            
+
             if ($caption) {
                 $document['caption'] = $caption;
             }
-            
+
             if ($filename) {
                 $document['filename'] = $filename;
             }
@@ -229,7 +331,6 @@ class ResponseBuilder
             ]);
 
             return false;
-
         } catch (Exception $e) {
             Log::error('Excepción enviando documento', [
                 'to' => $to,
