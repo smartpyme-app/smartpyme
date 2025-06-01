@@ -19,6 +19,4 @@ Route::middleware(['auth:api'])->prefix('admin/whatsapp')->group(function () {
     // Sesiones activas
     Route::get('/sessions', [WebhookController::class, 'getSessions']);
     
-    // Enviar mensaje manual (para testing)
-    Route::post('/send', [WebhookController::class, 'sendManualMessage']);
 });
