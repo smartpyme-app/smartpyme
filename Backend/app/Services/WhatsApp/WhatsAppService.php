@@ -42,7 +42,7 @@ class WhatsAppService
             // Procesar según el estado de la sesión
             $response = $this->messageHandler->handle($session, $messageData['body']);
 
-            // Enviar respuesta
+            // Enviar respuesta (con modo desarrollo/producción)
             if ($response) {
                 $sent = $this->responseBuilder->sendMessage($messageData['from'], $response);
                 

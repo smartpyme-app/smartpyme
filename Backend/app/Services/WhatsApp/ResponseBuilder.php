@@ -18,11 +18,41 @@ class ResponseBuilder
     }
 
     /**
-     * Enviar mensaje de texto
+     * Enviar mensaje de texto (con modo desarrollo)
      */
     public function sendMessage(string $to, string $message): bool
     {
+        // MODO DESARROLLO: Solo simular envío
+        if (config('app.env') !== 'production') {
+            Log::info('📱 [MODO DESARROLLO] Mensaje simulado enviado', [
+                'to' => $to,
+                'message' => $message,
+                'length' => strlen($message)
+            ]);
+            
+            // Simular éxito en desarrollo
+            return true;
+        }
+
+        // MODO PRODUCCIÓN: Envío real
+        return $this->sendRealMessage($to, $message);
+    }
+
+    /**
+     * Envío real de mensaje (solo producción)
+     */
+    private function sendRealMessage(string $to, string $message): bool
+    {
         try {
+            // Validar configuración
+            if (empty($this->accessToken) || empty($this->apiUrl)) {
+                Log::error('Configuración WhatsApp incompleta', [
+                    'has_token' => !empty($this->accessToken),
+                    'has_url' => !empty($this->apiUrl)
+                ]);
+                return false;
+            }
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->accessToken,
                 'Content-Type' => 'application/json',
@@ -36,25 +66,29 @@ class ResponseBuilder
             ]);
 
             if ($response->successful()) {
-                Log::info('Mensaje WhatsApp enviado exitosamente', [
+                Log::info('📱 Mensaje WhatsApp enviado exitosamente', [
                     'to' => $to,
-                    'message_length' => strlen($message)
+                    'message_length' => strlen($message),
+                    'response_status' => $response->status()
                 ]);
                 return true;
             }
 
-            Log::error('Error enviando mensaje WhatsApp', [
+            Log::error('❌ Error enviando mensaje WhatsApp', [
                 'to' => $to,
                 'status' => $response->status(),
-                'response' => $response->body()
+                'response' => $response->body(),
+                'api_url' => $this->apiUrl
             ]);
 
             return false;
 
         } catch (Exception $e) {
-            Log::error('Excepción enviando mensaje WhatsApp', [
+            Log::error('💥 Excepción enviando mensaje WhatsApp', [
                 'to' => $to,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'api_url' => $this->apiUrl,
+                'trace' => $e->getTraceAsString()
             ]);
 
             return false;

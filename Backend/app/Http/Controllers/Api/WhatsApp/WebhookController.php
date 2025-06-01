@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api\WhatsApp;
 
 use App\Http\Controllers\Controller;
@@ -27,15 +28,7 @@ class WebhookController extends Controller
 
         // Token de verificación configurado en .env
         $verifyToken = config('services.whatsapp.verify_token', 'smartpyme_verify_token');
-        Log::info('Verificación del webhook WhatsApp', [
-            'mode' => $mode,
-            'token' => $token,
-            'challenge' => $challenge
-        ]);
 
-        Log::info('Token de verificación configurado', [
-            'verify_token' => $verifyToken
-        ]);
         if ($mode === 'subscribe' && $token === $verifyToken) {
             Log::info('WhatsApp webhook verificado correctamente');
             return response($challenge, 200);
@@ -55,8 +48,17 @@ class WebhookController extends Controller
     public function handle(Request $request)
     {
         try {
-            // Log del payload para debugging
-            Log::info('WhatsApp webhook recibido', ['payload' => $request->all()]);
+            // Log del payload para debugging (limitado en desarrollo)
+            if (config('app.env') === 'production') {
+                Log::info('WhatsApp webhook recibido', ['payload' => $request->all()]);
+            } else {
+                // En desarrollo, log simplificado para evitar "over 9 levels deep"
+                Log::info('📱 WhatsApp webhook recibido [DEV]', [
+                    'from' => $request->input('entry.0.changes.0.value.messages.0.from'),
+                    'message' => $request->input('entry.0.changes.0.value.messages.0.text.body'),
+                    'timestamp' => $request->input('entry.0.changes.0.value.messages.0.timestamp')
+                ]);
+            }
 
             // Validar que el request tenga la estructura esperada
             if (!$this->isValidWebhook($request)) {
@@ -68,9 +70,14 @@ class WebhookController extends Controller
             $result = $this->whatsAppService->processIncomingMessage($request->all());
 
             if ($result['success']) {
-                Log::info('Mensaje procesado exitosamente', ['result' => $result]);
+                Log::info('✅ Mensaje procesado exitosamente', [
+                    'success' => $result['success'],
+                    'has_response' => isset($result['response'])
+                ]);
             } else {
-                Log::error('Error procesando mensaje', ['error' => $result['error']]);
+                Log::error('❌ Error procesando mensaje', [
+                    'error' => $result['error'] ?? 'Error desconocido'
+                ]);
             }
 
             // Siempre responder 200 para que Facebook no reintente

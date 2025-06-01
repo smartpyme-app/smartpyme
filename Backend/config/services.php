@@ -73,6 +73,7 @@ return [
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'smartpyme_verify_token'),
         'api_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com/v21.0/131106576743413/messages'),
         'webhook_url' => env('WHATSAPP_WEBHOOK_URL', '/api/whatsapp/webhook'),
+        'dev_mode' => env('WHATSAPP_DEV_MODE', true),
     ],
 
 ];

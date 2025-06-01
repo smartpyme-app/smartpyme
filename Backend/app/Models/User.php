@@ -136,7 +136,7 @@ class User extends Authenticatable implements JWTSubject
         ];
 
 
-        if ($this->tipo === 'administrador' || $this->tipo === 'admin') {
+        if ($this->tipo === 'Administrador' || $this->tipo === 'admin') {
             return array_map(fn() => true, $permissions);
         }
 
