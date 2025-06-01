@@ -14,7 +14,7 @@ class MessageHandler
 
     public function __construct()
     {
-        if (config('whatsapp.use_ai', false)) {
+        if (config('services.whatsapp.use_ai', false)) {
             $this->chatController = app(ChatController::class);
         }
     }
@@ -34,7 +34,7 @@ class MessageHandler
                 return $this->handlePendingUser($session, $message);
 
             case 'connected':
-                if (config('whatsapp.use_ai', false)) {
+                if (config('services.whatsapp.use_ai', false)) {
                     return $this->handleWithLucasIA($session, $message);
                 } else {
                     return $this->handleConnectedUser($session, strtolower($message));
@@ -49,35 +49,30 @@ class MessageHandler
     private function handleWithLucasIA(WhatsAppSession $session, string $message): string
     {
         try {
-            // 1. Simular un Request como si viniera del frontend
             $requestData = [
                 'prompt' => $message,
                 'history' => $this->getWhatsAppConversationHistory($session),
-                'conversationId' => null, // WhatsApp no maneja conversationId
-                'maxTokens' => 300, // Respuestas más cortas para WhatsApp
+                'conversationId' => null,
+                'maxTokens' => 300,
                 'temperature' => 0.7,
             ];
 
-            // 2. Crear un Request mock para el ChatController
             $request = new Request();
             $request->replace($requestData);
 
-            // 3. Simular usuario autenticado
             $request->setUserResolver(function () use ($session) {
                 return $session->usuario;
             });
 
-            // 4. Llamar directamente al método bedrockChat de tu ChatController
             $response = $this->chatController->bedrockChat($request);
 
-            // 5. Extraer la respuesta del JSON
             $responseData = $response->getData(true);
 
             if (isset($responseData['message'])) {
-                // 6. Procesar respuesta para WhatsApp
+
                 $lucasResponse = $this->processLucasResponseForWhatsApp($responseData['message']);
 
-                // 7. Guardar interacción en WhatsApp messages
+
                 WhatsAppMessage::logAIInteraction(
                     $session->whatsapp_number,
                     $message,
@@ -92,7 +87,6 @@ class MessageHandler
                 return $lucasResponse;
             }
 
-            // Fallback si no hay mensaje en la respuesta
             throw new \Exception('No se recibió respuesta válida de Lucas IA');
         } catch (\Exception $e) {
             Log::error('Error en Lucas IA WhatsApp', [
@@ -102,7 +96,6 @@ class MessageHandler
                 'usuario_id' => $session->id_usuario
             ]);
 
-            // Fallback al sistema de menú tradicional
             return "🤖 Lucas está temporalmente no disponible.\n\n" .
                 $this->handleConnectedUser($session, strtolower($message));
         }
@@ -111,14 +104,13 @@ class MessageHandler
     private function getWhatsAppConversationHistory(WhatsAppSession $session): array
     {
         $messages = WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)
-            ->where('created_at', '>=', now()->subHours(2)) // Solo últimas 2 horas
+            ->where('created_at', '>=', now()->subHours(2))
             ->orderBy('created_at', 'asc')
-            ->limit(8) // Máximo 8 mensajes para no sobrecargar
+            ->limit(8)
             ->get();
 
         $history = [];
         foreach ($messages as $msg) {
-            // Limpiar contenido de HTML si es respuesta de IA
             $content = $msg->is_bot_response ? strip_tags($msg->message_content) : $msg->message_content;
 
             $history[] = [
@@ -133,27 +125,20 @@ class MessageHandler
 
     private function processLucasResponseForWhatsApp(string $lucasResponse): string
     {
-        // 1. Remover HTML y mantener solo texto
         $cleanResponse = strip_tags($lucasResponse);
 
-        // 2. Convertir entidades HTML
         $cleanResponse = html_entity_decode($cleanResponse, ENT_QUOTES, 'UTF-8');
 
-        // 3. Limpiar espacios excesivos
         $cleanResponse = preg_replace('/\s+/', ' ', $cleanResponse);
         $cleanResponse = trim($cleanResponse);
 
-        // 4. Limitar longitud para WhatsApp
         if (strlen($cleanResponse) > 1500) {
             $cleanResponse = substr($cleanResponse, 0, 1450) . "...\n\n📱 *Respuesta truncada para WhatsApp*\n¿Quieres que continúe?";
         }
 
-        // 5. Agregar toque personalizado para WhatsApp
         if (!$this->endsWithQuestion($cleanResponse) && !str_contains($cleanResponse, '¿')) {
             $cleanResponse .= "\n\n¿Te ayudo con algo más? 😊";
         }
-
-        // 6. Agregar emoji de Lucas si no tiene emojis
         if (!preg_match('/[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{1F1E0}-\x{1F1FF}]/u', $cleanResponse)) {
             $cleanResponse = "🤖 " . $cleanResponse;
         }

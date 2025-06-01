@@ -121,4 +121,41 @@ class WhatsAppMessage extends Model
     {
         return $this->is_bot_response;
     }
+
+
+    public static function logAIInteraction(
+        string $whatsappNumber,
+        string $userMessage,
+        string $aiResponse,
+        $session,
+        array $aiMetadata = []
+    ): void {
+
+        self::create([
+            'whatsapp_number' => $whatsappNumber,
+            'id_empresa' => $session->id_empresa,
+            'id_usuario' => $session->id_usuario,
+            'message_type' => 'incoming',
+            'message_content' => $userMessage,
+            'is_bot_response' => false,
+            'metadata' => [
+                'processed_with_ai' => true,
+                'session_id' => $session->id
+            ]
+        ]);
+
+        self::create([
+            'whatsapp_number' => $whatsappNumber,
+            'id_empresa' => $session->id_empresa,
+            'id_usuario' => $session->id_usuario,
+            'message_type' => 'outgoing',
+            'message_content' => $aiResponse,
+            'is_bot_response' => true,
+            'metadata' => array_merge([
+                'ai_generated' => true,
+                'session_id' => $session->id,
+                'ai_model' => 'bedrock-haiku'
+            ], $aiMetadata)
+        ]);
+    }
 }
