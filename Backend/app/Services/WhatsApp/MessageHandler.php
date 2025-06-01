@@ -166,52 +166,67 @@ class MessageHandler
     }
 
 
-    private function getMainMenu(WhatsAppSession $session): string
+    private function getMainMenu(WhatsAppSession $session)
     {
         if (config('services.whatsapp.use_ai', false)) {
-            return "🤖 *Lucas - Asistente IA*\n\n" .
-                "🏢 Empresa: {$session->empresa->nombre}\n" .
-                "👤 Usuario: {$session->usuario->name}\n\n" .
-                "¡Hola! Puedes preguntarme cualquier cosa sobre tu empresa:\n\n" .
-                "💡 *Ejemplos:*\n" .
-                "• ¿Cuánto vendimos ayer?\n" .
-                "• ¿Cuál es mi flujo de efectivo?\n" .
-                "• ¿Qué productos están en stock bajo?\n" .
-                "• ¿Cuáles son mis mejores clientes?\n\n" .
-                "✨ Solo pregunta en lenguaje natural y yo te ayudo.";
+
+            return $this->getAIMenuWithButtons($session);
         }
 
-        $permissions = $session->usuario->getWhatsAppPermissions();
+        return $this->getTraditionalTextMenu($session);
+    }
+
+    private function getAIMenuWithButtons(WhatsAppSession $session)
+    {
+        $bodyText = "🤖 *Lucas - Asistente IA*\n\n";
+        $bodyText .= "🏢 Empresa: {$session->empresa->nombre}\n";
+        $bodyText .= "👤 Usuario: {$session->usuario->name}\n\n";
+        $bodyText .= "¿Qué información necesitas?\n\n";
+        $bodyText .= "💡 *También puedes preguntarme libremente:*\n";
+        $bodyText .= "• \"¿Cuánto vendimos la semana pasada?\"\n";
+        $bodyText .= "• \"¿Cuáles son mis mejores productos?\"\n";
+        $bodyText .= "• \"¿Tengo facturas vencidas?\"\n\n";
+        $bodyText .= "✨ *Usa los botones o escribe tu pregunta*";
+
+        $buttons = [
+            [
+                'id' => 'ventas_hoy',
+                'title' => '📈 Ventas'
+            ],
+            [
+                'id' => 'flujo_efectivo',
+                'title' => '💰 Flujo Efectivo'
+            ],
+            [
+                'id' => 'inventario_estado',
+                'title' => '📦 Inventario'
+            ]
+        ];
+
+        return [
+            'type' => 'buttons',
+            'body' => $bodyText,
+            'buttons' => $buttons
+        ];
+    }
+
+    private function getTraditionalTextMenu(WhatsAppSession $session)
+    {
         $menu = "📊 *{$session->empresa->nombre}*\n";
         $menu .= "Usuario: {$session->usuario->name}\n\n";
         $menu .= "¿Qué información necesitas?\n\n";
 
-        $optionNumber = 1;
-        if ($permissions['view_sales']) {
-            $menu .= "{$optionNumber}️⃣ Resumen de ventas\n";
-            $optionNumber++;
-        }
-        if ($permissions['view_inventory']) {
-            $menu .= "{$optionNumber}️⃣ Estado de inventario\n";
-            $optionNumber++;
-        }
-        if ($permissions['view_customers']) {
-            $menu .= "{$optionNumber}️⃣ Información de clientes\n";
-            $optionNumber++;
-        }
-        if ($permissions['view_reports']) {
-            $menu .= "{$optionNumber}️⃣ Reportes\n";
-            $optionNumber++;
-        }
+        $menu .= "1️⃣ Resumen de ventas\n";
+        $menu .= "2️⃣ Estado de inventario\n";
+        $menu .= "3️⃣ Información de clientes\n";
+        $menu .= "4️⃣ Reportes financieros\n";
+        $menu .= "5️⃣ Flujo de efectivo\n";
 
         $menu .= "\n0️⃣ Mostrar este menú\n";
         $menu .= "🔄 Escribe 'salir' para cerrar sesión";
 
         return $menu;
     }
-
-
-
 
 
     private function isGlobalCommand(string $message): bool
@@ -297,33 +312,34 @@ class MessageHandler
 
     private function handleConnectedUser(WhatsAppSession $session, string $message): string
     {
+        // Manejar IDs de botones primero
+        switch ($message) {
+            case 'ventas_hoy':
+                return $this->getSalesInfo($session);
 
-        $permissions = $session->usuario->getWhatsAppPermissions();
+            case 'flujo_efectivo':
+                return $this->getCashFlowInfo($session);
 
+            case 'inventario_estado':
+                return $this->getInventoryInfo($session);
+        }
+
+        // Manejar números tradicionales
         switch ($message) {
             case '1':
-                if (!$permissions['view_sales']) {
-                    return "❌ No tienes permisos para ver información de ventas.";
-                }
                 return $this->getSalesInfo($session);
 
             case '2':
-                if (!$permissions['view_inventory']) {
-                    return "❌ No tienes permisos para ver información de inventario.";
-                }
                 return $this->getInventoryInfo($session);
 
             case '3':
-                if (!$permissions['view_customers']) {
-                    return "❌ No tienes permisos para ver información de clientes.";
-                }
                 return $this->getCustomersInfo($session);
 
             case '4':
-                if (!$permissions['view_reports']) {
-                    return "❌ No tienes permisos para ver reportes.";
-                }
                 return $this->getReportsMenu($session);
+
+            case '5':
+                return $this->getCashFlowInfo($session);
 
             case '0':
             case 'menu':
@@ -333,6 +349,19 @@ class MessageHandler
                 return "❌ Opción no válida.\n\n" . $this->getMainMenu($session);
         }
     }
+
+    private function getCashFlowInfo(WhatsAppSession $session): string
+    {
+        return "💰 *Flujo de Efectivo*\n\n" .
+            "🏢 Empresa: {$session->empresa->nombre}\n" .
+            "📅 Período: Hoy\n\n" .
+            "• Ingresos del día: $0.00\n" .
+            "• Egresos del día: $0.00\n" .
+            "• Flujo neto: $0.00\n\n" .
+            "_Funcionalidad en desarrollo..._\n\n" .
+            "Escribe 'menu' para volver al menú principal.";
+    }
+
 
 
     private function getHelpMessage(): string
