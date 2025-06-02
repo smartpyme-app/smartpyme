@@ -81,16 +81,18 @@
                                 [(ngModel)]="venta.estado" 
                                 [ngClass]="{
                                   'bg-light-warning': venta?.estado == 'pendiente' || venta?.estado == 'aprobada',
-                                  'bg-light-danger': venta?.estado == 'perdida',
                                   'bg-light-success': venta?.estado == 'aceptada',
                                   'bg-light-danger': venta?.estado == 'anulada',
-                                  'bg-light-info': venta?.estado == 'facturada'
+                                  'bg-light-danger': venta?.estado == 'perdida' || venta?.estado == 'cancelada',
+                                  'bg-light-info': venta?.estado == 'facturada' || venta?.estado == 'enviada'
                                 }">
                           <option value="pendiente">Pendiente</option>
+                          <option value="enviada">Enviada</option>
                           <option value="aceptada">Aceptada</option>
-                            <option value="facturada" [disabled]="true">Facturada</option>
-                          <option value="perdida">Perdida</option>
                           <option value="anulada">Anulada</option>
+                          <option value="perdida">Perdida</option>
+                          <option value="cancelada">Cancelada</option>
+                          <option value="facturada" [disabled]="true">Facturada</option>
                         </select>
                        </td>
                       <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
@@ -101,9 +103,12 @@
                           </span>
                           <ng-template #accionesTemplate>
                               <div class="d-flex flex-column align-items-start">
-                                  <a *ngIf="venta.estado == 'pendiente' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
+                                  <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                       <i class="fa fa-fw fa-edit"></i> Editar
                                   </a>
+                                  <a *ngIf="venta.estado == 'enviada' && apiService.canEdit()" (click)="duplicarCotizacion(venta.id)" class="btn">
+                                    <i class="fa fa-fw fa-copy"></i> Duplicar
+                                </a>
                                   <a routerLink="/cotizacion/{{venta.id}}" class="btn">
                                       <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                   </a>
@@ -118,7 +123,15 @@
                                   <a *ngIf="venta.estado == 'aceptada' && venta.tiene_orden_produccion.length == 0" routerLink="/orden-produccion/crear/{{venta.id}}" class="btn">
                                       <i class="fa fa-fw fa-cogs"></i> Crear Orden de Producción
                                   </a>
-                                  
+                                  <a *ngIf="venta.estado == 'pendiente' && apiService.canEdit()" (click)="changeStateCotizacion(venta.id,'enviada')" class="btn">
+                                    <i class="fa fa-fw fa-paper-plane"></i> Marcar como enviada
+                                  </a>
+                                  <a *ngIf="venta.estado == 'enviada' && apiService.canEdit()" (click)="changeStateCotizacion(venta.id,'aceptada')" class="btn">
+                                    <i class="fa fa-fw fa-paper-plane"></i> Marcar como aceptada
+                                  </a>
+                                  <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" (click)="changeStateCotizacion(venta.id,'anulada')" class="btn">
+                                    <i class="fa fa-fw fa-trash"></i> Anular
+                                  </a>
                                   <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
                                       <i class="fa fa-fw fa-trash"></i> Eliminar
                                   </a> -->

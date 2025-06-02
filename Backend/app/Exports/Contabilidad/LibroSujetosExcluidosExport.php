@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
 
-class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
 
     public $request;
@@ -31,7 +31,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
 
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A1', 'LIBRO DE COMPRAS A SUJETOS EXCLUIDOS ');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
                 $event->sheet->setCellValue('E3', 'Folio N°:');
@@ -45,20 +45,19 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     public function headings(): array
     {
         return [
-            'N°',
-            'FECHA',
-            'NÚMERO DE DOCUMENTO',
-            'NÚMERO DE REGISTRO DEL CONTRIBUYENTE',
-            'NOMBRE DEL PROVEEDOR',
-            'COMPRAS EXENTAS INTERNAS',
-            'COMPRAS NO SUJETAS',
-            'IMPORTACIONES E INTERNACIONES EXENTAS',
-            'COMPRAS INTERNAS GRAVADAS',
-            'IMPORTACIONES E INTERNACIONES GRAVADAS',
-            'CRÉDITO FISCAL',
-            'ANTICIPO A CUENTA IVA PERCIBIDO',
-            'TOTAL',
-            'COMPRAS A SUJETOS EXCLUIDOS',
+            'TIPO DE DOCUMENTO',
+            'NUMERO DE NIT, DUI, OTRO DOCUMENTO',
+            'NOMBRE, RAZÓN SOCIAL O DENOMINACIÓN',
+            'FECHA DE EMISIÓN DEL DOCUMENTO',
+            'NUMERO DE SERIE DEL DOCUMENTO',
+            'NUMERO DE DOCUMENTO',
+            'MONTO DE LA OPERACIÓN',
+            'MONTO DE LA RETENCIÓN IVA 13%',
+            'TIPO DE OPERACIÓN',
+            'CLASIFICACIÓN',
+            'SECTOR',
+            'TIPO DE COSTO / GASTO',
+            'NUMERO DE ANEXO',
         ];
     }
 
@@ -72,10 +71,15 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->where('iva' , '>', 0)
+            ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->get();
+            ->get()
+            ->map(function ($compra) {
+                $compra->origen = 'compra';
+                return $compra;
+            });
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
@@ -83,20 +87,15 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
+            ->get()
+            ->map(function ($compra) {
+                $compra->origen = 'compra';
+                return $compra;
+            });
 
-        $devoluciones = DevolucionCompra::with(['proveedor'])
-            ->where('enable', true)
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->where('tipo_documento', 'Crédito fiscal')
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
-            
-        $libroCompras = $compras->merge($gastos)->merge($devoluciones)->sortBy('fecha');
+        $libroCompras = $compras->merge($gastos)->sortBy('fecha');
 
         return $libroCompras;
     }
@@ -104,34 +103,22 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     public function map($compra): array
     {
         $proveedor = optional($compra->proveedor()->first());
-        $multiplier = isset($compra->id_compra) ? -1 : 1;
-
-        // Valores base
+        
         $data = [
-            $this->index++,
-            $compra->fecha,
-            $compra->referencia,
-            $proveedor->nit ?? $proveedor->ncr,
-            $compra->nombre_proveedor,
-            0, // compras_exentas
-            0, // compras_no_sujetas
-            0, // importaciones_exentas
-            0, // compras_gravadas
-            0, // importaciones_gravadas
-            0, // credito_fiscal
-            0, // anticipo_iva_percibido
-            0, // total
-            0  // sujetos_excluidos
+            'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
+            'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
+            'proveedor' => $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
+            'fecha' => $compra->fecha,  // D - FECHA DE EMISI N DEL DOCUMENTO
+            'serie' => $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
+            'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
+            'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
+            'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
+            'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
+            'clasificacion' =>  $compra->origen == 'gasto' ? 'Gasto' : 'Costo' ,  // J - CLASIFICACI Costo gasto
+            'sector' => $compra->sector,  // K - SECTOR
+            'tipo' =>   $compra->tipo,  // L - TIPO DE COSTO / GASTO
+            'num_anexo' => 5,  // M - NUMERO DE ANEXO
         ];
-
-        if ($compra->tipo_documento == 'Sujeto excluido') {
-            $data[13] = $compra->total * $multiplier; // Solo asignar a sujetos excluidos
-        } else {
-            $data[8] = $compra->sub_total * $multiplier;  // COMPRAS GRAVADAS
-            $data[10] = $compra->iva * $multiplier;       // CRÉDITO FISCAL
-            $data[11] = ($compra->percepcion ?? 0) * $multiplier; // ANTICIPO IVA
-            $data[12] = $compra->total * $multiplier;     // TOTAL
-        }
 
         return $data;
     }

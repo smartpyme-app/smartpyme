@@ -42,6 +42,10 @@ class Gasto extends Model {
         'dte_invalidacion',
         'otros_impuestos',
         'es_retaceo',
+        'clasificacion',
+        'tipo_operacion',
+        'sector',
+        'tipo_gasto'
     ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];

@@ -11,8 +11,9 @@ import { FileService } from '@services/file.service';
 export class CrearOrdenProduccionComponent implements OnInit {
   public orden: any = {
     fecha: new Date().toISOString().split('T')[0],
-    estado: 'pendiente',
+    estado: 'creada',
     detalles: [],
+    // estado: 'pendiente',
   };
   public cotizacion: any = {};
   public loading: boolean = false;
@@ -137,7 +138,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
         this.orden = {
           fecha: new Date().toISOString().split('T')[0],
           fecha_entrega: new Date().toISOString().split('T')[0],
-          estado: 'pendiente',
+          // estado: 'pendiente',
+          estado: 'creada',
           id_cotizacion: this.cotizacion.id,
           id_cliente: this.cotizacion.id_cliente,
           id_usuario: this.cotizacion.id_usuario,
@@ -246,32 +248,49 @@ export class CrearOrdenProduccionComponent implements OnInit {
       this.alertService.error('Debe especificar una fecha de entrega');
       return;
     }
-
+  
     if (new Date(this.orden.fecha_entrega) < new Date(this.orden.fecha)) {
       this.alertService.error(
         'La fecha de entrega no puede ser anterior a la fecha actual'
       );
       return;
     }
-
+  
     try {
       this.loading = true;
-
+  
       // Preparar FormData con el archivo y los datos
       const formData = this.fileService.prepareFormData(
         this.orden,
         this.selectedFile
       );
-
+  
       // Enviar la petición
       const response = await this.apiService
         .store('orden-produccion', formData)
         .toPromise();
-
-      this.alertService.success(
-        'Orden creada',
-        'La orden de producción fue creada exitosamente.'
-      );
+  
+      // Manejar diferentes mensajes según el tipo de operación
+      if (response.action === 'updated') {
+        this.alertService.success(
+          'Orden actualizada',
+          'La orden de producción fue actualizada exitosamente.'
+        );
+      } else if (response.action === 'created') {
+        this.alertService.success(
+          'Orden creada',
+          'La orden de producción fue creada exitosamente.'
+        );
+      } else {
+        // Fallback en caso de que no venga el action
+        this.alertService.success(
+          this.isDetalles ? 'Orden actualizada' : 'Orden creada',
+          this.isDetalles 
+            ? 'La orden de producción fue actualizada exitosamente.'
+            : 'La orden de producción fue creada exitosamente.'
+        );
+      }
+  
       this.router.navigate(['/ordenes/produccion']);
     } catch (error) {
       this.alertService.error(error);

@@ -13,6 +13,9 @@ Route::post('/cotizacion',                    [CotizacionesController::class, 's
 Route::delete('/cotizacion/{id}',             [CotizacionesController::class, 'delete']);
 Route::post('/cotizacion/facturacion',        [CotizacionesController::class, 'facturacion']);
 Route::get('/cotizacion/impresion/{id}/{tipo}',        [CotizacionesController::class, 'generarDoc']);
+Route::post('/cotizacion/changeState',        [CotizacionesController::class, 'changeStateCotizacion']);
+Route::post('/cotizacion/duplicar',        [CotizacionesController::class, 'duplicarCotizacion']);
+
 
 Route::get('/cotizaciones/exportar',    [CotizacionesController::class, 'export']);
 
@@ -27,4 +30,5 @@ Route::get('/cotizaciones',                    [CotizacionVentaController::class
 Route::post("cotizacionVentas", [CotizacionVentaController::class, 'store']);
 Route::get("cotizacionVentas/{id}", [CotizacionVentaController::class, 'read']);
 Route::delete("cotizacion-venta-detalle/{id}", [CotizacionVentaController::class, 'delete']);
+
 
